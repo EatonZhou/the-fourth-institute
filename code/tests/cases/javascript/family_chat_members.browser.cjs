@@ -92,7 +92,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
         intake[args.resident_id] = args.open ? 'open' : 'closed';
       }};
       window.PortalResidentRuntimeController = {bind: id => ({
-        state: () => ({}), load: async () => ({detail: {resident: {backend: 'codex', ...(id === 'member_1' ? {family: {role: 'facade'}} : {})}, allows: {OpenIntake: true}}, settings: {}}), close() {}, destroy() {},
+        state: () => ({}), load: async () => ({detail: {resident: {backend: 'codex', ...(id === 'member_1' ? {family: {role: 'facade'}} : {})}, allows: {SetIntakeOpen: true}}, settings: {}}), close() {}, destroy() {},
       })};
       window.PortalResidentProtocol = {...PortalResidentProtocol,
         loadSnapshot: async (id, opts) => {

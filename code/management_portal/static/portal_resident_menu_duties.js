@@ -212,7 +212,7 @@
         const from = ids.indexOf(block.id), to = from + Number(button.dataset.dutyMove);
         if (to < 0 || to >= ids.length) return;
         [ids[from], ids[to]] = [ids[to], ids[from]];
-        await mutate(context, () => window.PortalInstructionClient.execute("OrderDuties", {
+        await mutate(context, () => window.PortalInstructionClient.execute("MoveDuties", {
           lineage_id: lineageId, holder_id: context.residentId, function_block_ids: ids,
         }), t("职责顺序已更新。"));
         return;

@@ -516,7 +516,7 @@ def get_account_resident_summary(account_id: str, actor: str, account_scope: str
         resident_domain_common.record_resident_id(record) for record in selected
     ])
     intake = {"open": 0, "closed": 0, "unknown": 0}
-    # The page opens or closes these with OpenIntake resident_ids.
+    # The page opens or closes these with SetIntakeOpen resident_ids.
     intake_ids: dict[str, list[str]] = {"open": [], "closed": []}
     work = {"idle": 0, "queued": 0, "running": 0, "stopping": 0, "unknown": 0}
     latest_input = {"failed": 0, "cancelled": 0}
@@ -886,7 +886,7 @@ def _deliver_to_facade(
             workspace_roots=resident_runtime_domain.resident_media_workspace_roots(environment or record),
         )
     if request.context_refs:
-        resolve_context_refs(request.context_refs, request.reader, request.message)
+        resolve_context_refs(request.context_refs, request.reader)
     facade_item = request.with_business_ref(request.user_message(record_id))
     facade_message = copy.deepcopy(facade_item)
     facade_message_id = str(facade_message.get("message_id") or "")
@@ -1110,7 +1110,12 @@ def _prepared_input(
     message = request.message
     cwd = _resident_message_cwd(environment, request.working_directory) if environment is not None else None
     _ensure_backend_accepts_context_refs(record, request.context_refs)
-    context_refs = resolve_context_refs(request.context_refs, request.attachment_actor, message)
+    from management_portal import prompt_injection
+    choices = prompt_injection.resolve(resident_runtime_domain.read_resident_runtime_settings(record).get("prompt_injection"))
+    context_refs = resolve_context_refs(
+        request.context_refs, request.attachment_actor,
+        message if choices["message_envelope"] == "every_turn" else "",
+    )
     media_roots = resident_runtime_domain.resident_media_workspace_roots(environment) if has_media else ()
     facade_record = (resident_record_domain.find_resident(request.relay.source[0])
                      if request.relay.sender and request.input_media else None)

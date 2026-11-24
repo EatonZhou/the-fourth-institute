@@ -74,8 +74,8 @@ Portal 中有一类工作不需要人在对话里逐次发起：知识库巡检�
 - **重复计划可以设置随机偏移，让同时到期的工作错开启动。** 随机偏移 `jitter_seconds` 取 0–86400 秒，按固定间隔重复时还必须小于间隔。系统为每一次触发在 0 到偏移上限之间随机抽取实际开始时间，并在抽取后保存，重启后不会重新抽取。
 - **立即运行一次就是手动触发。** 调用者对连到同一 Resident 的手动事件源调用 `TriggerEvent`，或直接用 `DeliverMessage` 把任务投递给这个 Resident。手动触发到达时目标正在工作，这次触发排队等待，不会被丢弃（连线显式配置了其他不可用策略时按配置处理）。
 - **定时与自动触发的工作默认在新的上下文中运行。** 由 `time.reached` 或 `file.changed` 启动的工作不进入 Resident 当前的模型会话：每次运行使用空白会话，不读取也不改变 Resident 自己的对话上下文。连线配置 `context_policy="session"` 时改为在 Resident 当前会话中运行。Lineage 在投递之前记录这次投递的执行方式，Resident 开始工作时按它执行。
-- **暂停调度就是暂停事件源。** `PauseComponent`（`paused: true`）暂停事件源后，到期的触发直接跳过；以 `paused: false` 恢复后从下一次计划时间继续，暂停期间的触发不补发。修改计划或随机偏移使用 `UpdateComponent`；永久停止时删除事件源或它到 Resident 的连线。
-- **停止正在进行的工作与暂停调度是两件事。** `CancelInput` 按消息 ID 停止 Resident 对应的工作；`OpenIntake`（`open: false`）关闭 Resident 的接单开关，之后到达的任务排队等待、不执行，直到以 `open: true` 重新打开（decision_2a3ff353165c）。
+- **暂停调度就是暂停事件源。** `SetComponentPaused`（`paused: true`）暂停事件源后，到期的触发直接跳过；以 `paused: false` 恢复后从下一次计划时间继续，暂停期间的触发不补发。修改计划或随机偏移使用 `UpdateComponent`；永久停止时删除事件源或它到 Resident 的连线。
+- **停止正在进行的工作与暂停调度是两件事。** `CancelInput` 按消息 ID 停止 Resident 对应的工作；`SetIntakeOpen`（`open: false`）关闭 Resident 的接单开关，之后到达的任务排队等待、不执行，直到以 `open: true` 重新打开（decision_2a3ff353165c）。
 - **模型选择就是 Resident 的运行设置。** 更换模型或推理强度使用 `UpdateResidentSettings`，更换 Provider 或账号使用 `RestartSession`（decision_d19b9909a674）；新设置从下一轮工作开始生效。
 - **运行状态分三处读取。** Resident 是否在工作、正在处理哪条输入、还有哪些任务在等待，由 Resident 状态与队列给出（decision_2a3ff353165c）；每次事件或独立 Effect 激活触发了谁、是否完成，由 Trigger Path 及其步骤、Execution 关联给出（decision_68215b3a825b）；事件源自己保存已触发次数、下一次计划时间和最近一次投递的摘要，由 `GetComponentRuntime` 读取。
 - **Home 的“定时与自动触发”面板把这些 Resident 汇总在一处。** 凡是有 `time.reached` 或 `file.changed` 事件源连到 Invoke 端口的 Resident，都作为一行显示并按所在 Lineage 分组，内容全部来自上述读取指令；页面上的暂停、恢复、修改定时和运行一次都提交为对应的指令（decision_481dc4e6292c）。

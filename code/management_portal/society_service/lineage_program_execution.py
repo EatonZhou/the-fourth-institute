@@ -905,7 +905,7 @@ class _PacketDispatch:
             source_node_id=self.source_node_id,
             packets=batch.packets,
             state=self.state,
-            include_envelope=_bool(batch.config.get("include_envelope"), True),
+            include_envelope=_bool(batch.config.get("include_envelope"), False),
         )
         if inbox is None:
             return {"status": "cancelled", "event_id": self.event.id, "operator_id": batch.target_id}
@@ -985,7 +985,7 @@ class _PacketDispatch:
             "source_wire_id": batch.wire_id,
             "prompt": prompt,
             "packet": packet,
-            "include_envelope": _bool(batch.config.get("include_envelope"), True),
+            "include_envelope": _bool(batch.config.get("include_envelope"), False),
         }
         packet_route = {
             "wire_id": batch.wire_id,
@@ -1173,7 +1173,7 @@ def _deliver_packet_to_agent(
         packet=packet,
         include_envelope=_bool(
             invocation.get("include_envelope"),
-            True,
+            False,
         ),
     )
     if not prompt:

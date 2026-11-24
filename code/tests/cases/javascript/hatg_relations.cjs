@@ -63,7 +63,7 @@ function isaServer(initial) {
       Object.assign(edge(args.handoff_id), plain(args.changes));
       return {handoff: plain(edge(args.handoff_id))};
     }
-    if (name === 'PrepareWorkspaceHandoff') {
+    if (name === 'RunWorkspaceHandoff') {
       const prepared = edge(args.handoff_id);
       prepared.status = server.prepare;
       prepared.error = server.prepare === 'failed' ? 'disk full' : '';
@@ -276,7 +276,7 @@ test('saving and preparing a new Handoff sends the edited items and reports the 
   h.$('handoffExplanationInput').value = '  Review the docs  ';
   await h.submit();
   assert.deepEqual(h.server.calls.map(call => call.name),
-    ['CreateWorkspaceHandoff', 'GetLineage', 'PrepareWorkspaceHandoff', 'GetLineage']);
+    ['CreateWorkspaceHandoff', 'GetLineage', 'RunWorkspaceHandoff', 'GetLineage']);
   const [create, , prepare] = h.server.calls;
   assert.deepEqual(create.args, {
     source_resident_id: 'resident_a', target_resident_id: 'resident_b', items: [{
@@ -343,7 +343,7 @@ test('a prepared Handoff only changes its explanation, a failed one is retried w
   assert.deepEqual([failed.$('handoffSendNowInput').checked, failed.$('handoffSubmitBtn').textContent], [true, '保存并重试']);
   failed.field(failed.cards()[0], 'target-path').value = '/copies/b2';
   await failed.submit();
-  assert.deepEqual(failed.server.writes(), ['UpdateWorkspaceHandoff', 'PrepareWorkspaceHandoff']);
+  assert.deepEqual(failed.server.writes(), ['UpdateWorkspaceHandoff', 'RunWorkspaceHandoff']);
   const [update] = failed.server.calls;
   assert.equal(update.args.changes.items[0].target.path, '/copies/b2');
   assert.deepEqual(update.args.changes.items[0].attempts, [{status: 'failed'}], 'earlier attempts stay with the item');
@@ -427,7 +427,7 @@ test('retrying a failed Handoff from the inspector reports the real outcome', as
   h.state.lineage.edges[0].status = 'failed';
   h.state.localVersion += 1;
   h.relations.renderRelationInspector();
-  h.server.fail.PrepareWorkspaceHandoff = new Error('runtime unavailable');
+  h.server.fail.RunWorkspaceHandoff = new Error('runtime unavailable');
   panel.querySelector('[data-retry-handoff]').click();
   await h.until(() => h.toasts.length === 3, 'the failing retry finishes');
   assert.deepEqual(h.toasts.at(-1), ['error', 'Handoff 重试失败：runtime unavailable']);

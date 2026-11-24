@@ -42,7 +42,7 @@ def inputs_from_claim(
     enveloped_ids = {
         str(packet.get("id") or "")
         for item in ordered
-        if bool(item.get("include_envelope", True))
+        if item.get("include_envelope") is True
         for packet in item.get("packets") or []
         if isinstance(packet, dict) and str(packet.get("id") or "")
     }

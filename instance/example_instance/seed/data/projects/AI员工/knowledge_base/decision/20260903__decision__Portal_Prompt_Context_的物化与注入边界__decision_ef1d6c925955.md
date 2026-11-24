@@ -143,7 +143,7 @@ Resident 的运行设置 `prompt_injection` 决定它的每一轮带哪些 Porta
 - 选一个预设：`{preset}`；
 - 自定义：`{preset: custom, parts}`，逐类给出时机。
 
-可以在 Chat 的“Prompt 注入”面板里设置，也可以用 HATG ISA（decision_d19b9909a674）：`GetResidentSettings` 在 `settings` 旁返回 `prompt_injection` 视图（`preset`、`preset_label`、`presets` 和带 `placement` 的 `parts`）；`UpdateResidentSettings` 通过 `changes.prompt_injection` = `{preset?, parts?}` 修改，`parts` 叠加在给出的预设上，没给预设时叠加在当前设置上，结果返回同样的视图；`PreviewPromptInjection` 预览各轮实际发送的内容。内容放在哪里由 Provider 决定，用户不能选。
+可以在 Chat 的“Prompt 注入”面板里设置，也可以用 HATG ISA（decision_d19b9909a674）：`GetResidentSettings` 在 `settings` 旁返回 `prompt_injection` 视图（`preset`、`preset_label`、`presets` 和带 `placement` 的 `parts`）；`UpdateResidentSettings` 通过 `changes.prompt_injection` = `{preset?, parts?}` 修改，`parts` 叠加在给出的预设上，没给预设时叠加在当前设置上，结果返回同样的视图；`GetPromptInjectionPreview` 预览各轮实际发送的内容。内容放在哪里由 Provider 决定，用户不能选。
 
 | 类别 | 内容 | 可选时机 | 位置 |
 | --- | --- | --- | --- |
@@ -151,7 +151,7 @@ Resident 的运行设置 `prompt_injection` 决定它的每一轮带哪些 Porta
 | `resident_md` | Resident 的长期身份说明 `<resident-identity>` | 同上 | Claude Code、Kimi Code、Provider API 在系统位置；Codex、DSH 在消息前 |
 | `runtime_identity` 运行身份 | `<resident-runtime-identity>`：resident_id、lineage_id、以本 Resident 身份调用 HATG ISA 的说明 | 同上 | 消息前 |
 | `authorization_context` 授权上下文 | `<portal-authorization-context>`：本轮执行者、消息来源、工作目录参考 | 同上 | 消息后 |
-| `message_envelope` 消息包装 | `<user-message>` 标签；带附件时还有会话说明、发送者和 Resident 信息；来自门面的消息附带回复提示 | 关闭、每轮 | 包住消息 |
+| `message_envelope` 消息包装 | 开启时用 `<user-message>` 包住正文。Portal 解析正文里的资源地址并附上引用清单，有引用时还附加会话说明与 Resident 信息。 | 关闭、每轮 | 本轮消息 |
 | `business_instructions` 业务指令 | `prompt_context.system_prompt` | 每轮 | 系统位置 |
 | `turn_skills` 任务 Skill 清单 | 某条消息额外要求读取的 Skill | 关闭、只发清单、连同核心规则重发 | 消息前；连同核心规则重发时随核心规则 |
 
@@ -159,16 +159,16 @@ Resident 的运行设置 `prompt_injection` 决定它的每一轮带哪些 Porta
 
 | 预设 | 核心规则 | resident.md | 运行身份 | 授权上下文 | 消息包装 | 任务 Skill |
 | --- | --- | --- | --- | --- | --- | --- |
-| `standard` 标准（默认） | 首轮 + 压缩后 | 首轮 + 压缩后 | 每轮 | 每轮 | 每轮 | 只发清单 |
+| `standard` 标准（默认） | 首轮 + 压缩后 | 首轮 + 压缩后 | 每轮 | 每轮 | 关闭 | 只发清单 |
 | `full` 每轮完整 | 每轮 | 每轮 | 每轮 | 每轮 | 每轮 | 只发清单 |
-| `minimal` 精简 | 首轮 | 首轮 | 首轮 | 首轮 | 每轮 | 只发清单 |
+| `minimal` 精简 | 首轮 | 首轮 | 首轮 | 首轮 | 关闭 | 只发清单 |
 | `pure` 纯 TUI | 关闭 | 关闭 | 关闭 | 关闭 | 关闭 | 关闭 |
 
 **改单个类别后记为自定义；** 结果与某个预设完全相同时，记为该预设。
 
-**纯 TUI 不带任何 Portal 内容，** 模型只收到消息原文，就像直接使用 Provider 自己的 TUI。Provider 自带的系统提示（例如 Claude Code 的 preset）照常保留，在它自己的 TUI 里也有。
+**纯 TUI 关闭表中可关闭的注入项。** Provider 自带的系统提示（例如 Claude Code 的 preset）照常保留。
 
-**每条消息自带的内容不受这些设置影响：** Fork 继承的历史、附加引用、系统提供的运行上下文都随消息发送。Agent Harness 的运行提示由 Harness 自己的设置控制。
+**关闭消息包装时，正文里的资源地址保留原样。** 主动附加的引用、Fork 继承的历史和本轮运行上下文仍随消息送达。标准和精简预设也会送达经核验的门面回复指引。Agent Harness 的运行提示由 Harness 自己的设置控制。
 
 **规则与权限的边界：** 关闭运行身份和授权上下文只是不再告诉模型这些信息，服务端仍按当前 Resident 检查权限。
 

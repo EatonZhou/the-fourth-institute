@@ -70,7 +70,7 @@ def _family_note_context(
     from dataclasses import replace
     from .family_familize import facade_for_family_state, facade_for_internal_note
 
-    if instruction == "CheckFamilyReview" and context.entry == "lineage":
+    if instruction == "MaintainFamilyReview" and context.entry == "lineage":
         from .family_familize import component_family, role_of, member_ids
         from .family_tasks import task_elements
         block = component_family(lineage, effect_id)
@@ -104,14 +104,14 @@ def _family_note_context(
             return context
         facade = facade_for_family_state(lineage, effect_id, str(arguments.get("key") or ""))
         return replace(context, caller=facade) if facade else context
-    if instruction in {"CheckFamilyRecovery", "CheckFamilyProgress", "CheckFamilyRoleAvailability"}:
+    if instruction in {"MaintainFamilyRecovery", "MaintainFamilyProgress", "MaintainFamilyRoleAvailability"}:
         from .family_familize import component_family, role_of
         block = component_family(lineage, effect_id)
         if (block and arguments.get("lineage_id") == lineage_id
                 and arguments.get("family_id") == block["id"]):
             return replace(context, caller=role_of(block, "facade"))
         return context
-    if instruction in {"CheckResidentWorkSummary", "GetFamilySummaryInputs"}:
+    if instruction in {"MaintainResidentWorkSummary", "GetFamilySummaryInputs"}:
         from .family_familize import component_family, role_of, member_ids
         block = component_family(lineage, effect_id)
         target = str(arguments.get("resident_id") or "")
@@ -559,7 +559,7 @@ class _EffectRun:
     def _admit_call(self, request: lineage_effect_script.CallRequest, attempt: _CallAttempt) -> None:
         try:
             # Admit the call atomically with the same durable control
-            # transaction used by PauseComponent. External work starts
+            # transaction used by SetComponentPaused. External work starts
             # only after this short transaction is released.
             from .state_store import get_lineage_data_store
             store = get_lineage_data_store()

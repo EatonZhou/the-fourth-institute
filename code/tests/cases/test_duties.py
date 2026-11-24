@@ -60,9 +60,9 @@ def test_order_and_update_duties(lineage):
     worker = resident(lineage, "Worker")
     first = apply(lineage, "fixed_reminder", worker)
     second = apply(lineage, "scheduled_work", worker, task="Check work")
-    ok("OrderDuties", {"lineage_id": lineage, "holder_id": worker, "function_block_ids": [second, first]})
+    ok("MoveDuties", {"lineage_id": lineage, "holder_id": worker, "function_block_ids": [second, first]})
     assert [b["id"] for b in duties(lineage, worker)] == [second, first]
-    assert run("OrderDuties", {"lineage_id": lineage, "holder_id": worker,
+    assert run("MoveDuties", {"lineage_id": lineage, "holder_id": worker,
                                "function_block_ids": [second]}).error
     updated = ok("UpdateDuty", {"lineage_id": lineage, "function_block_id": first,
                                 "description": "  每轮结束提醒\n继续  ", "category": "custom"})["function_block"]
@@ -72,7 +72,7 @@ def test_order_and_update_duties(lineage):
 
 
 def preview_parts(resident_id):
-    return {part["id"]: part for part in ok("PreviewPromptInjection", {"resident_id": resident_id})["parts"]}
+    return {part["id"]: part for part in ok("GetPromptInjectionPreview", {"resident_id": resident_id})["parts"]}
 
 
 def test_prompt_duty_enters_memory_and_leaves_with_removal(lineage):

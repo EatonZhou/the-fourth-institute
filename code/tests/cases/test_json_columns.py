@@ -150,10 +150,10 @@ def test_resident_context_documents_read_and_write_both_column_types(legacy):
             connection.execute("ALTER TABLE summary_jobs ALTER COLUMN evidence_json SET DEFAULT ''")
     store.upsert_catalog([{"resident_id": RESIDENT, "lineage_id": "lineage_aaaaaaaaaaaa", "title": "A"}])
 
-    assert store.write_work_summary(RESIDENT, RESIDENT, {"current_focus": "a\x00b"}, [], 0, {"m": "1"})["revision"] == 1
+    assert store.write_work_summary(RESIDENT, RESIDENT, {"current_focus": "a\x00b"}, [], {"m": "1"})["revision"] == 1
     # The same summary, or none, leaves the revision where it is.
-    assert store.write_work_summary(RESIDENT, RESIDENT, {"current_focus": "a\x00b"}, [], 1, {"m": "2"})["revision"] == 1
-    summary = store.write_work_summary(RESIDENT, RESIDENT, None, [], 1, {"m": "3"})
+    assert store.write_work_summary(RESIDENT, RESIDENT, {"current_focus": "a\x00b"}, [], {"m": "2"})["revision"] == 1
+    summary = store.write_work_summary(RESIDENT, RESIDENT, None, [], {"m": "3"})
     assert (summary["revision"], summary["summary"], summary["source_versions"]) == (1, {"current_focus": "a�b"}, {"m": "3"})
 
     store.enqueue(RESIDENT, mode="full", reason="test")

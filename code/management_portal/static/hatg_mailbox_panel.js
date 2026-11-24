@@ -11,7 +11,7 @@
   if (window.PortalMailboxPanel) return;
 
   const REFRESH_DELAY_MS = 250;
-  // PreviewPromptInjection marks where the message goes in the user-position prompt.
+  // GetPromptInjectionPreview marks where the message goes in the user-position prompt.
   const PREVIEW_MESSAGE_SLOT = "（本轮消息）";
   const TIMING_LABELS = Object.freeze({
     session_start_and_after_compaction: window.PortalI18n.t("会话开始和压缩后发送"),

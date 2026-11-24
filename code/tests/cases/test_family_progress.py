@@ -22,14 +22,12 @@ def reports(team, monkeypatch):
     doc = {"revision": 0, "summary": {}, "source_versions": {}}
     infos = []
     inputs = {"members": [{"resident_id": team.member, "summary": {"recent_results": ["已完成登录改进"]}}],
-              "expected_revision": 0, "source_versions": {"roster": "one", team.member: "two"}}
+              "source_versions": {"roster": "one", team.member: "two"}}
     monkeypatch.setattr(progress.work_summary, "get_family_summary_inputs", lambda *args: copy.deepcopy(inputs))
     monkeypatch.setattr(progress.work_summary, "maintenance_view", lambda *args: copy.deepcopy(doc))
-    def update(actor, rid, revision, *, summary, source_versions):
+    def update(actor, rid, *, summary, source_versions):
         assert actor == team.steward and rid == team.facade
-        if revision != doc["revision"]:
-            raise ValueError("摘要版本冲突")
-        doc.update(revision=revision + 1, summary=copy.deepcopy(summary), source_versions=source_versions)
+        doc.update(revision=doc["revision"] + 1, summary=copy.deepcopy(summary), source_versions=source_versions)
     monkeypatch.setattr(progress.work_summary, "update_resident_work_summary", update)
     def deliver(rid, actor, text, **kwargs):
         infos.append({"resident_id": rid, "actor": actor, "text": text, **kwargs})
@@ -40,7 +38,7 @@ def reports(team, monkeypatch):
         return mid, progress.check(team.lineage, team.family["family_id"], team.facade, event=event, **options)
     def publish(batch="20", **options):
         args = dict(batch_id=batch, report="已完成登录改进，继续处理权限边界。", summary={"current_focus": "登录改进已完成，处理权限边界"},
-                    expected_revision=doc["revision"], source_versions=inputs["source_versions"])
+                    source_versions=inputs["source_versions"])
         args.update(options)
         return progress.publish(team.lineage, team.family["family_id"], team.steward, **args)
     return SimpleNamespace(team=team, doc=doc, inputs=inputs, infos=infos, receive=receive, publish=publish, deliver=deliver)
@@ -123,7 +121,7 @@ def test_legacy_partial_publication_does_not_resume_member_broadcast(reports):
         assert batch["delivered"] == [r.team.member]
 
 
-def test_summary_conflict_and_wrong_author_do_not_deliver_and_request_failure_is_retryable(reports, monkeypatch):
+def test_wrong_author_does_not_deliver_and_request_failure_is_retryable(reports, monkeypatch):
     """Family 进展简报的触发、发布与设置"""
     r = reports
     from management_portal.society_service import family_facade
@@ -135,11 +133,9 @@ def test_summary_conflict_and_wrong_author_do_not_deliver_and_request_failure_is
     monkeypatch.setattr(family_facade, "tell_steward", original)
     r.receive(mid, every_turns=1)
     assert len(r.team.sent) == 1
-    with pytest.raises(ValueError, match="版本"):
-        r.publish("1", expected_revision=99)
     with pytest.raises(PermissionError):
         progress.publish(r.team.lineage, r.team.family["family_id"], r.team.member,
-                         batch_id="1", report="进展", summary={}, expected_revision=0, source_versions={})
+                         batch_id="1", report="进展", summary={}, source_versions={})
     assert not r.infos
     assert r.publish("1")["status"] == "published"
 
@@ -172,13 +168,13 @@ def test_publication_updates_real_summary_without_infos_and_steward_can_notify_s
     """Family 进展简报的触发、发布与设置"""
     monkeypatch.setattr(resident_intake_domain, "deliver_resident_message_content", deliver_resident_message_content)
     mid = team.message(team.facade, "queued")
-    ok("CheckFamilyProgress", {"lineage_id": team.lineage, "family_id": team.family["family_id"], "every_turns": 1,
+    ok("MaintainFamilyProgress", {"lineage_id": team.lineage, "family_id": team.family["family_id"], "every_turns": 1,
        "event": {"type": "resident.message_received", "payload": {"resident_id": team.facade, "message_id": mid}}},
        actor=team.steward)
     materials = progress.work_summary.get_family_summary_inputs(team.steward, team.facade)
     args = {"lineage_id": team.lineage, "family_id": team.family["family_id"], "batch_id": "1",
             "report": "Family 已开始接收工作，成员成果摘要尚未齐全。", "summary": {"current_focus": "接收工作，等待成员成果摘要"},
-            "expected_revision": materials["expected_revision"], "source_versions": materials["source_versions"]}
+            "source_versions": materials["source_versions"]}
     assert ok("PublishFamilyProgress", args, actor=team.steward)["status"] == "published"
     stored = progress.work_summary.maintenance_view(team.steward, team.facade)
     assert stored["summary"]["current_focus"] == args["summary"]["current_focus"]

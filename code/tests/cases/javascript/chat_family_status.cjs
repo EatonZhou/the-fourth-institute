@@ -98,7 +98,7 @@ w.PortalResidentRuntimeController = {
           family_facade: {},
           execution_account: node.accountId ? { account_id: node.accountId } : {},
           ...(residentId === 'res_queue' ? { provider_session: { provider: 'claude', account_id: 'route_x' } } : {}),
-          allows: { OpenIntake: true },
+          allows: { SetIntakeOpen: true },
         },
         settings: residentId === 'res_run' ? { model: 'model-x', reasoning_effort: 'high' }
           : residentId === 'res_stop' ? { model: 'detail-model', reasoning_effort: 'medium' } : {},

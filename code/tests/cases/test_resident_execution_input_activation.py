@@ -649,7 +649,8 @@ def test_normal_delivery_starts_idle_and_advances_busy_queue(input_delivery, mon
     resident_id = input_delivery["resident_id"]
     prompt_builder = resident_prompt_domain.build_resident_prompt
     monkeypatch.setattr(resident_prompt_domain, "build_resident_prompt", lambda *_: (_ for _ in ()).throw(AssertionError("prompt built during admission")))
-    first = _published_delivery(backend.deliver_resident_message_content(resident_id, "CASE-A", "First"))
+    first_message = "First: lineage_1fac8ce84383"
+    first = _published_delivery(backend.deliver_resident_message_content(resident_id, "CASE-A", first_message))
     job = resident_execution_work.read(input_delivery)
     assert "prompt_builder_version" not in job
     assert "actual_sent_prompt" not in job
@@ -657,7 +658,9 @@ def test_normal_delivery_starts_idle_and_advances_busy_queue(input_delivery, mon
     monkeypatch.setattr(resident_prompt_domain, "build_resident_prompt", prompt_builder)
     prepared = resident_execution_domain._portable_context_execution(input_delivery, job)
     assert prepared["prompt_builder_version"] == resident_execution_work.PROMPT_BUILDER_VERSION
-    assert "<user-message>\nFirst\n</user-message>" in prepared["actual_sent_prompt"]
+    assert first_message in prepared["actual_sent_prompt"]
+    assert "<user-message>" not in prepared["actual_sent_prompt"]
+    assert "<attached_references>" not in prepared["actual_sent_prompt"]
     assert resident_execution_work.execution_id(job)
     assert resident_execution_work.continuation_needed(input_delivery, job)
     assert not resident_execution_work.is_execution_held(job)

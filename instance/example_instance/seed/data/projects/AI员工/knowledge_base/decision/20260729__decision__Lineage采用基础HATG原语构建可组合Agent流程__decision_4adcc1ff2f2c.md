@@ -230,7 +230,7 @@ Effect 仍可用字符串简写固定提示词，也可省略它或留空；通�
 **其他规则：**
 - 一个 Effect 可以在脚本中用 `for` 向多个目标逐个调用指令；这些调用共享一次认领和一个结果事件，中断后从未完成的调用继续。每个目标需要独立的认领、结果事件和重试时，用多个 Effect。
 - Event 连线可以设置目标 Resident 是否沿用长会话（decision_481dc4e6292c）：`config.context_policy: "session"` 让时间与文件事件触发的工作进入 Resident 的长会话。这个字段只接受这一个值，其他取值保存时被拒绝。每次投递都是 Resident 的一轮模型工作，连线没有选择执行方式的字段，带 `execution` 的配置保存时被拒绝。
-- `include_envelope` 是激活连线的配置，默认为 true：目标除业务参数外，还能读到 Packet 的信封。设为 false 时只传映射后的参数。
+- **激活连线可显式设置 `include_envelope`。** 向 Resident 或由 Resident 执行的 Packet Operator 投递时，缺省只发送任务内容和显式映射的参数。设为 `true` 时再附上 Packet 信封。Effect 默认可以读取 `event` 和 `packet`，设为 `false` 时这两个脚本变量为空。
 - 引用连线（target、watch）不产生激活。
 
 ### 自动 Event 的运行身份
@@ -265,7 +265,7 @@ Effect 仍可用字符串简写固定提示词，也可省略它或留空；通�
 **Event Source 与 Effect 都有持久运行开关。**
 - 暂停期间不产生新的 Event。到期的定时触发被跳过，恢复后从下一次计划时间继续，不补发。
 - 观察型 Event Source 恢复时重新建立观察基线，暂停期间发生的变化不补发。
-- 暂停和恢复由 `PauseComponent` 控制（`paused: true` 暂停，`paused: false` 恢复），属于运行状态，不改变 Lineage 定义和版本。
+- 暂停和恢复由 `SetComponentPaused` 控制（`paused: true` 暂停，`paused: false` 恢复），属于运行状态，不改变 Lineage 定义和版本。
 - Event 和 Effect 配置抽屉顶部显示“已打开 / 已关闭”开关；点击立即保存运行状态，保留抽屉中的未保存配置。画布标记关闭节点，Event 关闭时禁止手动触发。保存失败显示原因，开关维持服务器状态并允许重试。
 - 状态来自 `program_event_source_runtime` 和 `program_effect_runtime`，随原有订阅刷新；从未执行过的 Effect 同样显示开关状态。开关的 PostgreSQL 持久状态、指令参数及并发语义见 decision_68215b3a825b。
 - Event 关闭后，手动触发、定时触发、观察回调和积压重放均受同一运行检查约束，不产生新触发。Effect 关闭后禁止新指令准入，脚本后续指令与待投递项等待打开；已经准入的外部调用可以完成，已有副作用保持原样。打开后继续时复用已经完成指令的结果。
@@ -354,7 +354,7 @@ Effect 仍可用字符串简写固定提示词，也可省略它或留空；通�
 - `max_rounds`（最多 1000）限定从 `continue` 输出的工作轮数。输入到达时，若当前轮数小于上限，先加一并从 `continue` 输出；当前轮数已达到上限时，下一次输入从 `stop` 输出且不再加一。收到 `done` 完成信号也从 `stop` 输出。
 - Loop 从 `continue` 或 `stop` 转发输入 Packet，保留消息与事实；运行关联记录当前轮次，来源追踪保留原产生者与经由组件。
 - `completion` 为 `complete`（默认）时，停止后保持停止；为 `rearm` 时，下一次外部触发重新计数。
-- 轮数、代次、待投递调用和暂停状态保存在算子运行状态中，由 `PauseComponent`（`paused: true|false`）和 `ResetComponentRuntime` 控制。
+- 轮数、代次、待投递调用和暂停状态保存在算子运行状态中，由 `SetComponentPaused`（`paused: true|false`）和 `ResetComponentRuntime` 控制。
 
 **评审、提问、构思、监督和固定提醒都用普通组件组合表达。** 用到的组件是普通 Resident、写明任务的激活连线、Loop 和算子。例如固定提醒：
 1. 一个调用 `DeliverMessage` 的 Effect 写好固定提示词，不读取其他对象，也不调用模型。
@@ -482,9 +482,9 @@ done
 | 修改 Lineage | `ApplyLineageChanges` | 操作列表用 `${…}` 引用上游 Effect 输出，或本脚本中前面调用返回的对象 ID |
 | 写共享状态 | `UpdateSharedState`；带 `expected_value` 时只在当前值相等时写入 | 键为常量，值来自 Event、上游输出或前面的调用 |
 | 通知用户 | `CreateNotification` | 标题与正文为常量或带变量的文字 |
-| 准备工作区交接 | `PrepareWorkspaceHandoff` | 来源与目标 Resident 来自两个 target 端点 |
+| 准备工作区交接 | `RunWorkspaceHandoff` | 来源与目标 Resident 来自两个 target 端点 |
 | 触发手动 Event | `TriggerEvent` | `event_source_id` 指向 `manual.triggered` 事件源；`prompt`、`payload` 来自本次输入。其他类型的 Event 只由真实事实产生 |
-| 停止接单、取消工作、清空队列或删除 Resident | `OpenIntake`（`open:=false`）、`ListResidentStates`、`CancelInput`、`ClearMailbox`、`DeleteResident` | `resident_id` 来自 target 端点；`CancelInput` 使用 `ListResidentStates` 读到的当前消息 ID；需要多步时由调用者组合 |
+| 停止接单、取消工作、清空队列或删除 Resident | `SetIntakeOpen`（`open:=false`）、`ListResidentStates`、`CancelInput`、`ClearMailbox`、`DeleteResident` | `resident_id` 来自 target 端点；`CancelInput` 使用 `ListResidentStates` 读到的当前消息 ID；需要多步时由调用者组合 |
 
 `ForkResident` 只创建新 Resident，`DeliverMessage` 只投递消息。"先 Fork 再派活"写成同一个 Effect 中的两次调用；只有这组动作需要在图上分别可见时，才画成两个 Effect。
 
@@ -1066,7 +1066,7 @@ Function Block 的展开、折叠是当前查看者的本地视图偏好，不�
 
 Function Block 与 Family 实例菜单提供“内部对象”和“问题”页，不需要展开模块。内部对象页按成员关系递归列出内部组件，按 Effect、Event、其他组件分组；每行显示名称、种类、稳定 ID 和状态标签。Effect 行直接显示失败通知收件人，点击即打开失败通知编辑器；Event 行带暂停或恢复按钮。“设置”在列表下方打开现有原语检查器，保存与普通检查器使用相同的权限、定义版本和草稿保护；不改变折叠状态或全局画布选择。概览页的“失败通知”汇总模块内 Effect 的收件人，状态与清单都相同的 Effect 合为一行并注明数量，尚未配置的 Effect 与明确关闭的 Effect 分属两行；“修改 N 个 Effect 的收件人…”对模块内全部 Effect 打开编辑器。问题页的 Effect 失败同样列出收件人，并可从那里修改。
 
-勾选对象后，顶部工具栏显示已选数量和“设置失败通知（N）”“暂停事件（N）”“恢复事件（N）”，全选框在部分选择时显示半选。批量设置失败通知打开与单个 Effect 相同的编辑器：所选 Effect 都有的收件人显示为普通标签；只在部分 Effect 中的收件人用虚线标签和覆盖数（例如 1/3）标出，可以“补到全部”或移除，不动则保持原有覆盖。新加的收件人加到全部所选 Effect。各 Effect 保存后的清单不同时，预览逐个列出，尚未配置的 Effect 写“尚未配置 · 当前不通知”，与“关闭失败通知”分开。保存以一次 ApplyLineageChanges 只更新清单有变化的 Effect 的 config.failure_recipients，保留各自脚本与端点。移除收件人会关闭原本有清单的 Effect；尚未配置的 Effect 只有在用户为它添加收件人或选择“关闭通知”时才写入清单，否则保持未配置。所选 Event 可以批量暂停、恢复，逐个调用 PauseComponent（暂停传 `paused: true`，恢复传 `paused: false`）；部分失败显示对象名称与原因，不把已成功操作回滚成未执行。
+勾选对象后，顶部工具栏显示已选数量和“设置失败通知（N）”“暂停事件（N）”“恢复事件（N）”，全选框在部分选择时显示半选。批量设置失败通知打开与单个 Effect 相同的编辑器：所选 Effect 都有的收件人显示为普通标签；只在部分 Effect 中的收件人用虚线标签和覆盖数（例如 1/3）标出，可以“补到全部”或移除，不动则保持原有覆盖。新加的收件人加到全部所选 Effect。各 Effect 保存后的清单不同时，预览逐个列出，尚未配置的 Effect 写“尚未配置 · 当前不通知”，与“关闭失败通知”分开。保存以一次 ApplyLineageChanges 只更新清单有变化的 Effect 的 config.failure_recipients，保留各自脚本与端点。移除收件人会关闭原本有清单的 Effect；尚未配置的 Effect 只有在用户为它添加收件人或选择“关闭通知”时才写入清单，否则保持未配置。所选 Event 可以批量暂停、恢复，逐个调用 SetComponentPaused（暂停传 `paused: true`，恢复传 `paused: false`）；部分失败显示对象名称与原因，不把已成功操作回滚成未执行。
 
 鸽子的红色数字表示当前查看者尚未查看的问题数量，点击直接打开问题页。清单列出内部 Effect 最新执行失败、组件配置错误和内部 Resident 最近错误（包括 Router、steward），显示具体来源、原因和时间。组件提供设置与运行记录入口，Effect 最近运行关联具体 Trigger Path；Resident 提供打开对话入口。取消的 Effect 不算失败。
 

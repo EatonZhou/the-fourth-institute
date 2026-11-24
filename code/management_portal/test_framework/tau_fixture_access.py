@@ -60,7 +60,7 @@ def prepare_workspace_access(root: Path, workspace_id: str, *, check, issue=None
             if not grant.get('receipt'):
                 from management_portal.hatg.contracts import InstructionError
                 try:
-                    receipt = issue('IssueTemporaryCredential', {**arguments, 'expires_in_seconds': 3600}, key=grant['key'])
+                    receipt = issue('CreateTemporaryCredential', {**arguments, 'expires_in_seconds': 3600}, key=grant['key'])
                 except InstructionError as error:
                     if error.code in {'instruction.forbidden', 'instruction.invalid_arguments', 'instruction.not_found'}:
                         grant['rejected'] = error.code

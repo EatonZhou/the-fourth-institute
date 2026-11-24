@@ -118,11 +118,11 @@ def test_summaries_include_what_their_maintainer_needs(discovery, monkeypatch):
 
     written = {
         "resident_aaaaaaaaaaaa": {"resident_id": "resident_aaaaaaaaaaaa", "summary": {"current_focus": "Operation 资源"},
-                                  "revision": 4, "source_versions": {}, "missing_message_ids": ["msg_2"],
+                                  "revision": 4, "source_versions": {}, "missing_message_ids": ["msg_2"], "pending_message_ids": ["msg_3"],
                                   "writer_id": "resident_aaaaaaaaaaaa", "updated_at": "2026-10-01T10:00:00Z",
                                   "title": "权限内核", "lineage_id": "lineage_e26fbccf5b06"},
         "resident_cccccccccccc": {"resident_id": "resident_cccccccccccc", "summary": {}, "revision": 0,
-                                  "source_versions": {}, "missing_message_ids": ["msg_1"], "writer_id": "",
+                                  "source_versions": {}, "missing_message_ids": ["msg_1"], "pending_message_ids": [], "writer_id": "",
                                   "updated_at": "", "title": "新成员", "lineage_id": "lineage_e26fbccf5b06"},
     }
 
@@ -140,11 +140,28 @@ def test_summaries_include_what_their_maintainer_needs(discovery, monkeypatch):
     first, own = result["summaries"]
     assert first["summary"] == {"current_focus": "Operation 资源"}
     assert (first["revision"], first["missing_message_ids"], first["writer_id"]) == (4, ["msg_2"], "resident_aaaaaaaaaaaa")
+    assert first["pending_message_ids"] == ["msg_3"]
     assert own["resident_id"] == "resident_cccccccccccc" and own["title"] == "新成员"
     assert (own["summary"], own["revision"], own["missing_message_ids"]) == ({}, 0, ["msg_1"])
     assert result["unavailable_resident_ids"] == ["resident_bbbbbbbbbbbb"]
     plain = _invoke(resident_isa.get_resident_summaries, {"resident_ids": ["resident_aaaaaaaaaaaa"]})["summaries"][0]
     assert "revision" not in plain
+    assert "pending_message_ids" not in plain
+
+
+@pytest.mark.parametrize("name", ["UpdateResidentWorkSummary", "PublishFamilyProgress"])
+def test_work_summary_writes_reject_removed_revision_argument(name):
+    """摘要写入不声明旧版本参数，入口在分派前拒绝它。"""
+    from management_portal.hatg.contracts import InstructionError
+    from management_portal.hatg.catalog import declaration as declaration_for
+
+    declaration = declaration_for(name)
+    schema = declaration.schema()
+    assert "expected_revision" not in {param["name"] for param in schema["parameters"]}
+    with pytest.raises(InstructionError) as error:
+        declaration.validate_arguments({"expected_revision": 0})
+    assert error.value.code == "instruction.invalid_arguments"
+    assert error.value.details["unknown_arguments"] == ["expected_revision"]
 
 
 def test_summaries_reject_empty_and_oversized_requests(discovery):

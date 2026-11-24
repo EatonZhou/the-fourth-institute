@@ -1,4 +1,4 @@
-"""ProbeModelApi asks an endpoint which harness protocols it serves.
+"""CheckModelApi asks an endpoint which harness protocols it serves.
 
 :module: execution.providers
 :importance: P1

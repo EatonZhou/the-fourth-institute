@@ -87,7 +87,7 @@ Notice Board 是 Portal 所有登录用户共享的公告与讨论区，位于 H
 
 - 用户发布时选择的分类立即生效。后台分类器还会读取帖子内容并给出自动分类；它只更新分类字段，不改标题、正文、作者或通知版本。
 
-- 页面用 `notification_revision` 表示当前读到的帖子版本；版本生成与已读位置推进遵循 decision_3e063aac15b3。Home 只在读取详情后回报实际展示的版本，不提供“标为未读”按钮；Agent 可使用 `MarkPostRead` 的该项能力。
+- 页面用 `notification_revision` 表示当前读到的帖子版本；版本生成与已读位置推进遵循 decision_3e063aac15b3。Home 只在读取详情后回报实际展示的版本，不提供“标为未读”按钮；Agent 可使用 `UpdatePostReadVersion` 的该项能力。
 
 - **提及**是正文中的用户引用。页面提供用户选择与插入，后端从帖子和回复中提取事件交给被提及用户的 Mailbox，出现在“通知”栏。提及通知和帖子未读分开记录：读过帖子后，Mailbox 中的提及条目仍需在 Mailbox 中处理；提及投递失败时，帖子照常发布。
 
@@ -114,7 +114,7 @@ Notice Board 是 Portal 所有登录用户共享的公告与讨论区，位于 H
 
 帖子、回复、管理标记和已读记录保存在 PostgreSQL 的 `notice` schema 中，每个业务动作在一个事务内提交或整体回滚。帖子创建、修改和删除提交后，ResourceService 同步统一资源登记，并通知权限系统：创建时把帖子放到 R 树“共享”下并记录作者为创建者，删除时把它移出权限树。同步失败明确返回 `resource.mutation_post_commit_failed`、`domain_committed: true` 和帖子 ID，原业务记录已经提交，调用者须先核对原对象再恢复投影，不能重复创建帖子。分类任务在 `pending`（等待）或 `claiming`（已被领取）状态时遇到进程重启，会被重新领取；每个任务最多尝试 5 次，之后标为失败。自动分类由经过认证的 Portal 服务主体（kind=service、id=portal）在系统入口触发 Portal System 中“Notice Board 自动分类”Function Block 的 Event，再由 Effect 调用 DeliverMessage 交给配置的分类 Resident；结果继续由同一服务主体观察，不借用帖子作者或指定用户名的权限。
 
-分类 Event 与 Effect 的关闭状态由 Lineage 持久保存，均通过 PauseComponent 的 `paused: true|false` 控制。关闭任一节点，或绑定、连线缺失时，分类任务保留在 durable 队列中等待，不消耗五次尝试额度；帖子仍能正常发布和手工选分类。恢复开启后处理原任务，内容指纹仍须匹配。触发过程中遇到暂停，已产生的 Event 和 Trigger Path 保存到任务中，恢复只观察这一条流程，不重复触发。流程已投递的消息继续按原 message_id 等待；流程终态失败则保留错误和路径，供检查。
+分类 Event 与 Effect 的关闭状态由 Lineage 持久保存，均通过 SetComponentPaused 的 `paused: true|false` 控制。关闭任一节点，或绑定、连线缺失时，分类任务保留在 durable 队列中等待，不消耗五次尝试额度；帖子仍能正常发布和手工选分类。恢复开启后处理原任务，内容指纹仍须匹配。触发过程中遇到暂停，已产生的 Event 和 Trigger Path 保存到任务中，恢复只观察这一条流程，不重复触发。流程已投递的消息继续按原 message_id 等待；流程终态失败则保留错误和路径，供检查。
 
 应用配置只指定承担者，图中的组件以 client_key `system:notice_classifier:event`、`system:notice_classifier:effect` 定位。Event 必须经唯一 route 进入该 Effect，Effect 的 target 端点必须指向当前配置的 Resident；改标题不改变绑定，切换承担者时须显式更新图中连线。不在应用配置中另存一个开关。
 

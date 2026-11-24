@@ -334,7 +334,7 @@
     if (!gate || !["open", "closed", "unknown"].includes(gate.state)) {
       return { state: "unknown", reason: "quota_unknown" };
     }
-    // A gate-less OpenIntake receipt cannot confirm quota recovery.
+    // A gate-less SetIntakeOpen receipt cannot confirm quota recovery.
     if (gate.reason === "manual") return { state: "unknown", reason: "quota_unknown" };
     return { ...gate };
   }

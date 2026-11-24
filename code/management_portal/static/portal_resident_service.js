@@ -585,7 +585,7 @@
         const move = payload.before_message_id
           ? { before_message_id: String(payload.before_message_id) }
           : { after_message_id: String(payload.after_message_id || "") };
-        return execute("ReorderMailbox", {
+        return execute("MoveMailboxItems", {
           resident_id: required(payload.resident_id, "resident_id"),
           message_id: required(payload.message_id, "message_id"),
           ...move,
@@ -593,7 +593,7 @@
       },
       setMailboxItemHold(payload = {}) {
         if (typeof payload.held !== "boolean") throw new TypeError("held must be a boolean");
-        return execute("SetMailboxItemHold", {
+        return execute("SetMailboxItemHeld", {
           resident_id: required(payload.resident_id, "resident_id"),
           message_id: required(payload.message_id, "message_id"),
           held: payload.held,
@@ -633,7 +633,7 @@
         }).then(result => result?.prompt || {});
       },
       promptInjectionPreview(residentId, turn = "later") {
-        return execute("PreviewPromptInjection", { resident_id: required(residentId, "resident_id"), turn });
+        return execute("GetPromptInjectionPreview", { resident_id: required(residentId, "resident_id"), turn });
       },
       clearMailbox(payload = {}) {
         return execute("ClearMailbox", { resident_id: required(payload.resident_id, "resident_id") }, keyed(payload, "queue-clear"));
@@ -658,7 +658,7 @@
         });
       },
       setIntake(payload = {}) {
-        return execute("OpenIntake", {
+        return execute("SetIntakeOpen", {
           resident_id: required(payload.resident_id, "resident_id"),
           open: Boolean(payload.open),
         }, keyed(payload, "intake"));

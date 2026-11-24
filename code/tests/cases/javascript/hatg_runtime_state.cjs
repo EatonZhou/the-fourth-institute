@@ -186,11 +186,11 @@ function controller(kind, source, server, environment = null) {
       requestResult: async (url, { body }) => {
         assert.equal(url, '/api/instructions/execute'); calls.push(plain(body));
         let result;
-        if (body.instruction === 'PauseComponent') {
+        if (body.instruction === 'SetComponentPaused') {
           if (control.hold) await control.hold;
           if (control.fail) return { response: { ok: false, status: 409 }, payload: { error: { code: 'instruction.conflict', message: '运行开关暂时不可用' } } };
           const key = kind === 'effect' ? 'program_effect_runtime' : 'program_event_source_runtime';
-          assert.equal(typeof body.arguments.paused, 'boolean', 'PauseComponent carries the required paused boolean');
+          assert.equal(typeof body.arguments.paused, 'boolean', 'SetComponentPaused carries the required paused boolean');
           const paused = body.arguments.paused;
           server[key][body.arguments.component_id] = { paused, state: paused ? 'paused' : 'active' };
           result = {};
@@ -264,7 +264,7 @@ async function scenario(kind, source) {
   assert.equal(title().disabled, false, 'draft controls restored');
   assert.equal(form().dataset.programDraftDirty, 'true', 'pause preserves dirty marker');
   assert.match(h.graph.content, /data-execution-state="paused"[^>]*>已关闭/, 'closed node badge');
-  const requests = () => h.calls.filter(call => call.instruction === 'PauseComponent');
+  const requests = () => h.calls.filter(call => call.instruction === 'SetComponentPaused');
   assert.equal(requests().length, 1, 'one pause');
   assert.deepEqual(requests()[0].arguments, { lineage_id: server.lineage_id, component_id: id, paused: true }, 'exact runtime arguments');
   assert.equal(Object.hasOwn(requests()[0], 'expected_version'), false, 'runtime switch omits graph CAS');
@@ -294,7 +294,7 @@ async function scenario(kind, source) {
   assert.equal(title().value, '打开失败也保留', 'retry preserves draft');
   assert.equal(requests().length, 2, 'failure then one explicit retry');
   for (const request of requests()) {
-    assert.deepEqual(request.arguments, { lineage_id: server.lineage_id, component_id: id, paused: false }, 'resume is PauseComponent paused=false');
+    assert.deepEqual(request.arguments, { lineage_id: server.lineage_id, component_id: id, paused: false }, 'resume is SetComponentPaused paused=false');
     assert.equal(Object.hasOwn(request, 'expected_version'), false, 'resume omits graph CAS');
   }
   assert.equal(new Set(requests().map(r => r.idempotency_key)).size, 2, 'user retry is a separate intent');

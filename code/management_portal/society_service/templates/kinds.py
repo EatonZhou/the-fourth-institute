@@ -60,6 +60,8 @@ def application_parameters(template: dict) -> list[dict]:
 
 
 def normalize(raw: dict) -> dict:
+    from ..instruction_name_migration import normalize_template
+
     if not isinstance(raw, dict):
         raise TemplateError("template 必须是对象")
     template = deepcopy(raw)
@@ -91,6 +93,7 @@ def normalize(raw: dict) -> dict:
     template.setdefault("body", {})
     if not isinstance(template["body"], dict):
         raise TemplateError("body 必须是对象")
+    template = normalize_template(template)
     template = kind.normalize(template)
     roles = (
         {item["key"] for item in template["body"].get("roles", [])}

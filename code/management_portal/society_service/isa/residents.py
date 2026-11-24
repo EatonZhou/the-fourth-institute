@@ -329,7 +329,7 @@ def get_resident_summaries(inv: Invocation) -> dict[str, Any]:
         if fields and "pending_requests" not in fields:
             row.pop("pending_requests")
         if written:
-            row.update({key: written[key] for key in ("revision", "source_versions", "missing_message_ids", "writer_id")})
+            row.update({key: written[key] for key in ("revision", "source_versions", "missing_message_ids", "pending_message_ids", "writer_id")})
             row.update({key: written[key] for key in ("layers", "maintenance", "consolidation") if key in written})
         summaries.append(row)
     return {"summaries": summaries, "unavailable_resident_ids": unavailable}
@@ -616,7 +616,7 @@ def unbind_workspace(inv: Invocation) -> dict[str, Any]:
 def update_resident_work_summary(inv: Invocation) -> dict[str, Any]:
     from ..resident_context import work_summary
     return work_summary.update_resident_work_summary(
-        inv.caller, str(inv.argument("resident_id")), inv.argument("expected_revision"),
+        inv.caller, str(inv.argument("resident_id")),
         summary=inv.argument("summary"), message_ids=inv.argument("message_ids"),
         source_versions=inv.argument("source_versions"),
         consolidation=inv.argument("consolidation"),
@@ -637,7 +637,7 @@ def get_family_summary_inputs(inv: Invocation) -> dict[str, Any]:
 HANDLERS = {
     'GetResidentTextInputSnapshot': get_resident_text_input_snapshot,
     "UpdateResidentWorkSummary": update_resident_work_summary,
-    "CheckResidentWorkSummary": check_resident_work_summary,
+    "MaintainResidentWorkSummary": check_resident_work_summary,
     "GetFamilySummaryInputs": get_family_summary_inputs,
     "CreateResident": create_resident,
     "ForkResident": fork_resident,
@@ -656,7 +656,7 @@ HANDLERS = {
     "ReleaseResidentSummaryJob": release_resident_summary_job,
     "GetResidentSettings": get_resident_settings,
     "UpdateResidentSettings": update_resident_settings,
-    "PreviewPromptInjection": preview_prompt_injection,
+    "GetPromptInjectionPreview": preview_prompt_injection,
     "RestartSession": restart_session,
     "GetSessionRestart": get_session_restart,
     "CancelSessionRestart": cancel_session_restart,

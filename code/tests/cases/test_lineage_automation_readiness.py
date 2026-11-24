@@ -80,7 +80,7 @@ def test_paused_and_exhausted_precede_missing_identity(lineage, paused, exhauste
     assert view["program_execution_explanations"]["nodes"][TIMER]["state"] == (
         "paused" if paused else "completed")
     if paused:
-        resumed = call("PauseComponent", lineage_id=lineage_id, component_id=TIMER, paused=False)
+        resumed = call("SetComponentPaused", lineage_id=lineage_id, component_id=TIMER, paused=False)
         assert resumed["runtime"]["state"] == ("exhausted" if exhausted else "blocked")
 
 

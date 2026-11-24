@@ -147,5 +147,5 @@ HANDLERS = {
     "RetractChatroomMessage": retract_chatroom_message,
     "UpdateChatroomReaction": update_chatroom_reaction,
     "CreateChatroomMessage": create_chatroom_message,
-    "MarkChatroomRead": mark_chatroom_read,
+    "UpdateChatroomReadPosition": mark_chatroom_read,
 }

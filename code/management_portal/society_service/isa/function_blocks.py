@@ -42,4 +42,4 @@ def order_duties(inv):
 
 
 HANDLERS = {"Functionalize": functionalize, "Unfunctionalize": unfunctionalize, "UpdateFunctionBlock": update,
-            "DeleteFunctionBlock": delete, "CreateDuty": create_duty, "UpdateDuty": update_duty, "OrderDuties": order_duties}
+            "DeleteFunctionBlock": delete, "CreateDuty": create_duty, "UpdateDuty": update_duty, "MoveDuties": order_duties}

@@ -38,7 +38,7 @@
       "category_title": "Lineage 定义",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "把多项修改作为一次原子提交：全部成功时版本只推进一次，任一项失败时全部不生效。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "把多项修改作为一次原子提交：全部成功时版本只推进一次，任一项失败时全部不生效。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false
     },
@@ -48,7 +48,7 @@
       "category_title": "模板",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "向当前 Lineage 施加模板；dry_run 只预览结构模板会找到、删除、修改和新建的元素。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "向当前 Lineage 施加模板；dry_run 只预览结构模板会找到、删除、修改和新建的元素。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false
     },
@@ -103,7 +103,7 @@
       "streaming": false
     },
     {
-      "instruction": "CheckFamilyProgress",
+      "instruction": "MaintainFamilyProgress",
       "category": "family_internal",
       "category_title": "Family 内部机制",
       "owner": "lineage",
@@ -113,7 +113,7 @@
       "streaming": false
     },
     {
-      "instruction": "CheckFamilyRecovery",
+      "instruction": "MaintainFamilyRecovery",
       "category": "family_internal",
       "category_title": "Family 内部机制",
       "owner": "lineage",
@@ -133,7 +133,7 @@
       "streaming": false
     },
     {
-      "instruction": "CheckResidentWorkSummary",
+      "instruction": "MaintainResidentWorkSummary",
       "category": "family_internal",
       "category_title": "Family 内部机制",
       "owner": "lineage",
@@ -198,7 +198,7 @@
       "category_title": "Lineage 定义",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "建立 Seed 的候选 Fork：Seed 的候选从这个 Resident 的工作出发，采纳 Seed 时 Fork 这个 Resident，这条关系随之变成到新 Resident 的继承关系。一个 Seed 只有一个候选 Fork，换成另一个 Resident 时替换原来的。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "建立 Seed 的候选 Fork：Seed 的候选从这个 Resident 的工作出发，采纳 Seed 时 Fork 这个 Resident，这条关系随之变成到新 Resident 的继承关系。一个 Seed 只有一个候选 Fork，换成另一个 Resident 时替换原来的。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false
     },
@@ -218,7 +218,7 @@
       "category_title": "Lineage 定义",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "在 Lineage 中创建一个组件。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "在 Lineage 中创建一个组件。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false
     },
@@ -318,7 +318,7 @@
       "category_title": "Resident",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "创建一个新的 Resident 身份，并把它作为节点加入指定 Lineage。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "创建一个新的 Resident 身份，并把它作为节点加入指定 Lineage。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false
     },
@@ -378,7 +378,7 @@
       "category_title": "Lineage 定义",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "创建激活连线或对象绑定；方向始终为发起方到接收方或被引用对象。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "创建激活连线或对象绑定；方向始终为发起方到接收方或被引用对象。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false
     },
@@ -388,7 +388,7 @@
       "category_title": "Lineage 定义",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "在同一 Lineage 的两个不同 Resident 之间创建交接关系。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "在同一 Lineage 的两个不同 Resident 之间创建交接关系。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false
     },
@@ -398,7 +398,7 @@
       "category_title": "Lineage 定义",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "删除 Seed 的候选 Fork；Seed 保留，重新建立候选 Fork 之前不能采纳。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "删除 Seed 的候选 Fork；Seed 保留，重新建立候选 Fork 之前不能采纳。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false
     },
@@ -418,7 +418,7 @@
       "category_title": "Lineage 定义",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "删除一个组件及与它相连的连线。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "删除一个组件及与它相连的连线。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false
     },
@@ -428,7 +428,7 @@
       "category_title": "Family",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "停止并删除整个 Family，包含门面、Router、Steward、所有成员、子 Family 和内部工作流；删除其 Session、自有 Workspace 与图引用，对话和运行轨迹按 Resident 删除规则保留。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "停止并删除整个 Family，包含门面、Router、Steward、所有成员、子 Family 和内部工作流；删除其 Session、自有 Workspace 与图引用，对话和运行轨迹按 Resident 删除规则保留。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false
     },
@@ -438,7 +438,7 @@
       "category_title": "Function Block",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "删除 Function Block 及其全部内部元素；Family 请使用 DeleteFamily，保留成员则使用 Unfamilize。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "删除 Function Block 及其全部内部元素；Family 请使用 DeleteFamily，保留成员则使用 Unfamilize。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false
     },
@@ -448,7 +448,7 @@
       "category_title": "Lineage 定义",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "删除整个 Lineage，其中的 Resident 和文件夹一并删除，不能恢复。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "删除整个 Lineage，其中的 Resident 和文件夹一并删除，不能恢复。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false
     },
@@ -538,7 +538,7 @@
       "category_title": "Resident",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "将 Resident 标记为已删除，永久保留同一身份及历史；释放模型会话，移除活动成员关系和 Lineage 引用，并删除文件夹（含自有工作区）。不提供恢复入口。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "将 Resident 标记为已删除，永久保留同一身份及历史；释放模型会话，移除活动成员关系和 Lineage 引用，并删除文件夹（含自有工作区）。不提供恢复入口。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false
     },
@@ -588,7 +588,7 @@
       "category_title": "Lineage 定义",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "删除一条连线。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "删除一条连线。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false
     },
@@ -598,7 +598,7 @@
       "category_title": "Lineage 定义",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "删除交接关系及其运行记录关联。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "删除交接关系及其运行记录关联。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false
     },
@@ -628,12 +628,12 @@
       "category_title": "Family",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "将同一 Lineage 的 Resident 或选中的 Family 组合为 Family；新建门面、steward、Router，成员与专属工作流成为 Function Block 元素。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "将同一 Lineage 的 Resident 或选中的 Family 组合为 Family；新建门面、steward、Router，成员与专属工作流成为 Function Block 元素。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false
     },
     {
-      "instruction": "FeaturePost",
+      "instruction": "SetPostFeatured",
       "category": "discussion",
       "category_title": "公共讨论",
       "owner": "web",
@@ -648,7 +648,7 @@
       "category_title": "Resident",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "从来源 Resident Fork 出一个新 Resident，新 Resident 按选定方式继承来源的上下文。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "从来源 Resident Fork 出一个新 Resident，新 Resident 按选定方式继承来源的上下文。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false
     },
@@ -668,7 +668,7 @@
       "category_title": "Function Block",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "把当前 Lineage 的选区封装为 Function Block，元素保持原有行为。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "把当前 Lineage 的选区封装为 Function Block，元素保持原有行为。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false
     },
@@ -1143,7 +1143,7 @@
       "streaming": false
     },
     {
-      "instruction": "IssueTemporaryCredential",
+      "instruction": "CreateTemporaryCredential",
       "category": "permission",
       "category_title": "权限",
       "owner": "resource",
@@ -1413,7 +1413,7 @@
       "streaming": false
     },
     {
-      "instruction": "MarkChatroomRead",
+      "instruction": "UpdateChatroomReadPosition",
       "category": "discussion",
       "category_title": "公共讨论",
       "owner": "web",
@@ -1423,7 +1423,7 @@
       "streaming": false
     },
     {
-      "instruction": "MarkMailboxItemRead",
+      "instruction": "SetMailboxItemRead",
       "category": "mailbox",
       "category_title": "Mailbox",
       "owner": "web",
@@ -1433,7 +1433,7 @@
       "streaming": false
     },
     {
-      "instruction": "MarkPostRead",
+      "instruction": "UpdatePostReadVersion",
       "category": "discussion",
       "category_title": "公共讨论",
       "owner": "web",
@@ -1458,7 +1458,7 @@
       "category_title": "组织与分工",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "把一组对象及其中的 Resident 原子迁移到目标 Lineage，保留身份、会话和运行游标。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "把一组对象及其中的 Resident 原子迁移到目标 Lineage，保留身份、会话和运行游标。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false
     },
@@ -1478,12 +1478,12 @@
       "category_title": "组织与分工",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "把一个没有被流程引用的 Resident 迁移到目标 Lineage，保留其身份和会话；Family 成员随之离开 Family，继承等关系断开。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "把一个没有被流程引用的 Resident 迁移到目标 Lineage，保留其身份和会话；Family 成员随之离开 Family，继承等关系断开。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false
     },
     {
-      "instruction": "OpenIntake",
+      "instruction": "SetIntakeOpen",
       "category": "resident_execution",
       "category_title": "Resident 执行",
       "owner": "lineage",
@@ -1493,7 +1493,7 @@
       "streaming": false
     },
     {
-      "instruction": "OpenTerminal",
+      "instruction": "CreateTerminal",
       "category": "environment",
       "category_title": "运行环境",
       "owner": "web",
@@ -1503,7 +1503,7 @@
       "streaming": false
     },
     {
-      "instruction": "PauseComponent",
+      "instruction": "SetComponentPaused",
       "category": "lineage_run",
       "category_title": "Lineage 运行",
       "owner": "lineage",
@@ -1513,7 +1513,7 @@
       "streaming": false
     },
     {
-      "instruction": "PinMailboxItem",
+      "instruction": "SetMailboxItemPinned",
       "category": "mailbox",
       "category_title": "Mailbox",
       "owner": "web",
@@ -1523,7 +1523,7 @@
       "streaming": false
     },
     {
-      "instruction": "PinPost",
+      "instruction": "SetPostPinned",
       "category": "discussion",
       "category_title": "公共讨论",
       "owner": "web",
@@ -1543,7 +1543,7 @@
       "streaming": false
     },
     {
-      "instruction": "PrepareWorkspaceHandoff",
+      "instruction": "RunWorkspaceHandoff",
       "category": "lineage_definition",
       "category_title": "Lineage 定义",
       "owner": "lineage",
@@ -1553,7 +1553,7 @@
       "streaming": false
     },
     {
-      "instruction": "PreviewPromptInjection",
+      "instruction": "GetPromptInjectionPreview",
       "category": "resident",
       "category_title": "Resident",
       "owner": "lineage",
@@ -1568,7 +1568,7 @@
       "category_title": "Resident",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "以 Seed 的候选 Fork 来源为基础 Fork 出一个待命的 Resident，候选 Fork 随之变成继承关系，并把 Seed 标记为已采纳；不发送任务，调用方随后用 DeliverMessage 把候选与用途交给新 Resident。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "以 Seed 的候选 Fork 来源为基础 Fork 出一个待命的 Resident，候选 Fork 随之变成继承关系，并把 Seed 标记为已采纳；不发送任务，调用方随后用 DeliverMessage 把候选与用途交给新 Resident。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false
     },
@@ -1673,7 +1673,7 @@
       "streaming": false
     },
     {
-      "instruction": "ReorderMailbox",
+      "instruction": "MoveMailboxItems",
       "category": "mailbox",
       "category_title": "Mailbox",
       "owner": "lineage",
@@ -2173,7 +2173,7 @@
       "category_title": "Family",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "停止门面、steward 和 Router，交还 leader、改接外部连线，删除 Family 内部结构并保留成员与子 Family。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "停止门面、steward 和 Router，交还 leader、改接外部连线，删除 Family 内部结构并保留成员与子 Family。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false
     },
@@ -2183,7 +2183,7 @@
       "category_title": "Function Block",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "解除 Function Block，保留内部元素；Family 请使用 Unfamilize。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "解除 Function Block，保留内部元素；Family 请使用 Unfamilize。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false
     },
@@ -2223,7 +2223,7 @@
       "category_title": "Lineage 定义",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "修改一个组件的名称或配置。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "修改一个组件的名称或配置。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false
     },
@@ -2243,7 +2243,7 @@
       "category_title": "Family",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "更新 Family 成员名册、名称、共同目标与路由参数；移出的成员保留，自动维护名册结构，并可收纳或移出普通工作流组件与内部连线。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "更新 Family 成员名册、名称、共同目标与路由参数；移出的成员保留，自动维护名册结构，并可收纳或移出普通工作流组件与内部连线。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false
     },
@@ -2253,7 +2253,7 @@
       "category_title": "Function Block",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "修改 Function Block 的名称、位置或元素归属。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "修改 Function Block 的名称、位置或元素归属。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false
     },
@@ -2273,7 +2273,7 @@
       "category_title": "Lineage 定义",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "修改 Lineage 的名称、说明、所属项目、Leader、自动运行身份、碎片或头像。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "修改 Lineage 的名称、说明、所属项目、Leader、自动运行身份、碎片或头像。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false
     },
@@ -2383,7 +2383,7 @@
       "category_title": "Resident",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "修改 Resident 名称或头像；改名同步它在 Lineage 中节点的显示名称。title 与 avatar 至少提供一项。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "修改 Resident 名称或头像；改名同步它在 Lineage 中节点的显示名称。title 与 avatar 至少提供一项。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false
     },
@@ -2463,7 +2463,7 @@
       "category_title": "Lineage 定义",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "修改一条连线的端点或配置。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "修改一条连线的端点或配置。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false
     },
@@ -2483,7 +2483,7 @@
       "category_title": "Lineage 定义",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "修改交接项、说明或标签。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "修改交接项、说明或标签。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false
     },
@@ -2718,7 +2718,7 @@
       "category_title": "Lineage 定义",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "把多项修改作为一次原子提交：全部成功时版本只推进一次，任一项失败时全部不生效。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "把多项修改作为一次原子提交：全部成功时版本只推进一次，任一项失败时全部不生效。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false,
       "parameters": [
@@ -2790,7 +2790,7 @@
       "category_title": "模板",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "向当前 Lineage 施加模板；dry_run 只预览结构模板会找到、删除、修改和新建的元素。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "向当前 Lineage 施加模板；dry_run 只预览结构模板会找到、删除、修改和新建的元素。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false,
       "parameters": [
@@ -3148,8 +3148,8 @@
       ],
       "target": "resident_id"
     },
-    "CheckFamilyProgress": {
-      "instruction": "CheckFamilyProgress",
+    "MaintainFamilyProgress": {
+      "instruction": "MaintainFamilyProgress",
       "category": "family_internal",
       "category_title": "Family 内部机制",
       "owner": "lineage",
@@ -3206,8 +3206,8 @@
       ],
       "target": "lineage_id"
     },
-    "CheckFamilyRecovery": {
-      "instruction": "CheckFamilyRecovery",
+    "MaintainFamilyRecovery": {
+      "instruction": "MaintainFamilyRecovery",
       "category": "family_internal",
       "category_title": "Family 内部机制",
       "owner": "lineage",
@@ -3332,8 +3332,8 @@
       ],
       "target": ""
     },
-    "CheckResidentWorkSummary": {
-      "instruction": "CheckResidentWorkSummary",
+    "MaintainResidentWorkSummary": {
+      "instruction": "MaintainResidentWorkSummary",
       "category": "family_internal",
       "category_title": "Family 内部机制",
       "owner": "lineage",
@@ -3714,7 +3714,7 @@
       "category_title": "Lineage 定义",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "建立 Seed 的候选 Fork：Seed 的候选从这个 Resident 的工作出发，采纳 Seed 时 Fork 这个 Resident，这条关系随之变成到新 Resident 的继承关系。一个 Seed 只有一个候选 Fork，换成另一个 Resident 时替换原来的。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "建立 Seed 的候选 Fork：Seed 的候选从这个 Resident 的工作出发，采纳 Seed 时 Fork 这个 Resident，这条关系随之变成到新 Resident 的继承关系。一个 Seed 只有一个候选 Fork，换成另一个 Resident 时替换原来的。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false,
       "parameters": [
@@ -3796,7 +3796,7 @@
       "category_title": "Lineage 定义",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "在 Lineage 中创建一个组件。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "在 Lineage 中创建一个组件。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false,
       "parameters": [
@@ -4473,7 +4473,7 @@
       "category_title": "Resident",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "创建一个新的 Resident 身份，并把它作为节点加入指定 Lineage。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "创建一个新的 Resident 身份，并把它作为节点加入指定 Lineage。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false,
       "parameters": [
@@ -4909,7 +4909,7 @@
       "category_title": "Lineage 定义",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "创建激活连线或对象绑定；方向始终为发起方到接收方或被引用对象。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "创建激活连线或对象绑定；方向始终为发起方到接收方或被引用对象。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false,
       "parameters": [
@@ -4995,7 +4995,7 @@
       "category_title": "Lineage 定义",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "在同一 Lineage 的两个不同 Resident 之间创建交接关系。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "在同一 Lineage 的两个不同 Resident 之间创建交接关系。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false,
       "parameters": [
@@ -5057,7 +5057,7 @@
       "category_title": "Lineage 定义",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "删除 Seed 的候选 Fork；Seed 保留，重新建立候选 Fork 之前不能采纳。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "删除 Seed 的候选 Fork；Seed 保留，重新建立候选 Fork 之前不能采纳。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false,
       "parameters": [
@@ -5123,7 +5123,7 @@
       "category_title": "Lineage 定义",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "删除一个组件及与它相连的连线。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "删除一个组件及与它相连的连线。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false,
       "parameters": [
@@ -5162,7 +5162,7 @@
       "category_title": "Family",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "停止并删除整个 Family，包含门面、Router、Steward、所有成员、子 Family 和内部工作流；删除其 Session、自有 Workspace 与图引用，对话和运行轨迹按 Resident 删除规则保留。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "停止并删除整个 Family，包含门面、Router、Steward、所有成员、子 Family 和内部工作流；删除其 Session、自有 Workspace 与图引用，对话和运行轨迹按 Resident 删除规则保留。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false,
       "parameters": [
@@ -5219,7 +5219,7 @@
       "category_title": "Function Block",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "删除 Function Block 及其全部内部元素；Family 请使用 DeleteFamily，保留成员则使用 Unfamilize。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "删除 Function Block 及其全部内部元素；Family 请使用 DeleteFamily，保留成员则使用 Unfamilize。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false,
       "parameters": [
@@ -5258,7 +5258,7 @@
       "category_title": "Lineage 定义",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "删除整个 Lineage，其中的 Resident 和文件夹一并删除，不能恢复。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "删除整个 Lineage，其中的 Resident 和文件夹一并删除，不能恢复。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false,
       "parameters": [
@@ -5577,7 +5577,7 @@
       "category_title": "Resident",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "将 Resident 标记为已删除，永久保留同一身份及历史；释放模型会话，移除活动成员关系和 Lineage 引用，并删除文件夹（含自有工作区）。不提供恢复入口。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "将 Resident 标记为已删除，永久保留同一身份及历史；释放模型会话，移除活动成员关系和 Lineage 引用，并删除文件夹（含自有工作区）。不提供恢复入口。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false,
       "parameters": [
@@ -5748,7 +5748,7 @@
       "category_title": "Lineage 定义",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "删除一条连线。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "删除一条连线。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false,
       "parameters": [
@@ -5781,7 +5781,7 @@
       "category_title": "Lineage 定义",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "删除交接关系及其运行记录关联。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "删除交接关系及其运行记录关联。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false,
       "parameters": [
@@ -5985,7 +5985,7 @@
       "category_title": "Family",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "将同一 Lineage 的 Resident 或选中的 Family 组合为 Family；新建门面、steward、Router，成员与专属工作流成为 Function Block 元素。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "将同一 Lineage 的 Resident 或选中的 Family 组合为 Family；新建门面、steward、Router，成员与专属工作流成为 Function Block 元素。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false,
       "parameters": [
@@ -6145,8 +6145,8 @@
       ],
       "target": "lineage_id"
     },
-    "FeaturePost": {
-      "instruction": "FeaturePost",
+    "SetPostFeatured": {
+      "instruction": "SetPostFeatured",
       "category": "discussion",
       "category_title": "公共讨论",
       "owner": "web",
@@ -6184,7 +6184,7 @@
       "category_title": "Resident",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "从来源 Resident Fork 出一个新 Resident，新 Resident 按选定方式继承来源的上下文。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "从来源 Resident Fork 出一个新 Resident，新 Resident 按选定方式继承来源的上下文。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false,
       "parameters": [
@@ -6423,7 +6423,7 @@
       "category_title": "Function Block",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "把当前 Lineage 的选区封装为 Function Block，元素保持原有行为。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "把当前 Lineage 的选区封装为 Function Block，元素保持原有行为。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false,
       "parameters": [
@@ -7214,7 +7214,7 @@
           "name": "items",
           "type": "array",
           "required": false,
-          "description": "带 user_id 时：置顶在前，其余按最近活动从新到旧，同一时间按 key 升序；每项是一段对话或一条通知；Resident 对话条目的 latest_message_id 是这段对话最近一条可通知消息的 ID，用 GetMessage(resident_id, message_id) 读取原文，input_message_id 是它回应的那条输入；version 是条目阅读状态的修订号，作为 MarkMailboxItemRead 的 expected_version"
+          "description": "带 user_id 时：置顶在前，其余按最近活动从新到旧，同一时间按 key 升序；每项是一段对话或一条通知；Resident 对话条目的 latest_message_id 是这段对话最近一条可通知消息的 ID，用 GetMessage(resident_id, message_id) 读取原文，input_message_id 是它回应的那条输入；version 是条目阅读状态的修订号，作为 SetMailboxItemRead 的 expected_version"
         },
         {
           "name": "unread_count",
@@ -8583,8 +8583,8 @@
       ],
       "target": "resident_id"
     },
-    "IssueTemporaryCredential": {
-      "instruction": "IssueTemporaryCredential",
+    "CreateTemporaryCredential": {
+      "instruction": "CreateTemporaryCredential",
       "category": "permission",
       "category_title": "权限",
       "owner": "resource",
@@ -9791,8 +9791,8 @@
       ],
       "target": ""
     },
-    "MarkChatroomRead": {
-      "instruction": "MarkChatroomRead",
+    "UpdateChatroomReadPosition": {
+      "instruction": "UpdateChatroomReadPosition",
       "category": "discussion",
       "category_title": "公共讨论",
       "owner": "web",
@@ -9855,8 +9855,8 @@
       ],
       "target": "chatroom_id"
     },
-    "MarkMailboxItemRead": {
-      "instruction": "MarkMailboxItemRead",
+    "SetMailboxItemRead": {
+      "instruction": "SetMailboxItemRead",
       "category": "mailbox",
       "category_title": "Mailbox",
       "owner": "web",
@@ -9888,8 +9888,8 @@
       ],
       "target": "key"
     },
-    "MarkPostRead": {
-      "instruction": "MarkPostRead",
+    "UpdatePostReadVersion": {
+      "instruction": "UpdatePostReadVersion",
       "category": "discussion",
       "category_title": "公共讨论",
       "owner": "web",
@@ -9994,7 +9994,7 @@
       "category_title": "组织与分工",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "把一组对象及其中的 Resident 原子迁移到目标 Lineage，保留身份、会话和运行游标。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "把一组对象及其中的 Resident 原子迁移到目标 Lineage，保留身份、会话和运行游标。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false,
       "parameters": [
@@ -10103,7 +10103,7 @@
       "category_title": "组织与分工",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "把一个没有被流程引用的 Resident 迁移到目标 Lineage，保留其身份和会话；Family 成员随之离开 Family，继承等关系断开。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "把一个没有被流程引用的 Resident 迁移到目标 Lineage，保留其身份和会话；Family 成员随之离开 Family，继承等关系断开。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false,
       "parameters": [
@@ -10154,8 +10154,8 @@
       ],
       "target": "resident_id"
     },
-    "OpenIntake": {
-      "instruction": "OpenIntake",
+    "SetIntakeOpen": {
+      "instruction": "SetIntakeOpen",
       "category": "resident_execution",
       "category_title": "Resident 执行",
       "owner": "lineage",
@@ -10237,8 +10237,8 @@
         ]
       ]
     },
-    "OpenTerminal": {
-      "instruction": "OpenTerminal",
+    "CreateTerminal": {
+      "instruction": "CreateTerminal",
       "category": "environment",
       "category_title": "运行环境",
       "owner": "web",
@@ -10301,8 +10301,8 @@
         "portal_admin"
       ]
     },
-    "PauseComponent": {
-      "instruction": "PauseComponent",
+    "SetComponentPaused": {
+      "instruction": "SetComponentPaused",
       "category": "lineage_run",
       "category_title": "Lineage 运行",
       "owner": "lineage",
@@ -10334,8 +10334,8 @@
       ],
       "target": "lineage_id"
     },
-    "PinMailboxItem": {
-      "instruction": "PinMailboxItem",
+    "SetMailboxItemPinned": {
+      "instruction": "SetMailboxItemPinned",
       "category": "mailbox",
       "category_title": "Mailbox",
       "owner": "web",
@@ -10367,8 +10367,8 @@
       ],
       "target": "key"
     },
-    "PinPost": {
-      "instruction": "PinPost",
+    "SetPostPinned": {
+      "instruction": "SetPostPinned",
       "category": "discussion",
       "category_title": "公共讨论",
       "owner": "web",
@@ -10453,8 +10453,8 @@
       ],
       "target": "chatroom_id"
     },
-    "PrepareWorkspaceHandoff": {
-      "instruction": "PrepareWorkspaceHandoff",
+    "RunWorkspaceHandoff": {
+      "instruction": "RunWorkspaceHandoff",
       "category": "lineage_definition",
       "category_title": "Lineage 定义",
       "owner": "lineage",
@@ -10524,8 +10524,8 @@
         ]
       ]
     },
-    "PreviewPromptInjection": {
-      "instruction": "PreviewPromptInjection",
+    "GetPromptInjectionPreview": {
+      "instruction": "GetPromptInjectionPreview",
       "category": "resident",
       "category_title": "Resident",
       "owner": "lineage",
@@ -10598,7 +10598,7 @@
       "category_title": "Resident",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "以 Seed 的候选 Fork 来源为基础 Fork 出一个待命的 Resident，候选 Fork 随之变成继承关系，并把 Seed 标记为已采纳；不发送任务，调用方随后用 DeliverMessage 把候选与用途交给新 Resident。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "以 Seed 的候选 Fork 来源为基础 Fork 出一个待命的 Resident，候选 Fork 随之变成继承关系，并把 Seed 标记为已采纳；不发送任务，调用方随后用 DeliverMessage 把候选与用途交给新 Resident。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false,
       "parameters": [
@@ -11395,8 +11395,8 @@
       ],
       "target": "project_id"
     },
-    "ReorderMailbox": {
-      "instruction": "ReorderMailbox",
+    "MoveMailboxItems": {
+      "instruction": "MoveMailboxItems",
       "category": "mailbox",
       "category_title": "Mailbox",
       "owner": "lineage",
@@ -13102,7 +13102,7 @@
       "category_title": "Family",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "停止门面、steward 和 Router，交还 leader、改接外部连线，删除 Family 内部结构并保留成员与子 Family。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "停止门面、steward 和 Router，交还 leader、改接外部连线，删除 Family 内部结构并保留成员与子 Family。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false,
       "parameters": [
@@ -13177,7 +13177,7 @@
       "category_title": "Function Block",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "解除 Function Block，保留内部元素；Family 请使用 Unfamilize。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "解除 Function Block，保留内部元素；Family 请使用 Unfamilize。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false,
       "parameters": [
@@ -13313,7 +13313,7 @@
       "category_title": "Lineage 定义",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "修改一个组件的名称或配置。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "修改一个组件的名称或配置。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false,
       "parameters": [
@@ -13405,7 +13405,7 @@
       "category_title": "Family",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "更新 Family 成员名册、名称、共同目标与路由参数；移出的成员保留，自动维护名册结构，并可收纳或移出普通工作流组件与内部连线。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "更新 Family 成员名册、名称、共同目标与路由参数；移出的成员保留，自动维护名册结构，并可收纳或移出普通工作流组件与内部连线。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false,
       "parameters": [
@@ -13513,7 +13513,7 @@
       "category_title": "Function Block",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "修改 Function Block 的名称、位置或元素归属。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "修改 Function Block 的名称、位置或元素归属。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false,
       "parameters": [
@@ -13657,7 +13657,7 @@
       "category_title": "Lineage 定义",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "修改 Lineage 的名称、说明、所属项目、Leader、自动运行身份、碎片或头像。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "修改 Lineage 的名称、说明、所属项目、Leader、自动运行身份、碎片或头像。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false,
       "parameters": [
@@ -14300,7 +14300,7 @@
       "category_title": "Resident",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "修改 Resident 名称或头像；改名同步它在 Lineage 中节点的显示名称。title 与 avatar 至少提供一项。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "修改 Resident 名称或头像；改名同步它在 Lineage 中节点的显示名称。title 与 avatar 至少提供一项。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false,
       "parameters": [
@@ -14789,7 +14789,7 @@
       "category_title": "Lineage 定义",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "修改一条连线的端点或配置。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "修改一条连线的端点或配置。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false,
       "parameters": [
@@ -14867,7 +14867,7 @@
       "category_title": "Lineage 定义",
       "owner": "lineage",
       "owner_title": "LineageService",
-      "description": "修改交接项、说明或标签。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。PrepareWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
+      "description": "修改交接项、说明或标签。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
       "mutates": true,
       "streaming": false,
       "parameters": [
@@ -15302,17 +15302,17 @@
       "start_line": 39,
       "end_line": 40
     },
-    "PinPost": {
+    "SetPostPinned": {
       "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/discussion.py",
       "start_line": 41,
       "end_line": 42
     },
-    "FeaturePost": {
+    "SetPostFeatured": {
       "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/discussion.py",
       "start_line": 43,
       "end_line": 44
     },
-    "MarkPostRead": {
+    "UpdatePostReadVersion": {
       "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/discussion.py",
       "start_line": 45,
       "end_line": 47
@@ -15382,7 +15382,7 @@
       "start_line": 89,
       "end_line": 95
     },
-    "MarkChatroomRead": {
+    "UpdateChatroomReadPosition": {
       "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/discussion.py",
       "start_line": 96,
       "end_line": 101
@@ -15427,7 +15427,7 @@
       "start_line": 55,
       "end_line": 57
     },
-    "OpenTerminal": {
+    "CreateTerminal": {
       "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/environment.py",
       "start_line": 58,
       "end_line": 63
@@ -15502,7 +15502,7 @@
       "start_line": 13,
       "end_line": 27
     },
-    "CheckFamilyProgress": {
+    "MaintainFamilyProgress": {
       "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/family_internal.py",
       "start_line": 28,
       "end_line": 31
@@ -15512,12 +15512,12 @@
       "start_line": 32,
       "end_line": 36
     },
-    "CheckFamilyRecovery": {
+    "MaintainFamilyRecovery": {
       "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/family_internal.py",
       "start_line": 37,
       "end_line": 40
     },
-    "CheckResidentWorkSummary": {
+    "MaintainResidentWorkSummary": {
       "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/family_internal.py",
       "start_line": 41,
       "end_line": 43
@@ -15647,7 +15647,7 @@
       "start_line": 92,
       "end_line": 94
     },
-    "PrepareWorkspaceHandoff": {
+    "RunWorkspaceHandoff": {
       "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/lineage_definition.py",
       "start_line": 95,
       "end_line": 100
@@ -15687,7 +15687,7 @@
       "start_line": 36,
       "end_line": 38
     },
-    "PauseComponent": {
+    "SetComponentPaused": {
       "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/lineage_run.py",
       "start_line": 39,
       "end_line": 40
@@ -15757,12 +15757,12 @@
       "start_line": 44,
       "end_line": 47
     },
-    "PinMailboxItem": {
+    "SetMailboxItemPinned": {
       "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/mailbox.py",
       "start_line": 48,
       "end_line": 50
     },
-    "MarkMailboxItemRead": {
+    "SetMailboxItemRead": {
       "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/mailbox.py",
       "start_line": 51,
       "end_line": 55
@@ -15772,7 +15772,7 @@
       "start_line": 56,
       "end_line": 70
     },
-    "ReorderMailbox": {
+    "MoveMailboxItems": {
       "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/mailbox.py",
       "start_line": 71,
       "end_line": 79
@@ -15952,7 +15952,7 @@
       "start_line": 112,
       "end_line": 115
     },
-    "IssueTemporaryCredential": {
+    "CreateTemporaryCredential": {
       "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/permission.py",
       "start_line": 116,
       "end_line": 120
@@ -16072,7 +16072,7 @@
       "start_line": 189,
       "end_line": 194
     },
-    "PreviewPromptInjection": {
+    "GetPromptInjectionPreview": {
       "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/resident.py",
       "start_line": 195,
       "end_line": 205
@@ -16122,7 +16122,7 @@
       "start_line": 34,
       "end_line": 41
     },
-    "OpenIntake": {
+    "SetIntakeOpen": {
       "address": "repo_5d287fed9c7e/file/management_portal/hatg/catalog/resident_execution.py",
       "start_line": 42,
       "end_line": 44

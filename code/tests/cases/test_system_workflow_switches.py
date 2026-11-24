@@ -78,7 +78,7 @@ def install(system, key):
 
 def toggle(system, component_id, paused, *, key=None):
     lineage_id, call, _settings = system
-    return call("PauseComponent", {
+    return call("SetComponentPaused", {
         "lineage_id": lineage_id, "component_id": component_id, "paused": paused,
     }, key=key)
 

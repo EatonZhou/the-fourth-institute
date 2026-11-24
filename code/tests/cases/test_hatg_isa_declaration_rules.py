@@ -11,13 +11,17 @@ the kernel's authorization path as well as the catalog.
 
 from __future__ import annotations
 
+import json
 import os
 import re
 from pathlib import Path
 
 import pytest
 
-from management_portal.hatg.catalog import instruction_catalog
+from management_portal.hatg import routing
+from management_portal.hatg.catalog import declaration, instruction_catalog
+from management_portal.hatg.contracts import InstructionContext
+from management_portal.hatg.instruction_renames import INSTRUCTION_RENAMES
 
 
 DECISIONS = Path(os.environ.get(
@@ -251,13 +255,13 @@ def test_each_object_has_one_parameter_name():
     assert repeated == set()
 
 
-# Changes with no single object to name: a work queue, a new terminal session,
-# a Portal instance, Portal-wide settings and knowledge tag list.
+# Changes with no single object to name: a work queue, a Portal instance,
+# Portal-wide settings, the knowledge tag list and a backup export profile.
 # AcceptUserAuthorization creates credentials from a verified input; it does
 # not modify that message. CorrectResourceLifecycleAssociation changes the
 # (scope_id, resource_id) allocation, not the Workspace used as read evidence.
 # Neither operation has a single resource version to use as scalar CAS.
-WITHOUT_TARGET = {"ClaimResidentSummaryJobs", "OpenTerminal", "RestartPortal",
+WITHOUT_TARGET = {"ClaimResidentSummaryJobs", "RunGoogleDriveBackup", "RestartPortal",
                   "UpdateExecutionSettings", "UpdateKnowledgeTags",
                   "AcceptUserAuthorization", "CorrectResourceLifecycleAssociation"}
 
@@ -346,8 +350,8 @@ def _listed_verbs() -> set[str]:
     paths = sorted(DECISIONS.glob("*decision_898b8911a2ff.md"))
     if not paths:
         pytest.skip("HATG ISA decisions are not available on this host")
-    section = paths[0].read_text(encoding="utf-8").split("## 命名规则", 1)[1].split("\n## ", 1)[0]
-    return set(re.findall(r"`([A-Z][a-z]+)`", section))
+    section = paths[0].read_text(encoding="utf-8").split("### 动词表", 1)[1].split("\n## ", 1)[0]
+    return set(re.findall(r"^\|\s*`([A-Z][a-z]+)`\s*\|", section, re.M))
 
 
 def test_instruction_verbs_follow_the_naming_rules():
@@ -356,3 +360,41 @@ def test_instruction_verbs_follow_the_naming_rules():
     listed = _listed_verbs()
     assert used - listed == set()
     assert listed - used == set()
+
+
+def _contract_values(value):
+    if isinstance(value, dict):
+        return {key: _contract_values(item) for key, item in value.items() if key != "description"}
+    if isinstance(value, (list, tuple)):
+        return [_contract_values(item) for item in value]
+    return value
+
+
+def test_instruction_name_migration_preserves_catalog_and_default_permissions():
+    """Compare every new declaration with the pre-migration live schema and default permission slots."""
+    from management_portal.permission_system.scheme.compiler import compile_scheme
+    from management_portal.permission_system.scheme.repository import builtin_documents
+
+    baseline = Path(__file__).with_name("fixtures") / "isa_renamed_contracts.json"
+    expected = json.loads(baseline.read_text(encoding="utf-8"))
+    assert set(expected) == set(INSTRUCTION_RENAMES.values())
+    assert len(expected) == len(INSTRUCTION_RENAMES)
+    scheme = compile_scheme(builtin_documents()["default"])
+    context = InstructionContext(caller="resident_aaaaaaaaaaaa", entry="harness")
+    differences = {}
+    for old, new in INSTRUCTION_RENAMES.items():
+        for name, arguments in ((old, {}), ("GetInstructionSchema", {"instruction": old})):
+            result = routing.execute({"instruction": name, "arguments": arguments}, context)
+            assert result.status == "failed" and result.error["code"] == "instruction.unknown", old
+        assert not scheme.slots(old)
+        schema = declaration(new).schema()
+        assert schema["instruction"] == new
+        actual = {key: value for key, value in schema.items()
+                  if key not in {"instruction", "category_title", "owner_title", "description"}}
+        actual["permission"] = scheme.describe(new)
+        actual = _contract_values(actual)
+        if actual != expected[new]:
+            differences[new] = {key: (expected[new].get(key), actual.get(key))
+                                for key in expected[new].keys() | actual.keys()
+                                if expected[new].get(key) != actual.get(key)}
+    assert differences == {}

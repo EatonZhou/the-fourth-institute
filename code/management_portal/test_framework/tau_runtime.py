@@ -377,7 +377,7 @@ def prepare_configuration(
                 raise CaseNotSent(
                     "TAU 执行者初始化尚未完成，保留原对象与输入；通过 GetResidentInitialization "
                     "回读并按 RetryResidentInitialization 恢复原尝试。需要 credits 时仅真实人类"
-                    "可确认精确账号和初始化 ID，OpenIntake 不代替确认："
+                    "可确认精确账号和初始化 ID，SetIntakeOpen 不代替确认："
                     f"{initialization.get('initialization_id', '')} / {initialization.get('status', '')}"
                 )
             if status["status"] == "stale" and replace_unusable_assignment is not None:

@@ -239,7 +239,7 @@ async function promptInjectionPage() {
     execute: async (instruction, args, options) => {
       executed.push([instruction, plain(args), options ? plain(options) : undefined]);
       if (instruction === 'GetResidentSettings') return { prompt_injection: settingsView };
-      if (instruction === 'PreviewPromptInjection') {
+      if (instruction === 'GetPromptInjectionPreview') {
         previews[args.turn] = deferred();
         return previews[args.turn].promise;
       }
@@ -257,7 +257,7 @@ async function promptInjectionPage() {
     await settle();
     assert.deepEqual(executed.slice(0, 2).map(([name, args]) => [name, args]), [
       ['GetResidentSettings', { resident_id: 'resident_sample' }],
-      ['PreviewPromptInjection', { resident_id: 'resident_sample', turn: 'first' }],
+      ['GetPromptInjectionPreview', { resident_id: 'resident_sample', turn: 'first' }],
     ], 'the page reads the settings, then previews the first turn');
     const preset = () => container.querySelector('[data-prompt-injection-preset]');
     assert.deepEqual([...preset().options].map(option => option.value), ['standard', 'minimal', 'pure'],
@@ -294,7 +294,7 @@ async function promptInjectionPage() {
     assert.deepEqual(update[1], { resident_id: 'resident_sample', changes: { prompt_injection: { preset: 'minimal' } } });
     assert.match(update[2].idempotencyKey, /^prompt-injection:[0-9a-f-]{36}$/);
     assert.equal(preset().value, 'minimal', 'the page shows the saved view');
-    assert.deepEqual(executed.at(-1).slice(0, 2), ['PreviewPromptInjection', { resident_id: 'resident_sample', turn: 'after_compaction' }],
+    assert.deepEqual(executed.at(-1).slice(0, 2), ['GetPromptInjectionPreview', { resident_id: 'resident_sample', turn: 'after_compaction' }],
       'the preview is read again for the chosen turn');
 
     const rules = container.querySelector('[data-prompt-injection-part="rules"]');

@@ -721,9 +721,9 @@ HANDLERS = {
     "ListUserAccessTokens": user_access_token,
     "RevokeUserAccessToken": user_access_token,
     "GetMailbox": get_user_mailbox,
-    "PinMailboxItem": pin_inbox_item,
-    "MuteMailboxItem": mute_inbox_item,
-    "MarkMailboxItemRead": mark_inbox_item_read,
+    "SetMailboxItemPinned": pin_inbox_item,
+    "SetMailboxItemMuted": mute_inbox_item,
+    "SetMailboxItemRead": mark_inbox_item_read,
     "ClearMailbox": clear_user_mailbox,
     "ListUsers": list_users,
     "GetUser": get_user,
@@ -739,8 +739,8 @@ HANDLERS = {
     "RestartPortal": restart_portal,
     "PublishRelease": publish_release,
     "GetDeviceStatus": get_device_status,
-    "StartGoogleDriveBackup": start_google_drive_backup,
-    "OpenTerminal": open_terminal,
+    "RunGoogleDriveBackup": start_google_drive_backup,
+    "CreateTerminal": open_terminal,
 }
 
 
@@ -760,7 +760,7 @@ def version_of(inv: Invocation, object_id: str) -> Any:
     no version token.
     """
 
-    if inv.name == "MarkMailboxItemRead" and object_id == inv.argument("key"):
+    if inv.name == "SetMailboxItemRead" and object_id == inv.argument("key"):
         # The handler checks the target completion with its single authoritative read.
         return None
     if inv.name in USER_RECORD_INSTRUCTIONS and object_id == inv.argument("user_id"):

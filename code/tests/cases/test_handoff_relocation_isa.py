@@ -31,7 +31,7 @@ def test_formal_relocation_preserves_identity_content_binding_history_and_replay
     lid, h, item, resident, source, snapshot = existing(lineage_store, tmp_path, method)
     old = Path(snapshot['expected_path']); (old/'user-edit').write_text('retained')
     call = arguments(lid, h, item, snapshot)
-    result = run('RelocateWorkspaceHandoff', call, key='relocate')
+    result = run('MoveWorkspaceHandoff', call, key='relocate')
     row = result.raise_for_error()['workspace']
     assert result.result['status'] == 'completed'
     assert row['workspace_id'] == snapshot['workspace_id']
@@ -42,7 +42,7 @@ def test_formal_relocation_preserves_identity_content_binding_history_and_replay
     assert current['target']['path'] == current['result']['target_path'] == row['path']
     bindings = lineage_resident_workspaces.get_node_workspaces(lid, resident, 'sample_admin')['workspaces']
     assert any(b['workspace_id'] == row['workspace_id'] and b['path'] == row['path'] for b in bindings)
-    again = run('RelocateWorkspaceHandoff', call, key='relocate')
+    again = run('MoveWorkspaceHandoff', call, key='relocate')
     # HATG keeps stable result identities, not stale mutable Workspace fields.
     assert again.replayed and again.instruction_id == result.instruction_id
     assert again.result['operation_id'] == result.result['operation_id']
@@ -59,7 +59,7 @@ def test_both_contributor_grants_required_by_actual_permission_scheme(lineage_st
     world.place(Fact('lineage', lid), Fact('workspace', wid))
     for kind in grants:
         world.grant('borrower', lid if kind == 'lineage' else wid, '@contributor')
-    result = run('RelocateWorkspaceHandoff', arguments(lid, h, item, snapshot), actor='borrower', key='authorized-move')
+    result = run('MoveWorkspaceHandoff', arguments(lid, h, item, snapshot), actor='borrower', key='authorized-move')
     if len(grants) == 2:
         row = result.raise_for_error()['workspace']
         assert row['workspace_id'] == wid
@@ -73,7 +73,7 @@ def test_both_contributor_grants_required_by_actual_permission_scheme(lineage_st
 def test_stale_workspace_version_is_conflict_without_filesystem_effects(lineage_store, tmp_path):
     lid, h, item, resident, source, snapshot = existing(lineage_store, tmp_path, 'filesystem_copy')
     args = arguments(lid, h, item, snapshot); args['expected_workspace_version'] = 'stale'
-    result = run('RelocateWorkspaceHandoff', args, key='stale')
+    result = run('MoveWorkspaceHandoff', args, key='stale')
     assert result.status == 'failed' and result.error['code'] == 'instruction.version_conflict'
     assert result.error['details']['current_version'] == snapshot['expected_version']
     assert Path(snapshot['expected_path']).exists()
@@ -85,7 +85,7 @@ def test_committed_dependency_failure_has_committed_pending_receipt(lineage_stor
     lid, h, item, resident, source, snapshot = existing(lineage_store, tmp_path, 'filesystem_copy')
     original = directory_move_owner.reconcile_dependencies
     monkeypatch.setattr(directory_move_owner, 'reconcile_dependencies', lambda *_: (_ for _ in ()).throw(OSError('retry Git dependency')))
-    result = run('RelocateWorkspaceHandoff', arguments(lid, h, item, snapshot), key='pending')
+    result = run('MoveWorkspaceHandoff', arguments(lid, h, item, snapshot), key='pending')
     receipt = result.raise_for_error()
     assert receipt['status'] == 'pending' and receipt['operation_id'] == result.instruction_id
     assert 'retry Git dependency' in receipt['error']

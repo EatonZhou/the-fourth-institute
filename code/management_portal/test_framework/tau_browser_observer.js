@@ -157,7 +157,7 @@ function instructionEvidenceScope(body) {
     const operations = new Set(['GetResident', 'GetResidentSettings', 'UpdateResidentSettings',
       'GetResidentInitialization', 'GetResidentRequest', 'ListResidentRequests',
       'ListMessages', 'ListInputHistory', 'SearchMessages', 'GetMessage', 'GetSentPrompt',
-      'PreviewPromptInjection', 'GetMailbox', 'WatchMailbox', 'ListMailboxTodos',
+      'GetPromptInjectionPreview', 'GetMailbox', 'WatchMailbox', 'ListMailboxTodos',
       'GetConversation', 'WatchConversationEvents', 'GetInputState', 'DeleteResident', 'ClearContext',
       'GetFamilyChatPreferences', 'UpdateFamilyChatPreferences',
       'RestartSession', 'GetSessionRestart', 'CancelSessionRestart', 'CancelInput', 'DeliverMessage']);

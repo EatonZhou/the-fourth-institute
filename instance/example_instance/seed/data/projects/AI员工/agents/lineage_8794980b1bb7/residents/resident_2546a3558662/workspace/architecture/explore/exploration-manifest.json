@@ -3,14 +3,14 @@
   "revision": 1,
   "model": {
     "address": "workspace_04ad72d24263/file/architecture/explore/exploration-model.json",
-    "sha256": "4b7dd60e0eb10460b829a24b02b4c48ef3de2837bb55932f8f3b62b871e3deda",
+    "sha256": "932828cbbcd38ccf09df72e89c9aa3bf18ea01e9ee6c631f2067bc57e7b7f020",
     "size": 5851008
   },
   "catalogs": {
     "hatg": {
       "manifest": {
         "address": "workspace_04ad72d24263/file/architecture/explore/catalog-manifest.json",
-        "sha256": "af7a3032dc57364a2a9bd8df7868ba71015dc995951134afb7344cdf3df158c2",
+        "sha256": "ecd36aee4e0748d4933c43d27dda05b045cc08aa85662d2945b77379e9f5a28c",
         "size": 7366
       }
     }

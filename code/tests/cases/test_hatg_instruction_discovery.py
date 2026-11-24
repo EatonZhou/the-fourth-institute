@@ -28,7 +28,7 @@ def test_default_discovery_has_general_capabilities_and_complete_group_index():
     """默认列日常能力，索引让应用、内部维护、运维能力仍可被发现"""
     result = listing()
     assert {"ListInstructions", "DeliverMessage", "ReadResource", "ApplyLineageChanges"} <= names(result)
-    assert not {"ExportPaperBibtex", "CheckFamilyProgress", "RestartPortal", "SubmitResidentSummary"} & names(result)
+    assert not {"ExportPaperBibtex", "MaintainFamilyProgress", "RestartPortal", "SubmitResidentSummary"} & names(result)
     assert {item["group"] for item in result["groups"]} == set(DISCOVERY_GROUPS)
     assert sum(item["count"] for item in result["groups"]) == len(instruction_catalog())
     assert result["guide"] == "/guide/agent.md"
@@ -42,7 +42,7 @@ def test_explicit_groups_partition_the_catalog_without_changing_categories():
     for group in DISCOVERY_GROUPS:
         result = listing(group=group)
         assert all(item["discovery_group"] == group for item in result["instructions"])
-    assert instruction_catalog()["CheckFamilyProgress"].category == "family_internal"
+    assert instruction_catalog()["MaintainFamilyProgress"].category == "family_internal"
 
 
 def test_category_alone_crosses_groups_and_combined_filter_intersects():

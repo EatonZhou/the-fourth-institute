@@ -396,5 +396,5 @@ def require_verified(inv):
         raise invalid("请先使用当前账号和模型完成执行测试")
 
 
-HANDLERS = {"GetProviderAccountSetup": get_setup, "PrepareProviderRuntime": prepare,
+HANDLERS = {"GetProviderAccountSetup": get_setup, "InstallProviderRuntime": prepare,
             "CheckProviderAccount": check, "GetProviderAccountCheck": check_result}

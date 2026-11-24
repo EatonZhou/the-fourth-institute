@@ -88,11 +88,11 @@ print(json.dumps({
 """
 # The instructions the installed features add (``isa.instructions``).
 FEATURE_INSTRUCTIONS = {
-    "ResolveMessageContextReferences", "ListPosts", "GetPost", "CreatePost", "UpdatePost", "DeletePost", "CreateReply", "DeleteReply", "PinPost",
-    "FeaturePost", "MarkPostRead", "ListChatrooms", "GetChatroom", "CreateChatroom", "UpdateChatroom",
+    "ResolveMessageContextReferences", "ListPosts", "GetPost", "CreatePost", "UpdatePost", "DeletePost", "CreateReply", "DeleteReply", "SetPostPinned",
+    "SetPostFeatured", "UpdatePostReadVersion", "ListChatrooms", "GetChatroom", "CreateChatroom", "UpdateChatroom",
     "LeaveChatroom", "DeleteChatroom", "ListChatroomMessages",
     "UpdateChatroomMessage", "RetractChatroomMessage", "UpdateChatroomReaction", "CreateChatroomMessage",
-    "MarkChatroomRead", "GetResearchMap", "ApplyResearchMapChanges", "ListResearchMapChanges", "UpdateResearchMapLayout", "GetResearchMapDigest",
+    "UpdateChatroomReadPosition", "GetResearchMap", "ApplyResearchMapChanges", "ListResearchMapChanges", "UpdateResearchMapLayout", "GetResearchMapDigest",
 }
 from management_portal.permission_system.scheme import repository
 from management_portal.permission_system.scheme.compiler import SchemeError, compile_scheme

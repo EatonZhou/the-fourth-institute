@@ -576,7 +576,7 @@ def cancel_provider_account_login(inv):
 
 
 HANDLERS = {
-    "OpenProviderAccountLogin": open_provider_account_login,
+    "CreateProviderAccountLogin": open_provider_account_login,
     "UpdateProviderAccountLogin": update_provider_account_login,
     "GetProviderAccountLogin": get_provider_account_login,
     "CancelProviderAccountLogin": cancel_provider_account_login,

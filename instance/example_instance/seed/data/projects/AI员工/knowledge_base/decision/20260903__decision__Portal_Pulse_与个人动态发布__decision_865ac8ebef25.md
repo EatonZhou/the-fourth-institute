@@ -92,7 +92,7 @@ Home 读取的是预先生成的文件，所以打开页面很快，浏览器也
 
 ## 流程开关与数据所有权
 
-Pulse 的三个定时 Event、一个手动 Event、原有 Pulse Resident 及四条投递连线共同属于具名 Function Block。开关直接使用 `PauseComponent`（`paused: true|false`）的持久运行状态。关闭一个定时 Event 后，该周期不再产生新触发；关闭三个定时 Event 停止自动生成，保留手动 Event 可补写一期。手动 Event 关闭后也不能手动触发。已被 Resident 接收的任务可以完成；关闭 Event 不撤销已接收的模型执行。Function Block 的封装保持上述 Event 和连线语义。
+Pulse 的三个定时 Event、一个手动 Event、原有 Pulse Resident 及四条投递连线共同属于具名 Function Block。开关直接使用 `SetComponentPaused`（`paused: true|false`）的持久运行状态。关闭一个定时 Event 后，该周期不再产生新触发；关闭三个定时 Event 停止自动生成，保留手动 Event 可补写一期。手动 Event 关闭后也不能手动触发。已被 Resident 接收的任务可以完成；关闭 Event 不撤销已接收的模型执行。Function Block 的封装保持上述 Event 和连线语义。
 
 暂停生成不删除已有摘要，也不隐藏 Home Pulse。读取、个人发布和撤回继续使用已有文件及 PostgreSQL `portal_pulse.publications`；公开权限仍由权限系统决定（decision_b820faf42218），个人所有权仍由来源条目决定。
 

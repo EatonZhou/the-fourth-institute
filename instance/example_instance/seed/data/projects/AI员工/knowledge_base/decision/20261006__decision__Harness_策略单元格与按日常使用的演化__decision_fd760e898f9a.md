@@ -101,7 +101,7 @@ Harness 演化评审流程安装在站点配置 `deployment.system_workflow.harn
 
 ### 记录开关
 
-`system:harness-recording:enabled` Event 是新增运行证据的总开关，和只读状态 Effect 一起放在“Harness 记录”Function Block 中。PauseComponent（`paused: true|false`）把它的有效状态投影为 ExecutionSettings 的 `harness_recording_enabled`，Portal Management“执行设置”里的 Harness 记录开关也经由它切换；投影的登记、删除后关闭和恢复规则见 decision_25eb93d803a4。手动触发相连的状态 Effect 只读当前投影。
+`system:harness-recording:enabled` Event 是新增运行证据的总开关，和只读状态 Effect 一起放在“Harness 记录”Function Block 中。SetComponentPaused（`paused: true|false`）把它的有效状态投影为 ExecutionSettings 的 `harness_recording_enabled`，Portal Management“执行设置”里的 Harness 记录开关也经由它切换；投影的登记、删除后关闭和恢复规则见 decision_25eb93d803a4。手动触发相连的状态 Effect 只读当前投影。
 
 新建的 Event 处于打开状态。安装开关时先在没有部署绑定时建好节点并关闭，再写入 `harness_recording_lineage_id`，下一次开关操作就把关闭状态投影过去，安装过程中不会打开记录。关闭记录后，后台效果账本写线程不再提交新的 turn 观察，每小时收集脚本也跳过执行历史扫描与复制。
 

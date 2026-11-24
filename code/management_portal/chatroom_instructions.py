@@ -80,7 +80,7 @@ DECLARATIONS = (
     ), (R("message", "object", "新消息：message_id、author_id、content_parts、ordinal、version…"),
         R("deliveries", "array", "@ 到的 Resident 的投递：id、resident_id、input_message_id、status（delivered、undeliverable…）、error")),
        mutates=True, target="chatroom_id"),
-    _d("MarkChatroomRead", ON_CHATROOM, "把聊天室标为调用者已读到指定位置；省略位置时读到最新消息。", (
+    _d("UpdateChatroomReadPosition", ON_CHATROOM, "把聊天室标为调用者已读到指定位置；省略位置时读到最新消息。", (
         R("chatroom_id", description="聊天室 ID"), P("through", "integer", "浏览器实际展示到的消息位置", minimum=0),
     ), (
         R("chatroom_id", description="聊天室 ID"), R("unread_count", "integer", "调用者剩余的未读消息数"),

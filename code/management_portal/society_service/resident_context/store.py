@@ -379,70 +379,95 @@ class ResidentContextStore:
         return [_decode(row) for row in rows]
 
     def work_summary(self, resident_id: str) -> dict[str, Any]:
+        from . import summary_layers
         with self.read() as connection:
             row = connection.execute("SELECT w.*,l.layers,l.maintenance FROM work_summaries w LEFT JOIN work_summary_layers l USING(resident_id) WHERE resident_id=%s", (resident_id,)).fetchone()
             missing = connection.execute("SELECT message_id FROM work_summary_rounds WHERE resident_id=%s AND NOT covered ORDER BY message_id",
                                          (resident_id,)).fetchall()
-        item = _decode(row) if row else {"resident_id": resident_id, "revision": 0, "updated_at": "", "writer_id": ""}
-        item.setdefault("summary", {})
+            item = _decode(row) if row else {"resident_id": resident_id, "revision": 0, "updated_at": "", "writer_id": ""}
+            item.setdefault("summary", {})
+            layers, state = summary_layers.initial(item["summary"], item.get("updated_at"))
+            if row and row["layers"] is not None:
+                layers, state = json_value(row["layers"]), json_value(row["maintenance"])
+            pending = self._pending_work_rounds(connection, resident_id, state)
         item["source_versions"] = json_value(item.get("source_versions", "{}"))
         item["missing_message_ids"] = [r["message_id"] for r in missing]
-        from . import summary_layers
-        layers, state = summary_layers.initial(item["summary"], item.get("updated_at"))
-        if row and row["layers"] is not None:
-            layers, state = json_value(row["layers"]), json_value(row["maintenance"])
-        item.update(layers=layers, maintenance=state, consolidation=summary_layers.due(layers, state))
+        due = summary_layers.due(layers, state)
+        item["pending_message_ids"] = sorted(pending[due["level"]])
+        maintenance = {key: state[key] for key in ("phase_at", "phase_rounds", "long_term_at", "long_term_rounds")}
+        item.update(layers=layers, maintenance=maintenance, consolidation=due)
         return item
 
+    @staticmethod
+    def _pending_work_rounds(connection: Any, resident_id: str, state: dict) -> dict:
+        from . import summary_layers
+        if "pending_rounds" in state or not (state.get("phase_rounds") or state.get("long_term_rounds")):
+            return summary_layers.pending_rounds(state)
+        rows = connection.execute(
+            "SELECT message_id FROM work_summary_rounds WHERE resident_id=%s AND covered ORDER BY message_id",
+            (resident_id,)).fetchall()
+        return summary_layers.pending_rounds(state, [row["message_id"] for row in rows])
+
     def write_work_summary(self, resident_id: str, writer: str, summary: dict | None,
-                           message_ids: list[str], expected_revision: int, source_versions: dict,
+                           message_ids: list[str], source_versions: dict,
                            *, temporal: bool = False, consolidation: dict | None = None,
                            counted_message_ids: list[str] | None = None) -> dict:
         with self.transaction() as connection:
+            row = self._lock_work_summary(connection, resident_id)
             if temporal:
                 from . import summary_layers
-                connection.execute("INSERT INTO work_summaries(resident_id) VALUES (%s) ON CONFLICT DO NOTHING", (resident_id,))
-                row = connection.execute("SELECT * FROM work_summaries WHERE resident_id=%s FOR UPDATE", (resident_id,)).fetchone()
-                if row["revision"] != expected_revision:
-                    raise ValueError("工作摘要版本已变化，请重新读取后提交")
                 saved = connection.execute("SELECT * FROM work_summary_layers WHERE resident_id=%s", (resident_id,)).fetchone()
                 layers, state = summary_layers.initial(json_value(row["summary_json"]), iso_time(row["updated_at"]) if row["updated_at"] else "")
                 if saved:
                     layers, state = json_value(saved["layers"]), json_value(saved["maintenance"])
                 previous_layers = _document(layers)
+                pending = self._pending_work_rounds(connection, resident_id, state)
+                state = summary_layers.with_pending_rounds(state, pending)
                 if consolidation is not None:
                     layers, state = summary_layers.consolidate(layers, state, consolidation)
-                elif summary is not None:
-                    layers["recent"] = summary
-                    check_budget(layers)
-                # No-content coverage remains legal for legacy oversized
-                # summaries, so it cannot prevent the subsequent condensation.
-                new_count = 0
-                for mid in message_ids if counted_message_ids is None else counted_message_ids:
-                    covered = connection.execute("SELECT covered FROM work_summary_rounds WHERE resident_id=%s AND message_id=%s", (resident_id, mid)).fetchone()
-                    new_count += int(not covered or not covered["covered"])
-                state["phase_rounds"] += new_count
-                state["long_term_rounds"] += new_count
-                content = summary_layers.project(layers) if summary is not None or consolidation is not None else None
-                self._write_summary(connection, resident_id, writer, content, expected_revision, source_versions,
+                else:
+                    if summary is not None:
+                        previous_threads = set(layers["recent"].get("active_threads", []))
+                        layers["recent"] = summary
+                        check_budget(layers)
+                        reopened = set(summary.get("active_threads", [])) - previous_threads
+                        closed = set(state.get("resolved_threads", [])) - reopened
+                        state["resolved_threads"] = sorted(closed.intersection(summary_layers.project(layers)["active_threads"]))
+                    counted = message_ids if counted_message_ids is None else counted_message_ids
+                    if counted:
+                        covered = {r["message_id"] for r in connection.execute(
+                            "SELECT message_id FROM work_summary_rounds WHERE resident_id=%s AND covered AND message_id=ANY(%s)",
+                            (resident_id, counted))}
+                        fresh = list(dict.fromkeys(mid for mid in counted if mid not in covered))
+                        if fresh:
+                            pending = {level: ids + fresh for level, ids in pending.items()}
+                            state = summary_layers.with_pending_rounds(state, pending)
+                            state.pop("budget_reviewed", None)
+                    if previous_layers != _document(layers):
+                        state.pop("budget_reviewed", None)
+                content = (summary_layers.project(layers, state.get("resolved_threads", []))
+                           if summary is not None or consolidation is not None else None)
+                self._write_summary(connection, row, writer, content, source_versions,
                                     preserve_layers=True, force_revision=previous_layers != _document(layers))
                 connection.execute("INSERT INTO work_summary_layers VALUES (%s,%s,%s) ON CONFLICT(resident_id) DO UPDATE SET layers=EXCLUDED.layers,maintenance=EXCLUDED.maintenance",
                                    (resident_id, _document(layers), _document(state)))
             else:
-                self._write_summary(connection, resident_id, writer, summary, expected_revision, source_versions)
+                self._write_summary(connection, row, writer, summary, source_versions)
             for mid in message_ids:
                 connection.execute("INSERT INTO work_summary_rounds VALUES (%s,%s,TRUE) ON CONFLICT(resident_id,message_id) DO UPDATE SET covered=TRUE", (resident_id,mid))
         return self.work_summary(resident_id)
 
     @staticmethod
-    def _write_summary(connection: Any, resident_id: str, writer: str | None, summary: dict | None,
-                       expected_revision: int | None, source_versions: dict, *, preserve_layers: bool = False,
+    def _lock_work_summary(connection: Any, resident_id: str):
+        connection.execute("INSERT INTO work_summaries(resident_id) VALUES (%s) ON CONFLICT DO NOTHING", (resident_id,))
+        return connection.execute("SELECT * FROM work_summaries WHERE resident_id=%s FOR UPDATE", (resident_id,)).fetchone()
+
+    @staticmethod
+    def _write_summary(connection: Any, row: Any, writer: str | None, summary: dict | None,
+                       source_versions: dict, *, preserve_layers: bool = False,
                        force_revision: bool = False) -> int:
         """The only content writer, shared by members, stewards and global claims."""
-        connection.execute("INSERT INTO work_summaries(resident_id) VALUES (%s) ON CONFLICT DO NOTHING", (resident_id,))
-        row = connection.execute("SELECT * FROM work_summaries WHERE resident_id=%s FOR UPDATE", (resident_id,)).fetchone()
-        if expected_revision is not None and int(row["revision"]) != expected_revision:
-            raise ValueError("工作摘要版本已变化，请重新读取后提交")
+        resident_id = row["resident_id"]
         if summary is None and not row["revision"]:
             raise ValueError("首次提交必须提供摘要，不能声明无新增")
         stored = _document(json_value(row["summary_json"]))
@@ -764,9 +789,11 @@ class ResidentContextStore:
             rebuilt_at = now if mode == "full" else (iso_time(previous["rebuilt_at"]) if previous else "")
         message_ids = [str(value) for value in source.get("message_ids") or []][-1000:]
         source_cursor = int(source.get("cursor") or 0)
-        revision = ResidentContextStore._write_summary(
-            connection, resident_id, writer, summary, source.get("summary_revision"), {},
-        )
+        row = ResidentContextStore._lock_work_summary(connection, resident_id)
+        source_revision = source.get("summary_revision")
+        if source_revision is not None and row["revision"] != source_revision:
+            raise ValueError("工作摘要版本已变化，请重新读取后提交")
+        revision = ResidentContextStore._write_summary(connection, row, writer, summary, {})
         connection.execute("""
             INSERT INTO snapshots(
                 resident_id, source_cursor, source_fingerprint,

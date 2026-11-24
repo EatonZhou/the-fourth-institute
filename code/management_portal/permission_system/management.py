@@ -137,8 +137,8 @@ def input_open(resident_id: str, message_id: str) -> bool:
 ACTIONS = {
     "GetEffectivePermissions": "effective",
     "CheckPermission": "check",
-    "IssueTemporaryCredential": "issue_temporary",
-    "RenewTemporaryCredential": "renew_temporary",
+    "CreateTemporaryCredential": "issue_temporary",
+    "UpdateTemporaryCredential": "renew_temporary",
     "RevokeTemporaryCredential": "revoke_temporary",
     "ListTemporaryCredentials": "list_temporary",
 }

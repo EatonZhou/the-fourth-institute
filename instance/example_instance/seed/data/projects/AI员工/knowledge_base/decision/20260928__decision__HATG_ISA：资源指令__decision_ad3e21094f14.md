@@ -58,8 +58,9 @@ links:
 | `ReadResource` | 否 | 读取资源正文或资源内部文件 | 对 `address` 有 @viewer |
 | `ListResourceTypes` | 否 | 列出全部资源类型的声明、状态与有效能力 | 对“共享”有 @viewer |
 | `GetResourceType` | 否 | 读取某个资源类型的声明、状态与有效能力 | 对“共享”有 @viewer |
+| `ListDeliverables` | 否 | 读取当前可见成果登记，可按项目与作者筛选 | 对“共享”有 @viewer |
 | `UpdateResourceType` | 是 | 启用或停用一个资源类型，可选信封版本前提 | 对“共享”有 @admin |
-| `PreviewArticleRestore` | 否 | 预检原 Article 的恢复证据、目录与当前权限，不执行恢复 | Article/原 Resident @admin、源 @viewer、目标 Project @contributor；领域另核历史与继承读取 |
+| `CheckArticleRestore` | 否 | 预检原 Article 的恢复证据、目录与当前权限，不执行恢复 | Article/原 Resident @admin、源 @viewer、目标 Project @contributor；领域另核历史与继承读取 |
 | `RestoreArticle` | 是 | 按已核证据和明确共享决定部分恢复原 Article ID | Article/原 Resident @admin、源 @viewer、目标 Project @contributor；领域独立核验 |
 | `RegisterResource` | 是 | 登记一个新资源 | 对新对象的所属位置有 @contributor |
 | `CreateWorkspace` | 是 | 在空位置创建 Workspace | 固定槽免检；给出 `owner_id` 时对该所属对象有 @contributor |
@@ -193,7 +194,7 @@ CreateWorkspace 要求目标位置不存在；RegisterWorkspace 要求目标是�
 
 固定槽在默认方案中免检，领域继续检查可见性：原操作调用者可以读取自己的清理记录；其他调用者必须有对应对象的读取权限，否则返回 `instruction.forbidden`。注销结果与文件清理进度分别报告；清理失败不恢复登记，后台持久重试，重启后继续。该入口不授予对象权限，不提供任意目录清理或管理员重试动作。
 
-### `PreviewArticleRestore`
+### `CheckArticleRestore`
 
 对已删除 Article 的原 ID 做有界只读证据预检，声明 `mutates=false`。输入为 `article_id`、原登记 Resident 的 `resident_id`、精确工具定位 `ordinal/tool_index/tool_item_id/expected_hash`、源目录 `source_address/source_version`、主阅读 PDF `primary_file/primary_version`、目标 `project_id/target_relative_path`；不接受 `apply`、客户端登记前像、ACL 或批准字典。目录版本是直接子项摘要，PDF 版本是字节 SHA256。
 
@@ -306,13 +307,14 @@ Workspace 支持 `UnregisterResource(resource_id=workspace_id)`，要求目标 W
 
 | 指令名 | arguments 参数名 |
 | --- | --- |
-| `PreviewArticleRestore` | `article_id`、`resident_id`、`ordinal`、`tool_index`、`tool_item_id`、`expected_hash`、`source_address`、`source_version`、`primary_file`、`primary_version`、`project_id`、`target_relative_path` |
+| `CheckArticleRestore` | `article_id`、`resident_id`、`ordinal`、`tool_index`、`tool_item_id`、`expected_hash`、`source_address`、`source_version`、`primary_file`、`primary_version`、`project_id`、`target_relative_path` |
 | `RestoreArticle` | `article_id`、`resident_id`、`ordinal`、`tool_index`、`tool_item_id`、`expected_hash`、`source_address`、`source_version`、`primary_file`、`primary_version`、`project_id`、`target_relative_path`、`inheritance_digest`、`decision_resident_id`、`proposal_message_id`、`decision_message_id` |
 | `SearchResources` | `q`、`resource_type`、`project_id`、`status`、`limit`、`cursor` |
 | `ResolveResource` | `address` |
 | `ReadResource` | `address`、`max_bytes`、`meta_only`、`preview` |
 | `ListResourceTypes` | 无 |
 | `GetResourceType` | `resource_type` |
+| `ListDeliverables` | `project_id`、`author_id`、`offset`、`limit` |
 | `UpdateResourceType` | `resource_type`、`enabled` |
 | `RegisterResource` | `resource_type`、`fields` |
 | `CreateWorkspace` | `path`、`operation_id`、`owner_id`、`title` |

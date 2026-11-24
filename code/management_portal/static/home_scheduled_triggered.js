@@ -91,7 +91,7 @@
     <div class="scheduled-triggered-actions">
       ${editField}${jitterField}
       ${editable ? window.PortalI18n.html`<button type="button" class="scheduled-triggered-action" data-scheduled-triggered-action="update_schedule" data-scheduled-triggered-row-id="${esc(scheduledTriggeredItemId(item))}" data-scheduled-triggered-source-id="${id}">修改定时</button>` : ""}
-      ${scheduledTriggeredAllows(item, "PauseComponent") ? window.PortalI18n.html`<button type="button" class="scheduled-triggered-action ${source.paused ? "start" : "stop"}" data-scheduled-triggered-action="${source.paused ? "resume_schedule" : "pause_schedule"}" data-scheduled-triggered-row-id="${esc(scheduledTriggeredItemId(item))}" data-scheduled-triggered-source-id="${id}">${source.paused ? window.PortalI18n.t("恢复调度") : window.PortalI18n.t("暂停调度")}</button>` : ""}
+      ${scheduledTriggeredAllows(item, "SetComponentPaused") ? window.PortalI18n.html`<button type="button" class="scheduled-triggered-action ${source.paused ? "start" : "stop"}" data-scheduled-triggered-action="${source.paused ? "resume_schedule" : "pause_schedule"}" data-scheduled-triggered-row-id="${esc(scheduledTriggeredItemId(item))}" data-scheduled-triggered-source-id="${id}">${source.paused ? window.PortalI18n.t("恢复调度") : window.PortalI18n.t("暂停调度")}</button>` : ""}
     </div>
   </div>`;
     }
@@ -268,7 +268,7 @@
         argumentsPayload = {resident_id: item.resident_id, message_id: item.active_message_id};
       } else if (action === "pause_schedule" || action === "resume_schedule") {
         if (!source) return;
-        instruction = "PauseComponent";
+        instruction = "SetComponentPaused";
         argumentsPayload = {lineage_id: item.lineage_id, component_id: sourceId, paused: action === "pause_schedule"};
       } else if (action === "update_settings") {
         const changes = {};

@@ -53,7 +53,7 @@ def test_terminal_routes_use_selected_policy_for_scoped_users(
     body: dict | None,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """已登录用户经两组终端路由到达终端后端的启动、读取、输入和控制；能否打开由后端按 OpenTerminal 判定"""
+    """已登录用户经两组终端路由到达终端后端的启动、读取、输入和控制；能否打开由后端按 CreateTerminal 判定"""
     calls: list[str] = []
     path = path.replace("/api/agent-workbench/local-terminal", terminal_prefix)
     def backend(actor: str, *_args: object, **_kwargs: object) -> dict:

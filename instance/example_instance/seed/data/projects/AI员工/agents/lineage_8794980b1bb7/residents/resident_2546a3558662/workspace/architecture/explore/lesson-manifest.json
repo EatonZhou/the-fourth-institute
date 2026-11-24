@@ -3,12 +3,12 @@
   "revision": 2,
   "catalog_manifest": {
     "address": "workspace_04ad72d24263/file/architecture/explore/catalog-manifest.json",
-    "sha256": "af7a3032dc57364a2a9bd8df7868ba71015dc995951134afb7344cdf3df158c2",
+    "sha256": "ecd36aee4e0748d4933c43d27dda05b045cc08aa85662d2945b77379e9f5a28c",
     "size": 7366
   },
   "artifact": {
     "address": "workspace_04ad72d24263/file/architecture/explore/lesson-sources.json",
-    "sha256": "8a0049f5f505c05cbfe080dcedd9e6163aa50bbeba8b8aaf52e7c01bf97e954f",
+    "sha256": "8d0a23d1c36b25ce6c17281fa606ae35776db2bb10e9a2b5f5b1f49167d05158",
     "size": 78444
   },
   "sources": [

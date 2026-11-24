@@ -45,7 +45,7 @@ def test_graph_draft_preserves_schedules_and_controls_manual_trigger(workflow, m
     assert len(schedule["timers"]) == 5
     assert all(item["available"] for item in schedule["actions"] + schedule["timers"])
     source_id = bindings["content"]["timer_event_id"]
-    call("PauseComponent", {"lineage_id": lid, "component_id": source_id, "paused": True})
+    call("SetComponentPaused", {"lineage_id": lid, "component_id": source_id, "paused": True})
     content_timer = next(t for t in controller.schedule(ACTOR)["timers"] if t["operation"] == "content")
     assert content_timer["paused"] and not content_timer["available"]
     assert content_timer["next_trigger_at"] == ""
@@ -54,12 +54,12 @@ def test_graph_draft_preserves_schedules_and_controls_manual_trigger(workflow, m
     assert receipt["accepted"] and receipt["event_id"] and receipt["trigger_path_id"]
     assert launched[0]["argv"] == ["content"]
     assert launched[0]["exclusive_key"] == "resource-backup"
-    call("PauseComponent", {"lineage_id": lid, "component_id": bindings["content"]["effect_id"], "paused": True})
+    call("SetComponentPaused", {"lineage_id": lid, "component_id": bindings["content"]["effect_id"], "paused": True})
     with pytest.raises(ResourceBackupUnavailable):
         backend.request_backup("content", ACTOR)
     assert len(launched) == 1
-    call("PauseComponent", {"lineage_id": lid, "component_id": bindings["content"]["effect_id"], "paused": False})
-    call("PauseComponent", {"lineage_id": lid, "component_id": bindings["content"]["manual_event_id"], "paused": True})
+    call("SetComponentPaused", {"lineage_id": lid, "component_id": bindings["content"]["effect_id"], "paused": False})
+    call("SetComponentPaused", {"lineage_id": lid, "component_id": bindings["content"]["manual_event_id"], "paused": True})
     with pytest.raises(ResourceBackupUnavailable):
         backend.request_backup("content", ACTOR)
     assert len(launched) == 1

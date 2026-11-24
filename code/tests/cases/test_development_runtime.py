@@ -110,6 +110,68 @@ class PairedRuntimeTest(unittest.TestCase):
             for component in installed:
                 self.assertNotIn(unittest.mock.call('restart', 'tfi-fixture-' + component + '.service'), control.call_args_list)
 
+    def test_instruction_rename_drains_old_owners_before_any_restart(self):
+        from management_common import loaded_modules
+        with tempfile.TemporaryDirectory() as directory:
+            root = write_pair(Path(directory))
+            with patch.object(loaded_modules, 'loaded', return_value={}), \
+                    patch.object(paired, 'control', return_value='') as control, \
+                    patch.object(paired, 'health', return_value={'ok': True}):
+                result = paired.activate(root,
+                    ['code/management_portal/hatg/instruction_renames.py'], 'renamed')
+            calls = control.call_args_list
+            stops = [c.args[1] for c in calls if c.args[0] == 'stop']
+            expected = ['gateway', 'dev-web', 'web', 'society', 'execution', 'resource']
+            self.assertEqual(stops, ['tfi-fixture-' + c + '.service' for c in expected])
+            self.assertEqual(result['quiesced'], expected)
+            last_stop = max(i for i, c in enumerate(calls) if c.args[0] == 'stop')
+            first_restart = min(i for i, c in enumerate(calls) if c.args[0] == 'restart')
+            self.assertLess(last_stop, first_restart)
+            self.assertIn(unittest.mock.call('kill', '--kill-whom=main', '--signal=HUP',
+                                             'tfi-fixture-worker.service'), calls)
+            self.assertFalse(any(c.args[0] == 'stop' and any(x in str(c) for x in
+                ('worker.service', 'postgres', 'nats', 'provider-')) for c in calls))
+
+    def test_instruction_rename_stop_failure_never_starts_migration_owners(self):
+        from management_common import loaded_modules
+        with tempfile.TemporaryDirectory() as directory:
+            root = write_pair(Path(directory))
+            def control_call(*args):
+                if args == ('stop', 'tfi-fixture-society.service'):
+                    raise subprocess.CalledProcessError(1, args)
+                return ''
+            with patch.object(loaded_modules, 'loaded', return_value={}), \
+                    patch.object(paired, 'control', side_effect=control_call) as control, \
+                    patch.object(paired, 'health', return_value={'ok': True}) as health:
+                with self.assertRaises(subprocess.CalledProcessError):
+                    paired.activate(root,
+                        ['code/management_portal/hatg/instruction_renames.py'], 'renamed')
+            self.assertFalse(any(c.args[0] in {'restart', 'start', 'kill'} for c in control.call_args_list))
+            health.assert_not_called()
+            self.assertFalse((root / 'runtime/development-activation.json').exists())
+
+    def test_rename_barrier_accepts_code_relative_paths_and_drains_transitioning_services(self):
+        from management_common import loaded_modules
+        for state in ('reloading', 'deactivating'):
+            with self.subTest(state=state), tempfile.TemporaryDirectory() as directory:
+                root = write_pair(Path(directory))
+                path = root / 'instance.json'
+                document = json.loads(path.read_text())
+                document['services']['components'].append('telepus-portal-refresh')
+                path.write_text(json.dumps(document))
+                with patch.object(loaded_modules, 'loaded', return_value={}), \
+                        patch.object(paired, 'control', return_value=
+                            'ActiveState=' + state + '\nUnitFileState=disabled') as control, \
+                        patch.object(paired, 'health', return_value={'ok': True}):
+                    result = paired.activate(root,
+                        ['management_portal/hatg/instruction_renames.py'], 'renamed')
+                self.assertIn('telepus-portal-refresh', result['quiesced'])
+                self.assertIn('resource', result['quiesced'])
+                calls = control.call_args_list
+                last_stop = max(i for i, c in enumerate(calls) if c.args[0] == 'stop')
+                first_restart = min(i for i, c in enumerate(calls) if c.args[0] == 'restart')
+                self.assertLess(last_stop, first_restart)
+
     def test_service_processes_record_lazily_imported_portal_modules(self):
         from management_common import loaded_modules
         with tempfile.TemporaryDirectory() as directory:

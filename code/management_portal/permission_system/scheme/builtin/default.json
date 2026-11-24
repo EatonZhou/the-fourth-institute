@@ -471,7 +471,7 @@
       "a": "@admin",
       "r": "@shared"
     },
-    "OpenTerminal": {
+    "CreateTerminal": {
       "a": "@admin",
       "r": "@shared"
     },
@@ -541,7 +541,7 @@
     "Familize": {
       "a": "@contributor"
     },
-    "FeaturePost": {
+    "SetPostFeatured": {
       "a": "@admin",
       "r": "@shared"
     },
@@ -726,35 +726,35 @@
     "MoveResident:target_lineage_id": {
       "a": "@admin"
     },
-    "OpenIntake:resident_id": {
+    "SetIntakeOpen:resident_id": {
       "a": "@contributor"
     },
-    "OpenIntake:resident_ids": {
+    "SetIntakeOpen:resident_ids": {
       "a": "@contributor"
     },
-    "PauseComponent": {
+    "SetComponentPaused": {
       "a": "@contributor"
     },
-    "PinPost": {
+    "SetPostPinned": {
       "a": "@admin",
       "r": "@shared"
     },
     "CreateChatroomMessage": {
       "a": "@contributor"
     },
-    "PrepareWorkspaceHandoff": {
+    "RunWorkspaceHandoff": {
       "a": "@contributor"
     },
-    "RelocateWorkspaceHandoff:lineage_id": {
+    "MoveWorkspaceHandoff:lineage_id": {
       "a": "@contributor"
     },
-    "RelocateWorkspaceHandoff:workspace_id": {
+    "MoveWorkspaceHandoff:workspace_id": {
       "a": "@contributor"
     },
-    "PreviewPromptInjection": {
+    "GetPromptInjectionPreview": {
       "a": "@viewer"
     },
-    "ProbeModelApi": {
+    "CheckModelApi": {
       "a": "@admin",
       "r": "@operations"
     },
@@ -771,16 +771,16 @@
     "RestoreArticle:resident_id": {"a": "@admin"},
     "RestoreArticle:source_address": {"a": "@viewer"},
     "RestoreArticle:project_id": {"a": "@contributor"},
-    "PreviewArticleRestore:article_id": {
+    "CheckArticleRestore:article_id": {
       "a": "@admin"
     },
-    "PreviewArticleRestore:resident_id": {
+    "CheckArticleRestore:resident_id": {
       "a": "@admin"
     },
-    "PreviewArticleRestore:source_address": {
+    "CheckArticleRestore:source_address": {
       "a": "@viewer"
     },
-    "PreviewArticleRestore:project_id": {
+    "CheckArticleRestore:project_id": {
       "a": "@contributor"
     },
     "RelayFamilyMessage": {
@@ -789,10 +789,10 @@
     "RenameProject": {
       "a": "@admin"
     },
-    "ReorderMailbox": {
+    "MoveMailboxItems": {
       "a": "@contributor"
     },
-    "SetMailboxItemHold": {
+    "SetMailboxItemHeld": {
       "a": "@contributor"
     },
     "RequestResidentSummaryRebuild": {
@@ -894,7 +894,7 @@
     "UpdateDuty": {
       "a": "@contributor"
     },
-    "OrderDuties": {
+    "MoveDuties": {
       "a": "@contributor"
     },
     "UpdateLineage": {
@@ -933,7 +933,7 @@
       "a": "@admin",
       "r": "@shared"
     },
-    "OpenProviderAccountLogin": {
+    "CreateProviderAccountLogin": {
       "a": "@admin",
       "r": "@shared"
     },
@@ -965,7 +965,7 @@
       "a": "@admin",
       "r": "@shared"
     },
-    "PrepareProviderRuntime": {
+    "InstallProviderRuntime": {
       "a": "@admin",
       "r": "@shared"
     },
@@ -1010,19 +1010,19 @@
     "WatchTriggerPath": {
       "a": "@viewer"
     },
-    "CheckFamilyProgress": {
+    "MaintainFamilyProgress": {
       "a": "@contributor"
     },
-    "CheckFamilyReview": {
+    "MaintainFamilyReview": {
       "a": "@contributor"
     },
-    "CheckFamilyRecovery": {
+    "MaintainFamilyRecovery": {
       "a": "@contributor"
     },
     "ResolveFamilyRequest": {
       "a": "@contributor"
     },
-    "CheckFamilyRoleAvailability": {
+    "MaintainFamilyRoleAvailability": {
       "a": "@contributor"
     },
     "DispatchFamilyTask": {
@@ -1031,7 +1031,7 @@
     "CheckPermission": {
       "a": "@admin"
     },
-    "CheckResidentWorkSummary": {
+    "MaintainResidentWorkSummary": {
       "a": "@free",
       "r": "@portal"
     },
@@ -1171,7 +1171,7 @@
       "a": "@viewer",
       "r": "@shared"
     },
-    "StartGoogleDriveBackup": {
+    "RunGoogleDriveBackup": {
       "a": "@admin",
       "r": "@shared"
     },
@@ -1265,7 +1265,7 @@
       "a": "@free",
       "r": "@portal"
     },
-    "IssueTemporaryCredential": {
+    "CreateTemporaryCredential": {
       "a": "@free",
       "r": "@portal"
     },
@@ -1335,25 +1335,25 @@
       "a": "@viewer",
       "r": "@shared"
     },
-    "MarkChatroomRead": {
+    "UpdateChatroomReadPosition": {
       "a": "@viewer"
     },
-    "MarkMailboxItemRead": {
+    "SetMailboxItemRead": {
       "a": "@free",
       "r": "@portal"
     },
-    "MarkPostRead": {
+    "UpdatePostReadVersion": {
       "a": "@viewer"
     },
     "MoveMailboxTodo": {
       "a": "@free",
       "r": "@portal"
     },
-    "MuteMailboxItem": {
+    "SetMailboxItemMuted": {
       "a": "@free",
       "r": "@portal"
     },
-    "PinMailboxItem": {
+    "SetMailboxItemPinned": {
       "a": "@free",
       "r": "@portal"
     },
@@ -1401,7 +1401,7 @@
       "a": "@free",
       "r": "@portal"
     },
-    "RenewTemporaryCredential": {
+    "UpdateTemporaryCredential": {
       "a": "@free",
       "r": "@portal"
     },

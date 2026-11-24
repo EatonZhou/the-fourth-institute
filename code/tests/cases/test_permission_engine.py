@@ -155,7 +155,7 @@ def test_default_scheme_rules(store, default):
     administration = engine.decide("bob", [("UpdatePermissionScheme", "@shared")])[0]
     assert administration.allowed and administration.permit.p == "@portal_admins"
     assert not engine.decide("alice", [("UpdatePermissionScheme", "@shared")])[0].allowed
-    assert all(decision.allowed for decision in engine.decide("someone", [("GetPortalStatus", "@shared"), ("MarkMailboxItemRead", "@portal")]))
+    assert all(decision.allowed for decision in engine.decide("someone", [("GetPortalStatus", "@shared"), ("SetMailboxItemRead", "@portal")]))
 
 
 def test_everyone_may_message_shared_residents(store, default):
@@ -644,8 +644,8 @@ def test_builtin_schemes_compile_against_the_catalog():
         {"element": "ApplyLineageChanges", "argument": "lineage_id", "a": "@contributor", "types": ["lineage"]}]}
     assert default.describe("GetPortalStatus") == {"required": True, "requirements": [
         {"element": "GetPortalStatus", "a": "@viewer", "resource": "@shared"}]}
-    assert default.describe("MarkMailboxItemRead") == {"required": True, "requirements": [
-        {"element": "MarkMailboxItemRead", "a": "@free", "resource": "@portal"}]}
+    assert default.describe("SetMailboxItemRead") == {"required": True, "requirements": [
+        {"element": "SetMailboxItemRead", "a": "@free", "resource": "@portal"}]}
     unclassified = copy.deepcopy(documents["default"])
     del unclassified["instructions"]["CreateTemplate:@public"]
     described = compile_scheme(unclassified).describe("CreateTemplate")
@@ -695,11 +695,11 @@ def test_project_admin_and_shared_administration_boundaries(store):
     assert not allowed(OTHER, "RunScript", {"lineage_id": LINEAGE}) and not allowed("bob", "RunScript", {"lineage_id": LINEAGE})
     with pytest.raises(ValueError):
         requests(scheme, "RunScript", {})
-    assert allowed("bob", "MarkMailboxItemRead") and allowed(RESIDENT, "GetInstructionSchema")
+    assert allowed("bob", "SetMailboxItemRead") and allowed(RESIDENT, "GetInstructionSchema")
     assert allowed("bob", "GetPortalStatus") and allowed(RESIDENT, "GetResident", {"resident_id": OTHER})
     assert levels(engine, scheme, RESIDENT, PROJECT) == "admin"
-    assert allowed(RESIDENT, "CheckFamilyRoleAvailability", {"lineage_id": LINEAGE})
-    assert not allowed(OTHER, "CheckFamilyRoleAvailability", {"lineage_id": LINEAGE})
+    assert allowed(RESIDENT, "MaintainFamilyRoleAvailability", {"lineage_id": LINEAGE})
+    assert not allowed(OTHER, "MaintainFamilyRoleAvailability", {"lineage_id": LINEAGE})
     assert not allowed(RESIDENT, "PublishRelease") and not allowed(RESIDENT, "UpdateModelApi")
     assert allowed("alice", "PublishRelease")
     assert allowed(RESIDENT, "DeleteFamily", {"lineage_id": LINEAGE}) and not allowed("bob", "DeleteFamily", {"lineage_id": LINEAGE})

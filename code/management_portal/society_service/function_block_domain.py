@@ -44,7 +44,7 @@ def order_duties(lineage_id, holder_id, function_block_ids, actor):
     _, ids = lineage_graph_edits.commit_lineage_edit(
         lineage_id, actor,
         lambda body: function_block_authoring.order_duties_in_body(body, holder_id, function_block_ids, actor),
-        reason="OrderDuties", full_view=False)
+        reason="MoveDuties", full_view=False)
     return ids
 
 

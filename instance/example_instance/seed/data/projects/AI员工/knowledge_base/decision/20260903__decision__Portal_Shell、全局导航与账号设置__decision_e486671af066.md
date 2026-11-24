@@ -104,7 +104,7 @@ TFI Portal 由许多业务页面组成。每个页面有自己的列表、卡片
 - **Auto 配色适配系统明暗，显式主题保留原有配色。** 颜色由主题层分别推导浅色、深色强调色及按钮文字色，保证文字可读性。当前不是 Auto 模式时，Appearance 仍可预览、保存，并提供“使用 Auto”入口。新配色不影响其他用户；刷新、重开 Menu 和同账号其他设备加载偏好后继续采用已保存值。
 - **个人访问令牌在 Settings 的最后一行签发和撤销。** 展开“Personal access tokens”时读取 `ListUserAccessTokens`；用户填写名称和有效天数（1–365，默认 90）后，浏览器在本地生成 `dbu_` 开头的令牌，只把 SHA-256 摘要随 `CreateUserAccessToken` 提交，令牌原文只在这里显示一次并可以复制。列表显示每个令牌的名称、状态和到期日，有效令牌可以用 `RevokeUserAccessToken` 撤销；令牌不能修改（decision_6eac174d85bf）。
 - **安全设置仍由安全领域处理。** Settings 只提供入口和宿主；安全状态与安全操作由专用接口负责。
-- **Management 只对服务端授权账号可见。** `/api/me` 的 `access.allows` 报告调用者能否通过页面关心的指令（CreateUser、GetExecutionSettings、UpdateProviderAccount、OpenTerminal），`access.user_category` 给出调用者的 User 分类；能通过 CreateUser 或 GetExecutionSettings 时显示入口；权限系统关闭时任何已登录 User 都看到入口（decision_b820faf42218）；菜单是否显示不能代替管理接口自身授权。
+- **Management 只对服务端授权账号可见。** `/api/me` 的 `access.allows` 报告调用者能否通过页面关心的指令（CreateUser、GetExecutionSettings、UpdateProviderAccount、CreateTerminal），`access.user_category` 给出调用者的 User 分类；能通过 CreateUser 或 GetExecutionSettings 时显示入口；权限系统关闭时任何已登录 User 都看到入口（decision_b820faf42218）；菜单是否显示不能代替管理接口自身授权。
 - **切换账号面板后，旧请求的返回结果不能覆盖新选择。** 较早的 Settings 或 Management 加载结果按此规则隔离；加载失败在警报区域显示。
 
 ### 服务重启期间保持可理解状态

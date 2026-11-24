@@ -139,6 +139,8 @@ def test_turn_prompt_uses_the_authenticated_sender_for_sender_hints(resident_rec
 
     monkeypatch.setattr(resident_runtime_domain, "resident_working_directory", lambda _: tmp_path)
     monkeypatch.setattr(resident_backend, "record_session_id", lambda _: "existing-session")
+    monkeypatch.setattr(resident_runtime_domain, "read_resident_runtime_settings",
+                        lambda _: {"prompt_injection": {"preset": "full"}})
     monkeypatch.setattr(resident_prompt_domain, "attached_references_text", lambda refs: "<resource address=\"r\"/>" if refs else "")
     prompt = resident_prompt_domain.build_resident_prompt(resident_record, {
         "actor": actor, "message": "status?", "context_refs": {"resources": ["r"]},
@@ -153,6 +155,18 @@ def test_turn_prompt_uses_the_authenticated_sender_for_sender_hints(resident_rec
     assert "<user-message>\nstatus?\n</user-message>" in prompt
     assert "本 Resident Agent 的 owner" not in prompt
     assert '"owner_ids"' not in prompt
+
+
+def test_standard_prompt_keeps_explicit_references_without_wrapping_the_message(resident_record):
+    prompt = resident_prompt_domain.build_resident_message(resident_record, {
+        "actor": "resident_2a1fc6cd272d",
+        "message": "status?",
+        "context_refs": {"resources": ["lineage_1fac8ce84383"]},
+    })
+    assert 'address="lineage_1fac8ce84383"' in prompt
+    assert prompt.endswith("status?\n")
+    assert "<resident_agent>" not in prompt
+    assert "<user-message>" not in prompt
 
 
 @pytest.mark.parametrize("reference,embedded,internal", [

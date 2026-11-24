@@ -144,13 +144,15 @@ def review_config(config, actor, expected_hash, decision):
         if not draft['script'].strip():
             raise ValueError('候选脚本尚未编写')
         from .lineage_effect_script import analyze
+        from .instruction_name_migration import normalize_script
         from .lineage_program_effect_rules import validate_effect_argument
         from management_portal.hatg.catalog import instruction_catalog
-        analysis = analyze(draft['script'], declaration_for=instruction_catalog().get,
+        script = normalize_script(draft['script'])
+        analysis = analyze(script, declaration_for=instruction_catalog().get,
                            declared_endpoints=draft['endpoints'], validate_argument=validate_effect_argument)
         if analysis.diagnostics:
             raise ValueError('脚本校验失败：' + '; '.join(str(item) for item in analysis.diagnostics))
-        result.update(script=draft['script'], endpoints=draft['endpoints'])
+        result.update(script=script, endpoints=draft['endpoints'])
     elif decision != 'cancel':
         raise ValueError('decision 必须是 confirm 或 cancel')
     result.pop('script_draft')

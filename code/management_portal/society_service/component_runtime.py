@@ -238,7 +238,7 @@ def _set_paused(lineage_id: str, component_id: str, paused: bool, actor: str) ->
 def reset(lineage_id: str, component_id: str, actor: str) -> dict[str, Any]:
     plan = _plan(lineage_id, actor)
     if _kind(plan, component_id) == "effect":
-        raise ValueError("Effect 没有可重置的运行计数；打开或关闭请使用 PauseComponent")
+        raise ValueError("Effect 没有可重置的运行计数；打开或关闭请使用 SetComponentPaused")
     if _kind(plan, component_id) == "loop":
         lineage_loop_runtime.reset(lineage_id, component_id)
         return views(lineage_id, actor, component_id=component_id)[0]

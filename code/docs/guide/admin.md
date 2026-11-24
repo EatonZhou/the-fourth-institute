@@ -44,10 +44,10 @@ Resident 本身不含模型。它每次工作都要通过一个**执行账号**�
 
 打开“Portal 管理”→“AI Backend”，依次配置 Provider、执行账号、模型 API 和 Backend 角色。页面和 HATG ISA 使用同一份站点登记：
 
-- **订阅账号**：用 `RegisterProviderAccount` 登记 Codex 或 Claude 的 `subscription_login` 账号，再在账号行打开登录会话。对应指令为 `OpenProviderAccountLogin`、`GetProviderAccountLogin`、`CancelProviderAccountLogin`；Claude 要求授权码时，用 `UpdateProviderAccountLogin` 提交到现有等待会话。订阅登记的 `config.account_dir` 保存主机目录的规范绝对路径。新建账号必须填写 `config.account_dir`，不设默认目录；指定位置不存在时创建空目录，已有目录直接使用其中的登录。删除登记保留目录。Codex 服务通过账号 ID 从正式登记读取并校验 `CODEX_HOME`，实例 runtime 清理重建后仍从登记取得账号目录。各实例运行自己的常驻进程，多个实例与终端 CLI 可共享同一账号目录，由 Provider 协调登录刷新。
+- **订阅账号**：用 `RegisterProviderAccount` 登记 Codex 或 Claude 的 `subscription_login` 账号，再在账号行打开登录会话。对应指令为 `CreateProviderAccountLogin`、`GetProviderAccountLogin`、`CancelProviderAccountLogin`；Claude 要求授权码时，用 `UpdateProviderAccountLogin` 提交到现有等待会话。订阅登记的 `config.account_dir` 保存主机目录的规范绝对路径。新建账号必须填写 `config.account_dir`，不设默认目录；指定位置不存在时创建空目录，已有目录直接使用其中的登录。删除登记保留目录。Codex 服务通过账号 ID 从正式登记读取并校验 `CODEX_HOME`，实例 runtime 清理重建后仍从登记取得账号目录。各实例运行自己的常驻进程，多个实例与终端 CLI 可共享同一账号目录，由 Provider 协调登录刷新。
 - **模型 API**：在新增或编辑表单中填写接口地址和 API Key，在“模型列表”中逐项添加服务商的模型标识，并选择一个默认模型。每个模型的“模型设置”中可启用或停用模型、勾选支持的推理强度，也可添加服务商提供的其他强度值。取消勾选可移除推理强度，自定义值也可点击旁边的 × 删除；保存后生效。直连该接口的 Resident 即可在对话设置中选择这些模型和推理强度。页面通过 `CreateModelApi` / `UpdateModelApi` 保存接口、默认模型和 `models` 目录；`api_profile` 执行账号通过 `config.api_id` 绑定接口。一次性 `secret` 经受控写入保存到密钥文件，更新时用 `changes.secret` 更换。不要把密钥放入账号 config、对话、日志或文档。
 - **用 API Key 运行 Agent Harness**：模型 API 默认只提供 Chat Completions。接口也支持其他协议时，在“高级设置”中声明（`protocols`）：`openai_responses`（`/responses`，Codex 使用）、`anthropic_messages`（Claude Code 使用，可指定地址和认证方式 Bearer 或 `x-api-key`）。保存接口后，后端自动提供所有协议兼容的运行器账号；“Agent 运行器”只选择接下来测试的账号，不会再登记第二个账号。Resident 可使用这些账号执行命令、编辑文件和使用工具。登记时 Portal 检查接口是否声明了该 Harness 需要的协议；仍有账号使用的协议不能撤下，接口也不能删除。
-  - 不确定接口支持哪些协议时，点“高级设置”中的“检测接口协议”（`ProbeModelApi`）：Portal 用表单中的地址、模型和密钥向 Chat Completions、Responses 和 Anthropic Messages 各发一次很短的请求，按结果勾选协议并选好 Anthropic 的认证方式，仍可手动修改。返回 2xx 且内容符合协议格式才算支持；检测会调用模型，可能产生少量费用，不修改登记。
+  - 不确定接口支持哪些协议时，点“高级设置”中的“检测接口协议”（`CheckModelApi`）：Portal 用表单中的地址、模型和密钥向 Chat Completions、Responses 和 Anthropic Messages 各发一次很短的请求，按结果勾选协议并选好 Anthropic 的认证方式，仍可手动修改。返回 2xx 且内容符合协议格式才算支持；检测会调用模型，可能产生少量费用，不修改登记。
   - Codex：密钥由 `codex login --with-api-key` 写入账号目录的 `auth.json`，`config.toml` 中由 Portal 维护的部分把整个 app-server 指向该接口，并关闭联网搜索、连接器、插件和遥测；模型及推理强度来自模型列表，`context_window` 用于自动压缩。修改接口地址或密钥会重写配置并重启该账号的 app-server，已有会话在重启后继续；账号有排队或运行中的执行时拒绝修改，只改模型列表不重启。
   - Codex 默认路线：已选择 Codex 但没有指定路线时的 Provider 内部默认值。站点只有一个启用的 Codex 账号时，它就是默认路线；有多个时，在执行账号列表中对另一个启用的 Codex 账号点“设为默认路线”，原默认账号的标记同时取消。AMA 使用的站点默认 AI 仍需按下文配置。
   - Claude Code：后台、标题和子代理请求都使用所选模型。
@@ -162,7 +162,7 @@ PostgreSQL 程序的位置写在清单 `instance.json` 的 `dependencies.postgre
 
 实例中的每一行表项都可以直接增加、修改、停用和删除，不论它最初是规则生成的还是后来加的，例如让某位 User 管理所有 Project，或让某人修改一个不属于任何 Project 的工作台。让某人管理所有 Project 只需要一条表项：主体是这位 User，动作为 @admin，资源是“全部 Project”；以后新建的 Project 也在这个节点下，不需要再加表项。写入只检查节点存在，不检查表项之间是否矛盾。在“权限表项”分栏操作，对应指令为 `CreatePermissionEntry`、`UpdatePermissionEntry`、`DeletePermissionEntry`、`ListPermissionEntries`；`ListPermissionEntries` 可以按节点本身、它的祖先或它的子树筛选，主体和资源至少给一个，列出整个实例时资源填 `@portal`、范围选子树。只有在资源上能写表项的主体（默认是对资源有 admin）才能写入、修改和删除那里的表项：修改和删除按表项已保存的资源判定，把表项移到另一个资源时两个资源都要能写。修改时可以在调用信封的 `expected_version` 中给出读到的表项版本，表项已被别人改过时返回版本冲突；不给时按当前内容修改。要查看某个主体实际拥有的权限，用 `GetEffectivePermissions` 或 `CheckPermission`。
 
-需要把自己的权限临时交给别人时，签发临时凭证：给 Resident 派任务时在 `DeliverMessage` 的 `temporary_credentials` 中附上，或用 `IssueTemporaryCredential` 并给出 `message_id`，凭证在对方处理完这条消息时失效；也可以按时长签发，到期前用 `RenewTemporaryCredential` 续期。两种都最长 7 天，接收者用完可以用 `RevokeTemporaryCredential` 交还。
+需要把自己的权限临时交给别人时，签发临时凭证：给 Resident 派任务时在 `DeliverMessage` 的 `temporary_credentials` 中附上，或用 `CreateTemporaryCredential` 并给出 `message_id`，凭证在对方处理完这条消息时失效；也可以按时长签发，到期前用 `UpdateTemporaryCredential` 续期。两种都最长 7 天，接收者用完可以用 `RevokeTemporaryCredential` 交还。
 
 判定只看执行者自己的权限：Resident 代替用户工作时，不叠加发起用户的权限，用户也不能借 Resident 越权。
 

@@ -20,7 +20,7 @@ def test_global_writer_updates_the_summary_read_by_work_and_discovery(context):
     assert indexed["summary_generation"] == authored["revision"] == 1
     assert indexed["summary_updated_at"] == authored["updated_at"]
     assert indexed["summary_stale"] is False
-    context.store.write_work_summary(A, A, None, ["covered"], 1, {})
+    context.store.write_work_summary(A, A, None, ["covered"], {})
     assert context.store.work_summary(A)["writer_id"] == WRITER
 
 
@@ -30,9 +30,9 @@ def test_facade_and_internal_search_use_authored_summary_without_global_rewrite(
     for record in context.source.records:
         record.update(global_summary_managed=False, discovery_visible=record["resident_id"] == C)
     context.sync_catalog()
-    work.update_resident_work_summary(A, A, 0, summary=SUMMARY, message_ids=["one"])
+    work.update_resident_work_summary(A, A, summary=SUMMARY, message_ids=["one"])
     inputs = work.get_family_summary_inputs(C, C)
-    authored = work.update_resident_work_summary(roles["steward"][0], C, 0, summary=SUMMARY,
+    authored = work.update_resident_work_summary(roles["steward"][0], C, summary=SUMMARY,
                                                source_versions=inputs["source_versions"])
     context.source.conversation_snapshot = lambda rid: pytest.fail("Family must not be re-summarized")
     context.reconcile()
@@ -49,7 +49,7 @@ def test_facade_and_internal_search_use_authored_summary_without_global_rewrite(
         if context.process_one_embedding() is None:
             break
     assert C in context.store.vectors(context.embedder.model_version)
-    work.update_resident_work_summary(roles["steward"][0], C, 1,
+    work.update_resident_work_summary(roles["steward"][0], C,
                                      summary={**SUMMARY, "current_focus": "紫晶导出完成"},
                                      source_versions=inputs["source_versions"])
     assert C not in context.store.vectors(context.embedder.model_version)
@@ -68,7 +68,7 @@ def test_familize_during_a_global_claim_cannot_overwrite_facade(context):
     claim = next(j for j in context.claim_summary_jobs(WRITER)["jobs"] if j["resident_id"] == A)
     # The live Family roles change before catalog reconciliation catches up.
     context.source.global_summary_resident_ids = lambda ids: set(ids) - {A}
-    context.store.write_work_summary(A, "steward", SUMMARY, [], 0, {B: "1"})
+    context.store.write_work_summary(A, "steward", SUMMARY, [], {B: "1"})
     with pytest.raises(PermissionError, match="Family"):
         context.submit_summary(WRITER, claim["claim_id"], {"current_focus": "obsolete profile"},
                                model_version="m", account_id="a")
@@ -81,7 +81,7 @@ def test_global_claim_cannot_overwrite_a_newer_revision(context):
     context.sync_catalog()
     context.prepare_due()
     claim = next(j for j in context.claim_summary_jobs(WRITER)["jobs"] if j["resident_id"] == A)
-    context.store.write_work_summary(A, A, SUMMARY, ["input"], 0, {})
+    context.store.write_work_summary(A, A, SUMMARY, ["input"], {})
     with pytest.raises(ValueError, match="版本"):
         context.submit_summary(WRITER, claim["claim_id"], {"current_focus": "old"},
                                model_version="m", account_id="a")
@@ -93,7 +93,7 @@ def test_unfamilize_keeps_the_summary_for_the_next_global_writer(context):
     """Unfamilize 后保留原摘要，下一次全局写入以它为上一版继续更新"""
     context.source.records[0].update(discovery_visible=False, global_summary_managed=False)
     context.sync_catalog()
-    context.store.write_work_summary(A, A, SUMMARY, ["input"], 0, {})
+    context.store.write_work_summary(A, A, SUMMARY, ["input"], {})
     context.source.records[0].update(discovery_visible=True, global_summary_managed=True)
     context.sync_catalog()
     assert context.store.work_summary(A)["summary"] == SUMMARY
@@ -123,10 +123,10 @@ def test_summary_changed_while_embedding_is_reindexed_instead_of_losing_update(c
     """生成向量期间摘要被修改时本次结果作废并重新索引，更新不丢失"""
     context.source.records = context.source.records[:1]
     context.sync_catalog()
-    context.store.write_work_summary(A, A, SUMMARY, [], 0, {})
+    context.store.write_work_summary(A, A, SUMMARY, [], {})
     embed = context.embedder.embed_document
     def change_during_embedding(text):
-        context.store.write_work_summary(A, A, {**SUMMARY, "current_focus": "新进展"}, [], 1, {})
+        context.store.write_work_summary(A, A, {**SUMMARY, "current_focus": "新进展"}, [], {})
         return embed(text)
     monkeypatch.setattr(context.embedder, "embed_document", change_during_embedding)
     assert context.process_one_embedding()["result"] == "superseded"

@@ -472,7 +472,7 @@ export function openLogin(accountId, {onChanged = () => {}} = {}) {
     progressTimer = setInterval(showProgress, 1000);
     try {
       const args = {account_id: accountId, ...(regionSelect ? {region: regionSelect.value} : {})};
-      const result = await call("OpenProviderAccountLogin", args, {signal: abort.signal});
+      const result = await call("CreateProviderAccountLogin", args, {signal: abort.signal});
       if (current === generation) render(result);
     } catch (error) { if (current === generation) failed(error); }
   };
@@ -824,7 +824,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         } else if (!preparationRequested) {
           preparationRequested = true;
           progressMessage = "正在自动准备运行环境…";
-          const result = await execute("PrepareProviderRuntime", {provider: setup.provider});
+          const result = await execute("InstallProviderRuntime", {provider: setup.provider});
           if (closed) return;
           if (result.preparation.status === "busy") {
             // Another runtime update owns the lock; observe and retry without user action.
@@ -1081,7 +1081,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         const args = {...(api ? {api_id: api.api_id} : {}), base_url: url.value.trim(), default_model: models.read().default_model,
           ...(secret.value ? {secret: secret.value} : {}), ...(path.value.trim() ? {secret_file: path.value.trim()} : {}),
           ...(anthropicUrl.value.trim() ? {anthropic_base_url: anthropicUrl.value.trim()} : {})};
-        const {results} = await execute("ProbeModelApi", args);
+        const {results} = await execute("CheckModelApi", args);
         probeResults.replaceChildren(...[["openai_chat", "Chat Completions（OpenCode、Kimi Code、直连）"], ["openai_responses", "OpenAI Responses（Codex）"],
           ["anthropic_messages", "Anthropic Messages（Claude Code、DeepSeek Harness）"]].map(([name, label]) => {
           const result = results[name] || {};

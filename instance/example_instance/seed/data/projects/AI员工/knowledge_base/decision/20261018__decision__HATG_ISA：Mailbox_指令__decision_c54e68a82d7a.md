@@ -42,12 +42,12 @@ Mailbox 指令读取和整理两种收件：User 的 Mailbox 列出这位用户�
 | --- | --- | --- | --- |
 | `GetMailbox` | 否 | 读取一个 Resident 或一位 User 的 Mailbox | 对 `resident_id` 有 @viewer；对 `user_id` 有 @admin |
 | `WatchMailbox` | 否（流式） | 从返回游标继续等待 User Mailbox 变化 | 对 `user_id` 有 @admin |
-| `MuteMailboxItem` | 是 | 设置调用者对话的消息免打扰，保留消息与实际未读 | 免检 |
-| `PinMailboxItem` | 是 | 置顶或取消置顶调用者 Mailbox 中的对话，最多 50 个，通知不支持置顶 | 免检 |
-| `MarkMailboxItemRead` | 是 | 把调用者 Mailbox 中的条目标为已读或未读 | 免检 |
+| `SetMailboxItemMuted` | 是 | 设置调用者对话的消息免打扰，保留消息与实际未读 | 免检 |
+| `SetMailboxItemPinned` | 是 | 置顶或取消置顶调用者 Mailbox 中的对话，最多 50 个，通知不支持置顶 | 免检 |
+| `SetMailboxItemRead` | 是 | 把调用者 Mailbox 中的条目标为已读或未读 | 免检 |
 | `ClearMailbox` | 是 | 清空一个 Mailbox：Resident 的全部等待消息，或 User 的 Mailbox 条目与未读状态 | 对 `resident_id` 有 @contributor；对 `user_id` 有 @admin |
-| `SetMailboxItemHold` | 是 | 暂存或恢复一条尚未接单的 Resident 等待消息，保留相对顺序 | 对 `resident_id` 有 @contributor |
-| `ReorderMailbox` | 是 | 调整 Resident 等待消息的顺序，包括移到队首 | 对 `resident_id` 有 @contributor |
+| `SetMailboxItemHeld` | 是 | 暂存或恢复一条尚未接单的 Resident 等待消息，保留相对顺序 | 对 `resident_id` 有 @contributor |
+| `MoveMailboxItems` | 是 | 调整 Resident 等待消息的顺序，包括移到队首 | 对 `resident_id` 有 @contributor |
 | `MergeMailboxItems` | 是 | 把若干条等待消息合并为一条 Mailbox 群体消息 | 对 `resident_id` 有 @contributor |
 | `SplitMailboxItem` | 是 | 把尚未执行的群体消息拆回原来的消息 | 对 `resident_id` 有 @contributor |
 | `RequeueMessage` | 是 | 放回停止或失败的一轮，或恢复接收记录完整但丢失执行位置的排队输入 | 对 `resident_id` 有 @contributor |
@@ -79,7 +79,7 @@ Mailbox 指令读取和整理两种收件：User 的 Mailbox 列出这位用户�
 - 结果：条目列表 `items` 和未读总数 `unread_count`。每项包含条目键、条目种类（对话或通知）、标题、摘要、来源、更新时间、运行或失败状态、是否未读和条目版本 `version`。置顶在前，其余按最近活动从新到旧，同一时间按 `key` 升序。
 - `pending_requests`：当前仍待这位 User 回答且能在原对话回答的问题，与 `items`、未读和清除状态独立。返回全部符合条件的问题，不按最近消息条数截断；读取、展示或收起提醒不算回答。每项包含不透明的稳定 `key`、`source_resident_id/source_message_id`（源问题身份）、`resident_id/message_id`（可打开并回答的对话与消息）、`kind`（`question`、`approval` 或 `question_set`）、`created_at`、可选 `title` 和相对 `url`。Family 门面展示保留源问题身份，链接打开有权限的门面对话并定位问题；不返回问题正文或答案。`related_resident_id` 同时匹配源 Resident 和展示 Resident。回答、关闭、原生请求过期后不再返回；权限不足的用户也不返回。读取失败报错，不能用空列表代替失败。通知渠道按此快照判断待答状态，不能用对话已读推断问题已处理。
 - `items` 与 `pending_requests` 都在服务端读取完整后返回，调用方无需额外分页。
-- Resident 对话条目还给出 `latest_message_id`：这段对话最近一条可通知消息（Resident 的回复或发给这位用户的消息）的 ID，只在它是 `msg_` 消息 ID 时出现；`input_message_id` 是它回应的那条输入。两者取自 `version` 中的同名字段，调用者不必解析 `version`。聊天室条目不带这两个字段，消息用 `ListChatroomMessages` 读取。读原文用 `GetMessage(resident_id, message_id=latest_message_id)`。没有 `input_message_id` 时，这是对方主动发来的消息，按 `recipients` 判断是否发给自己；有 `input_message_id` 时，这是对请求的回复，普通回复不一定带 `recipients`，改用 `GetConversation(resident_id, input_message_id)` 确认那条输入由自己发出、回复在它的 `reply_message_ids` 中。`origin.sender` 说明由谁发出。读取不改变已读状态；标记已读用 `MarkMailboxItemRead` 并以 `version` 作为期望版本。
+- Resident 对话条目还给出 `latest_message_id`：这段对话最近一条可通知消息（Resident 的回复或发给这位用户的消息）的 ID，只在它是 `msg_` 消息 ID 时出现；`input_message_id` 是它回应的那条输入。两者取自 `version` 中的同名字段，调用者不必解析 `version`。聊天室条目不带这两个字段，消息用 `ListChatroomMessages` 读取。读原文用 `GetMessage(resident_id, message_id=latest_message_id)`。没有 `input_message_id` 时，这是对方主动发来的消息，按 `recipients` 判断是否发给自己；有 `input_message_id` 时，这是对请求的回复，普通回复不一定带 `recipients`，改用 `GetConversation(resident_id, input_message_id)` 确认那条输入由自己发出、回复在它的 `reply_message_ids` 中。`origin.sender` 说明由谁发出。读取不改变已读状态；标记已读用 `SetMailboxItemRead` 并以 `version` 作为期望版本。
 
 ### `WatchMailbox`
 
@@ -91,7 +91,7 @@ Mailbox 指令读取和整理两种收件：User 的 Mailbox 列出这位用户�
 
 ## User Mailbox 的已读、置顶与清理
 
-### `PinMailboxItem`
+### `SetMailboxItemPinned`
 
 **置顶或取消置顶调用者 Mailbox 中的对话。**
 
@@ -99,7 +99,7 @@ Mailbox 指令读取和整理两种收件：User 的 Mailbox 列出这位用户�
 - 结果：更新后的条目 `item`。
 - 只有“对话”栏的条目可以置顶，通知拒绝置顶；每位用户最多置顶 50 个对话。置顶独立于已读。可以固定尚未交谈的可见 Resident。
 
-### `MuteMailboxItem`
+### `SetMailboxItemMuted`
 
 **为调用者自己的 User Mailbox 对话开启或关闭消息免打扰。**
 
@@ -108,7 +108,7 @@ Mailbox 指令读取和整理两种收件：User 的 Mailbox 列出这位用户�
 - 偏好与阅读状态持久保存在同一用户回执行，修改后发布原有 Mailbox / viewer-state 变化供其他浏览器刷新；聊天室委托其原有成员设置事务。
 - 开启后保留消息与实际未读，普通未读不计入 Mailbox 提醒汇总；聊天室 @ 提及仍提醒。关闭后既有未读重新计入。不会停止 Resident、关闭接单、自动已读或修改单向通知、Todo。
 
-### `MarkMailboxItemRead`
+### `SetMailboxItemRead`
 
 **把调用者 Mailbox 中的一个条目标为已读，或重新标为未读。**
 
@@ -129,18 +129,18 @@ Mailbox 指令读取和整理两种收件：User 的 Mailbox 列出这位用户�
 
 以下指令都指向 Resident Mailbox 中的具体消息。默认方案要求对目标 Resident 有 contributor；领域不以 owner、发送者或同一 Lineage 成员关系另行放行。撤回一条等待消息用 `CancelInput`。
 
-### `SetMailboxItemHold`
+### `SetMailboxItemHeld`
 
 **暂存或恢复一条尚未接单的等待消息。** 人类与 Agent 共用同一 Resident 队列时，整理者可以暂存阻塞后续请求的消息，或用调序让需要先处理的请求排到前面。
 
 - 参数：`resident_id`、`message_id`、严格布尔值 `held`；`true` 暂存，`false` 恢复。权限与其他队列整理操作相同。
 - 本操作作用于成员的等待队列；Family 门面尚未转交的路由请求不支持在门面暂存，按冲突拒绝。已转交请求的展示沿真实承接成员的等待状态传播，不另存门面暂存状态。
 - 暂存项保留原消息 ID、作者、时间、正文、附件、引用与来源，仍显示在等待列表。接单跳过暂存项，选择顺序中的下一条可执行请求；全部暂存时不开始新的工作。服务重启、新消息到达和后台恢复不解除暂存。
-- 恢复改变同一消息的暂存状态，不重新发送、不取消后重建，也不自动置顶；需要提前时另用 `ReorderMailbox`。已接单或正在执行的消息不能暂存，不抢占当前工作。
+- 恢复改变同一消息的暂存状态，不重新发送、不取消后重建，也不自动置顶；需要提前时另用 `MoveMailboxItems`。已接单或正在执行的消息不能暂存，不抢占当前工作。
 - 暂存状态不同的项不能合并；同为暂存的项合并后仍暂存，拆分继承原暂存状态。暂存项不能立即注入，须先恢复；撤回与清空仍可取消暂存项。
 - `GetMailbox.pending[].held` 和聊天等待项的 `held` 表示该状态。界面提供暂存、恢复、移到队首；调序只改变等待顺序，不自动按人类或 Agent 的身份重排。
 
-### `ReorderMailbox`
+### `MoveMailboxItems`
 
 **调整等待消息的顺序（decision_15f7df737ed5 的“调序”）。**
 
@@ -214,7 +214,7 @@ Resident 的添加能力本身不授予读取或修改已有待办的权限；�
 
 - 参数：`title`、`message`、`recipients`（接收者用户名列表；省略时通知人类发起人，或 Resident 发起人的登记 owner）、`lineage_id`（可选，通知所属的 Lineage）、`severity`（可选，`info`、`success`、`warning` 或 `error`，默认 `info`）、`notification_id`（可选，调用者提供的稳定 ID）。
 - 结果：通知 ID、接收者列表，以及本次是否新建（相同通知 ID 重复提交时为 `false`）。
-- 接收者用 `GetMailbox` 读取通知，用 `MarkMailboxItemRead` 与 `ClearMailbox` 标记和清理。由 SocietyService 执行。
+- 接收者用 `GetMailbox` 读取通知，用 `SetMailboxItemRead` 与 `ClearMailbox` 标记和清理。由 SocietyService 执行。
 
 ## 参数名契约
 
@@ -224,11 +224,11 @@ Resident 的添加能力本身不授予读取或修改已有待办的权限；�
 | --- | --- |
 | `GetMailbox` | `resident_id`、`user_id`、`related_resident_id` |
 | `WatchMailbox` | `user_id`、`after_cursor`、`timeout_seconds` |
-| `PinMailboxItem` | `key`、`pinned` |
-| `MarkMailboxItemRead` | `key`、`unread` |
+| `SetMailboxItemPinned` | `key`、`pinned` |
+| `SetMailboxItemRead` | `key`、`unread` |
 | `ClearMailbox` | `resident_id`、`user_id`、`mode`、`section` |
-| `SetMailboxItemHold` | `resident_id`、`message_id`、`held` |
-| `ReorderMailbox` | `resident_id`、`message_id`、`before_message_id`、`after_message_id`、`order` |
+| `SetMailboxItemHeld` | `resident_id`、`message_id`、`held` |
+| `MoveMailboxItems` | `resident_id`、`message_id`、`before_message_id`、`after_message_id`、`order` |
 | `MergeMailboxItems` | `resident_id`、`message_ids` |
 | `SplitMailboxItem` | `resident_id`、`message_id` |
 | `RequeueMessage` | `resident_id`、`message_id` |
@@ -239,7 +239,7 @@ Resident 的添加能力本身不授予读取或修改已有待办的权限；�
 | `DeleteMailboxTodo` | `todo_id` |
 | `MoveMailboxTodo` | `todo_id`、`direction`、`before_todo_id`、`after_todo_id` |
 | `CreateNotification` | `title`、`message`、`recipients`、`lineage_id`、`severity`、`notification_id` |
-| `MuteMailboxItem` | `key`、`muted` |
+| `SetMailboxItemMuted` | `key`、`muted` |
 
 格式名与版本须精确匹配当前规范值，校验规则见 decision_86aed2f0e8c7；本篇同时校验各字段和结构版本，不接受历史前缀或其他版本。
 

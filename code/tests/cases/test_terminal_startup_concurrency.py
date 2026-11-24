@@ -32,7 +32,7 @@ def test_slow_process_creation_does_not_block_other_terminal_reads(monkeypatch, 
         return created
     monkeypatch.setattr(terminal,'_spawn_shell',spawn)
     monkeypatch.setattr(terminal,'_spawn_process',spawn)
-    monkeypatch.setattr(permission_system,'allows',lambda actor,op,args: op=='OpenTerminal')
+    monkeypatch.setattr(permission_system,'allows',lambda actor,op,args: op=='CreateTerminal')
     monkeypatch.setattr(device_identity_backend,'effective_ssh_access',lambda rid:{'via_resource_id':rid,'host':'example.invalid'})
     monkeypatch.setattr(device_identity_backend,'read_device_ssh_password',lambda rid:'')
     with ThreadPoolExecutor(max_workers=2) as executor:

@@ -104,7 +104,7 @@ async function main() {
       toggle();
       await act('[data-scheduled-triggered-action="pause_schedule"]');
       assert.equal(record.instructions.length, 1);
-      assert.equal(record.instructions[0].instruction, 'PauseComponent');
+      assert.equal(record.instructions[0].instruction, 'SetComponentPaused');
       assert.match(panel.textContent, /已提交，正在刷新状态/);
       assert.equal(record.monitor_reads, 2, 'the earlier read is still in flight');
       releaseOldRead(); await oldRead; await tick();
@@ -130,7 +130,7 @@ async function main() {
       assert.match(panel.querySelector('.scheduled-triggered-recent').textContent, /成功/);
       toggle(); assert.equal(panel.querySelector('[data-scheduled-triggered-settings]'), null);
       await act('[data-scheduled-triggered-action="pause_schedule"]');
-      assert.equal(record.instructions[0].instruction, 'PauseComponent');
+      assert.equal(record.instructions[0].instruction, 'SetComponentPaused');
       assert.deepEqual(record.instructions[0].arguments, {lineage_id: 'lineage_100000000009', component_id: 'event_source_daily', paused: true});
     } else if (caseName === 'task_sources') {
       toggle();
@@ -174,7 +174,7 @@ async function main() {
       assert.ok(update.idempotency_key); assert.ok(record.monitor_reads > 1);
       assert.equal(record.last_monitor_fresh, true);
       await act('[data-scheduled-triggered-action="resume_schedule"]');
-      assert.equal(record.instructions[1].instruction, 'PauseComponent');
+      assert.equal(record.instructions[1].instruction, 'SetComponentPaused');
       assert.deepEqual(record.instructions[1].arguments, {lineage_id: 'lineage_100000000009', component_id: 'event_source_evening', paused: false});
       await act('[data-scheduled-triggered-action="run_once"]');
       assert.equal(record.instructions[2].instruction, 'TriggerEvent');

@@ -977,7 +977,7 @@ HANDLERS = {
     "UpdateModelApi": update_model_api,
     "DeleteModelApi": delete_model_api,
     "CompleteChat": complete_chat,
-    "ProbeModelApi": probe_model_api,
+    "CheckModelApi": probe_model_api,
     "ListProviderAccounts": list_provider_accounts,
     "UpdateProviderAccount": update_provider_account,
     "GetUsage": get_usage,

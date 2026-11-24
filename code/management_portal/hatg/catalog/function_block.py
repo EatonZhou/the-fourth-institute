@@ -49,7 +49,7 @@ DECLARATIONS = (
         P("memory_level", description="提示词所在的记忆层级：trigger 只在这条职责触发持有者时、turn 每轮、session 会话开始和压缩后、on_demand 按需读取",
           enum=("trigger", "turn", "session", "on_demand")),
     ), (R("function_block", "object", "修改后的 Function Block，含 duty"),), mutates=True),
-    _d("OrderDuties", ON_LINEAGE, "调整一个持有者全部职责的先后顺序。", (
+    _d("MoveDuties", ON_LINEAGE, "调整一个持有者全部职责的先后顺序。", (
         R("lineage_id", description="职责所在的 Lineage"),
         R("holder_id", description="持有职责的 Resident 或组织 Function Block"),
         R("function_block_ids", "array", "持有者的全部职责，按新顺序各列一次", items={"type": "string"}),

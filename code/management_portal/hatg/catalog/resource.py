@@ -40,7 +40,7 @@ DECLARATIONS = (
            R('final_version_recovered', 'boolean', '恒为 false'), R('primary_file', description='main.md'),
            R('restored_at', description='实际恢复时间'), R('portal_url', description='原资源入口')),
        target='article_id', mutates=True),
-    _d('PreviewArticleRestore', (On('article_id', 'article'), On('resident_id', 'resident'),
+    _d('CheckArticleRestore', (On('article_id', 'article'), On('resident_id', 'resident'),
                                 On('source_address'), On('project_id', 'project')),
        '只读预检旧 Article 原 ID 的恢复证据与当前权限；分别返回工具事实、登记账本和可保留回执。'
        '不恢复、复制、占位、修改 ACL 或签发恢复许可；can_apply 恒为 false，无 apply 参数。', (

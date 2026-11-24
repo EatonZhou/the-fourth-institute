@@ -21,7 +21,7 @@
 
 共享 Workbench 可能自动恢复与本例无关的 Chat。首次采集前先确认可见面板，只对本例目标业务 region 或准确 Resident Chat 做正文快照和截图，避免整页采集带入其他对话。确需整页布局图时，先用原生控件收起无关 Chat，结束后恢复其原可见性；不读取、发送、标记或改写这些对话来准备材料。误采的无关正文或截图不纳入本例报告，记录工具偏差后收窄观察范围继续。
 
-执行前提由 `tau_execution_prerequisites.prepare_execution_prerequisite` 统一读取。传入本次身份的正式 ISA 调用函数和目标 resident_id；Fork、重建或迁移后重新读取 GetResident、GetResidentInitialization、ListResidentStates，不以 OpenIntake、绑定已打开或回调返回 true 代替初始化/Session 执行许可。未完成 Fork 用 RetryResidentInitialization 和原 expected_initialization_id 恢复；普通 Session 重建用当前 RestartSession 的精确目标与 preserve 策略。需要 credits 时，只能由真实人类在支持入口确认精确账号和初始化/Session；服务主体、测试用户 profile、自动点击与自报 confirmed:true 都不构成人类许可。可传 interact 回调打开真实交互入口，之后助手正式回读；缺前提报告流程受阻，不擅换账号或重复创建。
+执行前提由 `tau_execution_prerequisites.prepare_execution_prerequisite` 统一读取。传入本次身份的正式 ISA 调用函数和目标 resident_id；Fork、重建或迁移后重新读取 GetResident、GetResidentInitialization、ListResidentStates，不以 SetIntakeOpen、绑定已打开或回调返回 true 代替初始化/Session 执行许可。未完成 Fork 用 RetryResidentInitialization 和原 expected_initialization_id 恢复；普通 Session 重建用当前 RestartSession 的精确目标与 preserve 策略。需要 credits 时，只能由真实人类在支持入口确认精确账号和初始化/Session；服务主体、测试用户 profile、自动点击与自报 confirmed:true 都不构成人类许可。可传 interact 回调打开真实交互入口，之后助手正式回读；缺前提报告流程受阻，不擅换账号或重复创建。
 
 本次运行明确禁止付费 credits 时，每次向 Codex 成员发送业务消息或触发 AI 工作前，必须调用上述助手并传 `require_native_quota=True`，包括复用的固定共享业务成员。它刷新并核对原账号的新鲜、正数原生额度，同时保留当前执行门检查；旧 Session 的 ready、开放 gate 或 override 不是本轮许可。原生额度耗尽、未知或陈旧时停在发送前，记录前提缺口，不迁移共享角色、确认 credits 或修改保护。普通 API 业务的登记 Provider 与计费配置保持原契约，不把这项 Codex 原生额度检查误用于不提供该额度的 API。
 

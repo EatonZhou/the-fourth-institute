@@ -290,14 +290,32 @@ def activate(root, paths, commit, *, initial=False):
         manifest.deployment_runtime('release').mkdir(parents=True, exist_ok=True)
         (manifest.deployment_runtime("release") / "generation.env").write_text("PORTAL_BUILD_ID=portal-" + commit[:12] + "\n")
     prefix = manifest.service_prefix
-    completed = []
+    selected = []
     for component in components:
         unit = prefix + "-" + component + ".service"
         if component in FUNCTIONAL_MODULES:
             state = dict(line.split('=', 1) for line in control(
                 'show', unit, '-p', 'ActiveState', '-p', 'UnitFileState').splitlines() if '=' in line)
-            if state.get('ActiveState') not in {'active', 'activating'} and state.get('UnitFileState') not in {'enabled', 'enabled-runtime'}:
+            if state.get('ActiveState') in {'inactive', 'failed'} and state.get('UnitFileState') not in {'enabled', 'enabled-runtime'}:
                 continue
+        selected.append(component)
+    quiesced = []
+    if initial or any(str(path).removeprefix('code/') == 'management_portal/hatg/instruction_renames.py'
+                      for path in paths):
+        # Renamed A nodes and executable definitions cannot coexist with old
+        # readers/writers. Stop ingress first, then drain every selected owner
+        # before the first new process can run its startup migration. systemctl
+        # stop waits for shutdown; failure deliberately prevents all restarts.
+        # Worker owns claimed provider processes, not permission rows: retain
+        # its usual generation handoff rather than interrupting executions.
+        for component in reversed(selected):
+            if component == 'worker':
+                continue
+            control('stop', prefix + '-' + component + '.service')
+            quiesced.append(component)
+    completed = []
+    for component in selected:
+        unit = prefix + '-' + component + '.service'
         if component == "worker":
             # Preserve claimed executions through the manager's handoff protocol.
             control("kill", "--kill-whom=main", "--signal=HUP", unit)
@@ -308,7 +326,7 @@ def activate(root, paths, commit, *, initial=False):
     control("enable", prefix + "-dev-web.service", prefix + "-gateway.service")
     checks = {name: health(entry["web_port"], name) for name, entry in manifest.deployments.items()}
     checks["public"] = health(manifest.document["network"]["entry_port"])
-    result = {"ok": True, "commit": commit, "components": completed, "health": checks}
+    result = {"ok": True, "commit": commit, "components": completed, "quiesced": quiesced, "health": checks}
     write(root / "runtime/development-activation.json", result)
     return result
 

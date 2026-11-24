@@ -510,9 +510,9 @@ HANDLERS = {
     "CreateWorkspaceHandoff": create_workspace_handoff,
     "UpdateWorkspaceHandoff": update_workspace_handoff,
     "DeleteWorkspaceHandoff": delete_workspace_handoff,
-    "PrepareWorkspaceHandoff": prepare_workspace_handoff,
+    "RunWorkspaceHandoff": prepare_workspace_handoff,
     "GetWorkspaceHandoff": get_workspace_handoff,
-    "RelocateWorkspaceHandoff": relocate_workspace_handoff,
+    "MoveWorkspaceHandoff": relocate_workspace_handoff,
     "GetLineageDiagnostics": get_lineage_diagnostics,
     "ApplyLineageChanges": apply_lineage_changes,
 }

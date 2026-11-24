@@ -585,7 +585,7 @@
         const changeEvents = async (pause, items) => {
           const errors = [];
           for (const item of items) {
-            try { await applyProgramMutation(() => executeHatgInstruction("PauseComponent", { component_id: item.id, paused: pause }, { definition: false }), null); }
+            try { await applyProgramMutation(() => executeHatgInstruction("SetComponentPaused", { component_id: item.id, paused: pause }, { definition: false }), null); }
             catch (error) { errors.push(`${item.title || item.id}：${error.message}`); }
           }
           const done = items.length - errors.length;

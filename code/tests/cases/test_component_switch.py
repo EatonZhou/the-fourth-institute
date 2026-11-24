@@ -32,7 +32,7 @@ def test_effect_switch_is_durable_and_does_not_change_definition(primitive_store
     current = make_lineage([{"id": EFFECT, "kind": "effect", "config": {"script": ""}}])
     lid = current["lineage_id"]
     before = lineage_reads.get_lineage(lid, ACTOR)
-    assert instruction("PauseComponent", lid, EFFECT, paused=True)["runtime"]["paused"] is True
+    assert instruction("SetComponentPaused", lid, EFFECT, paused=True)["runtime"]["paused"] is True
     with get_lineage_data_store().database.read() as connection:
         row = connection.execute("SELECT checkpoint_json FROM operator_work WHERE lineage_id=%s AND operator_id=%s",
                                  (lid, EFFECT)).fetchone()
@@ -43,7 +43,7 @@ def test_effect_switch_is_durable_and_does_not_change_definition(primitive_store
     assert after["program"] == before["program"]
     assert after["program_effect_runtime"][EFFECT]["paused"] is True
     # paused=false resumes the same component.
-    assert instruction("PauseComponent", lid, EFFECT, paused=False)["runtime"]["paused"] is False
+    assert instruction("SetComponentPaused", lid, EFFECT, paused=False)["runtime"]["paused"] is False
     assert lineage_reads.get_lineage(lid, ACTOR)["program_effect_runtime"][EFFECT]["paused"] is False
     with pytest.raises(ValueError, match="没有可重置"):
         component_runtime.reset(lid, EFFECT, ACTOR)
@@ -56,7 +56,7 @@ def test_closed_event_cannot_create_trigger_path(primitive_store, monkeypatch):
     monkeypatch.setattr(lineage_domain, "_send_node_message", lambda *a, **kw: sent.append(a))
     current = make_lineage([source()], [event_wire()])
     lid = current["lineage_id"]
-    instruction("PauseComponent", lid, "event_source_start", paused=True)
+    instruction("SetComponentPaused", lid, "event_source_start", paused=True)
     result = build_kernel().execute(InstructionCall.from_payload({
         "instruction": "TriggerEvent", "arguments": {"lineage_id": lid, "event_source_id": "event_source_start"},
     }), InstructionContext(caller=ACTOR, entry="web"))

@@ -35,7 +35,7 @@ DECLARATIONS = (
     )),
     _d("GetPost", ON_POST, "读取一篇帖子、它的全部回复和调用者可执行的操作。", (R("post_id", description="要读取的帖子"),), (
         POST, R("replies", "array", "全部回复：reply_id、author、content、created_at、floor、can_delete"),
-        R("notification_revision", "integer", "帖子的通知版本，每有回复加一；作 MarkPostRead 的读到版本，也是帖子的 expected_version"),
+        R("notification_revision", "integer", "帖子的通知版本，每有回复加一；作 UpdatePostReadVersion 的读到版本，也是帖子的 expected_version"),
         R("permissions", "object", "调用者可执行的操作：can_edit、can_delete"),
     ), target="post_id"),
     _d("CreatePost", FIXED, "发布一篇新帖子，作者的已读位置同时设为当前版本。", (
@@ -56,13 +56,13 @@ DECLARATIONS = (
     _d("DeleteReply", FIXED, "由回复作者删除自己的回复。", (
         R("post_id", description="回复所在的帖子"), R("reply_id", description="要删除的回复"),
     ), (POST,), mutates=True, target="post_id"),
-    _d("PinPost", FIXED, "设置或取消帖子的置顶。", (
+    _d("SetPostPinned", FIXED, "设置或取消帖子的置顶。", (
         R("post_id", description="要置顶或取消置顶的帖子"), R("pinned", "boolean", "true 置顶，false 取消置顶"),
     ), (POST,), mutates=True, target="post_id"),
-    _d("FeaturePost", FIXED, "设置或取消帖子的精华标记。", (
+    _d("SetPostFeatured", FIXED, "设置或取消帖子的精华标记。", (
         R("post_id", description="要设置精华的帖子"), R("featured", "boolean", "true 设为精华，false 取消精华"),
     ), (POST,), mutates=True, target="post_id"),
-    _d("MarkPostRead", ON_POST, "把帖子标为读到指定版本，或重新标为未读。", (
+    _d("UpdatePostReadVersion", ON_POST, "把帖子标为读到指定版本，或重新标为未读。", (
         R("post_id", description="要标记的帖子"),
         P("notification_revision", "integer", "读到的版本，取 GetPost 返回的 notification_revision；省略时为当前版本",
           minimum=0),

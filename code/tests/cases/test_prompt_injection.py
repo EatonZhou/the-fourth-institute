@@ -201,7 +201,7 @@ def test_isa_reads_changes_and_previews_the_prompt_injection(resident_record) ->
     """HATG ISA 读取、修改与预览 Prompt 注入
 
     GetResidentSettings 返回 prompt_injection 视图，UpdateResidentSettings 的 changes.prompt_injection 在当前设置上修改并返回新视图，
-    PreviewPromptInjection 读同一份设置，预览按轮次标出发送的部分，纯 TUI 只发消息原文。
+    GetPromptInjectionPreview 读同一份设置，预览按轮次标出发送的部分，纯 TUI 只发消息原文。
 
     :aspects: functional, behavior
     :design: decision_ef1d6c925955
@@ -232,9 +232,9 @@ def test_isa_reads_changes_and_previews_the_prompt_injection(resident_record) ->
     assert read["settings"]["prompt_injection"]["parts"]["runtime_identity"] == "session_start"
     assert read["prompt_injection"] == changed
 
-    first = residents.preview_prompt_injection(_invocation("PreviewPromptInjection", resident_id=resident_id))
+    first = residents.preview_prompt_injection(_invocation("GetPromptInjectionPreview", resident_id=resident_id))
     later = residents.preview_prompt_injection(_invocation(
-        "PreviewPromptInjection", resident_id=resident_id, turn="later",
+        "GetPromptInjectionPreview", resident_id=resident_id, turn="later",
     ))
     sent = lambda preview: {part["id"]: part["sent"] for part in preview["parts"]}  # noqa: E731
     assert sent(first)["runtime_identity"] and not sent(later)["runtime_identity"]
@@ -247,14 +247,14 @@ def test_isa_reads_changes_and_previews_the_prompt_injection(resident_record) ->
     choices = {part["id"]: part["choice"] for part in update(parts={"core_rules": "every_turn"})["prompt_injection"]["parts"]}
     assert choices["core_rules"] == "every_turn" and choices["runtime_identity"] == "session_start"
     later = residents.preview_prompt_injection(_invocation(
-        "PreviewPromptInjection", resident_id=resident_id, turn="later",
+        "GetPromptInjectionPreview", resident_id=resident_id, turn="later",
     ))
     assert "<portal-system-prompt" in later["prompt"]
     assert later["system_prompt"] == ""
 
     pure = update(preset="pure")["prompt_injection"]
     assert pure["preset"] == "pure"
-    bare = residents.preview_prompt_injection(_invocation("PreviewPromptInjection", resident_id=resident_id))
+    bare = residents.preview_prompt_injection(_invocation("GetPromptInjectionPreview", resident_id=resident_id))
     assert bare["parts"] == []
     assert bare["system_prompt"] == ""
     # Disabled reporting contributes no optional instructions, even in pure mode.

@@ -42,7 +42,7 @@ def test_recurring_jitter_config_is_normalized_and_bounded() -> None:
         )["components"][0]["config"]
 
     assert normalize(config)["jitter_seconds"] == 10
-    # Pausing is runtime state (PauseComponent); the definition has no enabled switch.
+    # Pausing is runtime state (SetComponentPaused); the definition has no enabled switch.
     for value in (True, False):
         with pytest.raises(ValueError, match="enabled"):
             normalize({**config, "enabled": value})

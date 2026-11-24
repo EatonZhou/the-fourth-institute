@@ -47,7 +47,8 @@ Portal 上游明确选择：
 
 - 无状态模型请求每次都是新调用，因此每次附带 system instructions。
 - Resident 默认使用 `standard` 预设；共用规则、角色规则、节点 `resident.md`、运行身份与授权是不同注入部分，各自按设置发送。不要把节点身份文档当作共用角色文件。
-- 通过 Prompt 注入面板，或 `GetResidentSettings`（结果的 `prompt_injection`）、`UpdateResidentSettings`（`changes.prompt_injection`）、`PreviewPromptInjection` 读取、修改和预览各部分的时机。
+- `standard` 和 `minimal` 默认省略消息包装。消息中的资源地址保留为原文，主动附加的资源随消息送达。`full` 或显式开启 `message_envelope` 时，Portal 也会解析正文里的资源地址，并附上引用清单。
+- 通过 Prompt 注入面板，或 `GetResidentSettings`（结果的 `prompt_injection`）、`UpdateResidentSettings`（`changes.prompt_injection`）、`GetPromptInjectionPreview` 读取、修改和预览各部分的时机。
 - Provider 声明系统位置跨压缩保留时，压缩后不重复发送该位置的首轮规则；Codex 属于这种情况。prompt 位置仍按各自时机发送。
 - Claude 与 DSH 每轮需要完整系统提示；Provider API 将 prompt 位置的部分写入最后一条用户消息。
 
@@ -67,7 +68,7 @@ repo_0cc377bb1dee/file/docs/routing/session-account-switch.md。
 恢复和失败续跑沿用原轮次的计划，不重复附加已经送达的部分；切换账号不自动重试失败输入。
 
 修改规则时更新源码 `code/core_skills/` 下的对应核心 Skill，随代码一起发行，
-再用 `PreviewPromptInjection` 检查物化正文与发送时机。文件更新不改写已有 Provider
+再用 `GetPromptInjectionPreview` 检查物化正文与发送时机。文件更新不改写已有 Provider
 session 中已送达的内容；后续是否发送按各部分设置与 Provider 保留策略决定。不得仅因
 预览读到新正文就宣称所有运行中 Resident 已更新，也不为文档同步重启正在执行的任务。
 

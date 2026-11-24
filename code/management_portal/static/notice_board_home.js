@@ -358,7 +358,7 @@ async function openNoticeBoardPost(postId) {
     const notificationRevision = Number(payload?.post?.notification_revision || 0);
     if (notificationRevision > 0) {
       try {
-        const readResult = await noticeBoardInstruction("MarkPostRead", {
+        const readResult = await noticeBoardInstruction("UpdatePostReadVersion", {
           post_id: cleanPostId,
           notification_revision: notificationRevision,
         });
@@ -752,7 +752,7 @@ async function toggleNoticeBoardPin() {
   const pinned = noticeBoardPinBtn.dataset.pinned !== "1";
   noticeBoardPinBtn.disabled = true;
   try {
-    await noticeBoardInstruction("PinPost", { post_id: postId, pinned });
+    await noticeBoardInstruction("SetPostPinned", { post_id: postId, pinned });
     renderNoticeBoardPost(await noticeBoardInstruction("GetPost", { post_id: postId }));
     await loadNoticeBoard();
     window.PortalUI.toast(pinned ? window.PortalI18n.t("帖子已置顶") : window.PortalI18n.t("已取消置顶"), "success");
@@ -769,7 +769,7 @@ async function toggleNoticeBoardFeatured() {
   const featured = noticeBoardFeaturedBtn.dataset.featured !== "1";
   noticeBoardFeaturedBtn.disabled = true;
   try {
-    await noticeBoardInstruction("FeaturePost", { post_id: postId, featured });
+    await noticeBoardInstruction("SetPostFeatured", { post_id: postId, featured });
     renderNoticeBoardPost(await noticeBoardInstruction("GetPost", { post_id: postId }));
     await loadNoticeBoard();
     window.PortalUI.toast(featured ? window.PortalI18n.t("帖子已设为精华") : window.PortalI18n.t("已取消精华"), "success");

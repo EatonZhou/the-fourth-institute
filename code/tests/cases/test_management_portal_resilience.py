@@ -247,7 +247,7 @@ def test_schedule_post_mutation_http_read_waits_for_new_build(monkeypatch, warm)
         web_read_caches._cached_scheduled_triggered_status("viewer")
         assert started.wait(timeout=1)
         old_refresh = cache._inflight["viewer"]
-        # The actual HTTP adapter must propagate fresh mode after PauseComponent.
+        # The actual HTTP adapter must propagate fresh mode after SetComponentPaused.
         response = pool.submit(handler.scheduled_triggered, None,
                                urlparse("/api/agent-status/scheduled-triggered?refresh=1&fresh=1"), "viewer")
         assert fresh_started.wait(timeout=1)

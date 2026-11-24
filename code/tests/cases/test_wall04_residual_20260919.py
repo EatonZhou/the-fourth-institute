@@ -87,7 +87,7 @@ def test_artifact_isa_reads_exact_response_and_enforces_resident_scope(team):
 
 
 def test_reorder_isa_persists_input_order_before_execution_allocation(team):
-    """ReorderMailbox 把消息移到队首时在分配执行前持久调整输入顺序"""
+    """MoveMailboxItems 把消息移到队首时在分配执行前持久调整输入顺序"""
     resident_id = team.target["resident_id"]
     entries = []
     for index in range(4):
@@ -101,7 +101,7 @@ def test_reorder_isa_persists_input_order_before_execution_allocation(team):
     record = resident_record_domain.find_resident(resident_id)
     entries[0]["execution_id"] = "execution-" + uuid.uuid4().hex[:24]
     resident_execution_work.write(record, {**entries[0], "queue": entries[1:]})
-    result = instruction(team, "ReorderMailbox", {
+    result = instruction(team, "MoveMailboxItems", {
         "resident_id": resident_id, "message_id": entries[3]["user_message_id"],
         "before_message_id": entries[1]["user_message_id"],
     })
@@ -298,7 +298,7 @@ def test_bootstrap_admission_starts_unless_intake_is_closed(input_team, closed):
 
 @pytest.mark.parametrize("mode", ["direct", "copy"])
 def test_handoff_isa_prepares_durable_binding_and_idempotent_delivery(team, mode, monkeypatch):
-    """PrepareWorkspaceHandoff 持久绑定目标且重放不发送消息"""
+    """RunWorkspaceHandoff 持久绑定目标且重放不发送消息"""
     def local_git_only(arguments, *args, **kwargs):
         command = arguments
         if arguments[:4] == [sys.executable, '-I', '-S', '-c']:
@@ -324,7 +324,7 @@ def test_handoff_isa_prepares_durable_binding_and_idempotent_delivery(team, mode
         "expected_revision": lineage_aggregate.read_lineage(team.lineage_id, actor=ACTOR)["revision"],
     }, ACTOR)
     handoff_id = created["handoff"]["id"]
-    prepared = instruction(team, "PrepareWorkspaceHandoff", {"lineage_id": team.lineage_id, "handoff_id": handoff_id})
+    prepared = instruction(team, "RunWorkspaceHandoff", {"lineage_id": team.lineage_id, "handoff_id": handoff_id})
     assert prepared.status == "committed", prepared.to_payload()
     handoff = prepared.result
     assert handoff["status"] == "ready", handoff
@@ -341,7 +341,7 @@ def test_handoff_isa_prepares_durable_binding_and_idempotent_delivery(team, mode
         assert not (output / ".env").exists()
         (output / "handoff.txt").write_text("target change")
         assert (source / "handoff.txt").read_text() == "original bytes"
-    replay = instruction(team, "PrepareWorkspaceHandoff", {"lineage_id": team.lineage_id, "handoff_id": handoff_id})
+    replay = instruction(team, "RunWorkspaceHandoff", {"lineage_id": team.lineage_id, "handoff_id": handoff_id})
     assert replay.result["items"] == handoff["items"]
     # Preparing a handoff never sends the target a message.
     with state_store.get_lineage_data_store().database.read() as connection:
@@ -351,7 +351,7 @@ def test_handoff_isa_prepares_durable_binding_and_idempotent_delivery(team, mode
 def test_handoff_isa_prepares_a_new_handoff_named_by_its_resident_pair(team, monkeypatch):
     """按 Resident 对准备交接时新建交接并共享来源的当前工作区
 
-    PrepareWorkspaceHandoff 只给来源和目标 Resident 时，先建立这对端点的交接；没有交接项时直接共享来源当前工作目录所在的 Workspace，准备成功为 ready，再次准备复用同一条交接。
+    RunWorkspaceHandoff 只给来源和目标 Resident 时，先建立这对端点的交接；没有交接项时直接共享来源当前工作目录所在的 Workspace，准备成功为 ready，再次准备复用同一条交接。
 
     :importance: P1
     :aspects: functional, behavior
@@ -363,14 +363,14 @@ def test_handoff_isa_prepares_a_new_handoff_named_by_its_resident_pair(team, mon
 
     monkeypatch.setattr(subprocess, "Popen", local_git_only)
     pair = {"lineage_id": team.lineage_id, "source_resident_id": team.source["resident_id"], "target_resident_id": team.target["resident_id"]}
-    prepared = instruction(team, "PrepareWorkspaceHandoff", pair)
+    prepared = instruction(team, "RunWorkspaceHandoff", pair)
     assert prepared.status == "committed", prepared.to_payload().get("error")
     assert prepared.result["handoff_id"].startswith("handoff_") and prepared.result["status"] == "ready"
     # Without items the handoff shares the Workspace the source works in.
     [item] = prepared.result["items"]
     assert Path(item["result"]["target_path"]).resolve() == Path(team.source["default_cwd"]).resolve()
     # The pair now names that handoff; preparing it again reuses it.
-    again = instruction(team, "PrepareWorkspaceHandoff", pair)
+    again = instruction(team, "RunWorkspaceHandoff", pair)
     assert again.result["handoff_id"] == prepared.result["handoff_id"]
 
 
@@ -449,7 +449,7 @@ def test_failed_handoff_preparation_is_reported_as_a_failed_status(team, monkeyp
         raise OSError("fixture copy target unavailable")
 
     monkeypatch.setattr(lineage_handoff_preparation, "prepare_items", unavailable)
-    prepared = instruction(team, "PrepareWorkspaceHandoff", {"lineage_id": team.lineage_id, "handoff_id": created["handoff"]["id"]})
+    prepared = instruction(team, "RunWorkspaceHandoff", {"lineage_id": team.lineage_id, "handoff_id": created["handoff"]["id"]})
     assert prepared.status == "committed", prepared.to_payload()
     assert prepared.result["status"] == "failed"
     got = instruction(team, "GetWorkspaceHandoff", {"handoff_id": created["handoff"]["id"]})

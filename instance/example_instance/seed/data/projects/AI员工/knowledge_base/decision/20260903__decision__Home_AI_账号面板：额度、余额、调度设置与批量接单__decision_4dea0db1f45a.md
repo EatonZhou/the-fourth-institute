@@ -163,7 +163,7 @@ Close 阈值位于并行数下方，打开详情及主动刷新时通过 ListPro
 
 ### 一次打开或关闭一个账号的接单
 
-- **“全部打开”“全部关闭”是按 Resident 的批量操作。** 页面把账号详情中的 `closed_resident_ids` 或 `open_resident_ids` 作为 `resident_ids` 交给 OpenIntake（打开传 `open: true`，关闭传 `open: false`），每个 Resident 按权限方案对它的 `resident_id` 要求单独判定，与在 Resident 上逐个开关相同（weihao 2026-10-18）。额度是否可用不影响这两个操作。
+- **“全部打开”“全部关闭”是按 Resident 的批量操作。** 页面把账号详情中的 `closed_resident_ids` 或 `open_resident_ids` 作为 `resident_ids` 交给 SetIntakeOpen（打开传 `open: true`，关闭传 `open: false`），每个 Resident 按权限方案对它的 `resident_id` 要求单独判定，与在 Resident 上逐个开关相同（weihao 2026-10-18）。额度是否可用不影响这两个操作。
 - **“全部打开”把这个账号上所有 Closed 的 Resident 设为 Open。** 每个被打开的 Resident 同时得到人工额度放行；它排队的消息按顺序继续执行，已经取消的执行不会重放。
 - **“全部关闭”把这个账号上的 Resident 设为手动关闭。** Open 的 Resident 改为 Closed，已经 Closed 的保持关闭。人工额度放行同时撤销。关闭只改变接单状态：正在执行的工作继续，排队的消息保留，不会取消或删除任何工作。
 - **没有需要处理的 Resident 时，按钮保持显示但不可用。** “全部打开”要求有 Closed 的 Resident；“全部关闭”要求有 Open 的 Resident。
@@ -179,7 +179,7 @@ ExecutionService ──accounts.list──> Agent Status 后端
                           GET /api/agent-status ──> home.js 账号表
 Codex 公开重置信号 ──仅触发重读──> ExecutionService AccountMonitor
 SocietyService ──get_account_resident_summary──> GET /api/agent-status/account-residents ──> 账号详情
-home.js ──OpenIntake──> /api/instructions/execute
+home.js ──SetIntakeOpen──> /api/instructions/execute
 ```
 
 - **Agent Status 后端**读取 ExecutionService 的 `accounts.list`，把账号携带的原币余额样本转换为展示字段。账号、计费账号的关联由 ExecutionService 按显式的 `billing_account_id` 确定。没有余额样本时显示读取中或不可用。
@@ -189,7 +189,7 @@ home.js ──OpenIntake──> /api/instructions/execute
 - **参考汇率**随余额观察更新。汇率采集从 ECB 每日数据按欧元交叉换算人民币，12 小时内复用；失败时保留原汇率和日期，至少 300 秒后再试。Web 只读取快照；首页仅用有效期内（不超过 7 天）的参考汇率辅助金币可视化，Close 阈值始终按原币金额比较。
 - **摘要读取与回退**按“读取与刷新”中的当前读取规则执行：同一实例共用不含用户身份的上次结果，每次请求重新组合 ExecutionService 当前快照；它用于超时或失败回退，没有另一个 30 秒过期周期。首次读取尚无余额时先返回账号，余额显示读取中。
 - **账号详情**由 SocietyService 按 Resident 的会话绑定解析执行账号，批量读取接单状态、工作状态、排队数和最近输入状态。
-- **节点批量操作**使用 HATG ISA 的 OpenIntake，由 SocietyService 逐个核对并保存，随后把人工额度放行同步给 Scheduler。
+- **节点批量操作**使用 HATG ISA 的 SetIntakeOpen，由 SocietyService 逐个核对并保存，随后把人工额度放行同步给 Scheduler。
 
 ## 接口
 
@@ -217,7 +217,7 @@ home.js ──OpenIntake──> /api/instructions/execute
 | `scope` | 固定为 `visible`（调用者可见的 Resident） |
 | `total`、`queued_messages` | Resident 总数、待发消息总数 |
 | `intake` | `open`、`closed`、`unknown` |
-| `open_resident_ids`、`closed_resident_ids` | Open、Closed 的 Resident；“全部关闭”“全部打开”把它们作为 `resident_ids` 交给 OpenIntake（分别传 `open: false`、`open: true`）。所有计数和列表都只含调用者看得到的 Resident，其他 User 的个人 AMA 不计入 |
+| `open_resident_ids`、`closed_resident_ids` | Open、Closed 的 Resident；“全部关闭”“全部打开”把它们作为 `resident_ids` 交给 SetIntakeOpen（分别传 `open: false`、`open: true`）。所有计数和列表都只含调用者看得到的 Resident，其他 User 的个人 AMA 不计入 |
 | `work` | `idle`、`queued`、`running`、`stopping`、`unknown` |
 | `latest_input` | 最近一条输入为 `failed` 和 `cancelled` 的数量 |
 | `without_session`、`quota_exempt` | 没有模型会话的数量、有人工额度放行的数量 |
@@ -228,7 +228,7 @@ home.js ──OpenIntake──> /api/instructions/execute
 ### 指令
 
 - **`UpdateProviderAccount`**（decision_4527448ad07f）：参数 `account_id`、`max_concurrency`、`dispatch_interval_min_seconds`、`dispatch_interval_max_seconds`，以及可选的 `close_threshold_percent`（百分比账号）、`close_threshold_amount`（余额账号，币种取实际读数）和布尔 `allow_credits`（省略保留）。只允许 Portal 管理员；参数越界、最小间隔大于最大间隔、阈值单位与账号不符时失败。结果中的 `settings` 是保存后的设置，含 `allow_credits` 与 `credits_supported`；账号摘要沿用这两个字段。
-- **`OpenIntake`**（decision_2a3ff353165c）带 `resident_ids` 和 `open`（true 打开、false 关闭）：结果包含 `changed_resident_ids`、`unchanged_resident_ids`、`failed`（每项是 Resident 与原因）、`changed_count`、`unchanged_count`、`failed_count` 和 `quota_override_pending`。
+- **`SetIntakeOpen`**（decision_2a3ff353165c）带 `resident_ids` 和 `open`（true 打开、false 关闭）：结果包含 `changed_resident_ids`、`unchanged_resident_ids`、`failed`（每项是 Resident 与原因）、`changed_count`、`unchanged_count`、`failed_count` 和 `quota_override_pending`。
 
 ## 相邻 Design
 

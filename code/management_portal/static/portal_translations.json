@@ -4968,9 +4968,9 @@
     "en": "Fast on",
     "zh-CN": "Fast 开"
   },
-  "FeaturePost": {
-    "en": "FeaturePost",
-    "zh-CN": "FeaturePost"
+  "SetPostFeatured": {
+    "en": "SetPostFeatured",
+    "zh-CN": "SetPostFeatured"
   },
   "Feedback": {
     "en": "Feedback",
@@ -7652,9 +7652,9 @@
     "en": "Map",
     "zh-CN": "Map"
   },
-  "MarkPostRead": {
-    "en": "MarkPostRead",
-    "zh-CN": "MarkPostRead"
+  "UpdatePostReadVersion": {
+    "en": "UpdatePostReadVersion",
+    "zh-CN": "UpdatePostReadVersion"
   },
   "Markdown": {
     "en": "Markdown",
@@ -8528,8 +8528,8 @@
     "en": "Personal access tokens",
     "zh-CN": "个人访问令牌"
   },
-  "PinPost": {
-    "en": "PinPost",
+  "SetPostPinned": {
+    "en": "SetPostPinned",
     "zh-CN": "置顶帖子"
   },
   "Plan": {

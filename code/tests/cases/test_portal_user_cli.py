@@ -179,7 +179,7 @@ def test_cli_discovery_shortcuts_and_join_report(client, monkeypatch, capsys):
     path, _, request, run = client
     run("https://portal.example", "list", "--category", "conversation", "--group", "all")
     run("https://portal.example", "schema", "DeliverMessage")
-    run("https://portal.example", "call", "MarkMailboxItemRead", "--arguments", '{"key": "resident:r"}', "--expected-version", "v7")
+    run("https://portal.example", "call", "SetMailboxItemRead", "--arguments", '{"key": "resident:r"}', "--expected-version", "v7")
     sent = [call.args[2] for call in request.call_args_list]
     assert sent[0]["instruction"] == "ListInstructions" and sent[0]["arguments"] == {"category": "conversation", "group": "all"}
     assert sent[1]["instruction"] == "GetInstructionSchema" and sent[1]["arguments"] == {"instruction": "DeliverMessage"}

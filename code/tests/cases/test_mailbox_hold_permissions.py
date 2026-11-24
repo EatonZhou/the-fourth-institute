@@ -20,7 +20,7 @@ CALLER = "resident_333333333333"
 
 def test_hold_schema_matches_adjacent_queue_controls(permissions):
     """Formal schema classifies every queue organizer action on its Resident."""
-    for name in ("SetMailboxItemHold", "ReorderMailbox", "MergeMailboxItems",
+    for name in ("SetMailboxItemHeld", "MoveMailboxItems", "MergeMailboxItems",
                  "SplitMailboxItem", "InjectMailboxItem", "RequeueMessage"):
         result = routing.execute({"instruction": "GetInstructionSchema",
                                   "arguments": {"instruction": name}},
@@ -42,7 +42,7 @@ def test_hold_and_resume_require_current_target_contributor(permissions, held):
     permissions.place(Fact("lineage", LINEAGE), *[
         Fact("resident", resident, {"lineage": LINEAGE}) for resident in (TARGET, OTHER, CALLER)])
     permissions.grant(CALLER, TARGET, "@message")
-    declaration = instruction_catalog()["SetMailboxItemHold"]
+    declaration = instruction_catalog()["SetMailboxItemHeld"]
     context = InstructionContext(caller=CALLER, entry="web")
 
     def authorize(target=TARGET):
@@ -59,5 +59,5 @@ def test_hold_and_resume_require_current_target_contributor(permissions, held):
     permissions.grant(CALLER, TARGET, "@contributor")
     assert authorize() is None
     refused(OTHER)
-    permissions.deny(CALLER, TARGET, "SetMailboxItemHold")
+    permissions.deny(CALLER, TARGET, "SetMailboxItemHeld")
     refused()

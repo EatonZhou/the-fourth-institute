@@ -98,7 +98,7 @@ Portal 中能够持有权限的参与者称为 **Principal**，包括人类用�
 - **表项与关联资源分开显示。** 表项来自 GetEffectivePermissions，以图标格列出该主体及其在 P 树上各级上级节点名下的全部启用表项和有效的临时凭证，写在分类节点上的表项（如免检、全员可读）也一样列出。关联资源只说明登记关系。表项覆盖其 R 节点及子树中的资源，子树中的资源不另列。
 - **Package 展示被查看主体自己的表项。** 不从角色或内置账号名单虚构权限，也不借用查看者的权限。
 - **查看他人的 Package 需要是该主体本人或管理员**（GetEffectivePermissions 的要求，decision_22227d0ad075）。读取失败可重试；空清单只说明该主体名下没有表项或临时凭证。
-- **个人 Menu 的 Package 只读。** 写入和删除表项在 Project 与 Lineage Menu 的 Package 或管理页的“权限方案 · 实例表”中进行，临时凭证由持有者用 IssueTemporaryCredential 签发。权限系统关闭时，Package 说明权限系统已关闭，不显示表项。
+- **个人 Menu 的 Package 只读。** 写入和删除表项在 Project 与 Lineage Menu 的 Package 或管理页的“权限方案 · 实例表”中进行，临时凭证由持有者用 CreateTemporaryCredential 签发。权限系统关闭时，Package 说明权限系统已关闭，不显示表项。
 - **Package 不包含秘密。** 页面不显示密码、认证密钥、检查点或令牌文件内容。
 - **Resident 的层级未登记时显示“未登记”。** 页面不从名称推测层级。
 

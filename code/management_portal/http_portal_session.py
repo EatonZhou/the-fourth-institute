@@ -15,7 +15,7 @@ from management_portal.http_routes import RouteDefinition
 # permission switch alone and, with ActivatePermissionScheme, is always true for a
 # Portal 管理员 (decision_b820faf42218 §3.1).
 PAGE_INSTRUCTIONS = ("CreateUser", "GetExecutionSettings", "UpdateExecutionSettings", "ActivatePermissionScheme",
-                     "UpdateProviderAccount", "OpenTerminal", "ListResourceTypes", "UpdateResourceType",
+                     "UpdateProviderAccount", "CreateTerminal", "ListResourceTypes", "UpdateResourceType",
                      "ListProviders", "ListProviderAccounts", "RegisterProviderAccount",
                      "DeleteProviderAccount", "DeleteModelApi")
 PAGE_ARGUMENTS = {"UpdateExecutionSettings": {"permission_system_enabled": True}}

@@ -50,6 +50,16 @@ def step_id(trigger_path_id: str, kind: str, node_id: str, activation_key: str) 
     return "trigger_step_" + digest[:12]
 
 
+def effect_step_status(connection: Any, lineage_id: str, activation_key: str) -> dict[str, Any]:
+    """Read only the identity and state of an Effect activation's audit step."""
+    return connection.execute(
+        "SELECT s.step_id,s.trigger_path_id,s.node_id,s.status FROM trigger_path_steps s "
+        "JOIN trigger_paths p USING(trigger_path_id) "
+        "WHERE p.lineage_id=%s AND s.kind='effect' AND s.activation_key=%s",
+        (lineage_id, activation_key),
+    ).fetchone() or {}
+
+
 def create_schema(connection: Any) -> None:
     connection.execute("""CREATE TABLE trigger_paths (
         trigger_path_id TEXT PRIMARY KEY, lineage_id TEXT NOT NULL,

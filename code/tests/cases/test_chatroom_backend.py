@@ -631,9 +631,9 @@ def test_the_instructions_run_for_members_and_called_residents(lineage, monkeypa
     assert run("UpdateChatroomMessage", {"chatroom_id": chatroom_id, "message_id": message["message_id"],
                                          "content": f"大家好 @{HELPER}"}, actor=ALICE).raise_for_error()["message"]["version"] != edited["version"]
     assert run("UpdateChatroom", {"chatroom_id": chatroom_id, "add_members": [DAVE]}, actor=BOB).raise_for_error()["chatroom"]["members"] == [ALICE, BOB, DAVE]
-    assert run("MarkChatroomRead", {"chatroom_id": chatroom_id}, actor=BOB).raise_for_error()["unread_count"] == 0
+    assert run("UpdateChatroomReadPosition", {"chatroom_id": chatroom_id}, actor=BOB).raise_for_error()["unread_count"] == 0
     assert run("UpdateChatroom", {"chatroom_id": chatroom_id, "muted": True}, actor=BOB).raise_for_error()["chatroom"]["muted"]
-    run("MarkChatroomRead", {"chatroom_id": chatroom_id, "through": posted["message"]["ordinal"]}, actor=BOB).raise_for_error()
+    run("UpdateChatroomReadPosition", {"chatroom_id": chatroom_id, "through": posted["message"]["ordinal"]}, actor=BOB).raise_for_error()
     # A quote names one message of this Chatroom; a replay returns the same message.
     quoting = {"chatroom_id": chatroom_id, "content_parts": text("同意"), "quote": {"message_id": posted["message"]["message_id"]}}
     quoted = run("CreateChatroomMessage", quoting, actor=BOB, key="post-2").raise_for_error()["message"]

@@ -62,7 +62,7 @@ window.PortalInstructionClient = {execute: async (name, args, options) => {
     case 'CheckProviderAccount':
       if (holdCheck) return new Promise(resolve => { finishCheck = resolve; });
       return {execution_id: 'execution_check'};
-    case 'OpenProviderAccountLogin':
+    case 'CreateProviderAccountLogin':
       if (args.account_id === 'kimi_sub') {
         if (failLoginStart) throw Error('temporary login failure');
         kimiRegion = args.region; return kimiResult();
@@ -92,7 +92,7 @@ window.PortalInstructionClient = {execute: async (name, args, options) => {
         backend_priority: args.backend_priority, model: args.model, reasoning_effort: args.reasoning_effort,
         version: (roles[0]?.version || 0) + 1}];
       return {role: roles[0]};
-    case 'PrepareProviderRuntime':
+    case 'InstallProviderRuntime':
       if (holdPrepare) return new Promise(resolve => { finishPrepare = resolve; });
       preparation = prepareResult; missing = prepareResult !== 'ready';
       return {preparation: {status: prepareResult}};
@@ -127,7 +127,7 @@ const openSetup = async () => {
   assert([...window.document.querySelectorAll('button')].find(el => el.textContent === '显示详细日志').hidden);
   click('测试并完成'); await flush(); await flush();
   assert(calls.some(call => call.name === 'UpdateBackendRole' && call.args.verification_execution_id === 'execution_check'));
-  assert(!calls.some(call => ['PrepareProviderRuntime', 'OpenProviderAccountLogin'].includes(call.name)));
+  assert(!calls.some(call => ['InstallProviderRuntime', 'CreateProviderAccountLogin'].includes(call.name)));
   assert.equal(window.document.querySelector('dialog'), null, 'a passing check completes the dialog');
   await openSetup();
   window.document.querySelector('input[name=use_default]').checked = true;
@@ -138,7 +138,7 @@ const openSetup = async () => {
   assert.match(window.document.querySelector('[data-backend-preparation-detail]').textContent, /下载并安装运行依赖/);
   assert.match(window.document.querySelector('[data-backend-setup-stages]').textContent, /准备运行环境.*进行中/);
   assert([...window.document.querySelectorAll('button')].find(el => el.textContent === '测试并完成').disabled);
-  assert.equal(calls.filter(call => call.name === 'PrepareProviderRuntime').length, 1);
+  assert.equal(calls.filter(call => call.name === 'InstallProviderRuntime').length, 1);
   const preparingStatus = window.document.querySelector('[data-backend-setup-status]');
   const preparingText = preparingStatus.textContent;
   const modelOption = window.document.querySelector('datalist option');
@@ -157,14 +157,14 @@ const openSetup = async () => {
   assert.equal(window.document.querySelector('datalist option'), modelOption, 'unchanged model options keep their DOM identity');
   assert.equal(draft.value, 'custom-model'); assert.equal(window.document.activeElement, draft);
   draft.value = 'model';
-  assert.equal(calls.filter(call => call.name === 'PrepareProviderRuntime').length, 1, 'polling must not reinstall');
+  assert.equal(calls.filter(call => call.name === 'InstallProviderRuntime').length, 1, 'polling must not reinstall');
   setupError = new TypeError('Load failed');
   tick(); await flush();
   assert.equal(timers.size, 1, 'a transient transport error does not stop preparation polling');
   assert.match(preparingStatus.textContent, /重新读取/);
   setupError = false;
   missing = false; tick(); await flush();
-  assert.equal(calls.filter(call => call.name === 'PrepareProviderRuntime').length, 1);
+  assert.equal(calls.filter(call => call.name === 'InstallProviderRuntime').length, 1);
   click('测试并完成'); await flush(); await flush();
   assert(!calls.some(call => call.name === 'UpdateBackendRole'));
   assert.match(window.document.querySelector('[data-backend-setup-status]').textContent, /未通过/);
@@ -201,7 +201,7 @@ const openSetup = async () => {
   assert.match(window.document.querySelector('[data-backend-setup-status]').textContent, /准备失败/);
   assert.equal(timers.size, 0, 'failed preparation must not retry in a loop');
   click('重试'); await flush();
-  assert.equal(calls.filter(call => call.name === 'PrepareProviderRuntime').length, 2);
+  assert.equal(calls.filter(call => call.name === 'InstallProviderRuntime').length, 2);
   prepareResult = 'ready'; click('重试'); await flush();
   assert.deepEqual(setupActions().map(el => el.textContent), ['测试并完成']);
   click('关闭');
@@ -212,13 +212,13 @@ const openSetup = async () => {
   await openSetup();
   assert.equal(timers.size, 1, 'runtime update locks are retried automatically');
   prepareResult = 'ready'; tick(); await flush();
-  assert.equal(calls.filter(call => call.name === 'PrepareProviderRuntime').length, 2);
+  assert.equal(calls.filter(call => call.name === 'InstallProviderRuntime').length, 2);
   assert.deepEqual(setupActions().map(el => el.textContent), ['测试并完成']);
   click('关闭');
   // Observe an existing preparation, without submitting another one, and stop polling on close.
   missing = true; preparation = 'pending'; calls.length = 0;
   await openSetup();
-  assert(!calls.some(call => call.name === 'PrepareProviderRuntime'));
+  assert(!calls.some(call => call.name === 'InstallProviderRuntime'));
   assert.equal(timers.size, 1); click('关闭'); assert.equal(timers.size, 0);
   preparation = 'missing'; holdPrepare = true; calls.length = 0;
   await openSetup(); click('关闭');
@@ -234,7 +234,7 @@ const openSetup = async () => {
   assert(!window.document.querySelector('input[name=model]').required);
   assert.match(window.document.querySelector('[data-backend-login-hint]').textContent, /设备码/);
   setupActions().find(el => el.textContent === '登录').click(); await flush();
-  assert(calls.some(call => call.name === 'OpenProviderAccountLogin'));
+  assert(calls.some(call => call.name === 'CreateProviderAccountLogin'));
   assert(!calls.some(call => call.name === 'CheckProviderAccount'));
   loginSession = {state: 'awaiting_user', verification_code: 'TEST-CODE', verification_url: 'https://example.com/device'};
   tick(); await flush();
@@ -354,12 +354,12 @@ const openSetup = async () => {
   const regionSelect = window.document.querySelector('[name=login_region]');
   assert.equal(regionSelect.value, 'mainland-cn');
   assert.deepEqual([...regionSelect.options].map(o => o.textContent), ['中国区', '国际区']);
-  assert(!calls.some(c => c.name === 'OpenProviderAccountLogin'), 'choose region before native login');
+  assert(!calls.some(c => c.name === 'CreateProviderAccountLogin'), 'choose region before native login');
   assert.equal(timers.size, 0, 'no polling before login');
   click('获取登录授权'); await flush();
   const loginLink = window.document.querySelector('dialog a');
   assert.equal(new URL(loginLink.href).hostname, 'www.kimi.com');
-  assert.equal(calls.find(c => c.name === 'OpenProviderAccountLogin').args.region, 'mainland-cn');
+  assert.equal(calls.find(c => c.name === 'CreateProviderAccountLogin').args.region, 'mainland-cn');
   holdLoginPoll = true; tick(); await flush();
   const oldResult = kimiResult();
   regionSelect.value = 'global'; regionSelect.dispatchEvent(new window.Event('change'));

@@ -275,12 +275,12 @@ def test_generated_supervision_graph_compiles_and_uses_own_family_context(team):
     diagnostics = ok("GetLineageDiagnostics", {"lineage_id": team.lineage})["diagnostics"]
     assert not [d for d in diagnostics if d["level"] == "error"]
     view = graph(team.lineage)
-    check = next(c for c in view["program"]["components"] if c["kind"] == "effect" and c["config"]["script"].startswith("CheckFamilyRecovery"))
+    check = next(c for c in view["program"]["components"] if c["kind"] == "effect" and c["config"]["script"].startswith("MaintainFamilyRecovery"))
     from management_portal.society_service.lineage_program_effect_execution import _family_note_context
     from management_portal.hatg.contracts import InstructionContext
     context = InstructionContext(caller=team.member, entry="lineage")
     args = {"lineage_id": team.lineage, "family_id": team.family["family_id"]}
-    assert _family_note_context(view, check["id"], "CheckFamilyRecovery", args, context, lineage_id=team.lineage).caller == team.facade
+    assert _family_note_context(view, check["id"], "MaintainFamilyRecovery", args, context, lineage_id=team.lineage).caller == team.facade
 
 
 def test_trigger_failure_resolves_original_event_and_ignores_delayed_completed_input(team):
@@ -332,14 +332,14 @@ def test_role_availability_has_independent_effect_and_respects_family_pause(team
     monkeypatch.setattr(family_quota, "restore_role_intakes", lambda records: checked.extend(r["resident_id"] for r in records) or restore(records))
     monkeypatch.setattr(family_quota.execution_port, "service", lambda: pytest.fail("intake effect must not query accounts"))
     args = {"lineage_id": team.lineage, "family_id": team.family["family_id"]}
-    result = ok("CheckFamilyRoleAvailability", args, actor=team.steward)
+    result = ok("MaintainFamilyRoleAvailability", args, actor=team.steward)
     assert result["family_id"] == team.family["family_id"]
     assert set(checked) == {team.family["router_resident_id"], team.steward}
     checked.clear()
     team.check()
     checked.clear()  # Recovery may restore its recipient's intake, without quota IO.
     team.intake(team.facade, "close")
-    assert ok("CheckFamilyRoleAvailability", args, actor=team.steward)["paused"]
+    assert ok("MaintainFamilyRoleAvailability", args, actor=team.steward)["paused"]
     assert not checked
     monkeypatch.setattr(family_quota.execution_port, "service", service)
     view = graph(team.lineage)
@@ -356,7 +356,7 @@ def test_role_availability_has_independent_effect_and_respects_family_pause(team
 def test_supervision_isa_checks_management_for_non_role_callers(team, monkeypatch):
     """监督 ISA 对非内部角色调用者检查管理权限"""
     from tests.cases.isa_test_support import run
-    result = ok("CheckFamilyRecovery", {"lineage_id": team.lineage, "family_id": team.family["family_id"]}, actor=team.steward)
+    result = ok("MaintainFamilyRecovery", {"lineage_id": team.lineage, "family_id": team.family["family_id"]}, actor=team.steward)
     assert result["family_id"] == team.family["family_id"]
     outsider = resident(team.lineage, "Outsider")
     checked = []
@@ -364,7 +364,7 @@ def test_supervision_isa_checks_management_for_non_role_callers(team, monkeypatc
         checked.append(actor)
         raise PermissionError("no management permission")
     monkeypatch.setattr(lineage_aggregate, "ensure_manager", require_owner)
-    denied = run("CheckFamilyRecovery", {"lineage_id": team.lineage, "family_id": team.family["family_id"]}, actor=outsider)
+    denied = run("MaintainFamilyRecovery", {"lineage_id": team.lineage, "family_id": team.family["family_id"]}, actor=outsider)
     assert denied.error and checked == [outsider]
 
 

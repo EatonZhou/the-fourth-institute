@@ -452,7 +452,7 @@ def test_a_group_requeued_onto_an_idle_resident_finishes_its_members(team, intak
         job = resident_execution_work.read(_record(resident_id))
         assert resident_execution_work.is_intake_held(job) and not job.get('submitted_at')
         assert store.execution('execution-g')['status'] == 'failed'
-        opened = instruction(team, 'OpenIntake', {'resident_id': resident_id, 'open': True})
+        opened = instruction(team, 'SetIntakeOpen', {'resident_id': resident_id, 'open': True})
         assert opened.status == 'committed', opened.error
         assert resident_record_domain.resident_intake_state(_record(resident_id)) == 'open'
         assert resident_execution_work.read(_record(resident_id))['user_message_id'] == group_id

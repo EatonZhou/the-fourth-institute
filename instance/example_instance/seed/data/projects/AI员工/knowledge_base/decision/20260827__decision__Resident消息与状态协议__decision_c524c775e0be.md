@@ -173,7 +173,7 @@ Resident 通过对话工作：别人给它发消息，它逐条处理并回复�
 | `send_hint` | 与发送相关的提示，例如接单关闭时“Agent 已关闭接单，发送的消息将排队等待开启。”；提示不改变权限。 |
 
 - 对话快照、单个和批量状态读取、以及返回完整 Resident 状态的操作回执，都同时返回 `controls`。`resident.state.changed` 事件被读取时，事件内容中也包含按读取者计算的 `controls`。`controls` 按读取者即时生成，不写入共享的对话状态或事件记录。
-- `OpenIntake`（`open: true` 开启、`open: false` 关闭接单）返回本次开关变化的确认：`previous_state`、`state`（`open` 或 `closed`）、`changed` 和 `intake_state`。它只说明开关的变化，调用方继续用状态事件或 `ListResidentStates` 取得完整的状态和 `controls`。
+- `SetIntakeOpen`（`open: true` 开启、`open: false` 关闭接单）返回本次开关变化的确认：`previous_state`、`state`（`open` 或 `closed`）、`changed` 和 `intake_state`。它只说明开关的变化，调用方继续用状态事件或 `ListResidentStates` 取得完整的状态和 `controls`。
 - **较旧的数据不能覆盖较新的结果。** 状态、`controls` 和消息都属于同一个 Resident；较旧的快照、事件或回执不能撤销较新的操作确认或终态。登录身份切换或权限失效后，旧身份的在途响应不进入新身份的视图。
 - 状态通知缺少完整 `controls` 时，调用方保持最后确认的值并重新读取；只有服务明确返回 `can_send=false` 时才采用这个值和禁用原因。
 
@@ -257,8 +257,8 @@ limit、分页标记、游标、消息 ID、产物 ID 或参数类型不合法�
 调用格式、执行规则和通用错误见 decision_898b8911a2ff。
 
 - **对话与上下文类**（decision_2fe6fd5367fb）：`DeliverMessage`、`ForwardMessages`、`GetConversation`、`ListMessages`、`GetMessage`、`ListRecentRounds`、`SearchMessages`、`GetMessageArtifact`、`WatchConversationEvents`、`GetSentPrompt`、`ClearContext`、`AbsorbContext`、`ListResidentRequests`、`GetResidentRequest`、`AnswerResidentRequest`、`GetSubagentRun`、`ListInputHistory`。
-- **Resident 执行类**（decision_2a3ff353165c）：`ListResidentStates`、`GetInputState`、`OpenIntake`（`open` 为 true 开启、false 关闭接单）、`CancelInput`、`CancelSubagent`。`CancelInput` 停止正在运行的一轮，或把等待中的请求、群体和 info 从 Mailbox 撤回；已结束的消息保留原结果，结果带 `already_terminal: true`。
-- **Mailbox 类**（decision_c54e68a82d7a，Mailbox 模型见 decision_15f7df737ed5）：`GetMailbox`、`WatchMailbox`、`PinMailboxItem`、`MarkMailboxItemRead`、`ClearMailbox`、`ReorderMailbox`、`MergeMailboxItems`、`SplitMailboxItem`、`RequeueMessage`、`InjectMailboxItem`、5 条 Mailbox Todo 指令和 `CreateNotification`。`GetMailbox` 的 `resident_id` 与 `user_id` 恰好传一个，分别读该 Resident 或该 User 的 Mailbox；`ClearMailbox` 带 `resident_id` 时取消该 Resident 全部等待消息，带 `user_id` 时清理该 User 的 Mailbox。用户打开某个 Resident 的对话时，页面用 `MarkMailboxItemRead` 把它当前已完成的回复标为已读。
+- **Resident 执行类**（decision_2a3ff353165c）：`ListResidentStates`、`GetInputState`、`SetIntakeOpen`（`open` 为 true 开启、false 关闭接单）、`CancelInput`、`CancelSubagent`。`CancelInput` 停止正在运行的一轮，或把等待中的请求、群体和 info 从 Mailbox 撤回；已结束的消息保留原结果，结果带 `already_terminal: true`。
+- **Mailbox 类**（decision_c54e68a82d7a，Mailbox 模型见 decision_15f7df737ed5）：`GetMailbox`、`WatchMailbox`、`SetMailboxItemPinned`、`SetMailboxItemRead`、`ClearMailbox`、`MoveMailboxItems`、`MergeMailboxItems`、`SplitMailboxItem`、`RequeueMessage`、`InjectMailboxItem`、5 条 Mailbox Todo 指令和 `CreateNotification`。`GetMailbox` 的 `resident_id` 与 `user_id` 恰好传一个，分别读该 Resident 或该 User 的 Mailbox；`ClearMailbox` 带 `resident_id` 时取消该 Resident 全部等待消息，带 `user_id` 时清理该 User 的 Mailbox。用户打开某个 Resident 的对话时，页面用 `SetMailboxItemRead` 把它当前已完成的回复标为已读。
 - **Resident 类**（decision_d19b9909a674）：运行设置 `GetResidentSettings`、`UpdateResidentSettings`，模型会话重启与 Provider、账号切换 `RestartSession`。
 
 Portal 的指令执行地址返回完整的指令结果，调用方从其中的 `result` 读取各指令的结果对象。网络断开、超时或回执丢失都不能说明操作没有被接收；调用方用原消息 ID 或原幂等键确认已有结果。

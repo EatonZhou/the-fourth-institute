@@ -93,8 +93,8 @@ def test_aborted_commit_does_not_consume_version_precondition(future_creation_st
     assert lineage_reads.get_lineage(lineage_id, ACTOR)["title"] == "concurrent"
 
 
-@pytest.mark.parametrize("instruction", ["PrepareWorkspaceHandoff", "RunScript"])
+@pytest.mark.parametrize("instruction", ["RunWorkspaceHandoff", "RunScript"])
 def test_runtime_operations_do_not_claim_definition_preconditions(instruction):
-    """PrepareWorkspaceHandoff 和 RunScript 不算定义修改指令，不占用定义版本前置条件"""
+    """RunWorkspaceHandoff 和 RunScript 不算定义修改指令，不占用定义版本前置条件"""
     from management_portal.hatg.lineage_versions import DEFINITION_MUTATIONS
     assert instruction not in DEFINITION_MUTATIONS

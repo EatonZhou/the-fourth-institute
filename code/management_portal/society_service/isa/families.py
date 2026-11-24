@@ -119,7 +119,7 @@ def publish_family_progress(inv):
     from ..family_progress import publish
     try:
         return publish(inv.argument("lineage_id"), inv.argument("family_id"), inv.caller,
-                       **{key: inv.argument(key) for key in ("batch_id", "report", "summary", "expected_revision", "source_versions")})
+                       **{key: inv.argument(key) for key in ("batch_id", "report", "summary", "source_versions")})
     except ValueError as exc:
         raise invalid(str(exc)) from exc
 
@@ -127,9 +127,9 @@ def publish_family_progress(inv):
 HANDLERS = {"Familize": familize, "Unfamilize": unfamilize, "DeleteFamily": delete_family, "UpdateFamily": update_family,
             "GetFamilyRoutingContext": get_family_routing_context,
             "ResolveFamilyRequest": archive_family_result,
-            "CheckFamilyReview": check_family_review,
-            "CheckFamilyRecovery": check_family_recovery, "CheckFamilyProgress": check_family_progress,
-            "CheckFamilyRoleAvailability": check_family_role_availability,
+            "MaintainFamilyReview": check_family_review,
+            "MaintainFamilyRecovery": check_family_recovery, "MaintainFamilyProgress": check_family_progress,
+            "MaintainFamilyRoleAvailability": check_family_role_availability,
             "PublishFamilyProgress": publish_family_progress, "DispatchFamilyTask": dispatch_family_task}
 
 

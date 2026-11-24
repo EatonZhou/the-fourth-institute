@@ -32,7 +32,7 @@ const {chromium}=require(path.join(code,'management_portal/test_framework/tau_ru
    window.PortalInstructionClient={execute:(instruction,args)=>{
     calls.push({instruction,...args});if(args.resident_id!==residentId)throw new Error('Wrong original Resident');
     if(instruction==='GetResidentSettings')return new Promise(resolve=>{window.resolveSettings=resolve;});
-    if(instruction==='PreviewPromptInjection')return new Promise((_resolve,reject)=>{window.rejectPreview=reject;});
+    if(instruction==='GetPromptInjectionPreview')return new Promise((_resolve,reject)=>{window.rejectPreview=reject;});
     throw new Error('Unexpected instruction '+instruction);
    }};
    window.PortalSocietyService={createClient:()=>({})};
@@ -66,7 +66,7 @@ const {chromium}=require(path.join(code,'management_portal/test_framework/tau_ru
   await editor.locator('[data-prompt-injection-preview]').filter({hasText:'Local preview fixture failure'}).waitFor({state:'visible',timeout:1000});
   assert.equal(await preset.isEnabled(),true);assert.equal(await preset.inputValue(),'standard');
   report.after_preview_failure={preset:await preset.inputValue(),preview:await editor.locator('[data-prompt-injection-preview]').innerText(),calls:await p.evaluate(()=>calls)};
-  assert.deepEqual(report.after_preview_failure.calls.map(c=>c.instruction),['projection','GetResidentSettings','PreviewPromptInjection']);
+  assert.deepEqual(report.after_preview_failure.calls.map(c=>c.instruction),['projection','GetResidentSettings','GetPromptInjectionPreview']);
   assert.equal(report.after_preview_failure.calls.every(c=>c.resident_id==='resident_prompt_fixture'),true);
   await p.evaluate(()=>panel.destroy());assert.deepEqual(requests,[]);assert.deepEqual(errors,[]);
   report.status='passed';if(process.env.TAU_PROMPT_ENTRY_REPORT)fs.writeFileSync(process.env.TAU_PROMPT_ENTRY_REPORT,JSON.stringify(report,null,2)+'\n');

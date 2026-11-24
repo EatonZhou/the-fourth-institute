@@ -100,7 +100,7 @@ def test_account_details_include_visible_automatic_selection(unassigned_site, re
     summary = intake.get_account_resident_summary("codex_one", "viewer")
     assert summary["total"] == 1
     # No intake snapshot exists for the synthetic unbound Resident. It is
-    # counted for ownership, but must not become a bulk OpenIntake target.
+    # counted for ownership, but must not become a bulk SetIntakeOpen target.
     assert summary["open_resident_ids"] == []
     assert summary["intake"] == {"open": 0, "closed": 0, "unknown": 1}
     assert summary["without_session"] == 1

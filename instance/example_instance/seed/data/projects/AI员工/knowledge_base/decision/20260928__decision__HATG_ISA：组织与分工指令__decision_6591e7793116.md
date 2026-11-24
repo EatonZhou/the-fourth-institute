@@ -219,7 +219,7 @@ DeliverMessage 使用明确的 resident_id。Family 路由读取 Family 的结�
 - 暂停接收（`--pause`）表示应用暂停接收新工作：应用在登记新工作前检查它并明确拒绝，已经接收的工作照常完成和恢复。只有声明了支持暂停的应用实现这一检查，目前只有 `tau`：暂停后新的 TAU Campaign 在登记前拒绝（decision_c953eab654cd）。其他应用只能读取和按版本切换目标，要求暂停时明确报错。
 - 支持暂停的应用切换目标前必须已经暂停接收，恢复接收另行提交；暂停、恢复和切换在同一条配置记录上串行提交，切换不会与正在登记的新工作交错。
 
-Notice Board 分类与 Which Resident 推荐的功能开关由当前目标 Resident 所属 Lineage 中的 Event 和 Effect 负责。两项应用不支持暂停接收：应用配置只选择承担者，PauseComponent（`paused: true|false`）控制图中组件，不在应用配置复制关闭状态。应用按 `system:<application>:event|effect` 的 client_key 定位组件，核验 Event → Effect → 当前承担者的完整连接，再触发真实 Event。修改承担者后，连接不一致的请求拒绝派发，管理者须显式修复目标连线。分类保持经过认证的 portal 服务主体，推荐保持网页请求者，后续 Effect 使用该发起身份检查权限。
+Notice Board 分类与 Which Resident 推荐的功能开关由当前目标 Resident 所属 Lineage 中的 Event 和 Effect 负责。两项应用不支持暂停接收：应用配置只选择承担者，SetComponentPaused（`paused: true|false`）控制图中组件，不在应用配置复制关闭状态。应用按 `system:<application>:event|effect` 的 client_key 定位组件，核验 Event → Effect → 当前承担者的完整连接，再触发真实 Event。修改承担者后，连接不一致的请求拒绝派发，管理者须显式修复目标连线。分类保持经过认证的 portal 服务主体，推荐保持网页请求者，后续 Effect 使用该发起身份检查权限。
 
 由人或 Resident 触发的 Event 保留原请求者作为 initiated_by；没有发起者的自动 Event（定时、文件、发布等）以 Lineage 登记的运行身份 `run_as_principal` 执行（decision_4adcc1ff2f2c）。Effect 按这个身份检查权限。Family 消息可以由明确的门面路由发出，这不改变执行身份。系统不借用 Leader、owner 或其他 Resident 的身份。
 

@@ -47,7 +47,7 @@ Router 负责把门面原请求交给 Family 内合适的承接者。Steward 负
 | 职责 | 监听 Event | 执行 Effect／HATG ISA | Effect 中 Prompt 的组成／模板 |
 | --- | --- | --- | --- |
 | R1．为门面原请求选人并转交 | `facade_inbox`：`resident.message_received`，Watch 门面 | `route → router` 执行 `FAMILY_ROUTER_SCRIPT`。有效引用（到达事件 `quoted_member_id`）和 Resident 发送者的延续请求（`continued_member_id`）直接调用 `RelayFamilyMessage`；其余（包括零或单业务成员） `DispatchFamilyTask(trigger="route", source_message_id=原请求)`。Router 输出 Packet 后，`relay → route_relay` 调用 `RelayFamilyMessage` | 需要选人时使用 **P-route**：首轮 route 指南＋本轮原请求、发送者、正文／附件引用、引用消息及指南路径。引用直交和延续直交不发模型 Prompt |
-| R2．维持自身可接单，执行前检查额度并按需迁移 | 接单：`role_intake` 的 `resident.state_changed(intake)` Watch Router／Steward，`recovery_timer` 每 5 分钟补查接单。额度：本角色有待执行原输入、即将提交执行或恢复该输入时的**平台准入点，不是独立 Event** | 接单经 `check_role_intake`／`recheck_role_availability → role_availability → CheckFamilyRoleAvailability`；额度由执行入口 `ensure_role_reserve` 按真实绑定账号检查，需要时调用 Restart 领域 | **无模型 Prompt**。接单 Effect 不读额度或迁移；执行入口保留原输入并做有限迁移，不要求低额度角色运行一轮来救自己 |
+| R2．维持自身可接单，执行前检查额度并按需迁移 | 接单：`role_intake` 的 `resident.state_changed(intake)` Watch Router／Steward，`recovery_timer` 每 5 分钟补查接单。额度：本角色有待执行原输入、即将提交执行或恢复该输入时的**平台准入点，不是独立 Event** | 接单经 `check_role_intake`／`recheck_role_availability → role_availability → MaintainFamilyRoleAvailability`；额度由执行入口 `ensure_role_reserve` 按真实绑定账号检查，需要时调用 Restart 领域 | **无模型 Prompt**。接单 Effect 不读额度或迁移；执行入口保留原输入并做有限迁移，不要求低额度角色运行一轮来救自己 |
 
 Router 不写自身工作摘要，不登记路由轮次摘要覆盖；完成检查、漏写提醒、阶段／长期归纳都排除 Router。路由结果由原请求、Packet 和投递记录追溯。
 
@@ -81,16 +81,16 @@ R1 转交 Effect 保留 JSON 类型，只有字面 true 才向普通或 scope-ou
 
 | 职责 | 监听 Event | 执行 Effect／HATG ISA | Effect 中 Prompt 的组成／模板 |
 | --- | --- | --- | --- |
-| S1．保持业务成员可接单，处理关闭接单造成的阻塞 | `recovery_arrival`：`resident.message_received`，Watch 业务成员、Router、Steward；`recovery_timer`：每 5 分钟 `time.reached` | `check_intake_blocked`／`recheck_recovery → recovery_check → CheckFamilyRecovery` 扫描当前阻塞。有未解决事项才派发 recovery；Steward 查原因，用 `OpenIntake(open=true)` 恢复，保留原队列 | **P-recovery**：Family、Lineage、incident_keys＋指南路径。无故障时无 Prompt |
-| S2．诊断失败、修复并继续原任务，核验恢复结果 | `resident.work_failed`、路由 Effect 的 `effect.failed`、Route 的 `event.delivery_failed`；`resident.work_finished` 与 5 分钟定时复查负责验收。具体 Watch 见下表 | 全部汇入 `recovery_check → CheckFamilyRecovery`。Steward 读取 `GetInputState`／`GetTriggerPath`／`ListResidentStates`，必要时 `RestartSession`、`GetSessionRestart`、`RequeueMessage`。无法修复时 `CheckFamilyRecovery(escalate_reason=具体原因)` | **P-recovery**；同一 Family 合并未解决故障，已有恢复任务排队／执行时不重复派发 |
-| S3．整理 Mailbox，决定串行、分流或增员；减少无行动价值通信 | `member_queue`：`resident.queue_pressure_exceeded`，Watch 业务成员；默认等待数从未超限变成 `>1`，即达到 2 条 | `notify_member_queue → notify_member_queue_task → DispatchFamilyTask(trigger="queue", event=事件)`。先 `GetMailbox`，再 `MergeMailboxItems`／`ReorderMailbox`；重读后才决定分流或 `CreateResident + UpdateFamily`；门面请求用 `RelayFamilyMessage(reassign=true)` 改派 | **P-queue**：精简事件指标＋指南路径。发现反复废话可基于实例定向提醒；当前没有独立的“废话检测”Event |
+| S1．保持业务成员可接单，处理关闭接单造成的阻塞 | `recovery_arrival`：`resident.message_received`，Watch 业务成员、Router、Steward；`recovery_timer`：每 5 分钟 `time.reached` | `check_intake_blocked`／`recheck_recovery → recovery_check → MaintainFamilyRecovery` 扫描当前阻塞。有未解决事项才派发 recovery；Steward 查原因，用 `SetIntakeOpen(open=true)` 恢复，保留原队列 | **P-recovery**：Family、Lineage、incident_keys＋指南路径。无故障时无 Prompt |
+| S2．诊断失败、修复并继续原任务，核验恢复结果 | `resident.work_failed`、路由 Effect 的 `effect.failed`、Route 的 `event.delivery_failed`；`resident.work_finished` 与 5 分钟定时复查负责验收。具体 Watch 见下表 | 全部汇入 `recovery_check → MaintainFamilyRecovery`。Steward 读取 `GetInputState`／`GetTriggerPath`／`ListResidentStates`，必要时 `RestartSession`、`GetSessionRestart`、`RequeueMessage`。无法修复时 `MaintainFamilyRecovery(escalate_reason=具体原因)` | **P-recovery**；同一 Family 合并未解决故障，已有恢复任务排队／执行时不重复派发 |
+| S3．整理 Mailbox，决定串行、分流或增员；减少无行动价值通信 | `member_queue`：`resident.queue_pressure_exceeded`，Watch 业务成员；默认等待数从未超限变成 `>1`，即达到 2 条 | `notify_member_queue → notify_member_queue_task → DispatchFamilyTask(trigger="queue", event=事件)`。先 `GetMailbox`，再 `MergeMailboxItems`／`MoveMailboxItems`；重读后才决定分流或 `CreateResident + UpdateFamily`；门面请求用 `RelayFamilyMessage(reassign=true)` 改派 | **P-queue**：精简事件指标＋指南路径。发现反复废话可基于实例定向提醒；当前没有独立的“废话检测”Event |
 | S4．补齐职责缺口，安排原请求承接者 | 沿 R1 的 `facade_inbox` 链；`route_relay` 调用 `RelayFamilyMessage(scope_gap=...)` 后进入服务分支。**无独立 recruit Event** | 服务保留原请求并派发 recruit。Steward 决定现有成员承担、调整分工或 `CreateResident` 后 `UpdateFamily(add_member_ids=...)`；最后 `RelayFamilyMessage(scope_reviewed=true, reason=...)` | **P-recruit**：门面、原请求、候选成员、职责缺口和理由 |
 | S5．纠正无效或低置信度路由 | Router 输出经 `relay → route_relay` 检查；缺 target、名册不符或置信度低于阈值。**无独立 route_review Event** | `DispatchFamilyTask(trigger="route_review", source_message_id=...)`；Steward 核对原请求与名册，未投递则修复原路由，已投递且确需更换则 `RelayFamilyMessage(reassign=true, reason=...)` | **P-route_review**：原请求 ID＋reason，或 Router Packet 的 target／confidence／scope 等 |
 | S6．处理业务成员低额度，安排原请求继续 | 任一 `RelayFamilyMessage` 转交入口发现承接成员新鲜额度窗口中最低剩余 **<5%**，包括引用直交。**无独立 quota Event** | 服务保留原请求、派发 quota。Steward 用 `ListProviderAccounts` 查额度，必要时 `RestartSession(context_strategy="compact")`；核验成功后 `RelayFamilyMessage(quota_reviewed=true, reason=...)` | **P-quota**：门面、原请求、成员、账号、最低窗口额度观测；这不负责两个持续角色自身额度 |
-| S7．有新业务活动时合并回顾分工与协作 | 当前业务成员的 `resident.work_finished` 记录活动；`periodic_review: time.reached` 按原 `review_interval_seconds` 检查，普通 Family 默认 86400 秒 | `member_done → record_review_activity → review_activity → CheckFamilyReview(event=完成事件)` 只记录；`notify_periodic_review → notify_periodic_review_task → CheckFamilyReview` 不带 event 执行门控。存在未消费活动且 Steward 空闲无排队时才派发 review | **P-review**：Family 定位与活动水位快照；没有新增业务时不启动模型 |
-| S8．维护业务成员与 Family 门面摘要 | `member_done: resident.work_finished` 仅 Watch 业务成员；`summary_timer: time.reached` 每 3600 秒补查 | `check_summary → summary_check → CheckResidentWorkSummary` 检查覆盖并按需归纳；`request_summary → summary_rollup` 检查到期层及门面来源变化；`DispatchFamilyTask(trigger=summary)` | 共用 **P-summary**；Router／Steward 免写自身摘要。无门面 20 输入自动简报 |
+| S7．有新业务活动时合并回顾分工与协作 | 当前业务成员的 `resident.work_finished` 记录活动；`periodic_review: time.reached` 按原 `review_interval_seconds` 检查，普通 Family 默认 86400 秒 | `member_done → record_review_activity → review_activity → MaintainFamilyReview(event=完成事件)` 只记录；`notify_periodic_review → notify_periodic_review_task → MaintainFamilyReview` 不带 event 执行门控。存在未消费活动且 Steward 空闲无排队时才派发 review | **P-review**：Family 定位与活动水位快照；没有新增业务时不启动模型 |
+| S8．维护业务成员与 Family 门面摘要 | `member_done: resident.work_finished` 仅 Watch 业务成员；`summary_timer: time.reached` 每 3600 秒补查 | `check_summary → summary_check → MaintainResidentWorkSummary` 检查覆盖并按需归纳；`request_summary → summary_rollup` 检查到期层及门面来源变化；`DispatchFamilyTask(trigger=summary)` | 共用 **P-summary**；Router／Steward 免写自身摘要。无门面 20 输入自动简报 |
 | S9．处理初始化、组织变动与相关背景 info | `Familize` 完成；非 Steward 操作者触发已有的成员加入、改名、迁出通知；门面收到带文本 info。**这些是服务入口，没有独立 organization Event** | 初始化调用 `DispatchFamilyTask(trigger="organization")`；其他入口经服务 `tell_steward` 派发。Steward 按需查 `GetLineage`／成员／原消息；需要变更才 `UpdateFamily`，需要行动才定向通知 | **P-organization**：change；初始化另含 Family 定位。info 额外带来源与“仅处理相关职责、不广播、不回复发送者”的 runtime_context |
-| S10．维持自身 active，执行前检查额度并迁移 | 与 R2 相同：接单状态 Event＋接单定时补查；额度检查随 Steward 的待执行输入进入平台准入点 | `CheckFamilyRoleAvailability` 只维护接单；执行入口负责既有低额度迁移策略，无安全账号时保留任务并通知实际真人创建人 | **无模型 Prompt**；与 P-quota 的业务成员复核分开 |
+| S10．维持自身 active，执行前检查额度并迁移 | 与 R2 相同：接单状态 Event＋接单定时补查；额度检查随 Steward 的待执行输入进入平台准入点 | `MaintainFamilyRoleAvailability` 只维护接单；执行入口负责既有低额度迁移策略，无安全账号时保留任务并通知实际真人创建人 | **无模型 Prompt**；与 P-quota 的业务成员复核分开 |
 
 ### S1／S2：恢复监听的完整映射
 
@@ -110,12 +110,12 @@ R1 转交 Effect 保留 JSON 类型，只有字面 true 才向普通或 scope-ou
 Effect 的现行脚本为：
 
 ```text
-CheckFamilyRecovery lineage_id="${arguments.lineage_id}" family_id="${arguments.family_id}" event="${event}"
+MaintainFamilyRecovery lineage_id="${arguments.lineage_id}" family_id="${arguments.family_id}" event="${event}"
 ```
 
-`CheckFamilyRecovery` 会核验故障并可能派发 recovery 任务或升级告警；持续角色接单由 `CheckFamilyRoleAvailability` 维护，账号迁移由消息执行入口检查触发。恢复派发前还核验并恢复 Steward 接单，避免与接单 Event 的先后顺序导致误报不可用；这一步不扫描账号额度。Effect 按运行图执行身份调用；不能因为 Router 是 Family 成员就假设其可直接调用这个受保护指令。
+`MaintainFamilyRecovery` 会核验故障并可能派发 recovery 任务或升级告警；持续角色接单由 `MaintainFamilyRoleAvailability` 维护，账号迁移由消息执行入口检查触发。恢复派发前还核验并恢复 Steward 接单，避免与接单 Event 的先后顺序导致误报不可用；这一步不扫描账号额度。Effect 按运行图执行身份调用；不能因为 Router 是 Family 成员就假设其可直接调用这个受保护指令。
 
-Steward 收到 recovery 后，先核对原输入当前接手者和状态。关闭接单造成阻塞时用 `OpenIntake(resident_id=成员, open=true)`；迁移用 `RestartSession`，随后用 `GetSessionRestart` 验证。迁移默认恢复最近失败输入；只有原输入仍失败、没有已经排队／运行／完成且没有取消或明确停止时，才显式 `RequeueMessage`。取消和删除不通过新建替代任务“恢复”。
+Steward 收到 recovery 后，先核对原输入当前接手者和状态。关闭接单造成阻塞时用 `SetIntakeOpen(resident_id=成员, open=true)`；迁移用 `RestartSession`，随后用 `GetSessionRestart` 验证。迁移默认恢复最近失败输入；只有原输入仍失败、没有已经排队／运行／完成且没有取消或明确停止时，才显式 `RequeueMessage`。取消和删除不通过新建替代任务“恢复”。
 
 恢复的完成条件是**原输入完成**；取消则终止跟进。修复轮次结束、排队或迁移成功都不等于业务任务完成。同一 Family 只保留一条未完成恢复通知；连续三轮修复结束仍未解决，或 Steward 自身失败／不可达，由平台升级。关闭整个门面暂停自维护；生命周期迁移暂时关闭接单时等待迁移，不抢先开放。
 
@@ -123,7 +123,7 @@ Steward 收到 recovery 后，先核对原输入当前接手者和状态。关�
 
 ### S3：Mailbox 整理与增员
 
-执行顺序为 `GetMailbox + ListResidentStates → MergeMailboxItems / ReorderMailbox → GetMailbox → 判断剩余工作 → 必要时 CreateResident + UpdateFamily → RelayFamilyMessage`。只合并适合一起执行的等待请求；保留原文、作者、独立诉求、依赖和取消语义，不动已领取输入，info 不参与合并。
+执行顺序为 `GetMailbox + ListResidentStates → MergeMailboxItems / MoveMailboxItems → GetMailbox → 判断剩余工作 → 必要时 CreateResident + UpdateFamily → RelayFamilyMessage`。只合并适合一起执行的等待请求；保留原文、作者、独立诉求、依赖和取消语义，不动已领取输入，info 不参与合并。
 
 队列 Event 首次观察只建立基线；之后由未超限进入超限才发一次。持续高位不会反复触发，因此 Steward 决定继续串行时应写明原因，仍需跟进时安排复查。默认阈值 1 的含义是“等待数至少 2”；如要求“严格超过 2”，Event 阈值应设为 2。队列长不直接证明需要新成员。
 
@@ -131,7 +131,7 @@ Steward 收到 recovery 后，先核对原输入当前接手者和状态。关�
 
 ### S7：业务活动与定时门控
 
-普通 Family 的完成事件只登记当前直属业务成员真实 completed、非 info 且 business_ref 非 `duty/` 的业务输入。Router、Steward、摘要、回顾、恢复维护与工具调用不构成活动。记录与派发由 Family owner 的 CheckFamilyReview 负责，活动与派发意图协议见 decision_a64b3ea2c3c5。
+普通 Family 的完成事件只登记当前直属业务成员真实 completed、非 info 且 business_ref 非 `duty/` 的业务输入。Router、Steward、摘要、回顾、恢复维护与工具调用不构成活动。记录与派发由 Family owner 的 MaintainFamilyReview 负责，活动与派发意图协议见 decision_a64b3ea2c3c5。
 
 定时事件只启动机械检查，无新增活动直接结束；门面暂停、Steward 忙碌、有排队或检查已被另一个调用持有时推迟。有新材料才合并派发一次，不设 N 次门槛，不按定时事件 ID 生成模型任务。生成 Effect 的调用身份仅绑定到所属 Family 门面，原外部发起者保留在原事件审计，不获得内部权限。个人助手保留原有对话活动门控。
 
@@ -142,7 +142,7 @@ Steward 收到 recovery 后，先核对原输入当前接手者和状态。关�
 | 触发入口 | Event → Route → Effect／ISA | 执行内容与 Prompt |
 | --- | --- | --- |
 | 业务成员当前轮次结束前 | 无新增 Event／Effect；本人 `GetResidentSummaries(include_maintenance=true)` → `UpdateResidentWorkSummary` | 本人替换近期层并登记覆盖；无新增事实可只登记覆盖。复用业务任务，不另起摘要工作轮次 |
-| 业务成员完成一轮 | `member_done: resident.work_finished` 只 Watch 业务成员 → `check_summary → summary_check → CheckResidentWorkSummary(resident_id=事件主体, message_id=完成输入)` | 漏写附加一条下轮提醒；已覆盖且 `consolidation_due=true` 时才进入共用归纳检查；需要时发 **P-summary** |
+| 业务成员完成一轮 | `member_done: resident.work_finished` 只 Watch 业务成员 → `check_summary → summary_check → MaintainResidentWorkSummary(resident_id=事件主体, message_id=完成输入)` | 漏写附加一条下轮提醒；已覆盖且 `consolidation_due=true` 时才进入共用归纳检查；需要时发 **P-summary** |
 | 每小时补查 | `summary_timer: time.reached(interval_seconds=3600)` → `request_summary → summary_rollup` | 检查业务成员到期归纳及门面来源变化，按需发同一 **P-summary**；同材料只派一次，不是要求成员每小时重写 |
 
 **共用归纳检查**：`ListResidentStates(steward)` 确认 idle 且无排队 → `GetFamilySummaryInputs(facade, overview_only=true)` → 仅 `needs_update=true` 时 `DispatchFamilyTask(trigger=summary)`。忙碌或材料未变则结束，不消耗模型轮次；Steward 忙碌而未派出的到期工作由后续小时检查补偿。派发 ID 由材料决定，已完成、失败或被停止的同材料任务不重派。
@@ -155,7 +155,7 @@ Steward 的提交顺序：
 
 仍保留 recent／phase／long_term 三层和统一预算：默认阶段 20 个新覆盖业务轮次，长期 100 轮，容量达 80% 提前归纳，单纯经过时间不触发；这些是**成员摘要的归纳阈值**，不是门面输入计数触发。详细提交、未决事项保护与字数约束见 [Resident ISA](/resource/knowledge?item=decision_d19b9909a674)。
 
-**只保留小时检查作为周期汇总入口。** 移除默认运行图的 `request_progress`、`progress_report`，门面不再累计 20 个输入自动请 Steward 发布简报。小时入口既覆盖自主工作，也补偿 Steward 忙碌时推迟的归纳；门面汇总仍在同一 summary 任务内完成。`CheckFamilyProgress`／`PublishFamilyProgress` 仅保留显式调用及旧批次收尾兼容，不属于当前自动工作流，也不向成员群发。
+**只保留小时检查作为周期汇总入口。** 移除默认运行图的 `request_progress`、`progress_report`，门面不再累计 20 个输入自动请 Steward 发布简报。小时入口既覆盖自主工作，也补偿 Steward 忙碌时推迟的归纳；门面汇总仍在同一 summary 任务内完成。`MaintainFamilyProgress`／`PublishFamilyProgress` 仅保留显式调用及旧批次收尾兼容，不属于当前自动工作流，也不向成员群发。
 
 ## 共同的 active 与额度保障
 
@@ -165,13 +165,13 @@ Steward 的提交顺序：
 
 | Event／Route | 监听对象与条件 | Effect／动作 |
 | --- | --- | --- |
-| `role_intake → check_role_intake` | `resident.state_changed(intake)`，Watch Router、Steward | `role_availability → CheckFamilyRoleAvailability` 恢复接单，返回已有角色状态 |
+| `role_intake → check_role_intake` | `resident.state_changed(intake)`，Watch Router、Steward | `role_availability → MaintainFamilyRoleAvailability` 恢复接单，返回已有角色状态 |
 | `recovery_timer → recheck_role_availability` | 每 5 分钟 `time.reached`，补查接单状态；同一 timer 的另一路仍检查原输入故障恢复 | 同上；**不读取账号额度，不发起迁移** |
 
 Effect 完整脚本：
 
 ```text
-CheckFamilyRoleAvailability lineage_id="${arguments.lineage_id}" family_id="${arguments.family_id}"
+MaintainFamilyRoleAvailability lineage_id="${arguments.lineage_id}" family_id="${arguments.family_id}"
 ```
 
 两条 Route 的 `invoke_profiles.effect.arguments` 绑定当前 `lineage_id` 与 `family_id`。关闭／删除门面返回 paused；门面开放时恢复两角色接单。生命周期迁移持有的临时关闭等待该操作，不能抢先开放；开放接单不授予额度 override。返回的 `waiting_count` 反映已有迁移记录，不代表本次新检查了账号额度。
@@ -273,7 +273,7 @@ ${facts}
 指南（当前默认）：
 
 ```text
-用 CheckFamilyRecovery 查看原故障及状态，按需读 GetInputState、GetTriggerPath、ListResidentStates，恢复原任务并核验结果。不要把修复回执当原任务成功。成员关闭接单导致原任务阻塞时，查明原因并用 OpenIntake(open=true) 恢复接单，继续原输入；排队中的输入不用重复投递。必要时 RestartSession 并核验操作结果；常规恢复无效时定位修复缺陷，或以 escalate_reason 说明具体阻塞并求助实际创建人。保留取消、删除和明确停止的任务；关闭整个 Family 门面表示暂停自维护，单个成员关闭不再自动免除恢复职责。
+用 MaintainFamilyRecovery 查看原故障及状态，按需读 GetInputState、GetTriggerPath、ListResidentStates，恢复原任务并核验结果。不要把修复回执当原任务成功。成员关闭接单导致原任务阻塞时，查明原因并用 SetIntakeOpen(open=true) 恢复接单，继续原输入；排队中的输入不用重复投递。必要时 RestartSession 并核验操作结果；常规恢复无效时定位修复缺陷，或以 escalate_reason 说明具体阻塞并求助实际创建人。保留取消、删除和明确停止的任务；关闭整个 Family 门面表示暂停自维护，单个成员关闭不再自动免除恢复职责。
 ```
 
 逐轮 prompt（完整默认模板）：
@@ -291,7 +291,7 @@ ${facts}
 指南（当前默认）：
 
 ```text
-先用 GetMailbox 和 ListResidentStates 核对触发成员当前待办、运行任务和实际积压，事件指标只代表触发时。先整理再评估扩容：有整理权限时，用 MergeMailboxItems 合并适合一轮处理的相关等待请求，必要时 ReorderMailbox 调整顺序；保留原文、作者、独立诉求、依赖和取消语义，不动已领取输入。合并只减少轮次，不压缩原文或消除实际工作量；info 不参与合并，不为降低队列数字取消有效请求。整理后重读 mailbox，结合 GetResidentSummaries 判断剩余任务是否独立、现有成员能否分担；确需新增能力或并行容量时才 CreateResident 并用 UpdateFamily 加入。门面原请求用 RelayFamilyMessage(reassign=true, reason=理由) 改派，其他输入先明确交接，避免重复执行。若反复出现同一发送者的无行动价值消息，可基于具体例子定向提醒对方：日常进展写摘要，仅为必要信息、重要运行影响或约定工作流发消息；无新情况不重复提醒、不群发或要求逐条确认。重要决定及依据保存到 Family 或项目记录；需要相关成员行动时才通知。保留串行时说明原因；仍有积压时安排必要复查。
+先用 GetMailbox 和 ListResidentStates 核对触发成员当前待办、运行任务和实际积压，事件指标只代表触发时。先整理再评估扩容：有整理权限时，用 MergeMailboxItems 合并适合一轮处理的相关等待请求，必要时 MoveMailboxItems 调整顺序；保留原文、作者、独立诉求、依赖和取消语义，不动已领取输入。合并只减少轮次，不压缩原文或消除实际工作量；info 不参与合并，不为降低队列数字取消有效请求。整理后重读 mailbox，结合 GetResidentSummaries 判断剩余任务是否独立、现有成员能否分担；确需新增能力或并行容量时才 CreateResident 并用 UpdateFamily 加入。门面原请求用 RelayFamilyMessage(reassign=true, reason=理由) 改派，其他输入先明确交接，避免重复执行。若反复出现同一发送者的无行动价值消息，可基于具体例子定向提醒对方：日常进展写摘要，仅为必要信息、重要运行影响或约定工作流发消息；无新情况不重复提醒、不群发或要求逐条确认。重要决定及依据保存到 Family 或项目记录；需要相关成员行动时才通知。保留串行时说明原因；仍有积压时安排必要复查。
 ```
 
 逐轮 prompt（完整默认模板）：
@@ -327,7 +327,7 @@ ${facts}
 指南（当前默认）：
 
 ```text
-读取原请求、Router 输出与当前名册。低置信度已转交的请求不重复派发；必要时用RelayFamilyMessage(reassign=true, reason=理由) 改派。格式错误未转交时修复原路由。组织成果若已在本复核输入完成，不再执行创建；本轮完成并有真实回复后，由授权恢复者用 ResolveFamilyRequest 将既有成果归档到原失败请求，再 CheckFamilyRecovery 核验。
+读取原请求、Router 输出与当前名册。低置信度已转交的请求不重复派发；必要时用RelayFamilyMessage(reassign=true, reason=理由) 改派。格式错误未转交时修复原路由。组织成果若已在本复核输入完成，不再执行创建；本轮完成并有真实回复后，由授权恢复者用 ResolveFamilyRequest 将既有成果归档到原失败请求，再 MaintainFamilyRecovery 核验。
 ```
 
 逐轮 prompt（完整默认模板）：
@@ -424,7 +424,7 @@ ${facts}
 | --- | --- | --- |
 | route | `route` | 门面消息 Event |
 | queue | `notify_member_queue` | 队列压力 Event |
-| review | `notify_periodic_review` | 周期 Event 经 CheckFamilyReview 按业务活动门控后派发 |
+| review | `notify_periodic_review` | 周期 Event 经 MaintainFamilyReview 按业务活动门控后派发 |
 | summary | `request_summary` | 成员完成检查与小时 Event 共用场景 |
 | recruit、route_review | `relay` | Router 输出后的分支 |
 | recovery、quota、organization | `recheck_recovery` | 恢复检查，或对应服务直接派发 |
@@ -433,7 +433,7 @@ ${facts}
 
 在 Lineage 画布双击 Family 图标，进入 Family 名称的首个页签 → **工作流程**，编辑关联 Event、Effect、guide 和 prompt；完整对象在“内部对象”。保存有图版本检查，冲突保留草稿。模板同步保留用户编辑、事件参数、现有对象 ID 和普通工作流；指南文件由图再生成。修改本 Decision 不自动修改运行图或已保存 Prompt。
 
-预览首轮、后续轮次和 Compact 后注入时，使用 `PreviewPromptInjection(resident_id=角色, turn="first" / "later" / "after_compaction")`；消息正文在预览中是占位文字。核对某次真实调用时，使用 `GetSentPrompt(resident_id=角色, message_id=该角色收到的任务ID)`，它需要该 Resident 的管理权限；不要把门面原请求 ID 当作角色任务 ID。
+预览首轮、后续轮次和 Compact 后注入时，使用 `GetPromptInjectionPreview(resident_id=角色, turn="first" / "later" / "after_compaction")`；消息正文在预览中是占位文字。核对某次真实调用时，使用 `GetSentPrompt(resident_id=角色, message_id=该角色收到的任务ID)`，它需要该 Resident 的管理权限；不要把门面原请求 ID 当作角色任务 ID。
 
 普通周期 Event 使用 `misfire_policy="coalesce_latest"`、`overlap_policy="drop"`；门面 route 允许并行，queue／普通 review 使用 `unavailable_policy="latest"`。审计某次执行时用 `GetTriggerPath`／`GetInputState` 核对 Effect 回执和角色输入，不能以 Event 发生推断职责已完成。
 

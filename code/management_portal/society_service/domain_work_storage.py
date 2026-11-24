@@ -32,6 +32,17 @@ COLUMNS = {table: ("lineage_id", *((key,) if key else ()), payload)
            for table, (key, payload) in TABLES.items()}
 
 
+def list_work(connection, table, lineage_id):
+    key, payload = TABLES[table]
+    if not key:
+        raise ValueError("Singleton repository has no keyed collection")
+    rows = connection.execute(
+        f"SELECT {key},{payload} FROM {table} WHERE lineage_id=%s ORDER BY {key}",
+        (lineage_id,),
+    ).fetchall()
+    return {row[key]: json_value(row[payload]) for row in rows}
+
+
 def create_schema(connection):
     for table, (key, payload) in TABLES.items():
         keys = "lineage_id" + ("," + key if key else "")
@@ -66,11 +77,8 @@ class WorkRepository:
         return json_value(row[self.payload]) if row else {}
 
     def list(self, lineage_id):
-        if not self.key:
-            raise ValueError("Singleton repository has no keyed collection")
         with self.database.read() as connection:
-            rows = connection.execute(f"SELECT {self.key},{self.payload} FROM {self.table} WHERE lineage_id=%s ORDER BY {self.key}", (lineage_id,)).fetchall()
-        return {row[self.key]: json_value(row[self.payload]) for row in rows}
+            return list_work(connection, self.table, lineage_id)
 
     def by_keys(self, keys):
         if not self.key:

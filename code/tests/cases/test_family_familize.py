@@ -182,7 +182,7 @@ def test_familize_hands_leadership_and_wires_to_the_facade_and_unfamilize_return
     ])
     watched = {(item["source"], item["target"]) for item in internal if item["kind"] == "watch"}
     summary_check = next(item for item in view["program"]["components"]
-                         if item["kind"] == "effect" and "CheckResidentWorkSummary" in item["config"].get("script", ""))
+                         if item["kind"] == "effect" and "MaintainResidentWorkSummary" in item["config"].get("script", ""))
     summary_source = next(item["source"] for item in internal
                           if item["kind"] == "route" and item["target"] == summary_check["id"])
     assert {target for source, target in watched if source == summary_source} == {first, second}

@@ -1090,7 +1090,7 @@ PERMISSION_INSTRUCTIONS = (
     "UpdatePermissionScheme", "DeletePermissionScheme", "ActivatePermissionScheme", "GetPermissionNode",
     "SearchPermissionNodes", "ListPermissionEntries", "CreatePermissionEntry", "UpdatePermissionEntry",
     "DeletePermissionEntry", "GetEffectivePermissions", "CheckPermission",
-    "IssueTemporaryCredential", "RenewTemporaryCredential", "RevokeTemporaryCredential", "ListTemporaryCredentials",
+    "CreateTemporaryCredential", "UpdateTemporaryCredential", "RevokeTemporaryCredential", "ListTemporaryCredentials",
 )
 
 
@@ -1120,7 +1120,7 @@ def restore_article(inv):
 HANDLERS = {
     "ListDeliverables": list_deliverables,
     'RestoreArticle': restore_article,
-    'PreviewArticleRestore': preview_article_restore,
+    'CheckArticleRestore': preview_article_restore,
     'CorrectResourceLifecycleAssociation': correct_resource_lifecycle_association,
     "CreateWorkspace": lambda inv: directory_isa.create_workspace(inv, _service()),
     "RegisterWorkspace": lambda inv: directory_isa.create_workspace(inv, _service()),
@@ -1154,7 +1154,7 @@ def binding() -> OwnerBinding:
 
 
 def _authorization_arguments(declaration, arguments, context):
-    if declaration.name in {'PreviewArticleRestore', 'RestoreArticle'}:
+    if declaration.name in {'CheckArticleRestore', 'RestoreArticle'}:
         return {**arguments, 'source_address': _service().parse_address(arguments.get('source_address')).root_id}
     if declaration.name in {"ReadResource", "ResolveResource"}:
         from .upload_files import file_reference

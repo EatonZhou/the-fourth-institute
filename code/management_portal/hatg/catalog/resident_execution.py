@@ -48,7 +48,7 @@ DECLARATIONS = (
     ), (
         R("input_state", "object", "状态、回复消息 ID 列表、更新时间和错误；work 独立给出可信执行关联、工作状态及 updated_at，送达 completed 不代表 work completed；include_progress 时另有 progress，include_context 时另有 in_context，include_execution_diagnostics 时另有 execution_diagnostics"),
     ), target="resident_id"),
-    _d("OpenIntake", (On("resident_id", "resident", optional=True), On("resident_ids", "resident", optional=True)), "打开或关闭 Resident 的接单开关。打开后等待中的消息按顺序开始执行；"
+    _d("SetIntakeOpen", (On("resident_id", "resident", optional=True), On("resident_ids", "resident", optional=True)), "打开或关闭 Resident 的接单开关。打开后等待中的消息按顺序开始执行；"
        "关闭后新消息只排队不执行，当前工作继续完成。", (
         *INTAKE_TARGETS,
         R("open", "boolean", "true 打开，false 关闭"),

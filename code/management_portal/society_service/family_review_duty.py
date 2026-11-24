@@ -53,9 +53,9 @@ def install(body, steward, actor, template, *, reconcile):
         'event_type':'time.reached', 'schedule_mode':'recurring', 'recurrence_kind':'interval',
         'interval_seconds':recipe['interval_seconds'], 'misfire_policy':'coalesce_latest', 'overlap_policy':'drop'})
     check = put('notify_periodic_review_task', 'effect', title='按业务活动检查组织回顾', config={
-        'script':'CheckFamilyReview lineage_id="${arguments.lineage_id}" family_id="${arguments.family_id}"', 'endpoints':[]})
+        'script':'MaintainFamilyReview lineage_id="${arguments.lineage_id}" family_id="${arguments.family_id}"', 'endpoints':[]})
     put('review_activity', 'effect', title='记录已完成业务活动', config={
-        'script':'CheckFamilyReview lineage_id="${arguments.lineage_id}" family_id="${arguments.family_id}" event:=${event}', 'endpoints':[]})
+        'script':'MaintainFamilyReview lineage_id="${arguments.lineage_id}" family_id="${arguments.family_id}" event:=${event}', 'endpoints':[]})
     entry = {**family_tasks.defaults('notify_periodic_review')[KEY], 'guide':recipe['guide'], 'prompt':recipe['prompt']}
     put('notify_periodic_review', 'route', source=timer, target=check, config={'unavailable_policy':'latest',
         'invoke_profiles':{'effect':{'arguments':{'lineage_id':{'value':body['lineage_id']},

@@ -35,7 +35,7 @@ DECLARATIONS = (
     ), (
         P("items", "array", "带 user_id 时：置顶在前，其余按最近活动从新到旧，同一时间按 key 升序；每项是一段对话或一条通知；"
           "Resident 对话条目的 latest_message_id 是这段对话最近一条可通知消息的 ID，用 GetMessage(resident_id, message_id) 读取原文，"
-          "input_message_id 是它回应的那条输入；version 是条目阅读状态的修订号，作为 MarkMailboxItemRead 的 expected_version"),
+          "input_message_id 是它回应的那条输入；version 是条目阅读状态的修订号，作为 SetMailboxItemRead 的 expected_version"),
         P("unread_count", "integer", "带 user_id 时：需要提醒的未读条目数，免打扰的普通未读不计入"),
         P("pending_requests", "array", "带 user_id 时：当前仍待这位 User 回答且有回答权限的问题。与未读、清除和消息列表独立，阅读不等于回答；"
           "每项含稳定 key、source_resident_id/source_message_id（源问题身份）、resident_id/message_id（可打开的对话与问题）、"
@@ -54,15 +54,15 @@ DECLARATIONS = (
         P("timeout_seconds", "integer", "本次订阅时长，默认 30 秒", minimum=1, maximum=60),
     ), (R("keys", "array", "这批有变化的 Mailbox 条目键；待回答问题随所属对话变化提示，用 GetMailbox 重读 pending_requests"), R("cursor", description="下次作 after_cursor 续读的游标"),
         R("snapshot_required", "boolean", "为 true 时须用 GetMailbox 重读整个 Mailbox")), streaming=True),
-    _d("MuteMailboxItem", FIXED, "设置调用者自己的对话消息免打扰。消息与未读仍保留，普通未读不计入 Mailbox 提醒总数；聊天室 @ 提及仍提醒。", (
+    _d("SetMailboxItemMuted", FIXED, "设置调用者自己的对话消息免打扰。消息与未读仍保留，普通未读不计入 Mailbox 提醒总数；聊天室 @ 提及仍提醒。", (
         R("key", description="Mailbox 对话条目键；不支持单向通知"),
         R("muted", "boolean", "true 开启消息免打扰，false 恢复提醒"),
     ), (R("item", "object", "更新后的条目，包含 muted、unread、attention_unread 与 read_revision"),),
        mutates=True, target="key"),
-    _d("PinMailboxItem", FIXED, "置顶或取消置顶调用者 Mailbox 中的对话；可固定尚未交谈的可见 Resident，不改变未读状态。通知不能置顶，最多 50 个。", (
+    _d("SetMailboxItemPinned", FIXED, "置顶或取消置顶调用者 Mailbox 中的对话；可固定尚未交谈的可见 Resident，不改变未读状态。通知不能置顶，最多 50 个。", (
         R("key", description="条目键；Resident 为 resident:resident_<id>"), R("pinned", "boolean", "true 置顶，false 取消置顶"),
     ), (R("item", "object", "改后的对话条目，与 GetMailbox 的条目同形；仍未列出时为空对象"),), mutates=True, target="key"),
-    _d("MarkMailboxItemRead", FIXED, "把调用者 Mailbox 中的条目标为已读，或重新标为未读；给出 expected_version 时，条目之后有新提醒或其他变化则拒绝修改。"
+    _d("SetMailboxItemRead", FIXED, "把调用者 Mailbox 中的条目标为已读，或重新标为未读；给出 expected_version 时，条目之后有新提醒或其他变化则拒绝修改。"
         "页面打开一段 Resident Chat 时不带 expected_version 调用，读到它最新的一条提醒。", (
         R("key", description="条目键；Resident 对话为 resident:resident_<id>，可以是 Mailbox 中尚未列出的可见 Resident"),
         P("unread", "boolean", "true 时重新标为未读"),
@@ -83,7 +83,7 @@ DECLARATIONS = (
         P("state", "object", "带 resident_id 时：清空后的 Resident 状态"),
         P("controls", "object", "带 resident_id 时：调用者此后可用的操作")),
        mutates=True, one_of=EITHER, argument_owners=RESIDENT_AT_LINEAGE),
-    _d("ReorderMailbox", ON_RESIDENT, "调整等待消息的顺序：把一条消息移到另一条之前或之后，或给出全部等待消息的新排列。", (
+    _d("MoveMailboxItems", ON_RESIDENT, "调整等待消息的顺序：把一条消息移到另一条之前或之后，或给出全部等待消息的新排列。", (
         R("resident_id", description="Mailbox 所属的 Resident"),
         P("message_id", description="要移动的消息"),
         P("before_message_id", description="移到这条消息之前"),
@@ -93,7 +93,7 @@ DECLARATIONS = (
         R("items", "array", "调整后的队列"), R("revision", description="调整后等待顺序的标识，与 GetMailbox 的 revision 相同"),
         R("reordered", "boolean", "顺序是否有变化"),
     ), mutates=True, target="resident_id", owner="lineage"),
-    _d("SetMailboxItemHold", ON_RESIDENT, "暂存或恢复一条尚未接单的等待消息。暂存项保留原消息和相对顺序，自动执行跳过它；恢复不置顶。"
+    _d("SetMailboxItemHeld", ON_RESIDENT, "暂存或恢复一条尚未接单的等待消息。暂存项保留原消息和相对顺序，自动执行跳过它；恢复不置顶。"
         "已接单、执行中、info 或 Family 门面路由请求不能暂存。", (
         R("resident_id", description="Mailbox 所属的 Resident"), R("message_id", description="顶层等待消息或群体 ID"),
         R("held", "boolean", "true 暂存，false 恢复"),

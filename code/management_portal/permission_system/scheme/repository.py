@@ -23,7 +23,7 @@ from typing import Any
 from ..engine.store import DEFAULT_SCHEME, Store
 from management_portal.hatg.declarations import decision_elements
 
-from .compiler import CompiledScheme, SchemeError, compile_scheme, declared_decisions
+from .compiler import CompiledScheme, SchemeError, compile_scheme, declared_decisions, rules_digest
 
 BUILTIN_DIRECTORY = Path(__file__).with_name("builtin")
 LOGGER = logging.getLogger(__name__)
@@ -68,6 +68,105 @@ def builtin_documents() -> dict[str, dict[str, Any]]:
 
 _REPORTED: set[tuple[str, tuple[str, ...]]] = set()
 
+ISA_NAME_MIGRATION = "isa-verbs-20261124"
+
+
+def _renamed_element(element: str) -> str:
+    # This is a persisted-data migration, never instruction resolution.
+    from management_portal.hatg.instruction_renames import INSTRUCTION_RENAMES
+
+    name, separator, argument = element.partition(":")
+    return INSTRUCTION_RENAMES.get(name, name) + separator + argument
+
+
+def _renamed_rules(document: dict[str, Any]) -> dict[str, Any]:
+    """Rewrite only A identifiers; titles, prose, resource IDs and audit evidence stay intact."""
+    result = copy.deepcopy(document)
+    mapped = result.get("instructions", {})
+    renamed = {}
+    for element, classification in mapped.items():
+        target = _renamed_element(element)
+        if target in renamed:
+            raise SchemeConflict(f"ISA 改名后的分类冲突：{target}")
+        renamed[target] = classification
+    if "instructions" in result:
+        result["instructions"] = renamed
+    for entry in result.get("entries", []):
+        if isinstance(entry.get("a"), str):
+            entry["a"] = _renamed_element(entry["a"])
+    return result
+
+
+def migrate_instruction_names(store: Store) -> bool:
+    """Upgrade every saved scheme before loading decisions, atomically and once per database.
+
+    Activation must drain older permission writers first. New owners serialize
+    here; an exception rolls back both data and the receipt. Historical merge
+    reports and authenticated source digests remain original audit evidence.
+    """
+    with store.read() as connection:
+        if store.execute(connection, "SELECT 1 FROM {s}.scheme_migrations WHERE migration_id=%s",
+                         (ISA_NAME_MIGRATION,)).fetchone():
+            return False
+    with store.transaction() as connection:
+        store.execute(connection, "SELECT pg_advisory_xact_lock(hashtextextended(%s,0))",
+                      (store.schema + ":" + ISA_NAME_MIGRATION,))
+        if store.execute(connection, "SELECT 1 FROM {s}.scheme_migrations WHERE migration_id=%s",
+                         (ISA_NAME_MIGRATION,)).fetchone():
+            return False
+        # Block all writes, including issuance/expiry and custom-scheme saves,
+        # before reading any rows; readers see either the old or the new TX.
+        store.execute(connection, "LOCK TABLE {s}.schemes, {s}.scheme_instances, {s}.scheme_sources,"
+                      " {s}.scheme_nodes, {s}.scheme_entries, {s}.user_authorizations"
+                      " IN SHARE ROW EXCLUSIVE MODE")
+        changed = False
+        for row in store.execute(connection, "SELECT scheme_id,document FROM {s}.schemes").fetchall():
+            document = _renamed_rules(row["document"])
+            if document != row["document"]:
+                store.execute(connection, "UPDATE {s}.schemes SET document=%s::jsonb,version=version+1"
+                              " WHERE scheme_id=%s", (json.dumps(document, ensure_ascii=False), row["scheme_id"]))
+                changed = True
+        for row in store.execute(connection, "SELECT scheme_id,rules,rules_digest FROM {s}.scheme_instances"
+                                 " WHERE rules IS NOT NULL").fetchall():
+            document = _renamed_rules(row["rules"])
+            if document != row["rules"]:
+                # Preserve a stale instance's status. Only rebase a digest that
+                # actually describes the saved basis, never pretend it is current.
+                digest = (rules_digest(document) if rules_digest(row["rules"]) == row["rules_digest"]
+                          else row["rules_digest"])
+                store.execute(connection, "UPDATE {s}.scheme_instances SET rules=%s::jsonb,rules_digest=%s"
+                              " WHERE scheme_id=%s", (json.dumps(document, ensure_ascii=False), digest, row["scheme_id"]))
+                changed = True
+        for row in store.execute(connection, "SELECT scheme_id,rules FROM {s}.scheme_sources").fetchall():
+            document = _renamed_rules(row["rules"])
+            if document != row["rules"]:
+                store.execute(connection, "UPDATE {s}.scheme_sources SET rules=%s::jsonb,digest=%s WHERE scheme_id=%s",
+                              (json.dumps(document, ensure_ascii=False), source_digest(document), row["scheme_id"]))
+                changed = True
+        for row in store.execute(connection, "SELECT scheme_id,id,parent,path FROM {s}.scheme_nodes WHERE tree='A'").fetchall():
+            element, parent = _renamed_element(row["id"]), _renamed_element(row["parent"])
+            path = [_renamed_element(part) for part in row["path"]]
+            if (element, parent, path) != (row["id"], row["parent"], list(row["path"])):
+                # A target collision intentionally aborts; never discard either
+                # classification or merge two principals' permissions.
+                store.execute(connection, "UPDATE {s}.scheme_nodes SET id=%s,parent=%s,path=%s"
+                              " WHERE scheme_id=%s AND tree='A' AND id=%s",
+                              (element, parent, path, row["scheme_id"], row["id"]))
+                changed = True
+        # Entry IDs, CAS versions, effects, disabled flags, issuer, lifetime,
+        # bound-message IDs and user-source proofs are unchanged.
+        for table in ("scheme_entries", "user_authorizations"):
+            for row in store.execute(connection, f"SELECT DISTINCT a_node FROM {{s}}.{table}").fetchall():
+                target = _renamed_element(row["a_node"])
+                if target != row["a_node"]:
+                    store.execute(connection, f"UPDATE {{s}}.{table} SET a_node=%s WHERE a_node=%s",
+                                  (target, row["a_node"]))
+                    changed = True
+        if changed:
+            store.bump(connection)
+        store.execute(connection, "INSERT INTO {s}.scheme_migrations(migration_id) VALUES (%s)", (ISA_NAME_MIGRATION,))
+    return True
+
 
 def installed(document: dict[str, Any], *, before: bool = False) -> dict[str, Any]:
     """The rules with their classification limited to the A elements of the instructions this Portal installs.
@@ -110,9 +209,13 @@ def installed(document: dict[str, Any], *, before: bool = False) -> dict[str, An
 
 
 class Schemes:
-    def __init__(self, store: Store) -> None:
+    def __init__(self, store: Store | None) -> None:
         self.store = store
         self._builtin = builtin_documents()
+        # Offline built-in inspection has no persistent state to upgrade.
+        # A real store must migrate successfully before any saved rules load.
+        if store is not None:
+            migrate_instruction_names(store)
         self._compiled: dict[tuple[str, str], CompiledScheme] = {}
         self._lock = threading.Lock()
 

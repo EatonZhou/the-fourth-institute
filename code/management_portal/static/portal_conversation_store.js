@@ -1048,7 +1048,7 @@
     const seen = readState(item).read_revision;
     try {
       const payload = await changeReadState(key, unread, () => window.PortalInstructionClient.execute(
-        "MarkMailboxItemRead", { key, unread: Boolean(unread) }, {
+        "SetMailboxItemRead", { key, unread: Boolean(unread) }, {
           keepalive: true,
           idempotencyKey: `inbox-read:${globalThis.PortalUIPrimitives.randomUUID()}`,
           expectedVersion: { [key]: String(seen) },
@@ -1076,7 +1076,7 @@
     const key = `chatroom:${exact}`;
     const actorRevision = state.actorRevision;
     const payload = await changeReadState(key, false, async () => {
-      const room = await window.PortalInstructionClient.execute("MarkChatroomRead", {
+      const room = await window.PortalInstructionClient.execute("UpdateChatroomReadPosition", {
         chatroom_id: exact,
         ...(through === null ? {} : { through }),
       }, {
@@ -1103,7 +1103,7 @@
     const key = `resident:${exact}`;
     const actorRevision = state.actorRevision;
     const payload = await changeReadState(key, false, () => window.PortalInstructionClient.execute(
-      "MarkMailboxItemRead", { key }, {
+      "SetMailboxItemRead", { key }, {
         keepalive: true,
         idempotencyKey: `resident-chat-read:${globalThis.PortalUIPrimitives.randomUUID()}`,
       },
@@ -1143,7 +1143,7 @@
   function setPinned(key, pinned) {
     if (state.pinRequests.has(key)) return state.pinRequests.get(key);
     const actorRevision = state.actorRevision;
-    const request = window.PortalInstructionClient.execute("PinMailboxItem", { key, pinned }, {
+    const request = window.PortalInstructionClient.execute("SetMailboxItemPinned", { key, pinned }, {
       idempotencyKey: `inbox-pin:${globalThis.PortalUIPrimitives.randomUUID()}`,
     }).then(payload => {
       if (actorRevision !== state.actorRevision) return null;
@@ -1173,7 +1173,7 @@
   function setMuted(key, muted) {
     if (state.muteRequests.has(key)) return state.muteRequests.get(key);
     const actorRevision = state.actorRevision;
-    const request = window.PortalInstructionClient.execute("MuteMailboxItem", { key, muted }, {
+    const request = window.PortalInstructionClient.execute("SetMailboxItemMuted", { key, muted }, {
       idempotencyKey: `inbox-mute:${globalThis.PortalUIPrimitives.randomUUID()}`,
     }).then(async payload => {
       if (actorRevision !== state.actorRevision) return null;

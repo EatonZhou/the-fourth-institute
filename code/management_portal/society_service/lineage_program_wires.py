@@ -124,8 +124,8 @@ def _route_delivery_config(config: dict[str, Any], ends: _WireEnds) -> dict[str,
 
     _reject_unknown_fields(config, _ROUTE_CONFIG_FIELDS, "route wire config")
     result: dict[str, Any] = {}
-    if not _boolean(config.get("include_envelope"), True):
-        result["include_envelope"] = False
+    if config.get("include_envelope") is not None:
+        result["include_envelope"] = _boolean(config["include_envelope"], False)
     profiles = normalize_invoke_profiles(config.get("invoke_profiles"))
     if profiles:
         result["invoke_profiles"] = profiles

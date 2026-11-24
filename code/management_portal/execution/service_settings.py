@@ -164,7 +164,7 @@ class ExecutionSettings:
             row = connection.execute('SELECT managed_workflow_keys FROM service_settings WHERE singleton = 1 FOR UPDATE').fetchone()
             managed = set(row['managed_workflow_keys']) if row else set()
             if managed.intersection(SETTING_WORKFLOW_KEYS[field] for field in changes):
-                raise ValueError('setting is managed by a Lineage Event; use PauseComponent')
+                raise ValueError('setting is managed by a Lineage Event; use SetComponentPaused')
             for field, enabled in changes.items():
                 self._set(connection, SETTING_WORKFLOW_KEYS[field], enabled)
         return self.get()

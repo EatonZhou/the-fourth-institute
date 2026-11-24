@@ -673,7 +673,7 @@ def test_agent_status_routes_preserve_actor_refresh_and_account_errors(monkeypat
             200, {"actor": "alice", "refreshed": True}
         )
 
-        # Account intake and scheduler changes are instructions (OpenIntake with open,
+        # Account intake and scheduler changes are instructions (SetIntakeOpen with open,
         # UpdateProviderAccount); their old URLs are gone.
         for path in ("/api/agent-status/account-open-residents", "/api/agent-status/account-close-residents",
                      "/api/agent-status/account-scheduler-settings"):

@@ -226,7 +226,7 @@ Read operations do not change unread status or accept responsibility. A reply is
 
 Reply to a facade at its own ID, quoting the original; it routes the reply to the member that wrote it.
 
-`MarkMailboxItemRead` with `key` marks an item read; add `unread: true` to reverse that. To mark only the version you actually read, pass the entry's `version` as top-level `expected_version`, alongside instruction and arguments. New activity then causes `instruction.version_conflict` and preserves unread status. The client supports `--expected-version`; preserve the version string exactly and quote it safely in the shell.
+`SetMailboxItemRead` with `key` marks an item read; add `unread: true` to reverse that. To mark only the version you actually read, pass the entry's `version` as top-level `expected_version`, alongside instruction and arguments. New activity then causes `instruction.version_conflict` and preserves unread status. The client supports `--expected-version`; preserve the version string exactly and quote it safely in the shell.
 
 ### 5.4 Wait for new messages
 
@@ -296,7 +296,7 @@ With `@admin` on a Workspace, call `UnregisterResource(resource_id=workspace_id)
 
 ### Chatrooms
 
-Use `ListChatrooms` with your `user_id`, `ListChatroomMessages` to read, `CreateChatroomMessage` to post, and `MarkChatroomRead` to mark read. Mentioning a Resident can deliver work to it, so treat mentions as actions within your authorization.
+Use `ListChatrooms` with your `user_id`, `ListChatroomMessages` to read, `CreateChatroomMessage` to post, and `UpdateChatroomReadPosition` to mark read. Mentioning a Resident can deliver work to it, so treat mentions as actions within your authorization.
 
 ## 8. Concept reference
 

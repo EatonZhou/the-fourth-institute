@@ -175,6 +175,19 @@ class DatabaseSnapshot:
             key = ('lineage', name)
             if key in output:
                 output[key] = [row for row in output[key] if row['node_id'] in owned_nodes]
+        # Portable definitions use the installed ISA vocabulary; historical
+        # rows are exported separately and retain their original evidence.
+        from management_portal.society_service.instruction_name_migration import (
+            normalize_component_config, normalize_wire_config,
+        )
+        for name, normalize in (('lineage_components', normalize_component_config),
+                                ('lineage_edges', normalize_wire_config)):
+            for row in output.get(('lineage', name), []):
+                if 'config_json' in row:
+                    config = row['config_json']
+                    was_text = isinstance(config, str)
+                    value = normalize(json.loads(config) if was_text else config)
+                    row['config_json'] = json.dumps(value, ensure_ascii=False) if was_text else value
         return output
 
     def historical_rows(self, resident_ids, lineage_ids):

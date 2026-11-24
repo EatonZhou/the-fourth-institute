@@ -53,7 +53,7 @@ CATEGORIES: dict[str, tuple[str, str, tuple[str, ...]]] = {
     ),
     "message_envelope": (
         "消息包装",
-        "<user-message> 标签，带附件时的会话说明、发送者与 Resident 信息，以及门面发来消息的回复说明",
+        "<user-message> 标签、会话说明，以及从正文识别的资源引用。主动附加的资源随消息送达",
         ENVELOPE_CHOICES,
     ),
     "turn_skills": (
@@ -69,7 +69,7 @@ PRESETS: dict[str, dict[str, str]] = {
         "resident_md": "session_start_and_after_compaction",
         "runtime_identity": "every_turn",
         "authorization_context": "every_turn",
-        "message_envelope": "every_turn",
+        "message_envelope": "off",
         "turn_skills": "list",
     },
     "full": {
@@ -85,7 +85,7 @@ PRESETS: dict[str, dict[str, str]] = {
         "resident_md": "session_start",
         "runtime_identity": "session_start",
         "authorization_context": "session_start",
-        "message_envelope": "every_turn",
+        "message_envelope": "off",
         "turn_skills": "list",
     },
     "pure": {

@@ -44,7 +44,7 @@ def _authenticated_terminal(
     calls: list[tuple[object, ...]] = []
     monkeypatch.setattr(http_auth, "_check_session", lambda _handler: True)
     monkeypatch.setattr(http_auth, "_get_session_username", lambda _handler: "tester")
-    # Opening a Terminal is OpenTerminal, which the Portal 管理员 category may run.
+    # Opening a Terminal is CreateTerminal, which the Portal 管理员 category may run.
     from tests.cases.permission_test_support import portal_admin
 
     portal_admin("tester")

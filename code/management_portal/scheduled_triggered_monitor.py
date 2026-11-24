@@ -33,7 +33,7 @@ RECENT_RUNS = 10
 # Runs read per Resident to count consecutive failures and find the last success.
 RUN_SCAN = 50
 # Each row's buttons, each asking only its own instruction (decision_b820faf42218 §3.1).
-LINEAGE_ACTIONS = ("UpdateComponent", "PauseComponent", "TriggerEvent", "CancelScriptRun")
+LINEAGE_ACTIONS = ("UpdateComponent", "SetComponentPaused", "TriggerEvent", "CancelScriptRun")
 RESIDENT_ACTIONS = ("UpdateResidentSettings", "CancelInput")
 
 

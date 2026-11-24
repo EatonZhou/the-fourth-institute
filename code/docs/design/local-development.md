@@ -26,6 +26,8 @@ python3 code/scripts/tfi_development_runtime.py activate --root /实际实例目
 重启数据库和 Provider 账号服务。完整发布范围无需重启时使用 `--no-activate`，随后核对 Release 的实际 HTTP 资源。
 静态 URL 的 `portal_v` 由公共 HTTP owner 按文件内容计算 SHA-256；静态发布不依赖 Web 进程换代来更新缓存身份。
 
+首次激活或发布包含 `code/management_portal/hatg/instruction_renames.py` 时，使用停稳后切换。按反向顺序停止本次选中的旧服务，包括 Web、Dev Web、公共网关及已启用的功能服务。全部停止成功后才按启动顺序重新启动；Worker 仍通过 HUP 平滑换代。Society 先迁移现行可执行定义，再恢复工作流和启动 Effect、Family 后台处理。受影响 Effect 有未完成工作或待投递时，迁移拒绝继续，历史运行日志和回执保留。任何停止、迁移或健康检查失败均不能报告激活完成。
+
 ## Resident 从哪里读取规则
 
 仓库根目录 `AGENTS.md` 是开发入口；Resident Folder 的小写 `resident.md` 保存节点身份，
@@ -35,7 +37,7 @@ Portal 托管的 Codex 关闭自动项目文档加载，因此不能只修改 `A
 共用提示的源码是 `code/core_skills/tfi-agent-rule/`，后台服务运行时直接读取自身代码目录中
 `core_skills/tfi-agent-rule/` 的主文件及对应角色文件，实例的 skills 区域不保存副本。`resident`
 角色通过其中的开发任务规则读取 `portal-development.md` 和 SPEC；不会自动注入 development 角色全文。
-修改随代码发布生效，并通过 `PreviewPromptInjection` 检查正文和发送时机。
+修改随代码发布生效，并通过 `GetPromptInjectionPreview` 检查正文和发送时机。
 共用规则要求必读的 `create-skill`、`manage-knowledge-base` 同样以 `code/core_skills/` 为源码，
 按同一方式生效。
 已送达的会话内容不会因文件变化而被改写；首轮、后续轮次、压缩后发送各按注入设置执行。

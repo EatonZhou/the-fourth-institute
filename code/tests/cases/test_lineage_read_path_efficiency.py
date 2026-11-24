@@ -48,7 +48,7 @@ def _intake_fakes(monkeypatch, states):
 
 
 def test_open_intake_open_false_closes_one_resident(monkeypatch):
-    """OpenIntake open=false 关闭单个 Resident 的接单，open=true 再打开"""
+    """SetIntakeOpen open=false 关闭单个 Resident 的接单，open=true 再打开"""
     resident_id = "resident_123456789abc"
     execution, transitions = _intake_fakes(monkeypatch, {resident_id: "open"})
     call = lambda opening: SimpleNamespace(  # noqa: E731
@@ -64,7 +64,7 @@ def test_open_intake_receipt_matches_published_schema(monkeypatch):
     """单人接单开关声明字符串状态，切换与幂等回执均可直接驱动下一次操作"""
     from management_portal.hatg.catalog import instruction_catalog
 
-    fields = {field.name: field.schema() for field in instruction_catalog()["OpenIntake"].result}
+    fields = {field.name: field.schema() for field in instruction_catalog()["SetIntakeOpen"].result}
     resident_id = "resident_123456789abc"
     execution, transitions = _intake_fakes(monkeypatch, {resident_id: "open"})
     for opening, expected in [(False, "closed"), (False, "closed"), (True, "open"), (True, "open")]:
@@ -85,7 +85,7 @@ def test_open_intake_receipt_matches_published_schema(monkeypatch):
 
 
 def test_open_intake_open_false_closes_a_resident_ids_batch(monkeypatch):
-    """OpenIntake open=false 按 resident_ids 批量关闭接单并报告变化与未变化的 Resident"""
+    """SetIntakeOpen open=false 按 resident_ids 批量关闭接单并报告变化与未变化的 Resident"""
     first, second = "resident_aaaaaaaaaaaa", "resident_bbbbbbbbbbbb"
     execution, transitions = _intake_fakes(monkeypatch, {first: "open", second: "open"})
     inv = SimpleNamespace(argument={"resident_ids": [first, second], "open": False}.get, caller="sample_admin", entry="lineage")

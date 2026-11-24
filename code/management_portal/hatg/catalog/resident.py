@@ -147,12 +147,12 @@ DECLARATIONS = (
         R("resident_ids", "array", "最多 128 个 Resident ID", items={"type": "string"}),
         P("fields", "array", "只返回 summary 中的这些字段；列出 pending_requests 时才带待处理请求", items={"type": "string"}),
         P("include_maintenance", "boolean", "同时返回维护摘要所需的内容版本 revision、汇总来源 source_versions、"
-          "漏写轮次 missing_message_ids 与维护者 writer_id；尚无摘要的可见 Resident 也返回一项（revision 为 0），"
-          "另有 layers（recent/phase/long_term）、maintenance（时间/轮次水位）、consolidation（due/level/总量/policy）。UpdateResidentWorkSummary 的 expected_revision 取这里的 revision"),
+          "漏写轮次 missing_message_ids、待归纳输入 pending_message_ids 与维护者 writer_id；尚无摘要的可见 Resident 也返回一项（revision 为 0），"
+          "另有 layers（recent/phase/long_term）、maintenance（时间/轮次水位）、consolidation（due/level/总量/policy）"),
     ), (
         R("summaries", "array", "每项包含 resident_id、title、lineage_id、summary（当前重点、近期成果、负责范围、"
           "适合与不适合接收的任务等）、pending_requests、summary_updated_at 与 summary_stale；"
-          "include_maintenance 时另有 revision、source_versions、missing_message_ids 与 writer_id"),
+          "include_maintenance 时另有 revision、source_versions、missing_message_ids、pending_message_ids 与 writer_id"),
         R("unavailable_resident_ids", "array", "调用者看不到或尚无摘要的 Resident"),
     )),
     _d("RequestResidentSummaryRebuild", ON_RESIDENT, "请求完整重建独立 Resident 的累计摘要，由 Portal 职责 resident-summary 的承担者重写；Family 成员与门面使用各自维护者，不能全局重建。", (
@@ -198,15 +198,14 @@ DECLARATIONS = (
         R("attempts", "integer", "这份摘要累计被认领的次数，含本次"),
     ), mutates=True, target="claim_id"),
     _d("UpdateResidentWorkSummary", FIXED, "本人替换近期事实，本 Family Steward 归纳阶段与长期层或汇总门面；各层各字段合计上限默认 5000 字符，不另限层间占比。省略 summary 表示仅登记覆盖轮次。", (
-        R("resident_id", description="摘要所属的 Resident：本人，或 Steward 汇总的本 Family 门面"),
-        R("expected_revision", "integer", "GetResidentSummaries（include_maintenance）返回的 revision"),
+        R("resident_id", description="摘要所属的 Resident：本人、Steward 归纳的本 Family 成员或汇总的门面"),
         P("summary", "object", "供工作查看、搜索和路由共用的九个语义字段"),
         P("message_ids", "array", "最多 128 个本人正在运行或已完成、被摘要覆盖的输入 ID", items={"type": "string"}),
         P("source_versions", "object", "门面汇总保存 GetFamilySummaryInputs 的来源版本"),
-        P("consolidation", "object", "仅本 Family Steward：phase 为替换后的九字段阶段摘要，long_term 可选；消费近期层。resolved_threads 可选，为原未决事项到解决/取消/交接说明的映射，其余未决事项自动保留。不能同时提交 summary/message_ids/source_versions；读取 include_maintenance 的 layers、revision、consolidation.policy 后提交"),
+        P("consolidation", "object", "仅本 Family Steward：phase 为替换后的九字段阶段摘要，long_term 可同时替换长期层；近期层由本人维护。consolidated_message_ids 列出来自 pending_message_ids 的已归纳输入，只推进这些输入的水位。resolved_threads 可选，为原未决事项到解决/取消/交接说明的映射，其余未决事项自动保留。不能同时提交 summary/message_ids/source_versions"),
     ), (R("resident_id", description="摘要所属的 Resident"),
         R("summary", "object", "保存后的工作摘要（九个语义字段）"),
-        R("revision", "integer", "工作摘要的内容版本；内容有变化时加一，下次提交作 expected_revision"),
+        R("revision", "integer", "工作摘要的内容版本；内容有变化时加一"),
         R("source_versions", "object", "保存的门面汇总来源版本；成员本人的摘要为空对象"),
         R("missing_message_ids", "array", "仍未被摘要覆盖的已登记轮次"),
         R("updated_at", description="摘要内容最近一次变化的时间"),
@@ -237,7 +236,7 @@ DECLARATIONS = (
         R("next_turn_fields", "array", "从下一轮才生效的字段"),
         PROMPT_INJECTION_VIEW,
     ), mutates=True, target="resident_id"),
-    _d("PreviewPromptInjection", ON_RESIDENT, "预览 Resident 在某种轮次实际会带上的 Prompt 注入内容：每个部分是否发送、位置、字数和正文，"
+    _d("GetPromptInjectionPreview", ON_RESIDENT, "预览 Resident 在某种轮次实际会带上的 Prompt 注入内容：每个部分是否发送、位置、字数和正文，"
        "以及拼好的系统提示和本轮消息（消息正文用占位文字）。", (
         R("resident_id", description="要预览的 Resident"),
         P("turn", description="first 为会话第一轮（默认），later 为之后的轮次，after_compaction 为上下文压缩后的第一轮",

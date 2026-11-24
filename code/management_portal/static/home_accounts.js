@@ -720,7 +720,7 @@
       accountIntakePending.set(accountId, action);
       renderAccountDetails();
       try {
-        const result = await window.PortalInstructionClient.execute("OpenIntake", { resident_ids: residentIds, open: opening }, {
+        const result = await window.PortalInstructionClient.execute("SetIntakeOpen", { resident_ids: residentIds, open: opening }, {
           idempotencyKey: `account-intake:${accountId}:${globalThis.PortalUIPrimitives.randomUUID()}`,
         });
         const changed = Number(result.changed_count || 0);

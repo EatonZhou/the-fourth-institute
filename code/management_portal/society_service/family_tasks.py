@@ -14,6 +14,7 @@ from string import Template
 
 from . import family_definition
 from .family_definition import family_elements as task_elements
+from .instruction_name_migration import normalize_prompt
 
 
 ROUTER_CONTINUATION_CONTRACT = (
@@ -65,7 +66,7 @@ TASKS = {
     "queue": ("notify_member_queue", "steward", "成员队列积压",
         "先用 GetMailbox 和 ListResidentStates 核对触发成员当前待办、运行任务和实际积压，事件指标只代表触发时。"
         "先整理再评估扩容：有整理权限时，用 MergeMailboxItems 合并适合一轮处理的相关等待请求，"
-        "必要时 ReorderMailbox 调整顺序；保留原文、作者、独立诉求、依赖和取消语义，不动已领取输入。"
+        "必要时 MoveMailboxItems 调整顺序；保留原文、作者、独立诉求、依赖和取消语义，不动已领取输入。"
         "合并只减少轮次，不压缩原文或消除实际工作量；info 不参与合并，不为降低队列数字取消有效请求。"
         "整理后重读 mailbox，结合 GetResidentSummaries 判断剩余任务是否独立、现有成员能否分担；"
         "确需新增能力或并行容量时才 CreateResident 并用 UpdateFamily 加入。门面原请求用 "
@@ -81,17 +82,17 @@ TASKS = {
     "summary": ("request_summary", "steward", "成员摘要到期归纳或门面材料变化",
         "用 GetFamilySummaryInputs(resident_id=facade, overview_only=true) 找到待归纳成员，再按需读取"
         "GetResidentSummaries(include_maintenance=true)。仅业务成员记录近期事实；Router 和 Steward 不维护自身摘要。Steward 归纳业务成员阶段与长期层；"
-        "用 UpdateResidentWorkSummary 的 consolidation 和 expected_revision 提交，覆盖已归纳片段。"
+        "用 UpdateResidentWorkSummary 的 consolidation 提交，并在 consolidated_message_ids 中列出已纳入的 pending_message_ids。近期层由成员本人维护。"
         "各层各字段合计遵守 consolidation.policy.total_chars 字数上限（默认 5000），不另限阶段与长期层占比；"
         "保留未完成承诺、阻塞、重要约束及来源。项目长记录独立保存，摘要只留当前结论与入口。篇幅较长时归纳重写，不截断或删除未解决事项。"
-        "归纳后重读 GetFamilySummaryInputs；facade_needs_update 为真时，用返回的 expected_revision、"
-        "source_versions 和九字段 summary 调用 UpdateResidentWorkSummary 更新门面。版本冲突后重读重算；"
+        "归纳后重读 GetFamilySummaryInputs；facade_needs_update 为真时，用返回的 "
+        "source_versions 和九字段 summary 调用 UpdateResidentWorkSummary 更新门面。"
         "材料未变不写入，不按输入批次另发简报，不群发。",
         "按需归纳业务成员摘要并更新 Family 门面，保留有效认知。"),
     "progress": ("request_progress", "steward", "达到进展简报轮次",
-        "用 GetFamilySummaryInputs 读取当前材料和版本。按批次用 PublishFamilyProgress 提交 report、"
-        "summary、expected_revision、source_versions；简报正文和门面九字段摘要分别不超过 500 字。"
-        "区分已完成、进行中、阻塞及未覆盖，不代写成员事实，不群发；冲突后重读再提交。",
+        "用 GetFamilySummaryInputs 读取当前材料。按批次用 PublishFamilyProgress 提交 report、"
+        "summary、source_versions；简报正文和门面九字段摘要分别不超过 500 字。"
+        "区分已完成、进行中、阻塞及未覆盖，不代写成员事实，不群发。",
         "为指定批次整理 Family 进展简报。"),
     "recruit": ("relay", "steward", "Router 发现职责缺口",
         "读取原请求和候选职责，决定招募、调整分工或由最接近的成员承担。需要招募时 CreateResident"
@@ -102,14 +103,14 @@ TASKS = {
         "RelayFamilyMessage(reassign=true, reason=理由) 改派。格式错误未转交时修复原路由，核定目标后用"
         "RelayFamilyMessage(recover=true, member_id=核定成员, reason=理由) 恢复同一原请求，不另发副本。"
         "组织成果若已在本复核输入完成，不再执行创建；本轮完成并有真实回复后，由授权恢复者"
-        "用 ResolveFamilyRequest 将既有成果归档到原失败请求，再 CheckFamilyRecovery 核验。",
+        "用 ResolveFamilyRequest 将既有成果归档到原失败请求，再 MaintainFamilyRecovery 核验。",
         "复核原请求的路由，必要时纠正。"),
     "recovery": ("recheck_recovery", "steward", "工作失败或接单阻塞",
-        "用 CheckFamilyRecovery 查看原故障及状态，按需读 GetInputState、GetTriggerPath、"
+        "用 MaintainFamilyRecovery 查看原故障及状态，按需读 GetInputState、GetTriggerPath、"
         "ListResidentStates，恢复原任务并核验结果。不要把修复回执当原任务成功。"
         "门面原请求因 Router 失败且尚未转交时，核定承接者后用 RelayFamilyMessage(recover=true, "
         "member_id=核定成员, reason=理由) 恢复同一原 ID，不用 RequeueMessage 或另发副本。"
-        "成员关闭接单导致原任务阻塞时，查明原因并用 OpenIntake(open=true) 恢复接单，继续原输入；"
+        "成员关闭接单导致原任务阻塞时，查明原因并用 SetIntakeOpen(open=true) 恢复接单，继续原输入；"
         "排队中的输入不用重复投递。必要时 RestartSession 并核验操作结果；常规恢复无效时定位修复缺陷，"
         "或以 escalate_reason 说明具体阻塞并求助实际创建人。保留取消、删除和明确停止的任务；"
         "关闭整个 Family 门面表示暂停自维护，单个成员关闭不再自动免除恢复职责。",
@@ -156,6 +157,8 @@ _PRE_UNIFIED_QUEUE_GUIDE = '先用 GetMailbox 和 ListResidentStates 核对触�
 _PRE_UNIFIED_REVIEW_GUIDE = '按需查看成员职责、近期活动和队列，判断组织是否需要调整。闲置或重叠是判断依据，不是自动删除指令。保留仍有效的任务与承诺；涉及交接时先完成交接。日常结果写工作摘要，需要人决定的事项向 Family 实际创建人汇报。'
 _PRE_UNIFIED_SUMMARY_GUIDE = '用 GetFamilySummaryInputs(resident_id=facade, overview_only=true) 找到待归纳成员，再按需读取GetResidentSummaries(include_maintenance=true)。Resident 记录近期事实，Steward 归纳阶段与长期层；用 UpdateResidentWorkSummary 的 consolidation 和 expected_revision 提交，覆盖已归纳片段。所有层与字段共用总字数预算；保留未完成承诺、阻塞、重要约束及来源。项目长记录独立保存，摘要只留当前结论与入口。达到预算时重写取舍，不按时间删除未解决事项。'
 _PRE_UNIFIED_SUMMARY_PROMPT = '按需归纳到期摘要，在总预算内保留有效认知。\n${facts}\n指南：${guide_path}（${guide_version}）'
+_VERSIONED_SUMMARY_GUIDE = "用 GetFamilySummaryInputs(resident_id=facade, overview_only=true) 找到待归纳成员，再按需读取GetResidentSummaries(include_maintenance=true)。仅业务成员记录近期事实；Router 和 Steward 不维护自身摘要。Steward 归纳业务成员阶段与长期层；用 UpdateResidentWorkSummary 的 consolidation 和 expected_revision 提交，覆盖已归纳片段。各层各字段合计遵守 consolidation.policy.total_chars 字数上限（默认 5000），不另限阶段与长期层占比；保留未完成承诺、阻塞、重要约束及来源。项目长记录独立保存，摘要只留当前结论与入口。篇幅较长时归纳重写，不截断或删除未解决事项。归纳后重读 GetFamilySummaryInputs；facade_needs_update 为真时，用返回的 expected_revision、source_versions 和九字段 summary 调用 UpdateResidentWorkSummary 更新门面。版本冲突后重读重算；材料未变不写入，不按输入批次另发简报，不群发。"
+_VERSIONED_PROGRESS_GUIDE = "用 GetFamilySummaryInputs 读取当前材料和版本。按批次用 PublishFamilyProgress 提交 report、summary、expected_revision、source_versions；简报正文和门面九字段摘要分别不超过 500 字。区分已完成、进行中、阻塞及未覆盖，不代写成员事实，不群发；冲突后重读再提交。"
 
 _PRE_SUBSCRIPTION_QUOTA_GUIDE = (
     "先用 GetLineage 核对 Family.auto_migrate；关闭时不自动更换账号，等待原额度或用户明确授权。同种类可用账号优先，否则按 auto_migrate_priority 的种类顺序，未列种类排末尾；用 ListProviderAccounts.migration_type 区分订阅、服务账号及不同 API 接入，不能只按 harness 选择。检查五小时、周等所有窗口，必要时 RestartSession(context_strategy=compact) 迁移；跨 Provider 须明确目标账号的默认 model，"
@@ -200,11 +203,19 @@ def saved_fields(trigger: str, saved: dict) -> dict:
                 "queue": {"guide": (_OLD_QUEUE_GUIDE, _PRE_UNIFIED_QUEUE_GUIDE), "prompt": _OLD_QUEUE_PROMPT},
                 "review": {"guide": _PRE_UNIFIED_REVIEW_GUIDE},
                 "quota": {"guide": (_PRE_SUBSCRIPTION_QUOTA_GUIDE, _PRE_PRESERVE_QUOTA_GUIDE)},
-                "summary": {"guide": _PRE_UNIFIED_SUMMARY_GUIDE, "prompt": _PRE_UNIFIED_SUMMARY_PROMPT}}.get(trigger, {})
-    for field, old in previous.items():
-        if fields.get(field) in (old if isinstance(old, tuple) else (old,)):
-            # Omit only the unchanged shipped value; both readers and graph
-            # reconciliation already start with the current defaults.
+                "summary": {"guide": (_PRE_UNIFIED_SUMMARY_GUIDE, _VERSIONED_SUMMARY_GUIDE), "prompt": _PRE_UNIFIED_SUMMARY_PROMPT},
+                "progress": {"guide": _VERSIONED_PROGRESS_GUIDE}}.get(trigger, {})
+    for field, value in list(fields.items()):
+        if not isinstance(value, str):
+            continue
+        old = previous.get(field, ())
+        shipped = old if isinstance(old, tuple) else (old,)
+        if field == "guide" and trigger in TASKS:
+            shipped = (*shipped, TASKS[trigger][3])
+        normalized = normalize_prompt(value)
+        if any(normalized == normalize_prompt(default) for default in shipped):
+            # Compare with the cutover's spelling so templates normalized
+            # before Family reconciliation still match their shipped defaults.
             fields.pop(field)
     return fields
 

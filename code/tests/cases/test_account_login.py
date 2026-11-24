@@ -338,7 +338,7 @@ def _claude_code_submission(store, monkeypatch, capsys, transport, ipc_root, pro
     from management_portal.execution import account_registrations
     monkeypatch.setattr(account_registrations, "registration", lambda _: registration)
     second = login.LoginManager(store)
-    opened = login.HANDLERS["OpenProviderAccountLogin"](SimpleNamespace(argument={"account_id": "login_claude"}.get))
+    opened = login.HANDLERS["CreateProviderAccountLogin"](SimpleNamespace(argument={"account_id": "login_claude"}.get))
     started = opened["session"]
     assert started["requires_code_input"] is True
     assert second.start(registration)["started_at"] == started["started_at"]
@@ -478,9 +478,9 @@ def test_login_receipt_and_permissions_do_not_contain_authorization_code():
     payload = {"account_id": "login_claude", "authorization_code": "synthetic-secret"}
     assert references(payload) == {"account_id": "login_claude"}
     declaration("UpdateProviderAccountLogin").validate_arguments(payload)
-    declaration("OpenProviderAccountLogin").validate_arguments({"account_id": "login_claude"})
+    declaration("CreateProviderAccountLogin").validate_arguments({"account_id": "login_claude"})
     with pytest.raises(login.InstructionError):
-        declaration("OpenProviderAccountLogin").validate_arguments(payload)
+        declaration("CreateProviderAccountLogin").validate_arguments(payload)
     with pytest.raises(login.InstructionError):
         declaration("UpdateProviderAccountLogin").validate_arguments({"account_id": "login_claude"})
     with pytest.raises(login.InstructionError) as exc:
@@ -490,7 +490,7 @@ def test_login_receipt_and_permissions_do_not_contain_authorization_code():
     root = Path(__file__).resolve().parents[2]
     mappings = json.loads((root / "management_portal/permission_system/scheme/builtin/default.json").read_text())["instructions"]
     assert "StartProviderAccountLogin" not in mappings
-    assert mappings["OpenProviderAccountLogin"] == mappings["UpdateProviderAccount"]
+    assert mappings["CreateProviderAccountLogin"] == mappings["UpdateProviderAccount"]
     assert mappings["UpdateProviderAccountLogin"] == mappings["UpdateProviderAccount"]
     assert mappings["CancelProviderAccountLogin"] == mappings["UpdateProviderAccount"]
     assert mappings["GetProviderAccountLogin"] == mappings["ListProviderAccounts"]

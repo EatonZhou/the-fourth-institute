@@ -1,4 +1,4 @@
-"""Opening a Terminal is the OpenTerminal instruction; Users fall into three categories.
+"""Opening a Terminal is the CreateTerminal instruction; Users fall into three categories.
 
 :design: decision_600ae27b0538
 """
@@ -41,7 +41,7 @@ def test_open_mode_opens_the_terminal_to_every_signed_in_user(open_mode, shells)
     一般用户与实习用户之间的调整同样放开；管理员名单只有 Portal 管理员能改（test_portal_admin_guarantee）。
     """
     context = InstructionContext(caller="alice", entry="web")
-    for name in ("OpenTerminal", "UpdateUser"):
+    for name in ("CreateTerminal", "UpdateUser"):
         assert permission_system.authorize_instruction(instruction_catalog()[name], {}, context) is None
         assert permission_system.allows("alice", name) and "user_categories" not in instruction_catalog()[name].schema()
     local_terminal_backend.open_terminal("alice")
@@ -50,7 +50,7 @@ def test_open_mode_opens_the_terminal_to_every_signed_in_user(open_mode, shells)
 
 
 def test_terminal_routes_answer_403_and_residents_never_open_one(permissions, shells, monkeypatch):  # noqa: F811
-    """权限系统开启时，Terminal 的 HTTP 入口对没有 OpenTerminal 的 User 返回 403；Resident 不能打开 Terminal"""
+    """权限系统开启时，Terminal 的 HTTP 入口对没有 CreateTerminal 的 User 返回 403；Resident 不能打开 Terminal"""
     from management_portal.http_agent_workbench import AgentWorkbenchHttp
     from management_portal.http_terminal import TerminalHttp
 
@@ -103,10 +103,10 @@ def test_user_category_changes_are_audited_and_unchanged_ones_are_not_changes(op
 
 
 def test_default_scheme_places_users_by_category(permissions):  # noqa: F811
-    """默认方案按 User 分类把 User 放进 P 树，OpenTerminal 只给 Portal 管理员，失败通知发给他们
+    """默认方案按 User 分类把 User 放进 P 树，CreateTerminal 只给 Portal 管理员，失败通知发给他们
 
     User 位于 Portal 管理员、一般用户或实习用户节点下，改分类即移动位置；Portal 管理员的表项在分类节点上，
-    能执行 OpenTerminal，并作为能修改共享 Lineage 的 User 收到失败通知。
+    能执行 CreateTerminal，并作为能修改共享 Lineage 的 User 收到失败通知。
     """
     from tests.cases.permission_test_support import Fact
 
@@ -115,8 +115,8 @@ def test_default_scheme_places_users_by_category(permissions):  # noqa: F811
     assert store.paths("P", ["alice"])["alice"] == ["@principals", "@users", "@members", "alice"]
     permissions.administrator("alice")
     assert store.paths("P", ["alice"])["alice"] == ["@principals", "@users", "@portal_admins", "alice"]
-    assert permission_system.allows("alice", "OpenTerminal")
-    assert not permission_system.allows("bob", "OpenTerminal")
+    assert permission_system.allows("alice", "CreateTerminal")
+    assert not permission_system.allows("bob", "CreateTerminal")
     permission_system.set_user_category("bob", "intern", actor="test-actor")
     assert store.paths("P", ["bob"])["bob"] == ["@principals", "@users", "@interns", "bob"]
     lineage = "lineage_aaaaaaaaaaaa"
@@ -149,7 +149,7 @@ def test_schemes_name_user_categories_on_p_class_nodes():
 
 
 def test_a_permitted_terminal_joins_the_hidden_rail_after_the_page_is_built():
-    """/api/me 晚于工作台返回时，有 OpenTerminal 权限的终端以隐藏面板加入，不改动已固定的布局
+    """/api/me 晚于工作台返回时，有 CreateTerminal 权限的终端以隐藏面板加入，不改动已固定的布局
 
     :module: workbench.panels
     """

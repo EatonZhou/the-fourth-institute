@@ -64,7 +64,9 @@
           targetKind: kind === 'effect' ? 'effect' : profileKey, effectConfig: kind === 'effect' ? target?.config || {} : null,
           editorId: `template-${draft.template_id || 'new'}-${row.key}-${profileKey}`, readonly: false,
         });
-        return fields.deliveryFieldsHtml({ config: row.config || {} }, false, { mappingHtml, messageDelivery: profileKey === 'agent' });
+        return fields.deliveryFieldsHtml({ config: row.config || {} }, false, {
+          mappingHtml, messageDelivery: profileKey === 'agent', effectTarget: profileKey === 'effect',
+        });
       }
       return `<p class="programInspectorNote">${esc(t(row.kind === 'watch' ? 'Watch 只声明 Event 正在观察哪个对象，不触发执行。' : '这条连线只建立引用，不触发执行。'))}</p>`;
     }

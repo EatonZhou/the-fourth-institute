@@ -494,7 +494,7 @@ def dispatch_program_event(
     cause = normalized_input.payload.get("cause") or {}
     cause_kind = str(cause.get("kind") or ("timer" if normalized_input.type == "time.reached" else "external"))
     cause_id = str(cause.get("id") or cursor or normalized_input.id)
-    # Serialize admission with PauseComponent. Occurrence claiming checks again
+    # Serialize admission with SetComponentPaused. Occurrence claiming checks again
     # before fanout; no external work runs inside this control transaction.
     with lineage_program_runtime._runtime_transaction(lineage_id) as runtime:
         if runtime["event_sources"].get(event_source_id, {}).get("paused"):

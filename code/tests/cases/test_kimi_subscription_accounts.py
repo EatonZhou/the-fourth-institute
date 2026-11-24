@@ -169,9 +169,9 @@ def test_login_region_contract_and_dispatch(monkeypatch):
     from management_portal.execution import account_login
     from management_portal.hatg.catalog import declaration
     from unittest.mock import Mock
-    declaration("OpenProviderAccountLogin").validate_arguments({"account_id": "kimi_sub", "region": "mainland-cn"})
+    declaration("CreateProviderAccountLogin").validate_arguments({"account_id": "kimi_sub", "region": "mainland-cn"})
     with pytest.raises(Exception):
-        declaration("OpenProviderAccountLogin").validate_arguments({"account_id": "kimi_sub", "region": "cn"})
+        declaration("CreateProviderAccountLogin").validate_arguments({"account_id": "kimi_sub", "region": "cn"})
     row = {"provider": "kimi"}
     monkeypatch.setattr(account_login, "_registration", lambda _: row)
     native = Mock(return_value={"session": None})

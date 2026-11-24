@@ -134,7 +134,7 @@ def test_web_objects_report_their_version_tokens(monkeypatch):
     # A post instruction asks the Notice Board for the post's version.
     assert web_isa.version_of(invocation({"post_id": "post_0123456789ab"}, "UpdatePost"), "post_0123456789ab") == 3
     # The inbox handler checks the displayed completion during its target read.
-    assert web_isa.version_of(invocation({"key": "resident:resident_aaaaaaaaaaaa"}, "MarkMailboxItemRead"), "resident:resident_aaaaaaaaaaaa") is None
+    assert web_isa.version_of(invocation({"key": "resident:resident_aaaaaaaaaaaa"}, "SetMailboxItemRead"), "resident:resident_aaaaaaaaaaaa") is None
     # Personal navigation has no version token: expected_version is accepted and not compared.
     assert web_isa.version_of(invocation({"object_id": "resident_aaaaaaaaaaaa"}), "resident_aaaaaaaaaaaa") is None
 
@@ -216,7 +216,7 @@ def test_mark_resident_read_checks_access_and_uses_persisted_boolean_without_sca
         _set_agent_conversation_read_state=apply,
     ))
     call = SimpleNamespace(
-        caller="sample_admin", name="MarkMailboxItemRead",
+        caller="sample_admin", name="SetMailboxItemRead",
         argument={"key": key, "unread": False}.get,
         expected_version_for=lambda _key: "5",
     )
@@ -276,7 +276,7 @@ def test_mark_notification_read_stops_at_the_page_that_contains_it(monkeypatch):
 
 
 def test_resident_chat_read_checks_identity_before_updating_persisted_flag(monkeypatch):
-    """打开 Resident Chat 时 MarkMailboxItemRead 先核对当前身份再写入已读；访问拒绝不会写入已读状态。
+    """打开 Resident Chat 时 SetMailboxItemRead 先核对当前身份再写入已读；访问拒绝不会写入已读状态。
 
     :module: platform.core
     """

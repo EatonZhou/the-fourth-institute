@@ -36,7 +36,7 @@ window.PortalInstructionClient={execute:async(name,args)=>{
  if(name==='ListInputHistory')return {messages:[]};
  if(name==='GetChatroom'){if(denied)throw Error('没有访问这个聊天室的权限');return {chatroom:fixtureRoom()};}
  if(name==='ListChatroomMessages'){if(blocked)await new Promise(r=>window.releaseRoom=r);if(denied)throw Error('forbidden');return {messages:structuredClone(messages),next_cursor:''};}
- if(name==='MarkChatroomRead'){reads.push(args);return {chatroom:{...fixtureRoom(),unread_count:0}};}
+ if(name==='UpdateChatroomReadPosition'){reads.push(args);return {chatroom:{...fixtureRoom(),unread_count:0}};}
  if(name==='CreateChatroomMessage'){const message={message_id:'msg_sent',ordinal:26,author_id:actor,role:'user',content_parts:args.content_parts};messages.push(message);return {message};}
  throw Error('Unexpected instruction '+name);
 }};

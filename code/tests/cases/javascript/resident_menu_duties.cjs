@@ -22,9 +22,9 @@ function fixture(){
   calls.push([name,args]);
   if(name==='GetLineage')return {lineage:JSON.parse(JSON.stringify(lineage))};
   if(name==='GetResidentSettings')return {quota_switch:{auto_switch_on_quota:true}};
-  if(name==='OrderDuties'){args.function_block_ids.forEach((id,i)=>{lineage.function_blocks.find(b=>b.id===id).duty.position=i;});return {function_block_ids:args.function_block_ids};}
+  if(name==='MoveDuties'){args.function_block_ids.forEach((id,i)=>{lineage.function_blocks.find(b=>b.id===id).duty.position=i;});return {function_block_ids:args.function_block_ids};}
   if(name==='DeleteFunctionBlock'){lineage={...lineage,function_blocks:lineage.function_blocks.filter(b=>b.id!==args.function_block_id)};return {};}
-  if(name==='PreviewPromptInjection')return {parts:[
+  if(name==='GetPromptInjectionPreview')return {parts:[
    {id:'core_rules',label:'Portal 核心规则',timing:'session_start_and_after_compaction',content:'规则正文'},
    {id:'runtime_identity',label:'运行身份',timing:'every_turn',content:'resident_id: resident_a'},
    {id:'duty_memory',label:'职责清单与说明',timing:'session_start_and_after_compaction',content:'# 你的职责\n1. 第一条'},
@@ -59,11 +59,11 @@ test('lists only the Resident\'s duties in order, with what each one connects',a
  f.dom.window.close();
 });
 
-test('moving and removing a duty go through OrderDuties and DeleteFunctionBlock',async()=>{
+test('moving and removing a duty go through MoveDuties and DeleteFunctionBlock',async()=>{
  const f=fixture();await f.load();
  const plain=value=>JSON.parse(JSON.stringify(value));
  await f.click(f.root.querySelector('[data-duty-id="fbi_a"] [data-duty-move="1"]'));
- assert.deepEqual(plain(f.calls.find(c=>c[0]==='OrderDuties')[1]),{lineage_id:'lineage_1',holder_id:'resident_a',function_block_ids:['fbi_b','fbi_a']});
+ assert.deepEqual(plain(f.calls.find(c=>c[0]==='MoveDuties')[1]),{lineage_id:'lineage_1',holder_id:'resident_a',function_block_ids:['fbi_b','fbi_a']});
  assert.deepEqual(f.items(),['fbi_b','fbi_a']);
  await f.click(f.root.querySelector('[data-duty-id="fbi_a"] [data-duty-remove]'));
  assert.deepEqual(plain(f.calls.find(c=>c[0]==='DeleteFunctionBlock')[1]),{lineage_id:'lineage_1',function_block_id:'fbi_a'});
@@ -130,6 +130,6 @@ test('the Memory tab lists what enters the context by level and opens duties',as
  assert.equal(f.w.document.getElementById('nodeMemoryRows').querySelector('form, input, textarea, select, [contenteditable]'),null);
  await f.click(level('on_demand').querySelector('[data-memory-duty]'));assert.deepEqual(focused,['fbi_b']);
  await f.click(level('session').querySelector('[data-memory-harness]'));assert.deepEqual(tabs,['harness']);
- assert.deepEqual(f.calls.map(c=>c[0]),['PreviewPromptInjection']);
+ assert.deepEqual(f.calls.map(c=>c[0]),['GetPromptInjectionPreview']);
  f.dom.window.close();
 });

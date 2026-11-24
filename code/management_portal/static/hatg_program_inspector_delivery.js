@@ -96,6 +96,7 @@
       return window.PortalLineageElementFields.deliveryFieldsHtml(wire, readonly, {
         extraHtml: budgetHtml + backlogHtml,
         messageDelivery,
+        effectTarget: programInvokeProfileKey(wire.target) === "effect",
         mappingHtml: programInvokeArgumentFieldsHtml(wire, readonly),
       });
     }

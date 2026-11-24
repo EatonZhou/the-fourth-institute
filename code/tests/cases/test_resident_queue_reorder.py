@@ -1,4 +1,4 @@
-"""ReorderMailbox changes only the waiting order (decision_15f7df737ed5, decision_2a3ff353165c).
+"""MoveMailboxItems changes only the waiting order (decision_15f7df737ed5, decision_2a3ff353165c).
 
 :module: resident.session
 :design: decision_15f7df737ed5, decision_2a3ff353165c
@@ -48,19 +48,19 @@ def _waiting(resident_id: str) -> list[str]:
 def test_move_before_after_and_full_order_keep_the_running_head_and_scheduler_in_step(team):
     """调序支持前后移动与完整顺序，运行中的项和调度优先级同步
 
-    ReorderMailbox 按 before、after 或完整顺序调整等待项；正在执行的项不动，调度优先级随顺序更新。
+    MoveMailboxItems 按 before、after 或完整顺序调整等待项；正在执行的项不动，调度优先级随顺序更新。
     """
     resident_id, entries = _queue(team, 5)
     head, a, b, c, d = (item["user_message_id"] for item in entries)
 
-    moved = instruction(team, "ReorderMailbox", {"resident_id": resident_id, "message_id": d, "before_message_id": b})
+    moved = instruction(team, "MoveMailboxItems", {"resident_id": resident_id, "message_id": d, "before_message_id": b})
     assert moved.status == "committed" and moved.result["reordered"] is True
     assert _waiting(resident_id) == [a, d, b, c]
 
-    instruction(team, "ReorderMailbox", {"resident_id": resident_id, "message_id": a, "after_message_id": c})
+    instruction(team, "MoveMailboxItems", {"resident_id": resident_id, "message_id": a, "after_message_id": c})
     assert _waiting(resident_id) == [d, b, c, a]
 
-    full = instruction(team, "ReorderMailbox", {"resident_id": resident_id, "order": [c, a, d, b]})
+    full = instruction(team, "MoveMailboxItems", {"resident_id": resident_id, "order": [c, a, d, b]})
     assert _waiting(resident_id) == [c, a, d, b]
     assert full.result["revision"].startswith("queue-")
     record = resident_record_domain.find_resident(resident_id)
@@ -87,7 +87,7 @@ def test_bad_moves_are_refused_and_change_nothing(team, arguments, code):
     resolved = {key: names.get(value, value) if isinstance(value, str) else value for key, value in arguments.items()}
     before = _waiting(resident_id)
 
-    refused = instruction(team, "ReorderMailbox", {"resident_id": resident_id, **resolved})
+    refused = instruction(team, "MoveMailboxItems", {"resident_id": resident_id, **resolved})
 
     assert refused.status == "failed" and refused.error["code"] == code
     assert _waiting(resident_id) == before

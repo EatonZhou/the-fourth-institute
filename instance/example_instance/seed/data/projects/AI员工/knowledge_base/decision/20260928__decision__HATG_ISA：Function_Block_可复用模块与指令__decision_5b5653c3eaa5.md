@@ -108,7 +108,7 @@ Family 的门面、steward、Router Resident、业务成员、组件和连线都
 | `parameters` | 施加模板时的参数取值 |
 | `memory` | 可选，职责的提示词：`prompt` 为正文，最长 20000 字；`level` 为所在记忆层级 |
 
-撤下职责就是 `DeleteFunctionBlock` 删除它的块：块内元素一起删除，持有者和它的其他职责不变。`UpdateDuty` 修改描述、类别、提示词和记忆层级，`OrderDuties` 一次给出持有者全部职责的新顺序。持有者离开图后，块变回普通块，记录随之删除。Family 块不能同时是职责。
+撤下职责就是 `DeleteFunctionBlock` 删除它的块：块内元素一起删除，持有者和它的其他职责不变。`UpdateDuty` 修改描述、类别、提示词和记忆层级，`MoveDuties` 一次给出持有者全部职责的新顺序。持有者离开图后，块变回普通块，记录随之删除。Family 块不能同时是职责。
 
 ### 职责的提示词
 
@@ -121,7 +121,7 @@ Family 的门面、steward、Router Resident、业务成员、组件和连线都
 | `session` | 会话开始和压缩后，随职责清单一起送达 |
 | `on_demand` | 写入持有者自有 Workspace 的 `duty-manuals.md`，职责清单中留一行指针，Resident 需要时自己读取 |
 
-职责清单由平台根据持有者在各 Lineage 的职责记录生成，按 `position` 列出每条职责的描述和提示词所在层级，与 `session` 级提示词一起作为注入部分 `duty_memory`，时机为会话开始和压缩后，位置与 `resident.md` 相同；`turn` 级提示词作为注入部分 `duty_memory_turn` 每轮放在消息之前。两部分都可以用 `PreviewPromptInjection` 查看。
+职责清单由平台根据持有者在各 Lineage 的职责记录生成，按 `position` 列出每条职责的描述和提示词所在层级，与 `session` 级提示词一起作为注入部分 `duty_memory`，时机为会话开始和压缩后，位置与 `resident.md` 相同；`turn` 级提示词作为注入部分 `duty_memory_turn` 每轮放在消息之前。两部分都可以用 `GetPromptInjectionPreview` 查看。
 
 只含提示词的职责用 `CreateDuty` 添加：它的块没有元素，提示词必须保留，层级不能是 `trigger`。其他块在元素全部移除后自动删除，带提示词的职责块例外。
 
@@ -187,7 +187,7 @@ Family 块还包含如下 `family` 字段。它是 Family 领域事实的读取�
 | `DeleteFunctionBlock` | 是 | 删除普通块及其递归包含的元素 | 对 `lineage_id` 有 @contributor |
 | `CreateDuty` | 是 | 给一个 Resident 加一条只含提示词的职责 | 对 `lineage_id` 有 @contributor |
 | `UpdateDuty` | 是 | 修改一条职责的描述、类别、提示词或记忆层级 | 对 `lineage_id` 有 @contributor |
-| `OrderDuties` | 是 | 调整一个持有者全部职责的先后顺序 | 对 `lineage_id` 有 @contributor |
+| `MoveDuties` | 是 | 调整一个持有者全部职责的先后顺序 | 对 `lineage_id` 有 @contributor |
 
 ## 参数名契约
 
@@ -201,7 +201,7 @@ Family 块还包含如下 `family` 字段。它是 Family 领域事实的读取�
 | `DeleteFunctionBlock` | `lineage_id`、`function_block_id` |
 | `CreateDuty` | `lineage_id`、`holder_id`、`description`、`prompt`、`memory_level`、`category` |
 | `UpdateDuty` | `lineage_id`、`function_block_id`、`description`、`category`、`prompt`、`memory_level` |
-| `OrderDuties` | `lineage_id`、`holder_id`、`function_block_ids` |
+| `MoveDuties` | `lineage_id`、`holder_id`、`function_block_ids` |
 
 ### Functionalize
 
@@ -245,7 +245,7 @@ Family 的成员、生成结构与普通工作流共用 `elements` 唯一直接�
 
 结果：`function_block`，为修改后的完整块对象，含 `duty`。
 
-### OrderDuties
+### MoveDuties
 
 参数：`lineage_id`、`holder_id`、`function_block_ids` 均必填。`function_block_ids` 必须恰好列出该持有者的全部职责块，每个一次；顺序即新的 `position`，从 0 开始。
 
@@ -274,7 +274,7 @@ Family 的概览采用场景化“工作流程”，将关联的 Event、Effect�
 
 Function Block 与 Family 实例菜单提供“内部对象”和“问题”页，不需要展开模块。内部对象页按成员关系递归列出内部组件，按 Effect、Event、其他组件分组；每行显示名称、种类、稳定 ID 和状态标签。Effect 行直接显示失败通知收件人，点击即打开失败通知编辑器；Event 行带暂停或恢复按钮。“设置”在列表下方打开现有原语检查器，保存与普通检查器使用相同的权限、定义版本和草稿保护；不改变折叠状态或全局画布选择。概览页的“失败通知”汇总模块内 Effect 的收件人，状态与清单都相同的 Effect 合为一行并注明数量，尚未配置的 Effect 与明确关闭的 Effect 分属两行；“修改 N 个 Effect 的收件人…”对模块内全部 Effect 打开编辑器。问题页的 Effect 失败同样列出收件人，并可从那里修改。
 
-勾选对象后，顶部工具栏显示已选数量和“设置失败通知（N）”“暂停事件（N）”“恢复事件（N）”，全选框在部分选择时显示半选。批量设置失败通知打开与单个 Effect 相同的编辑器：所选 Effect 都有的收件人显示为普通标签；只在部分 Effect 中的收件人用虚线标签和覆盖数（例如 1/3）标出，可以“补到全部”或移除，不动则保持原有覆盖。新加的收件人加到全部所选 Effect。各 Effect 保存后的清单不同时，预览逐个列出，尚未配置的 Effect 写“尚未配置 · 当前不通知”，与“关闭失败通知”分开。保存以一次 ApplyLineageChanges 只更新清单有变化的 Effect 的 config.failure_recipients，保留各自脚本与端点。移除收件人会关闭原本有清单的 Effect；尚未配置的 Effect 只有在用户为它添加收件人或选择“关闭通知”时才写入清单，否则保持未配置。所选 Event 可以批量暂停、恢复，逐个调用 PauseComponent（暂停传 `paused: true`，恢复传 `paused: false`）；部分失败显示对象名称与原因，不把已成功操作回滚成未执行。
+勾选对象后，顶部工具栏显示已选数量和“设置失败通知（N）”“暂停事件（N）”“恢复事件（N）”，全选框在部分选择时显示半选。批量设置失败通知打开与单个 Effect 相同的编辑器：所选 Effect 都有的收件人显示为普通标签；只在部分 Effect 中的收件人用虚线标签和覆盖数（例如 1/3）标出，可以“补到全部”或移除，不动则保持原有覆盖。新加的收件人加到全部所选 Effect。各 Effect 保存后的清单不同时，预览逐个列出，尚未配置的 Effect 写“尚未配置 · 当前不通知”，与“关闭失败通知”分开。保存以一次 ApplyLineageChanges 只更新清单有变化的 Effect 的 config.failure_recipients，保留各自脚本与端点。移除收件人会关闭原本有清单的 Effect；尚未配置的 Effect 只有在用户为它添加收件人或选择“关闭通知”时才写入清单，否则保持未配置。所选 Event 可以批量暂停、恢复，逐个调用 SetComponentPaused（暂停传 `paused: true`，恢复传 `paused: false`）；部分失败显示对象名称与原因，不把已成功操作回滚成未执行。
 
 鸽子的红色数字表示当前查看者尚未查看的问题数量，点击直接打开问题页。清单列出内部 Effect 最新执行失败、组件配置错误和内部 Resident 最近错误（包括 Router、steward），显示具体来源、原因和时间。组件提供设置与运行记录入口，Effect 最近运行关联具体 Trigger Path；Resident 提供打开对话入口。取消的 Effect 不算失败。
 

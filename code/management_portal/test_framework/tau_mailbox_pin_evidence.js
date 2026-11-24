@@ -30,8 +30,8 @@ function observeMailboxPin({page, origin, entryKey, evidenceDir, requestId} = {}
       if (!data || Buffer.byteLength(data) > 8192) return;
       body = JSON.parse(data);
     } catch { return; }
-    if (body?.instruction !== 'PinMailboxItem' || body?.arguments?.key !== entryKey || body.arguments.pinned !== true) return;
-    const record = {request_id: requestId(request) || null, instruction: 'PinMailboxItem',
+    if (body?.instruction !== 'SetMailboxItemPinned' || body?.arguments?.key !== entryKey || body.arguments.pinned !== true) return;
+    const record = {request_id: requestId(request) || null, instruction: 'SetMailboxItemPinned',
       http_status: null, instruction_id: null, status: null, replayed: null,
       item: null, committed: false, completed: false, error: null};
     records.push(record); requests.set(request, record);
@@ -58,7 +58,7 @@ function observeMailboxPin({page, origin, entryKey, evidenceDir, requestId} = {}
         record.item = item?.key === entryKey ? {key: entryKey, pinned: typeof item.pinned === 'boolean' ? item.pinned : null,
           read_revision: Number.isSafeInteger(item.read_revision) ? item.read_revision : null} : null;
         record.committed = record.http_status >= 200 && record.http_status < 300
-          && body?.instruction === 'PinMailboxItem' && record.instruction_id !== null
+          && body?.instruction === 'SetMailboxItemPinned' && record.instruction_id !== null
           && record.status === 'committed' && record.replayed === false && record.item?.pinned === true;
         if (!record.committed) record.error = 'original_receipt_not_committed_for_target';
       } catch { record.error = 'original_response_unreadable'; }
@@ -81,11 +81,11 @@ function observeMailboxPin({page, origin, entryKey, evidenceDir, requestId} = {}
         let timer;
         const finish = (error, value) => { clearTimeout(timer); waiters.delete(check); error ? reject(new Error(error)) : resolve(value); };
         const check = () => {
-          if (records.length > 1) return finish('Ambiguous original PinMailboxItem requests');
-          if (records[0]?.completed) return records[0].committed ? finish(null, snapshot()) : finish('Original PinMailboxItem receipt is incomplete or not committed');
-          if (stopped) finish('Original PinMailboxItem capture stopped before receipt');
+          if (records.length > 1) return finish('Ambiguous original SetMailboxItemPinned requests');
+          if (records[0]?.completed) return records[0].committed ? finish(null, snapshot()) : finish('Original SetMailboxItemPinned receipt is incomplete or not committed');
+          if (stopped) finish('Original SetMailboxItemPinned capture stopped before receipt');
         };
-        timer = setTimeout(() => finish('Original PinMailboxItem receipt timeout'), timeoutMs);
+        timer = setTimeout(() => finish('Original SetMailboxItemPinned receipt timeout'), timeoutMs);
         waiters.add(check); check();
       });
     },

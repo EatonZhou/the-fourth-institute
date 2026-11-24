@@ -232,7 +232,7 @@ DECLARATIONS = (
         R("allowed", "boolean", "所有请求都通过时为 true"),
         R("requests", "array", "每个判定请求：action、resource、allowed、reason，命中时带 permit、deny 表项"),
         P("portal_admin", "boolean", "true 表示这次调用由 Portal 管理员保底放行，不问方案（此时 requests 为空）"))),
-    _d("IssueTemporaryCredential", FIXED, "把自己在一个资源上持有的 A 树节点临时交给另一个主体：签发时只核对签发者此刻确实持有，立即写入一行带签发者和过期时间的 permit。"
+    _d("CreateTemporaryCredential", FIXED, "把自己在一个资源上持有的 A 树节点临时交给另一个主体：签发时只核对签发者此刻确实持有，立即写入一行带签发者和过期时间的 permit。"
        "给出 message_id 时凭证随这条消息：接收 Resident 对它的输入完成、失败或取消时删除；否则按 expires_in_seconds 到期。两种都最迟在签发 7 天后失效。"
        "也可以在 DeliverMessage 中用 temporary_credentials 随消息签发。凭证写入启用中方案的实例。", (
         R("principal_id", description="接收者"), R("a", description="A 树节点：@ 开头的分类节点或指令元素"),
@@ -244,7 +244,7 @@ DECLARATIONS = (
         R("issued_by", description="签发者"), R("issued_at", "number", "签发时间，Unix 秒"),
         R("expires_at", "number", "过期时间，Unix 秒"), P("message_id", description="随消息签发时：凭证随这条消息的输入结束")),
        mutates=True, target="resource_id"),
-    _d("RenewTemporaryCredential", FIXED, "签发者在按时长签发的临时凭证到期前续期：新的过期时间为此刻加 expires_in_seconds，不晚于签发后 7 天。随消息签发的凭证不能续期。", (
+    _d("UpdateTemporaryCredential", FIXED, "签发者在按时长签发的临时凭证到期前续期：新的过期时间为此刻加 expires_in_seconds，不晚于签发后 7 天。随消息签发的凭证不能续期。", (
         R("credential_id", description="要续期的临时凭证"),
         R("expires_in_seconds", "integer", "从此刻起的有效期", minimum=60, maximum=604800),
     ), (R("credential_id", description="续期的凭证"), R("principal_id", description="接收者"),

@@ -66,13 +66,13 @@ def test_review_lifecycle_preserves_shared_structure_and_never_resurrects(lineag
     assert family_review_duty.find(body, family) is None
     assert not removed & {i['id'] for k in ('components', 'wires') for i in body['program'][k]}
     assert 'review' not in family_tasks.configured(body, family)
-    assert ok('CheckFamilyReview', {'lineage_id': lineage, 'family_id': f['family_id']})['status'] == 'disabled'
+    assert ok('MaintainFamilyReview', {'lineage_id': lineage, 'family_id': f['family_id']})['status'] == 'disabled'
     assert any(e.get('key') == 'check_summary' for e in family['elements'])
     assert install(lineage, f['steward_resident_id'])['function_block_ids'][0] != bid
     body, family = parent(lineage, f['family_id'])
     assert len([b for b in body['function_blocks'] if b.get('duty', {}).get('holder_id') == f['steward_resident_id']]) == 1
     ok('Unfamilize', {'lineage_id': lineage, 'family_id': f['family_id']})
-    assert not any(c['kind'] == 'effect' and 'CheckFamilyReview' in c['config'].get('script', '') for c in graph(lineage)['program']['components'])
+    assert not any(c['kind'] == 'effect' and 'MaintainFamilyReview' in c['config'].get('script', '') for c in graph(lineage)['program']['components'])
 
 
 def test_saved_review_template_rebinds_to_another_family(lineage, charters):
@@ -124,9 +124,9 @@ def test_owned_review_effect_retains_scoped_facade_identity(team):
     eid = next(e['id'] for e in duty['elements'] if e.get('key') == 'notify_periodic_review_task')
     context = InstructionContext(caller='resident_eeeeeeeeeeee', entry='lineage')
     args = {'lineage_id': body['lineage_id'], 'family_id': block['id']}
-    assert _family_note_context(body, eid, 'CheckFamilyReview', args, context,
+    assert _family_note_context(body, eid, 'MaintainFamilyReview', args, context,
                lineage_id=body['lineage_id'], event=SimpleNamespace(type='time.reached')).caller == t.family['facade']
-    assert _family_note_context(body, eid, 'CheckFamilyReview', {**args, 'family_id': 'fbi_000000000000'}, context,
+    assert _family_note_context(body, eid, 'MaintainFamilyReview', {**args, 'family_id': 'fbi_000000000000'}, context,
                lineage_id=body['lineage_id'], event=SimpleNamespace(type='time.reached')).caller == context.caller
 
 

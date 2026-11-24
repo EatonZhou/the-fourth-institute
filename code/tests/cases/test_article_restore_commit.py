@@ -382,8 +382,8 @@ def test_preview_permission_is_not_submit_permission(permissions):
                       Fact('article', ARTICLE, {'project': 'Project'}), Fact('workspace', SOURCE))
     args = {'article_id': ARTICLE, 'resident_id': RESIDENT, 'project_id': 'Project', 'source_address': SOURCE}
     for key, rid in args.items():
-        permissions.grant(ACTOR, rid, 'PreviewArticleRestore:' + key)
-    assert permission_system.allows(ACTOR, 'PreviewArticleRestore', args)
+        permissions.grant(ACTOR, rid, 'CheckArticleRestore:' + key)
+    assert permission_system.allows(ACTOR, 'CheckArticleRestore', args)
     assert not permission_system.allows(ACTOR, 'RestoreArticle', args)
     assert declaration('RestoreArticle').mutates is True
     assert builtin_documents()

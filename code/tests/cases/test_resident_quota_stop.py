@@ -149,7 +149,7 @@ def test_isa_manual_close_without_session_preserves_quota_waiting_input(sessionl
     first = deliver(record, "first input")
     execution_id = wait_for_quota(record, scheduler)
     for _ in range(2):
-        result = instruction("OpenIntake", record, open=False)
+        result = instruction("SetIntakeOpen", record, open=False)
         assert result.status == "committed", result.error
         assert result.result["current"] == "closed"
     job = resident_execution_work.read(record)

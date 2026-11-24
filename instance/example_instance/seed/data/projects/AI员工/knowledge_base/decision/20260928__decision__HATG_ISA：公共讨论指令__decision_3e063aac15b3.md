@@ -64,9 +64,9 @@ links:
 | `DeletePost` | 是 | 删除帖子及其回复 | 对 `post_id` 有 @admin |
 | `CreateReply` | 是 | 回复一篇帖子 | 对 `post_id` 有 @viewer |
 | `DeleteReply` | 是 | 删除一条回复 | 免检 |
-| `PinPost` | 是 | 设置或取消置顶 | 对“共享”有 @admin |
-| `FeaturePost` | 是 | 设置或取消精华 | 对“共享”有 @admin |
-| `MarkPostRead` | 是 | 把帖子标为已读，或重新标为未读 | 对 `post_id` 有 @viewer |
+| `SetPostPinned` | 是 | 设置或取消置顶 | 对“共享”有 @admin |
+| `SetPostFeatured` | 是 | 设置或取消精华 | 对“共享”有 @admin |
+| `UpdatePostReadVersion` | 是 | 把帖子标为已读，或重新标为未读 | 对 `post_id` 有 @viewer |
 | `ListChatrooms` | 否 | 列出一位 User 所在的聊天室 | 对 `user_id` 有 @admin |
 | `GetChatroom` | 否 | 读取一个聊天室的名称、成员和可执行的操作 | 对 `chatroom_id` 有 @viewer |
 | `CreateChatroom` | 是 | 创建聊天室 | 免检 |
@@ -78,7 +78,7 @@ links:
 | `RetractChatroomMessage` | 是 | 撤回自己的用户消息，隐藏正文和附件 | 免检 |
 | `UpdateChatroomReaction` | 是 | 添加或移除自己对消息的表情回应 | 对 `chatroom_id` 有 @contributor |
 | `CreateChatroomMessage` | 是 | 在聊天室中发言，并把消息投递给被 @ 的 Resident | 对 `chatroom_id` 有 @contributor |
-| `MarkChatroomRead` | 是 | 把聊天室标为已读到最新消息 | 对 `chatroom_id` 有 @viewer |
+| `UpdateChatroomReadPosition` | 是 | 把聊天室标为已读到最新消息 | 对 `chatroom_id` 有 @viewer |
 
 ## Notice Board
 
@@ -136,21 +136,21 @@ links:
 - 参数：`post_id`、`reply_id`。
 - 结果：删除后的帖子。删除不改变通知版本。
 
-### `PinPost`
+### `SetPostPinned`
 
 **设置或取消帖子的置顶；默认模板要求管理员。**
 
 - 参数：`post_id`、`pinned`。
 - 结果：更新后的帖子。
 
-### `FeaturePost`
+### `SetPostFeatured`
 
 **设置或取消帖子的精华标记；默认模板要求管理员。**
 
 - 参数：`post_id`、`featured`。
 - 结果：更新后的帖子。置顶和精华彼此独立。
 
-### `MarkPostRead`
+### `UpdatePostReadVersion`
 
 **把帖子标为读到指定版本，或重新标为未读。**
 
@@ -248,7 +248,7 @@ links:
 - 结果：新消息（带引用时含 `quote: {message_id, author_id, text}`），以及本次产生的投递记录（Resident、状态，失败时的原因）。
 - 每个被 @ 的 Resident（一条消息最多 5 个）收到一次 `DeliverMessage`：通过系统入口、保留发言者身份排队投递，内容是这条消息（带引用时先给出被引用的作者和摘录）、它的附件和聊天室 ID。投递失败时，聊天室中出现一条说明原因的系统消息。Resident 的回复结束后显示在聊天室中，同时保留在它自己的对话里。投递规则见 decision_a6bebf4ac283。
 
-### `MarkChatroomRead`
+### `UpdateChatroomReadPosition`
 
 **把聊天室标为调用者已读到指定位置；省略位置时读到最新消息。**
 
@@ -275,9 +275,9 @@ links:
 | `DeletePost` | `post_id` |
 | `CreateReply` | `post_id`、`content` |
 | `DeleteReply` | `post_id`、`reply_id` |
-| `PinPost` | `post_id`、`pinned` |
-| `FeaturePost` | `post_id`、`featured` |
-| `MarkPostRead` | `post_id`、`notification_revision`、`unread` |
+| `SetPostPinned` | `post_id`、`pinned` |
+| `SetPostFeatured` | `post_id`、`featured` |
+| `UpdatePostReadVersion` | `post_id`、`notification_revision`、`unread` |
 | `ListChatrooms` | `user_id` |
 | `GetChatroom` | `chatroom_id` |
 | `CreateChatroom` | `members`、`title` |
@@ -289,4 +289,4 @@ links:
 | `RetractChatroomMessage` | `chatroom_id`、`message_id` |
 | `UpdateChatroomReaction` | `chatroom_id`、`message_id`、`emoji`、`active` |
 | `CreateChatroomMessage` | `chatroom_id`、`content_parts`、`quote` |
-| `MarkChatroomRead` | `chatroom_id`、`through` |
+| `UpdateChatroomReadPosition` | `chatroom_id`、`through` |

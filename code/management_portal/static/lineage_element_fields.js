@@ -877,6 +877,7 @@
   function deliveryFieldsHtml(wire, readonly, options = {}) {
     const config = wire?.config || {};
     const policy = String(config.unavailable_policy || "queue");
+    const includeEnvelope = config.include_envelope ?? (options.effectTarget === true);
     const limit = i18n().html`<label data-message-limit${options.messageDelivery === false ? " hidden" : ""}><span>发送消息次数上限</span><input name="max_messages" type="number" min="0" step="1" placeholder="无限次" value="${esc(config.max_messages ?? "")}"${readonly || options.messageDelivery === false ? " disabled" : ""}><small>留空为无限次；0 表示停止发送。仅成功投递到 Resident 的消息计数，达到上限后丢弃新的消息。</small></label>`;
     return i18n().html`${limit}<label><span>无法立即投递时，如何处理新内容</span><select name="unavailable_policy"${readonly ? " disabled" : ""}>
           <option value="drop"${policy === "drop" ? " selected" : ""}>直接丢弃</option>
@@ -885,7 +886,7 @@
         </select><small>例如：接收方 Resident 尚未空闲；筛选、分支或归并节点的上一轮投递还未完成；本连线还有更早的内容等待投递。</small><small data-event-policy-help></small></label>
         <label data-event-queue-limit${policy === "queue" ? "" : " hidden"}><span>最多积压数量</span><input name="queue_limit" type="number" min="1" max="100" step="1" value="${esc(config.queue_limit || 10)}"${readonly ? " disabled" : ""}><small>队列已满时，丢弃新到的内容；已排队的内容保留原顺序。</small></label>
         <label><span>待投递内容有效期（秒）</span><input name="expires_after_seconds" type="number" min="0" max="604800" step="1" value="${esc(config.expires_after_seconds || 0)}"${readonly ? " disabled" : ""}><small>从内容进入本连线的等待队列时开始计时，超时后不再投递；0 表示不限时。连线本身和已投递的内容不受影响。</small></label>
-        <label class="programInspectorCheckbox"><input name="include_envelope" type="checkbox"${config.include_envelope !== false ? " checked" : ""}${readonly ? " disabled" : ""}><span>沿这条 Route 投递时附带包信封</span></label>
+        <label class="programInspectorCheckbox"><input name="include_envelope" type="checkbox"${includeEnvelope ? " checked" : ""}${readonly ? " disabled" : ""}><span>沿这条 Route 投递时附带包信封</span></label>
         ${options.extraHtml || ""}<div data-invocation-mapping-slot>${options.mappingHtml || ""}</div>`;
   }
 

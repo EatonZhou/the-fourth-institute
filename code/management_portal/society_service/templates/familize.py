@@ -280,13 +280,13 @@ def reconcile_in_body(body: dict, block: dict, actor: str) -> None:
         else:
             review_args = {"lineage_id": {"value": body["lineage_id"]}, "family_id": {"value": block["id"]}}
             gated = put("notify_periodic_review_task", "effect", title="按业务活动检查组织回顾", config={
-                "script": 'CheckFamilyReview lineage_id="${arguments.lineage_id}" family_id="${arguments.family_id}"',
+                "script": 'MaintainFamilyReview lineage_id="${arguments.lineage_id}" family_id="${arguments.family_id}"',
                 "endpoints": []})
             put("notify_periodic_review", "route", source=review, target=gated, config={
                 "invoke_profiles": {"effect": {"arguments": review_args}}, "unavailable_policy": "latest"})
             if members:
                 activity = put("review_activity", "effect", title="记录已完成业务活动", config={
-                    "script": 'CheckFamilyReview lineage_id="${arguments.lineage_id}" family_id="${arguments.family_id}" event:=${event}',
+                    "script": 'MaintainFamilyReview lineage_id="${arguments.lineage_id}" family_id="${arguments.family_id}" event:=${event}',
                     "endpoints": []})
                 put("record_review_activity", "route", source=ids["member_done"], target=activity, config={
                     "invoke_profiles": {"effect": {"arguments": review_args}}})
@@ -307,7 +307,7 @@ def reconcile_in_body(body: dict, block: dict, actor: str) -> None:
         "prompt": {"value": ""}, "members": {"value": members}, "steward": {"value": steward},
         "threshold": {"value": family["route_threshold"]}}}}})
     recovery = put("recovery_check", "effect", title="核验 Family 故障恢复", config={
-        "script": 'CheckFamilyRecovery lineage_id="${arguments.lineage_id}" family_id="${arguments.family_id}" event="${event}"',
+        "script": 'MaintainFamilyRecovery lineage_id="${arguments.lineage_id}" family_id="${arguments.family_id}" event="${event}"',
         "endpoints": []})
 
     def recovery_route(key, source):
@@ -340,7 +340,7 @@ def reconcile_in_body(body: dict, block: dict, actor: str) -> None:
         "interval_seconds": 300, "misfire_policy": "coalesce_latest", "overlap_policy": "drop"})
     recovery_route("recheck_recovery", timer)
     availability = put("role_availability", "effect", title="保障 Router／Steward 可接单", config={
-        "script": 'CheckFamilyRoleAvailability lineage_id="${arguments.lineage_id}" family_id="${arguments.family_id}"',
+        "script": 'MaintainFamilyRoleAvailability lineage_id="${arguments.lineage_id}" family_id="${arguments.family_id}"',
         "endpoints": []})
     intake = put("role_intake", "event_source", title="Router／Steward 接单状态变化", config={
         "event_type": "resident.state_changed", "state_domain": "intake"})

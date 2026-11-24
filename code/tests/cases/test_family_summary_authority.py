@@ -150,7 +150,7 @@ def test_generated_script_dispatches_real_isa_once_without_lending_initiator_per
             return lineage_effect_script.CallResult(result.status == "committed", result.result or {}, result.error)
         # Controlled read facts isolate the identity handoff; dispatch and admission are real.
         facts = {
-            "CheckResidentWorkSummary": {"status": "covered", "consolidation_due": True},
+            "MaintainResidentWorkSummary": {"status": "covered", "consolidation_due": True},
             "ListResidentStates": {"states": [{"state": {"work_state": "idle", "queued_count": 0}}]},
             "GetFamilySummaryInputs": {"needs_update": True, "notification": {"message_id": NOTICE}},
         }

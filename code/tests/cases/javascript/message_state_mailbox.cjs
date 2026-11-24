@@ -64,7 +64,7 @@ function mailbox({ connected = false, targetRead, cachedSnapshot, clearResult, e
     return response instanceof Error ? Promise.reject(response) : Promise.resolve(response);
   } };
   window.PortalInstructionClient = { execute: async (instruction, args) => {
-    if (instruction === 'MuteMailboxItem' && execute) return execute(instruction, args);
+    if (instruction === 'SetMailboxItemMuted' && execute) return execute(instruction, args);
     if (instruction === 'ClearMailbox' && clearResult) {
       assert.deepEqual({ ...args }, { user_id: 'playwright', mode: 'unread' });
       return clearResult;
@@ -263,7 +263,7 @@ const checks = {
       const toggle = () => app.window.document.querySelector('[data-agent-inbox-mute]');
       assert.equal(toggle().textContent.trim(), '消息免打扰');
       toggle().click(); await app.advance(20);
-      assert.deepEqual(calls, [{ name: 'MuteMailboxItem', key: original.key, muted: true }]);
+      assert.deepEqual(calls, [{ name: 'SetMailboxItemMuted', key: original.key, muted: true }]);
       assert.equal(app.store.snapshot().unreadCount, 0);
       assert.equal(app.store.entry(original.key).unread, true);
       assert.ok(app.rows()[0].querySelector('[aria-label="消息免打扰"]'));

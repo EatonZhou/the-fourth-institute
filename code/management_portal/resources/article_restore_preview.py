@@ -14,7 +14,7 @@ from pathlib import Path, PurePosixPath
 from .article_restore import read_tool_registration, ToolEvidenceUnavailable
 from .registration import ResourceRegistrationStore, RegistrationEvidenceMissing, RegistrationEvidenceConflict
 
-ACTION = 'PreviewArticleRestore'
+ACTION = 'CheckArticleRestore'
 SOURCE_BUDGET = 8 * 1024 * 1024
 OUTPUT_BUDGET = 128 * 1024
 REQUIRED = frozenset({'article_id', 'resident_id', 'ordinal', 'tool_index', 'tool_item_id', 'expected_hash',

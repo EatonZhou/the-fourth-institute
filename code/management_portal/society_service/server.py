@@ -665,7 +665,10 @@ class SocietyServiceServer(LocalServiceSocketMixin, DrainingStreamServer):
                 'read_pool': self.read_pool.health(), 'index_pool': self.conversation_index_pool.health()}
 
     def serve_forever(self, poll_interval: float = 0.2) -> None:
+        from .instruction_name_migration import migrate
         from .system_workflow_switches import restore
+
+        migrate()
         restore()
         self.instruction_maintenance.start()
         if self.projections_enabled:
@@ -881,6 +884,8 @@ class SocietyServiceServer(LocalServiceSocketMixin, DrainingStreamServer):
 
 def parser() -> argparse.ArgumentParser:
     root = argparse.ArgumentParser(description="Run TFI Portal SocietyService")
+    root.add_argument("--check-isa-name-migration", action="store_true",
+                      help="Report unsettled Effect work blocking the ISA name cutover, then exit")
     root.add_argument("--socket", type=Path, default=society_service_socket())
     root.add_argument(
         "--housekeeping-seconds",
@@ -906,11 +911,17 @@ def parser() -> argparse.ArgumentParser:
 
 
 def main() -> int:
+    args = parser().parse_args()
+    if args.check_isa_name_migration:
+        from .instruction_name_migration import check
+
+        report = check()
+        print(json.dumps(report, sort_keys=True))
+        return 2 if report["blocked_count"] else 0
     loaded_modules.track()
     from .memory_profile import install as install_memory_profile, start as start_memory_profile
     install_memory_profile()
     start_memory_profile()
-    args = parser().parse_args()
     os.environ.setdefault("PORTAL_SOCIETY_SERVICE_PROCESS", "1")
     get_lineage_data_store()
     get_resident_conversation_stream()

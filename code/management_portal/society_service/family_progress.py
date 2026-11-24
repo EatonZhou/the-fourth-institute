@@ -104,7 +104,7 @@ def _bounded_summary(summary):
     return validate_summary(summary)
 
 
-def publish(lineage_id, family_id, actor, *, batch_id, report, summary, expected_revision, source_versions):
+def publish(lineage_id, family_id, actor, *, batch_id, report, summary, source_versions):
     block, family = _family(lineage_id, family_id, actor, publishing=True)
     if not isinstance(report, str) or not report.strip() or len(report) > MAX_CHARS:
         raise ValueError("简报正文必须是 1–500 字，包含标点、空格和换行")
@@ -128,7 +128,7 @@ def publish(lineage_id, family_id, actor, *, batch_id, report, summary, expected
             # Recover a crash after the summary write but before outbox commit.
             same = previous["summary"] == clean and previous["source_versions"] == source_versions
             if not same:
-                work_summary.update_resident_work_summary(actor, facade, expected_revision,
+                work_summary.update_resident_work_summary(actor, facade,
                     summary=clean, source_versions=source_versions)
             batch["content"] = copy.deepcopy(content)
         # Previously publishing batches may retain delivery receipts. Keep those

@@ -41,6 +41,11 @@ def _user_message_block(message: object) -> str:
     )
 
 
+def _message_text(job: dict[str, Any]) -> str:
+    from management_common.resident_handoff_cards import prompt_context
+    return prompt_context(job.get("input_message")) + str(job.get("message") or "")
+
+
 def _runtime_context_block(job: dict[str, Any]) -> str:
     runtime_context = normalized_runtime_context(job.get("runtime_context"))
     if not runtime_context:
@@ -63,7 +68,7 @@ def _reply_hint_block(record: dict[str, Any], job: dict[str, Any]) -> str:
     return f"<reply-hint>\n{hint}\n</reply-hint>" if hint else ""
 
 
-def _sender_line(job: dict[str, Any]) -> str:
+def _sender_line(job: dict[str, Any], *, envelope: bool = True) -> str:
     """Render the sender hint for deliveries that use one."""
     from management_common.principal import actor_principal
     actor = canonical_actor_id(job.get("actor"))
@@ -75,7 +80,7 @@ def _sender_line(job: dict[str, Any]) -> str:
     if medium:
         keep = f"原请求{delivery_hint}\n{keep}"
     if not actor:
-        return f"当前消息由 Portal 投递；{keep}"
+        return f"当前消息由 Portal 投递；{keep}" if envelope else delivery_hint
     kind = actor_principal(actor).kind
     if kind == "resident":
         # Routing packets are consumed by the Family Effect. Sending one back
@@ -88,9 +93,11 @@ def _sender_line(job: dict[str, Any]) -> str:
                 f"当前消息由 Family 门面 {actor} 投递，属于内部路由任务；"
                 "本轮只输出 route packet，系统会读取它并继续处理原请求。"
                 "不要用 DeliverMessage 把 packet 发回门面，也不要执行业务；"
-                f"{keep}"
+                + (keep if envelope else "")
             )
-        return ""
+        return delivery_hint
+    if not envelope:
+        return delivery_hint
     if kind == "service":
         return f"当前消息由 Portal 服务 {actor} 投递；{keep}"
     if delivery_hint:
@@ -133,9 +140,8 @@ def _build_resident_prompt(record: dict[str, Any], job: dict[str, Any]) -> str:
     Portal's other injected input (rules, resident.md, runtime identity,
     authorization context) travels as parts of the turn's system instructions
     and ExecutionService adds the due ones (``_resident_system_instructions``).
-    The envelope follows the Resident's ``prompt_injection`` setting; Fork
-    history, attached references and runtime context are the message's
-    content and always travel with it.
+    The envelope follows the Resident's ``prompt_injection`` setting.
+    Explicit attachments and runtime context travel with a bare message too.
     """
     from management_portal import prompt_injection
     if resident_input_scope.get(resident_domain_common.record_resident_id(record), str(job.get("user_message_id") or "")):
@@ -144,43 +150,27 @@ def _build_resident_prompt(record: dict[str, Any], job: dict[str, Any]) -> str:
     envelope = choices["message_envelope"] != "off"
     context_refs = job.get("context_refs") if isinstance(job.get("context_refs"), dict) else {}
     attached_refs = attached_references_text(context_refs)
-    from management_common.resident_handoff_cards import prompt_context
-    message = prompt_context(job.get("input_message")) + str(job.get("message") or "")
-    if not attached_refs or not envelope:
-        return _build_plain_user_prompt(job, envelope=envelope, reply_block=_reply_hint_block(record, job) if envelope else "")
-    workspace = resident_record_domain.resident_workspace_path(record)
-    resident_summary = {
-        "resident_id": record.get("resident_id", ""),
-        "title": record.get("title", ""),
-        "workspace_path": str(workspace),
-        "session_id": resident_backend.record_session_id(record),
-    }
-    runtime_block = _runtime_context_block(job)
-    runtime_section = f"{runtime_block}\n\n" if runtime_block else ""
-    reply_block = _reply_hint_block(record, job)
-    runtime_section += f"{reply_block}\n\n" if reply_block else ""
-    return (
-        "你正在继续 TFI Portal 中某个 Resident Agent 的当前 Session。\n"
-        f"{_sender_line(job)}"
-        "\n"
-        "<resident_agent>\n"
-        f"{json.dumps(resident_summary, ensure_ascii=False, indent=2)}\n"
-        "</resident_agent>\n"
-        "<attached_references>\n"
-        f"{attached_refs}\n"
-        "</attached_references>\n"
-        "\n"
-        f"{runtime_section}"
-        f"{_user_message_block(message)}"
-    )
-
-
-def _build_plain_user_prompt(job: dict[str, Any], *, envelope: bool = True, reply_block: str = "") -> str:
-    context_refs = job.get("context_refs") if isinstance(job.get("context_refs"), dict) else {}
-    attached_refs = attached_references_text(context_refs)
-    from management_common.resident_handoff_cards import prompt_context
-    message = prompt_context(job.get("input_message")) + str(job.get("message") or "")
+    message = _message_text(job)
     blocks: list[str] = []
+    if envelope and attached_refs:
+        resident_summary = {
+            "resident_id": record.get("resident_id", ""),
+            "title": record.get("title", ""),
+            "workspace_path": str(resident_record_domain.resident_workspace_path(record)),
+            "session_id": resident_backend.record_session_id(record),
+        }
+        blocks.append(
+            "你正在继续 TFI Portal 中某个 Resident Agent 的当前 Session。\n"
+            f"{_sender_line(job)}"
+            "\n"
+            "<resident_agent>\n"
+            f"{json.dumps(resident_summary, ensure_ascii=False, indent=2)}\n"
+            "</resident_agent>"
+        )
+    elif choices != prompt_injection.PRESETS["pure"]:
+        delivery_hint = _sender_line(job, envelope=False)
+        if delivery_hint:
+            blocks.append(delivery_hint)
     if attached_refs:
         blocks.append(
             "<attached_references>\n"
@@ -190,7 +180,9 @@ def _build_plain_user_prompt(job: dict[str, Any], *, envelope: bool = True, repl
     runtime_block = _runtime_context_block(job)
     if runtime_block:
         blocks.append(runtime_block)
-    if reply_block:
-        blocks.append(reply_block)
+    if choices != prompt_injection.PRESETS["pure"]:
+        reply_block = _reply_hint_block(record, job)
+        if reply_block:
+            blocks.append(reply_block)
     blocks.append(_user_message_block(message).strip() if envelope else message)
     return "\n\n".join(blocks) + ("\n" if envelope or len(blocks) > 1 else "")

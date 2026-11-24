@@ -46,7 +46,7 @@ DECLARATIONS = (
     _d("GetComponentRuntime", "读取 Lineage 中事件源、Effect 与循环组件的运行状态。", (
         R("lineage_id", description="要读取的 Lineage"), P("component_id", description="省略时读取全部事件源、Effect 与循环组件"),
     ), (R("components", "array", "每个组件的运行状态"),)),
-    _d("PauseComponent", "关闭或打开事件源与 Effect，暂停或恢复循环组件；关闭状态持久保存，关闭期间禁止新的触发或指令执行。", (
+    _d("SetComponentPaused", "关闭或打开事件源与 Effect，暂停或恢复循环组件；关闭状态持久保存，关闭期间禁止新的触发或指令执行。", (
         R("lineage_id", description="组件所在的 Lineage"), R("component_id", description="事件源、Effect 或循环组件"),
         R("paused", "boolean", "true 关闭或暂停，false 打开或恢复"),
     ), (RUNTIME,), mutates=True),

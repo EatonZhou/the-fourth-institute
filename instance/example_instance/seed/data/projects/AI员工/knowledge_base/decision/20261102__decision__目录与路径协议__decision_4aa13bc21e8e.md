@@ -170,7 +170,7 @@ Resident 和 Lineage 删除仍注销本次删除身份拥有的 Workspace 及绑
 
 ### Article 恢复的只读目录观察
 
-`PreviewArticleRestore` 读取精确 Article 的墓碑与活登记，并观察其清理任务及拟用新目录的竞争状态。Registry owner 在一个只读快照内查精确 ID，Cleanup owner 在另一个只读快照内查该对象的清理终态、待清理路径和占位。查询不初始化缺失的表、不分配 revision、不取得提交锁、不预留目录；原有创建与清理入口的默认行为保持。
+`CheckArticleRestore` 读取精确 Article 的墓碑与活登记，并观察其清理任务及拟用新目录的竞争状态。Registry owner 在一个只读快照内查精确 ID，Cleanup owner 在另一个只读快照内查该对象的清理终态、待清理路径和占位。查询不初始化缺失的表、不分配 revision、不取得提交锁、不预留目录；原有创建与清理入口的默认行为保持。
 
 竞争检查按目录 owner 的重叠规则执行，每类最多检查256项；超出预算、存储缺失或观察不完整时报告 `indeterminate`，不能把未见冲突推成全局安全。清理已终结、路径当前无竞争、身份仍为墓碑分别报告。它们只是各 owner 的时点事实，不构成恢复许可，也不能取代未来写入事务内的最终核验。
 

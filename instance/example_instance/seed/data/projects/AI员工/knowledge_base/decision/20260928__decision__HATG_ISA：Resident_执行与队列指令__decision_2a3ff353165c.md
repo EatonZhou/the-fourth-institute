@@ -53,7 +53,7 @@ Resident 执行指令控制 Resident 当前在做什么：查看它是否在工�
 | --- | --- | --- | --- |
 | `ListResidentStates` | 否 | 读取一个或多个 Resident 的状态与可用操作 | 对 `resident_ids` 有 @viewer |
 | `GetInputState` | 否 | 读取一条消息的处理状态 | 对 `resident_id` 有 @viewer |
-| `OpenIntake` | 是 | 打开或关闭接单：打开后等待中的消息开始推进，关闭后新消息只排队不执行 | 对 `resident_id` 有 @contributor；对 `resident_ids` 有 @contributor |
+| `SetIntakeOpen` | 是 | 打开或关闭接单：打开后等待中的消息开始推进，关闭后新消息只排队不执行 | 对 `resident_id` 有 @contributor；对 `resident_ids` 有 @contributor |
 | `CancelInput` | 是 | 停止一条消息：执行中的停止，等待中的撤回，已结束的保留结果 | 对 `resident_id` 有 @contributor |
 | `CancelSubagent` | 是 | 停止当前执行中的一个子 agent，父轮次继续 | 对 `resident_id` 有 @contributor |
 
@@ -101,9 +101,9 @@ Family 门面的 input_state.work 已沿正式 relay holder 投影实际承接�
 
 ## 接单开关
 
-`OpenIntake` 可以作用于一个 Resident，也可以批量作用于多个 Resident：`resident_id` 和 `resident_ids` 二者提供一个。批量执行时逐个处理每个 Resident，每个 Resident 按权限方案对它的 `resident_id` 单独判定，某个 Resident 失败不影响其他 Resident；结果分别列出发生变化、未变化（本来就处于目标状态）和失败的 Resident。Home 账号面板一次开关一个账号上的 Resident 时，从账号详情取 `open_resident_ids` 或 `closed_resident_ids` 作为 `resident_ids`（decision_4dea0db1f45a）。
+`SetIntakeOpen` 可以作用于一个 Resident，也可以批量作用于多个 Resident：`resident_id` 和 `resident_ids` 二者提供一个。批量执行时逐个处理每个 Resident，每个 Resident 按权限方案对它的 `resident_id` 单独判定，某个 Resident 失败不影响其他 Resident；结果分别列出发生变化、未变化（本来就处于目标状态）和失败的 Resident。Home 账号面板一次开关一个账号上的 Resident 时，从账号详情取 `open_resident_ids` 或 `closed_resident_ids` 作为 `resident_ids`（decision_4dea0db1f45a）。
 
-### `OpenIntake`
+### `SetIntakeOpen`
 
 **打开或关闭 Resident 的接单开关。**
 
@@ -145,7 +145,7 @@ CancelInput 在默认方案中要求对目标 Resident 有 contributor（decisio
 | --- | --- |
 | `ListResidentStates` | `resident_ids`、`include_viewer_state` |
 | `GetInputState` | `resident_id`、`message_id`、`include_progress`、`include_context`、`include_execution_diagnostics` |
-| `OpenIntake` | `resident_id`、`resident_ids`、`open` |
+| `SetIntakeOpen` | `resident_id`、`resident_ids`、`open` |
 | `CancelInput` | `resident_id`、`message_id` |
 | `CancelSubagent` | `resident_id`、`execution_id`、`tool_use_id` |
 

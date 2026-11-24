@@ -59,8 +59,8 @@
         };
     }
 
-    // The Terminal exists on this page only for Users who may run OpenTerminal (/api/me access.allows).
-    const terminalAllowed = () => window.PortalIdentity.peek()?.access?.allows?.OpenTerminal === true;
+    // The Terminal exists on this page only for Users who may run CreateTerminal (/api/me access.allows).
+    const terminalAllowed = () => window.PortalIdentity.peek()?.access?.allows?.CreateTerminal === true;
     const terminalEditorType = { type: "terminal", title: window.PortalI18n.t("终端"), icon: "terminal" };
     const lineageEditorTypes = [
       { type: "chat", title: window.PortalI18n.t("Chat Workspace"), icon: "chat" },

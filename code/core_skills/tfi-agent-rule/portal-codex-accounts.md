@@ -4,7 +4,7 @@
 
 账号登记、授权状态、程序可用性和 Backend 分配是不同状态。完成登记后回读相应状态，必要时用一次真实请求验证；不能把账号已登记或已登录等同于 Resident 已能执行。
 
-登记与管理使用 `RegisterProviderAccount`、`UpdateProviderAccountRegistration`、`DeleteProviderAccount`；Backend 分配使用 `UpdateBackendRole`。订阅登录使用 `OpenProviderAccountLogin`、`GetProviderAccountLogin`、`CancelProviderAccountLogin`；需要继续交互时按登录结果和 `UpdateProviderAccountLogin` 的 schema 提交。模型 API 使用 `CreateModelApi`、`UpdateModelApi`。不要从历史文件名或账号目录猜测当前登记清单。
+登记与管理使用 `RegisterProviderAccount`、`UpdateProviderAccountRegistration`、`DeleteProviderAccount`；Backend 分配使用 `UpdateBackendRole`。订阅登录使用 `CreateProviderAccountLogin`、`GetProviderAccountLogin`、`CancelProviderAccountLogin`；需要继续交互时按登录结果和 `UpdateProviderAccountLogin` 的 schema 提交。模型 API 使用 `CreateModelApi`、`UpdateModelApi`。不要从历史文件名或账号目录猜测当前登记清单。
 
 - CLI Provider 可复用当前机器已有的可执行程序和已授权账号；Portal 管理的独立运行时也是可用选择，不强制用户重装或重新登录。
 - Model API 路线按模型 API 登记和探测流程处理，不套用 CLI 安装、CODEX_HOME 或 systemd 要求。

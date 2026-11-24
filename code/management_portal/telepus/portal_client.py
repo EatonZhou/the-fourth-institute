@@ -184,7 +184,7 @@ class PortalClient:
         first = next((str(item.get("message_id") or "") for item in self.mailbox(actor, resident_id)), "")
         if not first or first == message_id:
             return {"reordered": False}
-        return self.call(actor, "ReorderMailbox", {
+        return self.call(actor, "MoveMailboxItems", {
             "resident_id": resident_id, "message_id": message_id, "before_message_id": first,
         })
 

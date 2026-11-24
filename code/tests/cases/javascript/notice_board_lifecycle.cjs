@@ -42,7 +42,7 @@ function fixture(t, {linked = false, initialList = null, detail = null} = {}) {
     calls.push({name, args, options});
     if (name === 'ListPosts') return initialList ? initialList.promise : Promise.resolve(payload);
     if (name === 'GetPost') return detail ? detail.promise : Promise.resolve({post: {post_id: 'post_test', title: 'Test post', notification_revision: 1}});
-    if (name === 'MarkPostRead') return Promise.resolve({unread: false});
+    if (name === 'UpdatePostReadVersion') return Promise.resolve({unread: false});
     throw Error('Unexpected instruction ' + name);
   }};
   for (const name of ['portal_ui_primitives.js', 'portal_overlay.js', 'portal_ui.js', 'portal_refresh_coordinator.js', 'notice_board_home.js']) {
@@ -91,8 +91,8 @@ test('visible detail retains explicit read and close semantics', async t => {
   const f = fixture(t, {linked: true});
   await tick();
   assert.equal(f.reads('GetPost'), 1);
-  assert.equal(f.reads('MarkPostRead'), 1);
-  const mark = f.calls.find(call => call.name === 'MarkPostRead');
+  assert.equal(f.reads('UpdatePostReadVersion'), 1);
+  const mark = f.calls.find(call => call.name === 'UpdatePostReadVersion');
   assert.equal(mark.args.post_id, 'post_test');
   assert.equal(mark.args.notification_revision, 1);
   assert.ok(mark.options.idempotencyKey);
@@ -101,7 +101,7 @@ test('visible detail retains explicit read and close semantics', async t => {
   assert.ok(!f.w.document.querySelector('#noticeBoardDetailOverlay').classList.contains('open'));
 });
 
-test('destroy during detail prevents late render and MarkPostRead', async t => {
+test('destroy during detail prevents late render and UpdatePostReadVersion', async t => {
   const detail = deferred();
   const f = fixture(t, {linked: true, detail});
   await tick();
@@ -109,7 +109,7 @@ test('destroy during detail prevents late render and MarkPostRead', async t => {
   f.destroy();
   detail.resolve({post: {post_id: 'post_test', title: 'Late post', notification_revision: 1}});
   await tick();
-  assert.equal(f.reads('MarkPostRead'), 0, 'destroyed panel must not mark a late detail read');
+  assert.equal(f.reads('UpdatePostReadVersion'), 0, 'destroyed panel must not mark a late detail read');
   assert.ok(!f.w.document.querySelector('#noticeBoardDetailOverlay').classList.contains('open'));
   assert.notEqual(f.w.document.querySelector('#noticeBoardDetailTitle').textContent, 'Late post');
 });

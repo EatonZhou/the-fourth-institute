@@ -29,7 +29,7 @@ from tests.cases.resident_execution_test_support import resident_record  # noqa:
 
 
 def _hold(team, resident_id, message_id, held=True):
-    return instruction(team, "SetMailboxItemHold", {
+    return instruction(team, "SetMailboxItemHeld", {
         "resident_id": resident_id, "message_id": message_id, "held": held,
     })
 
@@ -102,7 +102,7 @@ def test_held_merging_splitting_and_reorder_preserve_hold_and_injection_refuses(
     merged = instruction(team, "MergeMailboxItems", {"resident_id": resident_id, "message_ids": [a, b]})
     assert merged.status == "committed", merged.error
     group_id = merged.result["group_message_id"]
-    assert instruction(team, "ReorderMailbox", {"resident_id": resident_id, "message_id": group_id, "after_message_id": c}).status == "committed"
+    assert instruction(team, "MoveMailboxItems", {"resident_id": resident_id, "message_id": group_id, "after_message_id": c}).status == "committed"
     injected = instruction(team, "InjectMailboxItem", {"resident_id": resident_id, "message_id": group_id})
     assert injected.status == "failed" and "恢复" in injected.error["message"]
     split = instruction(team, "SplitMailboxItem", {"resident_id": resident_id, "message_id": group_id})
@@ -211,7 +211,7 @@ def test_all_held_head_reorders_merges_splits_and_cancels_as_waiting_input(team,
     for mid in (a, b, c):
         assert _hold(team, resident_id, mid).status == "committed"
     assert _finish_current(resident_id)
-    moved = instruction(team, "ReorderMailbox", {"resident_id": resident_id, "message_id": a, "after_message_id": c})
+    moved = instruction(team, "MoveMailboxItems", {"resident_id": resident_id, "message_id": a, "after_message_id": c})
     assert moved.status == "committed", moved.error
     pending = instruction(team, "GetMailbox", {"resident_id": resident_id}).result["pending"]
     assert [i["message_id"] for i in pending] == [b, c, a]

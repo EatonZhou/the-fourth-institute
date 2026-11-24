@@ -41,7 +41,7 @@ def team(configured_family, monkeypatch):
         args = {"lineage_id": body["lineage_id"], "family_id": block["id"]}
         if event is not None:
             args["event"] = event
-        return run("CheckFamilyReview", args, actor=ACTOR).raise_for_error()
+        return run("MaintainFamilyReview", args, actor=ACTOR).raise_for_error()
     return SimpleNamespace(body=body, block=block, family=f, repo=repo, completed=completed, check=check)
 
 
@@ -317,7 +317,7 @@ def test_structure_upgrade_preserves_interval_custom_prompt_and_user_workflows(t
     old = next(x for x in body["program"]["components"] if x["id"] == ids["notify_periodic_review_task"])
     old["config"]["script"] = "DispatchFamilyTask resident_id=\"${arguments.facade}\" trigger=\"review\""
     familize.reconcile_in_body(body, block, ACTOR)
-    assert "CheckFamilyReview" in old["config"]["script"]
+    assert "MaintainFamilyReview" in old["config"]["script"]
     assert timer["config"]["interval_seconds"] == 12345
     assert route["config"]["invoke_profiles"]["effect"]["arguments"]["family_tasks"]["value"]["review"]["prompt"] == "Custom ${facts}"
     assert next(x for x in body["program"]["components"] if x["id"] == workflow["id"]) == workflow
@@ -334,11 +334,11 @@ def test_generated_check_binds_own_family_but_not_external_or_other_components(t
     args = {"lineage_id": t.body["lineage_id"], "family_id": t.block["id"]}
     event = SimpleNamespace(type="time.reached", payload={}, subject_resident_id="")
     def scoped(key, arguments=args, entry=context):
-        return _family_note_context(t.body, ids[key], "CheckFamilyReview", arguments, entry,
+        return _family_note_context(t.body, ids[key], "MaintainFamilyReview", arguments, entry,
                                     lineage_id=t.body["lineage_id"], event=event)
-    assert run("CheckFamilyReview", args, actor=context.caller).error
+    assert run("MaintainFamilyReview", args, actor=context.caller).error
     assert scoped("notify_periodic_review_task").caller == f["facade"]
-    assert run("CheckFamilyReview", args, actor=f["facade"], entry="lineage").raise_for_error()["status"] == "unchanged"
+    assert run("MaintainFamilyReview", args, actor=f["facade"], entry="lineage").raise_for_error()["status"] == "unchanged"
     assert scoped("router").caller == context.caller
     assert scoped("notify_periodic_review_task", {**args, "family_id": "fbi_ffffffffffff"}).caller == context.caller
     assert scoped("notify_periodic_review_task", entry=InstructionContext(caller=context.caller, entry="web")).caller == context.caller

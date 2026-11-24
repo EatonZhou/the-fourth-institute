@@ -123,7 +123,7 @@ def test_inspection_checks_and_loans_use_a_nodes(world):
 
     GetEffectivePermissions 按 A 树分类节点给出覆盖范围，并报告 User 的分类。查看他人由方案中这几条指令对 principal_id 的要求判定：
     principal_id 必填，查看自己也要写明；查看自己不需要表项，实习用户查看别人被拒绝，管理员可以。
-    CheckPermission 与 IssueTemporaryCredential 用 a 参数，凭证列表也报告 a。
+    CheckPermission 与 CreateTemporaryCredential 用 a 参数，凭证列表也报告 a。
     """
     world.grant("bob", LINEAGE, "@contributor")
     with pytest.raises(ValueError, match="principal_id"):
@@ -144,7 +144,7 @@ def test_inspection_checks_and_loans_use_a_nodes(world):
     assert call("GetEffectivePermissions", "carol", principal_id="bob")["principal_id"] == "bob"
     assert call("CheckPermission", "alice", principal_id="bob", a="@contributor", resource_id=LINEAGE)["allowed"] is True
     assert call("CheckPermission", "alice", principal_id="bob", a="@admin", resource_id=LINEAGE)["allowed"] is False
-    loan = call("IssueTemporaryCredential", "alice", principal_id="carol", a="@viewer", resource_id=LINEAGE)
+    loan = call("CreateTemporaryCredential", "alice", principal_id="carol", a="@viewer", resource_id=LINEAGE)
     assert loan["a"] == "@viewer" and "level" not in loan
     [listed] = call("ListTemporaryCredentials", "alice", principal_id="alice")["credentials"]
     assert listed["a"] == "@viewer" and listed["direction"] == "issued"
@@ -165,26 +165,26 @@ def test_temporary_credentials_are_rows_that_end_with_their_task_or_time(world, 
     open_inputs = {(resident, "msg_task")}
     monkeypatch.setattr(management, "input_open", lambda principal, message: (principal, message) in open_inputs)
     with pytest.raises(PermissionError, match="没有"):
-        call("IssueTemporaryCredential", "bob", principal_id=resident, a="@admin", resource_id=LINEAGE)
+        call("CreateTemporaryCredential", "bob", principal_id=resident, a="@admin", resource_id=LINEAGE)
     with pytest.raises(PermissionError, match="处理中"):
-        call("IssueTemporaryCredential", "alice", principal_id=resident, a="@admin", resource_id=LINEAGE, message_id="msg_done")
-    task = call("IssueTemporaryCredential", "alice", principal_id=resident, a="@admin", resource_id=LINEAGE, message_id="msg_task")
+        call("CreateTemporaryCredential", "alice", principal_id=resident, a="@admin", resource_id=LINEAGE, message_id="msg_done")
+    task = call("CreateTemporaryCredential", "alice", principal_id=resident, a="@admin", resource_id=LINEAGE, message_id="msg_task")
     assert task["message_id"] == "msg_task" and task["expires_at"] - task["issued_at"] == pytest.approx(7 * 24 * 3600, abs=5)
     assert world.holds(resident, "@admin", LINEAGE)
     with world.store.read() as connection:
         lent = world.store.entries(connection, where="issued_by = 'alice'")
     assert [(entry.effect, entry.p, entry.a, entry.r) for entry in lent] == [("permit", resident, "@admin", LINEAGE)]
     with pytest.raises(ValueError, match="不能续期"):
-        call("RenewTemporaryCredential", "alice", credential_id=task["credential_id"], expires_in_seconds=3600)
+        call("UpdateTemporaryCredential", "alice", credential_id=task["credential_id"], expires_in_seconds=3600)
     with world.store.transaction() as connection:
         assert permission_system.end_task_credentials(connection, resident, "msg_task") == 1
     assert not world.holds(resident, "@admin", LINEAGE)
 
-    timed = call("IssueTemporaryCredential", "alice", principal_id="carol", a="@viewer", resource_id=LINEAGE,
+    timed = call("CreateTemporaryCredential", "alice", principal_id="carol", a="@viewer", resource_id=LINEAGE,
                  expires_in_seconds=600)
     with pytest.raises(PermissionError, match="签发者"):
-        call("RenewTemporaryCredential", "carol", credential_id=timed["credential_id"], expires_in_seconds=3600)
-    renewed = call("RenewTemporaryCredential", "alice", credential_id=timed["credential_id"], expires_in_seconds=7 * 24 * 3600)
+        call("UpdateTemporaryCredential", "carol", credential_id=timed["credential_id"], expires_in_seconds=3600)
+    renewed = call("UpdateTemporaryCredential", "alice", credential_id=timed["credential_id"], expires_in_seconds=7 * 24 * 3600)
     assert renewed["expires_at"] == pytest.approx(timed["issued_at"] + 7 * 24 * 3600, abs=1)
     world.administrator("dave")
     for outsider in ("bob", "dave"):
@@ -209,4 +209,4 @@ def test_business_questions_ask_instructions(world):
     assert not permission_system.allows("alice", "UpdateLineage", {})
     world.administrator("carol")
     assert permission_system.allows("carol", "CreateUser") and permission_system.user_categories()["carol"] == "portal_admin"
-    assert permission_system.allows("carol", "OpenTerminal") and not permission_system.allows("alice", "OpenTerminal")
+    assert permission_system.allows("carol", "CreateTerminal") and not permission_system.allows("alice", "CreateTerminal")

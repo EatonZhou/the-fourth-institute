@@ -263,7 +263,7 @@
         if (!state || destroyed) return;
         const turn = state.previewTurn;
         try {
-          const preview = await execute("PreviewPromptInjection", { resident_id: residentId, turn });
+          const preview = await execute("GetPromptInjectionPreview", { resident_id: residentId, turn });
           if (promptInjection !== state || state.previewTurn !== turn) return;
           state.preview = preview;
           state.previewError = "";

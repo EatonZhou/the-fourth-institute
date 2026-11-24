@@ -35,7 +35,7 @@ python3 code/scripts/check_tau_samples.py
 | 权限直达 | 管理页面壳可登录访问；普通用户对已注册 GET /api/admin/network 得到真实 403，拒绝前不读取网络配置 |
 | Workspace 精确许可 | 真实 PAR 权限引擎检查绑定无隐式写权；只借单 Workspace 的编辑/注销，验证相邻对象与管理员权限不变，撤销及回执丢失恢复 |
 | Workspace 准备 | 真实 BindWorkspace 返回当前 binding DTO，并通过正式 ID 分配器进入本轮生命周期；后台复用不再分配；目录外目标拒绝 |
-| 执行前提 | 初始化、当前 Session 与独立新上下文分别回读；OpenIntake、回调 true、当前 Session credits 均不能伪造其他许可 |
+| 执行前提 | 初始化、当前 Session 与独立新上下文分别回读；SetIntakeOpen、回调 true、当前 Session credits 均不能伪造其他许可 |
 | 执行账号身份 | Session 路由通过账号 owner 解析到 gate 的稳定账号；开放的同一账号可准入，同名路由、其他账号和关闭 gate 均不能放行 |
 | 运行账号范围 | 账号与运行设置要求覆盖可控制的模块执行者及本例新建/Fork 成员；产品固定绑定的共享业务成员保持原配置，即使调用者技术上有修改权限；实际额度不足如实报告前提缺口 |
 | 受测部署 | 正式分派安装的 workflow 不硬编码 Dev；汇总采用原始预检的 Dev/Release 身份，多个身份与未记录分别保留，不伪造目标 |

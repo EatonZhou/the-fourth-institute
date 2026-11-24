@@ -29,10 +29,13 @@ LOGIN_SESSION = ("登录会话：account_id、state（pending、awaiting_user、
 REGISTRATION = "账号登记：account_id、provider、kind、route_id、config、max_concurrency、enabled、version、login_state…"
 
 DECLARATIONS = (
-    _d("StartGoogleDriveBackup", FIXED, "异步复制最新 Portal 加密快照到已配置的 Google Drive，或执行合成文件的上传和恢复校验。", (
+    _d("RunGoogleDriveBackup", FIXED, "异步复制最新 Portal 加密快照到已配置的 Google Drive，或执行合成文件的上传和恢复校验。", (
         R("profile", description="critical 或 content 选择本地快照，probe 检查上传与恢复", enum=("critical", "content", "probe")),
         P("network_route", description="部署批准的传输通道。省略时使用站点的备份默认通道", enum=("direct", "vps", "inherited")),
-    ), (R("lineage_id"), R("script_run_id"), R("status"), P("network_route", description="本次采用的网络通道")), mutates=True),
+    ), (R("lineage_id", description="承载备份脚本运行的 Lineage ID"),
+        R("script_run_id", description="本次备份或探测的异步脚本运行 ID"),
+        R("status", description="调用返回时的脚本运行状态"),
+        P("network_route", description="本次采用的网络通道")), mutates=True),
     _d("GetExecutionSettings", FIXED, "管理员读取全系统执行设置。", (),
        (R("settings", "object", SETTINGS),), owner="execution"),
     _d("UpdateExecutionSettings", FIXED, "管理员修改全系统执行设置：请求时间记录和 Harness 记录通过系统 Event 开关，另有权限系统开关和 Harness 保留天数；至少提供一项。", (
@@ -74,7 +77,7 @@ DECLARATIONS = (
         P("device_id", description="只读取这一台：GPU 为 Device 的统一 ID，磁盘为磁盘资源 ID（如 nas_storage）"),
         P("refresh", "boolean", "跳过缓存重新采集"),
     ), (R("devices", "array", "GPU：全部服务器，或指定的一台，未知 ID 时为空；磁盘：全部磁盘，或指定的一块"),), target="device_id"),
-    _d("OpenTerminal", FIXED, "为调用者 User 打开一个 Portal 主机 shell，或经 SSH 连到一台 Device 的终端；会话之后由 Portal 页面读写。"
+    _d("CreateTerminal", FIXED, "为调用者 User 打开一个 Portal 主机 shell，或经 SSH 连到一台 Device 的终端；会话之后由 Portal 页面读写。"
        "权限系统开启时按启用的方案判定，默认方案只给 Portal 管理员；关闭时任何已登录的 User 都可以打开。", (
         P("device_id", description="Device 的统一 ID；省略时打开 Portal 主机 shell"),
         P("cwd", description="主机 shell 的起始目录"),
@@ -121,7 +124,7 @@ DECLARATIONS = (
     ), (R("message", "object", "模型的回答消息：OpenAI 兼容的 role、content…"),
         R("usage", "object", "接口返回的 token 用量；未返回时为空"),
         P("structured", "any", "提供 response_schema 时的校验结果，或 typesafe_system_one 的结构化答案")), mutates=True, target="api_id", owner="execution"),
-    _d("ProbeModelApi", FIXED, "向模型接口的各协议地址各发一次很短的请求，检测它为 Agent Harness 提供哪些协议；不保存任何内容。", (
+    _d("CheckModelApi", FIXED, "向模型接口的各协议地址各发一次很短的请求，检测它为 Agent Harness 提供哪些协议；不保存任何内容。", (
         P("api_id", description="已登记的模型接口；其余参数覆盖它的登记值"),
         P("base_url", description="接口基础地址"), P("default_model", description="检测请求使用的模型"),
         P("secret_file", description="密钥文件路径"), P("secret", description="一次性密钥，只用于本次检测，不保存、不回显"),
@@ -142,7 +145,7 @@ DECLARATIONS = (
         P("include_runtime", "boolean", "默认 true；false 只读接入目录，不探测版本或准备状态，并忽略 refresh"),
     ), (R("providers", "array", "Provider：provider、title、kinds（当前主机可新增的账号种类）、capabilities、runtime（已装与可用版本）、"
           "default_route_id、account_count；允许新增账号时附订阅账号的 account_directory_prefix（含末尾路径分隔符）"),), owner="execution"),
-    _d("PrepareProviderRuntime", FIXED, "准备所选 Provider 的运行环境；复用已装程序，缺失时异步安装。", (
+    _d("InstallProviderRuntime", FIXED, "准备所选 Provider 的运行环境；复用已装程序，缺失时异步安装。", (
         R("provider", description="Provider 名称"),
     ), (R("preparation", "object", "ready、preparing、busy、failed 或 pending；ListProviders 或账号接入状态可继续观察"),), mutates=True, target="provider", owner="execution"),
     _d("GetProviderAccountSetup", FIXED, "读取账号的运行环境、授权、模型与声明能力。", (
@@ -163,7 +166,7 @@ DECLARATIONS = (
     _d("GetProviderAccountCheck", FIXED, "读取账号测试结果；账号登记或模型 API 配置改变后原测试失效。", (
         R("account_id", description="执行账号"), R("execution_id", description="CheckProviderAccount 返回的执行 ID"),
     ), (R("check", "object", "status、passed、model、configuration_current 与脱敏提示"),), owner="execution"),
-    _d("OpenProviderAccountLogin", FIXED, "打开订阅账号登录会话。", (
+    _d("CreateProviderAccountLogin", FIXED, "打开订阅账号登录会话。", (
         R("account_id", description="执行账号 ID"),
         P("region", description="仅 Kimi：mainland-cn 中国区或 global 国际区；切换区域会替换未完成的授权流程，省略则沿用原生选择", enum=("mainland-cn", "global")),
     ), (R("session", "object", LOGIN_SESSION),

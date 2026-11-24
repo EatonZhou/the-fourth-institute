@@ -65,11 +65,11 @@ def test_real_event_effect_admission_and_replay(application_graph, application):
     repeated = flows.submit(application, actor=ACTOR, prompt="request", request_id="request1", content_parts=parts)
     assert repeated["message_id"] == first["message_id"] and len(sent) == 1
     for role in ("event_source_id", "effect_id"):
-        call(ACTOR, "PauseComponent", {"lineage_id": target["lineage_id"], "component_id": flow[role], "paused": True})
+        call(ACTOR, "SetComponentPaused", {"lineage_id": target["lineage_id"], "component_id": flow[role], "paused": True})
         with pytest.raises(flows.ApplicationFlowUnavailable):
             flows.submit(application, actor=ACTOR, prompt="disabled", request_id="new-" + role)
         assert len(sent) == 1
-        call(ACTOR, "PauseComponent", {"lineage_id": target["lineage_id"], "component_id": flow[role], "paused": False})
+        call(ACTOR, "SetComponentPaused", {"lineage_id": target["lineage_id"], "component_id": flow[role], "paused": False})
     flows.submit(application, actor=ACTOR, prompt="open", request_id="request2")
     assert len(sent) == 2
 
@@ -136,7 +136,7 @@ def test_recommendation_paused_graph_uses_authorized_directory_without_invocatio
         get_resident_conversation_snapshot=lambda *_: {"state": {"intake_state": "open"}})))
     monkeypatch.setattr(recommendation, "get_portal_ui_state_store", lambda: SimpleNamespace(put=lambda *args: None, get=lambda *args: None))
     flow = flows.binding("resident_discovery", actor=ACTOR)
-    call(ACTOR, "PauseComponent", {"lineage_id": target["lineage_id"], "component_id": flow["effect_id"], "paused": True})
+    call(ACTOR, "SetComponentPaused", {"lineage_id": target["lineage_id"], "component_id": flow["effect_id"], "paused": True})
     class Directory:
         def routing_candidates(self, **kwargs):
             assert kwargs["actor"] == ACTOR
@@ -155,7 +155,7 @@ def test_close_after_read_keeps_one_event_and_recovery_observes_only(application
     event_ids = []
     def close_before_trigger(actor, instruction, arguments=None, **options):
         if instruction == "TriggerEvent":
-            call(ACTOR, "PauseComponent", {"lineage_id": target["lineage_id"], "component_id": flow["effect_id"], "paused": True})
+            call(ACTOR, "SetComponentPaused", {"lineage_id": target["lineage_id"], "component_id": flow["effect_id"], "paused": True})
         result = call(actor, instruction, arguments, **options)
         if instruction == "TriggerEvent":
             event_ids.append(result["event_id"])
@@ -170,7 +170,7 @@ def test_close_after_read_keeps_one_event_and_recovery_observes_only(application
         lineage_domain.reconcile_lineage_runtime(target["lineage_id"], ACTOR, recovery_only=True)
     assert not sent and event_ids == [handle["event_id"]]
     monkeypatch.setattr(isa_client, "call", call)
-    call(ACTOR, "PauseComponent", {"lineage_id": target["lineage_id"], "component_id": flow["effect_id"], "paused": False})
+    call(ACTOR, "SetComponentPaused", {"lineage_id": target["lineage_id"], "component_id": flow["effect_id"], "paused": False})
     lineage_domain.reconcile_lineage_runtime(target["lineage_id"], ACTOR, recovery_only=True)
     recovered = WorkflowBindings().observe(handle, actor=ACTOR)
     assert recovered["message_id"] and recovered["event_id"] == handle["event_id"]

@@ -7,7 +7,7 @@
   // context, by the four memory levels, each item with its source. Duty
   // prompts come from the duty records in the Lineage and open in the Duties
   // tab; trigger-time items include the task of every wire that triggers the
-  // Resident; the platform's parts come from PreviewPromptInjection and their
+  // Resident; the platform's parts come from GetPromptInjectionPreview and their
   // timing is changed in the Harness tab.
 
   const DEPENDENCIES = Object.freeze(["$id", "esc", "focusNodeDuty", "menuState", "switchNodeSettingsTab"]);
@@ -119,7 +119,7 @@
       try {
         const [lineage, preview] = await Promise.all([
           window.PortalInstructionClient.execute("GetLineage", {lineage_id: lineageId}).then(result => result.lineage),
-          window.PortalInstructionClient.execute("PreviewPromptInjection", {resident_id: context.residentId, turn: "first"}),
+          window.PortalInstructionClient.execute("GetPromptInjectionPreview", {resident_id: context.residentId, turn: "first"}),
         ]);
         if (menuState.nodeMenuContext !== context) return;
         render(memoryItems(lineage, preview, context.residentId));

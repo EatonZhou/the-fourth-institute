@@ -58,7 +58,7 @@ def resident_deliverable_to_actor(record: dict[str, Any], actor: str) -> bool:
     return resident_visible_to_actor(record, actor)
 
 
-RESIDENT_ACTIONS = ("DeliverMessage", "UpdateResidentSettings", "OpenIntake", "RestartSession",
+RESIDENT_ACTIONS = ("DeliverMessage", "UpdateResidentSettings", "SetIntakeOpen", "RestartSession",
                     "CancelInput", "UpdateResident", "DeleteResident", "ForkResident")
 
 

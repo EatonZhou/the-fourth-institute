@@ -480,7 +480,7 @@ def _arguments(words: Iterable[Word | None], line: int, *, what: str) -> tuple[A
             raise ScriptSyntaxError(f"参数 {name} 重复", word.line)
         seen.add(name)
         assert value is not None
-        result.append(Argument(name, value, word.line))
+        result.append(Argument(name, value, word.line, word.offset))
     return tuple(result)
 
 
@@ -694,6 +694,37 @@ def parse(text: str) -> Script:
     parser = _Parser(tokens, lexer)
     statements = parser.statements(frozenset())
     return Script(statements, tuple(sorted(lexer.calls, key=lambda call: call.offset)))
+
+
+def rewrite_call_source(
+    source: str,
+    calls: tuple[Call, ...],
+    names: Mapping[str, str],
+    prompt: Callable[[str], str],
+) -> str:
+    """Edit parsed call heads and fixed delivery prompts at their source spans."""
+    replacements = []
+    lexer = _Lexer(source)
+
+    def replace_word(offset, value):
+        lexer.pos = offset
+        lexer.word()
+        replacements.append((offset, lexer.pos, value))
+
+    for call in calls:
+        if call.instruction in names:
+            replace_word(call.offset, names[call.instruction])
+        if call.instruction == "DeliverMessage":
+            for argument in call.arguments:
+                if argument.name == "message" and isinstance(argument.value, Word):
+                    original = argument.value.text
+                    if original is not None:
+                        updated = prompt(original)
+                        if updated != original:
+                            replace_word(argument.offset, literal_argument("message", updated))
+    for start, end, value in sorted(replacements, reverse=True):
+        source = source[:start] + value + source[end:]
+    return source
 
 
 # -- values ---------------------------------------------------------------------------

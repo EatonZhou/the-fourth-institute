@@ -47,7 +47,7 @@ def test_source_and_choice_contract(monkeypatch):
     selected = choice(original, 1)
     resident_handoff_selection.prepare(record, selected, repo)
     assert "未展示的建议草稿" not in prompt_context(selected)
-    assert "另一个选项" in resident_prompt_domain._build_plain_user_prompt({"message": "替我问一下", "input_message": selected})
+    assert "另一个选项" in resident_prompt_domain._message_text({"message": "替我问一下", "input_message": selected})
     for mutation in ("target", "source", "identity", "quote", "draft"):
         invalid = deepcopy(selected)
         if mutation == "target": invalid["content_parts"][1]["resident_id"] = "resident_ffffffffffff"

@@ -142,7 +142,7 @@ Fork 初始化的付费确认由初始化自身持有。人类在正式 `RetryRe
 
 授权分两个不可互换的范围。准备阶段只授权本次候选binding、目标账号和唯一Execution；成功提升后，授权绑定到该Resident的binding、目标账号和真实Provider Session引用。Scheduler在读取、派发及运行中额度保护时都校验同一范围与credits观察。后续重新开始、ClearContext、换账号、迁移、Fork或其他Resident不会继承；同一个Resident的稳定binding ID也不能代替具体Session身份。取消、准备失败及回滚不提升目标授权，临时候选例外按生命周期收尾。成功后的控制同步可重试，不能因此重复创建Session。
 
-为在授权时固定确切会话，有本次credits确认的空白新建通过候选创建与条件提升建立一个真实空Session，再绑定授权；创建操作不调用模型、不发送初始化消息。没有该确认时保持原有配置保存及首条输入懒建协议。已有会话的OpenIntake放行是独立操作，不把此次会话确认传播为Family或其他binding的授权。
+为在授权时固定确切会话，有本次credits确认的空白新建通过候选创建与条件提升建立一个真实空Session，再绑定授权；创建操作不调用模型、不发送初始化消息。没有该确认时保持原有配置保存及首条输入懒建协议。已有会话的SetIntakeOpen放行是独立操作，不把此次会话确认传播为Family或其他binding的授权。
 
 ### 额度与余额的读取
 

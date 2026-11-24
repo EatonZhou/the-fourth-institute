@@ -33,8 +33,8 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
           view.pending = view.pending.filter(item => item.message_id !== args.message_id);
           throw Error('request already admitted');
         }
-        if (instruction === 'SetMailboxItemHold') view.pending.find(item => item.message_id === args.message_id).held = args.held;
-        else if (instruction === 'ReorderMailbox') {
+        if (instruction === 'SetMailboxItemHeld') view.pending.find(item => item.message_id === args.message_id).held = args.held;
+        else if (instruction === 'MoveMailboxItems') {
           const item = view.pending.find(entry => entry.message_id === args.message_id);
           view.pending = view.pending.filter(entry => entry !== item);
           const before = view.pending.findIndex(entry => entry.message_id === args.before_message_id);
@@ -68,11 +68,11 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     await page.waitForFunction(() => !!window.releaseMutation);
     assert.equal(await action('human', 'first').isDisabled(), true, 'in-flight operations lock all organizers');
     await page.evaluate(() => {document.querySelector('[data-mailbox-item="agent"] [data-mailbox-action="hold"]').click();});
-    assert.equal(await page.evaluate(() => calls.filter(c => c.instruction === 'SetMailboxItemHold').length), 1);
+    assert.equal(await page.evaluate(() => calls.filter(c => c.instruction === 'SetMailboxItemHeld').length), 1);
     await page.evaluate(() => {blockMutation = false; releaseMutation();});
     await action('agent', 'resume').waitFor();
     assert.match(await row('agent').textContent(), /已暂存/);
-    assert.deepEqual(await page.evaluate(() => calls.find(c => c.instruction === 'SetMailboxItemHold').args),
+    assert.deepEqual(await page.evaluate(() => calls.find(c => c.instruction === 'SetMailboxItemHeld').args),
       {resident_id: 'resident_fixture', message_id: 'agent', held: true});
     assert.deepEqual(await page.evaluate(() => view.pending.map(item => item.message_id)), ['agent', 'human', 'info'], 'hold preserves position');
 
@@ -85,10 +85,10 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     await action('agent', 'resume').click();
     await action('agent', 'hold').waitFor();
     assert.deepEqual(await page.evaluate(() => view.pending.map(item => item.message_id)), ['agent', 'human', 'info'], 'resume preserves position');
-    assert.equal(await page.evaluate(() => calls.filter(c => c.instruction === 'SetMailboxItemHold').at(-1).args.held), false);
+    assert.equal(await page.evaluate(() => calls.filter(c => c.instruction === 'SetMailboxItemHeld').at(-1).args.held), false);
     await action('human', 'first').click();
     await page.waitForFunction(() => view.pending[0].message_id === 'human' && !document.querySelector('main [aria-busy="true"]'));
-    assert.deepEqual(await page.evaluate(() => calls.find(c => c.instruction === 'ReorderMailbox').args),
+    assert.deepEqual(await page.evaluate(() => calls.find(c => c.instruction === 'MoveMailboxItems').args),
       {resident_id: 'resident_fixture', message_id: 'human', before_message_id: 'agent'});
     assert.equal(await page.evaluate(() => view.active.message_id), 'active', 'move never preempts running work');
     await row('agent').focus();

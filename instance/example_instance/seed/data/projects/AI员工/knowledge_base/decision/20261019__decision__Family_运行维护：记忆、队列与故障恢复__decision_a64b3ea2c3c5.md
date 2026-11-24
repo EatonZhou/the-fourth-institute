@@ -62,11 +62,11 @@ Family 的基础可用性由平台监督，Steward 处理需要判断的组织�
 
 门面摘要概述成果、进行中事项和阻塞，缺失资料明确标记，不把待办写成完成。它不向全体成员发送 info；确有成员需要行动时才定向通知。
 
-`CheckFamilyProgress`／`PublishFamilyProgress` 保留显式调用和旧批次收尾兼容，默认运行图不再调用。旧账本保留；本 Family Steward 可提交对应批次，report 与随附门面九字段摘要各不超过 500 字符，带 source_versions 和 expected_revision；冲突后重读，同内容重试不重复写入，也不恢复广播。
+`MaintainFamilyProgress`／`PublishFamilyProgress` 保留显式调用和旧批次收尾兼容，默认运行图不再调用。旧账本保留；本 Family Steward 可提交对应批次，report 与随附门面九字段摘要各不超过 500 字符，带 source_versions 和 expected_revision；冲突后重读，同内容重试不重复写入，也不恢复广播。
 
 ## 组织回顾
 
-普通 Family 保存业务活动与已消费活动水位。成员 `resident.work_finished` 事件调用 CheckFamilyReview 时，只核验并登记活动，不启动模型。主体必须为当前直属业务成员，持久输入状态为 completed，消息为 user 且非 info、business_ref 非 `duty/`。事件时间戳不作完成证明；水位使用 Conversation 为该输入首次 completed 状态保存的持久事件 cursor 与输入 ID 排序，每个成员只前进、不回退；时钟回拨或同输入终态元数据更新不改变完成顺序。重复或乱序旧事件不产生新的回顾批次，工具调用及维护工作不参与。成员退出后保留此前合法登记、尚未消费的活动；退出之后到达的新登记仍按当前名册跳过。
+普通 Family 保存业务活动与已消费活动水位。成员 `resident.work_finished` 事件调用 MaintainFamilyReview 时，只核验并登记活动，不启动模型。主体必须为当前直属业务成员，持久输入状态为 completed，消息为 user 且非 info、business_ref 非 `duty/`。事件时间戳不作完成证明；水位使用 Conversation 为该输入首次 completed 状态保存的持久事件 cursor 与输入 ID 排序，每个成员只前进、不回退；时钟回拨或同输入终态元数据更新不改变完成顺序。重复或乱序旧事件不产生新的回顾批次，工具调用及维护工作不参与。成员退出后保留此前合法登记、尚未消费的活动；退出之后到达的新登记仍按当前名册跳过。
 
 原 periodic_review 定时事件和 review_interval_seconds 保留，普通 Family 默认一天。到点由 Effect 不带 event 调用同一指令：无未消费活动则结束，不读角色运行态或启动模型；有活动时再确认门面开放、Steward 空闲且无排队。忙碌、排队、未知运行态或并发检查由下一次定时检查补偿，不改接单或另投提示词。
 
@@ -85,7 +85,7 @@ Family 在已有 family_relays 账本的 activity_review 中独立保存 activit
 Steward 的处理顺序：
 
 1. 读取 GetMailbox、ListResidentStates，区分重复请求、可一起处理的同一事项、依赖等待、短暂忙碌与职责过宽。
-2. 在权限允许时用 MergeMailboxItems、ReorderMailbox 整理尚未执行的相关请求。保留原作者、原文、独立诉求和取消语义；已领取输入不变，info 不参与合并。合并减少轮次，不表示实际工作量消失，也不能为降低队列数字撤销有效请求。
+2. 在权限允许时用 MergeMailboxItems、MoveMailboxItems 整理尚未执行的相关请求。保留原作者、原文、独立诉求和取消语义；已领取输入不变，info 不参与合并。合并减少轮次，不表示实际工作量消失，也不能为降低队列数字撤销有效请求。
 3. 重读整理后的 Mailbox，按剩余工作量、可并行性、既有职责和交接成本决定串行、分流或增员。维持串行也是有效结果，摘要中保留依据，必要时安排复查。
 4. 新成员通过 CreateResident/ForkResident 与 UpdateFamily 的归属契约加入；门面原请求用 RelayFamilyMessage 的改派协议转交，其他输入明确交接，避免重复执行。私人 Family 的组织变更须经所有者确认。
 
@@ -123,15 +123,15 @@ Steward 先查当前输入、账号与执行者有效自动切换策略，再按
 
 复核输入必须 completed，并有属于该输入、由 Steward 实际写出的 agent 回复。调用者在 reason 中审计说明成果如何满足组织请求；平台校验来源和终态，不替代对成果含义的判断。取消、仍排队／运行、其他承接关系、未完成或无回复的来源、跨 Family／不相关来源均拒绝。同一来源重复归档幂等，不创建或执行新任务。
 
-归档只在 Family 的原请求关联账本保存真实来源、操作者、理由、时间、回复 ID 和原失败回执。原消息 ID、作者、时间、正文及原失败回执保持不变；GetInputState/GetMessage 沿已有回复投影展示既有完成成果。CheckFamilyRecovery 复查原 incident 为 resolved，包括先前的 missing_creator；不得从 Resident 创建链推造人类创立者。归档不自动填写 human_familizer_id，不把修复轮次“受理”当业务完成。
+归档只在 Family 的原请求关联账本保存真实来源、操作者、理由、时间、回复 ID 和原失败回执。原消息 ID、作者、时间、正文及原失败回执保持不变；GetInputState/GetMessage 沿已有回复投影展示既有完成成果。MaintainFamilyRecovery 复查原 incident 为 resolved，包括先前的 missing_creator；不得从 Resident 创建链推造人类创立者。归档不自动填写 human_familizer_id，不把修复轮次“受理”当业务完成。
 
 ## 持续监督与关闭接单
 
-成员、Router、Steward 的失败信号和路由链失败信号进入 CheckFamilyRecovery；每分钟机械复查及 Steward 完成事件核对当前状态。登记按原门面请求定位，没有门面请求时按 Resident 与消息 ID 定位。延迟事件对应的输入已经完成就结案；改派后跟随现接手者，历史 failed/continue 副本不再次执行。
+成员、Router、Steward 的失败信号和路由链失败信号进入 MaintainFamilyRecovery；每分钟机械复查及 Steward 完成事件核对当前状态。登记按原门面请求定位，没有门面请求时按 Resident 与消息 ID 定位。延迟事件对应的输入已经完成就结案；改派后跟随现接手者，历史 failed/continue 副本不再次执行。
 
 成员消息到达时检查接单阻塞；周期检查当前队列，覆盖消息到达后才关闭或事件漏送。每个关闭成员取一个有效阻塞输入，同一 Family 合并为一条未完成修复请求。已准入且未因关闭而挂起的活动工作不误报。
 
-Steward 可用 OpenIntake 恢复成员，必要时修复 Session、代码缺陷或对外求助。原队列位置和身份保留，不额外投递。排队、运行和重新路由只是等待结果，**原输入完成才算恢复成功**。
+Steward 可用 SetIntakeOpen 恢复成员，必要时修复 Session、代码缺陷或对外求助。原队列位置和身份保留，不额外投递。排队、运行和重新路由只是等待结果，**原输入完成才算恢复成功**。
 
 同一 Family 同时只保留一条未完成恢复请求，通知意图与幂等 ID 先持久化，中断后续投同一条。Steward 连续三轮修复结束而原任务仍未解决时升级；第三轮还在排队或运行不提前算用尽。取消停止跟进，已删除成员不自动重建。
 
@@ -144,7 +144,7 @@ Steward 自己失败、收不到恢复任务、恢复后仍不能接单，或显
 | 对象 | 检查与行动 |
 | --- | --- |
 | 业务成员 | RelayFamilyMessage 在直达、引用直交、模型选人后统一检查五小时、周等所有新鲜窗口的最低剩余额度；低于 5% 时保存复核记录，原请求留在门面，派发 quota 给 Steward。恰好 5% 不触发该复核；未知不当作零 |
-| 业务成员、Router、Steward | auto_migrate 开启且有待执行原输入时，在实际执行入口检查真实绑定账号；任一新鲜额度窗口不高于 5%，或按量余额耗尽时，平台寻找安全备用账号。空闲时不查询额度或迁移。resident.state_changed(intake) 与每分钟 timer 只经 CheckFamilyRoleAvailability 维护接单，不再设置额度 Watch |
+| 业务成员、Router、Steward | auto_migrate 开启且有待执行原输入时，在实际执行入口检查真实绑定账号；任一新鲜额度窗口不高于 5%，或按量余额耗尽时，平台寻找安全备用账号。空闲时不查询额度或迁移。resident.state_changed(intake) 与每分钟 timer 只经 MaintainFamilyRoleAvailability 维护接单，不再设置额度 Watch |
 | 备用账号 | 已登记、观测新鲜、可用，所有已知额度窗口严格高于 5%；按量后端有确认的正余额。自动切换只在订阅账号之间进行：服务账号和 API 只有在用户把该种类列入 Family.auto_migrate_priority，或与原账号同种类时才可选。优先同账号种类的安全备用账号；同种类不可用时按有效排序选择：成员显式开启使用站点 default.backend_priority，否则非空 auto_migrate_priority 优先，空数组使用站点默认 |
 
 **门面的人工额度放行覆盖 Router 与 Steward。** 有人在门面上人工打开接单时记录的额度放行（`quota_reserve_override`），由平台同步给本 Family 的 Router 和 Steward：每个角色以自己的 binding（`resident:<角色 ID>`）和递增的 revision 写入同一份三字段放行，并交给 Execution Scheduler；门面停用放行时同样同步为停用。门面没有放行记录时不改动角色自己的设置。同步发生在平台每次维护角色接单时，Family 暂停期间也照常同步。

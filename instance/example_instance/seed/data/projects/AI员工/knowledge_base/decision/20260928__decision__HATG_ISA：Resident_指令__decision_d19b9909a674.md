@@ -73,7 +73,7 @@ Resident 是可以跨多次模型会话持续存在的 Agent 身份。系统中�
 | `GetResidentSettings` | 否 | 读取运行设置与 Prompt 注入设置 | 对 `resident_id` 有 @viewer |
 | `GetResidentTextInputSnapshot` | 否 | 读取显式 fresh 文本的当前配置和完整系统 parts 版本，不提交模型 | 对 `resident_id` 有 @viewer |
 | `UpdateResidentSettings` | 是 | 修改运行设置，包括 Prompt 注入 | 对 `resident_id` 有 @contributor |
-| `PreviewPromptInjection` | 否 | 预览一轮实际带上的注入内容 | 对 `resident_id` 有 @viewer |
+| `GetPromptInjectionPreview` | 否 | 预览一轮实际带上的注入内容 | 对 `resident_id` 有 @viewer |
 | `GetResidentInitialization` | 否 | 读取既有初始化状态与执行身份 | 对 `resident_id` 有 @viewer |
 | `RetryResidentInitialization` | 是 | 恢复初始化并保留原队列 | 对 `resident_id` 有 @contributor |
 | `RestartSession` | 是 | 切换账号或 Provider（默认完整保留上下文），或显式重新开始模型会话 | 对 `resident_id` 有 @contributor |
@@ -197,7 +197,7 @@ active_threads 承载未决承诺、阻塞与重要约束。归纳遗漏的旧�
 
 摘要各时间层、各语义字段的文字值合计最多 5000 字符（默认），重复文字逐次计数；不另设阶段与长期层占比限制。提交内容超过总量上限时整次拒绝，版本、覆盖轮次和已有内容保持原状，不静默截断。归纳时先保留未关闭事项再检查总量；身份、维护职责、版本比较与未决事项保留仍按原规则校验。历史超长摘要继续可读，省略正文时仍可登记已覆盖轮次，后续归纳须满足总量上限。平台按新增工作量与容量判断归纳待办，不决定信息重要性：默认阶段 20 个新覆盖轮次，长期 100 轮，合计文字达到上限的 80% 提醒归纳。单纯经过时间不形成待办，没有新工作的成员摘要保持原状，闲置不会让它反复进入归纳。部署配置 PORTAL_SUMMARY_TOTAL_CHARS 定义合计字符上限（默认 5000，至少 400），PORTAL_SUMMARY_PHASE_ROUNDS、PORTAL_SUMMARY_LONG_TERM_ROUNDS 为正整数。维护轮次不计数量，重复覆盖不重计。独立 Resident 的认领结果也返回同一 summary_policy，单份摘要写入受相同总量上限约束。
 
-Family 内部检查成员摘要的 CheckResidentWorkSummary 和读取门面汇总材料的 GetFamilySummaryInputs 属于 Family 内部机制类（decision_b77fde81e7a0）。
+Family 内部检查成员摘要的 MaintainResidentWorkSummary 和读取门面汇总材料的 GetFamilySummaryInputs 属于 Family 内部机制类（decision_b77fde81e7a0）。
 
 全局摘要认领只允许当前职责承担者，任务仅覆盖独立 Resident；Family 成员和门面不进入队列。认领、提交及请求重建时重新核对当前归属；变为 Family 管理后旧认领失效。GetResidentSummaries 始终读取同一份累计内容，不保留内部成员首次自写前的另一条读取回退。具体 Family 工作流见 decision_44cf587c1721。
 
@@ -272,7 +272,7 @@ Family 内部检查成员摘要的 CheckResidentWorkSummary 和读取门面汇�
 - `reporting` 是完整对象 `{initiative, quality}`：主动性为 `off|low|medium|high`，质量为 `low|medium|high`，缺省 `off/medium`；未知键、缺键、非法枚举拒绝。`reporting_effective` 给出策略、`state`、`source_resident_id`、`source`、`configured` 与 `application=next_input`；`configured=false` 表示默认，不能称为用户已配置。显式保存默认值同样形成配置事实。版本校验覆盖可读运行设置、策略及是否已配置。
 - `application.items` 的 `reporting` 项记录 `next_turn` 与未知交付观察；保存不重启会话、不调用模型、不生成报告或发起审查。每条适用的新主输入或追加输入从可信转交链取得源门面策略；直接成员输入使用自身策略，已送达输入不被改写。主动性 off 保留正常答复、业务交付及用户明确要求的汇报；高主动性仍由 Resident 判断价值。质量与独立检查规则见 decision_b12782e7f490、decision_e3ced6d30f6b。
 
-### `PreviewPromptInjection`
+### `GetPromptInjectionPreview`
 
 **预览 Resident 在某种轮次实际会带上的注入内容。**
 
@@ -384,7 +384,7 @@ Family 内部检查成员摘要的 CheckResidentWorkSummary 和读取门面汇�
 | `GetResidentSettings` | `resident_id` |
 | `GetResidentTextInputSnapshot` | `resident_id`、`text` |
 | `UpdateResidentSettings` | `resident_id`、`expected_revision`、`changes` |
-| `PreviewPromptInjection` | `resident_id`、`turn` |
+| `GetPromptInjectionPreview` | `resident_id`、`turn` |
 | `GetResidentInitialization` | `resident_id` |
 | `RetryResidentInitialization` | `resident_id`、`expected_initialization_id`、`credits_consent` |
 | `RestartSession` | `resident_id`、`operation`、`provider`、`account_id`、`account_selection`、`model`、`reasoning_effort`、`collaboration_mode`、`service_tier`、`permission_preset`、`prompt_context`、`backend_options`、`context_strategy`、`active_execution_policy`、`resume_failed_input`、`credits_consent` |

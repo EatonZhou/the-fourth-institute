@@ -181,7 +181,7 @@ Chatroom 是 Society 页面左侧导航的一个面板，列出当前用户所�
 
 ## 指令
 
-Chatroom 的读写属于 HATG ISA 公共讨论类（decision_3e063aac15b3），由 Portal Web 执行：`ListChatrooms`、`GetChatroom`、`CreateChatroom`、`UpdateChatroom`、`LeaveChatroom`、`DeleteChatroom`、`ListChatroomMessages`、`CreateChatroomMessage`、`UpdateChatroomMessage`、`RetractChatroomMessage`、`UpdateChatroomReaction`、`MarkChatroomRead`。参数、结果和错误语义见该 Design。聊天室搜索和输入历史使用对话类的 `SearchMessages`、`ListInputHistory`（decision_2fe6fd5367fb），传 `chatroom_id`；这两种形式同样由 Portal Web 执行，用 `page_token` / `next_page_token` 分页。转发聊天室消息使用对话类的 `ForwardMessages`（decision_2fe6fd5367fb）。
+Chatroom 的读写属于 HATG ISA 公共讨论类（decision_3e063aac15b3），由 Portal Web 执行：`ListChatrooms`、`GetChatroom`、`CreateChatroom`、`UpdateChatroom`、`LeaveChatroom`、`DeleteChatroom`、`ListChatroomMessages`、`CreateChatroomMessage`、`UpdateChatroomMessage`、`RetractChatroomMessage`、`UpdateChatroomReaction`、`UpdateChatroomReadPosition`。参数、结果和错误语义见该 Design。聊天室搜索和输入历史使用对话类的 `SearchMessages`、`ListInputHistory`（decision_2fe6fd5367fb），传 `chatroom_id`；这两种形式同样由 Portal Web 执行，用 `page_token` / `next_page_token` 分页。转发聊天室消息使用对话类的 `ForwardMessages`（decision_2fe6fd5367fb）。
 
 ## 不变量
 

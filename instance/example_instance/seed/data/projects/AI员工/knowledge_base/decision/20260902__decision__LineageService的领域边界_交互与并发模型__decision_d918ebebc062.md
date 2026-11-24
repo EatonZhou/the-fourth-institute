@@ -214,7 +214,7 @@ Resident 登记在同一事务中提交身份和 Lineage 成员关系。首次�
 
 需要基于所读定义提交时，先取 `GetLineage.result.lineage.revision`，再作为调用顶层的 `expected_version`。ISA 通过调用内 ContextVar 传递前提，定义写入器在本次调用对各 Lineage 的首次提交时锁定并比较 revision；同一调用后续提交不再比较，事务回滚不消耗前提。版本不一致时返回 `instruction.conflict`，`error.details` 包含 `object_id`、`expected_version` 和 `current_version`。跨 Lineage 操作可用 `{Lineage ID: revision}` 指定检查集合，省略某个键不对它附加版本前提。布局的 `layout_revision` 不能代替定义 revision。
 
-外部服务调用、文件复制和整个多步处理器不包在持有 Lineage 行锁的事务内。没有定义提交的 `PrepareWorkspaceHandoff` 不做定义版本比较。原来的 Lineage 作用域只负责把副作用（变化通知、资源投影、成员同步）推迟到最外层操作结束后执行，不再互斥。
+外部服务调用、文件复制和整个多步处理器不包在持有 Lineage 行锁的事务内。没有定义提交的 `RunWorkspaceHandoff` 不做定义版本比较。原来的 Lineage 作用域只负责把副作用（变化通知、资源投影、成员同步）推迟到最外层操作结束后执行，不再互斥。
 
 ### Resident 状态处理与异步执行
 

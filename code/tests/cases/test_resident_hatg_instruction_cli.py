@@ -100,7 +100,7 @@ def test_an_explicit_key_is_kept(monkeypatch, clock):
     """HATG 命令行使用调用方显式给出的幂等键"""
     sent = []
     monkeypatch.setattr(cli, "urlopen", lambda request, timeout: sent.append(json.loads(request.data)) or committed())
-    cli.main(["--resident-id", RESIDENT, "call", "PauseComponent", "--arguments-json",
+    cli.main(["--resident-id", RESIDENT, "call", "SetComponentPaused", "--arguments-json",
               '{"lineage_id":"l","component_id":"c","paused":true}', "--idempotency-key", "mine"])
     assert sent[0]["idempotency_key"] == "mine"
 

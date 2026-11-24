@@ -629,7 +629,9 @@
     ) ? authoredUnavailablePolicy : "queue";
     const deliveryConfig = ["route"].includes(type)
       ? {
-          include_envelope: sourceConfig.include_envelope !== false,
+          ...(typeof sourceConfig.include_envelope === "boolean"
+            ? { include_envelope: sourceConfig.include_envelope }
+            : {}),
           invoke_profiles: normalizeInvokeProfiles(sourceConfig.invoke_profiles),
           unavailable_policy: unavailablePolicy,
           max_messages: sourceConfig.max_messages == null ? null : Math.max(0, Math.trunc(Number(sourceConfig.max_messages))),

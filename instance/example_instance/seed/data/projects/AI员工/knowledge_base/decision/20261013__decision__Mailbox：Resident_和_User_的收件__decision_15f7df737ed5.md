@@ -151,7 +151,7 @@ Job 进度保存可以在原 Resident 锁与事务内重申当前等待队列。
 
 有整理权限的主体可以暂存一条未接单的队列请求或群体，让后续请求先执行。消息身份、正文、附件和来源保持不变；暂存随原等待项持久保存，刷新、新消息到达和后台恢复不会解除。全部暂存时等待，不新开工作；恢复在原位置继续，不自动置顶，提前处理用调序。
 
-暂存不是取消或关闭整个 Resident，已接单执行不能暂存、不抢占。暂存与未暂存项不能合并；全部暂存项合并仍暂存，拆分继承暂存；立即注入须先恢复，撤回和清空仍有效。成员等待项公开 `held` 布尔值，Family 已转交消息的展示沿真实 holder 传播同一字段；门面尚未转交的路由请求不支持暂存。操作与参数见 decision_c54e68a82d7a 的 `SetMailboxItemHold`。
+暂存不是取消或关闭整个 Resident，已接单执行不能暂存、不抢占。暂存与未暂存项不能合并；全部暂存项合并仍暂存，拆分继承暂存；立即注入须先恢复，撤回和清空仍有效。成员等待项公开 `held` 布尔值，Family 已转交消息的展示沿真实 holder 传播同一字段；门面尚未转交的路由请求不支持暂存。操作与参数见 decision_c54e68a82d7a 的 `SetMailboxItemHeld`。
 
 ### 调序
 
@@ -179,13 +179,13 @@ Mailbox 的历史分组查询从消息 ID 索引定位源 Segment，再沿 `mess
 
 节点对话框（双击画布上的 Resident 卡片打开）左侧是一列窄的竖向导航：General、Package、Mailbox，上下方向键与 Home、End 在三栏间切换。切换时卡片大小不变（高 600px，不超过视口高度的 92%）：内容较长的一栏在卡片内滚动，General 的“删除节点／取消／保存节点”固定在卡片底部，每次切换都从该栏顶部开始显示。Mailbox 栏是这个 Resident 收件与处理情况的完整视图；合并、拆分和调序只在这一栏进行：Chat Workspace 排队区保持简洁，每条等待中的消息只有“立即注入”和“删除”，两条以上时标题栏有“全部清除”。标题旁有一个低调的小字链接“在 Mailbox 中合并、拆分、调序 ›”，字号和颜色与标题栏相同，悬停时才显示强调色和下划线；点击后打开这个 Resident 的 Menu 并直接进入 Mailbox 页。栏的内容来自 `GetMailbox`（字段见 decision_2a3ff353165c），撤回与 Chat 排队区的“删除”使用同一条指令 `CancelInput`；只有能整理这个 Mailbox 的人看到勾选框、拖动和操作按钮。
 
-- **待处理**：先按处理顺序列出队列中的请求和群体，再按到达顺序列出等待中的 info。每项显示类型（请求、群体 · N 条、info）、发送者、时间、前 200 字的摘要和附件数。点一项的摘要或“查看全文”打开叠在节点对话框上的消息卡片（见下）。请求和群体可以拖动、或聚焦后用 Alt+↑/↓ 调序（`ReorderMailbox`），勾选两项以上合并（`MergeMailboxItems`）；可勾选的项有两项以上时，工具栏在“合并所选”前有“全选”按钮，一次勾选全部请求和群体，全部勾选后按钮变为“取消全选”，再按清空勾选。群体可以拆分（`SplitMailboxItem`）；三类都可以撤回（`CancelInput`，info 撤回后不再随请求送达）。info 不参与合并和调序。
+- **待处理**：先按处理顺序列出队列中的请求和群体，再按到达顺序列出等待中的 info。每项显示类型（请求、群体 · N 条、info）、发送者、时间、前 200 字的摘要和附件数。点一项的摘要或“查看全文”打开叠在节点对话框上的消息卡片（见下）。请求和群体可以拖动、或聚焦后用 Alt+↑/↓ 调序（`MoveMailboxItems`），勾选两项以上合并（`MergeMailboxItems`）；可勾选的项有两项以上时，工具栏在“合并所选”前有“全选”按钮，一次勾选全部请求和群体，全部勾选后按钮变为“取消全选”，再按清空勾选。群体可以拆分（`SplitMailboxItem`）；三类都可以撤回（`CancelInput`，info 撤回后不再随请求送达）。info 不参与合并和调序。
 - **处理中**：Resident 状态中的当前请求，以及这一轮交给执行服务时随它送达的 info（“随行 info N 条”，点开列出发送者、时间和摘要）。
 - **最近已送达**：最近 10 轮中已经结束的，新的在前；每轮显示结果（完成、已停止、失败）、请求、结束时间、失败原因和随行的 info。停止或失败、并保留了原队列项的一轮有“放回队列”按钮。
 - **放回队列**：停止或失败的一轮可以把它的消息放回等待，包括随请求送达的 info。放回的是原来那些消息本身，消息 ID、发送者、时间和正文都不变，steward 发的 info 仍署名 steward；它们按原顺序回到队首，info 仍随下一条请求送达。那一轮的停止或失败记录保留在对话中。已经完成的请求不能放回，需要重做时发新消息。权限与整理相同。
 - **消息卡片**：待处理、处理中、最近已送达和随行 info 中的每一项都能点开卡片。卡片第一次打开时用 `GetMessage` 读取完整正文和图片、文件（群体逐条读取成员原文），栏打开期间再次打开不再读取；Esc 或右上角关闭只关掉卡片，焦点回到该项。卡片顶部的“显示实际发送的全部 prompt”开关用来查看 Portal 在用户输入之外加了哪些内容；按下后，栏打开期间之后打开的卡片也保持这个选择。
   - 已经送达的一轮（处理中或最近已送达）用 `GetSentPrompt` 从 Provider 会话记录读出这一轮实际发送的用户位置内容。消息原文和随行 info 原文高亮，其余是 Portal 加上的部分，例如运行身份、背景更新、授权上下文和 Agent Harness 运行提示。随行 info 的卡片显示带它送达的那一轮。会话记录里查不到这一轮时（会话重置后或较早的轮次）卡片说明查不到；没有读取权限时显示错误。
-  - 等待中的消息还没有发送，卡片注明显示的是预览：用 `PreviewPromptInjection`（`turn=later`）按当前 Harness 设置生成，消息原文放在消息位置。随行 info、附带引用和 Agent Harness 运行提示在发送时才确定，不在预览中。
+  - 等待中的消息还没有发送，卡片注明显示的是预览：用 `GetPromptInjectionPreview`（`turn=later`）按当前 Harness 设置生成，消息原文放在消息位置。随行 info、附带引用和 Agent Harness 运行提示在发送时才确定，不在预览中。
   - 两种情况下，卡片下方都折叠显示系统位置的 Portal 内容（例如 Portal 核心规则），注明按当前设置预览；这部分在会话开始和压缩后发送，不随每条消息重复。
 - **刷新**：栏打开时监听这个 Resident 的队列、输入处理状态、运行状态、上下文清除及身份或投影失效通知；监听本身不加载完整 Conversation。相关变化合并后在 250 毫秒重读 `GetMailbox`，普通活动通知不触发重读；每次显式操作后立即校准。页面隐藏时只记录失效，恢复可见时补读一次；重连、重新订阅及要求快照的通知也校准。相同结果不重建列表；重读仍保留随行 info 展开、勾选、焦点和滚动位置，拖动期间推迟展示更新。切换栏或关闭对话框时释放监听，不再重读。消息组详情按原成员顺序展示，逐消息复用读取结果；同一面板最多并发两条详情读取，切换或关闭卡片、销毁面板或切换身份时取消其未完成的展示请求，取消不影响业务输入与执行。
 
@@ -291,13 +291,13 @@ Conversation Index（会话索引）是 Mailbox 背后由服务端生成的摘�
 - **Mailbox 统一计数和清理。** Mailbox 标题和入口角标使用对话与通知合计的未读数；标题的条目数合计已加载的两类条目。“清除未读”“清除全部”同时作用于对话和通知的全部页，不影响 To Do；To Do 入口和面板标题独立显示未完成数。
 - **对话可以置顶和取消置顶。** “消息”栏中对话卡片的右键菜单（触屏长按）提供“置顶”或“取消置顶”；通知不能置顶。置顶的对话固定在“消息”栏最上方并显示图钉标记，置顶组和其余条目各自按更新时间从新到旧排列；置顶条目不论活动时间都在第一页返回。置顶不改变未读；“清除全部”不移除置顶的对话。每位用户最多置顶 50 个对话。
 - **置顶记录在服务端。** 置顶保存在这位用户的阅读状态行中，换设备、换浏览器后保持，远程 agent 读到的也一样。Resident 被删除、用户退出或失去访问权限而条目消失时，它的置顶随之删除。
-- **置顶通过 ISA 指令完成。** `PinMailboxItem`（`key`、`pinned`），由 Portal Web 执行，页面和 Agent 调用同一条指令；`GetMailbox(user_id)` 和 HTTP 读取的条目增加 `section`（`conversation` 或 `notification`）和 `pinned`。
-- **节点 Menu 的图钉固定到 User Mailbox。** Resident Menu 右上角使用「固定在 Mailbox／取消 Mailbox 固定」，与 Mailbox 中的置顶共用 `PinMailboxItem` 和服务端状态；普通 Resident、Family 门面与内部 Resident 都适用。它不再修改收藏导航。尚未交谈或曾清理的可见 Resident 也可以固定：服务端核验访问权限后，把该节点加入消息栏，不伪造消息、不标记已读，也不启动工作。取消固定后，没有对话活动的节点从 Mailbox 移除；已有对话仍按原规则展示。状态读取或修改失败不会伪装为成功；服务暂不可用也不删除已有固定。
+- **置顶通过 ISA 指令完成。** `SetMailboxItemPinned`（`key`、`pinned`），由 Portal Web 执行，页面和 Agent 调用同一条指令；`GetMailbox(user_id)` 和 HTTP 读取的条目增加 `section`（`conversation` 或 `notification`）和 `pinned`。
+- **节点 Menu 的图钉固定到 User Mailbox。** Resident Menu 右上角使用「固定在 Mailbox／取消 Mailbox 固定」，与 Mailbox 中的置顶共用 `SetMailboxItemPinned` 和服务端状态；普通 Resident、Family 门面与内部 Resident 都适用。它不再修改收藏导航。尚未交谈或曾清理的可见 Resident 也可以固定：服务端核验访问权限后，把该节点加入消息栏，不伪造消息、不标记已读，也不启动工作。取消固定后，没有对话活动的节点从 Mailbox 移除；已有对话仍按原规则展示。状态读取或修改失败不会伪装为成功；服务暂不可用也不删除已有固定。
 
 ### 对话消息免打扰
 
 - User Mailbox「消息」栏的 Resident 对话和聊天室支持消息免打扰。右键、触屏长按或键盘菜单键打开「对话操作」，可开启「消息免打扰」或「关闭消息免打扰」；免打扰会话显示划线铃铛，未读标记用灰色显示。
-- 偏好按当前用户与条目键持久保存在 Portal UI 的同一行 `conversation_states.muted` 中，默认关闭；换浏览器、换设备后保持。`MuteMailboxItem(key, muted)` 只修改调用者自己的对话偏好，与置顶、已读、清除共享 `read_revision`；其他浏览器通过原有 Mailbox 变化通知刷新。
+- 偏好按当前用户与条目键持久保存在 Portal UI 的同一行 `conversation_states.muted` 中，默认关闭；换浏览器、换设备后保持。`SetMailboxItemMuted(key, muted)` 只修改调用者自己的对话偏好，与置顶、已读、清除共享 `read_revision`；其他浏览器通过原有 Mailbox 变化通知刷新。
 - `unread` 表示实际是否未读，`attention_unread` 表示是否需要提醒。免打扰 Resident 对话仍接收消息、记录未读、显示运行状态，普通未读不计入入口、消息栏及个人助手入口的提醒角标，也不显示未读高亮。开启免打扰不标记已读、不停止 Resident、不关闭接单、不改变排序；取消后尚未阅读的消息立即重新计入提醒。
 - 聊天室沿用其成员偏好与事务，普通未读不提醒，被 @ 提及仍提醒。聊天室设置与 Mailbox 菜单修改的是同一份偏好。
 - 分页之外的未读汇总同样应用免打扰规则。列表中的原始未读标记仍保留，「清除未读」与正常阅读仍能将其读掉；「清除全部」后再次出现的同一对话仍保留免打扰。
@@ -314,7 +314,7 @@ Conversation Index（会话索引）是 Mailbox 背后由服务端生成的摘�
 
 ### 人和远程 agent 用同一套能力
 
-- **页面能做的事，Agent 都能用 ISA 指令做。** 远程 agent 以 User 身份（User Access Token）调用 `GetMailbox(user_id)`、`MarkMailboxItemRead`、`ClearMailbox`、`PinMailboxItem`，并用 `ListMessages`、`GetMessage`、`DeliverMessage`、`AnswerResidentRequest` 和聊天室指令阅读、回复。User Mailbox 没有队列，Agent 自己决定处理哪些条目、以什么顺序处理。
+- **页面能做的事，Agent 都能用 ISA 指令做。** 远程 agent 以 User 身份（User Access Token）调用 `GetMailbox(user_id)`、`SetMailboxItemRead`、`ClearMailbox`、`SetMailboxItemPinned`，并用 `ListMessages`、`GetMessage`、`DeliverMessage`、`AnswerResidentRequest` 和聊天室指令阅读、回复。User Mailbox 没有队列，Agent 自己决定处理哪些条目、以什么顺序处理。
 - **页面实时收到的变化，Agent 也能等到。** 页面通过 Portal 变化通知（`agent-conversation-index`、`resident_events`）实时刷新；Agent 用一条流式指令 `WatchMailbox` 等待同样的变化，返回变化的条目键和续读游标，不用反复轮询 `GetMailbox`。
 
 WatchMailbox 的首批检查点要求读取一次当前 Mailbox；之后把返回的 `cursor` 作为 `after_cursor` 续读。订阅复用页面经权限过滤的变化数据，不轮询列表；明确的 Resident 或条目变化返回 `keys`，无法定位到条目键的整表变化返回 `snapshot_required`。游标所在 Web 进程重启、游标超过当前序号或事件已退出缓存窗口时，同样要求重读。每次订阅默认持续 30 秒，可选择 1–60 秒；超时仍返回续读检查点。聊天室免打扰规则继续决定入口角标是否提醒，清除未读仍可作用于免打扰的未读条目。
@@ -377,12 +377,12 @@ Mailbox 收起期间共享缓存仍接收列表事件并保留已加载 Resident
 - **打开 Resident 卡片前先确认它还在。** 列表通过 Resident 发现服务确认目标仍然存在、当前用户仍有权访问。目标已被删除（404）时移除这张卡片并提示“该 Resident 已删除或不存在。”；无权访问（403）时同样移除并提示“没有查看这个 Resident 的权限。”；其他失败提示“无法确认 Resident 状态，请稍后重试。”，卡片保留。
 - **当前页面可以接管打开动作。** 确认通过后，列表发出浏览器事件 `portal:agent-conversation-open`，事件的 `detail` 中带有条目和一个 `handled` 标志。Society 页面这类能直接切换到目标 Resident 的页面把 `handled` 设为 `true` 并自行切换；没有页面接管时，浏览器前往条目的地址。
 - **打开 Resident 卡片本身不改变已读。** Resident 卡片的未读在用户真正看到对话时才清除，规则见下一节。
-- **打开通知就是读了它。** 通知没有可以确认阅读的 Chat，所以通知条目打开独立详情对话框，显示完整通知正文与来源，成功打开后、跳转之前调用 `MarkMailboxItemRead` 把这个条目标为已读；页面跳转后请求仍然完成，标记失败不阻止打开。详情底部的来源与关闭操作采用共享 `portalButton` 样式。 通知详情采用居中的紧凑卡片，宽度上限 560px、高度随可见视口收缩。状态标签与来源位于标题上方，发送者和本地时间采用次级字号；标题允许换行，完整正文保持纯文本及原有换行，长标识符可折行。标题与底部操作分区，长正文在中部滚动；“打开来源”为主操作，关闭为次操作，没有来源地址时隐藏跳转按钮。初始焦点落在右上角关闭按钮，保留键盘焦点提示、Tab 约束、Escape 关闭及返回触发点；窄屏与深色主题使用同一详情实现。
+- **打开通知就是读了它。** 通知没有可以确认阅读的 Chat，所以通知条目打开独立详情对话框，显示完整通知正文与来源，成功打开后、跳转之前调用 `SetMailboxItemRead` 把这个条目标为已读；页面跳转后请求仍然完成，标记失败不阻止打开。详情底部的来源与关闭操作采用共享 `portalButton` 样式。 通知详情采用居中的紧凑卡片，宽度上限 560px、高度随可见视口收缩。状态标签与来源位于标题上方，发送者和本地时间采用次级字号；标题允许换行，完整正文保持纯文本及原有换行，长标识符可折行。标题与底部操作分区，长正文在中部滚动；“打开来源”为主操作，关闭为次操作，没有来源地址时隐藏跳转按钮。初始焦点落在右上角关闭按钮，保留键盘焦点提示、Tab 约束、Escape 关闭及返回触发点；窄屏与深色主题使用同一详情实现。
 
 ### 已读与未读
 
-- **在 Chat 中看到 Resident 的对话后，条目自动变为已读。** 用户打开这个 Resident 的 Chat、对话内容已经显示出来时，浏览器以这个条目的 `key`（`resident:<Resident ID>`）调用 `MarkMailboxItemRead`，不带 `expected_version`；服务端先核对调用者能看到这个 Resident，再把这位用户这一行的读到位置推进到最新提醒，不查询历史结果。与滚动位置、最后一条消息是否进入视口无关；只是选中节点、在地址中带上 Resident ID 或从详情页返回都不算看到（decision_18abbdef3da3）。
-- **双击卡片切换已读和未读。** 双击取消待打开的单击，任何条目都可以切换。浏览器调用 `MarkMailboxItemRead`，以页面看到的修订号作为 `expected_version`：这之后有新提醒或其他变化时服务端拒绝修改，页面重新读取 Mailbox，新结果保持未读。标为已读把读到位置推进到最新提醒；标为未读把读到位置移到最新提醒之前，从未有过提醒的条目先取得一个提醒位置。Resident 条目先通过 Web 已绑定的 Resident 服务检查当前调用者的访问权限，不扫描消息列表。页面可以先更新红点；保存失败时恢复原状态，并明确提示“未读状态保存失败，请重试。”，不能静默吞掉错误。成功保存后，状态刷新与页面重载保持已读，直到真正的新结果或新消息到达。
+- **在 Chat 中看到 Resident 的对话后，条目自动变为已读。** 用户打开这个 Resident 的 Chat、对话内容已经显示出来时，浏览器以这个条目的 `key`（`resident:<Resident ID>`）调用 `SetMailboxItemRead`，不带 `expected_version`；服务端先核对调用者能看到这个 Resident，再把这位用户这一行的读到位置推进到最新提醒，不查询历史结果。与滚动位置、最后一条消息是否进入视口无关；只是选中节点、在地址中带上 Resident ID 或从详情页返回都不算看到（decision_18abbdef3da3）。
+- **双击卡片切换已读和未读。** 双击取消待打开的单击，任何条目都可以切换。浏览器调用 `SetMailboxItemRead`，以页面看到的修订号作为 `expected_version`：这之后有新提醒或其他变化时服务端拒绝修改，页面重新读取 Mailbox，新结果保持未读。标为已读把读到位置推进到最新提醒；标为未读把读到位置移到最新提醒之前，从未有过提醒的条目先取得一个提醒位置。Resident 条目先通过 Web 已绑定的 Resident 服务检查当前调用者的访问权限，不扫描消息列表。页面可以先更新红点；保存失败时恢复原状态，并明确提示“未读状态保存失败，请重试。”，不能静默吞掉错误。成功保存后，状态刷新与页面重载保持已读，直到真正的新结果或新消息到达。
 - **提醒在事件发生时写入。** Resident 的可提醒结果或发给用户的消息与对话事件在同一事务中推进收件人的提醒，用户离线时照常更新；清空上下文把所有查看者读到最新提醒。Lineage 通知创建时为每位接收者写入提醒；Notice Board 发帖、编辑新增和回复中的 @ 在提及时为被提及者写入提醒。查询只读这位用户的行，不比较历史结果，不遍历活动分页。Family 成员的转交结果推进原始发送者在门面对话上的提醒，转交副本不产生提醒。
 - **在 Home 读完帖子也就读了其中的 @。** 用户在 Home 把一个帖子读到最新版本时，Mailbox 中这个帖子的 @ 提及一并变为已读；只读到较早版本时保持未读。
 - **聊天室条目的未读就是聊天室自己的未读。** 在聊天室中阅读按展示位置推进已读；双击标为已读、“清除未读”把这位成员的已读位置移到最新消息；双击标为未读让最新一条消息重新未读。别人发言后条目变为未读，自己发言不会。卡片直接显示共享 Conversation Store 中的真实 `unread_count`，超过 99 显示 `99+`，悬停提示和无障碍标签保留准确条数；已读时不显示数字。新消息、重连和阅读回执沿用共享状态层更新计数，列表不自行累计。只有未读结果标记、没有消息条数的 Resident 或通知条目仍显示未读点，不把一个结果标记伪装成一条消息。入口红色总角标只计算需要提醒的未读条目数；聊天室使用服务端的 `attention_unread`。免打扰房间的普通未读数量为灰色并显示静音图标，有未读 @ 时另显示红色“@我 n”，点击进入房间定位消息。灰色未读仍可使用清除未读操作。
@@ -390,7 +390,7 @@ Mailbox 收起期间共享缓存仍接收列表事件并保留已加载 Resident
 
 每个进程首次使用阅读状态表时都会运行建表语句。`CREATE INDEX IF NOT EXISTS` 和 `ADD COLUMN IF NOT EXISTS` 即使无事可做也要锁表：锁要等写过这张表的事务结束，后到的读写又排在它后面。所以建表语句先查索引是否已经存在，新列直接写进 `CREATE TABLE`，表已存在时整段语句不锁表。
 
-`MarkMailboxItemRead` 先确认条目在调用者的 Mailbox 中，不拼出 Mailbox 页：Resident 条目由 Resident 服务确认身份，自己记阅读位置的功能条目由该功能确认（Chatroom 检查调用者是否是成员）。通知和 @ 创建时已写入收件人的行，有行就算在 Mailbox 中；只有更早、还没有行的通知才到 Mailbox 页中查找。
+`SetMailboxItemRead` 先确认条目在调用者的 Mailbox 中，不拼出 Mailbox 页：Resident 条目由 Resident 服务确认身份，自己记阅读位置的功能条目由该功能确认（Chatroom 检查调用者是否是成员）。通知和 @ 创建时已写入收件人的行，有行就算在 Mailbox 中；只有更早、还没有行的通知才到 Mailbox 页中查找。
 
 ### 清除
 
@@ -422,7 +422,7 @@ Resident 条目的排序时间始终包含当前用户最近发送消息的时�
 
 服务端在用户自己发出的消息得到结果，或有消息发给用户时为他写入提醒，以结果的 `completion_id` 识别同一事件；条目的完成签名取每个 Resident 最新的一项：
 
-- **发给用户的消息**：对话中 `recipients` 包含这位用户、仍在 Chat 中（在最后一次清空之后）的消息本身就值得提醒，签名取最新的一条，`completion_id` 是这条消息的 ID，`input_message_id` 为空。它和这位用户自己请求的结果比较时间，较新的一项是条目的完成签名；打开 Chat 时的 `MarkMailboxItemRead` 照常把它标为已读。服务端从 AgentData 的 Chat 消息投影表 `chat_message_positions`（每条 trace 消息一行，decision_b1ab45c4b3ec）的 `recipient_users` 列查找发给用户的消息，查找使用只覆盖模型消息的 GIN 部分索引 `chat_message_positions_recipient_idx`。只有收件人得到提醒，能看这段对话的其他人不会。
+- **发给用户的消息**：对话中 `recipients` 包含这位用户、仍在 Chat 中（在最后一次清空之后）的消息本身就值得提醒，签名取最新的一条，`completion_id` 是这条消息的 ID，`input_message_id` 为空。它和这位用户自己请求的结果比较时间，较新的一项是条目的完成签名；打开 Chat 时的 `SetMailboxItemRead` 照常把它标为已读。服务端从 AgentData 的 Chat 消息投影表 `chat_message_positions`（每条 trace 消息一行，decision_b1ab45c4b3ec）的 `recipient_users` 列查找发给用户的消息，查找使用只覆盖模型消息的 GIN 部分索引 `chat_message_positions_recipient_idx`。只有收件人得到提醒，能看这段对话的其他人不会。
 - **成功的输入**必须有 Resident 的有效回复：输入状态中的 `reply_message_ids` 指向同一 Resident 对话中的 `agent` 消息，回复有内容，并且是对这条输入的回复。签名取最后一条有效回复。转交给 Family 成员的请求由成员答完时，发送者的门面条目显示未读。
 - **失败和取消的输入**本身就值得提醒；没有回复时，用输入 ID 和终态生成签名。
 - **只确认送达的输入不提醒。** 注入当前正在进行的一轮的消息、`/fast` 这类同步命令的系统回执，以及没有有效回复的成功输入，都不产生新的完成签名，也不覆盖更早的真实结果或清除已有的未读。
@@ -516,7 +516,7 @@ Resident Mailbox 和 User Mailbox 的修改都使用 HATG ISA 指令（decision_
 | --- | --- | --- |
 | `MergeMailboxItems` | `resident_id`、`message_ids`（选中的顶层项 ID） | `group_message_id`、按处理顺序的 `member_message_ids`、调整后的队列 `items` 与 `revision` |
 | `SplitMailboxItem` | `resident_id`、`message_id`（群体消息 ID） | `group_message_id`、`member_message_ids`、`items`、`revision` |
-| `ReorderMailbox` | `resident_id`，加上 `message_id` 与 `before_message_id`/`after_message_id` 之一，或完整排列 `order` | `items`、`revision`、`reordered`（顺序是否有变化） |
+| `MoveMailboxItems` | `resident_id`，加上 `message_id` 与 `before_message_id`/`after_message_id` 之一，或完整排列 `order` | `items`、`revision`、`reordered`（顺序是否有变化） |
 | `RequeueMessage` | `resident_id`、`message_id`（最近几轮中停止或失败的一轮，或接收记录完整但丢失执行位置的 `queued` 请求/群体） | 放回的 `message_ids`（请求在前，随行 info 按原顺序）、`items`、`revision` |
 
 Mailbox 栏用只读指令 `GetMailbox`（传 `resident_id`）读取三部分内容。撤回用 `CancelInput`（`resident_id`、`message_id`）：正在运行的一轮被停止；等待中的请求、群体和 info 移出 Mailbox 并记为 `cancelled`，info 撤回后以 `cancelled`（`info_withdrawn`）结束，没有任何工作在处理的输入以 `cancelled`（`lost_input`）结束；已结束的消息保留原结果，不报错，结果带 `already_terminal: true` 和它的 `input_state`。对 Family 门面消息，它作用于 Router 转给成员的那条消息；尚未转出时从门面的 Mailbox 撤回。字段与失败情况见 decision_2a3ff353165c。
@@ -530,9 +530,9 @@ Mailbox 栏用只读指令 `GetMailbox`（传 `resident_id`）读取三部分内
 | 指令 | 作用 | 执行位置 |
 | --- | --- | --- |
 | `GetMailbox`（传 `user_id`） | 读取该 User 的 Mailbox（消息栏全部页，含对话与通知），结果为 `items` 与 `unread_count`；`user_id` 为调用者本人时读自己的 Mailbox；可用 `related_resident_id` 只读与某个 Resident 相关的条目。 | Portal Web |
-| `MarkMailboxItemRead` | 按 `key` 把一个条目标为已读，或用 `unread: true` 标为未读；可以把条目的 `version`（修订号）作为 `expected_version`，之后有新提醒或其他变化时拒绝修改。 | Portal Web |
+| `SetMailboxItemRead` | 按 `key` 把一个条目标为已读，或用 `unread: true` 标为未读；可以把条目的 `version`（修订号）作为 `expected_version`，之后有新提醒或其他变化时拒绝修改。 | Portal Web |
 | `ClearMailbox` | 传 `user_id`（调用者自己或有 admin 的 User）清理该 User 的 Mailbox；`mode` 为 `unread` 时清除未读状态，为 `all` 时清除未置顶的条目；`section` 可按对话或通知类型筛选，省略时作用于消息栏的全部对话与通知，不影响 Todo；页面清理不传 `section`；`cleared` 是实际处理的条目数。 | Portal Web |
-| `PinMailboxItem` | 按 `key` 与 `pinned` 置顶或取消置顶，独立于已读；通知拒绝置顶。 | Portal Web |
+| `SetMailboxItemPinned` | 按 `key` 与 `pinned` 置顶或取消置顶，独立于已读；通知拒绝置顶。 | Portal Web |
 | `WatchMailbox` | 以 `after_cursor` 续读页面同源的变化，流式返回 `keys`、`cursor` 与 `snapshot_required`；`timeout_seconds` 控制本次订阅时长。 | Portal Web |
 | `ListMailboxTodos` | 读取 `user_id` 指定 User 的个人待办及未完成数，默认方案要求目标 User 的 `@admin`。 | Portal Web |
 | `CreateMailboxTodo` | 添加 1–100 字待办，User 给自己添加，Resident 指定接收 User。 | Portal Web |

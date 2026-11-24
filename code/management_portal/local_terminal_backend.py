@@ -264,11 +264,11 @@ def _start_device_process(
 
 
 def require_open_terminal(actor: str, arguments: dict | None = None) -> None:
-    """Opening a shell is the OpenTerminal instruction; every route that starts one asks it first."""
+    """Opening a shell is the CreateTerminal instruction; every route that starts one asks it first."""
     from management_portal import permission_system
 
-    if not permission_system.allows(actor, "OpenTerminal", arguments or {}):
-        raise PermissionError("无权打开 Terminal：需要能执行 OpenTerminal（默认只开放给 Portal 管理员）")
+    if not permission_system.allows(actor, "CreateTerminal", arguments or {}):
+        raise PermissionError("无权打开 Terminal：需要能执行 CreateTerminal（默认只开放给 Portal 管理员）")
 
 
 def open_terminal(
@@ -280,7 +280,7 @@ def open_terminal(
     rows: object = None,
     cwd: object = None,
 ) -> dict:
-    """A host shell, or an SSH terminal on ``device_id``, for an actor that may run OpenTerminal."""
+    """A host shell, or an SSH terminal on ``device_id``, for an actor that may run CreateTerminal."""
     if device_id:
         from management_portal import device_identity_backend as devices
 

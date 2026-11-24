@@ -343,8 +343,8 @@ def test_designer_saves_only_with_its_own_task_credentials(store, resources, per
     assert store.get(APP, "alice")["revision"] == 1
     grant = {"principal_id": RESIDENT, "a": "@contributor", "resource_id": APP, "message_id": "msg_owner"}
     with pytest.raises(PermissionError):
-        permission_system.manage("IssueTemporaryCredential", grant, actor="bob")
-    permission_system.manage("IssueTemporaryCredential", grant, actor="alice")
+        permission_system.manage("CreateTemporaryCredential", grant, actor="bob")
+    permission_system.manage("CreateTemporaryCredential", grant, actor="alice")
     assert permissions.holds(RESIDENT, "@contributor", APP)
     assert not permissions.holds(RESIDENT, "@contributor", LINEAGE)
     assert runtime.save_generation_result(APP, {"job_id": "by_owner", "base_revision": 1, **page}, RESIDENT)["revision"] == 2

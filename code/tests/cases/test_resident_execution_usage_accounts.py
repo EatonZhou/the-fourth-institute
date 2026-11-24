@@ -306,7 +306,7 @@ def test_account_details_preserves_counts_when_quota_unavailable(resident_record
 def test_account_details_count_only_visible_residents(resident_record, monkeypatch):
     """账号汇总只统计调用者看得到的 Resident
 
-    计数与供 OpenIntake（open=true/false）resident_ids 使用的 open_resident_ids、closed_resident_ids 都只含调用者看得到（GetResident 通过）的 Resident。
+    计数与供 SetIntakeOpen（open=true/false）resident_ids 使用的 open_resident_ids、closed_resident_ids 都只含调用者看得到（GetResident 通过）的 Resident。
 
     :design: decision_4dea0db1f45a
     """

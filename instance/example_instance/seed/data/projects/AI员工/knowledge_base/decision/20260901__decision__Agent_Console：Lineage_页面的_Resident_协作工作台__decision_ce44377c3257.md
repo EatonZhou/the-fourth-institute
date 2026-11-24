@@ -73,7 +73,7 @@ Agent Console 是 Portal 的 Society 页面（地址 `/lineage`）中的工作�
 | 导航 | 活动栏所选视图的列表：Lineage 卡片及其中的 Resident 卡片、聊天室、收藏或聊天历史。 | 当前 Lineage 和选中的 Resident |
 | Chat Workspace | 当前 Resident 的消息、运行状态、输入框、附件和等待队列。Resident 安装了 Watchboard 时，Chat 旁边另显示一块监控板。 | 已经加载完成、可以发送消息的会话目标 |
 | 预览 | 文档与资源的预览和编辑区，左侧是 Resident 工作区的文件浏览器。 | 当前要查看的文件或资源 |
-| 终端 | 在 Portal 主机上打开的命令行，默认隐藏。只给能执行 OpenTerminal 的 User（默认只有 Portal 管理员，decision_4527448ad07f）：`/api/me` 的 `access.allows.OpenTerminal` 为假时，页面没有这个组件，布局菜单不提供新建终端，保存过的终端标签也不恢复。 | 当前 Resident（没有选中时为 Portal 主机） |
+| 终端 | 在 Portal 主机上打开的命令行，默认隐藏。只给能执行 CreateTerminal 的 User（默认只有 Portal 管理员，decision_4527448ad07f）：`/api/me` 的 `access.allows.CreateTerminal` 为假时，页面没有这个组件，布局菜单不提供新建终端，保存过的终端标签也不恢复。 | 当前 Resident（没有选中时为 Portal 主机） |
 | HATG | 当前 Resident 所在 Lineage 的协作图。 | 当前 Lineage 与图中选中的节点或连线 |
 
 Workbench 提供五种预设布局：完整工作台、对话、对话与成果、成果查看、HATG 协作。第一次打开页面使用“对话与成果”（导航、Chat 与预览，隐藏 HATG）。用户调整后的布局按页面偏好保存（decision_9f6135cbbb22）。

@@ -204,7 +204,7 @@ Family 的正式资源类型为 family，归属当前 Lineage 并投影 Project�
 
 普通 Family 可将“周期组织回顾”模板施加到自己的 Steward。首次施加接管原有回顾定时器、检查 Effect、活动记录 Effect 和两条路由，保留对象 ID，并封装为 Steward 持有的子职责（父块成员键 duty:review）。member_done 仍由 Family 维护，供摘要检查和回顾共同引用；独立化后空名册也保留共享源的身份，只更新成员监听。仅首次安装绑定活动路由，后续同步不补回用户删掉的职责内容。
 
-families.independent_duties 是独立管理范围的权威记录，目前支持 review；加列默认空数组，不自动迁移已有 Family。职责撤下后 review 标记保留，成员变化、结构同步及重启不会重建回顾结构；再次施加显式重新安装。CheckFamilyReview 对已独立化但无任务配置的 Family 返回 disabled，新 DispatchFamilyTask(review) 不再回落到内置提示词；既有投递意图继续使用原消息与冻结内容，重新安装后的检查可消费已接受回执而不重复投递。
+families.independent_duties 是独立管理范围的权威记录，目前支持 review；加列默认空数组，不自动迁移已有 Family。职责撤下后 review 标记保留，成员变化、结构同步及重启不会重建回顾结构；再次施加显式重新安装。MaintainFamilyReview 对已独立化但无任务配置的 Family 返回 disabled，新 DispatchFamilyTask(review) 不再回落到内置提示词；既有投递意图继续使用原消息与冻结内容，重新安装后的检查可消费已接受回执而不重复投递。
 
 独立职责仍沿用业务活动水位、空闲门控及受限的门面执行身份。嵌套职责的 Effect 只在本 Family、对应触发及参数匹配时取得该身份。UpdateFamily 的周期更新定位现有职责定时器；已撤下时不恢复结构。Unfamilize 清理这条职责及其内部元素，保留普通工作流的既有展开语义。
 

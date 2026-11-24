@@ -40,7 +40,7 @@ def test_terminal_uses_and_preserves_requested_cwd(tmp_path: Path) -> None:
     first_cwd.mkdir()
     second_cwd.mkdir()
     actor = "workspace-cwd-test"
-    # A new shell is OpenTerminal, which the Portal 管理员 category may run.
+    # A new shell is CreateTerminal, which the Portal 管理员 category may run.
     from tests.cases.permission_test_support import portal_admin
 
     portal_admin(actor)
@@ -123,7 +123,7 @@ def test_device_terminal_uses_registered_ssh_and_in_memory_password() -> None:
 def test_two_local_terminal_sessions_isolate_interrupt_and_restart(tmp_path, record_property):
     """中断或重启一个本地终端会话不影响另一会话，重启得到新的会话与进程"""
     actor = "isolated-terminal-owner"
-    # Restarting opens a new shell: OpenTerminal, which the Portal 管理员 category may run.
+    # Restarting opens a new shell: CreateTerminal, which the Portal 管理员 category may run.
     from tests.cases.permission_test_support import portal_admin
 
     portal_admin(actor)

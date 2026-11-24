@@ -87,7 +87,7 @@ TFI Portal 中的人和 Agent 通过同一组具名指令操作 AI 社会中的�
 | 只读指令 | 只返回当前信息的指令。它不改变业务状态，不留下执行记录，可以随时重复调用；允许顺带刷新读取所依赖的缓存，例如重新采集账号额度。 |
 | 流式指令 | 持续返回结果的只读指令，例如一个 Resident 的对话事件、一次 Run 的进展。调用者从某个游标开始订阅，出现新结果时服务依次送出，直到调用者停止或对象进入终态。 |
 | 幂等键 | 调用者为一次业务操作起的稳定编号，可选。恢复窗口内，同一调用者用同一个键重复提交同一条指令，内核返回已登记状态或结果，不重复执行原操作；记录到期回收后，旧键只触发防重拒绝，不能查询原结果。不提供时，每次提交都作为新的操作执行。 |
-| 对象版本 | 部分对象有版本令牌，对象每次修改后令牌改变，读取指令返回对应的版本字段，例如用户资料的 `version`。调用指令时一般不需要提供它；只有在容易出现并发覆盖的场景或调试复现时，调用者才把读到的令牌作为 `expected_version` 交回，令牌已经变化时这条指令失败。调用信封只比较本次指令作用的对象；信封里写其他对象、文件地址或主机路径时不读取它们，调用者不能借版本冲突探测别的对象是否存在或它的版本。有版本令牌的对象：Workspace 文件使用内容摘要（`UpdateWorkspaceFile` 按它的 `address` 比较），知识条目使用条目版本号，资源登记使用资源记录的版本，模型接口使用登记版本，用户记录使用访问设置的修订号，帖子使用它的通知修订号，User Mailbox 条目使用当前的完成签名。Lineage 定义修改可使用 `GetLineage.result.lineage.revision` 作为版本前提，仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；不一致返回 `instruction.conflict`，`error.details.current_version` 给出当前 revision。未传时提交时合并（decision_d918ebebc062）。Resident 运行设置与状态、组件运行状态、待投递调用、共享状态，以及 `PrepareWorkspaceHandoff` 不使用这个定义版本前提。没有定义提交时不做定义版本比较。个人导航、讨论评论和部署请求也没有版本令牌。对没有版本令牌的对象提供 `expected_version` 不做比较。 |
+| 对象版本 | 部分对象有版本令牌，对象每次修改后令牌改变，读取指令返回对应的版本字段，例如用户资料的 `version`。调用指令时一般不需要提供它；只有在容易出现并发覆盖的场景或调试复现时，调用者才把读到的令牌作为 `expected_version` 交回，令牌已经变化时这条指令失败。调用信封只比较本次指令作用的对象；信封里写其他对象、文件地址或主机路径时不读取它们，调用者不能借版本冲突探测别的对象是否存在或它的版本。有版本令牌的对象：Workspace 文件使用内容摘要（`UpdateWorkspaceFile` 按它的 `address` 比较），知识条目使用条目版本号，资源登记使用资源记录的版本，模型接口使用登记版本，用户记录使用访问设置的修订号，帖子使用它的通知修订号，User Mailbox 条目使用当前的完成签名。Lineage 定义修改可使用 `GetLineage.result.lineage.revision` 作为版本前提，仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；不一致返回 `instruction.conflict`，`error.details.current_version` 给出当前 revision。未传时提交时合并（decision_d918ebebc062）。Resident 运行设置与状态、组件运行状态、待投递调用、共享状态，以及 `RunWorkspaceHandoff` 不使用这个定义版本前提。没有定义提交时不做定义版本比较。个人导航、讨论评论和部署请求也没有版本令牌。对没有版本令牌的对象提供 `expected_version` 不做比较。 |
 
 ## 执行原则
 
@@ -95,7 +95,7 @@ HATG ISA 服务的是一个高自由度的 AI 社会。指令系统尽量少做�
 
 - **收到就执行。** 拥有服务按到达顺序执行指令，指令作用于对象的当前状态。调用者不需要证明自己读到的是最新内容，没有必须提供 `expected_version` 的指令。工作摘要的两条写指令（`UpdateResidentWorkSummary`、`PublishFamilyProgress`）必填的 `expected_revision` 属于摘要维护的约定，不是调用信封的对象版本：写摘要的人先读取摘要（门面汇总时读取摘要输入），交回读到的 `expected_revision`，门面汇总时连同来源版本 `source_versions`；拥有服务比较前者并把后者记进新摘要，摘要在这期间被改过时拒绝（weihao 2026-10-19 交由 7a4a 决定，保留为参数）。
 - **失败只影响这一条指令。** 参数不合法、目标不存在或执行出错时，这条指令返回错误；调用者、其他指令和正在进行的 Lineage 运行照常继续。系统不为失败做补偿，也不发出通知，是否处理由调用者决定。
-- **按指令契约执行。** 普通修改直接执行；`PreviewPromptInjection`、`GetLineageDiagnostics` 及 `RenameProject(dry_run=true)` 提供各自明确的预览、诊断或计划，不代替实际提交时的校验。
+- **按指令契约执行。** 普通修改直接执行；`GetPromptInjectionPreview`、`GetLineageDiagnostics` 及 `RenameProject(dry_run=true)` 提供各自明确的预览、诊断或计划，不代替实际提交时的校验。
 - **复合流程由调用方或对象生命周期组合。** 多项独立操作通过脚本组合，不单独登记一个组合指令。账号的个人 AMA 初始化在建号及成功登录后内部执行；Project 层 Lineage 与 Leader 随 Project 创建内部建立；关闭接单、取消当前工作和清空队列分别使用各自的指令。内部流程复用领域函数，不增加管理员重试指令。
 - **对象对修改开放。** 有权限的调用者可以直接修改任何对象，包括 Function Block 实例内部的组件和实例创建的 Resident。后一次修改覆盖前一次，系统不锁定对象，也不因此通知其他参与者。
 
@@ -111,7 +111,7 @@ HATG ISA 服务的是一个高自由度的 AI 社会。指令系统尽量少做�
 
 | 类别 | 主对象 | Design |
 | --- | --- | --- |
-| 资源 | 统一 ID 资源（包括设备）、资源动作目录、上传、工作区文件 | decision_ad3e21094f14 |
+| 资源 | 统一 ID 资源（包括设备）、资源动作目录、上传、工作区文件与成果登记（`ListDeliverables`） | decision_ad3e21094f14 |
 | 用户 | 人类用户的资料、账号状态与个人导航 | decision_6eac174d85bf |
 | Resident | Resident 的身份、运行设置、模型会话与工作区绑定 | decision_d19b9909a674 |
 | 对话与上下文 | Resident 的对话记录、消息与模型上下文 | decision_2fe6fd5367fb |
@@ -128,7 +128,7 @@ HATG ISA 服务的是一个高自由度的 AI 社会。指令系统尽量少做�
 | 公共讨论 | 帖子与回复、聊天室（Chatroom） | decision_3e063aac15b3 |
 | 组织与分工 | Project、Principal 层级、跨 Lineage 迁移 | decision_6591e7793116 |
 | 权限 | 权限系统开关与权限方案、权限表项、管理员名单、有效权限、试判定与临时凭证 | decision_22227d0ad075 |
-| 运行环境 | Portal 服务、设备状态、执行账号与用量、模型接口 | decision_4527448ad07f |
+| 运行环境 | Portal 服务、设备状态、执行账号与用量、模型接口与站点备份（`RunGoogleDriveBackup`） | decision_4527448ad07f |
 | 指令集自描述 | 指令目录与每次指令的执行记录 | decision_aa4fdbac8364 |
 
 Resident 与 Lineage 都按“定义、记忆、运行”三种状态性质拆成三类：
@@ -232,88 +232,130 @@ Python 入口将失败的指令结果转为业务异常时，保留外层回执�
 
 ## 命名规则
 
-- **指令名由“动词 + 对象”组成。** 对象名称取自分类 Design 中的主对象名称，同一对象在所有指令中使用同一个名称，例如 `GetResident`、`UpdateResident`、`DeleteResident`。
-- **优先使用六个通用动词。** 读取一个对象、列出多个对象、按内容搜索、创建、修改和删除对象分别使用下表前六个动词。修改对象的一部分（例如表情回应、正文）也用修改动词，对象名写明修改的部分。
-- **通用动词无法准确表达时使用表中的领域动词。** 新增指令只能使用下表中适用于新指令的动词。需要新动词时先在表中登记含义和例子。历史兼容用词只适用于表中指明的现有指令。表中每个动词都至少有一条指令在用，指令删除或改名后不再使用的动词同时从表中移除。目录测试逐条比对两边。
+指令名由“动词 + 对象”组成。动词只说明对对象做了什么，业务含义写进对象名；同一对象在所有指令中使用同一个名称，取自分类 Design 中的主对象名称，例如 `GetResident`、`UpdateResident`、`DeleteResident`。
+
+### 选择动词的顺序
+
+1. **先用读写动词。** 读取一个对象、列出多个、按内容搜索、读取内容、订阅变化、创建、修改和删除，分别使用 `Get`、`List`、`Search`、`Read`、`Watch`、`Create`、`Update`、`Delete`。修改对象的一部分（例如表情回应、正文、已读位置）也用 `Update`，对象名写明修改的部分，例如 `UpdateChatroomReaction`、`UpdateChatroomReadPosition`。
+2. **再用控制动词。** 它们不属于某一类对象，在所有类别中含义相同：
+   - `Set`：设置对象的一个布尔或枚举状态，指令名为 `Set<对象><状态>`，必填参数给出目标状态。打开和关闭、设置和取消属于同一操作，由参数区分，例如 `SetPostPinned(pinned)`、`SetMailboxItemMuted(muted)`、`SetComponentPaused(paused)`、`SetIntakeOpen(open)`。
+   - `Move`：改变对象的位置、顺序或归属，例如 `MoveResident`、`MoveMailboxItems`。
+   - `Cancel`：停止或撤回进行中的工作。
+   - `Run`：执行一次脚本、动作、交接或备份。
+   - `Apply`：把一组修改或一个模板应用到对象上。
+   - `Check`：检查条件或探测外部接口并返回结论，不修改业务状态，也不保存配置，例如 `CheckPermission`、`CheckModelApi`。
+3. **其余动词是领域动词。** 只有读写动词和控制动词都无法准确表达时才使用，并且要在下表登记含义和例子。
+
+### 其他约定
+
+- **预览写成读取。** 返回“将要产生的结果”的只读指令用 `Get<对象>Preview`，例如 `GetPromptInjectionPreview`；诊断用明确名称，例如 `GetLineageDiagnostics`。修改仍在提交时校验。
+- **会话类对象的打开写成创建。** 终端、账号登录会话等由调用产生一个新的会话对象，使用 `Create`，例如 `CreateTerminal`。
+- **凭证按生命周期命名。** 签发是 `Create`，续期是 `Update`，撤销是 `Revoke`。
+- **会写入的内部周期维护使用 `Maintain`。** 由 Effect 周期调用、登记事实并在需要时触发后续动作的内部指令，不用 `Check`，因为 `Check` 不修改业务状态。
+- **不为同一操作设置多个名称。** 调用者不同、入口不同或选项不同时，仍使用同一条指令；例如五种 Fork 方式都使用 `ForkResident`，由 `fork_mode` 参数区分。
+- **同一种读取覆盖多个对象时用一条指令，由参数选择对象。** 例如 `ListInputHistory`、`SearchMessages` 用 `resident_id(s)` 或 `chatroom_id` 二选一，`GetDeviceStatus` 用 `kind` 选择 GPU 或磁盘；两种对象由不同服务保存时，声明按参数分流（`argument_owners`）。
+- **新增动词有门槛。** 需要新动词时，先说明读写动词和控制动词为什么不能表达，再在表中登记。只有一条指令使用的动词优先考虑成对或成组设计。表中每个动词都至少有一条指令在用，指令删除或改名后不再使用的动词同时从表中移除。目录测试逐条比对两边。
+
+### 动词表
+
+**读写动词**
 
 | 动词 | 含义 | 例子 |
 | --- | --- | --- |
 | `Get` | 按 ID 读取一个对象 | `GetResident` |
 | `List` | 按条件列出多个对象 | `ListChatrooms` |
 | `Search` | 按内容搜索 | `SearchResources` |
+| `Read` | 读取对象的内容 | `ReadResource` |
+| `Watch` | 流式等待变化 | `WatchMailbox` |
 | `Create` | 创建对象 | `CreateChatroomMessage` |
 | `Update` | 修改对象或它的一部分 | `UpdateChatroomReaction` |
 | `Delete` | 删除对象 | `DeleteLineage` |
-| `Absorb` | 把一个 Resident 的上下文并入另一个 | `AbsorbContext` |
-| `Activate` | 让一个已保存的配置开始生效 | `ActivatePermissionScheme` |
-| `Answer` | 回答对象提出的请求 | `AnswerResidentRequest` |
-| `Apply` | 把一组修改或一个模板应用到对象上 | `ApplyLineageChanges` |
-| `Bind` | 建立两个对象之间的关联 | `BindWorkspace` |
+
+**控制动词**
+
+| 动词 | 含义 | 例子 |
+| --- | --- | --- |
+| `Set` | 设置对象的一个布尔或枚举状态 | `SetPostPinned` |
+| `Move` | 改变对象的位置、顺序或归属 | `MoveResident` |
 | `Cancel` | 停止或撤回进行中的工作 | `CancelInput`、`CancelSubagent` |
-| `Check` | 检查条件并返回结论，不修改对象 | `CheckPermission` |
-| `Probe` | 通过最小真实请求探测外部接口能力，不保存配置 | `ProbeModelApi` |
-| `Claim` | 领取待处理的工作 | `ClaimResidentSummaryJobs` |
-| `Clear` | 清空对象内容，对象本身保留 | `ClearMailbox` |
-| `Complete` | 由模型补全一次回答 | `CompleteChat` |
-| `Deliver` | 把消息投递给 Resident | `DeliverMessage` |
-| `Dispatch` | 按 Family 场景模板派发内部任务 | `DispatchFamilyTask` |
-| `Familize` | 把一组 Resident 组织成 Family | `Familize` |
-| `Feature` | 设为精选 | `FeaturePost` |
-| `Fork` | 从一个 Resident 分出新的 Resident | `ForkResident` |
-| `Forward` | 把已有消息转发给其他对象 | `ForwardMessages` |
-| `Functionalize` | 把一组组件封装为 Function Block | `Functionalize` |
-| `Inject` | 把一项内容插入队列 | `InjectMailboxItem` |
-| `Install` | 从已发布快照在调用者的工具箱中安装或更新可使用的副本 | `InstallStoreTemplate` |
-| `Issue` | 签发凭证 | `IssueTemporaryCredential` |
-| `Leave` | 调用者退出对象 | `LeaveChatroom` |
-| `Mark` | 设置读取等标记 | `MarkChatroomRead` |
-| `Merge` | 把多项合并为一项 | `MergeMailboxItems` |
-| `Move` | 改变对象所在的位置或顺序 | `MoveResident` |
-| `Open` | 打开或关闭开关，或打开会话 | `OpenIntake`、`OpenTerminal` |
-| `Pause` | 暂停或恢复运行 | `PauseComponent` |
-| `Pin` | 置顶 | `PinPost` |
-| `Prepare` | 生成待确认的草稿，不提交 | `PrepareWorkspaceHandoff` |
-| `Preview` | 读取将要产生的结果，不提交 | `PreviewPromptInjection` |
-| `Promote` | 把种子提升为正式对象 | `PromoteSeed` |
+| `Run` | 执行一次脚本、动作、交接或备份 | `RunScript` |
+| `Apply` | 把一组修改或一个模板应用到对象上 | `ApplyLineageChanges` |
+| `Check` | 检查条件或探测外部接口并返回结论，不修改业务状态 | `CheckPermission` |
+
+**成对的关系动词**
+
+| 动词 | 含义 | 例子 |
+| --- | --- | --- |
+| `Bind` | 建立两个对象之间的关联 | `BindWorkspace` |
+| `Unbind` | 解除 `Bind` 建立的关联 | `UnbindWorkspace` |
+| `Register` | 把已存在的外部对象登记为资源 | `RegisterResource` |
+| `Unregister` | 取消登记，外部对象本身保留 | `UnregisterResource` |
 | `Publish` | 发布到更大的可见范围 | `PublishRelease`、`PublishTemplate` |
 | `Unpublish` | 撤下已公开的发布项，保留此前安装的副本 | `UnpublishTemplate` |
-| `Read` | 读取对象的内容 | `ReadResource` |
-| `Register` | 把已存在的外部对象登记为资源 | `RegisterResource` |
-| `Relay` | 由中间对象转交消息 | `RelayFamilyMessage` |
-| `Release` | 交还已领取的工作 | `ReleaseResidentSummaryJob` |
-| `Rename` | 改变对象的 ID 名称 | `RenameProject` |
-| `Renew` | 延长有效期 | `RenewTemporaryCredential` |
-| `Reorder` | 调整多项的顺序 | `ReorderMailbox` |
-| `Order` | 历史兼容用词，用于调整单个持有者全部职责的顺序 | `OrderDuties` |
-| `Set` | 历史兼容用词，用于修改一条等待消息的暂存状态 | `SetMailboxItemHold` |
-| `Request` | 提出请求，由服务稍后处理 | `RequestResidentSummaryRebuild` |
-| `Requeue` | 把结束的消息放回队列 | `RequeueMessage` |
-| `Reset` | 恢复到初始状态 | `ResetUserPassword` |
-| `Resolve` | 把地址或待决项解析为确定结果 | `ResolveResource` |
-| `Restart` | 停下后重新启动 | `RestartPortal`、`RestartSession` |
-| `Restore` | 从删除或旧版本中恢复 | `RestoreTemplate` |
-| `Review` | 对锁定版本与哈希的候选草稿按确认职责作出确认或取消决定 | `ReviewComponentScript`、`ReviewTemplateScript` |
-| `Retract` | 撤回自己发出的内容 | `RetractChatroomMessage` |
-| `Retry` | 重新进行没有完成的工作，已完成的部分不重做 | `RetryResidentInitialization` |
-| `Revoke` | 撤销凭证或邀请 | `RevokeUserAccessToken` |
-| `Run` | 执行一次脚本或动作 | `RunScript` |
-| `Split` | 把一项拆成多项 | `SplitMailboxItem` |
-| `Submit` | 提交已完成的工作结果 | `SubmitResidentSummary` |
-| `Trigger` | 触发事件 | `TriggerEvent` |
-| `Unbind` | 解除 `Bind` 建立的关联 | `UnbindWorkspace` |
+| `Familize` | 把一组 Resident 组织成 Family | `Familize` |
 | `Unfamilize` | 解散 Family | `Unfamilize` |
+| `Functionalize` | 把一组组件封装为 Function Block | `Functionalize` |
 | `Unfunctionalize` | 展开 Function Block | `Unfunctionalize` |
-| `Unregister` | 取消登记，外部对象本身保留 | `UnregisterResource` |
-| `Watch` | 流式等待变化 | `WatchMailbox` |
-| `Accept` | 接受当前真实用户输入中的明确授权并签发凭证 | `AcceptUserAuthorization` |
-| `Correct` | 依据 owner 核验的证据纠正已有错误关联并保留审计 | `CorrectResourceLifecycleAssociation` |
-| `Mute` | 设置调用者自己的提醒抑制状态，保留消息与未读事实 | `MuteMailboxItem` |
-| `Relocate` | 将已登记对象归位，保留身份、内容和关联 | `RelocateWorkspaceHandoff` |
+| `Install` | 从已发布快照或安装来源，在目标位置安装或更新可使用的副本 | `InstallStoreTemplate`、`InstallProviderRuntime` |
 
-- **预览与诊断使用明确名称。** `PreviewPromptInjection` 读取提示预览，`GetLineageDiagnostics` 返回图诊断；修改仍在提交时校验。
-- **不为同一操作设置多个名称。** 调用者不同、入口不同或选项不同时，仍使用同一条指令；例如五种 Fork 方式都使用 `ForkResident`，由 `fork_mode` 参数区分。
-- **开关是一条指令加一个必填布尔参数。** 打开和关闭、设置和取消属于同一操作，用正向动词命名，由参数给出目标状态，例如 `PinPost(pinned)`、`FeaturePost(featured)`、`PinMailboxItem(pinned)`、`PauseComponent(paused)`、`OpenIntake(open)`（weihao 2026-10-18）。
-- **同一种读取覆盖多个对象时用一条指令，由参数选择对象。** 例如 `ListInputHistory`、`SearchMessages` 用 `resident_id(s)` 或 `chatroom_id` 二选一，`GetDeviceStatus` 用 `kind` 选择 GPU 或磁盘；两种对象由不同服务保存时，声明按参数分流（`argument_owners`）。
+**消息与队列**
+
+| 动词 | 含义 | 例子 |
+| --- | --- | --- |
+| `Deliver` | 把消息投递给 Resident | `DeliverMessage` |
+| `Forward` | 把已有消息转发给其他对象 | `ForwardMessages` |
+| `Inject` | 把一项内容插入队列 | `InjectMailboxItem` |
+| `Merge` | 把多项合并为一项 | `MergeMailboxItems` |
+| `Split` | 把一项拆成多项 | `SplitMailboxItem` |
+| `Requeue` | 把结束的消息放回队列 | `RequeueMessage` |
+| `Relay` | 由中间对象转交消息 | `RelayFamilyMessage` |
+| `Dispatch` | 按 Family 场景模板派发内部任务 | `DispatchFamilyTask` |
+| `Answer` | 回答对象提出的请求 | `AnswerResidentRequest` |
+
+**Resident 与上下文**
+
+| 动词 | 含义 | 例子 |
+| --- | --- | --- |
+| `Fork` | 从一个 Resident 分出新的 Resident | `ForkResident` |
+| `Promote` | 把种子提升为正式对象 | `PromoteSeed` |
+| `Absorb` | 把一个 Resident 的上下文并入另一个 | `AbsorbContext` |
+| `Clear` | 清空对象内容，对象本身保留 | `ClearMailbox` |
+| `Retry` | 重新进行没有完成的工作，已完成的部分不重做 | `RetryResidentInitialization` |
+| `Restart` | 停下后重新启动 | `RestartPortal`、`RestartSession` |
+| `Reset` | 恢复到初始状态 | `ResetUserPassword` |
+| `Restore` | 从删除或旧版本中恢复 | `RestoreTemplate` |
+
+**摘要任务队列**
+
+| 动词 | 含义 | 例子 |
+| --- | --- | --- |
+| `Request` | 提出请求，由服务稍后处理 | `RequestResidentSummaryRebuild` |
+| `Claim` | 领取待处理的工作 | `ClaimResidentSummaryJobs` |
+| `Release` | 交还已领取的工作 | `ReleaseResidentSummaryJob` |
+| `Submit` | 提交已完成的工作结果 | `SubmitResidentSummary` |
+
+**权限与确认**
+
+| 动词 | 含义 | 例子 |
+| --- | --- | --- |
+| `Accept` | 接受当前真实用户输入中的明确授权并签发凭证 | `AcceptUserAuthorization` |
+| `Revoke` | 撤销凭证、邀请或会话 | `RevokeUserAccessToken` |
+| `Activate` | 让一个已保存的配置开始生效 | `ActivatePermissionScheme` |
+| `Review` | 对锁定版本与哈希的候选草稿按确认职责作出确认或取消决定 | `ReviewComponentScript`、`ReviewTemplateScript` |
+| `Resolve` | 把地址或待决项解析为确定结果 | `ResolveResource` |
+| `Correct` | 依据 owner 核验的证据纠正已有错误关联并保留审计 | `CorrectResourceLifecycleAssociation` |
+
+**其他**
+
+| 动词 | 含义 | 例子 |
+| --- | --- | --- |
+| `Complete` | 由模型补全一次回答 | `CompleteChat` |
+| `Leave` | 调用者退出对象 | `LeaveChatroom` |
+| `Retract` | 撤回自己发出的内容 | `RetractChatroomMessage` |
+| `Rename` | 改变对象的 ID 名称 | `RenameProject` |
+| `Trigger` | 触发事件 | `TriggerEvent` |
+| `Maintain` | 内部周期维护：登记事实，并在需要时触发后续动作 | `MaintainFamilyProgress` |
+
 
 ## 指令在哪里执行
 

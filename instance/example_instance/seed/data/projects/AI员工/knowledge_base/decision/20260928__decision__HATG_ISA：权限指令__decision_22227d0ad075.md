@@ -77,8 +77,8 @@ links:
 | `GetEffectivePermissions` | 否 | 主体在各 A 分类节点上被授权的 R 节点与洞（`coverage`）、全部表项、有效的临时凭证，User 另有 `user_category`；Package 的奖章读取这里；`principal_id` 必填 | 对该主体有 @admin |
 | `CheckPermission` | 否 | 判定一个主体能否执行一条指令，或在一个资源上是否持有某个 A 节点；返回每个请求的结果、原因（permitted、no_permit、denied）与命中的表项；Portal 管理员保底放行的调用返回 `portal_admin: true`、`requests` 为空；`principal_id` 必填 | 对该主体有 @admin |
 | `AcceptUserAuthorization` | 是 | Resident 理解当前执行中真实 User 的自然语言授权后，提交源 message_id、原文 evidence 与准确 credentials；Society 核验来源与执行关系，权限 owner 检查 User 持有并原子签发、审计。凭证只给调用 Resident，默认随当前任务，明确时长可给 expires_in_seconds；重试不重签，附件不阻止授权 | 免检；处理器证明当前 User 来源及执行归属，引擎核验签发者持有 |
-| `IssueTemporaryCredential` | 是 | 把自己在一个资源上持有的一个 A 节点临时交给另一个主体：只核对签发者此刻持有，随即写入一行 (接收者, A 节点, 资源, permit)，带签发者和过期时间。给出 `message_id`（接收 Resident 正在处理的、发给它的消息）时凭证随任务：这条消息的输入进入完成、失败或取消时在同一事务中删除；否则按 `expires_in_seconds` 到期（默认一天）。两种都最迟在签发 7 天后失效。DeliverMessage 的 `temporary_credentials` 在投递时以同样方式签发（decision_2fe6fd5367fb） | 免检；由引擎核对签发者持有 |
-| `RenewTemporaryCredential` | 是 | 签发者在按时长签发的凭证到期前续期：新的过期时间为此刻加 `expires_in_seconds`，不晚于签发后 7 天；随任务签发的凭证不能续期 | 免检；只有签发者 |
+| `CreateTemporaryCredential` | 是 | 把自己在一个资源上持有的一个 A 节点临时交给另一个主体：只核对签发者此刻持有，随即写入一行 (接收者, A 节点, 资源, permit)，带签发者和过期时间。给出 `message_id`（接收 Resident 正在处理的、发给它的消息）时凭证随任务：这条消息的输入进入完成、失败或取消时在同一事务中删除；否则按 `expires_in_seconds` 到期（默认一天）。两种都最迟在签发 7 天后失效。DeliverMessage 的 `temporary_credentials` 在投递时以同样方式签发（decision_2fe6fd5367fb） | 免检；由引擎核对签发者持有 |
+| `UpdateTemporaryCredential` | 是 | 签发者在按时长签发的凭证到期前续期：新的过期时间为此刻加 `expires_in_seconds`，不晚于签发后 7 天；随任务签发的凭证不能续期 | 免检；只有签发者 |
 | `RevokeTemporaryCredential` | 是 | 撤销一张临时凭证：签发者撤回，接收者做完事后交还 | 免检；处理器只允许签发者或接收者（固定角色，开关关闭时同样生效） |
 | `ListTemporaryCredentials` | 否 | 一个主体签发的和收到的有效临时凭证；`principal_id` 必填 | 对该主体有 @admin |
 
@@ -147,8 +147,8 @@ UpdatePermissionScheme 和 ActivatePermissionScheme 的结果带 `auth_diff`，�
 | `GetEffectivePermissions` | `principal_id` |
 | `CheckPermission` | `principal_id`、`instruction`、`arguments`、`a`、`resource_id` |
 | `AcceptUserAuthorization` | `message_id`、`evidence`、`credentials`、`expires_in_seconds` |
-| `IssueTemporaryCredential` | `principal_id`、`a`、`resource_id`、`message_id`、`expires_in_seconds` |
-| `RenewTemporaryCredential` | `credential_id`、`expires_in_seconds` |
+| `CreateTemporaryCredential` | `principal_id`、`a`、`resource_id`、`message_id`、`expires_in_seconds` |
+| `UpdateTemporaryCredential` | `credential_id`、`expires_in_seconds` |
 | `RevokeTemporaryCredential` | `credential_id` |
 | `ListTemporaryCredentials` | `principal_id` |
 

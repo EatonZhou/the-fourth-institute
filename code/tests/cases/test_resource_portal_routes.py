@@ -431,7 +431,7 @@ def test_resident_reference_reports_society_service_unavailable_contracts(subtes
     with subtests.test(contract='test_device_terminal_start_and_io_share_the_portal_terminal_backend'), isolated_portal_case() as case_path:
         server, thread, base = _server()
         started = {'session_id': 'term_device_test', 'cursor': 0, 'chunk': '', 'alive': True}
-        # Opening a Terminal is OpenTerminal, which the Portal 管理员 category may run.
+        # Opening a Terminal is CreateTerminal, which the Portal 管理员 category may run.
         from tests.cases.permission_test_support import portal_admin
         portal_admin('sample_admin')
         try:

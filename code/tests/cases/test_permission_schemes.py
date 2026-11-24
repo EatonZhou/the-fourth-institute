@@ -293,7 +293,7 @@ def test_a_builtin_scheme_is_used_as_it_is_and_a_release_keeps_its_edits(off, mo
     call("UpdatePermissionEntry", scheme_id="default", entry_id=disabled["entry_id"], expected_version=1, disabled=True)
     [deleted] = call("ListPermissionEntries", scheme_id="default", p="@principals", a="@message", r="@portal")["entries"]
     call("DeletePermissionEntry", scheme_id="default", entry_id=deleted["entry_id"])
-    loan = call("IssueTemporaryCredential", principal_id="carol", a="@viewer", resource_id=LINEAGE, expires_in_seconds=3600)
+    loan = call("CreateTemporaryCredential", principal_id="carol", a="@viewer", resource_id=LINEAGE, expires_in_seconds=3600)
     call("CreatePermissionScheme", scheme_id="team", source_scheme_id="default")
     copied = off.store.scoped("team").instance()
 

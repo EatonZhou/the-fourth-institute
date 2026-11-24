@@ -31,7 +31,7 @@ def open_mode(monkeypatch):
 def test_open_mode_never_loads_the_permission_system():
     """权限系统关闭时只看是否登录，不加载任何权限代码
 
-    在新进程中以关闭模式导入各服务入口并调用权限端口的全部函数（权限指令除外）：已登录主体全部放行，OpenTerminal 等也不例外；
+    在新进程中以关闭模式导入各服务入口并调用权限端口的全部函数（权限指令除外）：已登录主体全部放行，CreateTerminal 等也不例外；
     个人 AMA 由 Society 自己的规定只给所有者；PAR 引擎、方案、适配层、临时凭证和管理模块都不会被加载。
     """
     code = """
@@ -64,8 +64,8 @@ assert ps.users_permitted("UpdateLineage", "lineage_id", lineage) is None
 assert ps.sync_resource({"resource_id": lineage}, resource_type="lineage") is False
 assert ps.unregister_resources([lineage]) == [] and ps.sync_user("alice") is None
 assert ps.rename_element(None, "a", "b", apply=True) == 0
-assert ps.allows("alice", "OpenTerminal") and ps.allows("alice", "UpdateUser")
-assert ps.instruction_requirement("OpenTerminal") == {"required": False, "requirements": []}
+assert ps.allows("alice", "CreateTerminal") and ps.allows("alice", "UpdateUser")
+assert ps.instruction_requirement("CreateTerminal") == {"required": False, "requirements": []}
 from management_portal.portal_access_control import get_portal_access_store
 get_portal_access_store().upsert_user("alice", actor="portal")
 assert ps.set_user_category("alice", "intern", actor="portal") and ps.user_categories() == {"alice": "intern"}
@@ -102,12 +102,12 @@ def test_permission_instructions_run_unchecked_while_the_system_is_off(monkeypat
     granted = permissions.grant("alice", LINEAGE, "@admin")
     entry = permission_system.manage("CreatePermissionEntry", {"p": "alice", "a": "@viewer", "r": "@operations"},
                                      actor="alice")["entry"]
-    loan = permission_system.manage("IssueTemporaryCredential", {"principal_id": "carol", "a": "@viewer", "resource_id": LINEAGE},
+    loan = permission_system.manage("CreateTemporaryCredential", {"principal_id": "carol", "a": "@viewer", "resource_id": LINEAGE},
                                     actor="alice")
     monkeypatch.setattr(permission_system, "configured_mode", lambda: permission_system.OPEN)
     context = InstructionContext(caller="bob", entry="web")
-    for name in ("IssueTemporaryCredential", "RevokeTemporaryCredential", "UpdatePermissionScheme", "DeletePermissionEntry",
-                 "GetEffectivePermissions", "UpdateUser", "OpenTerminal"):
+    for name in ("CreateTemporaryCredential", "RevokeTemporaryCredential", "UpdatePermissionScheme", "DeletePermissionEntry",
+                 "GetEffectivePermissions", "UpdateUser", "CreateTerminal"):
         assert permission_system.authorize_instruction(instruction_catalog()[name], {"principal_id": "alice"}, context) is None
     assert permission_system.manage("GetPermissionSystem", {}, actor="bob")["allows"]["UpdatePermissionScheme"] is True
     updated = permission_system.manage("UpdatePermissionEntry", {"entry_id": entry["entry_id"], "disabled": True},
@@ -121,7 +121,7 @@ def test_permission_instructions_run_unchecked_while_the_system_is_off(monkeypat
                                        actor="bob")["requests"][0]
     assert refused["allowed"] is False and refused["reason"] and "permit" not in refused
     with pytest.raises(PermissionError):
-        permission_system.manage("IssueTemporaryCredential", {"principal_id": "carol", "a": "@admin", "resource_id": LINEAGE},
+        permission_system.manage("CreateTemporaryCredential", {"principal_id": "carol", "a": "@admin", "resource_id": LINEAGE},
                                  actor="bob")
     # Only the issuer or the recipient revokes a credential: a domain rule, in force with the system off too.
     with pytest.raises(PermissionError):

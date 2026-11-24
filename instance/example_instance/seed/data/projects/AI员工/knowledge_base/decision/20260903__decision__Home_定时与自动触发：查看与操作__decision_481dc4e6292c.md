@@ -91,7 +91,7 @@ Home 的 Agent Status 包含“定时与自动触发”面板（Scheduled & Trig
 
 | 页面操作 | 对应指令 | 效果 |
 | --- | --- | --- |
-| 暂停调度 / 恢复调度 | `PauseComponent(paused=true)` / `PauseComponent(paused=false)`，作用于该 Resident 或脚本 Effect 的触发事件源 | 暂停期间到期的触发被跳过；恢复后从下一次计划时间继续，不补发暂停期间的触发 |
+| 暂停调度 / 恢复调度 | `SetComponentPaused(paused=true)` / `SetComponentPaused(paused=false)`，作用于该 Resident 或脚本 Effect 的触发事件源 | 暂停期间到期的触发被跳过；恢复后从下一次计划时间继续，不补发暂停期间的触发 |
 | 修改定时 | `UpdateComponent`，修改 `time.reached` 事件源的计划与随机偏移 | 从下一次计划开始按新时间触发 |
 | 运行一次 | `TriggerEvent`，作用于同一 Lineage 中连到该 Resident 或脚本 Effect 的手动事件源 | 立即投递一次任务，不改变后续计划 |
 | 取消当前运行 | Resident 使用 `CancelInput(resident_id, message_id)`；运行中的脚本使用 `CancelScriptRun(script_run_id)` | 停止所选运行，不影响后续计划；同一 Effect 的并行脚本分别提供取消入口 |

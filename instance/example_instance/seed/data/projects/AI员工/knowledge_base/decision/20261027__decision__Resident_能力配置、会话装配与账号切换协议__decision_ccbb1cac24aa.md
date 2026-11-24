@@ -301,7 +301,7 @@ GET /api/tool-settings 投影已安装应用目录；带 resident_id 时回读�
 | Scheduler | 原输入的排队、接受、停止和续接顺序 |
 | 原生界面 | 展示上述事实与提交意图，不自行推断迁移策略 |
 
-设置读取与保存继续通过正式 GetResidentSettings / UpdateResidentSettings；Prompt 预览复用 PreviewPromptInjection，实际发送复用现有查询。工具/MCP 扩展字段应进入同一有版本契约，不另造无约束 JSON 设置。
+设置读取与保存继续通过正式 GetResidentSettings / UpdateResidentSettings；Prompt 预览复用 GetPromptInjectionPreview，实际发送复用现有查询。工具/MCP 扩展字段应进入同一有版本契约，不另造无约束 JSON 设置。
 
 会话业务 owner 分别定义换账号、重启、压缩、恢复的操作意图，复用底层候选、等待与条件提交机制。界面自动选择支持的方案并提前说明影响，提交显式 preserve 或 compact；API smart 兼容值仍归一 preserve，不在执行层自动压缩。
 

@@ -179,7 +179,7 @@ HANDLERS = {
     "ResolveTriggerPath": resolve_trigger_path,
     "TriggerEvent": trigger_event,
     "GetComponentRuntime": get_component_runtime,
-    "PauseComponent": pause_component,
+    "SetComponentPaused": pause_component,
     "ResetComponentRuntime": reset_component_runtime,
     "ListTriggerPaths": list_trigger_paths,
     "GetTriggerPath": get_trigger_path,

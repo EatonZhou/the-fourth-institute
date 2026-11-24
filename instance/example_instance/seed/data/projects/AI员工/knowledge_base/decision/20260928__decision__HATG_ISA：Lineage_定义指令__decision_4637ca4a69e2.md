@@ -100,12 +100,12 @@ Lineage 定义的合并提交、显式 `expected_version`、冲突详情和多 L
 | `CreateWorkspaceHandoff` | 是 | 创建两个 Resident 之间的交接关系 | 对 `lineage_id` 有 @contributor |
 | `UpdateWorkspaceHandoff` | 是 | 修改交接内容或说明 | 对 `lineage_id` 有 @contributor |
 | `DeleteWorkspaceHandoff` | 是 | 删除交接关系 | 对 `lineage_id` 有 @contributor |
-| `PrepareWorkspaceHandoff` | 是 | 准备交接材料并为目标建立工作区绑定 | 对 `lineage_id` 有 @contributor |
+| `RunWorkspaceHandoff` | 是 | 准备交接材料并为目标建立工作区绑定 | 对 `lineage_id` 有 @contributor |
 | `GetWorkspaceHandoff` | 否 | 读取交接定义和最近一次准备结果 | 对“共享”有 @viewer |
 | `GetLineageDiagnostics` | 否 | 读取当前定义的诊断，包括 Effect 脚本的字面量参数校验 | 对 `lineage_id` 有 @viewer |
 | `ApplyLineageChanges` | 是 | 一次原子提交多项修改 | 对 `lineage_id` 有 @contributor |
 | `WatchLineage` | 否（流式） | 订阅 Lineage 定义的变化 | 对 `lineage_id` 有 @viewer |
-| `RelocateWorkspaceHandoff` | 是 | 将已有交接副本归位到所属 Lineage 的 handoff-workspaces，保留 Workspace ID、内容、绑定和尝试历史；活跃使用者阻止搬迁。 | 对 `lineage_id` 有 `@contributor`；对 `workspace_id` 有 `@contributor` |
+| `MoveWorkspaceHandoff` | 是 | 将已有交接副本归位到所属 Lineage 的 handoff-workspaces，保留 Workspace ID、内容、绑定和尝试历史；活跃使用者阻止搬迁。 | 对 `lineage_id` 有 `@contributor`；对 `workspace_id` 有 `@contributor` |
 
 Lineage 不保存待确认的修改方案。需要先让人确认的团队结构，由 Resident 在回复里给出方案，确认后再用 `ApplyLineageChanges` 等指令提交（核心 Skill `tfi-agent-rule` 的 `portal-resident.md` 中的“创建团队”协议）。
 
@@ -275,7 +275,7 @@ Lineage 不保存待确认的修改方案。需要先让人确认的团队结构
 - 结果：被删除的交接关系 ID。
 - 已经准备好的目标文件和工作区绑定按各自所有者的规则处理，不随交接关系一起删除。
 
-### `PrepareWorkspaceHandoff`
+### `RunWorkspaceHandoff`
 
 **准备交接材料，并为目标 Resident 建立工作区绑定。**
 
@@ -321,7 +321,7 @@ Lineage 不保存待确认的修改方案。需要先让人确认的团队结构
 
 Resident、Event Source、Filter、Reducer 的普通出端口为 output；Selector 使用 branch:<id>，Loop 使用 continue／stop。Route 接收端通常为 invoke，Loop 也接受 done。参数映射可以读取 packet.message.text、packet.message.data.* 与 packet.events.0.type；Watch 和 Target 绑定不传输 Packet。包格式与算子合同见 decision_4adcc1ff2f2c。
 
-### `RelocateWorkspaceHandoff`
+### `MoveWorkspaceHandoff`
 
 将交接项已有副本归位到所属 Lineage 的 handoff-workspaces。参数为 `lineage_id`、`handoff_id`、`item_id`、`workspace_id`、`expected_workspace_version`。Lineage 与 Workspace 都要求 `@contributor`，Workspace 版本必须匹配，活跃使用者阻止搬迁。保留 Workspace ID、内容、绑定与尝试历史，不创建第二份身份，也不重新准备交接。返回字段由当前 `GetInstructionSchema` 声明。
 
@@ -349,12 +349,12 @@ Resident、Event Source、Filter、Reducer 的普通出端口为 output；Select
 | `CreateWorkspaceHandoff` | `lineage_id`、`source_resident_id`、`target_resident_id`、`items`、`explanation`、`label` |
 | `UpdateWorkspaceHandoff` | `lineage_id`、`handoff_id`、`changes` |
 | `DeleteWorkspaceHandoff` | `lineage_id`、`handoff_id` |
-| `PrepareWorkspaceHandoff` | `lineage_id`、`handoff_id`、`source_resident_id`、`target_resident_id` |
+| `RunWorkspaceHandoff` | `lineage_id`、`handoff_id`、`source_resident_id`、`target_resident_id` |
 | `GetWorkspaceHandoff` | `handoff_id` |
 | `GetLineageDiagnostics` | `lineage_id` |
 | `ApplyLineageChanges` | `lineage_id`、`operations`、`function_block_id`、`duty_changes`、`dry_run`、`near_resident_id`、`placement`、`x`、`y` |
 | `WatchLineage` | `lineage_id`、`after_cursor` |
-| `RelocateWorkspaceHandoff` | `lineage_id`、`handoff_id`、`item_id`、`workspace_id`、`expected_workspace_version` |
+| `MoveWorkspaceHandoff` | `lineage_id`、`handoff_id`、`item_id`、`workspace_id`、`expected_workspace_version` |
 
 ### Effect 描述与版本确认
 

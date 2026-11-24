@@ -139,7 +139,7 @@ def test_handoff_create_and_prepare_bind_the_target_without_invoke(isolated_team
         "source_resident_id": source_id, "target_resident_id": target_id,
         "items": [{"source": {"path": str(source_path)}, "transfer": {"mode": "direct"}}],
     }).result
-    prepared = instruction(team, "PrepareWorkspaceHandoff", {"lineage_id": team.lineage_id, "handoff_id": created["handoff_id"]}).result
+    prepared = instruction(team, "RunWorkspaceHandoff", {"lineage_id": team.lineage_id, "handoff_id": created["handoff_id"]}).result
     assert prepared["status"] == "ready"
     graph = lineage_aggregate.read_lineage(team.lineage_id, actor=ACTOR)
     edge = next(value for value in graph["edges"] if value["type"] == "handoff")

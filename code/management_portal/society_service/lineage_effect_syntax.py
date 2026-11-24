@@ -1,7 +1,7 @@
 """The statement tree of an Effect script; ``lineage_effect_script`` parses and runs it."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 
@@ -46,6 +46,7 @@ class Argument:
     name: str
     value: Word | JsonValue | "Call"
     line: int
+    offset: int = field(default=0, compare=False)
 
 
 @dataclass(frozen=True)

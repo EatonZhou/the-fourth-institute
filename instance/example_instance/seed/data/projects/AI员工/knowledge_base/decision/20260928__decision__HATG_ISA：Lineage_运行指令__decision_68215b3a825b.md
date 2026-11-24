@@ -54,7 +54,7 @@ Event 目录、调度和恢复机制见 decision_4adcc1ff2f2c。触发根与原�
 | `ResolveEffectActivation` | 是 | 由 Lineage admin 人工终结结果未知的 Effect 激活 | 对 `lineage_id` 有 @admin |
 | `ResolveTriggerPath` | 是 | 由 Lineage admin 把无法自行结束的触发流程按失败关闭 | 对 `lineage_id` 有 @admin |
 | `GetComponentRuntime` | 否 | 读取事件源、Effect 与循环组件的运行状态 | 对 `lineage_id` 有 @viewer |
-| `PauseComponent` | 是 | 关闭或打开事件源与 Effect，暂停或恢复循环组件 | 对 `lineage_id` 有 @contributor |
+| `SetComponentPaused` | 是 | 关闭或打开事件源与 Effect，暂停或恢复循环组件 | 对 `lineage_id` 有 @contributor |
 | `ResetComponentRuntime` | 是 | 清零事件源的触发次数、循环的轮数，或 Route 的已发送消息次数 | 对 `lineage_id` 有 @contributor |
 | `ListTriggerPaths` | 否 | 列出 Lineage 的 Trigger Path，最新的在前 | 对 `lineage_id` 有 @viewer |
 | `WatchTriggerPath` | 否（流式） | 订阅一次 Trigger Path 的进展，直到它结束 | 对 `lineage_id` 有 @viewer |
@@ -88,7 +88,7 @@ Event 目录、调度和恢复机制见 decision_4adcc1ff2f2c。触发根与原�
 - Effect 返回 `kind=effect`、`paused`、`state=paused|active`、`paused_at`，包括从未执行过的 Effect。`GetLineage.program_effect_runtime` 同步提供这些字段；最近执行结果与当前开关分别表达。
 - 结果：每个组件的运行状态。事件源包括已触发次数、是否暂停、最近一次触发与投递摘要和下一次计划触发时间（已抽取随机偏移时包含偏移）；循环组件包括已进行轮数和是否暂停。Home 的“定时与自动触发”面板用它显示触发计划（decision_481dc4e6292c）。
 
-### `PauseComponent`
+### `SetComponentPaused`
 
 **关闭或打开一个事件源或 Effect，暂停或恢复循环组件。**
 
@@ -96,11 +96,11 @@ Event 目录、调度和恢复机制见 decision_4adcc1ff2f2c。触发根与原�
 - 结果：组件的运行状态。
 - 事件源暂停期间不产生新的 Event：到期的定时触发被跳过，观察型事件源不记录暂停期间的变化。循环组件暂停期间不开始新的轮次，正在进行的一轮继续完成。
 - 暂停不修改 Lineage 定义，不关闭 Resident 接单，也不取消正在进行的工作。
-- Event 与 Effect 的开关唯一真值为 PostgreSQL 中的运行状态 `paused`，默认打开。事件源保存在 `event_source_progress`，Effect 保存在已有组件状态表 `operator_work`；重启、刷新和修改组件配置不会自动打开。界面关闭和打开都调用 `PauseComponent`，分别传 `paused=true` 与 `paused=false`，不另存定义开关。
+- Event 与 Effect 的开关唯一真值为 PostgreSQL 中的运行状态 `paused`，默认打开。事件源保存在 `event_source_progress`，Effect 保存在已有组件状态表 `operator_work`；重启、刷新和修改组件配置不会自动打开。界面关闭和打开都调用 `SetComponentPaused`，分别传 `paused=true` 与 `paused=false`，不另存定义开关。
 - 关闭 Event 后，手动指令、定时观察、系统回调和积压重放均不能产生新的触发或增加计数；手动触发返回已关闭错误。关闭检查与触发记录的建立在同一短事务中串行。
 - 关闭 Effect 后，所有 Event 和 Packet 激活以及恢复重试都经过执行器的开关检查。脚本在每条指令准入时检查持久状态，准入与关闭使用同一事务锁。关闭期间返回 `status=paused`，不产生成功或失败事件；已有待投递项保持等待，不被当作投递完成。
 - 已经准入的外部调用可以返回其结果；关闭不能追溯撤销外部副作用。脚本的后续指令等待打开，已完成调用保留在恢复日志中。
-- System 请求计时与系统演化 Harness 记录的具名 Event 开关同步投影到 Execution 本地设置。`PauseComponent` 在原执行准入锁内提交运行状态，释放状态锁后重读最新图与运行状态、完成投影才返回；定义修改、删除和服务启动也重建投影。旧回调不能覆盖较新的开关状态。投影失败保留已提交回执，同幂等恢复只补投影，不重放旧暂停操作。删除已安装开关会关闭投影；从未安装时保留原设置值（decision_4527448ad07f）。
+- System 请求计时与系统演化 Harness 记录的具名 Event 开关同步投影到 Execution 本地设置。`SetComponentPaused` 在原执行准入锁内提交运行状态，释放状态锁后重读最新图与运行状态、完成投影才返回；定义修改、删除和服务启动也重建投影。旧回调不能覆盖较新的开关状态。投影失败保留已提交回执，同幂等恢复只补投影，不重放旧暂停操作。删除已安装开关会关闭投影；从未安装时保留原设置值（decision_4527448ad07f）。
 
 打开（`paused=false`）时：
 
@@ -198,7 +198,7 @@ Effect 的激活身份、状态、错误和有限输出保存在步骤中，指�
 | `ResolveTriggerPath` | `lineage_id`、`trigger_path_id`、`note` |
 | `TriggerEvent` | `lineage_id`、`event_source_id`、`wire_id`、`prompt`、`content_parts`、`event_name`、`subject_resident_id`、`payload` |
 | `GetComponentRuntime` | `lineage_id`、`component_id` |
-| `PauseComponent` | `lineage_id`、`component_id`、`paused` |
+| `SetComponentPaused` | `lineage_id`、`component_id`、`paused` |
 | `ResetComponentRuntime` | `lineage_id`、`component_id`、`wire_id` |
 | `ListTriggerPaths` | `lineage_id`、`resident_id`、`cursor`、`limit` |
 | `GetTriggerPath` | `lineage_id`、`trigger_path_id`、`artifact_activation_key`、`offset`、`limit` |

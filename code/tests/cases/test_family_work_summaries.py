@@ -59,18 +59,16 @@ def test_coverage_is_per_input_and_no_change_does_not_advance_content(setup_work
     _summarize(context, A, "维护旧模块")
     initial = work.maintenance_view(A, A)
     assert initial["revision"] == 1 and initial["summary"]["current_focus"] == "维护旧模块"
-    result = work.update_resident_work_summary(A, A, 1, summary=SUMMARY, message_ids=["running"])
+    result = work.update_resident_work_summary(A, A, summary=SUMMARY, message_ids=["running"])
     assert result["revision"] == 2
     assert work.check_resident_work_summary(C, A, "one")["status"] == "reminder_attached"
-    result = work.update_resident_work_summary(A, A, 2, message_ids=["one"])
+    result = work.update_resident_work_summary(A, A, message_ids=["one"])
     assert result["revision"] == 2 and not result["missing_message_ids"]
     assert work.check_resident_work_summary(C, A, "one")["status"] == "covered"
-    with pytest.raises(ValueError, match="版本"):
-        work.update_resident_work_summary(A, A, 0, summary=SUMMARY, message_ids=["two"])
     with pytest.raises(ValueError, match="输入"):
-        work.update_resident_work_summary(A, A, 2, message_ids=["failed"])
+        work.update_resident_work_summary(A, A, message_ids=["failed"])
     with pytest.raises(PermissionError):
-        work.update_resident_work_summary(B, A, 2, summary=SUMMARY, message_ids=["two"])
+        work.update_resident_work_summary(B, A, summary=SUMMARY, message_ids=["two"])
 
 
 def test_missing_rounds_share_one_next_input_reminder_and_maintenance_is_excluded(setup_work):
@@ -88,18 +86,20 @@ def test_missing_rounds_share_one_next_input_reminder_and_maintenance_is_exclude
 def test_family_rollup_changes_only_when_material_changes_and_has_one_writer(setup_work):
     """Family 汇总仅在材料变化时更新且仅 steward 可写"""
     context, roles, *_ = setup_work
-    work.update_resident_work_summary(A, A, 0, summary=SUMMARY, message_ids=["one"])
+    work.update_resident_work_summary(A, A, summary=SUMMARY, message_ids=["one"])
     inputs = work.get_family_summary_inputs(C, C)
+    assert "expected_revision" not in inputs
     assert inputs["needs_update"]
     steward = roles["steward"][0]
-    work.update_resident_work_summary(steward, C, 0, summary=SUMMARY, source_versions=inputs["source_versions"])
+    work.update_resident_work_summary(steward, C, summary=SUMMARY, source_versions=inputs["source_versions"])
     assert not work.get_family_summary_inputs(C, C)["needs_update"]
-    work.update_resident_work_summary(A, A, 1, message_ids=["two"])
+    work.update_resident_work_summary(A, A, message_ids=["two"])
     assert not work.get_family_summary_inputs(C, C)["needs_update"]
-    work.update_resident_work_summary(A, A, 1, summary={**SUMMARY, "recent_results": ["完成隔离"]}, message_ids=["two"])
+    work.update_resident_work_summary(A, A, summary={**SUMMARY, "recent_results": ["完成隔离"]}, message_ids=["two"])
+    work.update_resident_work_summary(steward, C, summary=SUMMARY, source_versions=inputs["source_versions"])
     assert work.get_family_summary_inputs(C, C)["needs_update"]
     with pytest.raises(PermissionError):
-        work.update_resident_work_summary(A, C, 1, summary=SUMMARY, source_versions=inputs["source_versions"])
+        work.update_resident_work_summary(A, C, summary=SUMMARY, source_versions=inputs["source_versions"])
 
 
 @pytest.mark.parametrize("role", ["router", "steward"])
@@ -116,7 +116,7 @@ def test_internal_roles_do_not_receive_summary_reminders_or_consolidation_work(s
     monkeypatch.setattr(context.store, "work_summary", only_members)
     work.get_family_summary_inputs(C, C, overview_only=True)
     with pytest.raises(PermissionError):
-        work.update_resident_work_summary(roles["steward"][0], router, 0,
+        work.update_resident_work_summary(roles["steward"][0], router,
                                          consolidation={"phase": SUMMARY})
 
 
@@ -146,7 +146,7 @@ def test_global_summary_jobs_delete_on_familize_but_internal_work_stays_readable
     context.sync_catalog()
     with pytest.raises(KeyError):
         context.submit_summary("writer", claim["claim_id"], SUMMARY, model_version="test", account_id="")
-    context.store.write_work_summary(A, A, SUMMARY, ["one"], 0, {})
+    context.store.write_work_summary(A, A, SUMMARY, ["one"], {})
     assert A not in {d["resident_id"] for d in context.store.documents()}
     assert context.contexts(actor="caller", resident_ids=[A])["residents"][0]["summary"]["current_focus"] == "维护登录"
 
@@ -164,10 +164,10 @@ def test_completion_summary_check_uses_event_subject():
     event = make_event("resident.work_finished", subject_resident_id=A,
                        payload={"message_id": "completed-input", "job_id": "completed-input"})
     outcome, calls = _run(FAMILY_SUMMARY_CHECK_SCRIPT, {"event": asdict(event)}, {
-        "CheckResidentWorkSummary": {"status": "reminder_attached"},
+        "MaintainResidentWorkSummary": {"status": "reminder_attached"},
     })
     assert outcome.status == "succeeded"
-    assert calls == [("CheckResidentWorkSummary", {"resident_id": A, "message_id": "completed-input"})]
+    assert calls == [("MaintainResidentWorkSummary", {"resident_id": A, "message_id": "completed-input"})]
     assert outcome.outputs == {"status": "reminder_attached"}
 
 

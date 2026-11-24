@@ -1498,6 +1498,7 @@ def test_selector_route_preserves_origin_role_in_agent_envelope(
                             'route',
                             selector_id,
                             WORK_A,
+                            config={"include_envelope": True},
                         ),
                         "source_port": "branch:alpha",
                     },
@@ -1533,12 +1534,12 @@ def test_selector_route_preserves_origin_role_in_agent_envelope(
 
 @pytest.mark.parametrize(
     ("include_envelope", "expects_envelope"),
-    [(True, True), (False, False)],
+    [(None, False), (True, True), (False, False)],
 )
 def test_packet_to_reducer_honors_invoke_edge_envelope_policy(
     runtime_store: Path,
     monkeypatch: pytest.MonkeyPatch,
-    include_envelope: bool,
+    include_envelope: bool | None,
     expects_envelope: bool,
 ) -> None:
     """发往归约器的包遵循调用连线封装设置"""
@@ -1581,7 +1582,7 @@ def test_packet_to_reducer_honors_invoke_edge_envelope_policy(
                         'route',
                         PRODUCER_A,
                         REDUCER,
-                        config={"include_envelope": include_envelope},
+                        config={} if include_envelope is None else {"include_envelope": include_envelope},
                     ),
                     _wire(
                         "wire_reducer_effect_envelope",
@@ -3089,7 +3090,7 @@ def test_recurring_pause_preserves_due_cursor_and_resume_skips_the_paused_window
 
     def set_paused(paused: bool) -> None:
         revision = lineage_reads.get_lineage(lineage_id, ACTOR)["revision"]
-        ok("PauseComponent",
+        ok("SetComponentPaused",
            {"lineage_id": lineage_id, "component_id": source_id, "paused": paused},
            actor=ACTOR, key=f"pause-{paused}-{Clock.current.isoformat()}")
         # Pausing is runtime state; the Lineage definition does not change.

@@ -294,8 +294,8 @@ def test_recovery_default_migration_preserves_edits(configured_family, custom):
 def test_first_turn_has_guide_and_later_turns_only_have_a_readable_reference(configured_family):
     _, block = configured_family
     rid = block["family"]["router"]
-    first = ok("PreviewPromptInjection", {"resident_id": rid, "turn": "first"})
-    later = ok("PreviewPromptInjection", {"resident_id": rid, "turn": "later"})
+    first = ok("GetPromptInjectionPreview", {"resident_id": rid, "turn": "first"})
+    later = ok("GetPromptInjectionPreview", {"resident_id": rid, "turn": "later"})
     assert any(p["id"] == "family_work_guide" and p["sent"] for p in first["parts"])
     assert not any(p["id"] == "family_work_guide" and p["sent"] for p in later["parts"])
 

@@ -75,7 +75,7 @@
     async function mutate(lineageId, name, args, payload = {}, prefix = "lineage", { definition = true, reload = true } = {}) {
       const scopedInstructions = new Set([
         "ForkResident", "UpdateResident", "DeleteResident", "MoveLineageObjects",
-        "CreateWorkspaceHandoff", "UpdateWorkspaceHandoff", "DeleteWorkspaceHandoff", "PrepareWorkspaceHandoff",
+        "CreateWorkspaceHandoff", "UpdateWorkspaceHandoff", "DeleteWorkspaceHandoff", "RunWorkspaceHandoff",
       ]);
       if (scopedInstructions.has(name)) args = { ...args, lineage_id: requiredLineageId(lineageId) };
       // Capture the version used to construct args before any await can
@@ -317,11 +317,11 @@
       },
       pauseComponent(payload = {}) {
         const lineageId = requiredLineageId(payload.lineage_id);
-        return mutate(lineageId, "PauseComponent", { lineage_id: lineageId, component_id: payload.component_id, paused: true }, {}, "component-pause", { definition: false });
+        return mutate(lineageId, "SetComponentPaused", { lineage_id: lineageId, component_id: payload.component_id, paused: true }, {}, "component-pause", { definition: false });
       },
       resumeComponent(payload = {}) {
         const lineageId = requiredLineageId(payload.lineage_id);
-        return mutate(lineageId, "PauseComponent", { lineage_id: lineageId, component_id: payload.component_id, paused: false }, {}, "component-resume", { definition: false });
+        return mutate(lineageId, "SetComponentPaused", { lineage_id: lineageId, component_id: payload.component_id, paused: false }, {}, "component-resume", { definition: false });
       },
       resetProgramEvent(payload = {}) {
         const lineageId = requiredLineageId(payload.lineage_id);
@@ -351,7 +351,7 @@
         return mutate(String(payload.lineage_id || ""), "DeleteWorkspaceHandoff", { handoff_id: payload.handoff_id }, payload, "handoff-delete");
       },
       executeHandoff(payload = {}) {
-        return mutate(String(payload.lineage_id || ""), "PrepareWorkspaceHandoff",
+        return mutate(String(payload.lineage_id || ""), "RunWorkspaceHandoff",
           pick(payload, ["handoff_id", "source_resident_id", "target_resident_id"]), payload, "handoff-prepare", { definition: false });
       },
       executeInstruction(name, args = {}, instructionControls = {}) {

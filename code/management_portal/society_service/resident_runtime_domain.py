@@ -421,6 +421,36 @@ def write_resident_runtime_settings(record: dict, settings: dict[str, Any]) -> d
     return persisted
 
 
+def migrate_instruction_names() -> None:
+    from . import instruction_name_migration, resident_store
+
+    catalog = resident_catalog.get_catalog()
+    for record in catalog.all():
+        resident_id = resident_domain_common.record_resident_id(record)
+        with resident_record_domain.state_lock(resident_id):
+            current = resident_record_domain.find_resident(resident_id)
+            if not current:
+                continue
+            try:
+                settings = catalog.state_store.read_resident_execution_settings(resident_id)
+                context = (settings or {}).get("prompt_context") or {}
+                prompt = context.get("system_prompt")
+                if isinstance(prompt, str):
+                    normalized = instruction_name_migration.normalize_prompt(prompt)
+                    if normalized != prompt:
+                        context["system_prompt"] = normalized
+                        catalog.state_store.transaction(
+                            lambda: write_resident_runtime_settings(current, settings)
+                        )
+                path = resident_record_domain.resident_instructions_path(current)
+                text = resident_store.read_text(path, limit=0)
+                normalized = instruction_name_migration.normalize_prompt(text)
+                if normalized != text:
+                    resident_store.replace_file_text(path, normalized)
+            except Exception as exc:
+                raise RuntimeError(f"Failed to normalize Resident prompts for {resident_id}") from exc
+
+
 def resident_settings_revision(record: dict[str, Any], settings: dict[str, Any]) -> str:
     from management_portal.execution.resident_capability_settings import settings_revision
 

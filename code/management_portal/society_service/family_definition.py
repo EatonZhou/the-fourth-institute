@@ -195,7 +195,7 @@ fi
 sent=$(DispatchFamilyTask resident_id="${arguments.facade}" trigger="summary" message_id="${inputs.notification.message_id}")
 output status="requested" message_id="${sent.message_id}"'''
 
-FAMILY_SUMMARY_CHECK_SCRIPT = r'''checked=$(CheckResidentWorkSummary resident_id="${event.subject_resident_id}" message_id="${event.payload.message_id}")
+FAMILY_SUMMARY_CHECK_SCRIPT = r'''checked=$(MaintainResidentWorkSummary resident_id="${event.subject_resident_id}" message_id="${event.payload.message_id}")
 if [ "${checked.consolidation_due}" != "true" ]; then
   output status="${checked.status}"
   exit

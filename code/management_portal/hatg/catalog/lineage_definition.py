@@ -82,7 +82,7 @@ DECLARATIONS = (
         R("target", description="激活的接收节点或绑定对象 ID；watch 可观察 Resident、组件、投递连线、工作区交接"),
         P("target_port", description="仅 route 使用：invoke 或 Loop.done；watch/target 直接绑定对象，省略此字段"),
         R("kind", description="route 激活连线；target 绑定 Effect 端点；watch 观察对象", enum=WIRE_KINDS),
-        P("config", "object", "参数映射、include_envelope（默认 true）与无法立即投递时的策略（queue 默认按顺序排队、latest 仅保留最新、drop 丢弃）；指向 Invoke 端口的连线写明任务"),
+        P("config", "object", "参数映射、include_envelope（向 Resident 或 Packet Operator 投递时默认 false，Effect 脚本默认可读 event/packet）与等待策略（queue 默认按顺序排队、latest 仅保留最新、drop 丢弃）；指向 Invoke 端口的连线写明任务"),
         P("label", description="连线上显示的名称"),
         P("client_key", description="调用者的审计标记，不代替连线 ID"),
     ), (R("wire_id", description="新连线的 ID"),
@@ -121,7 +121,7 @@ DECLARATIONS = (
         R("handoff_id", description="要删除的交接"),), (
         R("handoff_id", description="被删除的交接"),
     ), mutates=True, target="handoff_id"),
-    _d("PrepareWorkspaceHandoff", "准备交接材料，并为目标 Resident 建立工作区绑定。", (R("lineage_id", description="对象当前所属的源 Lineage"),
+    _d("RunWorkspaceHandoff", "准备交接材料，并为目标 Resident 建立工作区绑定。", (R("lineage_id", description="对象当前所属的源 Lineage"),
         P("handoff_id", description="要准备的交接；省略时按来源与接收方 Resident 查找或新建"),
         P("source_resident_id", description="交出工作区的 Resident；与 target_resident_id 一起代替 handoff_id"),
         P("target_resident_id", description="接收交接的 Resident；与 source_resident_id 一起代替 handoff_id"),
@@ -131,7 +131,7 @@ DECLARATIONS = (
         R("items", "array", "交接项：每项含 item_id、source、transfer、target 及准备结果 result"),
     ), mutates=True, target="handoff_id",
        one_of=(("handoff_id",), ("source_resident_id", "target_resident_id"))),
-    _d("RelocateWorkspaceHandoff", "将已有交接副本归位到所属 Lineage 的 handoff-workspaces，保留 Workspace ID、内容、绑定和尝试历史；活跃使用者阻止搬迁。", (
+    _d("MoveWorkspaceHandoff", "将已有交接副本归位到所属 Lineage 的 handoff-workspaces，保留 Workspace ID、内容、绑定和尝试历史；活跃使用者阻止搬迁。", (
         R("lineage_id", description="交接所属 Lineage"),
         R("handoff_id", description="已有交接 ID"),
         R("item_id", description="要归位的交接项 ID"),

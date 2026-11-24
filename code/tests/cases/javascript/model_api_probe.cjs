@@ -30,7 +30,7 @@ window.PortalInstructionClient = {execute: async (name, args, options = {}) => {
       account_id: registration.account_id, login_state, registration: {...registration, version}}))};
     case 'ListBackendRoles': return {roles: []};
     case 'ListModelApis': return {apis};
-    case 'ProbeModelApi': return {model: args.default_model, results: probe};
+    case 'CheckModelApi': return {model: args.default_model, results: probe};
     default: throw Error(name);
   }
 }};
@@ -63,7 +63,7 @@ const status = id => row(id).children[2].textContent;
   probe = {openai_chat: {status: 'supported', http_status: 200}, openai_responses: {status: 'supported', http_status: 200},
            anthropic_messages: {status: 'supported', http_status: 200, auth: 'x-api-key'}};
   click('检测接口协议', form); await flush();
-  assert.deepEqual(last('ProbeModelApi').args, {base_url: 'https://new.invalid/v1', default_model: 'gpt-new', secret: 'sk-draft'});
+  assert.deepEqual(last('CheckModelApi').args, {base_url: 'https://new.invalid/v1', default_model: 'gpt-new', secret: 'sk-draft'});
   assert.equal(form.elements.protocol_openai_responses.checked, true);
   assert.equal(form.elements.protocol_anthropic_messages.checked, true);
   assert.equal(form.elements.anthropic_auth.value, 'x-api-key');
@@ -86,7 +86,7 @@ const status = id => row(id).children[2].textContent;
   assert.equal(form.elements.protocol_google_genai.checked, true);
   assert.equal(form.elements.google_base_url.value, 'https://native.invalid/prefix');
   click('检测接口协议', form); await flush();
-  assert.deepEqual(last('ProbeModelApi').args, {api_id: 'gateway', base_url: 'https://gateway.invalid/v1', default_model: 'gpt-test'});
+  assert.deepEqual(last('CheckModelApi').args, {api_id: 'gateway', base_url: 'https://gateway.invalid/v1', default_model: 'gpt-test'});
   click('关闭');
 
   // Provider registration defaults do not claim the site's default AI role.

@@ -118,7 +118,7 @@
       if (control) control.disabled = true;
       try {
         return await applyProgramMutation(
-          () => executeHatgInstruction("PauseComponent", { component_id: component.id, paused: !paused }, { definition: false }),
+          () => executeHatgInstruction("SetComponentPaused", { component_id: component.id, paused: !paused }, { definition: false }),
           window.PortalI18n.text`${kind} 已${paused ? "打开" : "关闭"}。`,
           { failure: window.PortalI18n.text`${kind} ${paused ? "打开" : "关闭"}失败` },
         );

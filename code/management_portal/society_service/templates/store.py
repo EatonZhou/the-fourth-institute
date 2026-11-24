@@ -131,6 +131,28 @@ def ensure_builtins():
         _write(connection, rows.values())
 
 
+def migrate_instruction_names():
+    from ..instruction_name_migration import normalize_template
+
+    with database().transaction("templates") as connection:
+        rows = {row["template_id"]: row for row in read_rows(connection, "templates")}
+        changed = False
+        for template_id, previous in rows.items():
+            current = normalize_template(previous)
+            if current == previous:
+                continue
+            previous_hash = content_hash(previous)
+            current_hash = content_hash(current)
+            for field in ("builtin_source", "installed_store_hash"):
+                if previous[field] == previous_hash:
+                    current[field] = current_hash
+            current.update(version=previous["version"] + 1, updated_at=now(), updated_by="portal")
+            rows[template_id] = current
+            changed = True
+        if changed:
+            _write(connection, rows.values())
+
+
 def all_templates():
     ensure_builtins()
     with database().read() as connection:

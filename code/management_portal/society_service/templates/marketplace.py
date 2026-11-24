@@ -31,9 +31,10 @@ def group_for(template):
 
 
 def instructions_used(template):
+    from ..instruction_name_migration import normalize_template
     from ..lineage_effect_script import parse
 
-    kind, body = template["kind"], template["body"]
+    kind, body = template["kind"], normalize_template(template)["body"]
     if kind == "prompt":
         return ["DeliverMessage"]
     if kind == "explore":
@@ -41,7 +42,7 @@ def instructions_used(template):
     if kind == "familize":
         return ["Familize"]
     if kind == "family_duty":
-        return ["CheckFamilyReview"]
+        return ["MaintainFamilyReview"]
     if kind == "script":
         return list(dict.fromkeys(call.instruction for call in parse(body["script"]).calls))
     names = []
@@ -168,6 +169,8 @@ def publish(template_id, actor, release_note=""):
 
 
 def install(store_id, actor, *, target_template_id=None, mode="install"):
+    from ..instruction_name_migration import normalize_template
+
     if mode not in ("install", "overwrite", "copy"):
         raise TemplateError("未知安装方式")
     store.ensure_builtins()
@@ -196,11 +199,11 @@ def install(store_id, actor, *, target_template_id=None, mode="install"):
             previous.update({key: None for key in INSTALL})
         identity = previous["template_id"] if mode == "overwrite" else "template_" + secrets.token_hex(6)
         stamp = now()
-        value = {key: deepcopy(item[key]) for key in store.CONTENT}
+        value = normalize_template({key: deepcopy(item[key]) for key in store.CONTENT})
         value.update(template_id=identity, builtin_key=None, builtin_source=None,
                      created_by=actor, created_at=previous["created_at"] if mode == "overwrite" else stamp,
                      updated_by=actor, updated_at=stamp, version=previous["version"] + 1 if mode == "overwrite" else 1,
-                     installed_from_store_id=store_id, installed_store_version=item["version"], installed_store_hash=item["content_hash"])
+                     installed_from_store_id=store_id, installed_store_version=item["version"], installed_store_hash=store.content_hash(value))
         rows[identity] = value
         store._write(connection, rows.values())
     return {"template": describe(annotate([value], records)[0]), **({"detached_template_id": detached} if detached else {})}

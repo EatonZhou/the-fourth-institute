@@ -106,7 +106,7 @@ const click = text => {const b = [...window.document.querySelectorAll('button')]
   assert.equal(calls.filter(c => c.name === 'CreateModelApi').length, 1, 'retry must reuse the saved API');
   assert(!calls.some(c => c.name === 'RegisterProviderAccount'), 'route retry creates no duplicate account');
   assert(window.document.querySelector('[data-backend-setup-status]'));
-  assert(!calls.some(c => ['CompleteChat', 'CheckProviderAccount', 'OpenProviderAccountLogin'].includes(c.name)), 'registration does not spend quota or authorize automatically');
+  assert(!calls.some(c => ['CompleteChat', 'CheckProviderAccount', 'CreateProviderAccountLogin'].includes(c.name)), 'registration does not spend quota or authorize automatically');
   click('测试并完成'); await flush();
   assert.match(window.document.querySelector('[data-backend-setup-status]').textContent, /401/);
   const beforeRepair = calls.filter(c => ['CreateModelApi', 'RegisterProviderAccount'].includes(c.name)).length;

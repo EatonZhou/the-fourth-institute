@@ -122,7 +122,7 @@ async function domContract(kind, sourceTransform) {
     let release;
     h.control.hold = new Promise(resolve => { release = resolve; });
     switchButton().click();
-    await until(() => h.calls.some(call => call.instruction === 'PauseComponent'), 'pause reaches server');
+    await until(() => h.calls.some(call => call.instruction === 'SetComponentPaused'), 'pause reaches server');
     assert.equal(switchButton().matches(':disabled'), true, 'native switch disabled in flight');
     assert.equal(title().matches(':disabled'), true, 'native draft disabled in flight');
     const callsAtBusy = h.calls.length;
@@ -138,7 +138,7 @@ async function domContract(kind, sourceTransform) {
     assert.equal(badge()?.textContent, '已关闭', 'D3 renders real paused node badge');
     assertTriggers(true);
     if (kind === 'event_source') assert.equal(query('[data-event-listening-status]').textContent, '已关闭');
-    requests.push(...h.calls.filter(call => call.instruction === 'PauseComponent'));
+    requests.push(...h.calls.filter(call => call.instruction === 'SetComponentPaused'));
     const previousWindow = h.window;
     await h.close();
     h = await documentFixture(kind, server, sourceTransform);
@@ -160,7 +160,7 @@ async function domContract(kind, sourceTransform) {
     assert.equal(title().value, '打开失败也保留');
     assert.equal(badge(), null, 'D3 removes paused node badge');
     assertTriggers(false);
-    requests.push(...h.calls.filter(call => call.instruction === 'PauseComponent'));
+    requests.push(...h.calls.filter(call => call.instruction === 'SetComponentPaused'));
     assert.deepEqual(requests.map(call => call.arguments.paused), [true, false, false], 'pause, failed resume, retried resume');
     return { kind, requests, initial_document_disposed: true, fresh_document_hydrated: true };
   } finally { await h.close(); }

@@ -70,16 +70,17 @@ links:
 | `RestartPortal` | 是 | 重启 Portal 实例或其中的组件 | 对“Portal 运维”有 @admin |
 | `PublishRelease` | 是 | 把指定的 Dev 代码发布到 Release | 对“Portal 运维”有 @admin |
 | `GetDeviceStatus` | 否 | 读取 GPU 或磁盘状态 | 对“共享”有 @viewer |
-| `OpenTerminal` | 是 | 为调用者打开 Portal 主机 shell 或 Device 的 SSH 终端 | 对“共享”有 @admin |
+| `CreateTerminal` | 是 | 为调用者打开 Portal 主机 shell 或 Device 的 SSH 终端 | 对“共享”有 @admin |
+| `RunGoogleDriveBackup` | 是 | 异步复制加密快照到 Google Drive，或校验上传与恢复 | 对“共享”有 @admin |
 | `ListModelApis` | 否 | 列出已登记的模型接口 | 对“共享”有 @viewer |
 | `CreateModelApi` | 是 | 登记一个模型接口 | 对“Portal 运维”有 @admin |
 | `UpdateModelApi` | 是 | 修改一个模型接口的登记 | 对“Portal 运维”有 @admin |
 | `DeleteModelApi` | 是 | 删除一个模型接口的登记 | 对“Portal 运维”有 @admin |
 | `CompleteChat` | 是 | 调用一次模型接口生成文本 | 免检 |
-| `ProbeModelApi` | 是 | 检测模型接口为 Agent Harness 提供哪些协议 | 对“Portal 运维”有 @admin |
+| `CheckModelApi` | 是 | 检测模型接口为 Agent Harness 提供哪些协议 | 对“Portal 运维”有 @admin |
 | `ListProviderAccounts` | 否 | 读取执行账号的额度、余额和调度设置 | 对“共享”有 @viewer |
 | `UpdateProviderAccount` | 是 | 修改一个执行账号的调度设置 | 对“共享”有 @admin |
-| `PrepareProviderRuntime` | 是 | 复用已有运行时，缺失时按 Provider 异步准备 | 对“共享”有 @admin |
+| `InstallProviderRuntime` | 是 | 复用已有运行时，缺失时按 Provider 异步准备 | 对“共享”有 @admin |
 | `GetProviderAccountSetup` | 否 | 读取运行环境、授权、模型与声明能力 | 对“共享”有 @viewer |
 | `GetProviderAccountConfiguration` | 否 | 读取 Codex 原生默认 Provider 与版本；按需检查定义的持久会话引用 | 对“共享”有 @admin |
 | `UpdateProviderAccountConfiguration` | 是 | 条件更新 Codex 原生默认 Provider，不重启或改写已有会话 | 对“共享”有 @admin |
@@ -89,7 +90,7 @@ links:
 | `RegisterProviderAccount` | 是 | 登记执行账号并创建 Provider 目录与服务 | 对“共享”有 @admin |
 | `UpdateProviderAccountRegistration` | 是 | 修改执行账号的登记 | 对“共享”有 @admin |
 | `DeleteProviderAccount` | 是 | 删除空闲账号及其主机目录与服务实例 | 对“共享”有 @admin |
-| `OpenProviderAccountLogin` | 是 | 打开订阅账号的登录会话 | 对“共享”有 @admin |
+| `CreateProviderAccountLogin` | 是 | 打开订阅账号的登录会话 | 对“共享”有 @admin |
 | `UpdateProviderAccountLogin` | 是 | 向已有的 Claude 登录会话提交一次性授权码 | 对“共享”有 @admin |
 | `GetProviderAccountLogin` | 否 | 读取登录会话与账号认证状态 | 对“共享”有 @viewer |
 | `CancelProviderAccountLogin` | 是 | 取消订阅账号登录并结束登录进程 | 对“共享”有 @admin |
@@ -116,7 +117,7 @@ links:
 - 参数：`model_request_timing_enabled`、`harness_recording_enabled`，可选布尔值；`harness_retention_days`，可选整数（21–365，默认 30），Harness 证据、调用记录和未被引用的产物的保留天数；`permission_system_enabled`，可选布尔值，开启或关闭权限系统（默认开启）。至少提供一个。
 - 结果：保存后的 `settings`。开启权限系统时另有 `reconciled`：本次重建权限实例的报告。
 - 权限系统开关不经过 Event：关闭后各服务在 3 秒内改用开放实现、不再加载权限代码；开启前，在开关仍关闭时由 ResourceService 按当前模板和全部现有对象重建权限实例（创建者、Family steward、聊天室成员等规则表项随之展开），再写入开关。规则见 decision_b820faf42218。
-- 已安装流程以 Event runtime.paused 为真值：请求计时绑定 Portal System 的 `system:request-timing:enabled`，Harness 记录绑定系统演化的 `system:harness-recording:enabled`。修改设置调用同一 PauseComponent 实现，并在返回前更新 Execution 本地投影。删除已绑定 Event 后投影关闭，再修改设置返回 conflict，要求恢复图；未安装过的功能兼容原设置写入。
+- 已安装流程以 Event runtime.paused 为真值：请求计时绑定 Portal System 的 `system:request-timing:enabled`，Harness 记录绑定系统演化的 `system:harness-recording:enabled`。修改设置调用同一 SetComponentPaused 实现，并在返回前更新 Execution 本地投影。删除已绑定 Event 后投影关闭，再修改设置返回 conflict，要求恢复图；未安装过的功能兼容原设置写入。
 - 计时使用旁路观察，关闭停止后续时间记录，不改变 Provider 请求路径，不终止在途请求。Harness 关闭停止新增运行证据，重开不补写暂停期间排队证据，已有历史及显式质量评审保留。
 
 ## Portal 服务
@@ -172,18 +173,18 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个部署各有自
 - 参数：`kind`（必填，`gpu` 或 `disk`）、`device_id`（可选；省略时读取这一种类的全部设备；GPU 写 Device 的统一 ID，磁盘写磁盘资源 ID，例如 `nas_storage`）、`refresh`（可选，是否立即重新采集）。
 - 结果：`devices` 列出读到的设备，另附这一种类的汇总。GPU 为每台服务器和 GPU 的显存、利用率和进程占用，未知的 `device_id` 得到空列表；磁盘为每个磁盘的容量、已用空间和健康状态。
 
-### `OpenTerminal`
+### `CreateTerminal`
 
 **为调用者打开一个 Terminal：Portal 主机上的 shell，或经 SSH 连到一台 Device。**
 
 - 参数：`device_id`（可选；省略时打开 Portal 主机 shell）、`cwd`（主机 shell 的起始目录）、`cols`、`rows`（终端尺寸）。
 - 结果：`session_id`、`alive` 与 `cwd`。会话之后由 Portal 页面通过 Terminal 的读写路由使用，会话只属于打开它的 User；Resident 不能打开 Terminal。
 - Terminal 等于主机上的 shell。权限系统开启时按启用方案判定，默认方案要求“共享”上的 `@admin`；权限系统关闭时任何已登录的 User 均可打开。User 会话归属与 Resident 不可打开的限制继续由领域实现执行，不因权限系统关闭而取消。
-- 页面上的所有启动方式都是这条指令：Society 工作台的终端面板（`/api/agent-workbench/local-terminal/start`）、新建 shell（`control` 的 `restart`）和 Device 详情页的“打开 Terminal”（`/api/terminal/start`）都先判定 OpenTerminal，没有权限时返回 403。`/api/me` 的 `access.allows.OpenTerminal` 为假时，Society 页面不提供终端组件，Device 页面不显示打开按钮。
+- 页面上的所有启动方式都是这条指令：Society 工作台的终端面板（`/api/agent-workbench/local-terminal/start`）、新建 shell（`control` 的 `restart`）和 Device 详情页的“打开 Terminal”（`/api/terminal/start`）都先判定 CreateTerminal，没有权限时返回 403。`/api/me` 的 `access.allows.CreateTerminal` 为假时，Society 页面不提供终端组件，Device 页面不显示打开按钮。
 
 ## 执行账号与用量
 
-执行账号与用量指令由 ExecutionService 执行。按账号打开或关闭 Resident 的接单，使用 `OpenIntake` 的 `resident_ids` 批量形式（decision_2a3ff353165c）。
+执行账号与用量指令由 ExecutionService 执行。按账号打开或关闭 Resident 的接单，使用 `SetIntakeOpen` 的 `resident_ids` 批量形式（decision_2a3ff353165c）。
 
 ### `ListProviderAccounts`
 
@@ -210,7 +211,7 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个部署各有自
 - `RegisterProviderAccount`：参数 `account_id`、`provider`、`kind`（`subscription_login`、`api_profile` 或 `service`）、`route_id`（可选）、`config`（可选；`api_profile` 用 `config.api_id` 引用已有模型接口）、`max_concurrency`（可选，初始并发）、`enabled`（可选）、`secret`（可选，`api_profile` 的一次性密钥，只写入密钥文件，不回显）。结果 `registration`。
 - `UpdateProviderAccountRegistration`：参数 `account_id`、`changes`（配置、`enabled` 与初始并发）。结果 `registration`。调用信封的 `expected_version` 给出登记版本（`ListProviderAccounts` 每个账号的 `registration_version`）时按它比较，版本不符以 `instruction.version_conflict` 失败；省略时直接更新。
 - `DeleteProviderAccount`：参数 `account_id`。账号仍有绑定会话或排队、运行中的执行时以 `instruction.conflict` 失败，`details` 给出 `reason: account.busy`、会话数 `session_count` 和执行数 `execution_count`；仍被 Backend 角色引用时以 `instruction.conflict`（`reason: account.role_in_use`）失败。结果为被删除的 `account_id`。
-- `OpenProviderAccountLogin`、`UpdateProviderAccountLogin`、`GetProviderAccountLogin`、`CancelProviderAccountLogin`：参数都以 `account_id` 指定订阅账号；`UpdateProviderAccountLogin` 另有 `authorization_code`（Claude 浏览器返回的授权码，只送到当前登录进程，不保存或回显）；`OpenProviderAccountLogin` 另有可选 `region`，仅用于 Kimi：`mainland-cn` 为中国区、`global` 为国际区，切换区域会替换未完成的授权流程，省略时沿用原生选择。Open、Update、Cancel 返回 `session`；Get 返回 `session`（尚未开始时为 null）与 `login_state`。每个账号同一时间只有一个登录会话。
+- `CreateProviderAccountLogin`、`UpdateProviderAccountLogin`、`GetProviderAccountLogin`、`CancelProviderAccountLogin`：参数都以 `account_id` 指定订阅账号；`UpdateProviderAccountLogin` 另有 `authorization_code`（Claude 浏览器返回的授权码，只送到当前登录进程，不保存或回显）；`CreateProviderAccountLogin` 另有可选 `region`，仅用于 Kimi：`mainland-cn` 为中国区、`global` 为国际区，切换区域会替换未完成的授权流程，省略时沿用原生选择。Open、Update、Cancel 返回 `session`；Get 返回 `session`（尚未开始时为 null）与 `login_state`。每个账号同一时间只有一个登录会话。
 - 账号相关的失败使用通用错误码，`details.reason` 给出具体原因，页面按 `reason` 选择提示：
 
 | 情形 | 错误码 | `details.reason` |
@@ -227,7 +228,7 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个部署各有自
 - `UpdateBackendRole`：参数 `backend_role`（角色名，与 `CreateResident` 的 `backend_role` 同名）、`account_id`、`model`（可选）、`reasoning_effort`（可选）。结果 `role`。调用信封的 `expected_version` 给出角色版本时按它比较，新建角色时为 0；省略时直接写入。
 
 
-接入流程先调用 `GetProviderAccountSetup(account_id)`，分别展示运行环境、授权状态、模型目录与声明的工具能力。`PrepareProviderRuntime(provider)` 复用已安装程序；缺失时通过原运行时 owner 异步准备，返回 preparation，后续从 ListProviders 或 GetProviderAccountSetup 观察。`CheckProviderAccount(account_id, model?)` 创建普通持久 Execution，返回 execution_id；`GetProviderAccountCheck(account_id, execution_id)` 只读取调用者可访问的执行，核对账号、登记与模型 API 版本、完成状态和预期回复。测试不调用工具，不能据此宣称工具已实测。UpdateBackendRole 可带 `verification_execution_id`；接入页面必须带此回执，只有匹配当前账号与模型的成功测试才能完成默认设置。已有高级角色编辑保持可用。
+接入流程先调用 `GetProviderAccountSetup(account_id)`，分别展示运行环境、授权状态、模型目录与声明的工具能力。`InstallProviderRuntime(provider)` 复用已安装程序；缺失时通过原运行时 owner 异步准备，返回 preparation，后续从 ListProviders 或 GetProviderAccountSetup 观察。`CheckProviderAccount(account_id, model?)` 创建普通持久 Execution，返回 execution_id；`GetProviderAccountCheck(account_id, execution_id)` 只读取调用者可访问的执行，核对账号、登记与模型 API 版本、完成状态和预期回复。测试不调用工具，不能据此宣称工具已实测。UpdateBackendRole 可带 `verification_execution_id`；接入页面必须带此回执，只有匹配当前账号与模型的成功测试才能完成默认设置。已有高级角色编辑保持可用。
 
 ### `GetUsage`
 
@@ -299,7 +300,7 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个部署各有自
 - `response_schema` 是回答必须满足的 JSON Schema。Portal 先校验它本身，格式无效时以参数错误拒绝，不调用模型；调用时在消息最前面加一条系统消息，要求只输出满足该 Schema 的 JSON。回答返回后，优先从代码块、其次从正文中取出第一个 JSON 对象或数组，按 Schema 校验后放入 `structured`。回答中没有 JSON 或不满足 Schema 时调用失败，并标记为可重试。
 - 调用者必须明确选择接口，系统不根据调用者或任务自动选择。生成的文本不写入任何 Resident 的对话。
 
-### `ProbeModelApi`
+### `CheckModelApi`
 
 **检测模型接口为 Agent Harness 提供哪些协议。**
 
@@ -337,18 +338,19 @@ Telepus 绑定、提醒及服务控制改用应用工具，见 decision_692a484e
 | `RestartPortal` | `deployment`、`components` |
 | `PublishRelease` | `message`、`paths`、`all` |
 | `GetDeviceStatus` | `kind`、`device_id`、`refresh` |
-| `OpenTerminal` | `device_id`、`cwd`、`cols`、`rows` |
+| `CreateTerminal` | `device_id`、`cwd`、`cols`、`rows` |
+| `RunGoogleDriveBackup` | `profile`、`network_route` |
 | `ListModelApis` | 无 |
 | `CreateModelApi` | `api_id`、`base_url`、`kind`、`default_model`、`secret_file`、`secret`、`provider`、`routes`、`models`、`protocols`、`default_parameters`、`timeout_seconds`、`retries`、`headers`、`enabled` |
 | `UpdateModelApi` | `api_id`、`changes`、`secret` |
 | `DeleteModelApi` | `api_id` |
 | `CompleteChat` | `api_id`、`model`、`messages`、`options`、`response_schema` |
-| `ProbeModelApi` | `api_id`、`base_url`、`default_model`、`secret_file`、`secret`、`headers`、`anthropic_base_url` |
+| `CheckModelApi` | `api_id`、`base_url`、`default_model`、`secret_file`、`secret`、`headers`、`anthropic_base_url` |
 | `ListProviderAccounts` | `account_id`、`refresh` |
 | `GetProviderUsageEvents` | `account_id`、`since`、`until`、`cursor`、`limit` |
 | `UpdateProviderAccount` | `account_id`、`max_concurrency`、`dispatch_interval_min_seconds`、`dispatch_interval_max_seconds`、`close_threshold_percent`、`close_threshold_amount`、`allow_credits` |
 | `ListProviders` | `refresh`、`include_runtime` |
-| `PrepareProviderRuntime` | `provider` |
+| `InstallProviderRuntime` | `provider` |
 | `GetProviderAccountSetup` | `account_id` |
 | `GetProviderAccountConfiguration` | `account_id`、`include_provider_references` |
 | `UpdateProviderAccountConfiguration` | `account_id`、`model_provider` |
@@ -357,7 +359,7 @@ Telepus 绑定、提醒及服务控制改用应用工具，见 decision_692a484e
 | `RegisterProviderAccount` | `account_id`、`provider`、`kind`、`route_id`、`config`、`max_concurrency`、`reuse_existing`、`enabled`、`secret` |
 | `UpdateProviderAccountRegistration` | `account_id`、`changes` |
 | `DeleteProviderAccount` | `account_id` |
-| `OpenProviderAccountLogin` | `account_id`、`region` |
+| `CreateProviderAccountLogin` | `account_id`、`region` |
 | `UpdateProviderAccountLogin` | `account_id`、`authorization_code` |
 | `GetProviderAccountLogin` | `account_id` |
 | `CancelProviderAccountLogin` | `account_id` |

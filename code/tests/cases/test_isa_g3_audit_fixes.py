@@ -85,7 +85,7 @@ def test_list_inbox_exposes_the_read_revision_as_its_version(monkeypatch):
 
 
 def test_mark_inbox_read_accepts_the_scalar_version_and_rejects_a_changed_row(monkeypatch):
-    """MarkMailboxItemRead 接受字符串版本，阅读状态的修订号已变化时返回版本冲突"""
+    """SetMailboxItemRead 接受字符串版本，阅读状态的修订号已变化时返回版本冲突"""
     from management_portal.conversation_read_state import VersionConflict
 
     key = "notice-board:post_aaaaaaaaaaaa"
@@ -105,7 +105,7 @@ def test_mark_inbox_read_accepts_the_scalar_version_and_rejects_a_changed_row(mo
     monkeypatch.setattr(web_isa, "web", lambda _module: SimpleNamespace(_set_agent_conversation_read_state=set_read))
     kernel = InstructionKernel(web_isa.binding(), store=None, authorize=lambda *args: None)
     instruction = InstructionCall.from_payload({
-        "instruction": "MarkMailboxItemRead", "arguments": {"key": key}, "expected_version": "7",
+        "instruction": "SetMailboxItemRead", "arguments": {"key": key}, "expected_version": "7",
     })
     accepted = kernel.execute(instruction, InstructionContext(caller="bob", entry="web"))
     assert accepted.status == "committed", accepted.error
@@ -116,7 +116,7 @@ def test_mark_inbox_read_accepts_the_scalar_version_and_rejects_a_changed_row(mo
 
 
 def test_opening_a_chat_reads_through_the_latest_alert(monkeypatch):
-    """打开 Resident Chat 不带版本调用 MarkMailboxItemRead，先核对身份再读到最新提醒"""
+    """打开 Resident Chat 不带版本调用 SetMailboxItemRead，先核对身份再读到最新提醒"""
     resident_id = "resident_aaaaaaaaaaaa"
     key = "resident:" + resident_id
     calls = []
@@ -133,7 +133,7 @@ def test_opening_a_chat_reads_through_the_latest_alert(monkeypatch):
     monkeypatch.setattr(web_isa, "web", lambda _module: web)
     kernel = InstructionKernel(web_isa.binding(), store=None, authorize=lambda *args: None)
     result = kernel.execute(
-        InstructionCall.from_payload({"instruction": "MarkMailboxItemRead", "arguments": {"key": key}}),
+        InstructionCall.from_payload({"instruction": "SetMailboxItemRead", "arguments": {"key": key}}),
         InstructionContext(caller="bob", entry="web"),
     )
     assert result.status == "committed", result.error

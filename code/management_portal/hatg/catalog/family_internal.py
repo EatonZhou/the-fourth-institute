@@ -20,7 +20,7 @@ DECLARATIONS = (
         P("members", "array", "候选 ID、角色、名称及读取可用性；摘要、状态和能力通过各自指令按需读取"),
         P("chat_preferences", "object", "该请求原发送者的路由约束"),
         P("previous_round", "object", "唯一上一轮问答；无冻结候选时为 null")), mutates=False, target="resident_id"),
-    _d("CheckFamilyReview", ON_LINEAGE, "记录本 Family 业务成员已完成输入的活动水位，或在定时检查时合并派发有新材料的组织回顾；无新增、Steward 忙碌或门面暂停时不启动模型。", (
+    _d("MaintainFamilyReview", ON_LINEAGE, "记录本 Family 业务成员已完成输入的活动水位，或在定时检查时合并派发有新材料的组织回顾；无新增、Steward 忙碌或门面暂停时不启动模型。", (
         R("lineage_id", description="Family 所在 Lineage"),
         R("family_id", description="Family 资源 ID 或 Function Block 键"),
         P("event", "object", "业务成员 resident.work_finished 事件；传入时仅记录活动，不派发。省略时执行定时门控"),
@@ -36,7 +36,7 @@ DECLARATIONS = (
         R("message_id", description="保持不变的门面原请求 ID"),
         R("steward_message_id", description="实际完成组织工作的复核输入 ID"),
         R("reply_message_ids", "array", "原请求可读取的真实 Steward 回复 ID")), target="resident_id"),
-    _d("CheckFamilyRoleAvailability", ON_LINEAGE, "维护 Family Router 与 Steward 接单状态并返回已有迁移状态；不查询额度或发起迁移，无需模型轮次。门面关闭时暂停；额度检查由消息执行准入负责。", (
+    _d("MaintainFamilyRoleAvailability", ON_LINEAGE, "维护 Family Router 与 Steward 接单状态并返回已有迁移状态；不查询额度或发起迁移，无需模型轮次。门面关闭时暂停；额度检查由消息执行准入负责。", (
         R("lineage_id", description="Family 所在的 Lineage"),
         R("family_id", description="Family 资源 ID family_… 或 Function Block 键 fbi_…"),
     ), (R("family_id", description="Family Function Block 键"), R("paused", "boolean", "门面是否暂停"),
@@ -77,7 +77,7 @@ DECLARATIONS = (
         P("previous_member_id", description="改派前承接的成员"),
         P("recovery", "object", "恢复审计：原失败回执、恢复操作者、理由、时间、目标和投递结果")),
        target="resident_id"),
-    _d("CheckFamilyProgress", ON_LINEAGE, "登记门面收到的工作轮次，达到间隔后请 Steward 撰写 Family 进展简报；同一输入只计一次。", (
+    _d("MaintainFamilyProgress", ON_LINEAGE, "登记门面收到的工作轮次，达到间隔后请 Steward 撰写 Family 进展简报；同一输入只计一次。", (
         R("lineage_id", description="Family 所在的 Lineage"),
         R("family_id", description="Family 资源 ID family_… 或 Function Block 键 fbi_…"),
         P("event", "object", "门面 resident.message_received 事件"),
@@ -90,12 +90,10 @@ DECLARATIONS = (
         R("batch_id", description="简报请求中给出的批次号；更早的批次须先发布"),
         R("report", description="正文 1–500 字，标点、空格和换行均计数"),
         R("summary", "object", "九字段门面工作摘要，所有字段文字合计不超过 500 字"),
-        R("expected_revision", "integer", "GetFamilySummaryInputs 返回的 expected_revision，原样交回；"
-          "门面摘要已被改过时拒绝，需重新读取后提交"),
         R("source_versions", "object", "GetFamilySummaryInputs 的来源版本"),
     ), (R("family_id", description="Family 的 Function Block 键 fbi_…"), R("batch_id", description="已发布的简报批次号"),
         R("status", description="published"))),
-    _d("CheckFamilyRecovery", ON_LINEAGE, "核验 Family 原失败任务及关闭成员的当前阻塞队列；交给 steward 恢复原输入，无法恢复时以门面身份通知实际真人创立者。关闭门面暂停自维护。", (
+    _d("MaintainFamilyRecovery", ON_LINEAGE, "核验 Family 原失败任务及关闭成员的当前阻塞队列；交给 steward 恢复原输入，无法恢复时以门面身份通知实际真人创立者。关闭门面暂停自维护。", (
         R("lineage_id", description="Family 所在的 Lineage"),
         R("family_id", description="Family 资源 ID family_… 或 Function Block 键 fbi_…"),
         P("event", "object", "Family 监督 Effect 的触发 Event；省略时复查待恢复任务及关闭成员当前队列，不扫描历史失败输入"),
@@ -105,7 +103,7 @@ DECLARATIONS = (
           "escalated、resolved、cancelled 等）、attempts、observed（含 intake_state 与 blocked_reason）"),
         R("notice", "object", "最近交给 steward 的恢复消息：message_id、incident_keys、delivered；没有时为空对象"),
         P("paused", "boolean", "门面关闭或删除时为 true，暂停自维护且保留记录"))),
-    _d("CheckResidentWorkSummary", FIXED, "Family Effect 检查完成轮次；遗漏挂下一轮提醒，已覆盖时返回是否达到归纳条件。", (
+    _d("MaintainResidentWorkSummary", FIXED, "Family Effect 检查完成轮次；遗漏挂下一轮提醒，已覆盖时返回是否达到归纳条件。", (
         R("resident_id", description="完成这一轮的 Family 成员"),
         R("message_id", description="要检查的已完成输入；未完成的轮次跳过"),
     ), (R("status", description="facade、skipped、covered、reminder_pending 或 reminder_attached"),
@@ -118,7 +116,6 @@ DECLARATIONS = (
         P("notices", "array", "门面作为告知收下的最近结果报告 {message_id, author_id, kept_at, reason, text}；按需写入门面摘要，供成员查阅"),
         R("source_versions", "object", "来源版本：名册 roster、各成员摘要与门面收下的告知 notices 的指纹；提交时原样交回"),
         R("previous_summary", "object", "门面当前的工作摘要"),
-        R("expected_revision", "integer", "门面工作摘要的内容版本；提交时作 expected_revision"),
         R("consolidation_due", "array", "达到时间、轮次或容量条件的成员及内部角色；按需读取其维护视图"),
         R("facade_needs_update", "boolean", "门面来源是否变化"),
         P("notification", "object", "overview_only 时返回可直接交给 DeliverMessage 的短通知；同小时同材料使用相同消息 ID"),

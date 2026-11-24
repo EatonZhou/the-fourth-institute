@@ -77,7 +77,7 @@ Portal Terminal 是在网页里使用的命令行终端。用户可以在 Workbe
 
 浏览器通过 `/api/terminal/start`、`/api/terminal/input`、`/api/terminal/control` 和 `/api/terminal/read` 使用终端；Agent Workbench 的本地终端使用 `/api/agent-workbench/local-terminal/` 下同样四个操作。每个请求都按当前登录用户核对会话归属。设备凭据只在服务端读取，不进入浏览器请求或响应。终端中的进程仍受操作系统和运行环境的权限限制；在界面上选择目录不会创建新的 Workspace 绑定。
 
-启动终端及通过 `restart` 新建 shell 都受正式 `OpenTerminal` 权限检查；设备与本地主机的 HTTP 启动入口复用同一服务边界。权限系统启用时按当前方案判断（默认仅 Portal 管理员），关闭时仍要求有效登录 User。会话归属检查继续用于已有会话的读写和控制，知道会话 ID 或能查看目录不授予新建 shell 权限。
+启动终端及通过 `restart` 新建 shell 都受正式 `CreateTerminal` 权限检查；设备与本地主机的 HTTP 启动入口复用同一服务边界。权限系统启用时按当前方案判断（默认仅 Portal 管理员），关闭时仍要求有效登录 User。会话归属检查继续用于已有会话的读写和控制，知道会话 ID 或能查看目录不授予新建 shell 权限。
 
 ### 选区与剪贴板
 

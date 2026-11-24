@@ -881,7 +881,7 @@ def test_resident_state_events_observe_only_the_intake_domain() -> None:
                 {
                     "id": "effect_state_contract",
                     "kind": "effect",
-                    "config": effect_config("OpenIntake", {"resident_id": {"from": "endpoint.target"},
+                    "config": effect_config("SetIntakeOpen", {"resident_id": {"from": "endpoint.target"},
                                                            "open": {"value": False}}, ["target"]),
                 },
             ],
@@ -895,7 +895,7 @@ def test_resident_state_events_observe_only_the_intake_domain() -> None:
     components = {component["id"]: component for component in program["components"]}
     assert components["event_source_state_contract"]["config"]["max_fires"] == 3
     assert components["event_source_state_contract"]["config"]["state_domain"] == "intake"
-    assert components["effect_state_contract"]["config"]["script"] == 'OpenIntake resident_id="${endpoint.target}" open:=false'
+    assert components["effect_state_contract"]["config"]["script"] == 'SetIntakeOpen resident_id="${endpoint.target}" open:=false'
     with pytest.raises(ValueError, match="只能是 intake"):
         lineage_program.normalize_program(
             {"components": [{"id": "event_source_state_invalid", "kind": "event_source",
@@ -1762,7 +1762,7 @@ def test_manual_event_directly_starts_ordinary_resident(
     primitive_store: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """手动事件直接启动普通 Resident，消息带 HATG Packet 信封且发送时不持锁"""
+    """手动事件直接启动普通 Resident，默认仅传任务且发送时不持锁"""
     sent: list[tuple[str, str]] = []
 
     def send(node: dict, prompt: str, _actor: str) -> dict:
@@ -1804,8 +1804,7 @@ def test_manual_event_directly_starts_ordinary_resident(
 
     assert emitted["matched_count"] == 1
     assert [resident_id for resident_id, _prompt in sent] == [WORK_B]
-    assert "Execute the real business task." in sent[0][1]
-    assert "[HATG Packet]" in sent[0][1]
+    assert sent[0][1] == "Execute the real business task."
 
 
 def test_event_fire_limit_counts_occurrences_before_fanout_and_can_reset(
@@ -2379,7 +2378,7 @@ def test_one_event_can_fan_out_with_different_envelopes_per_edge(
                 ],
                 "wires": [
                     {'id': 'wire_fanout_plain', 'kind': 'route', 'source': 'event_source_fanout_envelope', 'target': WORK_A, 'config': {'invoke_profiles': {'agent': {'arguments': {'prompt': {'value': '继续同一项工作。'}}}}, 'include_envelope': False}},
-                    {'id': 'wire_fanout_wrapped', 'kind': 'route', 'source': 'event_source_fanout_envelope', 'target': WORK_B, 'config': {'invoke_profiles': {'agent': {'arguments': {'prompt': {'value': '继续同一项工作。'}}}}}},
+                    {'id': 'wire_fanout_wrapped', 'kind': 'route', 'source': 'event_source_fanout_envelope', 'target': WORK_B, 'config': {'invoke_profiles': {'agent': {'arguments': {'prompt': {'value': '继续同一项工作。'}}}}, 'include_envelope': True}},
                 ],
             },
         },

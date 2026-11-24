@@ -121,9 +121,9 @@ HANDLERS = {
     "DeletePost": delete_post,
     "CreateReply": create_reply,
     "DeleteReply": delete_reply,
-    "PinPost": pin_post,
-    "FeaturePost": feature_post,
-    "MarkPostRead": mark_post_read,
+    "SetPostPinned": pin_post,
+    "SetPostFeatured": feature_post,
+    "UpdatePostReadVersion": mark_post_read,
 }
 
 

@@ -72,7 +72,7 @@ def promote(record, authorization, provider_session_ref):
 
 
 def override_enabled(record):
-    """Business supervision must not mistake an expired Session consent for OpenIntake."""
+    """Business supervision must not mistake an expired Session consent for SetIntakeOpen."""
     from . import resident_record_domain
     from .domain_ports import execution_port
     policy = resident_record_domain.resident_quota_override(record)

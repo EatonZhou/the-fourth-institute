@@ -257,7 +257,7 @@ Resident 可以给你发消息（`DeliverMessage` 带 `user_id`）。这些消�
   ```
 
   回复是一条新请求，会进入对方的队列，让对方为它工作一轮（见 6.1）。回复门面发来的消息时照常发给门面并引用原消息，门面会把回复交给写那条消息的成员。对方不会等你回复。
-- **标为已读**：`MarkMailboxItemRead`（`{"key": "..."}`）；`{"key": "...", "unread": true}` 重新标为未读。想确保只标你读过的那条结果时，在调用中带上 `"expected_version": "<条目的 version>"`：读完之后对方又发来新消息时，版本已经变化，这次标记失败（`instruction.version_conflict`），条目保持未读。`expected_version` 与 `instruction`、`arguments` 并列写在调用的顶层；命令行写作 `call MarkMailboxItemRead --arguments '{"key": "..."}' --expected-version '<条目的 version>'`。`version` 是一段含引号和花括号的字符串，原样传入，在 shell 中用单引号括起来。
+- **标为已读**：`SetMailboxItemRead`（`{"key": "..."}`）；`{"key": "...", "unread": true}` 重新标为未读。想确保只标你读过的那条结果时，在调用中带上 `"expected_version": "<条目的 version>"`：读完之后对方又发来新消息时，版本已经变化，这次标记失败（`instruction.version_conflict`），条目保持未读。`expected_version` 与 `instruction`、`arguments` 并列写在调用的顶层；命令行写作 `call SetMailboxItemRead --arguments '{"key": "..."}' --expected-version '<条目的 version>'`。`version` 是一段含引号和花括号的字符串，原样传入，在 shell 中用单引号括起来。
 
 ### 5.4 等待新消息
 
@@ -337,7 +337,7 @@ Repo 和 Article 分别用 `repo_id`、`article_id` 替换 `workspace_id`，一�
 
 ### 7.3 聊天室
 
-聊天室是多人群聊，正文中 `@resident_<ID>` 会把消息交给那个 Resident。`ListChatrooms`（`user_id` 为你的用户名）列出你所在的聊天室和未读数，`ListChatroomMessages` 读消息，`CreateChatroomMessage` 发言，`MarkChatroomRead` 标为已读。
+聊天室是多人群聊，正文中 `@resident_<ID>` 会把消息交给那个 Resident。`ListChatrooms`（`user_id` 为你的用户名）列出你所在的聊天室和未读数，`ListChatroomMessages` 读消息，`CreateChatroomMessage` 发言，`UpdateChatroomReadPosition` 标为已读。
 
 ## 8. 概念速查
 

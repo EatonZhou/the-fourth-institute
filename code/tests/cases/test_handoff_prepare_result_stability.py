@@ -41,12 +41,12 @@ def test_prepare_items_match_durable_read_and_ready_replay(team, monkeypatch):
         'expected_revision': lineage_aggregate.read_lineage(team.lineage_id, actor=ACTOR)['revision'],
     }, ACTOR)
     arguments = {'lineage_id': team.lineage_id, 'handoff_id': created['handoff']['id']}
-    first = run('PrepareWorkspaceHandoff', arguments, actor=ACTOR, key=uuid4().hex)
+    first = run('RunWorkspaceHandoff', arguments, actor=ACTOR, key=uuid4().hex)
     assert first.status == 'committed', first.to_payload()
     assert first.result['status'] == 'ready', first.result
     original = deepcopy(first.result['items'])
     read = run('GetWorkspaceHandoff', {'handoff_id': arguments['handoff_id']}, actor=ACTOR, key=uuid4().hex)
-    replay = run('PrepareWorkspaceHandoff', arguments, actor=ACTOR, key=uuid4().hex)
+    replay = run('RunWorkspaceHandoff', arguments, actor=ACTOR, key=uuid4().hex)
     assert read.status == replay.status == 'committed', (read.to_payload(), replay.to_payload())
     assert read.result['handoff']['items'] == replay.result['items']
     assert replay.result['items'] == original

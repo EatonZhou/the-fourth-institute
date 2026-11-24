@@ -142,7 +142,7 @@ def _normalize_inbox_item(
         state = str(input_item.get("state") or "continue").strip().lower()
         if state not in lineage_primitives.OPERATOR_INPUT_STATES:
             raise ValueError("operator input state is invalid")
-        include_envelope = input_item.get("include_envelope", True)
+        include_envelope = input_item.get("include_envelope", False)
         if not isinstance(include_envelope, bool):
             raise ValueError("include_envelope must be boolean")
         inputs[wire_id] = {
@@ -308,7 +308,7 @@ def update_inbox(
     source_node_id: str,
     packets: list[dict[str, Any]],
     state: str = "continue",
-    include_envelope: bool = True,
+    include_envelope: bool = False,
 ) -> dict[str, Any] | None:
     clean_id = _operator_id(operator_id)
     normalized_event = _normalize_event(event)
