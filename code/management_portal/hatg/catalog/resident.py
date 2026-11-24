@@ -293,8 +293,8 @@ DECLARATIONS = (
         R("status", description="当前进度"),
         P("operation_id", description="稳定操作ID；相同账号无操作时为空"),
         P("operation", description="switch_account 或 restart"),
-        P("phase", description="等待、准备、导入、提交或终态阶段"),
-        P("context_result", description="pending、preserved、fresh、summarized 或 unchanged"),
+        P("phase", description="等待当前轮次、配置完成或终态；历史回执保留原阶段"),
+        P("context_result", description="pending_first_input 表示首条新消息时交接；unchanged 表示无变更；历史回执保留原值"),
         P("actual_binding", "object", "当前实际使用的绑定；失败时保留原绑定"),
     ), mutates=True, target="resident_id"),
     _d("GetSessionRestart", ON_RESIDENT, "读取 Resident 最近一次会话重启的进度。", (R("resident_id", description="要查看的 Resident"),), (
