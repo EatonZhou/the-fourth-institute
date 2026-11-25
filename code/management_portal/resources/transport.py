@@ -270,6 +270,11 @@ class ResourceServiceClient:
             )
         except (TypeError, ValueError):
             requested_timeout = 0.0
+        if action == "colab.start" and resource_id.startswith("device_"):
+            from management_portal.google_cloud_devices import COLAB_ALLOCATION_TIMEOUT
+
+            # Allow for the named-session status check before requesting allocation.
+            requested_timeout = max(requested_timeout, COLAB_ALLOCATION_TIMEOUT + 12)
         action_timeout = max(
             self.timeout,
             requested_timeout + self._RPC_GRACE_SECONDS,

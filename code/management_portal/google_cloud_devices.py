@@ -12,6 +12,9 @@ from management_common.portal_paths import path as portal_path
 from management_common.site_config import read_site_config
 
 
+COLAB_ALLOCATION_TIMEOUT = 300
+
+
 def settings() -> dict:
     return read_site_config().get("deployment", {}).get("google_cloud_devices", {})
 
@@ -77,7 +80,7 @@ def change_colab_session(device_id: str, action: str, payload: dict, *, actor: s
             raise ValueError(f"Shared Colab session already uses {current[1]}")
         if start and absent:
             args = [] if hardware == "CPU" else ["--gpu", hardware]
-            output = _read([*cli, "new", "-s", session, *args], timeout=90)
+            output = _read([*cli, "new", "-s", session, *args], timeout=COLAB_ALLOCATION_TIMEOUT)
             if "[colab] Session READY." not in output.splitlines():
                 raise ValueError("Colab session allocation was not confirmed")
             changed = True
