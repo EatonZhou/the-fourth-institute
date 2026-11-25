@@ -566,7 +566,6 @@ modules:
       - "skill_board_lan/skill_backend.py"
     designs:
       - "decision_355ed742bca5"
-      - "decision_56aef2c2393b"
       - "decision_6476c69b33da"
       - "decision_956154cd02f6"
       - "decision_3ece26686464"
