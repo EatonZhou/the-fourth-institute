@@ -83,21 +83,17 @@
     } = dependencies;
 
     let lineageActivityRail = null;
-    const metadataReads = new Set();
+    const residentNames = new Map();
 
     function recentResident(residentId, entry = {}) {
-      const candidates = [
-        residentRootForExactId(residentId),
-        residentExactId(state.detail?.resident) === residentId ? state.detail.resident : null,
-        window.PortalResidentProjection?.peek?.(residentId)?.resident,
-        window.PortalConversationStore?.entry?.(`resident:${residentId}`),
-        entry,
-      ];
+      const detail = residentExactId(state.detail?.resident) === residentId ? state.detail.resident : null;
+      const projection = window.PortalResidentProjection?.peek?.(residentId)?.resident;
+      // Navigation rows carry the Lineage title, and older shortcuts may have cached it.
+      const key = `${window.PortalIdentity.username()}:${residentId}`;
       return {
         resident_id: residentId,
-        title: candidates.map(item => String(item?.title || "").trim())
-          .find(title => title && title !== residentId) || "",
-        lineage_id: candidates.map(item => String(item?.lineage_id || "").trim()).find(Boolean) || "",
+        title: String(detail?.title || projection?.title || residentNames.get(key) || "").trim(),
+        lineage_id: detail?.lineage_id || projection?.lineage_id || entry.lineage_id || residentRootForExactId(residentId)?.lineage_id || "",
       };
     }
 
@@ -106,7 +102,6 @@
         .find(item => item.resident_id === residentId);
       const resident = recentResident(residentId, {
         ...previous, ...target,
-        title: target.title || previous?.title,
         lineage_id: target.lineage_id || previous?.lineage_id,
       });
       rememberRecentAgentSession({ ...resident, type: "resident" });
@@ -115,8 +110,8 @@
     function restoreRecentTitle(residentId) {
       const actor = window.PortalIdentity.username();
       const key = `${actor}:${residentId}`;
-      if (!actor || metadataReads.has(key)) return;
-      metadataReads.add(key);
+      if (!actor || residentNames.has(key)) return;
+      residentNames.set(key, "");
       // A shortcut keeps the title it was saved with, so each page reads the
       // current one once. Another User's personal assistant is not readable,
       // but its name is public.
@@ -126,7 +121,9 @@
         .then(resident => {
           if (window.PortalIdentity.username() !== actor) return;
           if (resident?.resident_id !== residentId) return;
+          residentNames.set(key, resident.title || "");
           window.PortalConversationStore.updateRecentResident(resident);
+          renderActivityRecentRail();
         }).catch(() => {
           // Keep the shortcut reachable when metadata cannot be read. A later
           // page load can retry; an ID suffix remains distinguishable meanwhile.

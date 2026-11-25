@@ -12,20 +12,23 @@ test('recent Residents appear newest first and dismiss one at a time', async t =
     '/api/me': { username: 'fixture' },
     '/api/agent-workbench/residents': { ready: true, principal_hierarchy: { projects: [], user_residents: [] },
       lineages: [{ lineage_id: LINEAGE, title: 'Lineage C', leader_resident_id: A }],
-      residents: [{ resident_id: A, title: 'Alpha', lineage_id: LINEAGE }, { resident_id: B, title: 'Beta', lineage_id: LINEAGE }] },
-  } });
+      residents: [{ resident_id: A, title: 'Lineage C', lineage_id: LINEAGE }, { resident_id: B, title: 'Beta', lineage_id: LINEAGE }] },
+  }, instructions: { GetResident: ({ resident_id }) => ({
+    resident: { resident_id, title: resident_id === A ? 'Alpha' : 'Beta', lineage_id: LINEAGE },
+  }) } });
   t.after(page.close);
   const doc = page.document;
   const items = () => [...doc.querySelectorAll('#activityRecentRail [data-activity-item]')];
-  // The rail names a Resident from the Resident list, so wait for the list.
+  // The Leader's navigation row carries the team title.
   await page.until(() => page.parts.PortalLineageWorkbenchRecent
     && page.parts.PortalLineageWorkbenchRecent.dependencies.state.residents?.length === 2);
   const { rememberResidentShortcutSession } = page.parts.PortalLineageWorkbenchRecent.exports;
   rememberResidentShortcutSession(A);
   rememberResidentShortcutSession(B);
-  await page.until(() => items().length === 2);
+  await page.until(() => items().length === 2 && items()[1].getAttribute('aria-label')?.includes('Alpha'));
+  assert.equal(items()[1].querySelector('.portalActivityRailGlyph').textContent, 'Al');
   assert.deepEqual(items().map(item => item.dataset.activityItem), [`resident:${B}`, `resident:${A}`], 'the latest command comes first');
-  assert.match(items()[0].getAttribute('title') || '', /Beta/);
+  assert.match(items()[0].getAttribute('aria-label') || '', /Beta/);
   const mark = items()[0].querySelector('.portalActivityRailGlyph');
   assert.equal(mark.hasAttribute('data-avatar-kind'), false, 'the shortcut shows a text glyph, not the avatar');
   assert.ok(mark.textContent.trim(), 'the glyph names the Resident');
@@ -38,7 +41,7 @@ test('recent Residents appear newest first and dismiss one at a time', async t =
   recent.dependencies.state.detail = null;
   rememberResidentShortcutSession(A);
   recent.exports.renderActivityRecentRail();
-  assert.match(items().find(item => item.dataset.activityItem === `resident:${A}`).title, /Alpha/);
+  assert.match(items().find(item => item.dataset.activityItem === `resident:${A}`).getAttribute('aria-label'), /Alpha/);
   assert.equal(page.window.PortalConversationStore.recent().find(item => item.resident_id === A).title, 'Alpha');
 
   doc.querySelector(`#activityRecentRail [data-activity-dismiss="resident:${B}"]`).click();
