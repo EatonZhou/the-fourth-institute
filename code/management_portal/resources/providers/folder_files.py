@@ -20,6 +20,7 @@ from urllib.parse import urlencode
 
 from management_common import secure_paths
 from management_common.secure_paths import open_target
+from management_portal.office_preview import supports_pdf_preview
 
 DIRECTORY_MEDIA_TYPE = "application/vnd.tfi.directory+json"
 MAX_DIRECTORY_ENTRIES = 200
@@ -81,7 +82,7 @@ def describe(result: dict[str, Any], root: PurePath, parts: tuple[str, ...], *, 
     # No resolved_path: HTTP must read these bytes through the Provider, not
     # reopen a filesystem path after ResourceService's boundary checks.
     result["preview_url"] = (result["portal_url"] + "&preview=pdf"
-                             if result["target_kind"] == "file" and PurePath(name).suffix.lower() in {".ppt", ".pptx"}
+                             if result["target_kind"] == "file" and supports_pdf_preview(name)
                              else "")
     return result
 

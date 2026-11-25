@@ -75,13 +75,13 @@ def test_real_par_all_active_callers_and_all_address_forms(files, actor):
     assert isa.read_upload(HANDLE)["ready"] is True  # Mutable creation/consumer metadata stays compatible.
 
 
-@pytest.mark.parametrize('name', ['幻灯片.PPTX', 'slides.ppt', 'report.docx'])
+@pytest.mark.parametrize('name', ['幻灯片.PPTX', 'slides.ppt', 'report.docx', '报告.DOC', 'sheet.xlsx'])
 def test_upload_preview_url_is_supplied_by_file_owner(files, name):
     files.write(name=name, data=b'fixture')
     result = files.call(preview=True).raise_for_error()
     raw = '/api/uploads/' + HANDLE
     assert result['content_url'] == raw
-    expected = raw + '?preview=pdf' if not name.endswith('.docx') else ''
+    expected = raw + '?preview=pdf' if not name.endswith('.xlsx') else ''
     assert result['preview_url'] == expected
     assert files.service.reference(files.reference, actor='bob')['preview_url'] == expected
 

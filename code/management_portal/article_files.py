@@ -17,6 +17,7 @@ from urllib.parse import quote
 from management_common.text_values import stripped_text
 from management_common import secure_paths
 from management_portal import article_discovery, article_registry, article_settings
+from management_portal.office_preview import supports_pdf_preview
 
 
 ARTICLE_UPLOAD_MAX_BYTES = 25 * 1024 * 1024
@@ -208,7 +209,7 @@ def describe_article_file(
         "size": stat.st_size,
         "version": str(stat.st_mtime_ns),
         "rawUrl": raw_url,
-        "preview_url": f"{raw_url}&preview=pdf" if target.suffix.lower() in {".ppt", ".pptx"} else "",
+        "preview_url": f"{raw_url}&preview=pdf" if supports_pdf_preview(target.name) else "",
         "downloadUrl": f"{raw_url}&download=1",
     }
 

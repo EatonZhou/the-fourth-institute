@@ -77,7 +77,7 @@ def test_text_preview_reads_only_limit_plus_one(tmp_path, monkeypatch):
     assert result['truncated'] and result['content'] == 'a' * 16
 
 
-@pytest.mark.parametrize('name', ['中文 #&%.PPTX', 'slides.ppt', 'report.docx'])
+@pytest.mark.parametrize('name', ['中文 #&%.PPTX', 'slides.ppt', 'report.docx', '报告.DOC', 'sheet.xlsx'])
 def test_file_sources_declare_conversion_url(tmp_path, monkeypatch, name):
     from management_portal.resources.providers import folder_files
     from management_portal.resources.isa import _file_metadata
@@ -90,7 +90,7 @@ def test_file_sources_declare_conversion_url(tmp_path, monkeypatch, name):
     resolved = folder_files.describe({'address': address, 'exists': True}, tmp_path, (name,), hide=True)
     resource = _file_metadata(resolved)
     for metadata, raw_key in [(local, 'raw_url'), (resource, 'content_url')]:
-        if name.endswith('.docx'):
+        if name.endswith('.xlsx'):
             assert metadata['preview_url'] == ''
             continue
         raw = urlsplit(metadata[raw_key])

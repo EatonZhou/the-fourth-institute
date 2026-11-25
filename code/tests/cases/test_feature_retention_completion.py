@@ -68,7 +68,7 @@ def test_deep_read_real_thread_holds_test_lease_and_tracks_files(tmp_path, monke
 @pytest.mark.parametrize('conversion_fails', [False, True])
 def test_presentation_occupied_work_is_durable_and_retryable(tmp_path, monkeypatch, conversion_fails):
     import os
-    from management_portal import presentation_preview as preview
+    from management_portal import office_preview as preview
     from management_common.directory_cleanup_store import DirectoryCleanupStore
     monkeypatch.setattr(preview, 'instance_runtime_root', lambda: tmp_path)
     monkeypatch.setattr(preview, 'libreoffice', lambda: 'fixture-soffice')
@@ -80,28 +80,28 @@ def test_presentation_occupied_work_is_durable_and_retryable(tmp_path, monkeypat
         retention = RetentionStore()
         with retention.database.read() as connection:
             declared.extend(connection.execute(f'SELECT category FROM {retention.table}').fetchall())
-        (directory / 'slides.pdf').write_bytes(b'%PDF-fixture')
+        (directory / 'document.pdf').write_bytes(b'%PDF-fixture')
         return SimpleNamespace(returncode=1 if conversion_fails else 0)
     monkeypatch.setattr(preview, 'run_process', convert)
     real_unlink = os.unlink
     def occupied(path, *args, **kwargs):
-        if Path(path).name == 'slides.pptx':
+        if Path(path).name == 'document.pptx':
             raise PermissionError('fixture: occupied conversion directory')
         return real_unlink(path, *args, **kwargs)
     with monkeypatch.context() as failure:
         failure.setattr(os, 'unlink', occupied)
         if conversion_fails:
-            with pytest.raises(preview.PresentationPreviewError, match='损坏'):
-                preview.presentation_pdf(b'fixture', 'slides.pptx')
+            with pytest.raises(preview.OfficePreviewError, match='损坏'):
+                preview.office_pdf(b'fixture', 'document.pptx')
         else:
-            pdf = preview.presentation_pdf(b'fixture', 'slides.pptx')
+            pdf = preview.office_pdf(b'fixture', 'document.pptx')
             assert pdf.read_bytes().startswith(b'%PDF-')
         assert any(row['category'] == 'runtime_tmp' for row in declared)
         queue = DirectoryCleanupStore()
         receipts = queue.status()
         assert len(receipts) == 1 and receipts[0]['status'] == 'retry'
         assert 'occupied conversion directory' in receipts[0]['last_error']
-        assert list(tmp_path.rglob('slides.pptx'))
+        assert list(tmp_path.rglob('document.pptx'))
     # Reopen the durable queue and invoke its allocation owner, as maintenance
     # does. Reserved cleanup retains its inode claim until that owner retries.
     from management_common.file_retention import recover_temporary_directories
@@ -111,7 +111,7 @@ def test_presentation_occupied_work_is_durable_and_retryable(tmp_path, monkeypat
     assert not recover_temporary_directories()['errors']
     assert queue.status()[0]['status'] == 'completed'
     assert not work[0].exists()
-    assert not list(tmp_path.rglob('slides.pptx'))
+    assert not list(tmp_path.rglob('document.pptx'))
 
 
 @pytest.fixture

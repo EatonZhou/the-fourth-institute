@@ -74,7 +74,7 @@
   function normalizeKind(document = {}) {
     const explicit = String(document.contentKind || document.kind || "").trim().toLowerCase();
     // File metadata uses binary for unparsed Office containers, not a format decision.
-    if ((!explicit || explicit === "binary") && isPresentation(document)) return "office";
+    if ((!explicit || explicit === "binary") && supportsOfficePreview(document)) return "office";
     if (explicit === "directory" || explicit === "remote-link" || explicit === "office" || explicit === "binary") return explicit;
     if (["xml", "yaml", "yml"].includes(explicit)) return "code";
     if (mediaKinds.has(explicit) || textKinds.has(explicit)) return explicit;
@@ -83,10 +83,11 @@
       || (document.binary ? "binary" : "text");
   }
 
-  function isPresentation(document = {}) {
+  function supportsOfficePreview(document = {}) {
     const mediaType = String(document.mediaType || document.mime_type || document.content_type || "").split(";", 1)[0].trim().toLowerCase();
-    return ["application/vnd.ms-powerpoint", "application/vnd.openxmlformats-officedocument.presentationml.presentation"].includes(mediaType)
-      || [document.filename, document.name, document.path, document.rel_path, document.title].some(value => [".ppt", ".pptx"].includes(extension(value)));
+    return ["application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.ms-powerpoint", "application/vnd.openxmlformats-officedocument.presentationml.presentation"].includes(mediaType)
+      || [document.filename, document.name, document.path, document.rel_path, document.title].some(value => [".doc", ".docx", ".ppt", ".pptx"].includes(extension(value)));
   }
 
   function normalizeDocument(input = {}) {
@@ -174,7 +175,7 @@
     hasFileShape,
     kindFromPath,
     isTextDocument,
-    isPresentation,
+    supportsOfficePreview,
     normalizeDocument,
     normalizeKind,
     normalizeRequest,

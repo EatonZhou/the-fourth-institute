@@ -29,8 +29,15 @@ load('portal_agent_preview_source');
   assert.equal(resourceUrl.searchParams.get('preview'), 'pdf');
   assert.equal(new URL(resource.download_url, w.location).searchParams.get('download'), '1');
   assert.equal(new URL(resource.raw_url, w.location).searchParams.has('preview'), false);
-  const other = await w.PortalResourceChips.loadPreview('workspace_0123456789ab/file/draft.docx', {
-    reference: { filename: 'draft.docx', content_kind: 'binary' },
+  for (const name of ['draft.docx', '合同.DOC']) {
+    const word = await w.PortalResourceChips.loadPreview('workspace_0123456789ab/file/' + name, {
+      reference: { filename: name, content_kind: 'binary' },
+    });
+    assert.equal(new URL(word.preview_url, w.location).searchParams.get('preview'), 'pdf');
+    assert.equal(new URL(word.raw_url, w.location).searchParams.has('preview'), false);
+  }
+  const other = await w.PortalResourceChips.loadPreview('workspace_0123456789ab/file/sheet.xlsx', {
+    reference: { filename: 'sheet.xlsx', content_kind: 'binary' },
   });
   assert.equal(other.preview_url, '');
 

@@ -670,7 +670,7 @@ async def upload_content(request: Request):
     from .resources import get_resource_service
     from .resources.content_payload import resolved_media_type
     from .http_files import authorized_resource_response
-    from .presentation_preview import presentation_pdf, MAX_SOURCE_BYTES, PresentationPreviewError
+    from .office_preview import office_pdf, MAX_SOURCE_BYTES, OfficePreviewError
 
     caller, _entry = await asyncio.to_thread(_instruction_principal, request)
     if not caller:
@@ -683,7 +683,7 @@ async def upload_content(request: Request):
             data, _content_type, resolved = await asyncio.to_thread(
                 service.read_content, address, actor=caller, max_bytes=MAX_SOURCE_BYTES,
             )
-            converted = await asyncio.to_thread(presentation_pdf, data, resolved["filename"])
+            converted = await asyncio.to_thread(office_pdf, data, resolved["filename"])
             return FileResponse(converted, media_type="application/pdf",
                                 headers={"Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff",
                                          "Content-Security-Policy": "sandbox"})
@@ -694,7 +694,7 @@ async def upload_content(request: Request):
             resource_service=service, address=address, actor=caller, resolved=resolved,
             content_type=resolved_media_type(resolved, fallback="application/octet-stream"), download=download,
         )
-    except PresentationPreviewError as exc:
+    except OfficePreviewError as exc:
         return _json_error(422, str(exc))
     except Exception as exc:  # noqa: BLE001
         status, payload = exception_http_error(exc)

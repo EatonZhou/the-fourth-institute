@@ -109,9 +109,9 @@ INSTANCE_RULES = (
          "management_common/embedding_feature.py:13, distribution/initialization.py:125"),
     Rule("dev/test-results", "cache", "test-results", "management_portal/page_bootstrap.py:30"),
     Rule("cache/presentation-preview", "runtime", "cache/presentation-preview",
-         "management_portal/presentation_preview.py:72 (reads runtime/cache, not the instance cache/)", True),
+         "management_portal/office_preview.py:72 (reads runtime/cache, not the instance cache/)", True),
     Rule("tools/libreoffice", "runtime", "tools/libreoffice",
-         "management_portal/presentation_preview.py:33, scripts/install_portal_libreoffice.py:68 "
+         "management_portal/office_preview.py:33, scripts/install_portal_libreoffice.py:68 "
          "(a program kept in runtime/)", True),
 )
 # Files of the old deployment layout that nothing reads any more; deleted by

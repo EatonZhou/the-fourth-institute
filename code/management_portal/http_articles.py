@@ -96,8 +96,8 @@ class ArticlesHttp:
                     if (qs.get("download") or [""])[0] == "1":
                         return self.serve_download(request, file_path)
                     if (qs.get("preview") or [""])[0] == "pdf":
-                        from .presentation_preview import presentation_pdf, read_presentation
-                        converted = presentation_pdf(read_presentation(file_path), file_path.name)
+                        from .office_preview import office_pdf, read_office_document
+                        converted = office_pdf(read_office_document(file_path), file_path.name)
                         return self.serve_media(request, converted, "application/pdf")
                     content_type = self.media_content_type(file_path)
                     if not content_type:

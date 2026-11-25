@@ -21,6 +21,10 @@ for (const name of ['portal_preview_contract.js', 'portal_preview_renderers.js']
 }
 const contract = w.PortalPreviewContract;
 const cases = [
+  { kind: 'binary', filename: '合同.DOCX', raw_url: '/api/uploads/upload_word' },
+  { kind: 'binary', path: 'notes/report.doc', raw_url: '/api/articles/article_0123456789ab/raw?path=notes%2Freport.doc' },
+  { kind: 'binary', mime_type: 'application/msword', raw_url: '/api/uploads/upload_legacy_word' },
+  { content_type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', raw_url: '/api/uploads/upload_word' },
   { kind: 'binary', path: '/share/slides.PPTX', raw_url: '/api/agent-workbench/link-file-raw?path=%2Fshare%2Fslides.PPTX', download_url: '/api/agent-workbench/link-file-raw?path=%2Fshare%2Fslides.PPTX&download=1' },
   { kind: 'office', path: 'workspace_0123456789ab/file/slides.ppt', raw_url: '/api/resources/content?address=workspace_0123456789ab%2Ffile%2Fslides.ppt' },
   { kind: 'binary', filename: '幻灯片.pptx', raw_url: '/api/uploads/upload_0123456789abcdef01234567' },
@@ -43,7 +47,7 @@ for (const input of cases) {
   assert.ok(renderer);
   renderer.render(w.document.getElementById('preview'), doc, {});
   assert.equal(pdfOptions.url, doc.previewUrl);
-  assert.equal(pdfOptions.loadingMessage, '正在加载演示文稿预览…');
+  assert.equal(pdfOptions.loadingMessage, '正在加载文档预览…');
   assert.match(pdfOptions.errorMessage, /下载/);
 }
 for (const input of [

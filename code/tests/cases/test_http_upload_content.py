@@ -103,12 +103,12 @@ def test_missing_file_is_reported_before_stream_headers(source):
 
 
 def test_presentation_conversion_refusal_keeps_422(source, monkeypatch):
-    from management_portal import presentation_preview
+    from management_portal import office_preview
 
     source.service.read_content = lambda *_args, **_kwargs: (b'ppt', 'application/octet-stream',
                                                              {'filename': 'slides.pptx'})
     def refused(*_args):
-        raise presentation_preview.PresentationPreviewError('converter unavailable')
-    monkeypatch.setattr(presentation_preview, 'presentation_pdf', refused)
+        raise office_preview.OfficePreviewError('converter unavailable')
+    monkeypatch.setattr(office_preview, 'office_pdf', refused)
     response = asyncio.run(asgi.upload_content(request(query=b'preview=pdf')))
     assert response.status_code == 422 and b'converter unavailable' in response.body

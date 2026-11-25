@@ -463,10 +463,10 @@
         root: viewer,
         url,
         title: document.title || document.path,
-        loadingMessage: window.PortalPreviewContract.isPresentation(document)
-          ? window.PortalI18n.t("正在加载演示文稿预览…") : "",
-        errorMessage: window.PortalPreviewContract.isPresentation(document)
-          ? window.PortalI18n.t("演示文稿预览失败，请稍后重试或下载原文件查看。") : "",
+        loadingMessage: window.PortalPreviewContract.supportsOfficePreview(document)
+          ? window.PortalI18n.t("正在加载文档预览…") : "",
+        errorMessage: window.PortalPreviewContract.supportsOfficePreview(document)
+          ? window.PortalI18n.t("文档预览失败，请稍后重试或下载原文件查看。") : "",
         version: document.version,
         statusClass: context.pdfStatusClass || "previewPdfStatus",
         pageClass: context.pdfPageClass || "previewPdfPage",

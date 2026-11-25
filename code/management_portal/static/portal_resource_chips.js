@@ -613,7 +613,7 @@
       content_type: String(options.contentType || reference.media_type || ""),
       content_url: contentUrl,
       raw_url: contentUrl,
-      preview_url: global.PortalPreviewContract.isPresentation({
+      preview_url: global.PortalPreviewContract.supportsOfficePreview({
         filename: reference.filename, path: clean, title: reference.title,
         content_type: options.contentType || reference.media_type,
       }) ? `${contentUrl}&preview=pdf` : "",

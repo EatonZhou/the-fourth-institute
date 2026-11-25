@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
+from management_portal.office_preview import supports_pdf_preview
 
 from . import resident_store
 from .domain_ports import resident_domain_port
@@ -423,5 +424,5 @@ def _workspace_link_file_payload(
         "truncated": truncated,
         "content": "" if binary else data.decode("utf-8", errors="replace"),
         "raw_url": raw_url,
-        "preview_url": raw_url + "&preview=pdf" if path.suffix.lower() in {".ppt", ".pptx"} else "",
+        "preview_url": raw_url + "&preview=pdf" if supports_pdf_preview(path.name) else "",
     }

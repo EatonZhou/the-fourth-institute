@@ -11,6 +11,11 @@ const expectedPages = Number(process.argv[3] || 2);
 const firstText = process.argv[4] || '中文幻灯片';
 const lastText = process.argv[5] || 'Second slide';
 const article = process.argv.includes('--article');
+const word = process.argv.includes('--word');
+const sourceName = word ? 'report.docx' : 'slides.pptx';
+const legacyName = word ? 'report.doc' : 'slides.ppt';
+const originalIndex = process.argv.indexOf('--original');
+const originalBytes = originalIndex >= 0 ? fs.readFileSync(process.argv[originalIndex + 1]) : Buffer.from('original-office');
 let html = `<!doctype html><html><head><link rel="stylesheet" href="/static/portal_workbench.css"></head><body>
 <a id="download">Download</a><div id="preview" style="height:650px;width:900px;overflow:auto"></div>
 <script>
@@ -55,7 +60,7 @@ function serveFile(request, response, filename, contentType) {
       return serveFile(request, response, filename, type);
     }
     if (url.pathname === '/api/articles/article_0123456789ab/file') {
-      assert.equal(url.searchParams.get('meta'), '1', 'PPT opens through metadata, never the text reader');
+      assert.equal(url.searchParams.get('meta'), '1', 'Office opens through metadata, never the text reader');
       const filename = url.searchParams.get('path');
       response.writeHead(200, { 'Content-Type': 'application/json' });
       return response.end(JSON.stringify({ path: filename, binary: true, version: '1',
@@ -65,8 +70,8 @@ function serveFile(request, response, filename, contentType) {
     }
     if (url.pathname === '/api/resources/content' || url.pathname === '/api/articles/article_0123456789ab/raw') {
       if (url.searchParams.get('download') === '1') {
-        response.writeHead(200, { 'Content-Disposition': 'attachment; filename="slides.pptx"' });
-        return response.end('original-pptx');
+        response.writeHead(200, { 'Content-Disposition': 'attachment; filename="' + sourceName + '"' });
+        return response.end(originalBytes);
       }
       assert.equal(url.searchParams.get('preview'), 'pdf');
       convertedRequests += 1;
@@ -84,7 +89,7 @@ function serveFile(request, response, filename, contentType) {
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.goto(origin);
-    await page.evaluate(async article => {
+    await page.evaluate(async ({ article, sourceName }) => {
       if (article) {
         const $ = id => window.document.getElementById(id);
         // Workbench normally assigns this pane its size; isolate that boundary
@@ -104,17 +109,17 @@ function serveFile(request, response, filename, contentType) {
           editorValue: () => $('articleSourceEditor').value,
           showToast: message => { throw new Error(message); },
         });
-        await articleDocuments.openArticleFile('notes/slides.pptx');
+        await articleDocuments.openArticleFile('notes/' + sourceName);
         return;
       }
-      const document = { path: 'workspace_0123456789ab/file/slides.pptx', kind: 'binary',
-        rawUrl: '/api/resources/content?address=workspace_0123456789ab%2Ffile%2Fslides.pptx',
-        previewUrl: '/api/resources/content?address=workspace_0123456789ab%2Ffile%2Fslides.pptx&preview=pdf',
-        downloadUrl: '/api/resources/content?address=workspace_0123456789ab%2Ffile%2Fslides.pptx&download=1' };
-      window.PortalPreview.configureDownloadLink(window.document.getElementById('download'), { url: document.downloadUrl, filename: 'slides.pptx' });
+      const document = { path: 'workspace_0123456789ab/file/' + sourceName, kind: 'binary',
+        rawUrl: '/api/resources/content?address=workspace_0123456789ab%2Ffile%2F' + sourceName,
+        previewUrl: '/api/resources/content?address=workspace_0123456789ab%2Ffile%2F' + sourceName + '&preview=pdf',
+        downloadUrl: '/api/resources/content?address=workspace_0123456789ab%2Ffile%2F' + sourceName + '&download=1' };
+      window.PortalPreview.configureDownloadLink(window.document.getElementById('download'), { url: document.downloadUrl, filename: sourceName });
       window.previewHandle = window.PortalPreview.render({ root: '#preview', document });
       await window.previewHandle.promise;
-    }, article);
+    }, { article, sourceName });
     const previewRoot = article ? '#articleDocumentPreview' : '#preview';
     const downloadLink = article ? '#articleDownloadFile' : '#download';
     await page.waitForFunction(() => document.querySelector('[data-portal-pdf-viewer]')?.dataset.pdfStatus === 'done');
@@ -131,19 +136,20 @@ function serveFile(request, response, filename, contentType) {
     const downloadEvent = page.waitForEvent('download');
     await page.locator(downloadLink).click();
     const downloaded = await downloadEvent;
-    assert.equal(downloaded.suggestedFilename(), 'slides.pptx');
+    assert.equal(downloaded.suggestedFilename(), sourceName);
+    assert.deepEqual(fs.readFileSync(await downloaded.path()), originalBytes);
     assert.equal(page.url(), origin);
     assert.ok(convertedRequests >= 1);
     if (article) {
       assert.equal(await page.locator('#articleCodeMode').isDisabled(), true);
       assert.equal(await page.locator('#articleVisualEditor').isVisible(), true);
       // Closing disposes the preview; reopening legacy PPT uses the same viewer.
-      await page.evaluate(async () => { articleDocuments.clearEditor(); await articleDocuments.openArticleFile('notes/slides.ppt'); });
+      await page.evaluate(async name => { articleDocuments.clearEditor(); await articleDocuments.openArticleFile('notes/' + name); }, legacyName);
       await page.waitForFunction(() => document.querySelector('#articleDocumentPreview [data-portal-pdf-viewer]')?.dataset.pdfStatus === 'done');
-      assert.match(await page.locator(downloadLink).getAttribute('href'), /slides.ppt&download=1$/);
+      assert.ok((await page.locator(downloadLink).getAttribute('href')).endsWith(encodeURIComponent('notes/' + legacyName) + '&download=1'));
     }
     assert.deepEqual(errors, []);
-    console.log(`Chromium: ${expectedPages} presentation pages, Chinese text, scrolling, zoom and original download passed`);
+    console.log(`Chromium: ${expectedPages} document pages, Chinese text, scrolling, zoom and original download passed`);
   } finally {
     await browser?.close();
     server.closeAllConnections();

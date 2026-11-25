@@ -1,4 +1,4 @@
-"""Private, bounded PPT/PPTX to PDF conversion, after the caller authorizes bytes."""
+"""Private, bounded Word/PowerPoint to PDF conversion, after the caller authorizes bytes."""
 from __future__ import annotations
 
 import hashlib
@@ -19,9 +19,17 @@ MAX_SOURCE_BYTES = 256 * 1024 * 1024
 MAX_PDF_BYTES = 128 * 1024 * 1024
 CONVERSION_SECONDS = 60
 _conversion_slot = threading.Lock()
+_PDF_FILTERS = {
+    ".doc": "writer_pdf_Export", ".docx": "writer_pdf_Export",
+    ".ppt": "impress_pdf_Export", ".pptx": "impress_pdf_Export",
+}
 
 
-class PresentationPreviewError(ValueError):
+def supports_pdf_preview(filename: str) -> bool:
+    return Path(filename).suffix.lower() in _PDF_FILTERS
+
+
+class OfficePreviewError(ValueError):
     """A user-facing preview failure; the original file remains downloadable."""
 
 
@@ -39,16 +47,16 @@ def libreoffice() -> str:
         executable = shutil.which(str(candidate))
         if executable:
             return executable
-    raise PresentationPreviewError("服务器尚未安装 LibreOffice，请下载原文件查看。")
+    raise OfficePreviewError("服务器尚未安装 LibreOffice，请下载原文件查看。")
 
 
 def _check_source_size(size: int) -> None:
     if size > MAX_SOURCE_BYTES:
         limit_mib = MAX_SOURCE_BYTES // (1024 * 1024)
-        raise PresentationPreviewError(f"演示文稿超过 {limit_mib} MiB 预览上限，请下载原文件查看。")
+        raise OfficePreviewError(f"文档超过 {limit_mib} MiB 预览上限，请下载原文件查看。")
 
 
-def read_presentation(path: Path) -> bytes:
+def read_office_document(path: Path) -> bytes:
     with path.open("rb") as stream:
         _check_source_size(os.fstat(stream.fileno()).st_size)
         data = stream.read(MAX_SOURCE_BYTES + 1)
@@ -56,14 +64,15 @@ def read_presentation(path: Path) -> bytes:
     return data
 
 
-def presentation_pdf(data: bytes, filename: str) -> Path:
+def office_pdf(data: bytes, filename: str) -> Path:
     """Never accept a URL or authorize via a cache hit. Inputs are authorized bytes."""
     suffix = Path(filename).suffix.lower()
-    if suffix not in {".ppt", ".pptx"}:
-        raise PresentationPreviewError("仅支持 PPT 和 PPTX 演示文稿预览。")
+    if not supports_pdf_preview(filename):
+        raise OfficePreviewError("仅支持 DOC、DOCX、PPT 和 PPTX 文件预览。")
     _check_source_size(len(data))
     if not data:
-        raise PresentationPreviewError("演示文稿为空，请下载原文件检查。")
+        raise OfficePreviewError("文档为空，请下载原文件检查。")
+    # Keep the existing on-disk cache namespace so retained PowerPoint PDFs remain reusable.
     root = instance_runtime_root() / "cache/presentation-preview"
     root.mkdir(parents=True, exist_ok=True, mode=0o700)
     key = hashlib.sha256(b"ppt-pdf-v1\0" + suffix.encode() + data).hexdigest()
@@ -73,12 +82,12 @@ def presentation_pdf(data: bytes, filename: str) -> Path:
             return cached
     # One process at a time per Web worker; fail fast instead of tying up HTTP threads.
     if not _conversion_slot.acquire(timeout=2):
-        raise PresentationPreviewError("演示文稿预览繁忙，请稍后刷新重试。")
+        raise OfficePreviewError("文档预览繁忙，请稍后刷新重试。")
     lock = None
     try:
         lock = (root / ".convert.lock").open("a+b")
         if not try_lock_descriptor(lock.fileno()):
-            raise PresentationPreviewError("演示文稿预览繁忙，请稍后刷新重试。")
+            raise OfficePreviewError("文档预览繁忙，请稍后刷新重试。")
         if cached.is_file():
             with cache_file(cached, group='presentation'):
                 return cached
@@ -87,7 +96,7 @@ def presentation_pdf(data: bytes, filename: str) -> Path:
         executable = libreoffice()
         with temporary_directory(prefix="convert-", dir=root) as directory:
             work = Path(directory)
-            source = work / ("slides" + suffix)
+            source = work / ("document" + suffix)
             source.write_bytes(data)
             profile = work / "profile"
             (profile / "user").mkdir(parents=True)
@@ -103,21 +112,21 @@ def presentation_pdf(data: bytes, filename: str) -> Path:
                 result = run_process([
                     executable, "-env:UserInstallation=" + profile.as_uri(),
                     "--headless", "--nologo", "--nodefault", "--norestore",
-                    "--convert-to", "pdf:impress_pdf_Export", "--outdir", str(work), str(source),
+                    "--convert-to", "pdf:" + _PDF_FILTERS[suffix], "--outdir", str(work), str(source),
                 ], cwd=work, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL, timeout=CONVERSION_SECONDS)
             except (subprocess.TimeoutExpired, TimeoutError) as exc:
-                raise PresentationPreviewError("演示文稿转换超时，请下载原文件查看。") from exc
+                raise OfficePreviewError("文档转换超时，请下载原文件查看。") from exc
             except OSError as exc:
-                raise PresentationPreviewError("演示文稿转换服务不可用，请下载原文件查看。") from exc
-            output = work / "slides.pdf"
+                raise OfficePreviewError("文档转换服务不可用，请下载原文件查看。") from exc
+            output = work / "document.pdf"
             if result.returncode or not output.is_file():
-                raise PresentationPreviewError("无法转换此演示文稿；文件可能损坏或已加密，请下载原文件查看。")
+                raise OfficePreviewError("无法转换此文档；文件可能损坏或已加密，请下载原文件查看。")
             if output.stat().st_size > MAX_PDF_BYTES:
-                raise PresentationPreviewError("转换后的文稿过大，请下载原文件查看。")
+                raise OfficePreviewError("转换后的文档过大，请下载原文件查看。")
             with output.open("rb") as stream:
                 if stream.read(5) != b"%PDF-":
-                    raise PresentationPreviewError("演示文稿转换失败，请下载原文件查看。")
+                    raise OfficePreviewError("文档转换失败，请下载原文件查看。")
             output.chmod(0o600)
             with cache_file(cached, group='presentation'):
                 output.replace(cached)

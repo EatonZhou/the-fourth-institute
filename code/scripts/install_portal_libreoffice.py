@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install an unprivileged LibreOffice Impress runtime on Debian/Ubuntu.
+"""Install an unprivileged LibreOffice Writer and Impress runtime on Debian/Ubuntu.
 
 Uses the host's configured, signed APT package index and verifies downloads with
 APT. No system packages are installed or changed. Other platforms can install
@@ -74,7 +74,7 @@ def main():
         downloads = root / "packages"
         downloads.mkdir(exist_ok=True)
         plan = subprocess.check_output([
-            "apt-get", "--print-uris", "--assume-yes", "--no-install-recommends", "install", "libreoffice-impress",
+            "apt-get", "--print-uris", "--assume-yes", "--no-install-recommends", "install", "libreoffice-impress", "libreoffice-writer",
         ], text=True)
         packages = []
         for line in plan.splitlines():

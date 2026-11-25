@@ -326,8 +326,8 @@ class AgentWorkbenchHttp:
             if download:
                 return self.download_file(request, media_path)
             if (qs.get('preview') or [''])[0] == 'pdf':
-                from .presentation_preview import presentation_pdf, read_presentation
-                converted = presentation_pdf(read_presentation(media_path), media_path.name)
+                from .office_preview import office_pdf, read_office_document
+                converted = office_pdf(read_office_document(media_path), media_path.name)
                 return self.media_file(request, converted, 'application/pdf')
             content_type = self.media_content_type(media_path)
             if not content_type:
