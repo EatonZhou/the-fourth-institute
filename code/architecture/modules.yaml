@@ -211,7 +211,7 @@ modules:
       - "management_portal/application_tools.py"
       - "management_portal/tool_settings.py"
       - "management_portal/http_*.py"
-      - "management_portal/presentation_preview.py"
+      - "management_portal/office_preview.py"
       - "management_portal/page_*.py"
       - "management_portal/runtime_capacity.py"
       - "management_portal/notifications/realtime_lifecycle.py"
