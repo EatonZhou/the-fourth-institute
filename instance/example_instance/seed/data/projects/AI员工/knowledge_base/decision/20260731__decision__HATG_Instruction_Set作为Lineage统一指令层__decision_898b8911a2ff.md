@@ -55,15 +55,15 @@ links:
   derived_from:
   - thinking_ca8f397a47de
 version:
-  number: 104
+  number: 109
   created_at: "2026-07-31"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-19T08:46:45Z"
+  updated_at: "2026-11-25T15:34:35Z"
   updated_by:
     user: ""
-    agent: "resident_60ae6d0cdf74"
+    agent: "resident_83d75ad3a6c7"
 metaness: 2
 ---
 # HATG ISA：指令格式、调用入口与执行规则
@@ -93,7 +93,7 @@ TFI Portal 中的人和 Agent 通过同一组具名指令操作 AI 社会中的�
 
 HATG ISA 服务的是一个高自由度的 AI 社会。指令系统尽量少做约束，也不追求强一致：
 
-- **收到就执行。** 拥有服务按到达顺序执行指令，指令作用于对象的当前状态。调用者不需要证明自己读到的是最新内容，没有必须提供 `expected_version` 的指令。工作摘要的两条写指令（`UpdateResidentWorkSummary`、`PublishFamilyProgress`）必填的 `expected_revision` 属于摘要维护的约定，不是调用信封的对象版本：写摘要的人先读取摘要（门面汇总时读取摘要输入），交回读到的 `expected_revision`，门面汇总时连同来源版本 `source_versions`；拥有服务比较前者并把后者记进新摘要，摘要在这期间被改过时拒绝（weihao 2026-10-19 交由 7a4a 决定，保留为参数）。
+- **收到就执行。** 拥有服务按到达顺序执行指令，指令作用于对象的当前状态。调用者不需要证明自己读到的是最新内容，没有必须提供 `expected_version` 的指令，也没有要求调用者交回读到版本的专用参数。版本令牌只是调用者可以选择使用的前提，系统不把它扩展为各指令的必填版本比较；多个写入者需要避免互相覆盖时，由对象自己的归属规则（例如单一写入者）解决。
 - **失败只影响这一条指令。** 参数不合法、目标不存在或执行出错时，这条指令返回错误；调用者、其他指令和正在进行的 Lineage 运行照常继续。系统不为失败做补偿，也不发出通知，是否处理由调用者决定。
 - **按指令契约执行。** 普通修改直接执行；`GetPromptInjectionPreview`、`GetLineageDiagnostics` 及 `RenameProject(dry_run=true)` 提供各自明确的预览、诊断或计划，不代替实际提交时的校验。
 - **复合流程由调用方或对象生命周期组合。** 多项独立操作通过脚本组合，不单独登记一个组合指令。账号的个人 AMA 初始化在建号及成功登录后内部执行；Project 层 Lineage 与 Leader 随 Project 创建内部建立；关闭接单、取消当前工作和清空队列分别使用各自的指令。内部流程复用领域函数，不增加管理员重试指令。
@@ -111,7 +111,7 @@ HATG ISA 服务的是一个高自由度的 AI 社会。指令系统尽量少做�
 
 | 类别 | 主对象 | Design |
 | --- | --- | --- |
-| 资源 | 统一 ID 资源（包括设备）、资源动作目录、上传、工作区文件与成果登记（`ListDeliverables`） | decision_ad3e21094f14 |
+| 资源 | 统一 ID 资源（包括设备）、资源动作目录、上传、工作区文件 | decision_ad3e21094f14 |
 | 用户 | 人类用户的资料、账号状态与个人导航 | decision_6eac174d85bf |
 | Resident | Resident 的身份、运行设置、模型会话与工作区绑定 | decision_d19b9909a674 |
 | 对话与上下文 | Resident 的对话记录、消息与模型上下文 | decision_2fe6fd5367fb |
@@ -222,11 +222,9 @@ Lineage 运行中产生的指令（例如 Effect 生成的指令）属于哪一�
 | `instruction.projection_pending` | 修改已经保存，但页面读取的汇总数据或资源索引还没有同步完成 | 503 |
 | `instruction.failed` | 其他执行失败 | 500 |
 
-Python 入口将失败的指令结果转为业务异常时，保留外层回执的指令名和编号于 `details.instruction_result={instruction, instruction_id}`，以便业务任务失败记录定位原调用。该字段只标识实际收到的外层回执：入口生成的编号不是拥有服务的执行记录。原 `details.instruction_id`（例如 `instruction.in_progress` 指向的原执行）、错误码、retryable 和 commit_state 原样保留；该诊断信息不改变重试许可，不证明业务已经提交，也不触发自动重发。
-
 流式指令的每个结果项包含 `cursor` 和该项内容；流结束时送出终态或错误。调用者用最后收到的 `cursor` 重新订阅，就能不重复、不遗漏地继续。
 
-操作系统错误不能仅按 Python 异常类推断业务对象是否存在。Windows `ERROR_FILENAME_EXCED_RANGE`（206）即使表现为 `FileNotFoundError`，仍是文件 I/O 失败，不能映射为 `instruction.not_found`；各服务的本地、RPC 和 HTTP 边界保持同一含义。它不能使已提交但待投影的回执提前按“目标不存在”结算：保留原提交状态与同键投影恢复许可，修复后只补投影。真实目标缺失、权限拒绝和无效回执仍按各自规则结算。
+底层文件或系统错误不能直接当作“业务对象不存在”：只有目标确实缺失才返回 `instruction.not_found`，各服务的本地、RPC 和 HTTP 边界保持同一含义。已提交但待投影的回执也不会因这类错误提前按“目标不存在”结算，而是保留原提交状态与同键投影恢复许可，修复后只补投影。真实目标缺失、权限拒绝和无效回执仍按各自规则结算。
 
 各分类 Design 可以增加领域错误码。拥有服务内部的领域错误按 HTTP 状态归入上表：版本冲突为 `instruction.version_conflict`，其他 409 为 `instruction.conflict`，401 与 403 为 `instruction.forbidden`，404 与 410 为 `instruction.not_found`，429 和可重试的 5xx 为 `instruction.owner_unavailable`，其他 4xx 为 `instruction.invalid_arguments`，其余为 `instruction.failed`；领域自己的错误码保留在 `details.reason` 中。调用者遇到未知错误码时保留其状态和说明，不从错误文字推断操作是否已经提交。
 
@@ -361,9 +359,9 @@ Python 入口将失败的指令结果转为业务异常时，保留外层回执�
 
 所有指令遵守同一套规则，执行则发生在拥有目标对象的服务中。每条指令在声明中写明自己的拥有服务，入口按声明把调用通过该服务的 RPC 送过去；拥有服务在自己的进程中运行指令内核并执行领域操作。这样，读取资源的请求直接到达 ResourceService，不经过其他服务中转；一个服务暂时不可用时，也只影响由它执行的那些指令。
 
-指令的执行服务由指令声明中的 `owner` 确定（核心类别的声明在 `management_portal/hatg/catalog/`，可选功能的声明在功能自己的 `<功能>_instructions.py`），`ListInstructions` 与 `GetInstructionSchema` 返回同一目录。ResourceService、Portal Web、SocietyService、ExecutionService 分别执行声明归属自己的指令；不按类别推测例外指令的服务。
+指令的执行服务由指令声明中的 `owner` 确定（核心类别的声明随核心目录，可选功能的声明随功能），`ListInstructions` 与 `GetInstructionSchema` 返回同一目录。ResourceService、Portal Web、SocietyService、ExecutionService 分别执行声明归属自己的指令；不按类别推测例外指令的服务。
 
-一条指令操作的状态分在两个服务时，声明用 `argument_owners` 列出 (参数, 服务)：调用带了该参数（非空）就在那个服务执行，否则在 `owner` 执行。入口路由、服务端的本地执行检查和内核启动时的实现核对都按这条规则；每个相关服务都要登记实现，`GetInstructionSchema` 返回 `argument_owners`。目前 `GetMailbox` 和 `ClearMailbox` 使用：带 `resident_id` 在 SocietyService 读取或取消该 Resident 的等待消息，带 `user_id` 在 Portal Web 读取或清理 User Mailbox（decision_c54e68a82d7a，weihao 10-18）。`SearchMessages` 和 `ListInputHistory` 带 `chatroom_id` 时在 Portal Web 执行，这部分实现由聊天室功能登记；没有安装聊天室时，Web 对带 `chatroom_id` 的调用返回参数错误（decision_15aab18c0ab3）。
+一条指令操作的状态分在两个服务时，声明用 `argument_owners` 列出 (参数, 服务)：调用带了该参数（非空）就在那个服务执行，否则在 `owner` 执行。入口路由、服务端的本地执行检查和内核启动时的实现核对都按这条规则；每个相关服务都要登记实现，`GetInstructionSchema` 返回 `argument_owners`。目前 `GetMailbox` 和 `ClearMailbox` 使用：带 `resident_id` 在 SocietyService 读取或取消该 Resident 的等待消息，带 `user_id` 在 Portal Web 读取或清理 User Mailbox（decision_c54e68a82d7a）。`SearchMessages` 和 `ListInputHistory` 带 `chatroom_id` 时在 Portal Web 执行，这部分实现由聊天室功能登记；没有安装聊天室时，Web 对带 `chatroom_id` 的调用返回参数错误（decision_15aab18c0ab3）。
 
 指令集自描述类中，读取指令目录在入口本地完成；`GetInstructionExecution` 可以按 `instruction_id` 中的服务标记路由，也可以按原提交的 `instruction + idempotency_key` 路由至原指令 owner。后者只读匹配当前调用者的原请求，取回真实执行 ID 后仍按原记录真实归属授权；不执行原指令，不允许代查其他调用者的幂等键。按参数分流的指令不能用幂等键查询，因为仅凭指令名找不到记录所在的服务，需要用 `instruction_id`。
 
@@ -384,12 +382,6 @@ Python 入口将失败的指令结果转为业务异常时，保留外层回执�
 9. Effect、Function Block 运行等在执行中产生新指令时，新指令重新经过上述完整流程，不继承外层已经通过的检查。
 
 需要调用外部服务或执行长时间工作的指令（例如 Fork、工作区交接、调用模型接口）先在事务中保存执行意图，再在锁外完成外部工作，最后按执行记录归并结果。进程重启后，拥有服务依据执行记录和目标对象的当前状态继续处理；无法确认某个外部动作是否已经执行时，不盲目重做。
-
-指令内核为非流式指令记录慢调用的位置（`management_portal/hatg/slow_call_profile.py`）。服务进程不允许外部调试器附加，所以处理函数运行超过 0.5 秒后，一个采样线程每 50 毫秒读一次它所在线程的调用栈；调用超过 2 秒结束时，服务在标准错误输出写一行 `HATG slow instruction profile:`，内容是拥有服务、指令名、用时、样本数、每个 Portal 代码帧出现在多少个样本中，以及最常见的最内层帧（例如等在哪条数据库查询或哪把锁上）。这一行只用于排查，不进入执行记录。
-
-慢调用记录只覆盖指令处理函数。要看整个服务进程的 CPU 花在哪里（包括后台恢复、事件投递和定时唤醒），向 SocietyService 或 ResourceService 的 Python 进程发送 SIGUSR2：`kill -USR2 <pid>`。systemd 记录的 MainPID 是外层的 `sg`，需要取它的子进程。服务的主循环收到信号后启动一个采样线程（`management_common/cpu_profile.py`），在之后 30 秒里每 20 毫秒从 `/proc/self/task/<tid>/stat` 读一次每个线程的 CPU 时间；只有 CPU 时间增加的线程才记录调用栈，并按它用掉的时钟滴答加权，等在锁、网络或数据库上的线程不计入。结束时在标准错误输出写一行 `Service CPU profile:`，内容是按线程名合计的滴答数（名字里的数字记为 N）、占用 CPU 最多的 Portal 代码帧、最内层帧和调用栈。采样期间再收到信号不另起一次。刚启动的二三十秒主要是启动开销，采样应避开发布重启。
-
-每次慢调用采样只保留源码位置和计数；线程 frame 快照在该次采样返回前释放，不在常驻循环的空闲等待中持有请求栈或 locals。提取 StackSummary 不读取源码行，避免为位置统计填充 linecache；Windows 路径先统一分隔符再判定源码边界。请求结束后的业务对象生命周期不受诊断线程延长。
 
 ## 重试、幂等与并发
 
@@ -413,7 +405,7 @@ Python 入口将失败的指令结果转为业务异常时，保留外层回执�
 
 每条指令由其类别对应的声明模块登记一次。声明包含：指令名、所属类别、发现分组 `discovery_group`、拥有服务、一句话说明、参数定义、结果定义、是否改变状态、是否流式、哪个参数指向目标对象，以及判定槽（这条指令按什么判定，见“声明格式”）。指令内核在每个服务启动时合并同一份声明；两个模块声明同名指令时启动失败。
 
-可选功能的指令随功能安装：公告板、聊天室等尚属 ISA 的功能通过 `isa.instructions` 接入点提供声明模块（`<功能>_instructions.py`），目录合并已安装功能的声明和它们新增的类别（`hatg.catalog.categories()`），`ListInstructions` 的 `category` 取值随之变化；声明的类别不在这些类别中时目录构建失败。Web 执行的功能指令，其实现由功能的 `web.instructions` 模块（`<功能>_web_isa.py`）登记到 Web 内核。功能没有安装时，它的指令不在目录中，各服务的内核也就不需要它们的实现（decision_15aab18c0ab3）。
+可选功能的指令随功能安装：公告板、聊天室等尚属 ISA 的功能通过 `isa.instructions` 接入点提供声明，目录合并已安装功能的声明和它们新增的类别，`ListInstructions` 的 `category` 取值随之变化；声明的类别不在这些类别中时目录构建失败。Web 执行的功能指令，其实现由功能通过 `web.instructions` 接入点登记到 Web 内核。功能没有安装时，它的指令不在目录中，各服务的内核也就不需要它们的实现（decision_15aab18c0ab3）。
 
 拥有服务启动时，指令内核核对自己登记的实现：本服务拥有的指令缺少实现，或为其他服务拥有的指令登记了实现，默认拒绝启动。目录中已不存在的旧实现只记录警告并忽略。Release Web 与共享目录短暂不一致时，采用 decision_08bb2d9141f9“共享与独立的范围”规定的发布兼容：目录先新增而 Web 实现尚未发布时，Release Web 保持启动，对该调用返回 `instruction.owner_unavailable`；Dev 与共享组件的缺失实现检查保持严格。
 
@@ -423,20 +415,20 @@ Python 入口将失败的指令结果转为业务异常时，保留外层回执�
 
 ## 新增与修改指令
 
-指令集随系统开发不断增加和修改。本章规定一条指令进入目录前必须满足的条件、推荐的修改流程和声明格式（weihao 2026-10-18）。能由代码检查的条件都写成目录测试，测试不通过的修改不能发布。
+指令集随系统开发不断增加和修改。本章规定一条指令进入目录前必须满足的条件、推荐的修改流程和声明格式。能由代码检查的条件都写成目录测试，测试不通过的修改不能发布。
 
 ### 进入目录的条件
 
 1. **单一操作。** 一条指令作用于一个主对象，执行一项确定的操作。多步流程用 Lineage、Effect 或 RunScript 把已有指令组合起来，不登记成新指令（见“执行原则”）。
 2. **不重复。** 只有现有指令加参数做不到时才新增。同一操作只有一个名字（见“命名规则”）。
 3. **可判定。** 每一种合法的参数组合都能确定这次调用作用在哪些对象上。权限系统据此把一次调用拆成 (调用者, A 元素, 对象) 请求；找不到对象，就无法判定。新增指令时，在声明中写判定槽：按哪个参数指向的对象判定；不作用于具体对象的指令，例如 `GetPortalStatus`，写固定槽。同一次提交在默认方案的指令分类中给每个新 A 元素选等级（decision_600ae27b0538）。漏写分类的 A 元素落在“未归类”下，只有管理员能通过，其他调用者都被拒绝。
-4. **有契约。** 所属类别的 Design 在指令表和参数名契约表中写明这条指令：主对象、参数、结果、是否改变状态、领域错误，以及判定对象（判定槽，随声明）和默认方案要求（等级与固定槽的 R 节点，以 decision_600ae27b0538 的分类为准）。默认方案要求写在指令表的“默认方案要求”列，目录测试把这一列与 default.json 逐条对比，不一致就失败。
+4. **有契约。** 所属类别的 Design 在指令表和参数名契约表中写明这条指令：主对象、参数、结果、是否改变状态、领域错误，以及判定对象（判定槽，随声明）和默认方案要求（等级与固定槽的 R 节点，以 decision_600ae27b0538 的分类为准）。默认方案要求写在指令表的“默认方案要求”列，目录测试把这一列与默认方案逐条对比，不一致就失败。
 
 ### 推荐流程
 
 1. **先查目录。** 用 `ListInstructions`、`GetInstructionSchema` 确认现有指令组合不出所需操作。
 2. **先写契约。** 在类别 Design 中写好上一节第 4 条的内容。新主对象不属于任何现有类别时，按“指令怎样分类”新建类别和它的 Design。
-3. **自查。** 新增或修改指令的人按本章逐条检查契约，再开始实现。没有专门的审查人；发布的硬门槛只有目录测试，测试判断不了的条件（是否重复、名字是否合适、是否应该用组合流程）靠这一步自查（weihao 2026-10-19）。
+3. **自查。** 新增或修改指令的人按本章逐条检查契约，再开始实现。没有专门的审查人；发布的硬门槛只有目录测试，测试判断不了的条件（是否重复、名字是否合适、是否应该用组合流程）靠这一步自查。
 4. **同一次提交。** 指令声明（含判定槽）、实现、默认方案的分类、类别 Design 和测试一起提交，目录测试通过后发布。
 5. **修改和删除走同一流程。** 改名、改参数或删除指令时，同一次提交改完所有调用方：页面、脚本、Skill、Lineage 中的 Effect 与连线配置。不保留旧名或旧参数作为别名。
 
@@ -444,12 +436,12 @@ Python 入口将失败的指令结果转为业务异常时，保留外层回执�
 
 在“命名规则”和“调用格式”之外，指令声明还要满足：
 
-- **目标对象用统一 ID 指定，且必填。** 指令作用的对象写在参数中，用统一 ID 或资源地址。不允许省略参数时默认为调用者自己；读取自己的资料也写明自己的 ID。唯一的例外是 RunScript 的 `lineage_id`：Effect 内由激活确定，Resident 省略时取其所在 Lineage（decision_8b510cbd9c58）；入口按这样确定的 Lineage 判定（weihao 2026-10-19 起要求对它有 `@admin`），User 省略时拒绝，不落到其他节点或免检。声明的 `target` 指向这个参数；修改已有对象的指令都声明 `target`，调用信封的单个 `expected_version` 按它比较。没有单一目标对象的修改不声明：认领摘要队列、新开终端、重启 Portal 实例，以及全站执行设置和知识标签列表。`AcceptUserAuthorization` 依据当前真实授权输入签发新凭证，不修改证据消息；`CorrectResourceLifecycleAssociation` 修改 `(scope_id, resource_id)` 定位的关联审计，不修改证据 Workspace，因此两者不声明单一资源 `target`。前者仍核验当前输入、签发者权限及重复签发；后者仍由生命周期准入锁与关联事务保证并发和幂等。此规则仅适用于这些明确语义，不按动词类别普遍豁免 target。
+- **目标对象用统一 ID 指定，且必填。** 指令作用的对象写在参数中，用统一 ID 或资源地址。不允许省略参数时默认为调用者自己；读取自己的资料也写明自己的 ID。唯一的例外是 RunScript 的 `lineage_id`：Effect 内由激活确定，Resident 省略时取其所在 Lineage（decision_8b510cbd9c58）；入口按这样确定的 Lineage 判定（要求对它有 `@admin`），User 省略时拒绝，不落到其他节点或免检。声明的 `target` 指向这个参数；修改已有对象的指令都声明 `target`，调用信封的单个 `expected_version` 按它比较。没有单一目标对象的修改不声明：认领摘要队列、新开终端、重启 Portal 实例，以及全站执行设置和知识标签列表。`AcceptUserAuthorization` 依据当前真实授权输入签发新凭证，不修改证据消息；`CorrectResourceLifecycleAssociation` 修改 `(scope_id, resource_id)` 定位的关联审计，不修改证据 Workspace，因此两者不声明单一资源 `target`。前者仍核验当前输入、签发者权限及重复签发；后者仍由生命周期准入锁与关联事务保证并发和幂等。此规则仅适用于这些明确语义，不按动词类别普遍豁免 target。
 - **一个对象只有一种写法。** 同一个对象不能既用 ID、又用路径、账号编号或执行编号指定。指令可以作用于不同类型的对象时，每种类型一个参数，声明为“恰好给一个”，每个参数都有判定槽。例如 `GetMailbox` 用 `resident_id` 或 `user_id`。按多个条件筛选的读取指令可以声明“至少给一个”，给出的每个参数都按它的判定槽判定，例如 `ListPermissionEntries` 的 `p` 和 `r`。
 - **同一类对象在所有指令中使用同一个参数名。** 例如 Resident 一律用 `resident_id`，Project 一律用 `project_id`。
-- **分页读取一组条目用 `cursor`、`limit` 和 `next_cursor`（weihao 2026-10-19）。** `limit` 是每页最多的条数；`cursor` 是上一页结果中的 `next_cursor`，原样交回，不填时读第一页；还有下一页时结果带 `next_cursor`，它不出现或为空就表示已经读完。cursor 是不透明的字符串，调用者不解析、不自己拼写。不用 `offset`、`page_token`、`before` 这类其他名字；结果可以另外给出总数 `total`。例如 `GetConversation` 返回的 `next_cursor` 交给 `ListMessages` 继续往前读，`ListPermissionEntries` 一页页列出表项。三种读取不属于这条：按位置读取一个对象内部序列的指令用 `offset`，调用者可以从任意位置读起——`ReadScriptRunOutput`（日志的字节位置）、`GetSubagentRun`（子 agent 轨迹，界面直接从末尾附近读）、`GetTriggerPath`（一个流程的步骤、边与执行四个列表共用一个位置）；只取前几条、不翻页的读取只有 `limit`；读取某个位置之后的新变化用 Watch 指令的 `after_cursor`（见“流式指令”），`ListChatroomMessages` 的 `after` 与 `change_cursor` 读取某个位置之后的新消息和变更，也不是翻页。
+- **分页读取一组条目用 `cursor`、`limit` 和 `next_cursor`。** `limit` 是每页最多的条数；`cursor` 是上一页结果中的 `next_cursor`，原样交回，不填时读第一页；还有下一页时结果带 `next_cursor`，它不出现或为空就表示已经读完。cursor 是不透明的字符串，调用者不解析、不自己拼写。不用 `offset`、`page_token`、`before` 这类其他名字；结果可以另外给出总数 `total`。例如 `GetConversation` 返回的 `next_cursor` 交给 `ListMessages` 继续往前读，`ListPermissionEntries` 一页页列出表项。三种读取不属于这条：按位置读取一个对象内部序列的指令用 `offset`，调用者可以从任意位置读起——`ReadScriptRunOutput`（日志的字节位置）、`GetSubagentRun`（子 agent 轨迹，界面直接从末尾附近读）、`GetTriggerPath`（一个流程的步骤、边与执行四个列表共用一个位置）；只取前几条、不翻页的读取只有 `limit`；读取某个位置之后的新变化用 Watch 指令的 `after_cursor`（见“流式指令”），`ListChatroomMessages` 的 `after` 与 `change_cursor` 读取某个位置之后的新消息和变更，也不是翻页。
 - **创建指令必须给出新对象的位置。** 位置指所属的 Project、Lineage 或父对象，通常由显式参数给出并核验。`RegisterResource` 对要求本人归属的资源，允许 `place` 使用单独的 `$caller`，关系仅限 `resident` 与 `personal_space`；平台从当前认证主体解析，不接受调用者代填其他身份，也不能与请求字段混用。全局对象（例如 Project、User、聊天室、帖子、模型接口）没有所属对象，按固定槽判定，方案给固定槽指定 R 树分类节点。只有系统内部创建的对象例外，例如账号的个人 AMA。
-- **判定对象可以来自已保存的记录。** 目标是一条记录、记录又属于另一个对象时，按记录所属的对象判定。这一步在入口完成：判定槽声明“这个参数是记录 ID，判定时用记录所属的对象”，入口读出记录所属的对象，再和其他请求一起交给引擎；处理代码不再问引擎（weihao 2026-10-18）。例如 `UpdatePermissionEntry`、`DeletePermissionEntry` 按表项已保存的 r 判定，修改 r 时新 r 也判定；`GetInstructionExecution` 读取 Lineage 范围的执行回执时按回执所属的 Lineage 判定，调用者作用域的回执只向原调用者开放。写法：判定槽写 `via="<记录>.<字段>"`，不写类型，记录字段必须在权限词汇的 `records` 中登记；字段可能为空的记录（`records` 中标 `may_be_unowned`，例如 `instruction_execution.lineage`）为空时不生成请求（`optional` 只管参数没给的情况，与此无关），调用没有其他请求就按未归类判定、只有管理员能通过，所以这类指令另有固定槽。两条都由声明规则测试逐条核对。
+- **判定对象可以来自已保存的记录。** 目标是一条记录、记录又属于另一个对象时，按记录所属的对象判定。这一步在入口完成：判定槽声明“这个参数是记录 ID，判定时用记录所属的对象”，入口读出记录所属的对象，再和其他请求一起交给引擎；处理代码不再问引擎。例如 `UpdatePermissionEntry`、`DeletePermissionEntry` 按表项已保存的 r 判定，修改 r 时新 r 也判定；`GetInstructionExecution` 读取 Lineage 范围的执行回执时按回执所属的 Lineage 判定，调用者作用域的回执只向原调用者开放。写法：判定槽写 `via="<记录>.<字段>"`，不写类型，记录字段必须在权限词汇的 `records` 中登记；字段可能为空的记录（`records` 中标 `may_be_unowned`，例如 `instruction_execution.lineage`）为空时不生成请求（`optional` 只管参数没给的情况，与此无关），调用没有其他请求就按未归类判定、只有管理员能通过，所以这类指令另有固定槽。两条都由声明规则测试逐条核对。
 - **判定槽写在声明中。** 声明的 `decides` 列出这条指令按什么判定，每项是一个判定槽：`On(参数, 类型…, optional=, via=, place=)` 按参数指向的对象判定，参数可以是点分路径（如 `fields.project_id`）；`types` 限定对象类型，`via` 按已保存记录的字段判定（见上一条），`place` 按新对象将要放在哪里判定（创建与登记指令，参数是新对象的类型，`place` 写关系对象类型到参数路径，或上述本人归属资源允许的单独 `$caller` 认证主体落点）；`Fixed(名称)` 不指向对象，按方案给它的 R 树分类节点判定。“恰好给一个”与“至少给一个”仍写在参数声明中。每个判定槽是一个 A 元素：只有一个槽时元素名就是指令名，有多个槽时是 `指令:参数` 或 `指令:固定槽名`（例如 `DeliverMessage:resident_id`、`CreateTemplate:@public`）。方案只给 A 元素分类，不能改写判定槽（decision_b820faf42218 §3.2）。增删判定槽使槽数在一个和多个之间变化时，A 元素改名：同一提交更新默认方案的分类，并在提交说明中写明旧元素名；自定义方案中旧元素的分类和以它为 A 的表项、临时凭证不再生效。
 - **列表与搜索的范围由参数或固定节点决定。** 给出所属对象时按它判定；列出全局对象的指令按固定槽判定。结果可以只包含调用者有权看到的对象，例如 `SearchResources`、`ListUsers`。不允许的是“省略参数时只列调用者自己的”这类由调用者身份决定范围的写法；要列自己的，就把自己的 ID 写在参数里。
 - **结果中能找到对象 ID。** 创建指令的结果中能找到新对象的 ID；修改指令的结果中能找到被修改对象的 ID，对象有版本令牌时同时返回新版本。ID 可以直接是结果字段，也可以在返回的对象里。
@@ -459,13 +451,13 @@ Python 入口将失败的指令结果转为业务异常时，保留外层回执�
 
 目录测试把上述条件变成发布前的检查：
 
-- 代码目录与各类别 Design 的指令表逐条一致，类别、是否改变状态、是否流式与表中一致（`test_hatg_isa_catalog_spec.py`）；
+- 代码目录与各类别 Design 的指令表逐条一致，类别、是否改变状态、是否流式与表中一致；
 - 所有类别的 Design 都有参数名契约表，并与声明一致；
 - 声明字段齐全，参数不重名，`target` 指向已声明的参数，流式指令只读且以 `Watch` 开头；
-- 修改已有对象的指令声明 `target`，例外按名字列出；流式指令都用 `after_cursor` 续读，结果项带 `cursor`；分页读取用 `cursor`、`limit` 与 `next_cursor`，按位置读取的三条指令按名字列出；每个参数和结果字段都有说明（`test_hatg_isa_declaration_rules.py`）；
+- 修改已有对象的指令声明 `target`，例外按名字列出；流式指令都用 `after_cursor` 续读，结果项带 `cursor`；分页读取用 `cursor`、`limit` 与 `next_cursor`，按位置读取的三条指令按名字列出；每个参数和结果字段都有说明；
 - 每个拥有服务都能为自己的每条指令找到实现；
-- 默认方案给每个 A 元素分类（`test_permission_engine.py`）；
-- 每条指令都声明判定槽，A 元素名不重复；判定槽引用的每个参数都在指令声明中存在，类型与落点关系已登记；每一种合法的参数组合至少生成一个判定请求；`via` 只写已登记的记录字段，可能不属于任何对象的记录旁边有固定槽；指令名的动词属于“命名规则”列出的动词（`test_hatg_isa_declaration_rules.py`）。
+- 默认方案给每个 A 元素分类；
+- 每条指令都声明判定槽，A 元素名不重复；判定槽引用的每个参数都在指令声明中存在，类型与落点关系已登记；每一种合法的参数组合至少生成一个判定请求；`via` 只写已登记的记录字段，可能不属于任何对象的记录旁边有固定槽；指令名的动词属于“命名规则”列出的动词。
 
 规范生效时仍不符合的指令，按名字列在测试中，并写明在等哪项决定。一条指令改好后，测试要求把它从名单中删掉，名单只减不增；新指令不能加入名单。
 
@@ -491,8 +483,8 @@ ISA 定义可以执行哪些操作，权限系统决定谁能执行。普通业�
 - 调用者身份、消息署名与异步执行归属见 decision_ae422b92c6f3。
 
 
-### 拥有服务声明的中断核验
+## 拥有服务声明的中断核验
 
 通用写指令中断后仍保留结果未知。拥有服务可以为具备稳定业务身份和受理凭据的特定操作登记核验入口：同键重试重新检查当前权限与原请求指纹，在原执行的独立活动锁内核验领域事实；核验入口使用原指令 ID，不向其他业务处理器开放通用重执许可。已有受理凭据只补齐原关联和回执，未受理的确定性输入沿同一身份继续受理。暂时不可用返回结果未知、允许后续核验；权限拒绝、身份冲突及不支持的调用形态继续保留原未知回执等待处置。Effect 将明确标为核验待续的回执留在原激活中重试，不发送不可恢复结果通知。
 
-当前登记的操作仅为普通 RelayFamilyMessage；改派、故障恢复、告知和 Steward 复核各自沿原协议。旧版已挂起的连线投递在加载新核验能力后获得一次原激活核验机会，保留原 Event、脚本指纹与指令幂等键；不支持或仍无法核验的操作继续挂起，不逐轮重新开闸。
+目前登记核验入口的操作是普通 RelayFamilyMessage；改派、故障恢复、告知和 Steward 复核各自沿原协议。没有登记核验入口或无法核验的操作保持挂起，不逐轮重新开闸。

@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 50
+  number: 53
   created_at: "2026-09-28T10:45:00Z"
   created_by:
     user: "weihao"
     agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-11-19T08:46:58Z"
+  updated_at: "2026-11-25T15:34:34Z"
   updated_by:
     user: ""
-    agent: "resident_60ae6d0cdf74"
+    agent: "resident_83d75ad3a6c7"
 importance: 8
 metaness: 2
 ai_generated: false
@@ -58,7 +58,6 @@ links:
 | `ReadResource` | 否 | 读取资源正文或资源内部文件 | 对 `address` 有 @viewer |
 | `ListResourceTypes` | 否 | 列出全部资源类型的声明、状态与有效能力 | 对“共享”有 @viewer |
 | `GetResourceType` | 否 | 读取某个资源类型的声明、状态与有效能力 | 对“共享”有 @viewer |
-| `ListDeliverables` | 否 | 读取当前可见成果登记，可按项目与作者筛选 | 对“共享”有 @viewer |
 | `UpdateResourceType` | 是 | 启用或停用一个资源类型，可选信封版本前提 | 对“共享”有 @admin |
 | `CheckArticleRestore` | 否 | 预检原 Article 的恢复证据、目录与当前权限，不执行恢复 | Article/原 Resident @admin、源 @viewer、目标 Project @contributor；领域另核历史与继承读取 |
 | `RestoreArticle` | 是 | 按已核证据和明确共享决定部分恢复原 Article ID | Article/原 Resident @admin、源 @viewer、目标 Project @contributor；领域独立核验 |
@@ -314,7 +313,6 @@ Workspace 支持 `UnregisterResource(resource_id=workspace_id)`，要求目标 W
 | `ReadResource` | `address`、`max_bytes`、`meta_only`、`preview` |
 | `ListResourceTypes` | 无 |
 | `GetResourceType` | `resource_type` |
-| `ListDeliverables` | `project_id`、`author_id`、`offset`、`limit` |
 | `UpdateResourceType` | `resource_type`、`enabled` |
 | `RegisterResource` | `resource_type`、`fields` |
 | `CreateWorkspace` | `path`、`operation_id`、`owner_id`、`title` |

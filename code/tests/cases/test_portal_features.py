@@ -194,12 +194,12 @@ def test_installed_features_serve_their_routes_before_the_shell_fallbacks():
 
     routes = shell._portal_route_definitions()
     contributed = {key for key, _ in portal_features.contributions("web.routes")}
-    assert contributed == {"paper", "projects", "article", "repo", "backup", "wall", "test_framework", "notice_board", "home_report", "resident_results"}
+    assert contributed == {"paper", "projects", "article", "repo", "backup", "wall", "test_framework", "notice_board", "home_report"}
     assert "robolab" not in contributed
     fallbacks = [index for index, route in enumerate(routes) if route.group == "portal-fallback"]
     paths = [route.path for route in routes]
     for path in ("/paper/api/library", "/api/articles", "/api/wall/", "/test/api/run",
-                 "/api/resource-backup/overview", "/api/notice-board/image", "/static/test_page.js", "/api/home-report", "/home-report", "/results", "/api/results"):
+                 "/api/resource-backup/overview", "/api/notice-board/image", "/static/test_page.js", "/api/home-report", "/home-report"):
         assert paths.index(path) < min(fallbacks), path
 
 

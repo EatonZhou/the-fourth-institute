@@ -22,7 +22,7 @@ class DeliverableRegistryProjection:
             attributes={'project_ids': item['projects'], 'status': item['status'],
                         'created_by': item['created_by'], 'created_for': item['created_for'],
                         'author_id': item['author_id'], 'revision': item['revision']},
-            search_terms=[item['author_id'], *item['projects']], url=item['portal_url'])
+            search_terms=[item['author_id'], *item['projects']], url=f"/api/resources/content?address={item['resource_id']}")
 
 
 REGISTRY_PROJECTION = DeliverableRegistryProjection()

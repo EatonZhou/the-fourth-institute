@@ -131,7 +131,6 @@
 - [Home 页的信息结构与加载方式](/r/decision_00546e28e1e0)
 - [对话驱动的 Portal 主页与右侧展示区（目标设计）](/r/decision_b12782e7f490)
 - [汇报资源、版本与成果目录](/r/decision_e3ced6d30f6b)
-- [Resident 成果、原始资料与项目内协作](/r/decision_56aef2c2393b)
 - [Portal Pulse 与个人动态发布](/r/decision_865ac8ebef25)
 - [Daily News 的每日信息摘要](/r/decision_5d2bf4a72f09)
 - [Home Notice Board 的发布与讨论](/r/decision_605810a1292b)
@@ -185,7 +184,7 @@
 - [Portal 共享运行基础与 Dev 到 Release 的快速发布流程](/r/decision_08bb2d9141f9)
 - [Portal 运行维护：安装、检查、发布与恢复](/r/decision_ab9880dc4c9d)
 - [Portal Web 重启通知与服务恢复编排](/r/decision_37f98f8fcb4b)
-- [Portal Resource Backup 监控、触发与恢复边界](/r/decision_b06ae321a668)，含 Google Drive 备份指令 `StartGoogleDriveBackup` 的调用与验收步骤。
+- [Portal Resource Backup 监控、触发与恢复边界](/r/decision_b06ae321a668)，含 Google Drive 备份指令 `RunGoogleDriveBackup` 的调用与验收步骤。
 - [Portal Test Case、Catalog 与运行证据协议](/r/decision_8273271b67b1)
 - [共享代码实例的回归与 TAU 验收](docs/testing.md)
 - [Portal Test 页面：测试总览、用例目录、运行与 TAU](/r/decision_f2a6a5dd4646)

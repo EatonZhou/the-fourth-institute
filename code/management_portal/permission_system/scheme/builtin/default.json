@@ -1421,10 +1421,6 @@
       "a": "@viewer",
       "r": "@shared"
     },
-    "ListDeliverables": {
-      "a": "@viewer",
-      "r": "@shared"
-    },
     "SetTelepusEnabled": {
       "a": "@admin",
       "r": "@shared"

@@ -1,12 +1,12 @@
 {
   "type": "deliverable",
   "category": "resource",
-  "title": {"zh": "成果", "en": "Deliverable"},
-  "description": "Project-scoped Resident results with immutable revisions and source documents.",
+  "title": {"zh": "历史成果（只读）", "en": "Archived deliverable (read-only)"},
+  "description": "Read-only retained deliverable references. New work uses existing knowledge and workspace resources.",
   "provider": "management_portal.resources.providers.deliverable:install_resolver",
   "catalog_section": "",
   "catalog_order": 86,
-  "registerable": true,
+  "registerable": false,
   "scope": "shared",
   "unit": "core",
   "enabled_by_default": true

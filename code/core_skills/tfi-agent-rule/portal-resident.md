@@ -4,18 +4,6 @@ Resident 是跨 Provider session 持续存在的 Agent 身份，按当前配置�
 
 处理 Resident Folder、Workspace 或 Context fork 前，读取 `./portal-resident-folder.md`。
 
-## 成果与项目协作
-
-完成可供后续工作复用的成果时，维护自己的正式成果清单。按任务的项目范围登记
-`deliverable` 资源，写清结论、验证依据、限制与原始资料；更新已有成果时保留身份并新增版本。
-未确认可以共享的材料保持草稿，项目发布必须在当前授权范围内；不把私聊或整份运行日志自动公开。
-登记、修订与发现的字段和流程见 `./resident-results.md`。
-
-开始需要已有成果的工作时，按当前 Project 使用 `ListDeliverables`，需要特定作者时传
-`author_id`；按需读取固定版本与原文，不把所有成果正文加入每轮上下文。
-需要作者补充时，通过 `DeliverMessage` 引用成果固定版本，遵守当前任务的发消息授权。
-成果发布不会自动给项目成员发通知，也不会迁移 Resident 的 Lineage 或开放私人对话。
-
 ## 工作目录
 
 每个 Lineage 节点固定拥有并登记 `<lineage_folder>/residents/<resident_id>/workspace/`。该节点自有 Workspace 设置为默认 cwd。Context fork 使用自己的节点 Workspace，并继承父节点绑定的其他 Workspace；父节点自有 Workspace不继承。

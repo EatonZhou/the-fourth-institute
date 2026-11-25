@@ -1,4 +1,4 @@
-"""Unified deliverable identities, fixed revisions and immutable source documents."""
+"""Read-only historical deliverable identities and immutable source documents."""
 import json
 import re
 from urllib.parse import unquote
@@ -16,7 +16,7 @@ def install_resolver(service):
         result = dict(address=address, root_id=identifier, resource_type='deliverable', target_kind='deliverable',
             record=detail['record'], detail=detail, exists=True, content_kind='json',
             version=str(detail['revision']), filename='deliverable.json',
-            portal_url=f"/results?id={identifier}&revision={detail['revision']}")
+            portal_url=f"/api/resources/content?address={identifier}/revision/{detail['revision']}")
         if filename is not None:
             filename = unquote(filename)
             doc = next((doc for doc in detail['snapshot']['documents'] if doc['name'] == filename), None)
@@ -36,13 +36,3 @@ def install_resolver(service):
             raise ValueError('Deliverable exceeds read byte budget')
         return data, mime, {'filename': current['filename']}
     service.register_resolver('deliverable', resolve, read_content=read)
-
-
-def install_mutation_provider(service):
-    def register(payload, *, actor='', resource_id='', **context):
-        return DeliverableStore(service=service).create(resource_id, payload, actor)
-
-    def update(resource_id, payload, *, actor='', **context):
-        return DeliverableStore(service=service).update(resource_id, payload, actor)
-    service.register_mutation_provider('deliverable', register=register, update=update,
-                                      service_managed_registration=True)
