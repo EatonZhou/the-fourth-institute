@@ -235,12 +235,12 @@
     const mode = container.querySelector("[data-network-mode]");
     const save = container.querySelector("[data-network-save]");
     const field = key => container.querySelector(`[data-network-field="${key}"]`);
-    let baseline = null, revision = "";
+    let baseline = null, revision = "", proxyDisabled = false;
     const draft = () => mode.value === "environment" ? null : Object.fromEntries(proxyKeys.map(key => [key, field(key).value]));
     const dirty = () => !!revision && JSON.stringify(draft()) !== JSON.stringify(baseline);
     const sync = () => {
       reload.disabled = busy;
-      mode.disabled = busy || !revision;
+      mode.disabled = busy || !revision || proxyDisabled;
       for (const key of proxyKeys) field(key).disabled = busy || !revision || mode.value === "environment";
       save.disabled = busy || !dirty();
       container.setAttribute("aria-busy", String(busy));
@@ -275,8 +275,9 @@
       value("access_mode").textContent = data.access.mode === "remote" ? t("允许其他设备访问") : t("仅本机");
       value("port").textContent = String(data.access.port);
       legacyNote.hidden = !data.access.legacy_restriction;
-      source.textContent = data.proxy_source === "saved" ? t("当前使用已保存的代理设置。") : t("当前代理来自服务环境。");
-      mode.value = data.proxy_source;
+      proxyDisabled = data.proxy_source === "disabled";
+      source.textContent = proxyDisabled ? t("此实例已禁用应用代理") : data.proxy_source === "saved" ? t("当前使用已保存的代理设置。") : t("当前代理来自服务环境。");
+      mode.value = proxyDisabled ? "environment" : data.proxy_source;
       for (const key of proxyKeys) field(key).value = data.proxy[key];
       revision = data.revision;
       baseline = draft();
@@ -293,7 +294,7 @@
         || !Number.isInteger(data.access?.port) || !Array.isArray(data.access?.urls)
         || !data.access.urls.every(item => typeof item === "string")
         || !proxyKeys.every(key => typeof data.proxy?.[key] === "string")
-        || !["environment", "saved"].includes(data.proxy_source) || typeof data.revision !== "string" || !data.revision) {
+        || !["environment", "saved", "disabled"].includes(data.proxy_source) || typeof data.revision !== "string" || !data.revision) {
         throw new Error(t("服务器未返回完整的网络设置，请重新读取。"));
       }
       return data;

@@ -155,13 +155,14 @@ def read_settings() -> dict:
     raw = _read(config_path())
     entries = _parse(raw)
     saved = any(key in entries for key in PROXY_KEYS)
-    source = entries if saved else inherited_proxy_environment()
+    disabled = proxy_environment_disabled()
+    source = {} if disabled else (entries if saved else inherited_proxy_environment())
     access = router_access()
     mode, port = access["mode"], access["port"]
     return {
         "access": {"mode": mode, "port": port, "urls": _access_urls(port, mode)},
         "proxy": _proxy_values(source),
-        "proxy_source": "saved" if saved else "environment",
+        "proxy_source": "disabled" if disabled else ("saved" if saved else "environment"),
         "revision": hashlib.sha256(raw + json.dumps(_proxy_values(source), sort_keys=True).encode()).hexdigest(),
     }
 
@@ -202,6 +203,8 @@ def update_proxy(proxy, *, expected_revision: str) -> dict:
     """
     if not isinstance(expected_revision, str) or not expected_revision:
         raise ValueError("请先读取网络设置再保存")
+    if proxy is not None and proxy_environment_disabled():
+        raise ValueError("此实例已禁用应用代理")
     values = None if proxy is None else _validate_proxy(proxy)
     path = config_path()
     with _lock(path) as stream, lock_stream(stream):
