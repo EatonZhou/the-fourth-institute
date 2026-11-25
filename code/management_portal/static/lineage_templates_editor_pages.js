@@ -46,7 +46,9 @@
 
     function renderBody() {
       disposeCode();
-      if (draft.kind === 'prompt') {
+      if (draft.editor?.graph) {
+        renderRecipeGraph();
+      } else if (draft.kind === 'prompt') {
         bodyPage.innerHTML = `<div class="templateParameterTokens">${draft.parameters.map(parameter => `<button type="button" data-insert-parameter="${esc(parameter.name)}">{{param.${esc(parameter.name)}}}</button>`).join('')}</div>
             ${field({ label: '消息内容', type: 'text', required: true }, draft.body.message, 'data-body-field="message"')}
             <p class="templateHelp">${esc(t('用 [音频文件]、[条目类型] 等中括号标出待填写内容。拖到聊天输入框或 Resident 节点后编辑草稿，再发送。'))}</p>`;
@@ -62,6 +64,46 @@
         bodyPage.innerHTML = (draft.editor?.fields || []).map(schema => field(schema, draft.body[schema.name] ?? schema.default, `data-body-field="${esc(schema.name)}" data-field-type="${esc(schema.type)}"`)).join('');
         if (!bodyPage.childElementCount) bodyPage.innerHTML = `<p class="templateHelp">${esc(t('此模块通过参数页配置施加时的默认值。'))}</p>`;
       }
+    }
+
+    function renderRecipeGraph() {
+      let projection = draft.editor.graph;
+      const rows = () => ['roles', 'components', 'wires'].flatMap(key => projection.body[key] || []);
+      bodyPage.innerHTML = `<div class="templateRecipeGraph"><div class="templateRecipeToolbar"><select data-recipe-select aria-label="${esc(t('选择图中元素'))}"><option value="">${esc(t('模板参数'))}</option>${rows().map(row => `<option value="${esc(row.key)}">${esc(row.title || row.key)}</option>`).join('')}</select><span>${esc(t('成员按施加时的名册展开'))}</span></div><div class="templateGraphWorkspace is-workshop"><div class="templateGraphHost" data-template-graph></div><aside class="templateGraphInspector" data-graph-inspector></aside></div></div>`;
+      const inspector = bodyPage.querySelector('[data-graph-inspector]');
+      const select = bodyPage.querySelector('[data-recipe-select]');
+      const schemas = draft.editor.fields || [];
+      function inspect(key) {
+        readDraft();
+        select.value = key;
+        const row = rows().find(row => row.key === key);
+        const controls = key ? projection.controls[key] || [] : schemas.map(schema => ({field: schema.name}));
+        inspector.innerHTML = `<h3>${esc(row?.title || row?.key || t('模板参数'))}</h3>` + controls.map(control => {
+          if (control.task) {
+            const value = draft.body.tasks?.[control.task]?.[control.field] ?? control.value;
+            return field({label: control.label, type:'text', multiline:true}, value, `data-recipe-task="${esc(control.task)}" data-task-field="${esc(control.field)}"`);
+          }
+          const schema = schemas.find(schema => schema.name === control.field);
+          return schema ? field(schema, draft.body[schema.name], `data-body-field="${esc(schema.name)}" data-field-type="${esc(schema.type)}"`) : '';
+        }).join('') + (row ? `<p class="templateHelp">${esc(t('连线与运行脚本由 Family 维护；这里的配置随模板保存，施加时生成对应运行图。'))}</p><details><summary>${esc(t('实际配置'))}</summary><pre>${esc(JSON.stringify(row.config || row, null, 2))}</pre></details>` : '');
+      }
+      inspector.addEventListener('input', event => {
+        const input = event.target.closest('[data-recipe-task]');
+        if (!input) return;
+        draft.body.tasks ||= {};
+        draft.body.tasks[input.dataset.recipeTask] ||= {};
+        draft.body.tasks[input.dataset.recipeTask][input.dataset.taskField] = input.value;
+      });
+      editorState.graph = window.LineageTemplateGraph.mount({root:bodyPage.querySelector('[data-template-graph]'), body:() => projection.body,
+        workshop:true, readOnly:true, onSelect:inspect});
+      select.addEventListener('change', () => editorState.graph.select(select.value));
+      editorState.refreshRecipeGraph = graph => {
+        if (!graph) return;
+        graph.body.layout = projection.body.layout;
+        projection = graph;
+        editorState.graph.render();
+      };
+      inspect('');
     }
 
     function renderStructureLists() {

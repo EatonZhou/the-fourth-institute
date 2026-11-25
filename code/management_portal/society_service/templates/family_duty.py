@@ -37,6 +37,10 @@ class FamilyDutyKind:
                           {'name':'guide','type':'text','label':'职责指南','multiline':True},
                           {'name':'prompt','type':'text','label':'触发提示词','multiline':True}]}
 
+    def editor_graph(self, template):
+        from .family_graph import project
+        return project(template)
+
     def _apply(self, ctx, dry_run):
         if len(ctx.target['resident_ids']) != 1:
             raise TemplateError('请选择一个 Family Steward')

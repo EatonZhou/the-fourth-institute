@@ -209,6 +209,7 @@
       $id("autoLayoutBtn").addEventListener("click", autoLayoutGraph);
       $id("graphLeaderJumpBtn").addEventListener("click", focusLineageLeader);
       $id("addTemplateBtn").addEventListener("click", () => panelHost.templateController.newTemplate());
+      $id("openTemplateWorkshopBtn").addEventListener("click", () => panelHost.templateController.newTemplate());
       [["saveSelectionTemplateBtn", false], ["saveSelectionRewriteBtn", true]].forEach(([id, rewrite]) => {
         $id(id).addEventListener("click", async event => {
           const elementIds = [...state.selectedCanvasObjectIds];

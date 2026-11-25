@@ -34,7 +34,7 @@ def list_templates(target_kind=None):
         raise TemplateError("未知目标类型")
     from .marketplace import annotate
     return [
-        describe(item)
+        describe(item, editor_graph=False)
         for item in annotate(store.all_templates())
         if target_kind is None or target_kind in item["targets"]
     ]

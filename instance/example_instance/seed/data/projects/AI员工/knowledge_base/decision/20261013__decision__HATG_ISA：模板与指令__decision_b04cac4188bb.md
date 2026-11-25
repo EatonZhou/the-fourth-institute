@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-10-13'
 version:
-  number: 37
+  number: 38
   created_at: "2026-10-13"
   created_by:
     user: ""
     agent: "resident_e8fc8c899f00"
-  updated_at: "2026-11-18T02:32:56Z"
+  updated_at: "2026-11-25T09:15:30Z"
   updated_by:
     user: ""
     agent: "resident_25ac6961fafb"
@@ -147,7 +147,9 @@ match 的每一项有局部 `key` 与 `kind`，以及：
 
 ### familize
 
-`body` 包含 `goal`、`route_threshold`、`review_interval_seconds`、`auto_migrate`、`auto_migrate_priority` 与可选 `resident_settings`；前三项默认分别为空文本、60、86400，自动迁移默认开启，优先级及角色设置遵守 Family Design。路由阈值为 0–100 的整数，回顾间隔为正整数秒。该模块使用这些明确字段，Family 参数不承载任意结构或脚本。
+`body` 包含 `goal`、`route_threshold`、`review_interval_seconds`、`auto_migrate`、`auto_migrate_priority` 与可选 `resident_settings`、`tasks`；前三项默认分别为空文本、60、86400，自动迁移默认开启，优先级及角色设置遵守 Family Design。路由阈值为 0–100 的整数，回顾间隔为正整数秒。该模块使用这些明确字段，Family 参数不承载任意结构或脚本。
+
+`tasks` 以当前 Family 生成图中的工作场景为键，每项只允许覆盖 `guide` 与 `prompt`。两者为 1–20000 字非空文本；prompt 必须保留 `${facts}`，只允许 facts、guide_path、guide_version 占位符。场景的承接角色及投递结构由运行契约决定。保存和施加前使用同一运行图校验；施加时将配置写入对应连线，之后名册同步保留已有指南与触发提示词。修改模板不追改已施加的 Family。
 
 Family 的施加说明提供布尔参数 `auto_migrate`。配方已声明该参数时保留其显式默认；未声明时从 `body.auto_migrate` 计算默认值。原生施加表单允许为本次新建 Family 选择是否自动迁移，选择在首次角色执行前生效；省略参数按上述默认处理。该选项适用于已编辑的内置模板和自定义 Family 模板，不需要改写它们的存储内容、全局账号默认或既有 Family。
 
@@ -233,11 +235,13 @@ HATG 画布的控件分在四角：左上是缩放（缩小、百分比、放大
 
 模板工坊是 Lineage 工作台的一种卡片，与 Chat、HATG、预览、终端用同一套工作台面板，可以打开、关闭、收起和拖动，布局随工作台保存与恢复。工作台初始登记一张默认隐藏的工坊，在顶栏隐藏组件区提供入口，“调整布局”的面板列表也可切换显示；首次显示时才加载模板和助手对话，隐藏不会丢弃当前草稿，已保存模板随布局恢复。删除当前模板后，常驻组件回到可新建模板的状态。在 HATG 的工具箱里双击卡片、点“新建模板”或从选区保存时，HATG 请求工作台打开工坊卡片：第一张在 HATG 旁边分屏，之后打开的模板成为同一组里的标签，再次打开同一模板时聚焦已有标签。卡片大部分是画布，右侧一窄栏是与工坊助手的对话，可以收起，卡片较窄时默认收起。模板资源链接打开独立页面 `/template-workshop?template=<template_id>`，页面中挂的是同一个卡片组件。
 
+- **进入与切换**：工具箱标题栏在商店旁提供工坊图标。工坊左侧纵列与当前用户工具箱使用相同可见范围，包含内置及本人创建或安装的模板，不显示内部工坊助手。选中模板在当前工坊右侧载入其编辑内容；有未保存或无效草稿时，切换前选择保留或放弃。保存、另存及外部模板更新同步列表，过时加载结果不能覆盖新选择。
 - **顶栏**：可直接修改的模板名、“…”菜单，右侧放本人非内置已保存模板的“发布到商店”（已上架时为“发布新版本”）以及并排的英文按钮 **Save** 与 **Save As**（两者不翻译）。草稿有未保存修改时点发布，会提示先 Save，使上架快照与已保存模板一致。从商店预览未安装的快照时，顶栏提供“安装到工具箱”。“…”菜单放结构模板的图、列表、JSON 视图切换，以及内置模板的“恢复内置”和已保存模板的“删除”。删除后关闭这张卡片，已施加的结果保留。
 - **Save 与 Save As**：Save 把草稿存回当前模板，新模板第一次 Save 走 `CreateTemplate`，之后走 `UpdateTemplate`。Save As 用当前草稿 `CreateTemplate` 一份新模板并切换过去。内置模板、他人创建的模板与未安装的商店预览快照（独立页地址为 `/template-workshop?store=<store_id>`）不能 Save，按钮不可用，改动用 Save As 存成自己的模板。两者都先用 dry_run 校验，服务端错误显示在页面上。保存只写入本人的模板，与发布到商店是两个动作。有未保存的修改时，关闭卡片或离开页面前提示。
 - **画布**：结构模板用编辑器的图视图铺满卡片，打开时适配全部节点，缩放不超过 100%；施加时绑定的位置（目标、Lineage Leader 与已有元素）灰显。选中节点或连线时弹出浮动检查器，没有选中时不显示。图上方的添加按钮去掉，由画布左下角的工具箱代替：抽屉与 HATG 工具箱共用代码，分为原语（Event、Effect、Loop、Filter、Selector、Reducer、Seed）、空位（目标 Resident、Lineage Leader、新建 Resident、Fork、已有元素），以及工具箱中的职责、角色、组织模板。单击拿起后在画布上单击放下，或直接拖放；放下模板就是把它的元素复制进草稿，key 与参数名冲突时自动改名。交办类模板不能放进结构草稿。
 - **自动计算**：结构模板的分组固定为 structure，`targets` 由图决定：有 `from: target` 角色时为 resident，否则有已有元素时为 selection，都没有时为 canvas。页面不再提供分组和目标范围的选择。说明、参数与施加预览放在默认收起的“模板信息”面板。
-- **其他模块**：prompt、explore、script、familize 模板同样在工坊中打开，画布位置显示该模块的字段，没有画布工具箱。
+- **配方图**：familize 与 family_duty 通过各自施加时使用的图生成器提供 `editor.graph`，包含本地角色／组件／连线与可编辑字段映射。它是派生视图，不写入模板正文、不创建运行对象；成员以按施加名册展开的绑定位置显示。选中元素可修改其配方字段和任务指南，并查看实际配置；平台维护的结构与脚本不能在配方图中自由增删。职责实例工坊仍按实例归属编辑。`GetTemplate`、保存及 dry_run 返回该图，`ListTemplates` 只返回轻量编辑说明。
+- **其他模块**：prompt、explore、script 保留对应的正文、字段或脚本编辑器；没有持久 HATG 结构的模板不生成虚构节点。
 
 工坊助手每个用户一个，是用户 My Lineage（`lineage_membership` 为 personal、由该用户创建的 Lineage）中的一个普通 Resident，帮用户画职责模板的图。它不加入 My Lineage 中的个人助手 Family，Family 的初始化与同步也不吸收它。用户第一次在工坊里发消息时，页面以 My Lineage 的画布为目标施加内置模板 workshop_assistant，再用 `CreateDuty` 给它加一条固定职责（memory_level 为 session），内容是助手的操作说明；操作说明自带结构写法，不依赖某个项目的知识条目。之后在任何 Lineage 打开工坊，都与同一位助手对话。页面在 My Lineage 中按 Function Block 的 `template_id` 等于该内置模板固定 ID 找到助手，不按名字查找。用户没有 My Lineage 时，对话栏说明原因并停用发送，不在其他 Lineage 中创建助手。对话框使用 Portal 的 Chat 组件，运行设置走助手自己的对话设置。
 
@@ -437,10 +441,10 @@ ReviewComponentScript(lineage_id, effect_id, draft_hash, decision) 和 ReviewTem
 进入此流程后 script_review_required 为 true；同一 Effect 后续修改运行脚本必须再走候选与确认，不能删除标记或草稿绕过确认。既有未进入流程的直接脚本编辑保持兼容。候选字段不进入运行计划，不改变现行执行契约；失败通知收件人仍独立配置。含待确认草稿的模板不可发布商店；确认后可发布、安装并施加，模板和已施加实例仍各自独立。
 
 
-## Family 回顾职责配方（G0）
+## Family 回顾职责配方
 
-新增 family_duty 模块，作为“职责”分组，当前提供内置“周期组织回顾”。目标仅为一个普通 Family 的 Steward；body 为 interval_seconds（正整数秒）、guide 与 prompt（各 1–20000 字，prompt 保留 ${facts}，仅允许 facts、guide_path、guide_version 占位符）。模板不保存 Family、Steward 或共享事件的具体身份，施加时从目标解析；个人 AMA Family 与重复安装拒绝。
+family_duty 模块属于“职责”分组，当前提供内置“周期组织回顾”。目标仅为一个普通 Family 的 Steward；body 为 interval_seconds（正整数秒）、guide 与 prompt（各 1–20000 字，prompt 保留 ${facts}，仅允许 facts、guide_path、guide_version 占位符）。模板不保存 Family、Steward 或共享事件的具体身份，施加时从目标解析；个人 AMA Family 与重复安装拒绝。
 
 ApplyTemplate 的 dry_run 使用同一安装及图校验路径，不改变定义。首次施加接管原回顾结构，后续撤下、再安装沿用职责生命周期；持久的 independent_duties 标记阻止 Family 同步重新生成。共享成员完成事件仍属 Family，职责工坊可编辑自己的组件与连线。既有任务的原请求身份、业务活动及空闲门控不变。
 
-CreateTemplate.from_selection 选择这条职责时生成 family_duty 配方，可通过工坊修改周期、指南和触发提示词，另存、发布商店、安装后用于另一 Family。任意自定义结构、Effect 脚本或附加职责记忆不静默省略：目前超出该配方可复用范围时明确拒绝导出，实例编辑仍保留。它是首个职责试拆样例，并非完整角色模板。
+CreateTemplate.from_selection 选择这条职责时生成 family_duty 配方，可通过工坊修改周期、指南和触发提示词，另存、发布商店、安装后用于另一 Family。任意自定义结构、Effect 脚本或附加职责记忆不静默省略：目前超出该配方可复用范围时明确拒绝导出，实例编辑仍保留。

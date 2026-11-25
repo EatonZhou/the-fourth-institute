@@ -46,7 +46,7 @@
       if (templatesState.application && templatesState.application.lineageId !== getContext().lineage_id) templatesState.application.close();
       if (picked && (picked.lineageId !== getContext().lineage_id || picked.user !== username())) cancelPlacement();
       const user = username();
-      const visible = templatesState.templates.filter(item => item.builtin_key !== 'workshop_assistant' && (item.builtin_key || (user && item.created_by === user)) && (!config.structureOnly || item.kind === 'structure'));
+      const visible = visibleTemplates(templatesState.templates, user).filter(item => !config.structureOnly || item.kind === 'structure');
       shelf.innerHTML = [...(config.toolboxGroups || []), ...GROUPS].filter(group => !config.structureOnly || group.key !== 'errands').map(group => {
         const rows = visible.filter(item => (item.toolbox_group || groupFor(item.kind)) === group.key);
         const cards = rows.map(item => `<div class="templateTileWrap"><button type="button" class="templateTile" draggable="true"
@@ -64,7 +64,7 @@
       const task = request('ListTemplates', {}).then(result => {
         if (templatesState.disposed || owner !== identity || user !== username()) return;
         templatesState.templates = [...(config.toolboxItems || []), ...(result.templates || [])]; templatesState.kinds = result.kinds || [];
-        render(); config.onChange?.();
+        render(); config.onChange?.(templatesState.templates);
       }).finally(() => { if (loading === task) loading = null; });
       loading = task;
       return loading;
@@ -201,5 +201,6 @@
     abort.signal.addEventListener('abort', () => { cancelPlacement(); ghost.remove(); });
     return {abort, dropHint, find, load, render, unsupported};
   }
-  window.LineageTemplatesShelf = Object.freeze({createShelf, groupFor, storeGroupFor, thumbnail, dependencies: DEPENDENCIES});
+  const visibleTemplates = (items, user) => items.filter(item => item.builtin_key !== 'workshop_assistant' && (item.builtin_key || (user && item.created_by === user)));
+  window.LineageTemplatesShelf = Object.freeze({createShelf, visibleTemplates, groupFor, storeGroupFor, thumbnail, dependencies: DEPENDENCIES});
 })();

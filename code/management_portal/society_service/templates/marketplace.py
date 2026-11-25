@@ -93,9 +93,12 @@ def annotate(templates, records=None):
     return result
 
 
-def describe(template):
+def describe(template, *, editor_graph=True):
     kind = kinds.get(template["kind"])
-    return {**template, "behavior": kind.describe(template), "editor": kind.editor(),
+    editor = kind.editor()
+    if editor_graph and hasattr(kind, 'editor_graph'):
+        editor = {**editor, 'graph': kind.editor_graph(template)}
+    return {**template, "behavior": kind.describe(template), "editor": editor,
             "application_parameters": kinds.application_parameters(template)}
 
 

@@ -21,8 +21,10 @@ const {chromium} = require(path.join(repo, 'management_portal/test_framework/tau
       window.calls=[];
       window.execute=async(instruction,args={},options={})=>{
         calls.push({instruction,args,options});
+        if(instruction==='GetTemplate' && args.template_id===window.deferTemplateId) await new Promise(resolve=>window.releaseTemplate=resolve);
         const data=await (await fetch('/rpc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({instruction,arguments:args,options})})).json();
         if(data.error)throw Object.assign(new Error(data.error.message),data.error);
+        if(instruction==='GetTemplate') window.lastCompletedGet=args.template_id;
         return data.result;
       };
       await PortalHatgLoader.load();
@@ -41,6 +43,10 @@ const {chromium} = require(path.join(repo, 'management_portal/test_framework/tau
       chat:document.querySelector('.workshopChatColumn').getBoundingClientRect().width,
       height:document.querySelector('.templateGraphCanvas').getBoundingClientRect().height}));
     assert.ok(layout.canvas>900 && layout.chat<=350 && layout.height>750,JSON.stringify(layout));
+    const library = page.locator('[data-workshop-library]');
+    assert.equal(await library.isVisible(),true);
+    const expectedLibrary = await page.evaluate(() => execute('ListTemplates').then(result => LineageTemplatesShelf.visibleTemplates(result.templates,'sample_admin').map(t=>t.template_id).sort()));
+    assert.deepEqual((await library.locator('[data-workshop-template]').evaluateAll(nodes=>nodes.map(n=>n.dataset.workshopTemplate))).sort(),expectedLibrary);
     await page.locator('.hatgNode[data-node-id="target"]').click();
     assert.equal(await page.locator('[data-graph-inspector]').isVisible(),true);
     assert.equal(await page.locator('.templateGraphPalette').isVisible(),false);
@@ -53,6 +59,7 @@ const {chromium} = require(path.join(repo, 'management_portal/test_framework/tau
     await page.locator('.templateGraphCanvas').click({position:{x:650,y:500}});
     assert.equal(await page.evaluate(()=>workshop.template().body.components.filter(row=>row.kind==='loop').length),1);
     await page.keyboard.press('Escape');
+    await page.locator('.templateGraphCanvas').click({position:{x:40,y:80}});
     await page.locator('[data-workshop-toolbox]').first().click();
     await page.locator('[data-template-id="workshop_seed"]').dragTo(page.locator('.templateGraphCanvas'),{targetPosition:{x:700,y:600}});
     assert.equal(await page.evaluate(()=>workshop.template().body.components.some(row=>row.kind==='seed')),true);
@@ -139,6 +146,46 @@ const {chromium} = require(path.join(repo, 'management_portal/test_framework/tau
       assert.equal(await page.locator('[data-workshop-toolbox]').first().isVisible(),false);
       assert.equal(await page.locator('[data-meta="title"]').inputValue(),'Assistant '+kind);
       if(kind==='script') await page.waitForSelector('.monaco-editor');
+      if(kind==='familize') {
+        assert.equal(await page.locator('.hatgNode[data-node-id="router"]').count(),1);
+        await page.locator('[data-recipe-select]').selectOption('route');
+        await page.locator('[data-recipe-task="route"][data-task-field="guide"]').fill('Choose by relevant expertise.');
+        await page.locator('[data-workshop-save]').click();
+        await page.waitForFunction(()=>!workshop.dirty());
+        const saved=await page.evaluate(async()=>(await execute('GetTemplate',{template_id:workshop.template().template_id})).template);
+        assert.equal(saved.body.tasks.route.guide,'Choose by relevant expertise.');
+        const destination=await page.evaluate(async()=>(await execute('ListTemplates')).templates.find(t=>t.builtin_key==='family').template_id);
+        await page.locator(`[data-workshop-template="${destination}"]`).click();
+        await page.waitForFunction(id=>workshop.template().template_id===id,destination);
+        assert.equal(await page.locator('[data-workshop-save]').isDisabled(),true);
+        await page.locator('[data-meta="title"]').fill('Unsaved Family');
+        const target=page.locator('[data-workshop-template]').filter({hasText:'Parameterized loop'});
+        await target.click();
+        await page.getByRole('button',{name:'继续编辑',exact:true}).click();
+        assert.equal(await page.locator('[data-meta="title"]').inputValue(),'Unsaved Family');
+        await target.click();
+        await page.getByRole('button',{name:'放弃修改并切换',exact:true}).click();
+        await page.waitForFunction(()=>workshop.template().title==='Parameterized loop');
+        // A slow old selection cannot replace a newer selection or fresh typing.
+        const other=await page.evaluate(async id=>{
+          window.deferTemplateId=id; window.releaseTemplate=null;
+          return (await execute('ListTemplates')).templates.find(t=>t.builtin_key==='fixed_reminder').template_id;
+        },destination);
+        await page.locator(`[data-workshop-template="${destination}"]`).click();
+        await page.waitForFunction(()=>typeof releaseTemplate==='function');
+        await page.locator(`[data-workshop-template="${other}"]`).click();
+        await page.waitForFunction(id=>workshop.template().template_id===id,other);
+        await page.evaluate(()=>releaseTemplate());
+        await page.waitForFunction(id=>lastCompletedGet===id,destination);
+        assert.equal(await page.evaluate(()=>workshop.template().template_id),other);
+        await page.evaluate(()=>{window.releaseTemplate=null;window.lastCompletedGet='';});
+        await page.locator(`[data-workshop-template="${destination}"]`).click();
+        await page.waitForFunction(()=>typeof releaseTemplate==='function');
+        await page.locator('[data-meta="title"]').fill('Keep editing while loading');
+        await page.evaluate(()=>{window.deferTemplateId='';releaseTemplate();});
+        await page.waitForFunction(id=>lastCompletedGet===id,destination);
+        assert.equal(await page.locator('[data-meta="title"]').inputValue(),'Keep editing while loading');
+      }
       if(kind==='family_duty') {
         await page.locator('[data-body-field="interval_seconds"]').fill('1800');
         await page.locator('[data-body-field="guide"]').fill('Review only completed business work.');

@@ -222,7 +222,7 @@
     return slots.map(item => `.templateGraph .hatgNode[data-node-id="${CSS.escape(item.key)}"]{opacity:.65;background:var(--panel-2)}`).join('\n');
   }
 
-  function mount({ root, body, workshop = false, isReadonly = () => false, onBeforeChange = () => {}, onChange = () => {}, onSelect = () => {} }) {
+  function mount({ root, body, workshop = false, readOnly = false, isReadonly = () => false, onBeforeChange = () => {}, onChange = () => {}, onSelect = () => {} }) {
     const program = window.PortalLineageProgram;
     const factory = window.PortalHatgGraph?.createGraph;
     if (!program || !factory) throw new Error(t('HATG 图形引擎未加载'));
@@ -318,6 +318,7 @@
 
     // `work` edits the body and returns the key to select, or nothing to keep the selection.
     function change(work) {
+      if (readOnly) return;
       try { onBeforeChange(); } catch (error) { hint(String(error.message || error)); return; }
       const key = work(collections(body()));
       if (key !== undefined) selected = key;
@@ -397,6 +398,7 @@
     }
 
     function connect(port) {
+      if (readOnly) return;
       const normalized = program.normalizePort(port);
       if (!normalized?.node_id || (!normalized.port_id && normalized.type !== "object")) return;
       if (!wireDraft) {

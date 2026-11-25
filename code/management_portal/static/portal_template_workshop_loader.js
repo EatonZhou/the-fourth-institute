@@ -60,6 +60,7 @@
             location.assign(url);
           },
           onSaved: template => { target = {...target,store_id:'',...template}; options.emit?.('workshop-saved',target); },
+          onOpened: template => { target = {...target,store_id:'',...template}; options.emit?.('workshop-saved',target); },
           onDeleted: () => {
             target = {...target,template_id:'',store_id:'',title:window.PortalI18n.t('模板工坊')};
             chat?.destroy(); workshop?.destroy(); chat = null; workshop = null; pending = null;

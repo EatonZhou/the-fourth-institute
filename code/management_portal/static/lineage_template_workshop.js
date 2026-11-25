@@ -4,7 +4,7 @@
   const esc = text => window.PortalUIPrimitives.escapeHtml(String(text ?? ''));
   const clone = value => JSON.parse(JSON.stringify(value));
   const request = (name, args, options) => window.PortalInstructionClient.execute(name, args, options);
-  function mount({root, lineageId, templateId = '', storeId = '', execute = request, onSaved, onDeleted, onOpenWorkshop}) {
+  function mount({root, lineageId, templateId = '', storeId = '', execute = request, onSaved, onDeleted, onOpenWorkshop, onOpened}) {
     root.querySelectorAll('[id]').forEach(node => { node.dataset.workshopId ||= node.id; });
     const element = id => root.querySelector(`[data-workshop-id="${id}"],#${id}`);
     let form = element('workshopEditor');
@@ -15,6 +15,34 @@
     let runtime = null, templates = null, base = '', fresh = !templateId && !storeId, previewItem = null;
     let removed = false;
     let documentRevision = 0;
+    let libraryItems = [], navigation = 0, editVersion = 0;
+    const library = root.querySelector('[data-workshop-library]');
+    if (library) library.hidden = false;
+    function renderLibrary(items = libraryItems) {
+      libraryItems = items;
+      const host = library?.querySelector('[data-workshop-library-items]');
+      if (!host) return;
+      host.innerHTML = window.LineageTemplatesShelf.visibleTemplates(items, window.PortalIdentity.username())
+        .filter(item => !item.toolbox_group).map(item => `<button type="button" data-workshop-template="${esc(item.template_id)}" aria-current="${item.template_id === runtime?.draft.template_id}">${esc(t(item.title))}</button>`).join('');
+    }
+    async function openTemplate(id) {
+      if (runtime?.view.working) return;
+      if (id === runtime?.draft.template_id && !previewItem) return;
+      const serial = ++navigation;
+      let changed = true;
+      try { changed = !!runtime && JSON.stringify(runtime.readDraft()) !== base; } catch (_) { /* An invalid draft still needs discard confirmation. */ }
+      if (changed && !await window.PortalUI.confirm({title:t('切换模板？'), message:t('当前模板有未保存的修改，切换后将放弃这些修改。'), confirmLabel:t('放弃修改并切换'), cancelLabel:t('继续编辑')})) return;
+      if (serial !== navigation || abort.signal.aborted) return;
+      try {
+        const previousVersion = editVersion;
+        const result = await execute('GetTemplate',{template_id:id});
+        if (serial !== navigation || abort.signal.aborted) return;
+        if (editVersion !== previousVersion || runtime?.view.working) return;
+        templateId = id; storeId = ''; previewItem = null; fresh = false; removed = false;
+        documentRevision += 1; error(null); templates.edit(result.template);
+        onOpened?.(result.template);
+      } catch (exception) { if (serial === navigation) error(exception); }
+    }
     const abort = new AbortController();
     const listen = (node, type, handler) => node.addEventListener(type, handler, {signal: abort.signal});
     const toolboxTrigger = root.querySelector('.workshopToolboxButton');
@@ -32,6 +60,7 @@
       catch (_) { return true; }
     };
     const changed = () => {
+      editVersion += 1;
       element('workshopUnsaved').hidden = !dirty();
       root.dispatchEvent(new CustomEvent('workshop:draft-changed'));
     };
@@ -92,6 +121,7 @@
       },
       ready(value) {
         runtime = value;
+        renderLibrary();
         root.dataset.templateKind = runtime.draft.kind;
         root.querySelector('[data-workshop-toolbox]').hidden = runtime.draft.kind !== 'structure';
         if (runtime.draft.kind !== 'structure') toolboxHover.close();
@@ -137,6 +167,7 @@
       shelf, canvas, request: execute, getContext: () => ({lineage_id: lineageId}),
       editorHost, toast: (message, tone) => { if (tone === 'error') error(message); },
       toolboxGroups: [{key:'primitives', label:'原语'}, {key:'slots', label:'空位'}], toolboxItems: toolboxItems(),structureOnly:true,
+      onChange: renderLibrary,
       acceptTemplate: item => item.kind === 'structure',
       resolveTarget: event => ({kind:'canvas', ...runtime.editorState.graph.position(event)}),
       async applyTemplate(id, target) {
@@ -156,6 +187,8 @@
       },
     });
     listen(root, 'click', async event => {
+      const chosen = event.target.closest('[data-workshop-template]');
+      if (chosen) { await openTemplate(chosen.dataset.workshopTemplate); return; }
       if (event.target.closest('[data-workshop-store]')) {
         toolboxHover.close();
         window.PortalTemplateStore.open({request:execute,lineageId,onOpenWorkshop:resource => onOpenWorkshop?.(resource)});
@@ -170,7 +203,7 @@
       if (saved?.template_id === templateId && runtime && !dirty() && !runtime.view.working) runtime.edit(saved);
     });
     const controller = {
-      sessionId, lineageId, dirty, documentKey: () => `${sessionId}:${documentRevision}`,
+      sessionId, lineageId, dirty, openTemplate, documentKey: () => `${sessionId}:${documentRevision}`,
       fit: () => runtime?.editorState.graph?.fit(),
       save: () => runtime.view.busy(() => save(runtime.readDraft())), template: () => runtime?.draft,
       async acceptDraft(value) {

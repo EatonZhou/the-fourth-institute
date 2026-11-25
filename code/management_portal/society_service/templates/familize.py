@@ -596,7 +596,11 @@ def familize(lineage_id: str, resident_ids: Iterable[str], actor: str, *, title:
     # the existing-Lineage-Family return; per-application choices remain last.
     defaults = copy.deepcopy(dict(load_body()))
     settings = _resident_settings(defaults.pop("resident_settings", None), resident_settings)
-    values = _values({**defaults, **dict(parameters or {}), **({"goal": goal} if goal else {})})
+    choices = {**defaults, **dict(parameters or {})}
+    tasks = choices.pop("tasks", {})
+    from . import family_graph
+    family_graph.generate({**choices, "tasks": tasks})  # Validate before creating any roles.
+    values = _values({**choices, **({"goal": goal} if goal else {})})
     # A selection is named after one of its members; a Lineage-wide Family after its Lineage.
     title = str(title or (lineage.get("title") if scope == "lineage" else "") or _member_title(members)).strip()
     element_keys = _member_elements(lineage, members, lineage_scope=scope == "lineage")
@@ -646,6 +650,7 @@ def familize(lineage_id: str, resident_ids: Iterable[str], actor: str, *, title:
                                        "key": "member:" + roles["facade"]})
         family_workflows.update(body, block, actor, collect=True)
         reconcile_in_body(body, block, actor)
+        family_graph.apply_tasks(body, block, tasks)
         if parent_id:
             reconcile_in_body(body, parent, actor)
         if leader in members or scope == "lineage" or personal_ama_id:
@@ -841,7 +846,15 @@ class FamilizeKind:
     def normalize(self, template: dict) -> dict:
         body = dict(template.get("body") or {})
         settings = _validate_resident_settings(body.pop("resident_settings", None))
-        return {**template, "body": {**_values(body), "resident_settings": settings}}
+        tasks = body.pop("tasks", {})
+        normalized = {**_values(body), "resident_settings": settings, **({"tasks": tasks} if tasks else {})}
+        from . import family_graph
+        family_graph.generate({**normalized, "tasks": tasks})
+        return {**template, "body": normalized}
+
+    def editor_graph(self, template):
+        from .family_graph import project
+        return project(template)
 
     def describe(self, template: dict) -> dict:
         settings = _resident_settings(template.get("body", {}).get("resident_settings"))
