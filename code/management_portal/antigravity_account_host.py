@@ -20,17 +20,22 @@ def connect_account(account_id, **callbacks):
     from scripts.portal_service_units import antigravity_account_service
 
     path = socket_path(account_id)
-    try:
-        connection = connect_local(path)
-    except (FileNotFoundError, ConnectionRefusedError):
-        antigravity_account_service(account_id, action="start")
-        deadline = time.monotonic() + 20
-        while True:
-            try:
-                connection = connect_local(path)
-                break
-            except (FileNotFoundError, ConnectionRefusedError):
-                if time.monotonic() >= deadline:
-                    raise TimeoutError("Antigravity account service did not become ready")
-                time.sleep(0.1)
-    return AccountAcpClient(connection, **callbacks)
+    deadline = time.monotonic() + 20
+    next_start = 0.0
+    while True:
+        try:
+            connection = connect_local(path)
+            return AccountAcpClient(connection, **callbacks)
+        except (FileNotFoundError, ConnectionRefusedError):
+            now = time.monotonic()
+            if now >= deadline:
+                raise TimeoutError("Antigravity account service did not become ready")
+            if now >= next_start:
+                try:
+                    antigravity_account_service(account_id, action="start")
+                    next_start = deadline
+                except BlockingIOError:
+                    # Another first caller or instance update owns the lifecycle lock.
+                    # Keep trying the socket while it registers and starts the service.
+                    next_start = now + 1
+            time.sleep(0.1)

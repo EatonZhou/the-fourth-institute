@@ -352,3 +352,24 @@ def test_linux_account_accepts_only_matching_instance_tunnel_policy(tmp_path):
     path.write_text(policy)
     deployment["proxy_environment"] = "enabled"
     assert not accepted()
+
+
+def test_cold_client_waits_for_concurrent_registration(monkeypatch, tmp_path):
+    from management_portal import antigravity_account_host as host
+    from scripts import portal_service_units
+
+    attempts = []
+    ready = object()
+    def connect(path):
+        if attempts:
+            return ready
+        raise FileNotFoundError
+    def start(account_id, *, action):
+        attempts.append((account_id, action))
+        raise BlockingIOError
+    monkeypatch.setattr(host, "socket_path", lambda _: tmp_path / "account.sock")
+    monkeypatch.setattr(host, "connect_local", connect)
+    monkeypatch.setattr(host, "AccountAcpClient", lambda connection: connection)
+    monkeypatch.setattr(portal_service_units, "antigravity_account_service", start)
+    assert host.connect_account("one") is ready
+    assert attempts == [("one", "start")]
