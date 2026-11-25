@@ -33,6 +33,17 @@ def _settings() -> dict:
     return read_site_config().get("deployment", {}).get("transfer_network", {})
 
 
+@contextmanager
+def drive_transfer(env: dict, route: str, rclone: str):
+    # Select the program and its environment together during a live cutover.
+    direct = _settings().get("direct_rclone_program") if route == "direct" else None
+    if direct:
+        yield direct, {key: value for key, value in env.items() if key not in PROXY_KEYS}
+        return
+    with transfer_environment(env, route, GOOGLE_DRIVE_HOSTS) as scoped:
+        yield rclone, scoped
+
+
 def _proxy_environment(env: dict, proxy: str) -> dict:
     clean = {key: value for key, value in env.items() if key not in PROXY_KEYS}
     clean.update({"HTTPS_PROXY": proxy, "https_proxy": proxy})

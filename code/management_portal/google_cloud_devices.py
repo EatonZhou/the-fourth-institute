@@ -71,14 +71,15 @@ def read_status(config: dict, kind: str) -> dict:
                 raise ValueError("Colab did not return all usage fields")
             values[field] = cast(match[1])
         return values
-    from management_common.transfer_network import GOOGLE_DRIVE_HOSTS, resolve_route, transfer_environment
+    from management_common.transfer_network import drive_transfer, resolve_route
 
-    command = [
-        _executable(config, "rclone"), "--config", str(portal_path("secrets") / "colab-drive.conf"),
+    route = resolve_route()
+    args = [
+        "--config", str(portal_path("secrets") / "colab-drive.conf"),
         "--retries", "1", "--low-level-retries", "1", "about", "colab_drive:", "--json",
     ]
-    with transfer_environment(dict(os.environ), resolve_route(), GOOGLE_DRIVE_HOSTS) as env:
-        data = json.loads(_read(command, env=env))
+    with drive_transfer(dict(os.environ), route, _executable(config, "rclone")) as (binary, env):
+        data = json.loads(_read([binary, *args], env=env))
     return {
         field: data[key]
         for field, key in (("storage_total_bytes", "total"), ("storage_used_bytes", "used"),

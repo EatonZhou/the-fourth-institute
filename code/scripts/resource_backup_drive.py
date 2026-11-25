@@ -17,22 +17,21 @@ DESTINATION = "colab_drive:Backups/Portal"
 
 
 def run(operation: str, service_root: Path, network_route: str | None = None) -> dict:
-    from management_common.transfer_network import GOOGLE_DRIVE_HOSTS, resolve_route, transfer_environment
+    from management_common.transfer_network import drive_transfer, resolve_route
+    from management_common.site_config import read_site_config
 
     route = resolve_route(network_route)
     env = {key: value for key, value in os.environ.items() if not key.startswith(("RCLONE_", "RESTIC_"))}
-    with transfer_environment(env, route, GOOGLE_DRIVE_HOSTS) as scoped:
-        return {**_run(operation, service_root, scoped), "network_route": route}
+    binary = read_site_config()["deployment"]["google_cloud_devices"]["rclone"]
+    with drive_transfer(env, route, binary) as (rclone, scoped):
+        return {**_run(operation, service_root, scoped, rclone), "network_route": route}
 
 
-def _run(operation: str, service_root: Path, env: dict) -> dict:
+def _run(operation: str, service_root: Path, env: dict, rclone: str) -> dict:
     from management_common.portal_paths import path as portal_path
-    from management_common.site_config import read_site_config
 
     if operation not in OPERATIONS:
         raise ValueError("Unsupported Google Drive backup operation")
-    deployment = read_site_config()["deployment"]
-    rclone = deployment["google_cloud_devices"]["rclone"]
     config_path = portal_path("secrets") / "colab-drive.conf"
     config = configparser.ConfigParser(interpolation=None)
     config.read(config_path)
