@@ -110,15 +110,24 @@ def _undefine(component: str) -> None:
 
 
 def kimi_account_service(account_id: str, *, action: str) -> dict[str, Any]:
+    return _account_service('kimi-account', account_id, action=action)
+
+
+def antigravity_account_service(account_id: str, *, action: str) -> dict[str, Any]:
+    return _account_service('antigravity-account', account_id, action=action)
+
+
+def _account_service(kind: str, account_id: str, *, action: str) -> dict[str, Any]:
     """Control only an account host registered in this instance's inventory."""
     from management_common.provider_account_paths import validate_identity
     from scripts import instance_services
-    component = 'kimi-account@' + validate_identity(account_id)
+    component = kind + '@' + validate_identity(account_id)
     if action not in {'start', 'stop', 'remove'}:
-        raise ValueError('Unknown Kimi account service action')
+        raise ValueError('Unknown account service action')
     instance = _instance()
     if action == 'start':
-        instance, _ = instance_services.register_component(instance.root, component, listener_bind='127.0.0.1')
+        options = {'listener_bind': '127.0.0.1'} if kind == 'kimi-account' else {}
+        instance, _ = instance_services.register_component(instance.root, component, **options)
     elif component not in instance.document['services']['components']:
         return {'active': 'inactive', 'pid': 0}
     instance_services.verify_definitions(instance, exact=False, selected_components=(component,))
@@ -133,7 +142,10 @@ def kimi_account_service(account_id: str, *, action: str) -> dict[str, Any]:
         control.stop(name)
         if action == 'remove':
             _undefine(component)
-    return {**control.status(name), 'port': instance.listener(component)['port']}
+    state = control.status(name)
+    if kind == 'kimi-account':
+        state = {**state, 'port': instance.listener(component)['port']}
+    return state
 
 
 def install_claude_unit(runtime: Path, package: Path) -> Path:

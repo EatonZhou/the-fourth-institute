@@ -35,7 +35,7 @@ def manifest_unit_text(instance, component):
                                     '--component', component],
                              cwd=code, log_root=instance.directory('runtime'), log_name=component,
                              environment=instance.service_environment(component),
-                             keep_alive=True if component.startswith('kimi-account@') else None)
+                             keep_alive=True if component.startswith(('kimi-account@', 'antigravity-account@')) else None)
 
 
 def command_unit_text(name, command, *, cwd, log_root, log_name, environment=None, keep_alive=None):

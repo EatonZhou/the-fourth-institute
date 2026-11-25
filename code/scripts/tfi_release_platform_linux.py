@@ -47,7 +47,7 @@ def manifest_unit_text(instance, component):
     stop_signal = "KillSignal=SIGINT\n" if component == "nats" else ""
     # The Worker Manager runs Provider adapters, which keep the default weight.
     weight = "" if component == "worker" else REQUEST_PATH_CPU_WEIGHT
-    restart = 'always' if component.startswith(('codex-app-server@', 'kimi-account@')) else 'on-failure'
+    restart = 'always' if component.startswith(('codex-app-server@', 'kimi-account@', 'antigravity-account@')) else 'on-failure'
     limits = 'MemoryHigh=32G\nMemoryMax=36G\nMemorySwapMax=1G\n' if component.startswith('codex-app-server@') else ''
     environment = ''.join('Environment=' + json.dumps(key + '=' + value, ensure_ascii=False).replace('%', '%%') + '\n'
                           for key, value in instance.service_environment(component).items())

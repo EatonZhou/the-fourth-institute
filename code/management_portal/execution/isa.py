@@ -653,6 +653,9 @@ def delete_provider_account(inv):
     if row["provider"] == "kimi":
         from management_portal.kimi_account_runtime import remove_account
         remove_account(row)
+    if row["provider"] == "antigravity":
+        from scripts.portal_service_units import antigravity_account_service
+        antigravity_account_service(row["account_id"], action="remove")
     delete_login_data(row["account_id"])
     host.remove_account_runtime(row["provider"], row["account_id"])
     store.delete_registration(row["account_id"])
