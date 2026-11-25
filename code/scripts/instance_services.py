@@ -89,9 +89,10 @@ def controller(instance):
     if platform_name() == 'windows':
         from scripts.tfi_windows_user_services import WindowsServiceControl
         return WindowsServiceControl(definition_directory(instance))
-    if platform_name() == 'macos' and instance.document['services'].get('launch_agents_directory'):
+    if platform_name() == 'macos':
         from scripts.portal_service_control import ServiceControl
-        return ServiceControl(platform='macos', agent_root=definition_directory(instance))
+        return ServiceControl(platform='macos', agent_root=definition_directory(instance),
+                              shutdown_state=instance.directory('runtime') / 'service-locks')
     return adapter().service_controller()
 
 

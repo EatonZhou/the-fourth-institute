@@ -61,6 +61,12 @@ the table. Registration is the authority for custom and account services, not
 a filename scan. A stopped component stays stopped; an explicitly disabled
 feature is not enabled merely because its module ships in the code.
 
+On macOS, stopping a Codex account service lets the account host shut down its
+native app-server before launchd unloads the job. The updater waits for both
+processes to exit before it starts a replacement. A shutdown timeout leaves
+the update in its resumable stop phase. A retry checks the recorded process
+identities even if launchd no longer reports a PID for the old job.
+
 ## Feature contributions
 
 An installed feature with persistent update requirements contributes
