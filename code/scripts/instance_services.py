@@ -200,6 +200,26 @@ def definition_root(text, platform):
     return environment.get('PORTAL_INSTANCE_ROOT')
 
 
+def _account_tunnel_dropin(instance, component, directory, properties):
+    """Recognize only the instance's effective, manifest-equivalent ACP egress settings."""
+    from management_common.portal_network import PROXY_KEYS
+
+    if not component.startswith('antigravity-account@') or properties.get('NeedDaemonReload') != 'no':
+        return False
+    deployment = instance.site_settings().get('deployment', {})
+    if (deployment.get('proxy_environment') != 'disabled'
+            or deployment.get('providers', {}).get('antigravity_egress') != 'tunnel'):
+        return False
+    path = directory / (instance.service_prefix + '-.service.d') / '65-no-proxy.conf'
+    if (properties.get('DropInPaths') != str(path) or path.parent.is_symlink()
+            or path.is_symlink() or not path.is_file()):
+        return False
+    lines = [line.strip() for line in path.read_text(encoding='utf-8').splitlines() if line.strip()]
+    return (len(lines) == 3 and lines[:2] == ['[Service]', 'Environment=TFI_PROVIDER_EGRESS=tunnel']
+            and lines[2].startswith('UnsetEnvironment=')
+            and set(lines[2].removeprefix('UnsetEnvironment=').split()) == PROXY_KEYS)
+
+
 def verify_definitions(instance, *, exact=True, selected_components=None):
     platform = platform_name()
     native = adapter()
@@ -223,9 +243,10 @@ def verify_definitions(instance, *, exact=True, selected_components=None):
             raise ValueError('Instance service definition differs from its manifest: ' + path.name)
         if platform == 'linux':
             result = control.run('systemctl', '--user', 'show', name,
-                                 '--property=FragmentPath,DropInPaths', check=True)
+                                 '--property=FragmentPath,DropInPaths,NeedDaemonReload', check=True)
             properties = dict(line.split('=', 1) for line in result.stdout.splitlines() if '=' in line)
-            if properties.get('FragmentPath') != str(path) or properties.get('DropInPaths'):
+            if (properties.get('FragmentPath') != str(path)
+                    or properties.get('DropInPaths') and not _account_tunnel_dropin(instance, component, directory, properties)):
                 raise ValueError('Loaded instance service has a different definition or overrides: ' + name)
         elif platform == 'macos':
             # A plist on disk is not proof of the job launchd has loaded.

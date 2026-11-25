@@ -327,3 +327,28 @@ def test_shared_google_environment_has_no_resident_caller(tmp_path, monkeypatch)
     monkeypatch.setenv("PORTAL_SHARED_ACP", "1")
     with pytest.raises(RuntimeError, match="hatg_instruction"):
         resident_hatg_instruction._resident_id("resident_aaaaaaaaaaaa")
+
+
+def test_linux_account_accepts_only_matching_instance_tunnel_policy(tmp_path):
+    from types import SimpleNamespace
+    from scripts.instance_services import _account_tunnel_dropin
+
+    deployment = {"proxy_environment": "disabled", "providers": {"antigravity_egress": "tunnel"}}
+    instance = SimpleNamespace(service_prefix="tfi-test", site_settings=lambda: {"deployment": deployment})
+    path = tmp_path / "tfi-test-.service.d" / "65-no-proxy.conf"
+    path.parent.mkdir()
+    policy = ("[Service]\nEnvironment=TFI_PROVIDER_EGRESS=tunnel\n"
+              "UnsetEnvironment=HTTP_PROXY HTTPS_PROXY ALL_PROXY NO_PROXY http_proxy https_proxy all_proxy no_proxy\n")
+    path.write_text(policy)
+    state = {"NeedDaemonReload": "no", "DropInPaths": str(path)}
+    def accepted(**changes):
+        return _account_tunnel_dropin(instance, "antigravity-account@one", tmp_path, {**state, **changes})
+    assert accepted()
+    assert not accepted(NeedDaemonReload="yes")
+    assert not accepted(DropInPaths=f"{path} {path}")
+    assert not _account_tunnel_dropin(instance, "society", tmp_path, state)
+    path.write_text(policy + "WorkingDirectory=/tmp\n")
+    assert not accepted()
+    path.write_text(policy)
+    deployment["proxy_environment"] = "enabled"
+    assert not accepted()
