@@ -17,7 +17,7 @@ w.PortalUI.toast = (message, tone) => toasts.push([message, tone]);
   for (const compact of [false, true]) {
     const progress = api.createSessionRestartProgress({compact, headerIcon: compact});
     w.document.body.append(progress.element);
-    for (const strategy of ['native', 'local']) {
+    for (const strategy of ['preserve', 'native', 'local']) {
       progress.update({restart: {...pending, context_strategy: strategy}});
       assert.equal(progress.element.hidden, false, 'configuration completion must expose pending context');
       assert.match(progress.element.textContent, /账号配置已保存/);
@@ -41,16 +41,16 @@ w.PortalUI.toast = (message, tone) => toasts.push([message, tone]);
     observeSessionRestart: (_id, callback) => {observe = callback; return () => {};}};
   const config = {resident_id: 'fixture', runtime_settings: {model: 'm'}, runtime_catalog: catalog,
     source: pending.source, providers: [{id: 'codex'}, {id: 'claude'}], accounts: {
-      codex: [{id: 'codex_two', context_options: [{id: 'local', label: '摘要重组', enabled: true}]}],
-      claude: [{id: 'claude_one', context_options: [{id: 'local', enabled: true, description: '首条真实输入携带本地摘要、索引和最近三轮。'}]}]}};
+      codex: [{id: 'codex_two', context_options: [{id: 'preserve', label: '完整上下文', enabled: true}]}],
+      claude: [{id: 'claude_one', context_options: [{id: 'preserve', enabled: true, description: '继承完整有效上下文。'}]}]}};
   for (const inline of [false, true]) {
     const selection = api.createRuntimePanel({inline});
     w.document.body.append(selection.element);
     selection.open({...config, accounts: {...config.accounts, claude: [
       {id: 'claude_one', context_options: [
-        {id: 'local', label: '摘要重组', enabled: true, description: '首条真实输入携带本地记忆'}]},
+        {id: 'preserve', label: '完整上下文', enabled: true, description: '首条真实输入继承完整上下文'}]},
       {id: 'claude_two', context_options: []},
-      {id: 'claude_three', context_options: [{id: 'local', label: '摘要重组', enabled: false}]}
+      {id: 'claude_three', context_options: [{id: 'preserve', label: '完整上下文', enabled: false}]}
     ]}}, () => {throw new Error('an incomplete selection must not submit');});
     await flush();
     const backend = selection.element.querySelector('[data-session-backend]');
@@ -75,7 +75,7 @@ w.PortalUI.toast = (message, tone) => toasts.push([message, tone]);
     assert.equal(submit.disabled, true); submit.click();
     await change(account, JSON.stringify(['claude', 'claude_one']));
     quiet();
-    assert.equal(memory.value, 'local', 'account migration only reconstructs local memory');
+    assert.equal(memory.value, 'preserve', 'account migration uses full Fork context');
     assert.equal(submit.disabled, false);
     await change(account, '');
     quiet();
@@ -120,7 +120,7 @@ w.PortalUI.toast = (message, tone) => toasts.push([message, tone]);
   w.document.body.append(panel.element);
   for (const deferred of [false, true]) {
     panel.open(config, async values => {
-      requests++; assert.equal(values.context_strategy, 'local');
+      requests++; assert.equal(values.context_strategy, 'preserve');
       assert.equal(values.active_execution_policy, 'wait'); assert.equal(Object.hasOwn(values, 'resume_failed_input'), false);
       assert.ok(values.idempotency_key);
       return deferred ? {...pending, status: 'accepted'} : pending;
@@ -133,7 +133,7 @@ w.PortalUI.toast = (message, tone) => toasts.push([message, tone]);
     assert.doesNotMatch(panel.element.querySelector('[data-switch-context-description]').textContent, /新会话成功后才切换/,
       'manual configuration must not repeat the old immediate model handoff promise');
     const submit = panel.element.querySelector('[data-session-restart-submit]');
-    assert.equal(submit.textContent, '保存账号配置');
+    assert.match(submit.textContent, /切换账号|Switch account/);
     submit.click(); submit.click(); await flush();
     if (deferred) {observe({restart: pending}); await flush(); observe({restart: pending}); await flush();}
     assert.equal(requests, deferred ? 2 : 1, 'double submit admits one write: ' + JSON.stringify(toasts));

@@ -1392,8 +1392,6 @@ def resident_system_instructions(
 
     settings = (job.get("_assembly_runtime_settings") or resident_runtime_domain.read_resident_runtime_settings(record)) if settings is None else settings
     choices = prompt_injection.resolve(settings.get("prompt_injection"))
-    if job.get("memory_handoff"):
-        choices = {**choices, "core_rules": "every_turn", "runtime_identity": "every_turn", "authorization_context": "every_turn"}
     from .resident_capability_materials import selected_skills
     additional_skills, skill_observations = selected_skills(settings, job.get("additional_skills"),
         resident_id=resident_domain_common.record_resident_id(record))
@@ -1673,7 +1671,7 @@ def _build_resident_execution_request_unrestricted(
         # message. Presets are context, never a replacement for the new input.
         prompt = str(job.get("raw_message") or "") if scope else str(job.get("actual_sent_prompt") or job.get("message") or job.get("raw_message") or "")
         seed = job.get("fork_context_input") or {}
-        if not fresh_context and seed.get("portable_prompt"):
+        if record.get("source_resident_id") and not fresh_context and seed.get("portable_prompt"):
             # Stateless Model API calls receive the same portable trace as a
             # native Provider. It already includes this Resident's history;
             # the conversation-history selector must not append it again.
@@ -2034,16 +2032,15 @@ def _portable_context_execution(
     if _lineage_delivery_profile(job):
         # A fresh-context run does not use (or consume) the session's seed.
         return job
-    if (record.get("session_restart") or {}).get("pending_handoff") is not None:
+    if ((record.get("session_restart") or {}).get("pending_handoff") or {}).get("strategy") in {"compact", "visible"}:
         from . import resident_pending_session_context
-        from . import resident_memory_handoff
 
         # Selection is configuration-only. The first real input carries the
         # frozen, explicitly bounded handoff rather than rebuilding all trace.
         prompt_job = dict(job)
         prompt_job.pop("fork_context_input", None)
         prompt_job = _prepare_resident_prompt(record, prompt_job)
-        accepted = execution_port.sessions().has_accepted_input(
+        accepted = execution_port.sessions().has_context(
             resident_backend.execution_binding_id(record),
             agent_id=resident_domain_common.record_resident_id(record),
         )
@@ -2051,9 +2048,7 @@ def _portable_context_execution(
             record, prompt_job["actual_sent_prompt"], accepted=accepted,
         )
         if seed:
-            resident_memory_handoff.prepare_native(record, resident_execution_work.request_actor(job))
             prompt_job["fork_context_input"] = seed
-            prompt_job["memory_handoff"] = True
         return prompt_job
     if (
         _requires_initial_context_compaction(record)

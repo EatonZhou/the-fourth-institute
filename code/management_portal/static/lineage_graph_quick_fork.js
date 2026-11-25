@@ -222,7 +222,7 @@
         .attr("data-source-node-id", node => node.id)
         .attr("data-busy", node => state.model.quickForkNodeId === node.id ? "true" : null)
         .attr("aria-busy", node => state.model.quickForkNodeId === node.id ? "true" : "false")
-        .attr("aria-label", node => `从「${node.title || node.id}」Fork 新 Resident（默认优先原生方式）`)
+        .attr("aria-label", node => `从「${node.title || node.id}」完整上下文 Fork 新 Resident`)
         .attr("aria-description", "点击直接 Fork；悬停或按方向键选择其他创建方式；拖到 Seed 上建立候选 Fork。")
         .attr("aria-haspopup", "menu")
         .attr("data-portal-tooltip-opt-out", "1")
@@ -254,7 +254,7 @@
           event.preventDefault();
           event.stopPropagation();
           if (event.detail > 1 || suppressQuickForkClick) return;
-          invokeQuickFork(node.id, event, "");
+          invokeQuickFork(node.id, event, "full");
         });
     }
 

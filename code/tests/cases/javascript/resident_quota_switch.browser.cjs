@@ -21,7 +21,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     for (const file of ['portal_text', 'portal_state', 'portal_translations', 'portal_i18n', 'portal_ui_primitives', 'portal_overlay', 'portal_ui', 'portal_model_api_settings', 'chat_workspace_runtime_settings', 'portal_resident_runtime_controller', 'portal_resident_menu_runtime', 'chat_workspace_runtime_controls', 'chat_workspace_resident_workspace']) await page.addScriptTag({url: '/static/' + file + '.js'});
     await page.evaluate(() => {
       const catalog = {models: ['m'], default_model: 'm', efforts_by_model: {}, service_tiers_by_model: {}, runtime_capabilities: {settings: ['model']}};
-      const contextOptions = [{id: 'local', enabled: true, description: '摘要重组'}];
+      const contextOptions = [{id: 'preserve', enabled: true, description: '摘要重组'}];
       let settings = {model: 'm'}, revision = 'r0';
       window.saves = []; window.switches = []; window.toasts = []; window.canEdit = true; window.canSwitch = true; window.optionTargets = []; window.currentResident = "fixture";
       PortalUI.toast = message => toasts.push(message);
@@ -99,7 +99,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     await page.locator('.portalSessionRestartOverlay [data-session-restart-submit]').click();
     await page.waitForFunction(() => switches.length === 1);
     const payload = await page.evaluate(() => switches[0]);
-    assert.equal(payload.target_account, 'outside-default'); assert.equal(payload.context_strategy, 'local');
+    assert.equal(payload.target_account, 'outside-default'); assert.equal(payload.context_strategy, 'preserve');
     assert.equal(Object.hasOwn(payload, 'resume_failed_input'), false);
     await page.evaluate(() => {
       quota({state: 'unavailable', reason: 'quota_unknown'}); residentWorkspace.quotaSubmitted('message3');

@@ -52,7 +52,7 @@ def input_history_page(repository: Any, record: Mapping[str, Any], actor: str,
     result: dict[str, Any] = {'resident_id': target, 'messages': [], 'next_page_token': ''}
 
     def predecessor() -> tuple[Mapping[str, Any], int] | None:
-        if current.get('fork_mode') not in {'full', 'compacted', 'native', 'local'} or depth >= _MAX_DEPTH:
+        if current.get('fork_mode') not in {'full', 'compacted'} or depth >= _MAX_DEPTH:
             return None
         source = str(current.get('context_source_resident_id') or current.get('source_resident_id') or '')
         if not source or source in seen:

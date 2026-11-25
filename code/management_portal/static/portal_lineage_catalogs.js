@@ -196,50 +196,6 @@
       available: !!definition && routes.length > 0 };
   }
 
-  function forkControls(host) {
-    if (host._memoryControls) return host._memoryControls;
-    const editor = window.PortalChatWorkspaceRuntimeSettings.createRuntimeSettings({escapeHtml: window.PortalUI.escapeHtml || (s => String(s).replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`))}).createRuntimeSettingsEditor();
-    const label = document.createElement("label"), method = document.createElement("select"), status = document.createElement("p");
-    label.className = "residentFormRow"; label.append("记忆交接", method);
-    host.replaceChildren(editor.element, label, status);
-    let generation = 0, ready = false, lastKey = "";
-    const control = {
-      open(residentId, provider, route) {
-        const key = JSON.stringify([residentId, provider, route]);
-        if (key === lastKey) return;
-        lastKey = key; ready = false;
-        const ticket = ++generation;
-        editor.element.disabled = true; method.disabled = true; status.textContent = "正在读取账号、模型与交接能力…";
-        window.PortalResidentService.sessionRestartOptions(residentId)
-          .then(async config => {
-            const account = config.accounts?.[provider]?.find(row => row.id === route || row.account_id === route);
-            if (!account?.account_id) throw new Error("目标账号已不可用，请重新选择");
-            return [config, account, await runtimeCatalog(account.account_id)];
-          })
-          .then(([config, account, catalog]) => {
-            if (ticket !== generation) return;
-            const choices = account?.fork_context_options || [];
-            method.replaceChildren(...choices.map(row => {const o = new Option(row.label, row.id); o.disabled = !row.enabled; return o;}));
-            method.value = choices.find(row => row.enabled)?.id || "";
-            if (!method.value) throw new Error("账号交接能力不可用，请重新打开窗口");
-            const current = config.source?.provider === provider ? config.runtime_settings || {} : {};
-            const model = catalog.models?.includes(current.model) ? current.model : catalog.default_model;
-            const effort = catalog.efforts_by_model?.[model]?.includes(current.reasoning_effort) ? current.reasoning_effort : catalog.default_efforts_by_model?.[model] || catalog.default_reasoning_effort || "";
-            editor.open({model, reasoning_effort: effort}, {catalog, modelOnly: true, showApiAccount: false, showAccountSelection: false, hint: "仅创建分支；第一条新消息才交接记忆，不提前调用模型。"});
-            editor.element.disabled = false; method.disabled = false; ready = true; status.textContent = "";
-          }).catch(error => {if (ticket === generation) {lastKey = ""; status.textContent = String(error.message || error);}});
-      },
-      read() {
-        if (!ready) throw new Error("请等待目标账号配置读取完成");
-        const values = editor.read({complete: true});
-        return {fork_mode: method.value, model: values.model, ...(values.reasoning_effort !== undefined ? {reasoning_effort: values.reasoning_effort} : {})};
-      },
-      reset() { generation += 1; ready = false; lastKey = ""; },
-    };
-    host._memoryControls = control;
-    return control;
-  }
-
   function invalidate(targets = null) {
     if (targets === null || targets === undefined) {
       entries.clear();
@@ -260,7 +216,7 @@
   window.PortalLineageCatalogs = Object.freeze({
     agentBackends,
     populateBackends,
-    renderForkProvider, forkControls,
+    renderForkProvider,
     invalidate,
     normalizeRuntimeCatalog,
     projectCatalog,

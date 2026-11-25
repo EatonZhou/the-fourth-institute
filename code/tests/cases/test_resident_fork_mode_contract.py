@@ -1,4 +1,4 @@
-"""Fork and switching share two lazy memory transfers."""
+"""Current Fork protocol uses full; historical native provenance is independent."""
 from unittest import mock
 
 import pytest
@@ -10,9 +10,9 @@ from management_portal.society_service.templates.registry import TemplateError
 from management_portal.society_service.templates import kinds
 
 
-@pytest.mark.parametrize("mode", [None, "native", "local", "full", "visible"])
-def test_public_fork_protocol_accepts_two_transfers_and_rejects_old_modes(mode):
-    """ForkResident 接受缺省、native、local；拒绝 full 和 visible
+@pytest.mark.parametrize("mode", [None, "full", "native", "visible"])
+def test_public_fork_protocol_accepts_full_and_rejects_native(mode):
+    """ForkResident 接受缺省或 full 的 fork_mode，拒绝 native 和 visible
 
     :design: decision_5bf5bfbd52cb, decision_d19b9909a674
     :design-point:
@@ -20,7 +20,7 @@ def test_public_fork_protocol_accepts_two_transfers_and_rejects_old_modes(mode):
     args = {"lineage_id": "lineage_aaaaaaaaaaaa", "source_resident_id": "resident_aaaaaaaaaaaa"}
     if mode is not None:
         args["fork_mode"] = mode
-    if mode in {"full", "visible"}:
+    if mode in {"native", "visible"}:
         with pytest.raises(InstructionError) as failed:
             catalog.declaration("ForkResident").validate_arguments(args)
         assert failed.value.code == "instruction.invalid_arguments"
@@ -28,7 +28,7 @@ def test_public_fork_protocol_accepts_two_transfers_and_rejects_old_modes(mode):
         catalog.declaration("ForkResident").validate_arguments(args)
 
 
-@pytest.mark.parametrize("mode", [None, "native", "local", "full", "visible", "unknown"])
+@pytest.mark.parametrize("mode", [None, "full", "native", "visible", "unknown"])
 def test_direct_branch_calls_validate_mode_before_provider_creation(mode):
     """直接创建分支时先校验分支模式，无效模式在创建 Resident 前被拒绝
 
@@ -39,7 +39,7 @@ def test_direct_branch_calls_validate_mode_before_provider_creation(mode):
     if mode is not None:
         payload["mode"] = mode
     authority = mock.Mock()
-    if mode in {"full", "visible", "unknown"}:
+    if mode in {"native", "visible", "unknown"}:
         with pytest.raises(ValueError, match="分支模式"):
             lineage_branch_transitions.branch_request(payload)
         with pytest.raises(ValueError, match="分支模式"):
@@ -49,7 +49,7 @@ def test_direct_branch_calls_validate_mode_before_provider_creation(mode):
             )
         assert authority.mock_calls == []
     else:
-        assert lineage_branch_transitions.branch_request(payload)[-1] == (mode or "")
+        assert lineage_branch_transitions.branch_request(payload)[-1] == "full"
         lineage_branch_transitions.create_derived_resident(
             payload["source_resident_id"], payload, "CASE-A", "lineage_aaaaaaaaaaaa",
             resident_authority=authority,
@@ -57,9 +57,9 @@ def test_direct_branch_calls_validate_mode_before_provider_creation(mode):
         authority.create_resident_full_context_fork.assert_called_once()
 
 
-@pytest.mark.parametrize("mode", [None, "native", "local", "full", "visible"])
-def test_structure_templates_use_the_two_memory_transfers(mode):
-    """结构模板不预先覆盖能力选择，支持两种方法"""
+@pytest.mark.parametrize("mode", [None, "full", "native", "visible"])
+def test_structure_templates_use_the_current_full_mode(mode):
+    """结构模板的 fork 角色默认 full，拒绝 native 和 visible"""
     role = {"key": "child", "from": "fork", "fork_of": "source"}
     if mode is not None:
         role["fork_mode"] = mode
@@ -67,17 +67,17 @@ def test_structure_templates_use_the_two_memory_transfers(mode):
         "kind": "structure", "category": "structure", "title": "Fork", "targets": ["resident"], "parameters": [],
         "body": {"roles": [{"key": "source", "from": "target"}, role], "components": [], "wires": []},
     }
-    if mode in {"full", "visible"}:
+    if mode in {"native", "visible"}:
         with pytest.raises(TemplateError, match="Fork 模式"):
             kinds.normalize(template)
     else:
-        assert kinds.normalize(template)["body"]["roles"][-1].get("fork_mode", "") == (mode or "")
+        assert kinds.normalize(template)["body"]["roles"][-1].get("fork_mode", "full") == "full"
 
 
 
 @pytest.mark.parametrize("provider", [None, "claude", "kimi", "provider_api"])
-def test_isa_fork_default_defers_choice_to_the_lineage_owner(monkeypatch, provider):
-    """ForkResident 默认由交接能力选择方法，并带上指定的 Provider 与账号
+def test_isa_fork_default_emits_full_to_the_lineage_owner(monkeypatch, provider):
+    """ForkResident 默认以 full 模式提交，并带上指定的 Provider 与账号
 
     :design: decision_5bf5bfbd52cb, decision_d19b9909a674
     :design-point:
@@ -113,13 +113,13 @@ def test_isa_fork_default_defers_choice_to_the_lineage_owner(monkeypatch, provid
     )
     residents.fork_resident(inv)
     assert joins == [("lineage_aaaaaaaaaaaa", "resident_bbbbbbbbbbbb", "fbi_cccccccccccc", inv)]
-    assert payloads[0]["fork_mode"] == ""
+    assert payloads[0]["fork_mode"] == "full"
     if provider:
         assert payloads[0]["provider"] == provider
         assert payloads[0]["backend_route_id"] == "selected-account"
 
 
-@pytest.mark.parametrize("mode", ["native", "local"])
+@pytest.mark.parametrize("mode", ["full", "compacted", "recent-5", "recent-10", "message"])
 def test_every_fork_mode_forwards_provider_and_account(mode):
     """每种 fork 模式都把指定的 Provider 和 backend_route_id 传给创建"""
     authority = mock.Mock()
@@ -133,12 +133,12 @@ def test_every_fork_mode_forwards_provider_and_account(mode):
 
 
 def test_restart_provider_native_strategy_keeps_its_distinct_protocol():
-    """RestartSession 的 context_strategy 接受 native，拒绝 full
+    """RestartSession 复用完整 Fork 上下文，以 preserve 请求
 
     :design: decision_5bf5bfbd52cb, decision_d19b9909a674
     :design-point:
     """
-    args = {"resident_id": "resident_aaaaaaaaaaaa", "context_strategy": "native"}
+    args = {"resident_id": "resident_aaaaaaaaaaaa", "context_strategy": "preserve"}
     catalog.declaration("RestartSession").validate_arguments(args)
     args["context_strategy"] = "full"
     with pytest.raises(InstructionError) as failed:

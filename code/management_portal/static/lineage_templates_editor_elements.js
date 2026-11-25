@@ -37,7 +37,7 @@
       if (row.from === 'target') return `<p class="programInspectorNote">${esc(t('施加时由拖放到的 Resident 担任这个角色。'))}</p>`;
       if (row.from === 'lineage_leader') return `<p class="programInspectorNote">${esc(t('施加时由当前 Lineage 的 Leader 担任这个角色。'))}</p>`;
       const fork = row.from === 'fork' ? `${field({ label: 'Fork 来源角色', type: 'enum', options: roleKeys().filter(key => key !== row.key) }, row.fork_of, 'data-row-field="fork_of" data-field-type="enum"')}
-          ${field({ label: 'Fork 模式', type: 'enum', options: ['', 'native', 'local'] }, row.fork_mode || '', 'data-row-field="fork_mode" data-field-type="enum"')}` : '';
+          ${field({ label: 'Fork 模式', type: 'enum', options: ['full', 'compacted', 'recent-5', 'recent-10'] }, row.fork_mode || 'full', 'data-row-field="fork_mode" data-field-type="enum"')}` : '';
       return `${fork}<div class="templateInspectorResident" data-role-settings></div>`;
     }
 

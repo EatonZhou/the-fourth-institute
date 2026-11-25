@@ -45,7 +45,7 @@ def test_default_restart_preserves_without_model_turn(monkeypatch, isolated_port
     with isolated_portal_case():
         record, operations, _ = _restart_domain(monkeypatch)
         result = domain.restart_resident_session(record['resident_id'], 'alice', {})
-        assert result['context_strategy'] == 'native'
+        assert result['context_strategy'] == 'preserve'
         assert result['operation'] == 'restart'
         assert result['operation_id'] == result['restart_id']
         assert operations == []
@@ -100,7 +100,7 @@ def test_fresh_rechecks_source_before_clearing(monkeypatch, isolated_portal_case
             return read_binding(current, expected_binding=expected_binding)
         monkeypatch.setattr(resident_backend, 'session_record', change_at_check)
         with pytest.raises((ValueError, RuntimeError), match='(configuration|binding).*changed'):
-            domain.restart_resident_session(record['resident_id'], 'alice', {'context_strategy': 'local'})
+            domain.restart_resident_session(record['resident_id'], 'alice', {'context_strategy': 'preserve'})
         actual = read_binding(record)
         assert actual['backend_session_id'] == ('old-native-thread' if changed == 'configuration' else 'concurrent-thread')
         assert record['session_state'] == 'active' and saved == [] and operations == [] and resets == []
@@ -116,7 +116,7 @@ def test_fresh_save_failure_restores_detached_binding(monkeypatch, isolated_port
             raise RuntimeError('save failed')
         monkeypatch.setattr(resident_record_domain, 'save_resident_record', fail_save)
         with pytest.raises(RuntimeError, match='save failed'):
-            domain.restart_resident_session(record['resident_id'], 'alice', {'context_strategy': 'local'})
+            domain.restart_resident_session(record['resident_id'], 'alice', {'context_strategy': 'preserve'})
         restored = resident_backend.session_record(record)
         assert {k: v for k, v in restored.items() if k not in {'created_at', 'updated_at'}} == {
             k: v for k, v in original.items() if k not in {'created_at', 'updated_at'}
@@ -128,7 +128,7 @@ def test_fresh_save_failure_restores_detached_binding(monkeypatch, isolated_port
 def test_switch_rejects_context_reduction(monkeypatch, isolated_portal_case):
     with isolated_portal_case():
         record, operations, _ = _restart_domain(monkeypatch)
-        with pytest.raises(ValueError, match='未知'):
+        with pytest.raises(ValueError, match='使用 preserve'):
             domain.restart_resident_session(record['resident_id'], 'alice', {
                 'operation': 'switch_account', 'target_account': 'one', 'context_strategy': 'compact',
             })
@@ -138,11 +138,11 @@ def test_switch_rejects_context_reduction(monkeypatch, isolated_portal_case):
 def test_replay_rejects_changed_request(monkeypatch, isolated_portal_case):
     with isolated_portal_case():
         record, operations, _ = _restart_domain(monkeypatch)
-        payload = {'context_strategy': 'native', 'idempotency_key': 'same-id'}
+        payload = {'context_strategy': 'preserve', 'idempotency_key': 'same-id'}
         first = domain.restart_resident_session(record['resident_id'], 'alice', payload)
         assert domain.restart_resident_session(record['resident_id'], 'alice', payload) == first
         with pytest.raises(ValueError, match='different request'):
-            domain.restart_resident_session(record['resident_id'], 'alice', {**payload, 'context_strategy': 'local'})
+            domain.restart_resident_session(record['resident_id'], 'alice', {**payload, 'target_account': 'one'})
         assert operations == []
 
 
@@ -157,7 +157,7 @@ def test_cross_provider_requires_explicit_model_before_side_effects(monkeypatch,
             with pytest.raises(ValueError, match='跨 Provider.*model'):
                 domain.restart_resident_session(record['resident_id'], 'alice', {
                     'target_provider': 'claude', 'target_account': 'deepseek_primary',
-                    'context_strategy': 'compact', **model_field,
+                    'context_strategy': 'preserve', **model_field,
                 })
             assert record == original and operations == [] and saved == []
             assert resident_backend.session_record(record) == binding
@@ -180,10 +180,10 @@ def test_switch_options_report_context_limits_without_reducing_context(monkeypat
         codex = options['accounts']['codex'][0]['context_options']
         claude = {row['id']: row for row in options['accounts']['claude'][0]['context_options']}
         api = {row['id']: row for row in options['accounts']['provider_api'][0]['context_options']}
-        assert {row['id'] for row in codex} == {'native','local'}
-        assert not codex[0]['enabled'] and codex[1]['enabled']
-        assert not claude['native']['enabled'] and claude['local']['enabled']
-        assert not api['native']['enabled'] and api['local']['enabled']
+        assert [row['id'] for row in codex] == ['preserve']
+        assert codex[0]['enabled']
+        assert set(claude) == {'preserve'} and claude['preserve']['enabled']
+        assert set(api) == {'preserve'} and api['preserve']['enabled']
         assert operations == [] and saved == [], 'reading choices never starts a session or discards context'
 
 
@@ -355,8 +355,8 @@ def test_successful_switch_does_not_retry_failed_input(monkeypatch, isolated_por
 
 
 @pytest.mark.parametrize('provider,strategy,account', [
-    ('codex', 'local', 'one'), ('codex', 'native', 'zero'),
-    ('claude', 'local', 'deepseek_primary'), ('provider_api', 'local', 'test-api'),
+    ('codex', 'preserve', 'one'), ('codex', 'preserve', 'zero'),
+    ('claude', 'preserve', 'deepseek_primary'), ('provider_api', 'preserve', 'test-api'),
 ])
 @pytest.mark.parametrize('auto_switch_on_quota', [True, False])
 def test_candidate_retains_platform_settings_and_freezes_revision(

@@ -75,9 +75,9 @@ class ResidentDomainHost:
             )),
             (resident_execution_domain, ("resume_resident_execution",)),
             (resident_fork_domain, (
-                "create_resident_full_context_fork",
-
-
+                "create_resident_full_context_fork", "create_resident_compacted_context_fork",
+                "create_resident_fork_from_message",
+                "create_resident_context_fork",
             )),
             (resident_management_domain, (
                 "rename_resident_identity", "rename_resident_title", "update_resident",

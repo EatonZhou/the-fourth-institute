@@ -57,12 +57,13 @@ instructions 属于哪个 Portal role。创建、Fork、显式压缩与释放操
 
 Fork 子 Resident 在首条真实输入按自己的身份与规则构造注入计划。
 注册、配置保存与建立空会话不发送“请整理并确认初始化”的模型任务。
-账号迁移只使用 local（摘要重组），保存配置和有界交接材料，不调用模型、
-不修改原 Segment 或 Resident trace。首条真实输入携带已有摘要、记忆索引和最近三轮，
-按目标 Provider 注入核心规则并消费材料，仍遵守正常额度准入。
+账号切换复用完整 Fork 的有效上下文继承和首轮投递，不另行生成截短摘要。
+切换保留原 Resident 身份、Segment 和 trace；新绑定首条真实输入由 Fork 的
+上下文投递机制导入有效窗口，按目标 Provider 注入自身规则，遵守正常额度准入。
 同账号只改模型或 effort 沿原生会话更新参数，不做 Portal 记忆交接。
-只有 Fork 提供 native/local 两种方式；原生 Fork 可用时默认选用，
-也在首条真实输入附上目标自己的核心规则和记忆索引。清空仍用独立 ClearContext。
+Fork 提供 full、compacted、recent-5、recent-10、message；默认完整继承，
+支持选定历史消息截止点和目标账号。压缩继承由原 Fork 初始化过程准备。
+清空仍用独立 ClearContext；选择账号不会清空上下文。
 完整协议见
 repo_0cc377bb1dee/file/docs/routing/resident-capability-config.md 与
 repo_0cc377bb1dee/file/docs/routing/session-account-switch.md。

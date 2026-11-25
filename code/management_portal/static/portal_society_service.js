@@ -242,7 +242,7 @@
       branchNode(payload = {}) {
         const lineageId = requiredLineageId(payload.lineage_id);
         return mutate(lineageId, "ForkResident", pick(payload, [
-          "source_resident_id", "fork_mode", "model", "reasoning_effort",
+          "source_resident_id", "fork_mode", "context_source_resident_id", "message",
           "title", "provider", "account_id", "family_id", ...PLACEMENT,
         ]), payload, "resident-fork");
       },

@@ -5,7 +5,7 @@ import pytest
 
 from tests.cases.test_session_restart import _restart_domain
 from management_portal.society_service import (
-    resident_domain, resident_backend, resident_execution_work, resident_memory_handoff,
+    resident_domain, resident_backend, resident_execution_work, resident_fork_context,
 )
 
 
@@ -21,15 +21,15 @@ def test_message_arrives_before_session_configuration_commit(monkeypatch, race):
     elif race == "admitted":
         job["intake_admitted_at"] = "2026-11-24T01:00:00Z"
     before = copy.deepcopy(job)
-    material = resident_memory_handoff.material
+    material = resident_fork_context.require_snapshot
     def arrives(*args, **kwargs):
         monkeypatch.setattr(resident_execution_work, "read", lambda *_: copy.deepcopy(job))
         return material(*args, **kwargs)
-    monkeypatch.setattr(resident_memory_handoff, "material", arrives)
+    monkeypatch.setattr(resident_fork_context, "require_snapshot", arrives)
     with pytest.raises(ValueError, match="已开始新的工作"):
         resident_domain.restart_resident_session(
             record["resident_id"], "alice",
-            {"target_provider": "claude", "model": "deepseek-v4-pro", "context_strategy": "local"},
+            {"target_provider": "claude", "model": "deepseek-v4-pro", "context_strategy": "preserve"},
         )
     assert job == before
     assert record["backend"] == "codex"

@@ -134,41 +134,20 @@ def test_latest_context_compaction_is_the_sessions_newest_compaction() -> None:
     assert compaction["content"] == summary
 
 
-def test_restart_handoff_carries_the_previous_compaction_summary(monkeypatch) -> None:
-    """Fork 继承的上下文只送达 Provider 一次，失败轮次的压缩照样记录"""
-    summary = {"content": {"replacement_history": [
-        {"type": "message", "role": "user", "content": [{"type": "input_text", "text": "Kept request."}]},
-        {"type": "compaction", "encrypted_content": "opaque"},
-        {"type": "message", "role": "user", "content": [{"type": "input_text", "text": "Summary of all work."}]},
-    ]}}
-    requested = []
-    monkeypatch.setattr(resident_restart_domain, "execution_port", SimpleNamespace(
-        latest_context_compaction=lambda resident_id, since="": requested.append(resident_id) or summary,
-    ))
-
-    prompt = resident_restart_domain._session_restart_handoff_prompt(
-        {"resident_id": "resident_aaaaaaaaaaaa", "codex_goal": {"objective": "polish specs"}},
-        {"messages": [{"role": "agent", "content_parts": [{"type": "text", "text": "visible progress"}]}]},
-        strategy="compact",
-    )
-
-    assert requested == ["resident_aaaaaaaaaaaa"]
-    assert "Kept request.\n\nSummary of all work." in prompt
-    assert "opaque" not in prompt
-    assert prompt.index("Summary of all work.") < prompt.index("--- 可移植对话记录 ---")
-
-
-def test_restart_handoff_without_a_compaction_is_unchanged(monkeypatch) -> None:
-    """Fork 继承的上下文只送达 Provider 一次，失败轮次的压缩照样记录"""
-    monkeypatch.setattr(resident_restart_domain, "execution_port", SimpleNamespace(
-        latest_context_compaction=lambda _resident_id, since="": None,
-    ))
-    prompt = resident_restart_domain._session_restart_handoff_prompt(
-        {"resident_id": "resident_aaaaaaaaaaaa", "codex_goal": {"objective": "polish specs"}},
-        {"messages": [{"role": "agent", "content_parts": [{"type": "text", "text": "visible progress"}]}]},
-        strategy="compact",
-    )
-    assert "压缩摘要" not in prompt
+@pytest.mark.parametrize('compacted', [False, True])
+def test_restart_handoff_reuses_canonical_fork_window(monkeypatch, compacted):
+    from tests.cases.test_resident_account_switch_protocol import _fresh_bound_domain, _effective_history
+    from management_portal.society_service import resident_execution_domain
+    record, _, saved, store, _ = _fresh_bound_domain(monkeypatch)
+    if compacted:
+        _effective_history(record['resident_id'])
+    before = store.agent_context_snapshot(record['resident_id'])
+    resident_restart_domain.restart_resident_session(record['resident_id'], 'alice', {'target_account': 'one'})
+    monkeypatch.setattr(resident_execution_domain, '_prepare_resident_prompt', lambda r, j: {**j, 'actual_sent_prompt': j['raw_message']})
+    seed = resident_execution_domain._portable_context_execution(saved[-1], {'raw_message': 'continue'})['fork_context_input']
+    assert [s['segment_id'] for s in seed['segments']] == [s['segment_id'] for s in before['segments']]
+    assert ('kept summary' if compacted else 'old request') in seed['portable_prompt']
+    assert 'pre-compaction secret' not in seed['portable_prompt']
 
 
 class _DaemonClient:
@@ -218,19 +197,21 @@ def test_restart_after_a_failed_unbound_first_turn_hands_its_work_over(monkeypat
     monkeypatch.setattr(resident_restart_domain.execution_port, "latest_context_compaction",
                         lambda _resident_id, since="": None, raising=False)
 
-    with pytest.raises(ValueError, match="尚未绑定"):
+    with pytest.raises(ValueError, match="使用 preserve"):
         resident_domain.restart_resident_session(
             record["resident_id"], "alice", {"context_strategy": "native"},
         )
     result = resident_domain.restart_resident_session(record["resident_id"], "alice", {})
 
-    assert not result.get("configuration_only")
+    assert result["configuration_only"] is True
     # A restart keeps the full effective context by default (decision_ccbb1cac24aa): the new
     # session starts empty and receives the unbound turn's work as its seed, with no model handoff turn.
     assert result["context_strategy"] == "preserve"
-    assert operations[0]["operation"] == "create" and not operations[0]["source_binding_id"]
-    seed = operations[0]["step"]["request"]["metadata"]["fork_context_input"]
-    assert seed["segments"] and seed["empty_context"] is False
+    assert not operations
+    from management_portal.society_service import resident_execution_domain
+    monkeypatch.setattr(resident_execution_domain, "_prepare_resident_prompt", lambda r, j: {**j, "actual_sent_prompt": j["raw_message"]})
+    seed = resident_execution_domain._portable_context_execution(_saved[-1], {"raw_message": "continue"})["fork_context_input"]
+    assert seed["segments"] and "old request" in seed["portable_prompt"]
 
 
 def test_restart_of_a_resident_that_never_had_a_session_only_configures(monkeypatch) -> None:

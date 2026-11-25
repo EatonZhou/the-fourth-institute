@@ -73,21 +73,18 @@ def test_sessions_from_before_a_clear_are_not_the_newest_context() -> None:
     assert store.latest_provider_session_ref(agent_id, since="2026-10-05T09:13:18Z") == ref
 
 
-def test_a_restart_after_a_clear_hands_over_no_compaction_summary(monkeypatch) -> None:
-    """清空后重启不交接压缩摘要"""
-    requested = []
-    monkeypatch.setattr(resident_restart_domain, "execution_port", SimpleNamespace(
-        latest_context_compaction=lambda resident_id, since="": requested.append(since) or None,
-    ))
-
-    prompt = resident_restart_domain._session_restart_handoff_prompt(
-        {"resident_id": "resident_aaaaaaaaaaaa", "context_reset_at": "2026-10-05T09:13:38.000Z"},
-        {"messages": []},
-        strategy="compact",
-    )
-
-    assert requested == ["2026-10-05T09:13:38.000Z"]
-    assert "压缩摘要" not in prompt
+def test_a_restart_after_a_clear_hands_over_no_compaction_summary(monkeypatch):
+    from tests.cases.test_resident_account_switch_protocol import _fresh_bound_domain, _effective_history
+    from management_portal.society_service import resident_execution_domain
+    record, _, saved, store, _ = _fresh_bound_domain(monkeypatch)
+    _effective_history(record['resident_id'])
+    reset_at = '2099-01-01T00:00:00Z'
+    store.reset_provider_context(record['resident_id'], reset_at=reset_at, actor_ref='alice')
+    record['context_reset_at'] = reset_at
+    resident_restart_domain.restart_resident_session(record['resident_id'], 'alice', {'target_account': 'one'})
+    monkeypatch.setattr(resident_execution_domain, '_prepare_resident_prompt', lambda r, j: {**j, 'actual_sent_prompt': j['raw_message']})
+    prepared = resident_execution_domain._portable_context_execution(saved[-1], {'raw_message': 'continue'})
+    assert 'fork_context_input' not in prepared
 
 
 def test_clear_context_resets_persisted_heat_and_lineage_badge(future_creation_store, monkeypatch):

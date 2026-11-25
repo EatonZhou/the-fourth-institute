@@ -217,7 +217,8 @@ async function residentChat() {
     w.PortalAPI = {get: async () => ({config: {}, restart: null})};
     w.PortalInstructionClient = {execute: async () => ({entries: [], items: []})};
     const panel = chat.panelPackage.create({root, id: 'quotePanel', autoLoad: false,
-      target: {resident_id: 'resident_111111111111'}, onError: error => failures.push(error.message)});
+      target: {resident_id: 'resident_111111111111', lineage_id: 'lineage_111111111111'},
+      onError: error => failures.push(error.message)});
     const snapshot = {messages: [
       {message_id: 'reply_before', role: 'agent', content_parts: [{type: 'text', text: 'Earlier part'}]},
       {message_id: 'reply_selected', role: 'agent', origin: {sender: {id: 'resident_222222222222'}},
@@ -245,6 +246,44 @@ async function residentChat() {
       root.querySelector('[data-pinned-action="quote"]').click();
       assert.equal(panel.workspace.quote()?.message_id, 'reply_selected', 'header quote selects the same reply');
       assert.doesNotMatch(bar.textContent, /Earlier part|Later part/);
+
+      // Exercise the restored menu through the real panel, including a target
+      // in another Lineage. Its parent must not become the context source.
+      const forks = [];
+      const other = {resident_id: 'resident_444444444444', lineage_id: 'lineage_444444444444'};
+      w.PortalSocietyService = {createClient: () => ({
+        loadLineage: async id => ({nodes: [{id: id === other.lineage_id ? other.resident_id : panel.target().resident_id}]}),
+        branchNode: async body => {
+          forks.push(plain(body));
+          return {resident_id: 'resident_555555555555', lineage: {lineage_id: body.lineage_id}};
+        },
+      })};
+      Object.assign(panel.residentProjection, {backend_capabilities: {portal_fork: true}, allows: {ForkResident: true}});
+      snapshot.messages.unshift({message_id: 'request_selected', role: 'user',
+        content_parts: [{type: 'text', text: 'Fork this request'}]});
+      panel.applySnapshot(snapshot);
+      const forkMenu = root.querySelector('[data-portal-message-menu="request_selected"]');
+      assert.ok(forkMenu.querySelector('[data-portal-message-action="fork-current"]'));
+      assert.ok(forkMenu.querySelector('[data-portal-message-action="fork-other"]'));
+      assert.equal(root.querySelector('[data-portal-message-menu="reply_selected"] [data-portal-message-action="fork-current"]'), null);
+      forkMenu.querySelector('[data-portal-message-action="fork-current"]').click();
+      await settle();
+      assert.deepEqual(forks, [{lineage_id: 'lineage_111111111111',
+        source_resident_id: 'resident_111111111111', context_source_resident_id: 'resident_111111111111',
+        fork_mode: 'message', message: {message_id: 'request_selected'}}]);
+
+      w.PortalResidentService.forwardTargets = async query => query.residentId
+        ? {target: other} : {scopes: []};
+      forkMenu.querySelector('[data-portal-message-action="fork-other"]').click();
+      await settle();
+      w.document.querySelector('[data-resident-forward-direct-id]').value = other.resident_id;
+      w.document.querySelector('[data-resident-forward-direct-locate]').click();
+      await settle();
+      assert.equal(w.document.querySelector('[data-resident-forward-submit]').disabled, false);
+      w.document.querySelector('[data-resident-forward-submit]').click();
+      await settle();
+      assert.deepEqual(forks[1], {...forks[0], lineage_id: other.lineage_id, source_resident_id: other.resident_id});
+      assert.deepEqual(failures, []);
 
       // Navigation changes the history scope before the next conversation has
       // loaded. A composer update during that interval must not cache the old

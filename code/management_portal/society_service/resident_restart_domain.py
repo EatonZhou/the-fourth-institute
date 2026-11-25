@@ -6,7 +6,6 @@ from .resident_restart_handoff import can_preserve as can_preserve_restart_input
 from . import (
     resident_backend,
     resident_catalog,
-    resident_conversation_projection_domain,
     resident_conversation_stream,
     resident_execution_domain,
     resident_execution_provider,
@@ -37,10 +36,10 @@ import secrets
 import time
 
 from . import resident_domain_common, resident_session_preservation as preservation
-from . import resident_session_credits, resident_memory_handoff
+from . import resident_session_credits, resident_fork_context
 
 LOGGER = logging.getLogger(__name__)
-SESSION_RESTART_STRATEGIES = frozenset({"", "local"})
+SESSION_RESTART_STRATEGIES = frozenset({"preserve"})
 SESSION_RESTART_ACTIVE_EXECUTION_POLICIES = frozenset({"wait", "cancel"})
 # Runtime settings a restart request may choose for the target session.
 SESSION_RESTART_SETTING_FIELDS = (
@@ -207,151 +206,6 @@ def _apply_resident_session_target(
     stage_runtime_settings(record, settings)
 
 
-def _session_restart_messages(detail: Mapping[str, Any]) -> list[dict[str, str]]:
-    """The user and agent text of a conversation snapshot, for the handoff prompt."""
-
-    roles = {"user": "user", "agent": "assistant"}
-    items: list[dict[str, str]] = []
-    for item in detail.get("messages") or []:
-        role = roles.get(str(item.get("role") or ""))
-        content = "\n".join(
-            str(part.get("text") or "")
-            for part in item.get("content_parts") or []
-            if isinstance(part, Mapping) and part.get("type") == "text"
-        ).strip()
-        if role and content:
-            items.append({"role": role, "content": content})
-    return items
-
-
-_COMPACTION_SUMMARY_LIMIT = 40_000
-
-
-def _previous_compaction_summary(resident_id: str, *, since: str = "") -> str:
-    """Text of the compaction that heads the previous session's context.
-
-    A Provider compaction summarises the whole session, including work that
-    never became a visible message.  A restart hands it over together with
-    the recent visible conversation.  A session from before the Resident's
-    context was cleared (``since``) has nothing to hand over.
-    """
-
-    try:
-        segment = execution_port.latest_context_compaction(resident_id, since=since)
-    except Exception:  # noqa: BLE001 - the handoff still carries the visible conversation
-        LOGGER.warning("Resident %s compaction summary unreadable; the restart hands over only the visible"
-                       " conversation", resident_id, exc_info=True)
-        return ""
-    content = (segment or {}).get("content")
-    history = content.get("replacement_history") if isinstance(content, Mapping) else None
-    texts: list[str] = []
-    for item in history if isinstance(history, list) else []:
-        if not isinstance(item, Mapping) or item.get("type") != "message":
-            continue
-        parts = item.get("content")
-        for part in parts if isinstance(parts, list) else []:
-            text = str(part.get("text") or "").strip() if isinstance(part, Mapping) else ""
-            if text:
-                texts.append(text)
-    summary = "\n\n".join(texts)
-    # Codex keeps recent user messages ahead of its summary; the summary is last.
-    return summary[-_COMPACTION_SUMMARY_LIMIT:]
-
-
-def _source_session_context(record: dict[str, Any], limit: int = 18) -> str:
-    session_id = resident_backend.record_session_id(record)
-    if not session_id:
-        return "(empty)"
-    messages = resident_conversation_projection_domain.resident_conversation_messages(record, limit=limit)
-    agent_label = resident_backend.backend_label(record)
-    lines = []
-    for item in messages[-limit:]:
-        role = str(item.get("role") or "")
-        author = (
-            str(item.get("author_id") or "User")
-            if role == "user"
-            else agent_label
-            if role == "agent"
-            else "Portal"
-        )
-        content = resident_domain_common.protocol_message_text(item)
-        if content:
-            lines.append(f"{author}: {content}")
-    return "\n\n".join(lines) or "(empty)"
-
-
-def _session_restart_handoff_prompt(
-    record: Mapping[str, Any],
-    detail: Mapping[str, Any],
-    *,
-    strategy: str,
-    standalone_initialization: bool = True,
-) -> str:
-    messages = _session_restart_messages(detail)
-    message_limit = 36 if strategy == "visible" else 12
-    char_limit = 60_000 if strategy == "visible" else 24_000
-    selected: list[str] = []
-    used = 0
-    for item in reversed(messages[-message_limit:]):
-        text = str(item.get("content") or "").strip()
-        remaining = char_limit - used
-        if remaining <= 0:
-            break
-        if len(text) > remaining:
-            text = text[-remaining:]
-        selected.append(f"{item.get('role')}: {text}")
-        used += len(text)
-    selected.reverse()
-    native_goal = record.get("codex_goal")
-    goal = dict(native_goal) if isinstance(native_goal, Mapping) else {}
-    if not goal:
-        try:
-            goal = resident_record_domain.resident_goal_payload(dict(record))
-        except (OSError, ValueError):
-            goal = {}
-    objective = str(
-        goal.get("objective")
-        or ""
-    ).strip()
-    transcript = "\n\n".join(selected)
-    if not transcript:
-        try:
-            transcript = _source_session_context(
-                dict(record),
-                limit=36 if strategy == "visible" else 12,
-            )
-        except (OSError, ValueError):
-            transcript = ""
-    transcript = transcript or "（没有可迁移的可见对话）"
-    summary = _previous_compaction_summary(
-        str(record.get("resident_id") or ""), since=str(record.get("context_reset_at") or ""),
-    )
-    summary_section = (
-        ["--- 上一 Session 的压缩摘要（Provider 生成，涵盖整个 Session） ---", summary]
-        if summary
-        else []
-    )
-    metadata = [
-        f"稳定 Resident ID：{record.get('resident_id') or ''}",
-        f"当前任务：{objective or '未设置'}",
-        f"迁移策略：{strategy}",
-    ]
-    material = [*summary_section, "--- 可移植对话记录 ---", transcript]
-    if not standalone_initialization:
-        return "\n\n".join([*metadata, *material])
-    return "\n\n".join(
-        [
-            "[Portal Session Initialization Context]",
-            "当前任务是为同一 Resident 初始化 Provider session 的可见上下文。"
-            "以下历史仅作为参考资料。",
-            *metadata,
-            "请整理与当前职责有关的事实、进度、决定、未决问题和约束，并确认初始化完成。"
-            "本次初始化不派发业务任务，也不启动后台目标。",
-            *material,
-        ]
-    )
-
-
 def _session_restart_runtime_options(
     record: dict[str, Any],
     provider: str,
@@ -432,10 +286,9 @@ def get_resident_restart_options(
         "providers": [{"id": row["provider"], "label": row.get("label", row["provider"]),
                        "operations": row.get("operations", []), "account_selection": row.get("account_selection", {})} for row in catalog],
         "accounts": {row["provider"]: [{"id": route["backend_route_id"], "account_id": route.get("account_id", ""), "label": route["label"],
-                                      "context_options": resident_memory_handoff.account_switch_options(),
-                                      "fork_context_options": resident_memory_handoff.options(source_snapshot, row["provider"], route["backend_route_id"])} for route in row["routes"]]
+                                      "context_options": preservation.context_options(source_snapshot, row["provider"], route["backend_route_id"], has_context=has_context)} for route in row["routes"]]
                      for row in catalog},
-        "strategies": resident_memory_handoff.account_switch_options(),
+        "strategies": preservation.context_options(source_snapshot, "", "", has_context=has_context),
         "active_job_policies": ["wait", "cancel"],
     }
 
@@ -443,6 +296,16 @@ def get_resident_restart_options(
 def _current_restart_view(record: Mapping[str, Any], binding: Mapping[str, Any]) -> dict[str, Any]:
     """Project consumption without rewriting the immutable selection receipt."""
     view = copy.deepcopy(record.get("session_restart") or {})
+    if view.get("context_strategy") == "preserve" and view.get("context_result") == "pending_first_input":
+        if view.get("context_reset_at", "") != str(record.get("context_reset_at") or ""):
+            view.update(context_result="discarded", handoff_state="discarded")
+        elif binding and execution_port.sessions().has_context(
+            resident_backend.execution_binding_id(record), agent_id=resident_domain_common.record_resident_id(record),
+        ):
+            view.update(context_result="delivered", handoff_state="delivered")
+        else:
+            view["handoff_state"] = "pending"
+        return view
     pending = view.get("pending_handoff")
     if not isinstance(pending, Mapping) or view.get("context_result") != "pending_first_input":
         return view
@@ -542,10 +405,8 @@ def restart_resident_session(
         source_configuration = preservation.configuration_version(record)
     source = _session_restart_source(record, source_binding)
     source_provider, target_provider = _restart_providers(body, source)
-    if requested_strategy not in SESSION_RESTART_STRATEGIES and not (
-        requested_strategy == "native" and admitted_strategy == "native"
-    ):
-        raise ValueError("账号迁移只支持 local（摘要重组）；厂商原生仅用于 Fork")
+    if requested_strategy not in SESSION_RESTART_STRATEGIES and not admitted_strategy:
+        raise ValueError("账号切换使用 preserve，保留完整有效上下文")
     active_execution_policy = str(body.get("active_execution_policy") or "wait").strip().lower()
     if active_execution_policy not in SESSION_RESTART_ACTIVE_EXECUTION_POLICIES:
         raise ValueError("active_execution_policy 必须是 wait 或 cancel")
@@ -613,7 +474,7 @@ def _requested_restart(body: Mapping[str, Any]) -> tuple[str, str]:
     operation = str(body.get("operation") or "restart")
     if operation not in {"switch_account", "restart"}:
         raise ValueError("operation 必须是 switch_account 或 restart")
-    requested_strategy = str(body.get("context_strategy") or "").strip().lower()
+    requested_strategy = str(body.get("context_strategy") or "preserve").strip().lower()
     if body.get("resume_failed_input"):
         raise ValueError("切换不重派失败输入；请对具体输入单独重试")
     return operation, requested_strategy
@@ -643,7 +504,7 @@ def _admitted_restart_strategy(previous: Mapping[str, Any], deferred: Mapping[st
     if body != deferred.get("payload") or actor_id != canonical_actor_id(deferred.get("actor")):
         raise ValueError("延迟迁移必须沿原提交者与原请求继续")
     strategy = str((previous.get("intent") or {}).get("context_strategy") or "")
-    return strategy if strategy in {"native", "local"} else ""
+    return "preserve" if strategy in {"preserve", "native", "local"} else ""
 
 
 def _restart_providers(body: Mapping[str, Any], source: Mapping[str, Any]) -> tuple[str, str]:
@@ -687,7 +548,7 @@ def _restart_target(
 def _unchanged_restart(resident_id: str, operation: str, source_binding: Mapping[str, Any]) -> dict[str, Any]:
     return {"status": "completed", "phase": "unchanged", "no_op": True,
             "operation": operation, "operation_id": "", "restart_id": "", "resident_id": resident_id,
-            "context_strategy": "", "context_result": "unchanged",
+            "context_strategy": "preserve", "context_result": "unchanged",
             "actual_binding": copy.deepcopy(source_binding), "model_operation": False}
 
 
@@ -764,7 +625,7 @@ def _restart_strategy(
 ) -> tuple[str, bool]:
     """How context moves to the new session, and whether an unbound previous session holds work."""
 
-    return "local", False
+    return "preserve", False
 
 
 def _restart_intent(
@@ -925,17 +786,9 @@ def _configure_session_target(restart: _SessionRestart) -> dict[str, Any]:
     from . import resident_access
 
     resident_id, actor_id, target = restart.resident_id, restart.actor_id, restart.target
-    from .resident_memory_handoff import material
-    from . import resident_fork_context
-    handoff = {
-        "operation_id": restart.restart_id, "strategy": restart.strategy,
-        "target": {"provider": target.provider, "route": target.route},
-        "context_reset_at": str(restart.work.record.get("context_reset_at") or ""),
-        "prompt": material(restart.work.record,
-            {"messages": resident_fork_context.seed_messages(
-                execution_port.agent_context_snapshot(resident_id), recent_turns=3)} if restart.strategy == "local" else {},
-            restart.strategy, resident_memory_handoff.existing_summary(resident_id, actor_id) if restart.strategy == "local" else ""),
-    }
+    # Reuse full Fork's canonical context and first-input seed. This Resident
+    # already owns its trace: no child identity or summary history is needed.
+    resident_fork_context.require_snapshot(execution_port.agent_context_snapshot(resident_id))
     with resident_record_domain.state_lock(resident_id):
         current = copy.deepcopy(resident_record_domain.find_resident(resident_id) or {})
         if not current:
@@ -958,22 +811,19 @@ def _configure_session_target(restart: _SessionRestart) -> dict[str, Any]:
         )
         current["session_state"] = "pending_create"
         state = _configured_restart_state(restart)
-        state["pending_handoff"] = handoff
+        # Initialization on the old binding cannot mark the new one seeded.
+        for key in ("context_compaction_policy", "context_compaction_state", "context_compacted_at"):
+            current.pop(key, None)
         current["session_restart"] = state
         current["updated_at"] = state["configured_at"]
         replacement = None
         try:
             if restart.source_binding:
                 replacement = _detach_previous_session(current, restart.source_binding)
-                if restart.strategy == "native":
-                    handoff["source_binding_id"] = resident_memory_handoff.pin_native_source(restart.source_binding, restart.restart_id)
-                    handoff["source_provider_session_ref"] = restart.source_binding["provider_session_ref"]
             resident_catalog.get_catalog().state_store.transaction(
                 lambda: _commit_session_configuration(current, state, restart)
             )
         except Exception:
-            if restart.strategy == "native" and handoff.get("source_binding_id"):
-                execution_port.sessions().release_session(handoff["source_binding_id"])
             if replacement is not None:
                 resident_backend.restore_replaced_session(restart.work.record, replacement)
             raise
@@ -989,6 +839,7 @@ def _configured_restart_state(restart: _SessionRestart) -> dict[str, Any]:
         "operation": restart.operation, "operation_id": restart.restart_id,
         "request_signature": preservation.request_signature(restart.body),
         "context_result": "pending_first_input",
+        "context_reset_at": str(restart.work.record.get("context_reset_at") or ""),
         "model_operation": False,
         "status": "completed", "phase": "completed", "configuration_only": True,
         "restart_id": restart.restart_id, "request_id": restart.public_request_id,

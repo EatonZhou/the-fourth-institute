@@ -18,10 +18,10 @@ const service = window.PortalResidentService.createClient({api: {get: async () =
 (async () => {
   await service.updateRuntimeSettings('r1', {model: 'm2'}, 'save-key', 'sha256:old');
   assert.deepEqual(mutations[0], {name: 'UpdateResidentSettings', args: {resident_id: 'r1', changes: {model: 'm2'}, expected_revision: 'sha256:old'}, controls: {idempotencyKey: 'save-key'}});
-  await service.restartSession({resident_id: 'r1', operation: 'switch_account', target_provider: 'codex', target_account: 'three', context_strategy: 'local', active_execution_policy: 'wait', resume_failed_input: false, idempotency_key: 'switch-key', credits_consent: {account_id: 'codex_three', confirmed: true}});
-  assert.deepEqual(mutations[1], {name: 'RestartSession', args: {resident_id: 'r1', operation: 'switch_account', provider: 'codex', account_id: 'three', context_strategy: 'local', active_execution_policy: 'wait'}, controls: {idempotencyKey: 'switch-key'}});
+  await service.restartSession({resident_id: 'r1', operation: 'switch_account', target_provider: 'codex', target_account: 'three', context_strategy: 'preserve', active_execution_policy: 'wait', resume_failed_input: false, idempotency_key: 'switch-key', credits_consent: {account_id: 'codex_three', confirmed: true}});
+  assert.deepEqual(mutations[1], {name: 'RestartSession', args: {resident_id: 'r1', operation: 'switch_account', provider: 'codex', account_id: 'three', context_strategy: 'preserve', active_execution_policy: 'wait'}, controls: {idempotencyKey: 'switch-key'}});
   await service.restartSession({resident_id: 'r1', operation: 'restart', target_provider: 'codex', account_selection: 'auto',
-    model: 'codex-model', context_strategy: 'local', active_execution_policy: 'wait', idempotency_key: 'auto-key'});
+    model: 'codex-model', context_strategy: 'preserve', active_execution_policy: 'wait', idempotency_key: 'auto-key'});
   assert.equal(mutations[2].args.account_selection, 'auto');
   assert.equal(mutations[2].args.model, 'codex-model');
   assert.equal(Object.hasOwn(mutations[2].args, 'account_id'), false, 'auto selection must not pin the catalog preview account');

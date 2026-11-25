@@ -22,7 +22,7 @@ def configuration_version(record):
 def request_signature(body):
     return digest({**{key: value for key, value in body.items() if key != "idempotency_key"},
                    "operation": body.get("operation") or "restart",
-                   "context_strategy": body.get("context_strategy") or "",
+                   "context_strategy": body.get("context_strategy") or "preserve",
                    "active_execution_policy": body.get("active_execution_policy") or "wait",
                    "resume_failed_input": body.get("resume_failed_input", False)})
 
@@ -54,15 +54,5 @@ def preserve_route_error(source, target_provider, target_route, *, has_context):
 
 
 def context_options(source, target_provider, target_route, *, has_context):
-    error = preserve_route_error(source, target_provider, target_route, has_context=has_context)
-    handoff = target_provider != "provider_api"
-    return [
-        {"id": "preserve", "label": "完整保留当前有效上下文", "enabled": not error,
-         "description": error or "不压缩、不删减上下文；无法完整保留时拒绝切换，继续使用原会话。"},
-        {"id": "compact", "label": "精简交接（可能遗漏细节）", "enabled": handoff,
-         "description": "调用模型根据已有摘要和少量近期对话整理交接内容，可能遗漏细节和工具过程；新会话成功后才切换，旧会话及历史记录保留。"},
-        {"id": "visible", "label": "近期可见对话交接（非完整上下文）", "enabled": handoff,
-         "description": "将近期可见对话及已有摘要交给目标模型整理，内容有长度限制，不含完整工具过程和内部上下文；新会话成功后才切换，旧会话及历史记录保留。"},
-        {"id": "fresh", "label": "空白开始（不携带当前上下文）", "enabled": True,
-         "description": "目标账号从空白上下文开始，不携带当前对话内容；旧会话及历史记录保留。"},
-    ]
+    return [{"id": "preserve", "label": "完整上下文", "enabled": True,
+             "description": "继承当前有效上下文，保留对话和工具过程。"}]

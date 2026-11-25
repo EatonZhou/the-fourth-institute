@@ -22,7 +22,6 @@ from management_portal.society_service import (
     resident_execution_engine_domain,
     resident_execution_work,
     resident_input_queue_domain,
-    resident_memory_handoff,
     resident_record_domain,
     resident_restart_domain,
 )
@@ -121,7 +120,6 @@ def resident(monkeypatch, execution, request):
     # actual durable Job, restart and Mailbox repositories for the whole handoff.
     monkeypatch.setattr(store, 'transaction', transaction)
     monkeypatch.setattr(resident_catalog, 'get_catalog', lambda: SimpleNamespace(state_store=store))
-    monkeypatch.setattr(resident_memory_handoff, 'existing_summary', lambda *a: '')
     monkeypatch.setattr(resident_execution_work, 'read', real_read)
     monkeypatch.setattr(resident_execution_work, 'is_active', real_active)
     monkeypatch.setattr(resident_execution_work, '_post_execution_commit', lambda *a, **k: None)
@@ -164,7 +162,7 @@ def resident(monkeypatch, execution, request):
     receipt = resident_restart_domain.restart_resident_session(
         RID, 'alice',
         {'target_provider': 'codex', 'target_account': 'one', 'model': 'gpt-6-astra',
-         'context_strategy': 'local', 'active_execution_policy': 'wait',
+         'context_strategy': 'preserve', 'active_execution_policy': 'wait',
          'idempotency_key': 'original-migration'},
         portal_reason=portal_reason,
     )
@@ -224,7 +222,8 @@ def test_manual_deferred_switch_preserves_original_input_without_preparation(res
     assert state['context_result'] == 'pending_first_input'
     assert state['restart_id'] == original['restart_id']
     assert state['request_id'] == original['request_id']
-    assert state['pending_handoff']['operation_id'] == original['operation_id']
+    assert state['operation_id'] == original['operation_id']
+    assert 'pending_handoff' not in state
     assert current['backend'] == 'codex' and current['backend_route_id'] == 'one'
     assert current['intake_open'] and not state.get('deferred') and not operations
     assert scheduler.snapshot(request.execution_id)['status'] == 'cancelled'

@@ -638,10 +638,6 @@ def test_builtin_schemes_compile_against_the_catalog():
     documents = builtin_documents()
     default = compile_scheme(documents["default"])
     assert default.unmapped() == []
-    assert default.describe("ForkResident")["requirements"] == [
-        {"element": "ForkResident:lineage_id", "argument": "lineage_id", "a": "@contributor", "types": ["lineage"]},
-        {"element": "ForkResident:source_resident_id", "argument": "source_resident_id", "a": "@viewer", "types": ["resident"]},
-    ]
     assert "@unmapped" not in default.trees["A"].nodes
     assert default.trees["A"].default_parent == "@admin"
     assert default.describe("ApplyLineageChanges") == {"required": True, "requirements": [

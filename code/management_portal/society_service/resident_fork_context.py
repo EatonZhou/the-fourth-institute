@@ -8,6 +8,13 @@ from ..execution.context_seed import context_turn_starts, is_context_user_input 
 from .resident_message_contract import derived_message_identity
 
 
+def require_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
+    """Admit the canonical context shared by Fork and account switching."""
+    if not snapshot or (not snapshot.get("segments") and not snapshot.get("empty_context")):
+        raise ValueError("Fork 来源缺少 PostgreSQL 中的有效模型上下文；不能创建空白分支")
+    return snapshot
+
+
 def requires_initial_context_compaction(state: Mapping[str, Any]) -> bool:
     return (
         str(state.get("context_compaction_policy") or "").strip() == "before_first_turn"

@@ -268,7 +268,6 @@
       restoreResidentRegisterForm();
       restoreResidentForkCreateBody();
       resetResidentForkCreateState();
-      window.PortalLineageCatalogs.forkControls($id("residentForkMemoryControls")).reset();
       renderResidentForkCreateModal();
       resetResidentAttachOptionState();
       state.residentAttachChoice = {
@@ -433,9 +432,8 @@
         modal.backendRouteId = selection.account;
       }
       $id("residentForkCreateBody").querySelectorAll("[data-fork-create-action]").forEach(button => {
-        button.disabled = !ready;
+        button.disabled = !ready || (button.dataset.forkCreateAction === "compacted" && !selection.definition?.seeded_compaction);
       });
-      if (ready) window.PortalLineageCatalogs.forkControls($id("residentForkMemoryControls")).open(modal.residentId, selection.provider, selection.account);
       hint.textContent = modal.loading ? window.PortalI18n.t("正在读取 Provider 和账号…")
         : ready ? window.PortalI18n.t("在所选 Provider 和账号建立独立会话，继承所选上下文。")
           : window.PortalI18n.t("该 Provider 暂无可用账号。");
@@ -551,7 +549,6 @@
       const inlineAttach = state.residentForkCreateInlineHost === "attach";
       restoreResidentForkCreateBody();
       resetResidentForkCreateState();
-      window.PortalLineageCatalogs.forkControls($id("residentForkMemoryControls")).reset();
       renderResidentForkCreateModal();
       if (inlineAttach && options.keepAttachOpen !== true) {
         resetResidentAttachOptionState();
@@ -574,13 +571,10 @@
       ).trim();
       const provider = forkCreateState().provider;
       const draftText = String(forkCreateState().draftText || "").trim();
-      let memory;
-      try { memory = window.PortalLineageCatalogs.forkControls($id("residentForkMemoryControls")).read(); }
-      catch (error) {window.PortalUI.toast(error.message, "error"); return;}
-      const mode = memory.fork_mode;
+      const mode = action;
       closeResidentForkCreateModal();
       await createResidentForkFromMenu(residentId, {
-        mode, ...memory,
+        mode,
         backendRouteId,
         provider,
         lineageId,
@@ -632,9 +626,7 @@
         const response = await societyService.branchNode({
           lineage_id: lineageId,
           source_resident_id: id,
-          ...(options.mode ? {fork_mode: options.mode} : {}),
-          ...(options.model ? {model: options.model} : {}),
-          ...(options.reasoning_effort !== undefined ? {reasoning_effort: options.reasoning_effort} : {}),
+          fork_mode: options.mode || "full",
           ...(options.provider ? { provider: options.provider } : {}),
           ...(options.backendRouteId ? { account_id: options.backendRouteId } : {}),
         });
@@ -848,6 +840,42 @@
         state.crossLineageFork.error = `跨 Lineage 创建分支失败：${err.message || err}`;
         renderCrossLineageForkModal();
       }
+    }
+
+    async function performForkResidentFromMessage(key, target = {}, workspace = currentAgentChatWorkspace()) {
+      const residentId = residentIdForSelection(chatTargetForPanel(workspace));
+      const item = workspaceMessageByKey(key, workspace);
+      if (!residentId || !item || messageRole(item) !== "human") return;
+      let sourceLineageId = activeLineageId();
+      if (!sourceLineageId && !target.lineageId) {
+        const navigationTarget = await residentDiscovery.resolveNavigationTarget(residentId);
+        sourceLineageId = String(navigationTarget?.lineage_id || "").trim();
+      }
+      const targetLineageId = String(target.lineageId || sourceLineageId).trim();
+      const targetResidentId = String(target.residentId || residentId).trim();
+      if (!targetLineageId) {
+        throw new Error(window.PortalI18n.t("当前 Resident 尚未登记到 Lineage，无法创建 HATG 分支"));
+      }
+      const message = {
+        message_id: item.id,
+      };
+      const targetLineage = await societyService.loadLineage(targetLineageId);
+      const graphParent = (targetLineage?.nodes || []).find(node => (
+        String(node?.id || "") === targetResidentId
+      ));
+      if (!graphParent) {
+        throw new Error(window.PortalI18n.t("所选 Resident 不是目标 Lineage HATG 中的正式节点"));
+      }
+      const graphParentId = String(graphParent.id || "").trim();
+      if (!graphParentId) throw new Error(window.PortalI18n.t("当前 HATG 节点缺少 canonical node ID"));
+      const response = await societyService.branchNode({
+        lineage_id: targetLineageId,
+        source_resident_id: graphParentId,
+        context_source_resident_id: residentId,
+        fork_mode: "message",
+        message,
+      });
+      await completeResidentFork(response, targetLineageId);
     }
 
     return Object.freeze({

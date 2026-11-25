@@ -281,18 +281,15 @@ def test_native_permissions_shows_and_switches_the_providers_permission_mode(bac
     assert denied["title"] == "Permission denied" and not denied["updates"]
 
 
-@pytest.mark.parametrize("target_route,strategy,expected_model,expected_effort", [
-    ("claude_one", "smart", "opus", "high"),
-    # Another account cannot keep the full context; only an explicit handover moves it.
-    # claude_two offers no opus, so its default model replaces it; sonnet there offers high.
-    ("claude_two", "compact", "sonnet", "high"),
+@pytest.mark.parametrize("target_route,expected_model,expected_effort", [
+    ("claude_one", "opus", "high"),
+    # The target account's model catalog still determines compatible settings.
+    ("claude_two", "sonnet", "high"),
 ])
 def test_claude_restart_preserves_settings_only_on_the_same_route(
-    monkeypatch, native_routes, target_route, strategy, expected_model, expected_effort,
+    monkeypatch, native_routes, target_route, expected_model, expected_effort,
 ):
-    """重启 Claude 会话时模型和推理强度按目标账号校正
-
-    同一路由原样保留模型和推理强度；换到另一账号时沿用原设置并按目标账号目录校正：目标没有的模型换成它的默认模型，目标模型支持的推理强度保留。
+    """Claude 迁移复用完整 Fork 上下文，模型和推理强度按目标账号目录校正。
 
     :design: decision_ccbb1cac24aa
     """
@@ -301,59 +298,37 @@ def test_claude_restart_preserves_settings_only_on_the_same_route(
     monkeypatch.setattr(resident_runtime_domain, "read_resident_runtime_settings",
                         lambda *_: {"model": "opus", "reasoning_effort": "high"})
     state = resident_domain.restart_resident_session(record["resident_id"], "alice", {
-        "target_provider": "claude", "target_account": target_route, "context_strategy": strategy,
+        "target_provider": "claude", "target_account": target_route, "context_strategy": "preserve",
     })
-    if target_route == "claude_one":
-        assert state["status"] == "accepted"
-        settings = state["target_runtime_settings"]
-        assert operations[0]["operation"] == "fork"
-    else:
-        assert state["configuration_only"] and state["context_result"] == "pending_first_input"
-        assert record["backend_route_id"] == target_route
-        assert resident_backend.session_record(record) == {} and not operations
-        settings = record["execution_settings"]
+    assert state["configuration_only"] and state["context_result"] == "pending_first_input"
+    assert record["backend_route_id"] == target_route
+    assert resident_backend.session_record(record) == {} and not operations
+    settings = record["execution_settings"]
     assert settings["model"] == expected_model
     assert settings["reasoning_effort"] == expected_effort
 
 
-@pytest.mark.parametrize("source_provider,source_route,expected_strategy", [
-    ("codex", "zero", "compact"), ("claude", "claude_two", "compact"),
-    ("claude", "claude_one", "native"),
+@pytest.mark.parametrize("source_provider,source_route", [
+    ("codex", "zero"), ("claude", "claude_two"), ("claude", "claude_one"),
 ])
-def test_native_restart_route_and_strategy(monkeypatch, native_routes, source_provider, source_route, expected_strategy):
-    """重启到 Claude 时同一账户用原生 Fork，跨 Provider 或跨账户明确选择后改为压缩上下文
+def test_native_restart_route_and_strategy(monkeypatch, native_routes, source_provider, source_route):
+    """原生账号及跨 Provider 迁移都沿 preserve 的完整 Fork 上下文交付。
 
-    智能选择只是完整保留的兼容写法。跨 Provider 或跨账户无法完整保留时，严格保留会拒绝请求。显式选择压缩交接并固定账号时，保存配置和首条输入的交接材料。
+    保存目标配置不请求模型；首次真实输入使用共享种子，目标模型仍显式校验。
 
     :design: decision_ccbb1cac24aa
     """
     record, operations, saved = _restart_domain(monkeypatch, source_provider=source_provider, source_route=source_route)
-    request = {"target_provider": "claude", "target_account": "claude_one", "context_strategy": "smart"}
-    original_binding = resident_backend.session_record(record)
+    request = {"target_provider": "claude", "target_account": "claude_one", "context_strategy": "preserve"}
     if source_provider != "claude":
-        request["model"] = "sonnet"  # A cross-Provider switch names its target model.
-    if expected_strategy == "compact":
-        with pytest.raises(ValueError, match="原会话已保留"):
-            resident_domain.restart_resident_session(record["resident_id"], "alice", request)
-        assert not operations and resident_backend.session_record(record) == original_binding
-        request["context_strategy"] = "compact"
+        request["model"] = "sonnet"
     result = resident_domain.restart_resident_session(record["resident_id"], "alice", request)
-    assert result["context_strategy"] == expected_strategy
-    if expected_strategy == "native":
-        assert result["status"] == "accepted" and not result["model_operation"]
-        assert result["target_runtime_settings"]["model"] == "sonnet"
-        assert operations[0]["backend_route_id"] == "claude_one"
-        assert operations[0]["operation"] == "fork"
-        assert resident_backend.session_record(record) == original_binding
-        resident_restart_domain.resume_resident_session_restart(operations[0]["step"])
-    else:
-        assert result["status"] == "completed" and result["configuration_only"]
-        assert result["context_result"] == "pending_first_input" and not result["model_operation"]
-        assert record["execution_settings"]["model"] == "sonnet"
-        assert record["session_restart"]["pending_handoff"]["target"] == {
-            "provider": "claude", "route": "claude_one",
-        }
-        assert not operations and resident_backend.session_record(record) == {}
+    assert result["context_strategy"] == "preserve"
+    assert result["status"] == "completed" and result["configuration_only"]
+    assert result["context_result"] == "pending_first_input" and not result["model_operation"]
+    assert record["execution_settings"]["model"] == "sonnet"
+    assert result["target"] == {"provider": "claude", "account_id": "claude_one"}
+    assert not operations and resident_backend.session_record(record) == {}
     assert saved[-1]["backend_route_id"] == "claude_one"
     assert "provider_profile" not in saved[-1]
     assert "backend_binding" not in saved[-1]
@@ -362,7 +337,7 @@ def test_native_restart_route_and_strategy(monkeypatch, native_routes, source_pr
 def test_cross_account_native_fork_is_refused(monkeypatch, native_routes):
     """跨 Claude 账户的原生 Fork 重启被拒绝"""
     record, operations, _ = _restart_domain(monkeypatch, source_provider="claude", source_route="claude_two")
-    with pytest.raises(ValueError, match="原生 Fork"):
+    with pytest.raises(ValueError, match="preserve"):
         resident_domain.restart_resident_session(record["resident_id"], "alice", {
             "target_provider": "claude", "target_account": "claude_one", "context_strategy": "native",
         })

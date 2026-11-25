@@ -363,11 +363,34 @@ def fork_lineage_resident(
         raise ValueError("ForkResident 需要 source")
     if "operation" in payload:
         raise ValueError("ForkResident 不接受 operation；Function Block 使用独立协议")
-    fork_mode = _text(payload.get("fork_mode"), 24).lower()
-    if fork_mode not in {"", "native", "local"}:
-        raise ValueError("记忆交接只支持 native 或 local")
-    if any(field in payload for field in ("launch_after_fork", "prompt", "message", "context_source_resident_id")):
-        raise ValueError("ForkResident 只继承来源 Resident，不接受消息截止点或新任务")
+    fork_mode = _text(
+        payload.get("fork_mode"),
+        24,
+    ).lower() or "full"
+    forbidden_fields = [
+        field
+        for field in ("launch_after_fork", "prompt")
+        if field in payload
+    ]
+    if "message" in payload and fork_mode != "message":
+        forbidden_fields.append("message")
+    if forbidden_fields:
+        raise ValueError(
+            "ForkResident 只创建普通 Resident，不接受字段："
+            + "、".join(forbidden_fields)
+        )
+    if fork_mode == "message":
+        selector = payload.get("message")
+        if (
+            not isinstance(selector, dict)
+            or set(selector) != {"message_id"}
+            or not isinstance(selector.get("message_id"), str)
+            or not selector["message_id"].strip()
+        ):
+            raise ValueError(
+                "ForkResident 的 message 只接受历史截止点选择器："
+                "{message_id: 非空字符串}；不接受新消息正文"
+            )
     effect_id = _text(payload.get("effect_id"), 110).lower()
     trigger_path_id = _text(payload.get("trigger_path_id"), 180)
     edge_id = _text(payload.get("edge_id"), 80).lower()

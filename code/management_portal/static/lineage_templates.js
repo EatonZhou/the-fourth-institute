@@ -24,7 +24,7 @@
     idea: '想法', plan: '方案', other: '其他',
     text: '文本', integer: '整数', number: '数值', boolean: '开关', enum: '枚举选项', duration: '时长（秒）',
     target: '目标', lineage_leader: '当前 Lineage 的负责人', new: '新建', fork: '派生',
-    '': '优先原生 Fork', native: '厂商原生 Fork', local: '本地摘要与 trace',
+    full: '完整上下文', compacted: '压缩后的上下文', 'recent-5': '最近 5 轮', 'recent-10': '最近 10 轮',
     event_source: '事件源', effect: '执行动作', loop: '循环', filter: '筛选', selector: '选择', reducer: '汇总', seed: '种子',
     route: '传递', watch: '观察', keep: '保留', delete: '删除', update: '修改', one: '恰好一个', all: '全部',
   });

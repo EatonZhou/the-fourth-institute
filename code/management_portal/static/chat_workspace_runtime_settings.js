@@ -556,12 +556,12 @@
       const targetContextOptions = () => {
         const [provider, account] = selected();
         const options = current.accounts?.[provider]?.find(row => row.id === account || row.account_id === account)?.context_options || [];
-        return options.filter(row => row.id === "local");
+        return options.filter(row => row.id === "preserve");
       };
-      // Only the local handoff can be submitted by the account switch.
+      // Account switching retains the full canonical Fork context.
       const contextChoice = () => targetContextOptions().find(row => row.id === memoryMethod.value && row.enabled) || targetContextOptions().find(row => row.enabled);
-      // With a single usable method (account migration only reconstructs local
-      // memory) there is nothing to choose, so the field and its texts stay out
+      // With a single preservation method there is nothing to choose,
+      // so the field and its texts stay out
       // of the card and its size does not change while the account is picked.
       const contextSelectable = () => targetContextOptions().filter(row => row.enabled).length > 1;
       const readEditor = () => { try { return JSON.stringify(readParameters()); } catch (_) { return "invalid"; } };
@@ -610,22 +610,21 @@
         memoryMethod.closest("label").hidden = !switchingAccount || !choice || !contextSelectable();
         memoryMethod.disabled = locked || !choice || (cross && !targetReady);
         const contextDescription = find("[data-switch-context-description]");
-        contextDescription.textContent = window.PortalI18n.t(switchingAccount && choice?.id === "local" && contextSelectable()
-          ? (automatic() ? choice.description : "交接材料来自已有摘要和近期对话，可能遗漏细节和工具过程；保存配置不会立即调用目标模型。") : "");
+        contextDescription.textContent = window.PortalI18n.t(switchingAccount && contextSelectable() ? choice?.description || "" : "");
         contextDescription.hidden = !contextDescription.textContent;
         const changed = !cross && parametersChanged();
         let label = "保存", disabled = locked || !changed;
         if (retry) { label = "重试同一请求"; disabled = submitting; }
         else if (init) { label = "继续当前初始化"; disabled = locked || !restart; }
         else if (switchingAccount) {
-          label = choice?.id === "local" ? (automatic() ? "交接并切换" : "保存账号配置") : "切换账号";
+          label = "切换账号";
           disabled = locked || !choice || !selected()[1] || (cross && !targetReady);
         }
         if (!retry && !init && !automatic() && canSwitch() && !selected()[1]) disabled = true;
         submit.disabled = disabled;
         submit.textContent = window.PortalI18n.t(submitting ? "正在提交…" : label);
         saveHint.textContent = window.PortalI18n.t(tracking || retry || init ? ""
-          : switchingAccount ? (choice ? (!automatic() && choice.id === "local"
+          : switchingAccount ? (choice ? (!automatic()
             ? "等待正在运行的工作完成后保存配置；此步骤不调用模型，不按目标额度阻塞。首条真实输入仍受额度限制。"
             : "等待正在运行的工作完成后切换；切换失败时保留原会话。") : "")
           : changed ? "参数从下一轮生效，不会重新开始会话。" : "");

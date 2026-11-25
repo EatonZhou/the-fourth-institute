@@ -364,7 +364,7 @@
         const taken = ['roles', 'components', 'wires'].some(list => source[list].some(item => item.key === ROLE_PREFIX[from]));
         const key = taken ? nextKey(source, ROLE_PREFIX[from]) : ROLE_PREFIX[from];
         keepPlaces(source);
-        source.roles.push({ key, from, title: '', ...(from === 'new' ? { provider: 'codex', settings: {} } : {}), ...(from === 'fork' ? { fork_of: origin.key, fork_mode: '', settings: {} } : {}) });
+        source.roles.push({ key, from, title: '', ...(from === 'new' ? { provider: 'codex', settings: {} } : {}), ...(from === 'fork' ? { fork_of: origin.key, fork_mode: 'full', settings: {} } : {}) });
         source.layout[key] = point(position);
         return key;
       });
