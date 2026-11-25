@@ -46,7 +46,8 @@ or transactionally read-only operation.
 | PostgreSQL | Preserve manifest-selected cluster/programs, await readiness | Major version/cluster relocation uses its explicit migration, never automatic replacement |
 | NATS, Resource, Execution, Society, Worker | Refresh registered definitions, verify launchers, restore running intent, check Web/Worker health | Instance identity, database and credentials retained |
 | Release Web, Dev Web, gateway | Refresh registered definitions through native platform adapter | No inference that a second deployment should be created |
-| Codex account servers, Kimi account servers, Kimi/Claude, relay | Registered components participate in the same stop/definition/start/state checks | Account activation and registration remain with the account owner; no fabricated account or credential |
+| Codex account servers | Keep running accounts and their running PostgreSQL and NATS services available while replacing Portal services | Worker recovery follows the original accepted turn. Running accounts adopt updated launch definitions on their next service start |
+| Kimi account servers, Kimi/Claude, relay | Registered components participate in the same stop/definition/start/state checks | Account activation and registration remain with the account owner |
 | Custom services | Validate declared program path, render owned definition and check resulting state | Unknown launchers fail before stopping; updater cannot invent a program |
 | Telepus | Prepare owner schema; inspect local bindings; register missing bridge requirements | Existing stopped bridges are retained; a conflicting partially stopped bridge blocks preflight; no source contacts copied |
 | Installed Watchboards | Validate declarations and runtime file dependencies; reconcile versioned product templates | User-modified files conflict; unknown missing panels require original source, never guessed defaults |
@@ -61,11 +62,13 @@ the table. Registration is the authority for custom and account services, not
 a filename scan. A stopped component stays stopped; an explicitly disabled
 feature is not enabled merely because its module ships in the code.
 
-On macOS, stopping a Codex account service lets the account host shut down its
-native app-server before launchd unloads the job. The updater waits for both
-processes to exit before it starts a replacement. A shutdown timeout leaves
-the update in its resumable stop phase. A retry checks the recorded process
-identities even if launchd no longer reports a PID for the old job.
+The plan and receipt list which services the updater leaves out of the stop
+phase in `preserved_services`, including Codex accounts that are already stopped.
+An interrupted update retains the original running-service intent when retried.
+An explicit account or instance stop still shuts down the Codex account host.
+On macOS the service controller waits for both the host and its native
+app-server before unloading the launchd job. It checks the recorded process
+identities on retry even after launchd stops reporting the host PID.
 
 ## Feature contributions
 
