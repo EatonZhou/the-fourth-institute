@@ -11,7 +11,7 @@ from management_common.text_values import stripped_text
 from management_portal.repo_workspace_checkout import (
     RepoWorkspaceConflict, _repo_lock, _safe_relative_path, _target,
 )
-from management_portal.repo_workspace_git import _git, _git_bytes
+from management_portal.repo_workspace_git import GitOperationError, _git, _git_bytes
 from management_portal.repo_workspace_network import _network_git
 from management_portal.repo_workspace_history import MAX_DIFF_BYTES
 from management_portal.repo_workspace_state import _branch_name, _branch_records, _commit_record, _head_commit, _remote_auth_context, _status_payload
@@ -59,6 +59,69 @@ def _pull_target(workspace: Path, scope: str) -> dict[str, Any]:
     return target
 
 
+def _git_path(repo_root: Path, name: str) -> Path:
+    raw = _git(repo_root, "rev-parse", "--git-path", name)
+    path = Path(raw)
+    return path if path.is_absolute() else (repo_root / path)
+
+
+def _rebase_in_progress(repo_root: Path) -> bool:
+    return any(_git_path(repo_root, name).exists() for name in ("rebase-merge", "rebase-apply"))
+
+
+def _git_operation_in_progress(repo_root: Path) -> bool:
+    return any(
+        _git_path(repo_root, name).exists()
+        for name in ("rebase-merge", "rebase-apply", "MERGE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD")
+    )
+
+
+def _committer_config(repo_root: Path, actor: str = "") -> list[str]:
+    config: list[str] = []
+    author = re.sub(r"[\x00\r\n]+", " ", stripped_text(actor)).strip() or "TFI Portal"
+    email_local = re.sub(r"[^A-Za-z0-9._-]+", "-", author).strip("-") or "portal"
+    if not _git(repo_root, "config", "--get", "user.name", allowed_returncodes=(0, 1)):
+        config.append(f"user.name={author}")
+    if not _git(repo_root, "config", "--get", "user.email", allowed_returncodes=(0, 1)):
+        config.append(f"user.email={email_local}@{'tfi.local'}")
+    return config
+
+
+def _integrate_fetched_head(repo_root: Path, *, actor: str = "") -> str:
+    fetch_head = _git(repo_root, "rev-parse", "--verify", "FETCH_HEAD^{commit}", allowed_returncodes=(0, 128))
+    if not fetch_head:
+        return ""
+    local_head = _git(repo_root, "rev-parse", "--verify", "HEAD^{commit}", allowed_returncodes=(0, 128))
+    merge_base = (
+        _git(repo_root, "merge-base", local_head, fetch_head, allowed_returncodes=(0, 1))
+        if local_head
+        else ""
+    )
+    if not local_head or not merge_base or merge_base in {local_head, fetch_head}:
+        return _git(repo_root, "merge", "--ff-only", "FETCH_HEAD")
+    if _git_operation_in_progress(repo_root):
+        raise RepoWorkspaceConflict("当前仓库存在未完成的变基、合并或拣选操作，请先处理后再拉取。")
+    status = _status_payload(repo_root)
+    if status["conflict_count"] or status["staged_count"] or status["unstaged_count"]:
+        raise RepoWorkspaceConflict("远端与本地提交已分叉，且工作区存在未提交的跟踪文件更改；请先提交或处理当前更改后再拉取。")
+    try:
+        return _git(
+            repo_root,
+            "rebase",
+            "--no-autostash",
+            "FETCH_HEAD",
+            git_config=_committer_config(repo_root, actor),
+            timeout=180,
+        )
+    except GitOperationError as exc:
+        if _rebase_in_progress(repo_root):
+            _git(repo_root, "rebase", "--abort", allowed_returncodes=(0, 1, 128))
+        raise GitOperationError(
+            f"远端与本地提交存在冲突，已取消自动变基并保留当前状态。\n{exc}",
+            returncode=exc.returncode,
+        ) from exc
+
+
 def pull_scoped_git_workspace(
     workspace_path: str | Path, *, article_id: str, actor: str = "",
     credential: dict[str, Any] | None = None, remember: bool = False,
@@ -84,7 +147,7 @@ def sync_scoped_git_workspace(
         for step in (["pull", "push"] if operation == "sync" else [operation]):
             args = {
                 "fetch": ["fetch", "--no-recurse-submodules", "--", remote],
-                "pull": ["pull", "--ff-only", "--no-rebase", "--no-autostash", "--no-recurse-submodules", "--", remote, f"refs/heads/{branch}"],
+                "pull": ["fetch", "--no-recurse-submodules", "--", remote, f"refs/heads/{branch}"],
                 "push": ["push", "--set-upstream", "--", remote, f"HEAD:refs/heads/{branch}"],
             }[step]
             output, credential_use = _network_git(
@@ -92,6 +155,9 @@ def sync_scoped_git_workspace(
                 context=_remote_auth_context(repo_root, remote, push=step == "push"), actor=actor,
                 credential=credential, remember=remember,
             )
+            if step == "pull":
+                integrated = _integrate_fetched_head(repo_root, actor=actor)
+                output = "\n".join(part for part in (output, integrated) if part)
             outputs.append(output)
         return {"status": scoped_git_status(workspace), "output": "\n".join(outputs), "credential": credential_use}
 

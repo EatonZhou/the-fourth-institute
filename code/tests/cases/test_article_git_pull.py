@@ -8,6 +8,7 @@ import pytest
 
 from management_portal import article_git, article_registry, repo_workspace_scoped_git as scoped
 from management_portal.http_articles import ArticlesHttp
+from management_portal.repo_workspace_checkout import RepoWorkspaceConflict
 from management_portal.repo_workspace_git import GitAuthenticationRequired, GitOperationError
 
 
@@ -216,18 +217,103 @@ def test_scm_mutations_require_contributor(repo, monkeypatch, operation):
         article_git.run_article_git_operation("article_0123456789ab", operation, {}, actor="viewer")
 
 
-def test_diverged_sync_never_pushes_and_push_never_overwrites(repo):
+def test_diverged_non_conflicting_pull_and_sync_rebase_cleanly(repo):
     author, checkout = repo
+    (author / "main.tex").write_text("line1\nline2\nline3\nline4\nline5\n")
+    git(author, "add", "."); git(author, "commit", "-m", "base multiline"); git(author, "push", "origin", "main")
+    git(checkout, "pull", "origin", "main")
+
     advance(author)
     remote_head = git(author, "rev-parse", "HEAD")
     (checkout / "local.tex").write_text("local")
-    git(checkout, "add", "."); git(checkout, "commit", "-m", "diverged")
+    git(checkout, "add", "local.tex"); git(checkout, "commit", "-m", "diverged local file")
+    (checkout / "untracked.tex").write_text("keep untracked")
     local_head = git(checkout, "rev-parse", "HEAD")
-    for operation in ("sync", "push"):
+
+    with pytest.raises(GitOperationError):
+        scoped.sync_scoped_git_workspace(checkout, "push", article_id="article_0123456789ab")
+    assert git(checkout, "rev-parse", "HEAD") == local_head
+    assert git(checkout, "ls-remote", "origin", "refs/heads/main").split()[0] == remote_head
+
+    pulled = scoped.sync_scoped_git_workspace(checkout, "pull", article_id="article_0123456789ab", actor="alice")
+    assert pulled["status"]["ahead"] == 1 and pulled["status"]["behind"] == 0
+    assert (checkout / "main.tex").read_text() == "remote revision"
+    assert (checkout / "new.tex").read_text() == "new section"
+    assert (checkout / "local.tex").read_text() == "local"
+    assert (checkout / "untracked.tex").read_text() == "keep untracked"
+    assert git(checkout, "rev-parse", "HEAD^") == remote_head
+
+    scoped.sync_scoped_git_workspace(checkout, "push", article_id="article_0123456789ab", actor="alice")
+    git(author, "pull", "origin", "main")
+    (author / "main.tex").write_text("L1\nL2\nL3\nL4\nL5\n")
+    git(author, "add", "main.tex"); git(author, "commit", "-m", "five lines"); git(author, "push", "origin", "main")
+    git(checkout, "pull", "origin", "main")
+
+    (author / "main.tex").write_text("REMOTE-1\nL2\nL3\nL4\nL5\n")
+    git(author, "add", "main.tex"); git(author, "commit", "-m", "remote top"); git(author, "push", "origin", "main")
+    (checkout / "main.tex").write_text("L1\nL2\nL3\nL4\nLOCAL-5\n")
+    git(checkout, "add", "main.tex"); git(checkout, "commit", "-m", "local bottom")
+
+    synced = scoped.sync_scoped_git_workspace(checkout, "sync", article_id="article_0123456789ab", actor="alice")
+    assert synced["status"]["ahead"] == 0 and synced["status"]["behind"] == 0
+    assert (checkout / "main.tex").read_text() == "REMOTE-1\nL2\nL3\nL4\nLOCAL-5\n"
+    assert (checkout / "untracked.tex").read_text() == "keep untracked"
+    assert git(checkout, "rev-parse", "HEAD") == git(checkout, "ls-remote", "origin", "refs/heads/main").split()[0]
+
+
+def test_diverged_conflicting_sync_aborts_rebase_and_never_pushes(repo):
+    author, checkout = repo
+    advance(author)
+    remote_head = git(author, "rev-parse", "HEAD")
+    (checkout / "main.tex").write_text("conflicting local revision")
+    git(checkout, "add", "main.tex"); git(checkout, "commit", "-m", "conflicting local")
+    local_head = git(checkout, "rev-parse", "HEAD")
+
+    for operation in ("pull", "sync", "push"):
         with pytest.raises(GitOperationError):
             scoped.sync_scoped_git_workspace(checkout, operation, article_id="article_0123456789ab")
         assert git(checkout, "rev-parse", "HEAD") == local_head
+        assert (checkout / "main.tex").read_text() == "conflicting local revision"
+        assert not (checkout / "new.tex").exists()
+        assert not (checkout / ".git" / "rebase-merge").exists()
+        assert not (checkout / ".git" / "rebase-apply").exists()
         assert git(checkout, "ls-remote", "origin", "refs/heads/main").split()[0] == remote_head
+
+
+def test_diverged_pull_refuses_dirty_tracked_changes(repo):
+    author, checkout = repo
+    advance(author)
+    (checkout / "local.tex").write_text("local committed")
+    git(checkout, "add", "local.tex"); git(checkout, "commit", "-m", "diverged")
+    local_head = git(checkout, "rev-parse", "HEAD")
+    (checkout / "local.tex").write_text("dirty unstaged")
+
+    with pytest.raises(RepoWorkspaceConflict, match="跟踪文件"):
+        scoped.sync_scoped_git_workspace(checkout, "pull", article_id="article_0123456789ab")
+    assert git(checkout, "rev-parse", "HEAD") == local_head
+    assert (checkout / "local.tex").read_text() == "dirty unstaged"
+
+    git(checkout, "add", "local.tex")
+    with pytest.raises(RepoWorkspaceConflict, match="跟踪文件"):
+        scoped.sync_scoped_git_workspace(checkout, "pull", article_id="article_0123456789ab")
+    assert git(checkout, "rev-parse", "HEAD") == local_head
+    assert git(checkout, "show", ":local.tex") == "dirty unstaged"
+
+
+def test_diverged_pull_works_without_configured_git_identity(repo, monkeypatch):
+    author, checkout = repo
+    advance(author)
+    (checkout / "local.tex").write_text("local")
+    git(checkout, "add", "local.tex"); git(checkout, "commit", "-m", "diverged")
+    git(checkout, "config", "--unset", "user.name")
+    git(checkout, "config", "--unset", "user.email")
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", "/dev/null")
+    monkeypatch.setenv("GIT_CONFIG_SYSTEM", "/dev/null")
+
+    result = scoped.sync_scoped_git_workspace(checkout, "pull", article_id="article_0123456789ab", actor="alice")
+    assert result["status"]["ahead"] == 1 and result["status"]["behind"] == 0
+    assert (checkout / "main.tex").read_text() == "remote revision"
+    assert (checkout / "local.tex").read_text() == "local"
 
 
 @pytest.mark.parametrize("action", ["init", "stage", "commit", "discard", "branch", "fetch", "pull", "push", "sync"])
