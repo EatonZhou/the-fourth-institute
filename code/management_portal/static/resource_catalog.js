@@ -1323,10 +1323,9 @@
         <header><span>云资源</span><h3>使用说明</h3></header>
         <div class="deviceUsageGuide markdownBody">
           ${deviceKind(record) === "google_colab" ? window.PortalI18n.html`
-            <p>启动共享会话后即可使用下方的 SSH 测试和终端。GPU 型号以实际分配为准。</p>
-            <pre><code>colab new -s ${esc(colab?.session || "portal-colab")} --gpu A100</code></pre>
-            <p>任务完成后停止会话，结束计费。</p>
-            <pre><code>colab stop -s ${esc(colab?.session || "portal-colab")}</code></pre>
+            <p>通过本设备的 RunResourceAction 启动共享会话。请求 A100 的示例：</p>
+            <pre><code>colab.start  {"hardware":"A100"}</code></pre>
+            <p>使用 ssh.run 执行 nvidia-smi 核对实际卡型。任务结束且共享会话空闲时，用 colab.stop 释放运行时并停止计费。</p>
             <a class="portalButton" href="https://github.com/googlecolab/google-colab-cli">Colab CLI 使用文档</a>
           ` : window.PortalI18n.html`
             <p>在 Colab 挂载 Drive 后，把项目文件放在 <code>MyDrive/Dirtybase Portal</code>。</p>

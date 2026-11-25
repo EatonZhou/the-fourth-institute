@@ -41,6 +41,11 @@ ACTIONS = (
     A("device", "ssh.test", "测试到设备的 SSH 连接。", (
         P("timeout_seconds", "integer", "超时秒数，默认 15", minimum=1, maximum=45),
     ), (R("ok", "boolean"), P("error")), mutates=False),
+    A("device", "colab.start", "分配共享 Colab 会话（消耗 CU），或复用已有同规格会话。", (
+        R("hardware", description="运算资源类型", enum=("CPU", "T4", "L4", "G4", "A100", "H100")),
+    ), (R("session"), R("running", "boolean"), R("changed", "boolean"))),
+    A("device", "colab.stop", "释放已配置的共享 Colab 会话。", (),
+      (R("session"), R("running", "boolean"), R("changed", "boolean"))),
     A("device", "ssh.run", "使用此设备绑定的 SSH 身份在远端执行命令（30 秒）。", (
         R("command", description="远端 shell 命令，最多 8192 个字符"),
     ), (R("exit_code", "integer"), R("output", description="合并输出，最多 32 KiB"), R("truncated", "boolean"))),

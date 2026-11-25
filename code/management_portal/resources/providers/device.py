@@ -59,6 +59,8 @@ def install_mutation_provider(service: "ResourceService") -> None:
 def install_action_provider(service: "ResourceService") -> None:
     from management_portal import device_identity_backend
 
+    from management_portal import google_cloud_devices
+
     def test_ssh(
         resource_id: str,
         payload: dict[str, Any],
@@ -114,6 +116,10 @@ def install_action_provider(service: "ResourceService") -> None:
     service.register_action_provider(
         "device",
         {
+            "colab.start": lambda rid, payload, *, actor: google_cloud_devices.change_colab_session(
+                rid, "colab.start", payload, actor=actor),
+            "colab.stop": lambda rid, payload, *, actor: google_cloud_devices.change_colab_session(
+                rid, "colab.stop", payload, actor=actor),
             "ssh.test": test_ssh,
             "ssh.run": lambda rid, payload, *, actor: device_identity_backend.run_device_ssh(
                 rid, payload.get("command"), actor=actor,

@@ -591,15 +591,21 @@ def managed_ssh_command(profile: Path) -> list[str]:
 def run_device_ssh(device_id: str, command: str, *, actor: str) -> dict[str, Any]:
     if not allows_device_ssh(actor, device_id):
         raise PermissionError("SSH requires action permission on this device")
-    profile = managed_ssh_profile(device_id)
-    if profile is None:
-        raise ValueError("Device has no managed SSH profile")
+    from management_portal import google_cloud_devices
+
     if not isinstance(command, str) or not command.strip() or len(command) > 8192:
         raise ValueError("Provide a remote command of 1 to 8192 characters")
+    if google_cloud_devices.colab_session(device_id):
+        argv = google_cloud_devices.colab_ssh_command(device_id, command)
+    else:
+        profile = managed_ssh_profile(device_id)
+        if profile is None:
+            raise ValueError("Device has no managed SSH profile")
+        argv = [*managed_ssh_command(profile), command]
     with tempfile.TemporaryFile() as output:
         try:
             completed = subprocess.run(
-                [*managed_ssh_command(profile), command], stdin=subprocess.DEVNULL,
+                argv, stdin=subprocess.DEVNULL,
                 stdout=output, stderr=subprocess.STDOUT, timeout=30,
             )
         except subprocess.TimeoutExpired as exc:

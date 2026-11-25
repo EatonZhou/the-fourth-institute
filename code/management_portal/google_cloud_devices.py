@@ -1,4 +1,4 @@
-"""Read-only observations and existing-session SSH for the configured Google devices."""
+"""Google device observations, shared Colab sessions and remote execution."""
 from __future__ import annotations
 
 import json
@@ -7,6 +7,7 @@ from pathlib import Path
 import re
 import subprocess
 
+from management_common.file_lock import lock_stream
 from management_common.portal_paths import path as portal_path
 from management_common.site_config import read_site_config
 
@@ -50,10 +51,48 @@ def colab_ssh_command(device_id: str, *remote_command: str) -> list[str]:
     return [*_colab_command(settings()), "ssh", "-s", session, "-i", str(key), "--", *remote_command]
 
 
-def _read(command: list[str], *, env: dict | None = None) -> str:
-    result = subprocess.run(command, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=12, env=env)
+def change_colab_session(device_id: str, action: str, payload: dict, *, actor: str) -> dict:
+    from management_portal import permission_system
+
+    if not permission_system.allows(actor, "RunResourceAction", {"resource_id": device_id, "action": action}):
+        raise PermissionError("Colab requires action permission on the target device")
+    session = colab_session(device_id)
+    if not session or action not in {"colab.start", "colab.stop"}:
+        raise ValueError("Expected the configured Colab device and a session action")
+    start = action == "colab.start"
+    hardware = payload.get("hardware")
+    if start and hardware not in ("CPU", "T4", "L4", "G4", "A100", "H100"):
+        raise ValueError("Choose a supported Colab accelerator or CPU")
+
+    cli = _colab_command(settings())
+    lock = portal_path("secrets") / "colab-cli" / "session-action.lock"
+    with lock.open("a+b") as stream, lock_stream(stream):
+        status = _read([*cli, "status", "-s", session])
+        absent = f"[colab] Session '{session}' not found." in status.splitlines()
+        current = re.search(rf"^\[{re.escape(session)}\] [^\n|]+ \| Hardware: (\w+) \|", status, re.MULTILINE)
+        if not absent and not current:
+            raise ValueError("Cannot determine the shared Colab session state")
+        changed = False
+        if start and current and current[1] != hardware:
+            raise ValueError(f"Shared Colab session already uses {current[1]}")
+        if start and absent:
+            args = [] if hardware == "CPU" else ["--gpu", hardware]
+            output = _read([*cli, "new", "-s", session, *args], timeout=90)
+            if "[colab] Session READY." not in output.splitlines():
+                raise ValueError("Colab session allocation was not confirmed")
+            changed = True
+        elif not start and current:
+            output = _read([*cli, "stop", "-s", session], timeout=90)
+            if "[colab] Session terminated." not in output.splitlines():
+                raise ValueError("Colab session release was not confirmed")
+            changed = True
+        return {"session": session, "running": start, "changed": changed}
+
+
+def _read(command: list[str], *, env: dict | None = None, timeout: int = 12) -> str:
+    result = subprocess.run(command, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=timeout, env=env)
     if result.returncode:
-        raise ValueError("Cloud status unavailable. Check the CLI configuration and Google authorization.")
+        raise ValueError("Google cloud operation failed. Check authorization, availability and quota.")
     return result.stdout
 
 
