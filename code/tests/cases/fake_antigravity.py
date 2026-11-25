@@ -138,6 +138,8 @@ for line in sys.stdin:
         result = {"protocolVersion": 1, "agentInfo": {"version": "1.4.5"},
                   "agentCapabilities": {"loadSession": True, "mcpCapabilities": {"http": True},
                                         "promptCapabilities": {"image": not bool(os.environ.get("FAKE_NO_IMAGES"))}}}
+        if os.environ.get("FAKE_ADDITIONAL_DIRECTORIES"):
+            result["agentCapabilities"]["sessionCapabilities"] = {"additionalDirectories": {}}
     elif method == "authenticate":
         if os.environ.get("FAKE_LOGIN"):
             print("https://accounts.google.com/o/oauth2/auth?state=s&redirect_uri=http%3A%2F%2Flocalhost%3A12345%2F", file=sys.stderr, flush=True)

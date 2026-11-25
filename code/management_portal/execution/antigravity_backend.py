@@ -12,6 +12,7 @@ from management_portal.antigravity_client import AcpClient, AcpTransportError, T
 from management_portal.antigravity_runtime import command
 from management_portal.antigravity_input_media import prompt_content
 from management_portal.resident_shell_environment import resident_process_environment
+from .antigravity_workspace import additional_directories
 from .backend_contracts import BackendResult, full_system_context
 from .context_seed import realize_portable_seed
 from .native_harness_tools import prepare_tools
@@ -239,6 +240,9 @@ class AntigravityBackend:
     def __init__(self, client_factory=AcpClient):
         self.client_factory = client_factory
 
+    def open_client(self, request, account_id, env, **callbacks):
+        return self.client_factory(command(), env=env, cwd=request.cwd, **callbacks)
+
     def prepare_context_seed(self, invocation):
         return realize_portable_seed(invocation)
 
@@ -249,7 +253,7 @@ class AntigravityBackend:
         if session.backend_route_id and route != session.backend_route_id:
             raise ValueError("Provider route changes require a session migration")
         if request.operation == "release":
-            # Each invocation closes its process. Google retains durable history.
+            # Google retains durable history when the Worker releases its session.
             return BackendResult({"message": "", "provider": self.provider_id, "operation": "release"},
                                  session.backend_session_id, route)
         if request.operation not in {"create", "turn"}:
@@ -383,8 +387,8 @@ class AntigravityBackend:
 
         with ExitStack() as stack:
             server = stack.enter_context(ToolServer(catalog, dispatch)) if catalog else None
-            client = stack.enter_context(self.client_factory(command(), env=env, cwd=request.cwd,
-                                        on_update=update, on_request=client_request))
+            client = stack.enter_context(self.open_client(request, row["account_id"], env,
+                                                         on_update=update, on_request=client_request))
             handshake = client.initialize()
             capabilities = handshake.get("agentCapabilities") or {}
             if request.input_media and not capabilities.get("promptCapabilities", {}).get("image"):
@@ -398,6 +402,9 @@ class AntigravityBackend:
                 meta["enabledTools"] = []
             params = {"cwd": request.cwd, "mcpServers": [server.descriptor()] if server else [],
                       "_meta": {"antigravity": meta}}
+            session_capabilities = capabilities.get("sessionCapabilities")
+            if isinstance(session_capabilities, dict) and isinstance(session_capabilities.get("additionalDirectories"), dict):
+                params["additionalDirectories"] = additional_directories(request) if native else []
             if sid:
                 params["sessionId"] = sid
             created = client.call("session/load" if sid else "session/new", params)

@@ -51,6 +51,19 @@ def build_backend_session_operation_request(
     named_resident = (
         binding_resident or str(dict(metadata or {}).get("resident_id") or "").strip()
     ) if operation == "turn" else ""
+    operation_metadata = {**resident_metadata, **dict(metadata or {}),
+                          "business_type": "resident_session_operation", "operation": operation}
+    if backend == "antigravity" and operation in {"create", "turn"}:
+        # Lifecycle requests use the owner execution profile even when the
+        # initiating actor has limited workspace authority. Use the scope
+        # assembled by Society for this Resident, including its owner check.
+        operation_metadata.pop("filesystem_scope", None)
+        identity = operation_runtime_options.get("resident_environment")
+        resident_id = operation_metadata.get("resident_id")
+        if (operation_runtime_options.get("is_owner") is True and isinstance(identity, dict)
+                and resident_id and identity.get("PORTAL_RESIDENT_ID") == resident_id
+                and (not binding_resident or binding_resident == resident_id)):
+            operation_metadata["filesystem_scope"] = operation_runtime_options.get("authorization_scope")
     return build_agent_session_request(
         actor=actor,
         prompt=(
@@ -71,12 +84,7 @@ def build_backend_session_operation_request(
         ),
         backend_route_id=backend_route_id,
         system_instructions=system_instructions,
-        metadata={
-            **resident_metadata,
-            **dict(metadata or {}),
-            "business_type": "resident_session_operation",
-            "operation": operation,
-        },
+        metadata=operation_metadata,
         agent_id=str(agent_id or "").strip() or named_resident,
         priority=100 if operation == "release" else 0,
     )
