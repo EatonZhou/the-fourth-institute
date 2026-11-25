@@ -91,10 +91,6 @@ def component_command(instance: InstanceManifest, component: str) -> tuple[list[
             raise FileNotFoundError('Registered service program or working directory is unavailable')
         env['PYTHONPATH'] = os.pathsep.join((str(code), str(entrypoint.parent)))
         return [python, str(entrypoint), *program['arguments']], env
-    if component.startswith('antigravity-account@'):
-        from management_common.provider_account_paths import validate_identity
-        account_id = validate_identity(component.partition('@')[2])
-        return [python, '-m', 'management_portal.antigravity_account_server', '--account-id', account_id], env
     if component.startswith('kimi-account@'):
         from management_common.provider_account_paths import validate_identity, registered_home
         from management_portal.kimi_account_runtime import account_for_route

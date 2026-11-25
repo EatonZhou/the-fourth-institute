@@ -60,27 +60,8 @@ def login_failure_reason(message):
     return ""
 
 
-def acp_environment(env):
-    # Apply the instance policy after the account and task environments have merged.
-    # The isolated installer handshake has no instance environment or proxy.
-    instance_root = env.get("PORTAL_INSTANCE_ROOT")
-    if instance_root and PROXY_KEYS.intersection(env):
-        providers = load(instance_root).site_settings().get("deployment", {}).get("providers", {})
-        if providers.get("antigravity_egress") == "tunnel":
-            env = {key: value for key, value in env.items() if key not in PROXY_KEYS}
-    return env
-
-
 class AcpClient:
     def __init__(self, command, *, env, cwd=None, on_update=None, on_request=None, on_login_url=None):
-        self.process = spawn_process(command, env=acp_environment(env), cwd=cwd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                     stderr=subprocess.PIPE, text=True, bufsize=1, start_new_session=True)
-        self._attach(self.process.stdout, self.process.stdin, on_update, on_request, on_login_url)
-        self._stderr = threading.Thread(target=self._read_stderr, daemon=True)
-        self._stderr.start()
-
-    def _attach(self, reader, writer, on_update, on_request, on_login_url=None):
-        self._input, self._output = reader, writer
         self.on_update = on_update or (lambda params: None)
         self.on_request = on_request or (lambda method, params: None)
         self.on_login_url = on_login_url
@@ -91,8 +72,19 @@ class AcpClient:
         self._failure = None
         self._close_lock = threading.Lock()
         self._closed = False
+        # Apply the instance policy after the account and task environments have merged.
+        # The isolated installer handshake has no instance environment or proxy.
+        instance_root = env.get("PORTAL_INSTANCE_ROOT")
+        if instance_root and PROXY_KEYS.intersection(env):
+            providers = load(instance_root).site_settings().get("deployment", {}).get("providers", {})
+            if providers.get("antigravity_egress") == "tunnel":
+                env = {key: value for key, value in env.items() if key not in PROXY_KEYS}
+        self.process = spawn_process(command, env=env, cwd=cwd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                     stderr=subprocess.PIPE, text=True, bufsize=1, start_new_session=True)
         self._reader = threading.Thread(target=self._read, daemon=True)
+        self._stderr = threading.Thread(target=self._read_stderr, daemon=True)
         self._reader.start()
+        self._stderr.start()
 
     def __enter__(self):
         return self
@@ -125,7 +117,7 @@ class AcpClient:
 
     def _read(self):
         try:
-            for line in self._input:
+            for line in self.process.stdout:
                 message = json.loads(line)
                 if message.get("method"):
                     method, params = message["method"], message.get("params") or {}
@@ -160,8 +152,8 @@ class AcpClient:
     def _send(self, message):
         with self._lock:
             try:
-                self._output.write(json.dumps(message, ensure_ascii=False) + "\n")
-                self._output.flush()
+                self.process.stdin.write(json.dumps(message, ensure_ascii=False) + "\n")
+                self.process.stdin.flush()
             except OSError as exc:
                 raise AcpTransportError(-32001, "Antigravity ACP write failed; delivery unknown") from exc
 
@@ -229,31 +221,6 @@ class AcpClient:
             for pipe in (self.process.stdin, self.process.stdout, self.process.stderr):
                 pipe.close()
             self._closed = True
-
-
-class AccountAcpClient(AcpClient):
-    """One Worker's execution-scoped connection to its account's native host."""
-
-    def __init__(self, connection, *, on_update=None, on_request=None):
-        self.connection = connection
-        self._attach(connection.makefile("r", encoding="utf-8"), connection.makefile("w", encoding="utf-8"),
-                     on_update, on_request)
-
-    def close(self, *, timeout=5):
-        import socket
-
-        with self._close_lock:
-            if self._closed:
-                return
-            self._closed = True
-            try:
-                self.connection.shutdown(socket.SHUT_RDWR)
-            except OSError:
-                pass
-            self.connection.close()
-            self._reader.join(timeout)
-            self._input.close()
-            self._output.close()
 
 
 class ToolServer:

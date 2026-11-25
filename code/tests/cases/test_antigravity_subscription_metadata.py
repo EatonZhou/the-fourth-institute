@@ -36,7 +36,7 @@ def test_daily_tier_reads_native_auth_without_session_or_usage(monkeypatch):
     client = MagicMock()
     client.__enter__.return_value = client
     client.call.return_value = metadata()
-    monkeypatch.setattr(accounts, 'connect_account', lambda *args, **kwargs: client)
+    monkeypatch.setattr(accounts, 'AcpClient', lambda *args, **kwargs: client)
     monkeypatch.setattr(accounts, 'account_for_route', lambda route: {'account_id': 'one'})
     monkeypatch.setattr(accounts, 'command', lambda: ['native'])
     monkeypatch.setattr(accounts, 'environment', lambda _: {})

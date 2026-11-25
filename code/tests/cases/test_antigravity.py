@@ -32,15 +32,13 @@ FAKE = Path(__file__).with_name("fake_antigravity.py")
 @pytest.fixture
 def agent(monkeypatch, tmp_path):
     from management_portal.execution import antigravity_backend as backend
-    def test_client(account_id, **callbacks):
-        return AcpClient([sys.executable, str(FAKE)], env=accounts.environment(account_id), **callbacks)
-    monkeypatch.setattr(backend, "connect_account", test_client)
-    monkeypatch.setattr(accounts, "connect_account", test_client)
+    monkeypatch.setattr(backend, "command", lambda: [sys.executable, str(FAKE)])
     monkeypatch.setattr(accounts, "command", lambda: [sys.executable, str(FAKE)])
     monkeypatch.setattr(accounts, "account_for_route", lambda route: {"account_id": "antigravity_one", "route_id": "one"})
     monkeypatch.setattr(accounts, "account_home", lambda provider, account: tmp_path)
     monkeypatch.setattr(accounts, "account_runtime", lambda *args: tmp_path)
     monkeypatch.setattr(accounts, "environment", lambda account: {"GEMINI_HOME": str(tmp_path)})
+    monkeypatch.setattr(backend, "resident_process_environment", lambda options: ({}, {}))
     return tmp_path
 
 

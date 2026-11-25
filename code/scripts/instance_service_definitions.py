@@ -31,7 +31,7 @@ def dependencies(instance: InstanceManifest, component: str) -> tuple[str, ...]:
         'society': ('postgres', 'nats', 'resource', 'execution'),
         'gateway': ('web', 'dev-web'),
     }
-    required = (('postgres',) if component.startswith(('kimi-account@', 'antigravity-account@')) else
+    required = (('postgres',) if component.startswith('kimi-account@') else
                 graph.get(component, ('postgres', 'nats', 'resource', 'execution', 'society')))
     return tuple(name for name in required if name in instance.document['services']['components'])
 

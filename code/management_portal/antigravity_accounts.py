@@ -12,7 +12,6 @@ from urllib.parse import parse_qs, urlsplit
 from urllib.request import ProxyHandler, build_opener
 
 from management_common.file_permissions import atomic_write_private_bytes
-from management_portal.antigravity_account_host import connect_account
 from management_portal.antigravity_client import AcpClient, AcpError, AuthenticationRequired
 from management_portal.antigravity_runtime import command
 from management_portal.execution.account_hosting import account_home
@@ -105,7 +104,7 @@ def read_subscription(route):
     """Read native account tier without creating or loading a model session."""
     from management_portal.execution.account_observation import cancel_resource
     row = account_for_route(route)
-    with connect_account(row['account_id']) as client, \
+    with AcpClient(command(), env=environment(row['account_id'])) as client, \
             cancel_resource(lambda: client.close(timeout=1)):
         client.initialize()
         authenticated = client.call('authenticate', {'methodId': 'oauth-personal'})
@@ -114,7 +113,7 @@ def read_subscription(route):
 
 def logged_in(account_id):
     try:
-        with connect_account(account_id) as client:
+        with AcpClient(command(), env=environment(account_id)) as client:
             client.initialize()
             client.call("authenticate", {"methodId": "oauth-personal"})
         return True
@@ -175,7 +174,7 @@ def observe_account(account_id):
     from management_portal.execution.account_observation import cancel_resource, check_cancelled, cancelled
     check_cancelled()
     try:
-        with connect_account(account_id, on_update=update) as client, \
+        with AcpClient(command(), env=environment(account_id), on_update=update) as client, \
                 cancel_resource(lambda: client.close(timeout=1)):
             handshake = client.initialize()
             authenticated = client.call("authenticate", {"methodId": "oauth-personal"})

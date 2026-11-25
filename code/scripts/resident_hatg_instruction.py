@@ -21,7 +21,6 @@ import argparse
 import http.client
 import json
 import math
-import os
 import re
 import sys
 import time
@@ -69,8 +68,6 @@ class InstructionFailed(RuntimeError):
 
 
 def _resident_id(requested: str) -> str:
-    if os.environ.get("PORTAL_SHARED_ACP") == "1":
-        raise RuntimeError("共享 Google 进程没有 Resident 身份。请通过本轮 hatg_instruction 或 RunScript 调用 Portal。")
     injected = str(read_product_env("PORTAL_RESIDENT_ID") or "").strip()
     if injected and requested and injected != requested:
         raise RuntimeError("--resident-id 与 Portal 注入的 Resident 身份 不一致")

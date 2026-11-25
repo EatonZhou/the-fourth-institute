@@ -8,9 +8,10 @@ import threading
 
 from management_common.provider_turn_artifacts import ToolEditArtifacts
 from management_portal import antigravity_accounts as accounts
-from management_portal.antigravity_client import AcpTransportError, ToolServer
-from management_portal.antigravity_account_host import connect_account
+from management_portal.antigravity_client import AcpClient, AcpTransportError, ToolServer
+from management_portal.antigravity_runtime import command
 from management_portal.antigravity_input_media import prompt_content
+from management_portal.resident_shell_environment import resident_process_environment
 from .antigravity_workspace import additional_directories
 from .backend_contracts import BackendResult, full_system_context
 from .context_seed import realize_portable_seed
@@ -236,6 +237,12 @@ class AntigravityBackend:
     _active = {}
     _lock = threading.Lock()
 
+    def __init__(self, client_factory=AcpClient):
+        self.client_factory = client_factory
+
+    def open_client(self, request, account_id, env, **callbacks):
+        return self.client_factory(command(), env=env, cwd=request.cwd, **callbacks)
+
     def prepare_context_seed(self, invocation):
         return realize_portable_seed(invocation)
 
@@ -261,7 +268,8 @@ class AntigravityBackend:
         prompt = prompt_content(invocation.user_prompt, request.input_media) if request.operation == "turn" else []
         row = accounts.account_for_route(route)
         route = row["route_id"]
-        env = accounts.environment(row["account_id"])
+        env, _ = resident_process_environment(options)
+        env.update(accounts.environment(row["account_id"]))
         native = self.native_tools_allowed(request)
         catalog, dispatch = prepare_tools(invocation, context)
         offered_tools = {tool["name"] for tool in catalog}
@@ -370,7 +378,7 @@ class AntigravityBackend:
                 call = params.get("toolCall") or {}
                 mcp = (call.get("_meta") or {}).get("mcp") or {}
                 portal_tool = mcp.get("server") == "portal" and mcp.get("tool") in offered_tools
-                if (not sid or params.get("sessionId") == sid) and (portal_tool or native) and not context.is_cancelled():
+                if (not sid or params.get("sessionId") == sid) and (native or portal_tool) and not context.is_cancelled():
                     option = next((p for p in params.get("options", []) if p.get("kind") == "allow_once"), None)
                     if option:
                         return {"outcome": {"outcome": "selected", "optionId": option["optionId"]}}
@@ -379,7 +387,7 @@ class AntigravityBackend:
 
         with ExitStack() as stack:
             server = stack.enter_context(ToolServer(catalog, dispatch)) if catalog else None
-            client = stack.enter_context(connect_account(row["account_id"],
+            client = stack.enter_context(self.open_client(request, row["account_id"], env,
                                                          on_update=update, on_request=client_request))
             handshake = client.initialize()
             capabilities = handshake.get("agentCapabilities") or {}
