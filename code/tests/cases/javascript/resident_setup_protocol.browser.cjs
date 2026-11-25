@@ -26,7 +26,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       window.dialog = runtime.createSessionRestartDialog();
       window.openDialog = () => dialog.open({resident_id: 'fixture', source: {provider: 'codex', account_id: 'two', has_session: true}, runtime_settings: {model: 'm'}, runtime_catalog: catalog,
         // The server declares which context transfers each target account supports.
-        providers: [{id: 'codex', label: 'Codex'}], accounts: {codex: [{id: 'two', account_id: 'codex_two', label: 'two', context_options: [{id: 'preserve', enabled: true, description: '不压缩上下文'}]}, {id: 'three', account_id: 'codex_three', label: 'three', context_options: [{id: 'preserve', enabled: true, description: '不压缩上下文'}]}]},
+        providers: [{id: 'codex', label: 'Codex'}], accounts: {codex: [{id: 'two', account_id: 'codex_two', label: 'two', context_options: [{id: 'local', enabled: true, description: '摘要重组'}]}, {id: 'three', account_id: 'codex_three', label: 'three', context_options: [{id: 'local', enabled: true, description: '摘要重组'}]}]},
         application: {items: [{path: 'capability_config', status: 'unknown', delivery: 'unknown'}]},
         onSave: async values => {saves.push(values); return {settings: values};}}, async values => {calls.push(values); return {status: 'completed', restart_id: 'done'};}, async () => ({}));
       openDialog();
@@ -47,7 +47,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     assert.equal(await page.evaluate(() => calls.length), 0, 'saving parameters keeps the Session');
     await page.evaluate(() => openDialog());
     await page.locator('[data-session-target]').selectOption(JSON.stringify(['codex', 'three']));
-    assert.equal(await page.locator('[data-switch-context-status]').innerText(), '不压缩上下文');
+    assert.equal(await page.locator('[data-memory-method]').inputValue(), 'local');
     for (const width of [1280, 390]) {
       await page.setViewportSize({width, height: 900});
       await page.locator('[data-session-restart-submit]').scrollIntoViewIfNeeded();
@@ -57,7 +57,8 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     if (process.env.PORTAL_UI_EVIDENCE) await page.screenshot({path: process.env.PORTAL_UI_EVIDENCE, fullPage: true});
     await page.locator('[data-session-restart-submit]').click();
     const payload = await page.evaluate(() => calls[0]);
-    assert.equal(payload.operation, 'switch_account'); assert.equal(payload.context_strategy, 'preserve'); assert.equal(payload.resume_failed_input, false);
+    assert.equal(payload.operation, 'switch_account'); assert.equal(payload.context_strategy, 'local');
+    assert.equal(Object.hasOwn(payload, 'resume_failed_input'), false);
     assert.equal(await page.locator('.portalSessionRestartOverlay').isVisible(), false);
     assert.deepEqual(errors, []);
     console.log('PASS browser: one-page runtime panel; cancel/save/switch; 1280/390px; one Chromium page');

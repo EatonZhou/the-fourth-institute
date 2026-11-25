@@ -28,7 +28,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       document.getElementById('background').onclick = () => backgroundClicks++;
       document.getElementById('hostForm').addEventListener('submit', event => {event.preventDefault(); hostSubmits++;});
       const catalog = {models: ['m', 'm2'], default_model: 'm', efforts_by_model: {m: ['low', 'high'], m2: ['low', 'high']}, service_tiers_by_model: {}, runtime_capabilities: {settings: ['model', 'reasoning_effort', 'permissions', 'collaboration_mode'], permission_presets: ['full-access']}};
-      const choices = preserve => [{id: 'preserve', enabled: preserve, description: '完整保留上下文'}, {id: 'compact', enabled: true, description: '摘要交接可能遗漏细节和工具过程'}, {id: 'fresh', enabled: true}];
+      const choices = [{id: 'local', enabled: true, description: '摘要重组'}];
       window.PortalResidentService = {runtimeAccounts: async () => ({accounts: []}), runtimeCatalog: async () => catalog, observeSessionRestart: () => () => {}, refreshSessionRestart: async () => ({})};
       PortalUI.toast = message => {throw new Error(message);};
       const api = PortalChatWorkspaceRuntimeSettings.createRuntimeSettings({escapeHtml: PortalUIPrimitives.escapeHtml});
@@ -38,7 +38,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       };
       window.config = extra => ({resident_id: 'fixture', source: {provider: 'codex', account_id: 'one'}, runtime_settings: {model: 'm'}, runtime_catalog: catalog,
         credits_confirmation: {allowed: true, scope: 'target_session'},
-        providers: [{id: 'codex', label: 'Codex'}, {id: 'claude', label: 'Claude'}], accounts: {codex: [{id: 'one', context_options: choices(true)}, {id: 'two', context_options: choices(true)}], claude: [{id: 'claude_one', context_options: choices(false)}]},
+        providers: [{id: 'codex', label: 'Codex'}, {id: 'claude', label: 'Claude'}], accounts: {codex: [{id: 'one', context_options: choices}, {id: 'two', context_options: choices}], claude: [{id: 'claude_one', context_options: choices}]},
         onSave: async values => {saves.push(values); return {settings: values};}, ...extra});
       window.openSettings = (extra = {}) => {
         window.dialog?.destroy();
@@ -89,7 +89,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     await page.selectOption('[data-session-target]', JSON.stringify(['claude', 'claude_one']));
     await page.waitForFunction(() => document.querySelector('[data-target-editor-host] [data-runtime-setting="model"]')?.selectedOptions[0]?.textContent === 'm (default)');
     assert.equal(await page.locator('[data-runtime-editor="current"]').isVisible(), false, 'a cross-Provider switch shows the target parameters');
-    assert.match(await page.locator('[data-switch-context-description]').innerText(), /遗漏细节/);
+    assert.equal(await page.locator('[data-memory-method]').inputValue(), 'local');
     assert.equal(await page.locator('[data-session-restart-submit]').innerText(), await page.evaluate(() => PortalI18n.t('保存账号配置')));
     await page.locator('[data-runtime-panel-reset]').click();
     assert.equal(await page.evaluate(() => requests.length), 0, 'cancel does not switch');
@@ -100,15 +100,15 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     await page.click('[data-session-restart-submit]');
     await page.waitForFunction(() => requests.length === 1);
     assert.equal(await page.evaluate(() => requests[0].model), 'm', 'switch submits the model displayed by the default option');
-    assert.equal(await page.evaluate(() => requests[0].context_strategy), 'compact');
-    // A same-Provider switch to a paid account asks for an explicit credits confirmation.
+    assert.equal(await page.evaluate(() => requests[0].context_strategy), 'local');
+    // A same-Provider switch only saves the account configuration.
     await page.evaluate(() => openSettings());
     await page.selectOption('[data-session-target]', JSON.stringify(['codex', 'two']));
-    await page.check('[data-session-credits-consent]');
+    assert.equal(await page.locator('[data-session-credits-consent]').isVisible(), false);
     await page.click('[data-session-restart-submit]');
     await page.waitForFunction(() => requests.length === 2);
-    assert.equal(await page.evaluate(() => requests[1].context_strategy), 'preserve');
-    assert.deepEqual(await page.evaluate(() => requests[1].credits_consent), {account_id: 'two', confirmed: true});
+    assert.equal(await page.evaluate(() => requests[1].context_strategy), 'local');
+    assert.equal(await page.evaluate(() => Object.hasOwn(requests[1], 'credits_consent')), false);
     // A failed or running initialization continues from the same panel.
     await page.evaluate(() => openSettings({initialization: {initialization_id: 'original-init', status: 'running'}}));
     assert.equal(await page.locator('[data-session-restart-submit]').innerText(), await page.evaluate(() => PortalI18n.t('继续当前初始化')));
@@ -180,8 +180,8 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     await page.click('[data-session-restart-submit]');
     await page.waitForFunction(() => requests.length === 3);
     assert.deepEqual(await page.evaluate(() => ({provider: requests[2].target_provider, model: requests[2].model, policy: requests[2].account_selection,
-      account: requests[2].target_account || null, resume: requests[2].resume_failed_input})),
-      {provider: 'codex', model: 'codex-model', policy: 'auto', account: null, resume: false});
+      account: requests[2].target_account || null, resumesFailedInput: Object.hasOwn(requests[2], 'resume_failed_input')})),
+      {provider: 'codex', model: 'codex-model', policy: 'auto', account: null, resumesFailedInput: false});
     // Changing only the policy is a settings save; it never replaces the live Session.
     await page.evaluate(() => openSettings(selectionConfig()));
     await page.selectOption('[data-session-policy]', 'auto');

@@ -121,7 +121,7 @@ w.PortalUI.toast = (message, tone) => toasts.push([message, tone]);
   for (const deferred of [false, true]) {
     panel.open(config, async values => {
       requests++; assert.equal(values.context_strategy, 'local');
-      assert.equal(values.active_execution_policy, 'wait'); assert.equal(values.resume_failed_input, false);
+      assert.equal(values.active_execution_policy, 'wait'); assert.equal(Object.hasOwn(values, 'resume_failed_input'), false);
       assert.ok(values.idempotency_key);
       return deferred ? {...pending, status: 'accepted'} : pending;
     });

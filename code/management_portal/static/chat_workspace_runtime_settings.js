@@ -541,10 +541,10 @@
       const readParameters = () => ({...editor.read(), ...(policyEnabled() ? {account_selection: policy.value} : {})});
       const targetContextOptions = () => {
         const [provider, account] = selected();
-        return current.accounts?.[provider]?.find(row => row.id === account || row.account_id === account)?.context_options || [];
+        const options = current.accounts?.[provider]?.find(row => row.id === account || row.account_id === account)?.context_options || [];
+        return options.filter(row => row.id === "local");
       };
-      // The server owns transfer capabilities. Prefer preservation, then summary
-      // handoff; never turn an unsupported transfer into a blank session.
+      // Only the local handoff can be submitted by the account switch.
       const contextChoice = () => targetContextOptions().find(row => row.id === memoryMethod.value && row.enabled) || targetContextOptions().find(row => row.enabled);
       // With a single usable method (account migration only reconstructs local
       // memory) there is nothing to choose, so the field and its texts stay out
@@ -583,12 +583,13 @@
         find("[data-session-policy-field]").hidden = !policyEnabled();
         find("[data-session-account-field]").hidden = automatic();
         find("[data-session-policy-hint]").hidden = !automatic();
-        const creditTarget = init ? [current.source?.provider, current.source?.account_id] : selected();
         const showCredits = current.credits_confirmation?.allowed === true && init
-          && (init || !automatic()) && creditTarget[0] === "codex" && Boolean(creditTarget[1]);
+          && current.source?.provider === "codex" && Boolean(current.source?.account_id);
         find("[data-session-credits-confirmation]").hidden = !showCredits;
         creditsConsent.disabled = locked || !showCredits;
-        find("[data-session-credits-description]").textContent = window.PortalI18n.t("本次目标账号：") + canonicalAccount(...creditTarget);
+        find("[data-session-credits-description]").textContent = showCredits
+          ? window.PortalI18n.t("本次目标账号：") + canonicalAccount(current.source.provider, current.source.account_id)
+          : "";
         target.disabled = locked || automatic(); backend.disabled = locked; policy.disabled = locked;
         editor.element.disabled = locked; targetEditor.element.disabled = locked;
         const choice = contextChoice();
@@ -693,8 +694,6 @@
         if (submit.disabled) return;
         const retry = restartView.restart?.status === "confirming";
         try {
-          const consentFor = (provider, account) => creditsConsent.checked && !creditsConsent.disabled
-            ? {account_id: canonicalAccount(provider, account), confirmed: true} : null;
           if (retry || initializing() || switching()) {
             if (!restart) return;
             const [provider, account] = initializing() || !switching() ? [current.source?.provider, current.source?.account_id] : selected();
@@ -704,7 +703,8 @@
             if (cross && !runtime.model) throw new Error("请选择目标 Provider 的模型。");
             // Parameters edited together with a same-Provider switch are saved first.
             const parameters = !retry && !cross && parametersChanged() ? readParameters() : null;
-            const consent = consentFor(provider, account);
+            const consent = initializing() && creditsConsent.checked && !creditsConsent.disabled
+              ? {account_id: canonicalAccount(provider, account), confirmed: true} : null;
             submitting = true; update();
             if (!retry && initializing()) {
               await restartService.retryResidentInitialization(current.resident_id, {
@@ -724,8 +724,7 @@
               : await restart({operation: "switch_account",
                 target_provider: provider, ...(!automatic() ? {target_account: account} : {}),
                 context_strategy: contextChoice().id,
-                ...(consent ? {credits_consent: consent} : {}),
-                active_execution_policy: "wait", resume_failed_input: false, ...runtime, idempotency_key: requestKey});
+                active_execution_policy: "wait", ...runtime, idempotency_key: requestKey});
             current.restart = result; restartView.restart = result;
             tracking = sessionRestartActive(result); progress.update(restartView);
             if (result?.status === "completed") complete(result);

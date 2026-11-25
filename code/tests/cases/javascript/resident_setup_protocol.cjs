@@ -20,16 +20,13 @@ w.PortalResidentService = {runtimeAccounts: async () => ({accounts: []}), runtim
   retrySessionRestart: async () => ({status: 'accepted', restart_id: 'same'})};
 w.PortalUI.toast = message => errors.push(String(message));
 const api = w.PortalChatWorkspaceRuntimeSettings.createRuntimeSettings({escapeHtml: w.PortalUIPrimitives.escapeHtml});
-const contextOptions = enabled => [
-  {id: 'preserve', label: '完整保留', enabled, description: enabled ? '不压缩上下文' : '这两个 Provider 无法完整保留上下文'},
-  {id: 'compact', label: '精简交接', enabled: true, description: '可能遗漏细节和工具过程'},
-  {id: 'visible', label: '仅可见对话', enabled: true, description: '不含完整工具过程'},
-  {id: 'fresh', label: '空白开始', enabled: true, description: '不携带当前上下文'},
+const contextOptions = [
+  {id: 'local', label: '摘要重组', enabled: true, description: '可能遗漏细节和工具过程'},
 ];
 const config = {resident_id: 'fixture', choose_runtime_settings: true, runtime_settings: {model: 'm'}, runtime_catalog: catalog,
   source: {provider: 'codex', account_id: 'two', has_session: true},
   providers: [{id: 'codex', label: 'Codex'}, {id: 'claude', label: 'Claude'}],
-  accounts: {codex: [{id: 'two', account_id: 'codex_two', label: 'two', context_options: contextOptions(true)}, {id: 'three', account_id: 'codex_three', label: 'three', context_options: contextOptions(true)}], claude: [{id: 'one', account_id: 'claude_one', label: 'one', context_options: contextOptions(false)}]},
+  accounts: {codex: [{id: 'two', account_id: 'codex_two', label: 'two', context_options: contextOptions}, {id: 'three', account_id: 'codex_three', label: 'three', context_options: contextOptions}], claude: [{id: 'one', account_id: 'claude_one', label: 'one', context_options: contextOptions}]},
   onSave: async values => {saves.push(values); return {settings: values};}};
 const flush = async () => {for (let i = 0; i < 8; i++) await new Promise(resolve => setTimeout(resolve, 0));};
 const click = selector => w.document.querySelector(selector).click();
@@ -65,8 +62,8 @@ const plain = value => JSON.parse(JSON.stringify(value));
   assert.doesNotMatch(submit.textContent, /^(保存|Save)$/, 'another account turns the action into a switch');
   click('[data-session-restart-submit]'); await flush();
   assert.equal(changes.length, 1);
-  assert.equal(changes[0].operation, 'switch_account'); assert.equal(changes[0].context_strategy, 'preserve');
-  assert.equal(changes[0].active_execution_policy, 'wait'); assert.equal(changes[0].resume_failed_input, false);
+  assert.equal(changes[0].operation, 'switch_account'); assert.equal(changes[0].context_strategy, 'local');
+  assert.equal(changes[0].active_execution_policy, 'wait'); assert.equal(Object.hasOwn(changes[0], 'resume_failed_input'), false);
   assert.equal(changes[0].target_account, 'three'); assert.equal(changes[0].model, undefined, 'same-provider switch must not overwrite model with a default');
   observe({restart: {restart_id: 'op1', status: 'completed', operation: 'switch_account'}}); await flush();
   dialog.destroy();
@@ -100,26 +97,24 @@ const plain = value => JSON.parse(JSON.stringify(value));
   cross.open(config, async values => {changes.push(plain(values)); return {status: 'completed'};}); await flush();
   select('[data-session-target]', JSON.stringify(['claude', 'one'])); await flush();
   assert.equal(w.document.querySelector('[data-switch-context]'), null, 'handoff does not require choosing an implementation strategy');
-  assert.match(w.document.querySelector('[data-switch-context-status]').textContent, /无法完整保留/);
+  assert.equal(w.document.querySelector('[data-memory-method]').value, 'local');
   assert.equal(changes.length, 3, 'selecting an account does not submit');
   const defaultModel = w.document.querySelector('[data-target-editor-host] [data-runtime-setting="model"]');
   assert.equal(defaultModel.selectedOptions[0].textContent, 'm (default)');
   assert.equal(defaultModel.value, '', 'the default option uses an inheritance value in the editor');
   assert.equal(w.document.querySelector('[data-runtime-section="parameters"] .portalRuntimeSettingsEditor').hidden, true,
     'a cross-Provider switch shows the target parameters, not the current ones');
-  assert.match(w.document.querySelector('[data-switch-context-description]').textContent, /遗漏细节/);
   assert.equal(w.document.querySelector('[data-session-restart-submit]').textContent, w.PortalI18n.t('保存账号配置'));
   click('[data-session-restart-submit]'); await flush();
   assert.equal(changes.length, 4, 'the displayed catalog default is a valid choice for a cross-provider switch');
-  assert.equal(changes[3].model, 'm'); assert.equal(changes[3].target_provider, 'claude'); assert.equal(changes[3].context_strategy, 'compact');
-  assert.equal(changes[3].operation, 'restart');
+  assert.equal(changes[3].model, 'm'); assert.equal(changes[3].target_provider, 'claude'); assert.equal(changes[3].context_strategy, 'local');
+  assert.equal(changes[3].operation, 'switch_account');
   cross.destroy();
   const handoff = api.createSessionRestartDialog();
   handoff.open(config, async values => {changes.push(plain(values)); return {status: 'accepted', restart_id: 'compact'};}); await flush();
   select('[data-session-target]', JSON.stringify(['claude', 'one'])); await flush();
   select('[data-session-target]', JSON.stringify(['codex', 'three'])); await flush();
-  assert.equal(w.document.querySelector('[data-session-restart-submit]').textContent, w.PortalI18n.t('切换账号'));
-  assert.equal(w.document.querySelector('[data-switch-context-description]').textContent, '', 'preservation must not inherit the summary warning');
+  assert.equal(w.document.querySelector('[data-session-restart-submit]').textContent, w.PortalI18n.t('保存账号配置'));
   select('[data-session-target]', JSON.stringify(['claude', 'one'])); await flush();
   select('[data-target-editor-host] [data-runtime-setting="model"]', 'm2');
   click('[data-session-restart-submit]'); await flush();
@@ -145,7 +140,7 @@ const plain = value => JSON.parse(JSON.stringify(value));
     unsupported.destroy();
   }
   assert.deepEqual(errors, []);
-  console.log('PASS preferred preservation, disclosed summary handoff, no blank fallback, cancellation, progress and settings drafts');
+  console.log('PASS local summary handoff, no blank fallback, cancellation, progress and settings drafts');
   const defaults = api.createSessionRestartDialog();
   defaults.open(config, async () => {throw new Error('parameter edits must not switch the session');}); await flush();
   select('[data-runtime-editor="current"] [data-runtime-setting="model"]', '');
@@ -183,9 +178,10 @@ const plain = value => JSON.parse(JSON.stringify(value));
   select('[data-session-target]', JSON.stringify(['codex', 'two'])); await flush();
   assert.equal(consent().checked, false, 'changing target cannot carry a credit confirmation');
   select('[data-session-target]', JSON.stringify(['codex', 'three'])); await flush();
-  consent().checked = true; consent().dispatchEvent(new w.Event('change'));
+  assert.equal(w.document.querySelector('[data-session-credits-confirmation]').hidden, true);
+  consent().checked = true;
   click('[data-session-restart-submit]'); await flush();
-  assert.deepEqual(paidRequests[0].credits_consent, {account_id: 'codex_three', confirmed: true});
+  assert.equal(Object.hasOwn(paidRequests[0], 'credits_consent'), false, 'account switching cannot authorize spending');
   assert.ok(paidRequests[0].idempotency_key);
   paid.open({...config, credits_confirmation: {allowed: true}},
     async values => {paidRequests.push(plain(values)); return {status: 'completed'};}); await flush();
@@ -220,5 +216,5 @@ const plain = value => JSON.parse(JSON.stringify(value));
   assert.equal(selectedSettings[1].account_selection, 'fixed', 'switching back to fixed sends explicit policy');
   fixedSelection.destroy();
   assert.deepEqual(errors, []);
-  console.log('PASS explicit credits confirmation, canonical target account and non-inheritance');
+  console.log('PASS account switching sends only configuration; credits consent is not carried over');
 })().catch(error => {console.error(error); process.exitCode = 1;}).finally(async () => {await flush(); dom.window.close();});
