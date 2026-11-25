@@ -12,7 +12,7 @@
     const drawer = element('workshopToolbox');
     const shelf = element('workshopShelf');
     const sessionId = window.PortalUIPrimitives.randomUUID();
-    let runtime = null, templates = null, base = '', fresh = !templateId && !storeId, previewItem = null;
+    let runtime = null, templates = null, base = '', previewItem = null;
     let removed = false;
     let documentRevision = 0;
     let libraryItems = [], navigation = 0, editVersion = 0;
@@ -29,16 +29,14 @@
       if (runtime?.view.working) return;
       if (id === runtime?.draft.template_id && !previewItem) return;
       const serial = ++navigation;
-      let changed = true;
-      try { changed = !!runtime && JSON.stringify(runtime.readDraft()) !== base; } catch (_) { /* An invalid draft still needs discard confirmation. */ }
-      if (changed && !await window.PortalUI.confirm({title:t('切换模板？'), message:t('当前模板有未保存的修改，切换后将放弃这些修改。'), confirmLabel:t('放弃修改并切换'), cancelLabel:t('继续编辑')})) return;
+      if (dirty() && !await window.PortalUI.confirm({title:t('切换模板？'), message:t('当前模板有未保存的修改，切换后将放弃这些修改。'), confirmLabel:t('放弃修改并切换'), cancelLabel:t('继续编辑')})) return;
       if (serial !== navigation || abort.signal.aborted) return;
       try {
         const previousVersion = editVersion;
         const result = await execute('GetTemplate',{template_id:id});
         if (serial !== navigation || abort.signal.aborted) return;
         if (editVersion !== previousVersion || runtime?.view.working) return;
-        templateId = id; storeId = ''; previewItem = null; fresh = false; removed = false;
+        templateId = id; storeId = ''; previewItem = null; removed = false;
         documentRevision += 1; error(null); templates.edit(result.template);
         onOpened?.(result.template);
       } catch (exception) { if (serial === navigation) error(exception); }
@@ -55,8 +53,10 @@
       node.textContent = value ? window.PortalI18n.message(value.message || value) : '';
     };
     const dirty = () => {
-      if (removed) return false;
-      try { return fresh || (!!runtime && JSON.stringify(runtime.readDraft()) !== base); }
+      if (removed || !runtime) return false;
+      // An unsaved template starts clean; only persisted draft content differs
+      // from the baseline established when its editor becomes ready.
+      try { return JSON.stringify(runtime.readDraft()) !== base; }
       catch (_) { return true; }
     };
     const changed = () => {
@@ -81,7 +81,6 @@
       const args = name === 'UpdateTemplate' ? {template_id: id, template: payload} : {template: payload};
       await execute(name, {...args, dry_run: true});
       const result = await execute(name, args);
-      fresh = false;
       if (copy) documentRevision += 1;
       templateId = result.template.template_id;
       storeId = ''; previewItem = null;
@@ -133,7 +132,7 @@
           const install = document.createElement('button'); install.type = 'button'; install.className = 'portalButton'; install.textContent = t('安装'); install.dataset.workshopInstall = '';
           install.onclick = () => void runtime.view.busy(async () => {
             const saved = await window.PortalTemplateStore.installItem(previewItem,{request:execute});
-            if (saved) { previewItem = null; storeId = ''; templateId = saved.template_id; fresh = false; runtime.edit(saved); onSaved?.(saved); }
+            if (saved) { previewItem = null; storeId = ''; templateId = saved.template_id; runtime.edit(saved); onSaved?.(saved); }
           });
           runtime.view.footer.append(install);
         } else if (runtime.draft.template_id && !runtime.draft.builtin_key && runtime.draft.created_by === window.PortalIdentity.username()) {

@@ -50,6 +50,7 @@ const {chromium} = require(path.join(repo, 'management_portal/test_framework/tau
     await page.locator('.hatgNode[data-node-id="target"]').click();
     assert.equal(await page.locator('[data-graph-inspector]').isVisible(),true);
     assert.equal(await page.locator('.templateGraphPalette').isVisible(),false);
+    await require('./template_workshop_dirty.browser.cjs')(page);
     await page.locator('[data-workshop-toolbox]').first().click();
     assert.equal(await page.locator('[data-toolbox-group="errands"]').count(),0);
     assert.equal(await page.locator('[data-toolbox-group="organizations"] .templateTile').count(),0);

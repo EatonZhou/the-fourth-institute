@@ -24,6 +24,8 @@
 
     let codeText = '';
     let codeActive = false;
+    const initialRowFields = new WeakMap(['roles', 'components', 'wires', 'match'].flatMap(list =>
+      (draft.body[list] || []).map(row => [row, new Set(Object.keys(row))])));
 
     const disposeCode = () => { editorState.codeGeneration += 1; editorState.codeEditor?.destroy(); editorState.codeEditor = null; codeActive = false; };
 
@@ -56,7 +58,12 @@
         const row = input.closest('[data-structure-row]');
         const list = row.closest('[data-structure-list]').dataset.structureList;
         const value = readField(input, input.dataset.fieldType || 'text');
-        draft.body[list][Number(row.dataset.structureRow)][input.dataset.rowField] = value;
+        const item = draft.body[list][Number(row.dataset.structureRow)];
+        if (!initialRowFields.has(item)) initialRowFields.set(item, new Set(Object.keys(item)));
+        // Inspecting an omitted optional field, or undoing its edit, keeps it
+        // omitted rather than adding an empty value to the authored content.
+        if (value === '' && !initialRowFields.get(item).has(input.dataset.rowField)) delete item[input.dataset.rowField];
+        else item[input.dataset.rowField] = value;
       });
       parametersPage.querySelectorAll('[data-parameter-row]').forEach(row => {
         const parameter = draft.parameters[Number(row.dataset.parameterRow)];
