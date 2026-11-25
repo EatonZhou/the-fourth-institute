@@ -15,6 +15,8 @@ import threading
 import time
 from urllib.parse import urlsplit
 
+from management_common.instance_manifest import load
+from management_common.portal_network import PROXY_KEYS
 from management_common.process_runtime import spawn_process, terminate_process_tree
 
 
@@ -70,6 +72,13 @@ class AcpClient:
         self._failure = None
         self._close_lock = threading.Lock()
         self._closed = False
+        # Apply the instance policy after the account and task environments have merged.
+        # The isolated installer handshake has no instance environment or proxy.
+        instance_root = env.get("PORTAL_INSTANCE_ROOT")
+        if instance_root and PROXY_KEYS.intersection(env):
+            providers = load(instance_root).site_settings().get("deployment", {}).get("providers", {})
+            if providers.get("antigravity_egress") == "tunnel":
+                env = {key: value for key, value in env.items() if key not in PROXY_KEYS}
         self.process = spawn_process(command, env=env, cwd=cwd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                      stderr=subprocess.PIPE, text=True, bufsize=1, start_new_session=True)
         self._reader = threading.Thread(target=self._read, daemon=True)
