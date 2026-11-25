@@ -15,7 +15,8 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_workshop_draft_semantics():
-    result = subprocess.run(['node', '--test', str(ROOT / 'tests/cases/javascript/template_workshop.cjs')],
+    result = subprocess.run(['node', '--test', str(ROOT / 'tests/cases/javascript/template_workshop.cjs'),
+                             str(ROOT / 'tests/cases/javascript/duty_workshop_history.cjs')],
                             cwd=ROOT, capture_output=True, text=True, timeout=30)
     assert result.returncode == 0, result.stdout + result.stderr
 

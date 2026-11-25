@@ -40,6 +40,8 @@ module.exports = async function dutyWorkshop(page) {
   assert.equal(await page.evaluate(()=>dutyWorkshop.dirty()),false);
   // Build a component through the same toolbox and semantic inspector as templates.
   await root.locator('[data-template-id="workshop_loop"]').click();
+  await root.locator('[data-duty-config]').evaluate(node=>{node.closest('details').open=true;});
+  await root.locator('[data-duty-config]').fill(JSON.stringify({max_rounds:4}));
   await root.locator('[data-duty-element-title]').fill('Bounded loop');
   await root.locator('[data-duty-save]').click();
   await page.getByRole('alertdialog').getByRole('button',{name:'保存',exact:true}).click();
@@ -49,6 +51,37 @@ module.exports = async function dutyWorkshop(page) {
     const component=graph.program.components.find(c=>c.title==='Bounded loop');
     return Boolean(component && graph.function_blocks.find(b=>b.id===dutyId).elements.some(e=>e.id===component.id));
   }),true);
+  const savedLoop=await page.evaluate(async()=>{
+    const graph=(await execute('GetLineage',{lineage_id:sourceLineageId})).lineage;
+    return {id:graph.program.components.find(row=>row.title==='Bounded loop').id,revision:graph.revision};
+  });
+  await root.locator('[data-workshop-history="undo"]').click();
+  assert.equal(await root.locator(`.hatgNode[data-node-id="${savedLoop.id}"]`).count(),1,'undo retains the stable server identity');
+  assert.equal(await page.evaluate(async()=>(await execute('GetLineage',{lineage_id:sourceLineageId})).lineage.revision),savedLoop.revision,'local undo does not write the Lineage');
+  const previewOnly=async expected=>{
+    await root.locator('[data-duty-save]').click();
+    await page.getByRole('alertdialog').waitFor();
+    const operations=await page.evaluate(()=>calls.filter(call=>call.instruction==='ApplyLineageChanges'&&call.args.dry_run).at(-1).args.operations);
+    assert.ok(operations.length>0&&operations.every(row=>row.op===expected&&row.id===savedLoop.id),JSON.stringify(operations));
+    await page.getByRole('alertdialog').getByRole('button',{name:'取消',exact:true}).click();
+  };
+  await previewOnly('update');
+  await root.locator('[data-workshop-history="undo"]').click();await previewOnly('update');
+  await root.locator('[data-workshop-history="undo"]').click();await previewOnly('delete');
+  assert.equal(await root.locator(`.hatgNode[data-node-id="${savedLoop.id}"]`).count(),0,'undo creation means a pending deletion of that ID');
+  for(let step=0;step<3;step++)await root.locator('[data-workshop-history="redo"]').click();
+  assert.equal(await page.evaluate(()=>dutyWorkshop.dirty()),false);
+  const saveSameIdentity=async()=>{
+    await root.locator('[data-duty-save]').click();await page.getByRole('alertdialog').getByRole('button',{name:'保存',exact:true}).click();
+    await page.waitForFunction(()=>!dutyWorkshop.dirty());
+    const operations=await page.evaluate(()=>calls.filter(call=>call.instruction==='ApplyLineageChanges'&&!call.args.dry_run).at(-1).args.operations);
+    assert.ok(operations.length>0&&operations.every(row=>row.op==='update'&&row.id===savedLoop.id),JSON.stringify(operations));
+    assert.equal(await page.evaluate(async id=>(await execute('GetLineage',{lineage_id:sourceLineageId})).lineage.program.components.filter(row=>row.id===id).length,savedLoop.id),1);
+  };
+  await root.locator('[data-workshop-history="undo"]').click();await saveSameIdentity();
+  await root.locator('[data-workshop-history="undo"]').click();await saveSameIdentity();
+  await root.locator('[data-workshop-history="redo"]').click();await saveSameIdentity();
+  await root.locator('[data-workshop-history="redo"]').click();await saveSameIdentity();
   await root.locator('[data-duty-meta="title"]').fill('Keep this conflict draft');
   await page.evaluate(()=>execute('UpdateDuty',{lineage_id:sourceLineageId,function_block_id:dutyId,description:'Concurrent editor'}));
   await root.locator('[data-duty-save]').click();

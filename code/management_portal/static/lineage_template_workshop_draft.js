@@ -22,6 +22,7 @@
       cursor += step; group = ''; onChange(state()); return clone(entries[cursor]);
     }
     return {reset,record,state,undo:() => move(-1),redo:() => move(1),
+      rebase(transform) {entries=entries.map(value=>clone(transform(clone(value))));group='';onChange(state());},
       saved(value) {if (cursor < 0) reset(value); else {entries[cursor] = clone(value); group = ''; onChange(state());}}};
   }
   function targets(template) {

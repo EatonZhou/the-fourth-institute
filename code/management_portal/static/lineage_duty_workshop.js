@@ -128,6 +128,7 @@
         const metadata = Object.keys(args.duty_changes).map(key => `${key}: ${String(args.duty_changes[key])}`);
         if (!await window.PortalUI.confirm({title:t('保存职责变更？'),message:[...changes,...metadata].join('\n'),confirmLabel:t('保存')})) return;
         await execute('ApplyLineageChanges',args,{expectedVersion:model.revision});
+        history.rebase(value=>({...value,content:model.committedDraft(value.content),...(value.selected ? {selected:model.committedKey(value.selected)} : {})}));
         await load(true); onSaved({function_block_id:functionBlockId,title:model.block.title});
       });
     }

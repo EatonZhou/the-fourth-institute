@@ -76,7 +76,17 @@
       Object.keys(body).forEach(key=>delete body[key]); Object.assign(body,next.body);
       draft.body = body; draft.meta = next.meta;
     }
-    return {draft,block,revision:lineage.revision,all,owned,reference,request,fromPreview,restore,
+    const committedKey = key => allocated.get(key) || key;
+    function committedDraft(value) {
+      const next=copy(value);
+      for(const list of ['components','wires','match','roles']) for(const row of next.body[list] || []) {
+        row.key=committedKey(row.key);
+        for(const field of ['source','target']) if(row[field])row[field]=committedKey(row[field]);
+      }
+      next.body.layout=Object.fromEntries(Object.entries(next.body.layout || {}).map(([key,value])=>[committedKey(key),value]));
+      return next;
+    }
+    return {draft,block,revision:lineage.revision,all,owned,reference,request,fromPreview,restore,committedKey,committedDraft,
       dirty:() => {const value=request();return !!value.operations.length || !!Object.keys(value.duty_changes).length;}};
   }
   window.LineageDutyWorkshopModel = Object.freeze({create});
