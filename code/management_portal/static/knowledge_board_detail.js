@@ -1,6 +1,177 @@
 // Knowledge board: the detail dialog: opening, rendering, editing, saving and deleting an item.
 
 let detailDeleting = false;
+let detailRenaming = false;
+// A partial/uncertain attempt keeps its original parameters when continued.
+const detailRenameOperations = new Map();
+let detailRenameActor = "";
+let detailRenameIdentityStarted = false;
+
+function detailRenameKey(id, actor = detailRenameActor) {
+  return actor && id ? `portal:knowledge.file.rename:v1:${JSON.stringify([actor, id])}` : "";
+}
+
+function validDetailRenameFilename(filename) {
+  return typeof filename === "string" && !!filename && filename === filename.trim()
+    && !/[\\/\x00-\x1f\x7f]/.test(filename) && !filename.startsWith(".")
+    && /\.md$/i.test(filename) && !/\.index\.md$/i.test(filename);
+}
+
+function detailRenameOperation(key) {
+  if (!key) return null;
+  if (detailRenameOperations.has(key)) return detailRenameOperations.get(key);
+  try {
+    const raw = sessionStorage.getItem(key);
+    const operation = raw ? JSON.parse(raw) : null;
+    if (operation && (Array.isArray(operation) || Object.keys(operation).sort().join(",") !== "expected_version,filename,operation_id"
+      || !validDetailRenameFilename(operation.filename)
+      || !Number.isSafeInteger(operation.expected_version) || operation.expected_version < 1
+      || typeof operation.operation_id !== "string" || !/^[a-zA-Z0-9_-]{1,128}$/.test(operation.operation_id))) {
+      throw new Error("Invalid rename recovery data");
+    }
+    detailRenameOperations.set(key, operation);
+    return operation;
+  } catch (_) {
+    // Never execute unvalidated data. An unavailable store still permits an
+    // in-page operation, with an explicit warning when trying to persist it.
+    return null;
+  }
+}
+
+function rememberDetailRename(key, operation) {
+  detailRenameOperations.set(key, operation);
+  try {
+    if (operation) sessionStorage.setItem(key, JSON.stringify(operation));
+    else sessionStorage.removeItem(key);
+    if (sessionStorage.getItem(key) !== (operation ? JSON.stringify(operation) : null)) throw new Error("Storage did not persist");
+  } catch (_) {
+    window.PortalUI.toast(window.PortalI18n.t("无法保存或清除重命名恢复信息。请勿刷新或关闭此页，在此页完成操作后再核对。"), "error");
+  }
+}
+
+function initDetailRenameIdentity() {
+  detailRenameIdentityStarted = true;
+  // load() is the same authenticated /api/me initialization used by the page.
+  // username()/peek() alone can contain an unverified sessionStorage cache.
+  window.PortalIdentity?.load().then(identity => {
+    detailRenameActor = typeof identity?.username === "string" ? identity.username.trim() : "";
+    syncDetailButtons();
+  }).catch(() => { detailRenameActor = ""; syncDetailButtons(); });
+}
+
+window.addEventListener("portal:identity-changed", event => {
+  if (!detailRenameIdentityStarted) return;
+  if (event.detail?.identity?.username !== detailRenameActor) {
+    detailRenameActor = "";
+    initDetailRenameIdentity();
+  }
+});
+
+document.getElementById("mRename")?.addEventListener("click", () => renameDetailFile());
+
+function renamableDetail(snapshot = detailDocumentSession?.snapshot()) {
+  const item = state.selected;
+  const id = state.detailFileId;
+  if (!id || id.includes("/") || item?.kb_id !== id || !item.type
+    || ["skill", "article", "experiment"].includes(item.type)
+    || state.detailSelectedFileId !== id || state.detailSelectedFileKind !== "markdown"
+    || state.detailSelectedFileLinked || state.detailReadOnly
+    || snapshot?.payload?.can_edit !== true
+    || ["empty", "loading", "error"].includes(snapshot.status)) return null;
+  const version = snapshot.payload.version?.number ?? snapshot.payload.version;
+  return Number.isSafeInteger(version) && version > 0 ? { item, version } : null;
+}
+
+async function renameDetailFile() {
+  const snapshot = detailDocumentSession?.snapshot();
+  const target = renamableDetail(snapshot);
+  if (!target || !detailRenameActor || detailRenaming || detailDeleting) return;
+  if (snapshot.editing || snapshot.saving || snapshot.dirty) {
+    window.PortalUI.toast(window.PortalI18n.t("请先保存或取消编辑，再重命名主文件。"), "error");
+    return;
+  }
+  const id = target.item.kb_id;
+  const actor = detailRenameActor;
+  const operationKey = detailRenameKey(id, actor);
+  const generation = state.detailLinkDiscoverySequence;
+  const stillCurrent = () => state.detailFileId === id
+    && state.detailLinkDiscoverySequence === generation && detailRenameActor === actor;
+  const unchanged = () => stillCurrent()
+    && detailDocumentSession.snapshot().requestId === snapshot.requestId
+    && detailDocumentSession.snapshot().payload === snapshot.payload
+    && !detailDocumentSession.snapshot().editing;
+  detailRenaming = true;
+  syncDetailButtons();
+  let operation = detailRenameOperation(operationKey);
+  let completed = false;
+  try {
+    const identity = await window.PortalIdentity.load({ force: true });
+    if (identity?.username !== actor || !unchanged()) return;
+    if (!operation) {
+      const filename = await window.PortalUI.prompt({
+        title: window.PortalI18n.t("重命名主文件"),
+        label: window.PortalI18n.t("新文件名（含 .md）"),
+        message: window.PortalI18n.t("仅修改同目录主文件名，标题、正文和附件目录保持不变。"),
+        value: String(snapshot.payload.filename || target.item.filename || "").split(/[\\/]/).pop(),
+      });
+      if (filename === null || !unchanged()) return;
+      if (!validDetailRenameFilename(filename)) {
+        throw new Error(window.PortalI18n.t("请输入完整的 .md 文件名；不能包含路径，也不能使用隐藏文件或 .index.md 索引文件。"));
+      }
+      operation = { filename, expected_version: target.version,
+        operation_id: window.PortalUIPrimitives.randomUUID() };
+    }
+    if (!unchanged()) return;
+    // Save before dispatch, so a reload while the HTTP response is in flight
+    // can only continue the same actor's original operation.
+    rememberDetailRename(operationKey, operation);
+    const receipt = await window.PortalInstructionClient.execute("RunResourceAction", {
+      resource_id: id, action: "knowledge.file.rename", arguments: { ...operation },
+    }, { idempotencyKey: `knowledge.file.rename:${window.PortalUIPrimitives.randomUUID()}` });
+    const result = receipt?.result;
+    const resultVersion = result?.version?.number ?? result?.version;
+    if (result?.resource_id !== id || result?.address !== id
+      || result?.operation_id !== operation.operation_id
+      || !["completed", "partial"].includes(result?.status)
+      || (result.status === "completed" && (result.filename !== operation.filename
+        || !Number.isSafeInteger(resultVersion) || resultVersion < 1))) {
+      throw new Error(window.PortalI18n.t("重命名结果未确认，请继续原操作核对状态。"));
+    }
+    if (result.status === "partial") {
+      if (result.retryable === false) {
+        rememberDetailRename(operationKey, null);
+        throw new Error(window.PortalI18n.t("源文件已变更，旧重命名操作已撤回。请刷新详情后重新发起重命名。"));
+      }
+      const detail = typeof result.error === "string" ? result.error : result.error?.message;
+      throw new Error([window.PortalI18n.t("重命名尚未完成，请继续原操作。"), detail].filter(Boolean).join(" "));
+    }
+    completed = true;
+    rememberDetailRename(operationKey, null);
+    if (!unchanged()) return;
+    // Reopen only the primary document. openDetail would reset the private chat.
+    await openDetailFile({ address: id, kind: "markdown" }, { skipDiscard: true });
+    if (!stillCurrent()) return;
+    if (detailDocumentSession.snapshot().status === "error") {
+      throw new Error(detailDocumentSession.snapshot().error || window.PortalI18n.t("加载失败"));
+    }
+    detailResourceGuest?.changed({ resourceId: id, kind: "updated" });
+    if (!detailResourceGuest?.embedded()) await loadIndex({ refresh: true });
+    if (stillCurrent()) window.PortalUI.toast(window.PortalI18n.t("主文件已重命名"));
+  } catch (error) {
+    // A definitive precondition rejection can be corrected by reopening detail.
+    // Uncertain and partial outcomes retain the operation ID and original version.
+    if ([400, 403, 404, 409, 422].includes(error.status)) rememberDetailRename(operationKey, null);
+    if (stillCurrent()) window.PortalUI.toast(window.PortalUI.errorMessage(
+      window.PortalI18n.t(completed ? "刷新" : "重命名主文件"), error), "error", {
+      retry: !completed && detailRenameOperation(operationKey) ? () => {
+        if (unchanged()) return renameDetailFile();
+      } : undefined,
+    });
+  } finally {
+    detailRenaming = false;
+    syncDetailButtons();
+  }
+}
 
 function renderKnowledgeResourceIdentity(item, fallbackId = "") {
   const resourceId = String(item?.kb_id || fallbackId || "").trim();
@@ -65,6 +236,7 @@ function disposeDetailPreview() {
 }
 
 function initDetailDocumentSession() {
+  initDetailRenameIdentity();
   detailDocumentSession = window.PortalDocumentSession.create({
     canEdit: detailSelectedFileEditable,
     onStateChange: snapshot => {
@@ -129,6 +301,13 @@ function finalizeDetailClose(context = {}) {
 
 function syncDetailButtons() {
   const snapshot = detailDocumentSession?.snapshot?.();
+  const renameButton = document.getElementById("mRename");
+  if (renameButton) {
+    renameButton.hidden = !renamableDetail(snapshot);
+    renameButton.disabled = !detailRenameActor || detailRenaming || detailDeleting || state.detailEditing || state.detailSaving;
+    renameButton.textContent = window.PortalI18n.t(detailRenameOperation(detailRenameKey(state.detailFileId))
+      ? "继续重命名主文件" : "重命名主文件");
+  }
   const available = !!snapshot?.payload && !["empty", "loading", "error"].includes(snapshot.status);
   const selectedFile = detailFiles().find(value => String(value.address || "") === state.detailSelectedFileId);
   window.PortalPreview.configureDownloadLink(el.mDownload, {
@@ -144,12 +323,12 @@ function syncDetailButtons() {
     || state.detailEditing
     || !detailSelectedFileEditable();
   el.mDelete.hidden = !deletableDetail(snapshot);
-  el.mDelete.disabled = detailDeleting;
+  el.mDelete.disabled = detailDeleting || detailRenaming;
   el.mCancelEdit.hidden = !state.detailEditing;
   el.mSave.hidden = !state.detailEditing;
   el.mSave.disabled = state.detailSaving || !detailIsDirty();
   el.mCancelEdit.disabled = state.detailSaving;
-  el.mEdit.disabled = state.detailSaving || detailDeleting;
+  el.mEdit.disabled = state.detailSaving || detailDeleting || detailRenaming;
   el.mClose.disabled = state.detailSaving;
   el.mSave.textContent = state.detailSaving ? window.PortalI18n.t("保存中…") : window.PortalI18n.t("保存");
 }
@@ -263,7 +442,7 @@ function resetDetailEditorDraft() {
 }
 
 async function setDetailEditing(editing) {
-  if (!state.detailSelectedFileId || state.detailSaving) return;
+  if (!state.detailSelectedFileId || state.detailSaving || detailRenaming) return;
   if (editing && !detailSelectedFileEditable()) return;
   if (editing) {
     if (!detailDocumentSession.beginEdit()) return;
@@ -348,7 +527,7 @@ function deletableDetail(snapshot = detailDocumentSession?.snapshot()) {
 async function deleteDetail() {
   const snapshot = detailDocumentSession?.snapshot();
   const item = deletableDetail(snapshot);
-  if (!item || detailDeleting) return;
+  if (!item || detailDeleting || detailRenaming) return;
   const id = item.kb_id;
   const { requestId, payload } = snapshot;
   const detailGeneration = state.detailLinkDiscoverySequence;

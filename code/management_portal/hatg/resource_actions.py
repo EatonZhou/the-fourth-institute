@@ -14,6 +14,14 @@ from management_common.knowledge_resource_types import MARKDOWN_REGISTERABLE_RES
 
 
 ACTIONS = (
+    *(A(kind, "knowledge.file.rename", "重命名知识条目的 Markdown 主文件；同目录改名，保留资源 ID、标题、正文和附件位置。原根 ID 仍可读取，直接文件路径须使用返回的新名称。", (
+        R("filename", description="完整新文件名，必须为不含目录的可见 .md 文件；拒绝覆盖已有文件"),
+        R("expected_version", "integer", "当前知识根资源版本号；版本冲突不改文件", minimum=1),
+        P("operation_id", description="稳定操作 ID；partial 后以相同参数重试，不重复推进版本"),
+    ), (R("resource_id"), R("address"), R("filename"), R("version", "object"),
+        R("operation_id"), R("status", description="completed 或 partial"),
+        P("retryable", "boolean", "false 表示准备已撤回，须回读后用新操作 ID 发起"), P("error")))
+      for kind in MARKDOWN_REGISTERABLE_RESOURCE_TYPES),
     *(A(kind, "knowledge.file.create", "在知识条目的已登记附件目录内新增文本文件；保留主文档和资源 ID，推进条目版本并同步在线文件列表。已有文件用 UpdateResource 更新。", (
         R("filename", description="不含目录的文本文件名，例如 usage.md；拒绝覆盖已有文件"),
         R("text", description="附件全文"),

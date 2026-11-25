@@ -323,6 +323,27 @@ def _candidate_markdown_files(root: Path) -> list[Path]:
 def _choose_primary_file(root: Path, markdown_files: list[Path]) -> Path | None:
     if not markdown_files:
         return None
+    # A controlled rename pins directory packages to their registered primary.
+    # Do not let a companion's lexical position or README name steal identity.
+    from management_portal.resources.registry_store import get_registry_store
+    from management_portal.resources.directory_registrations import locations
+    from management_common.instance_locations import located_path
+    checked = set()
+    for path in markdown_files:
+        identity = knowledge_metadata_id(_yaml_front_matter(_read_file_text(str(path))))
+        if not identity or identity in checked:
+            continue
+        checked.add(identity)
+        document = get_registry_store().get("knowledge", identity)
+        if not document or not document.get("primary_file"):
+            continue
+        if not any(Path(located_path(entry["path"])) == root for entry in locations("knowledge", document)):
+            continue
+        relative = Path(document["primary_file"])
+        if relative.is_absolute() or len(relative.parts) != 1 or relative.name.startswith("."):
+            raise ValueError("Invalid registered Knowledge primary file")
+        primary = root / relative
+        return primary if primary in markdown_files else None
     preferred_names = ["experiment.md", "README.md", "readme.md", "index.md"]
     for name in preferred_names:
         candidate = root / name

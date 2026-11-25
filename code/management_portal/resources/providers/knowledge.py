@@ -146,6 +146,11 @@ def install_mutation_provider(service: "ResourceService") -> None:
 
 
 def install_action_provider(service: "ResourceService") -> None:
+    def rename_file(resource_id: str, payload: dict[str, Any], *, actor: str = "") -> dict[str, Any]:
+        from ..knowledge_move import rename_knowledge
+        return rename_knowledge(resource_id, payload, actor=actor,
+                                project_batch=service._index().project_relocated)
+
     def create_file(resource_id: str, payload: dict[str, Any], *, actor: str = "") -> dict[str, Any]:
         from knowledge_board_lan.knowledge_backend import create_item_file, KnowledgeVersionConflict
         from management_portal import permission_system
@@ -175,4 +180,5 @@ def install_action_provider(service: "ResourceService") -> None:
 
     service.register_action_provider(MARKDOWN_REGISTERABLE_RESOURCE_TYPES, {
         "knowledge.file.create": create_file,
+        "knowledge.file.rename": rename_file,
     })

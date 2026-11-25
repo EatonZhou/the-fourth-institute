@@ -1,4 +1,48 @@
 {
+  "无法保存或清除重命名恢复信息。请勿刷新或关闭此页，在此页完成操作后再核对。": {
+    "en": "Rename recovery information could not be saved or cleared. Do not reload or close this page; finish the operation here and then verify its status.",
+    "zh-CN": "无法保存或清除重命名恢复信息。请勿刷新或关闭此页，在此页完成操作后再核对。"
+  },
+  "源文件已变更，旧重命名操作已撤回。请刷新详情后重新发起重命名。": {
+    "en": "The source file changed and the previous rename operation was withdrawn. Reload the detail before starting a new rename.",
+    "zh-CN": "源文件已变更，旧重命名操作已撤回。请刷新详情后重新发起重命名。"
+  },
+  "重命名主文件": {
+    "en": "Rename main file",
+    "zh-CN": "重命名主文件"
+  },
+  "继续重命名主文件": {
+    "en": "Continue renaming main file",
+    "zh-CN": "继续重命名主文件"
+  },
+  "请先保存或取消编辑，再重命名主文件。": {
+    "en": "Save or cancel editing before renaming the main file.",
+    "zh-CN": "请先保存或取消编辑，再重命名主文件。"
+  },
+  "新文件名（含 .md）": {
+    "en": "New filename (including .md)",
+    "zh-CN": "新文件名（含 .md）"
+  },
+  "仅修改同目录主文件名，标题、正文和附件目录保持不变。": {
+    "en": "Rename the main file in its current directory. The title, content and attachment directory stay unchanged.",
+    "zh-CN": "仅修改同目录主文件名，标题、正文和附件目录保持不变。"
+  },
+  "请输入完整的 .md 文件名；不能包含路径，也不能使用隐藏文件或 .index.md 索引文件。": {
+    "en": "Enter a complete .md filename without a path. Hidden files and index files ending in .index.md are not allowed.",
+    "zh-CN": "请输入完整的 .md 文件名；不能包含路径，也不能使用隐藏文件或 .index.md 索引文件。"
+  },
+  "重命名结果未确认，请继续原操作核对状态。": {
+    "en": "The rename result is unconfirmed. Continue the original operation to check its status.",
+    "zh-CN": "重命名结果未确认，请继续原操作核对状态。"
+  },
+  "重命名尚未完成，请继续原操作。": {
+    "en": "Renaming is incomplete. Continue the original operation.",
+    "zh-CN": "重命名尚未完成，请继续原操作。"
+  },
+  "主文件已重命名": {
+    "en": "Main file renamed",
+    "zh-CN": "主文件已重命名"
+  },
   "代理方式": {
     "en": "Proxy mode",
     "zh-CN": "代理方式"

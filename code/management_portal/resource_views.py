@@ -296,8 +296,15 @@ def knowledge_detail(
     content_url = "/api/resources/content?address=" + quote(
         stripped_text(resolved.get("address")) or clean_address, safe="",
     )
+    from management_common.knowledge_resource_types import MARKDOWN_REGISTERABLE_RESOURCE_TYPES
+    from management_portal import permission_system
+    root_id = clean_address.partition("/")[0]
+    can_edit = root_id.partition("_")[0] in MARKDOWN_REGISTERABLE_RESOURCE_TYPES and root_id in permission_system.permitted_ids(
+        stripped_text(actor), "RunResourceAction", "resource_id", [root_id],
+    )
     return {
         **_json_value(detail),
+        "can_edit": can_edit,
         "address": stripped_text(resolved.get("address")) or clean_address,
         "path": stripped_text(resolved.get("resolved_path")),
         "filename": stripped_text(resolved.get("filename")),

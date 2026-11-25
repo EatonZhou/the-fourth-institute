@@ -445,8 +445,10 @@ def _commit(journal, plan):
             destinations = {entry["source"]: entry["target"] for entry in _owned(plan)}
             for entry in locations("knowledge", document):
                 old = Path(located_path(entry["path"]))
-                new = destinations[cleanup_location(old)]
+                new = destinations.get(cleanup_location(old), cleanup_location(old))
                 entry["path"] = stored_location(cleanup_path(new))
+            if plan.get("primary_file"):
+                document["primary_file"] = plan["primary_file"]
             writer.put("knowledge", rid, document)
             permission_system.sync_resource(plan["result"], resource_type=plan["result"]["resource_type"],
                                             connection=writer.connection)
@@ -514,6 +516,8 @@ def _result(journal, *, error=""):
     complete = not pending and not error and journal.get("projected", False)
     result = {"operation_id": journal["operation_id"], "status": "completed" if complete else "partial",
               "committed": committed, "pending": pending, "projected": journal.get("projected", False)}
+    if journal["request"].get("filename"):
+        result["retryable"] = not any(p["phase"] == "aborted" for p in journal["plans"])
     if error:
         result["error"] = error
     if journal.get("unproven_stages"):
@@ -591,54 +595,165 @@ def move_knowledge(target_project_id, payload, *, actor, project_batch):
                 stack.enter_context(resource_mutation_lock(target_parent, plan["resource_id"]))
         if all(p["phase"] == "cleaned" for p in journal["plans"]) and journal.get("projected"):
             return _result(journal)
-        error = ""
-        try:
-            for plan in journal["plans"]:
-                if plan["phase"] in {"committed", "cleaned"}:
-                    continue
-                if plan["phase"] == "aborted":
-                    raise ResourceVersionConflict(plan["abort_reason"])
-                _verify_source(plan)
-                if plan["source"] != plan["target"]:
-                    _prepare_files(journal, plan)
-                    _commit(journal, plan)
-                else:
-                    plan["phase"] = "committed"
-                    journal["projected"] = False
-                    _save(journal)
-        except Exception as exc:
-            # Read the durable receipt rather than guess whether an uncertain
-            # database commit succeeded. Unknown storage errors propagate.
-            journal = get_registry_store().get(JOURNAL, key)
-            if journal is None:
-                raise
-            error = f"{type(exc).__name__}: {exc}"
-            if isinstance(exc, ResourceVersionConflict):
-                try:
-                    _abort_uncommitted(journal, error)
-                except Exception as cleanup_error:
-                    error += f"; recovery retained paths: {cleanup_error}"
-        committed = [p for p in journal["plans"] if p["phase"] in {"committed", "cleaned"}]
-        if committed:
-            journal["projected"] = False
+        return _continue_move(journal, project_batch)
+
+
+def _continue_move(journal, project_batch):
+    """Finish one owner relocation protocol for project moves and renames."""
+    error = ""
+    try:
+        for plan in journal["plans"]:
+            if plan["phase"] in {"committed", "cleaned"}:
+                continue
+            if plan["phase"] == "aborted":
+                raise ResourceVersionConflict(plan["abort_reason"])
+            _verify_source(plan)
+            if plan["source"] != plan["target"]:
+                _prepare_files(journal, plan)
+                _commit(journal, plan)
+            else:
+                plan["phase"] = "committed"
+                journal["projected"] = False
+                _save(journal)
+    except Exception as exc:
+        # Read the durable receipt rather than guess whether an uncertain
+        # database commit succeeded. Unknown storage errors propagate.
+        journal = get_registry_store().get(JOURNAL, journal["key"])
+        if journal is None:
+            raise
+        error = f"{type(exc).__name__}: {exc}"
+        if isinstance(exc, ResourceVersionConflict):
             try:
-                # A later move/update must never be overwritten by replay of
-                # an older receipt. Project the registry's current location.
-                records = []
-                for plan in committed:
-                    document = get_registry_store().get("knowledge", plan["resource_id"])
-                    if document is None or is_deleted(plan["resource_id"]):
-                        raise KeyError(plan["resource_id"])
-                    current, _ = _paths(document, plan["resource_id"])
-                    if current != cleanup_path(plan["target"]):
-                        raise ResourceVersionConflict("Knowledge moved again before its earlier projection completed")
-                    records.append(plan["result"])
+                _abort_uncommitted(journal, error)
+            except Exception as cleanup_error:
+                error += f"; recovery retained paths: {cleanup_error}"
+    committed = [p for p in journal["plans"] if p["phase"] in {"committed", "cleaned"}]
+    if committed:
+        journal["projected"] = False
+        try:
+            # Never replay an earlier location over a newer committed move.
+            records = []
+            for plan in committed:
+                document = get_registry_store().get("knowledge", plan["resource_id"])
+                if document is None or is_deleted(plan["resource_id"]):
+                    raise KeyError(plan["resource_id"])
+                current, _ = _paths(document, plan["resource_id"])
+                if current != cleanup_path(plan["target"]):
+                    raise ResourceVersionConflict("Knowledge moved again before its earlier projection completed")
+                records.append(plan["result"])
+            project_batch(records)
+            # A renamed directory primary temporarily shares the package with
+            # its old filename. Publish location first for existing readers,
+            # then confirm the final file inventory after old-file cleanup.
+            refresh_inventory = any(p.get("primary_file") for p in committed)
+            journal["projected"] = not refresh_inventory
+            _save(journal)
+            for plan in committed:
+                if plan["phase"] != "cleaned":
+                    _cleanup(journal, plan)
+            if refresh_inventory:
                 project_batch(records)
                 journal["projected"] = True
                 _save(journal)
-                for plan in committed:
-                    if plan["phase"] != "cleaned":
-                        _cleanup(journal, plan)
-            except Exception as exc:
-                error = (error + "; " if error else "") + f"{type(exc).__name__}: {exc}"
-        return _result(journal, error=error)
+        except Exception as exc:
+            error = (error + "; " if error else "") + f"{type(exc).__name__}: {exc}"
+    return _result(journal, error=error)
+
+
+def rename_knowledge(resource_id, payload, *, actor, project_batch):
+    """Rename a Markdown primary in place, keeping its root and companions."""
+    from management_common.knowledge_resource_types import MARKDOWN_REGISTERABLE_RESOURCE_TYPES
+    from knowledge_board_lan import knowledge_backend as kb
+    from knowledge_board_lan.knowledge_source import _is_index_file, _yaml_front_matter, knowledge_metadata_id
+    from knowledge_board_lan.knowledge_versions import stamp_knowledge_version
+
+    if resource_id.partition("_")[0] not in MARKDOWN_REGISTERABLE_RESOURCE_TYPES:
+        raise ValueError("Only Markdown Knowledge primary files can be renamed")
+    if not isinstance(payload, dict) or set(payload) - {"filename", "expected_version", "operation_id"}:
+        raise ValueError("Unknown Knowledge rename fields")
+    filename = payload.get("filename")
+    if (not isinstance(filename, str) or not filename or filename != filename.strip()
+            or filename.startswith(".") or len(filename.encode("utf-8")) > 240
+            or re.search(r'[<>:"/\\|?*\x00-\x1f]', filename)
+            or Path(filename).suffix.lower() != ".md" or _is_index_file(Path(filename))
+            or filename.split(".")[0].upper() in {"CON", "PRN", "AUX", "NUL", *(f"COM{i}" for i in range(1, 10)), *(f"LPT{i}" for i in range(1, 10))}):
+        raise ValueError("filename must be a plain visible Markdown filename")
+    expected = payload.get("expected_version")
+    if isinstance(expected, bool) or not isinstance(expected, int) or expected < 1:
+        raise ValueError("A positive expected_version is required")
+    request = {"resource_id": resource_id, "actor": actor, "filename": filename, "expected_version": expected}
+    operation_id = payload.get("operation_id", "")
+    if not isinstance(operation_id, str) or len(operation_id) > 200:
+        raise ValueError("operation_id must be a string of at most 200 characters")
+    operation_id = operation_id or "knowledge-rename:" + _digest(request)
+    key = _digest(["rename", actor, operation_id])
+    if resource_id not in permission_system.permitted_ids(actor, "RunResourceAction", "resource_id", [resource_id]):
+        raise PermissionError("Knowledge rename requires contributor permission")
+    lock_root = current_instance().root / "runtime" / "knowledge-moves"
+    with mutation_projection_scope(resource_id), resource_mutation_lock(lock_root, "operation:" + key), knowledge_identity_lock(resource_id):
+        if resource_id not in permission_system.permitted_ids(actor, "RunResourceAction", "resource_id", [resource_id]):
+            raise PermissionError("Knowledge rename requires contributor permission")
+        journal = get_registry_store().get(JOURNAL, key)
+        if journal is not None and journal["request"] != request:
+            raise ValueError("Knowledge rename operation_id was already used with different arguments")
+        if journal is None:
+            record = kb.resolve_item_address(resource_id, actor=actor)
+            source = _safe(Path(record["path"]))
+        else:
+            source = cleanup_path(journal["plans"][0]["source"])
+        with resource_mutation_lock(source.parent, resource_id):
+            if journal is None:
+                document = get_registry_store().get("knowledge", resource_id)
+                if document is None or is_deleted(resource_id):
+                    raise KeyError(resource_id)
+                primary, companion = _paths(document, resource_id)
+                if primary != source:
+                    raise ResourceVersionConflict("Knowledge primary registration changed")
+                before = _read_text(source)
+                metadata = _yaml_front_matter(before)
+                if (knowledge_metadata_id(metadata) != resource_id
+                        or metadata.get("type") != resource_id.partition("_")[0]):
+                    raise ValueError("Knowledge primary metadata disagrees with its registered identity")
+                version = _version(before, resource_id)
+                if version["number"] != expected:
+                    raise ResourceVersionConflict(expected_version=expected, current_version=version)
+                target = _safe(source.with_name(filename))
+                if source != target:
+                    assert_missing_location(target)
+                after = stamp_knowledge_version(before, actor=actor, previous_text=before) if source != target else before
+                root = _safe(Path(record["root_path"]))
+                plan = {"resource_id": resource_id, "source": cleanup_location(source), "target": cleanup_location(target),
+                        "source_identity": _identity(source), "source_root": cleanup_location(root),
+                        "source_root_identity": _identity(root), "target_root": cleanup_location(root),
+                        "target_root_identity": _identity(root), "before": before, "after": after,
+                        "document": document, "phase": "pending", "artifacts": [],
+                        "owned": [{"source": cleanup_location(source), "target": cleanup_location(target),
+                                   "kind": "file", "manifest": _manifest(source)}],
+                        "result": {"resource_id": resource_id, "resource_type": record["type"],
+                                   "path": str(target), "address": resource_id, "filename": filename,
+                                   "content_root": str(root), "project": record["project"],
+                                   "project_ids": kb._knowledge_project_ids(record), "version": _version(after, resource_id)}}
+                journal = {"key": key, "operation_id": operation_id, "request": request,
+                           "plans": [plan], "projected": False}
+                with directory_writer("knowledge", JOURNAL) as writer:
+                    if writer.get("knowledge", resource_id) != document or is_deleted(resource_id, connection=writer.connection):
+                        raise ResourceVersionConflict("Knowledge registration changed")
+                    queue = get_directory_cleanup_store()
+                    queue.assert_available(source, connection=writer.connection)
+                    queue.assert_available(target, connection=writer.connection)
+                    _assert_no_nested_owners(plan, writer.connection)
+                    if companion is not None and source.is_relative_to(companion):
+                        # Directory packages must select the registered primary,
+                        # independent of README/name ordering while two files exist.
+                        document = deepcopy(document)
+                        document["primary_file"] = source.relative_to(companion).as_posix()
+                        writer.put("knowledge", resource_id, document)
+                        plan["document"] = document
+                        plan["primary_file"] = target.relative_to(companion).as_posix()
+                    _save(journal, writer=writer)
+            if all(p["phase"] == "cleaned" for p in journal["plans"]) and journal.get("projected"):
+                progress = _result(journal)
+            else:
+                progress = _continue_move(journal, project_batch)
+            result = {**journal["plans"][0]["result"], **progress}
+            return result
