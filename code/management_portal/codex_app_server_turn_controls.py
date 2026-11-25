@@ -125,7 +125,7 @@ class CodexTurnControls:
         if not safe_thread_id or not safe_turn_id:
             raise ValueError("thread_id and turn_id are required")
         safe_service_tier = str(service_tier or "").strip()
-        if safe_service_tier not in {"", "priority"}:
+        if safe_service_tier not in {"", "priority", "ultrafast"}:
             raise ValueError("unsupported turn service tier")
         return self._rpc.request(
             "turn/settings/update",

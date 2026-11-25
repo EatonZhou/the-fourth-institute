@@ -657,7 +657,7 @@ class ExecutionTurnSettingsControl:
         if set(self.settings) != {"service_tier"}:
             raise ValueError("turn settings control only supports service_tier")
         service_tier = self.settings.get("service_tier")
-        if not isinstance(service_tier, str) or service_tier not in {"", "priority"}:
+        if not isinstance(service_tier, str) or service_tier not in {"", "priority", "ultrafast"}:
             raise ValueError("invalid turn service tier")
         if len(self.expected_turn_id) > 512:
             raise ValueError("expected turn id is too long")

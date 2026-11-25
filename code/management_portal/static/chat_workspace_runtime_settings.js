@@ -8,6 +8,12 @@
     "escapeHtml",
   ]);
 
+  function speedLabel(id, tiers) {
+    if (!id) return "Standard (default)";
+    if (id === "ultrafast") return "Ultra-fast";
+    return tiers.find(item => item?.id === id)?.name || (id === "priority" ? "Fast" : id);
+  }
+
   function residentRuntimeSettingRows(settings = {}, catalog = {}) {
     const data = settings && typeof settings === "object" ? settings : {};
     const model = String(data.model || catalog.default_model || window.PortalI18n.t("Provider default")).trim();
@@ -17,7 +23,7 @@
       || (catalog.default_efforts_by_model?.[model] ?? catalog.default_reasoning_effort);
     if (fields.includes("reasoning_effort") && effort) rows.push(["Effort", effort]);
     const modelTiers = catalog.service_tiers_by_model?.[model] || [];
-    if (fields.includes("service_tier") && modelTiers.length) rows.push(["Speed", data.service_tier === "priority" ? window.PortalI18n.t("Fast on") : window.PortalI18n.t("Fast off")]);
+    if (fields.includes("service_tier") && modelTiers.length) rows.push(["Speed", speedLabel(data.service_tier, modelTiers)]);
     if (fields.includes("permissions")) {
       const capabilities = catalog.runtime_capabilities || {};
       const preset = String(data.permission_preset || "").trim();
@@ -137,7 +143,7 @@
           <label class="portalRuntimeSettingsField"><span>Model</span><select data-runtime-setting="model"></select></label>
           <label class="portalRuntimeSettingsField"><span>Mode</span><select data-runtime-setting="collaboration_mode"><option value="default">Default · 默认执行</option><option value="plan">Plan · 先制定计划</option></select></label>
           <label class="portalRuntimeSettingsField"><span>Effort</span><select data-runtime-setting="reasoning_effort"></select></label>
-          <label class="portalRuntimeSettingsField"><span>Speed</span><select data-runtime-setting="service_tier"><option value="">Standard (default)</option><option value="priority">Fast</option></select></label>
+          <label class="portalRuntimeSettingsField"><span>Speed</span><select data-runtime-setting="service_tier"></select></label>
           <label class="portalRuntimeSettingsField"><span>执行沙箱与审批</span><select data-runtime-setting="permission_preset"><option value="">Full Access (default)</option><option value="default">Ask</option><option value="auto-review">Auto-review</option><option value="full-access">Full Access</option></select></label>
         </div>
         <p class="portalRuntimeSettingsHint" data-runtime-settings-hint>设置从下一轮生效。</p>
@@ -176,13 +182,17 @@
         effort.closest(".portalRuntimeSettingsField").hidden = !providerCatalog.runtime_capabilities?.settings?.includes("reasoning_effort") || (knownModel && !efforts.length && !currentEffort);
         const tiers = providerCatalog.service_tiers_by_model?.[selectedModel] || [];
         const tierIds = tiers.map(item => typeof item === "string" ? item : item.id).filter(Boolean);
-        const currentTier = String(currentSettings.service_tier || "").toLowerCase() === "priority"
-          ? "priority"
-          : String(currentSettings.service_tier || "");
+        const currentTier = String(currentSettings.service_tier || "").toLowerCase();
+        const sameModel = selectedModel === (initialSettings.model || providerCatalog.default_model);
+        const selectedTier = sameModel || tierIds.includes(currentTier) ? currentTier : "";
         const tierField = tier.closest(".portalRuntimeSettingsField");
-        setOptions(tier, tierIds, currentTier, tierIds.length ? "Standard (default)" : "Unavailable");
+        setOptions(tier, tierIds, selectedTier, "Standard (default)");
         for (const option of tier.options) {
-          if (option.value === "priority") option.textContent = tierIds.includes("priority") ? "Fast" : window.PortalI18n.t("Fast (saved; unavailable)");
+          option.textContent = speedLabel(option.value, tiers);
+          if (option.value && !tierIds.includes(option.value)) {
+            option.textContent += " (saved; unavailable)";
+            option.disabled = true;
+          }
         }
         tier.disabled = !tierIds.length;
         tierField.hidden = !providerCatalog.runtime_capabilities?.settings?.includes("service_tier") || !tierIds.length;
@@ -238,7 +248,12 @@
               }
             }
             if (!effort.closest(".portalRuntimeSettingsField").hidden) selected.reasoning_effort = String(effort.value || "").trim();
-            if (!tier.disabled && !tier.closest(".portalRuntimeSettingsField").hidden) selected.service_tier = String(tier.value || "").trim();
+            if (!tier.disabled && !tier.closest(".portalRuntimeSettingsField").hidden
+              && (complete || modelChanged || tier.value !== String(initialSettings.service_tier || ""))) {
+              selected.service_tier = tier.value;
+            } else if (modelChanged && !modelOnly && providerCatalog?.runtime_capabilities?.settings?.includes("service_tier") && initialSettings.service_tier) {
+              selected.service_tier = "";
+            }
           }
           if (!modelOnly) Object.assign(selected, apiFields.read());
           if (initialApiRoute && apiAccount.value !== initialApiRoute) selected.backend_route_id = apiAccount.value;
@@ -265,7 +280,6 @@
             : providerCatalog?.models || [];
           setOptions(model, models, currentSettings.model || "", dialogOptions.defaultModelLabel || `${providerCatalog?.default_model || "Provider"} (default)`);
           setOptions(effort, dialogOptions.efforts || [], currentSettings.reasoning_effort || "", "Provider default");
-          tier.value = String(currentSettings.service_tier || "").toLowerCase() === "priority" ? "priority" : String(currentSettings.service_tier || "");
           tier.disabled = false;
           tier.closest(".portalRuntimeSettingsField").title = "";
           const permissionPresets = providerCatalog?.runtime_capabilities?.permission_presets || [];
