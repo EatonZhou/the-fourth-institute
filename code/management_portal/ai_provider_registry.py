@@ -9,7 +9,8 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from management_portal import model_api_store
+from management_portal import model_api_store, moonshot_direct
+from management_portal.model_direct_origin import transport_url
 from management_portal.provider_transport_diagnostics import ProviderTransportObservation
 
 # Wire protocols an agent harness speaks to a Model API; each AgentProvider
@@ -95,7 +96,7 @@ class AIProviderRegistry:
             raise ValueError("AI provider base URL is missing")
         if protocol == "anthropic" and not url.endswith("/anthropic"):
             url = url.removesuffix("/v1") + "/anthropic"
-        return url
+        return transport_url(url)
 
     @staticmethod
     def declares_protocols(item: dict[str, Any]) -> bool:
@@ -161,14 +162,14 @@ class AIProviderRegistry:
             url = str(options.get("base_url") or "").strip().rstrip("/")
             if not url:
                 raise ValueError("google_genai requires an explicit base_url")
-            return url, "x-goog-api-key"
+            return transport_url(url), "x-goog-api-key"
         if protocol != "anthropic_messages":
             return AIProviderRegistry.base_url(item), "bearer"
         if not AIProviderRegistry.declares_protocols(item) and item.get("kind") != "anthropic_messages":
             return AIProviderRegistry.base_url(item, protocol="anthropic"), "bearer"
         url = str(options.get("base_url") or "").strip().rstrip("/")
         default_auth = "x-api-key" if item.get("kind") == "anthropic_messages" else "bearer"
-        return url or AIProviderRegistry.base_url(item).removesuffix("/v1"), str(options.get("auth") or default_auth)
+        return transport_url(url) if url else AIProviderRegistry.base_url(item).removesuffix("/v1"), str(options.get("auth") or default_auth)
 
     @staticmethod
     def harness_models(item: dict[str, Any]) -> list[str]:
@@ -280,7 +281,11 @@ class AIProviderRegistry:
                     context = ssl.create_default_context()
                     context.load_verify_locations(cafile=certifi.where())
                     tls["context"] = context
-                with urllib.request.urlopen(request, timeout=timeout, **tls) as response:
+                if moonshot_direct.enabled(provider_id, request):
+                    result = moonshot_direct.open_request(request, timeout)
+                else:
+                    result = urllib.request.urlopen(request, timeout=timeout, **tls)
+                with result as response:
                     observation.headers_received(getattr(response, "status", None))
                     observation.enter("reading_response_body")
                     raw_body = response.read()
