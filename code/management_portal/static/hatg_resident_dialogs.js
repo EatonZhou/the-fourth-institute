@@ -100,7 +100,9 @@
         input.disabled = !enabled;
         input.required = enabled && input !== effort;
       }
-      $id("nodeServiceTierInput").closest("label").hidden = !fields.includes("service_tier");
+      const tier = $id("nodeServiceTierInput");
+      window.PortalLineageCatalogs.populateServiceTiers(tier, catalog, model.value, fields);
+      tier.closest("label").hidden = tier.disabled;
       state.nodeCatalogPending = Boolean(selected && fields.includes("model") && !Array.isArray(catalog?.models));
       $id("nodeForm").setAttribute("aria-busy", String(Boolean(state.nodeCatalogPending || state.nodeSubmitBusy)));
       const status = $id("nodeFormRuntimeStatus");
@@ -163,7 +165,8 @@
         const route = $id("nodeRouteSelect").value;
         const settings = {model: $id("nodeModelSelect").value, account_selection: $id("nodeAccountSelection")?.value || "fixed"};
         if (!$id("nodeEffortSelect").disabled) settings.reasoning_effort = $id("nodeEffortSelect").value;
-        if (!$id("nodeServiceTierInput").closest("label").hidden && $id("nodeServiceTierInput").value === "fast") settings.service_tier = "priority";
+        const tier = $id("nodeServiceTierInput");
+        if (!tier.disabled && tier.value) settings.service_tier = tier.value;
         const response = await societyService.createNode({
           lineage_id: state.lineage.lineage_id,
           title,

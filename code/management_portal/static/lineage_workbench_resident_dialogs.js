@@ -161,7 +161,7 @@
       const model = settings.model || catalog.default_model || "";
       if (catalog.models?.includes(model)) $id("residentRuntimeModelSelect").value = model;
       syncResidentEffortSelect("residentRuntimeModelSelect", "residentRuntimeEffortSelect", settings.reasoning_effort || "");
-      setSelectValue("residentRuntimeTierSelect", settings.service_tier === "priority" ? "priority" : "");
+      syncResidentTierSelect(catalog, settings.service_tier || "");
       setSelectValue("residentRuntimePermissionSelect", runtimePermissionPreset(settings));
     }
 
@@ -176,6 +176,15 @@
       if (tier && residentRuntimeDefinition().runtime_settings?.includes("service_tier")) settings.service_tier = tier;
       if (permissionPreset && residentRuntimeDefinition().runtime_settings?.includes("permissions")) settings.permission_preset = permissionPreset;
       return settings;
+    }
+
+    function syncResidentTierSelect(catalog, requested) {
+      const select = $id("residentRuntimeTierSelect");
+      window.PortalLineageCatalogs.populateServiceTiers(select, catalog, $id("residentRuntimeModelSelect").value,
+        residentRuntimeDefinition().runtime_settings || [], requested);
+      const row = select.closest(".residentFormRow");
+      row.hidden = select.disabled;
+      row.style.display = row.hidden ? "none" : "";
     }
 
     function syncResidentBackendRuntimeFields() {
@@ -204,7 +213,8 @@
         modelSelect.replaceChildren(...(catalog.models || []).map(value => new Option(value, value)));
         modelSelect.value = catalog.models?.includes(previous) ? previous : catalog.default_model || "";
       }
-      for (const [id, field] of [["residentRuntimeEffortSelect", "reasoning_effort"], ["residentRuntimeTierSelect", "service_tier"], ["residentRuntimePermissionSelect", "permissions"]]) {
+      syncResidentTierSelect(catalog);
+      for (const [id, field] of [["residentRuntimeEffortSelect", "reasoning_effort"], ["residentRuntimePermissionSelect", "permissions"]]) {
         const row = $id(id)?.closest(".residentFormRow");
         if (row) { row.hidden = !fields.includes(field); row.style.display = row.hidden ? "none" : ""; }
       }

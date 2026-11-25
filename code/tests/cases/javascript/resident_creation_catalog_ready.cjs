@@ -23,7 +23,7 @@ for (const name of ['portal_lineage_catalogs.js','hatg_resident_dialogs.js']) {
 }
 const deps = Object.fromEntries(w.PortalHatgResidentDialogs.dependencies.map(name=>[name,()=>{}]));
 const state = {lineage:{lineage_id:'fixture'},nodeRouteChosen:true,accountSelection:{},agentBackendCatalog:{backends:[{
-  backend:'codex',runtime_settings:['model','reasoning_effort'],routes:[
+  backend:'codex',runtime_settings:['model','reasoning_effort','service_tier'],routes:[
     {backend_route_id:'two',account_id:'codex_two',label:'two'},
     {backend_route_id:'three',account_id:'codex_three',label:'three'},
   ],
@@ -61,12 +61,25 @@ const ui = w.PortalHatgResidentDialogs.createResidentDialogs(deps);
     assert.match($id('nodeFormError').textContent,/current route unavailable/);
     assert.equal($id('nodeSubmitBtn').disabled,true);
     pending.set('codex_two',deferred());$id('nodeRouteSelect').value='two';ui.renderNodeProviderFields();
-    pending.get('codex_two').resolve({models:['model-x'],default_model:'model-x',efforts_by_model:{'model-x':['high']}});
+    pending.get('codex_two').resolve({models:['model-x','model-y'],default_model:'model-x',efforts_by_model:{'model-x':['high']},
+      service_tiers_by_model:{'model-x':['priority',{id:'ultrafast'}]}});
     await tick();
     assert.equal($id('nodeForm').getAttribute('aria-busy'),'false');
     assert.equal($id('nodeModelSelect').value,'model-x');
     assert.equal($id('nodeSubmitBtn').disabled,false);
     assert.equal($id('nodeFormError').hidden,true);
+    const tier = $id('nodeServiceTierInput');
+    assert.deepEqual(Array.from(tier.options, option => option.text), ['Standard (default)', 'Fast', 'Ultra-fast']);
+    tier.value = 'ultrafast';
+    let submitted;
+    state.graphController = {getPlacementGeometry: () => ({})};
+    deps.societyService.createNode = async request => { submitted = request; throw Error('fixture write outcome'); };
+    await ui.submitNodeForm({preventDefault(){}});
+    assert.equal(submitted.settings.service_tier, 'ultrafast');
+    $id('nodeModelSelect').value = 'model-y';
+    ui.renderNodeProviderFields();
+    assert.equal(tier.value, '');
+    assert.equal(tier.disabled, true);
     state.nodeSubmitBusy=true;ui.renderNodeProviderFields();
     assert.equal($id('nodeSubmitBtn').disabled,true,'catalog refresh cannot enable a second write');
     assert.equal($id('nodeForm').getAttribute('aria-busy'),'true');

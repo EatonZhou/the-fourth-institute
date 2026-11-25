@@ -20,11 +20,26 @@
       default_model: defaultModel,
       default_reasoning_effort: defaultEffort,
       models,
+      service_tiers_by_model: data.service_tiers_by_model || {},
       efforts_by_model: data.efforts_by_model && typeof data.efforts_by_model === "object" ? data.efforts_by_model : {},
       default_efforts_by_model: data.default_efforts_by_model && typeof data.default_efforts_by_model === "object"
         ? data.default_efforts_by_model
         : {},
     };
+  }
+
+  function populateServiceTiers(select, catalog, model, fields, requested = select.value) {
+    const tiers = fields.includes("service_tier") ? catalog?.service_tiers_by_model?.[model] || [] : [];
+    const options = [new Option("Standard (default)", "")];
+    for (const tier of tiers) {
+      const id = typeof tier === "string" ? tier : tier?.id;
+      if (!id) continue;
+      const label = id === "ultrafast" ? "Ultra-fast" : tier.name || (id === "priority" ? "Fast" : id);
+      options.push(new Option(label, id));
+    }
+    select.replaceChildren(...options);
+    select.value = options.some(option => option.value === requested) ? requested : "";
+    select.disabled = options.length === 1;
   }
 
   function clone(value) {
@@ -216,6 +231,7 @@
   window.PortalLineageCatalogs = Object.freeze({
     agentBackends,
     populateBackends,
+    populateServiceTiers,
     renderForkProvider,
     invalidate,
     normalizeRuntimeCatalog,

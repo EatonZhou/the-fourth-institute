@@ -130,9 +130,7 @@
       state.residentRouteChosen = true;
       syncResidentBackendRuntimeFields();
     });
-    $id("residentRuntimeModelSelect").addEventListener("change", () => {
-      syncResidentEffortSelect("residentRuntimeModelSelect", "residentRuntimeEffortSelect", $id("residentRuntimeEffortSelect")?.value || "");
-    });
+    $id("residentRuntimeModelSelect").addEventListener("change", syncResidentBackendRuntimeFields);
 
     return Object.freeze({});
   }
