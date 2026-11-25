@@ -22,6 +22,10 @@ def resolve_route(requested: str | None = None) -> str:
     route = requested or config.get("default_route", "inherited")
     if route not in ROUTES:
         raise ValueError("Unknown transfer network route")
+    if config.get("drive_physical_only") is True:
+        if not config.get("direct_rclone_program"):
+            raise ValueError("Physical-only Drive backend is not configured")
+        route = "direct"
     if route == "direct" and not config.get("direct_interface"):
         raise ValueError("Direct transfer interface is not configured")
     if route == "vps" and not (config.get("vps_via_host_routing") is True or config.get("vps_proxy")):
@@ -36,7 +40,12 @@ def _settings() -> dict:
 @contextmanager
 def drive_transfer(env: dict, route: str, rclone: str):
     # Select the program and its environment together during a live cutover.
-    direct = _settings().get("direct_rclone_program") if route == "direct" else None
+    config = _settings()
+    if config.get("drive_physical_only") is True:
+        route = "direct"
+        if not config.get("direct_rclone_program"):
+            raise ValueError("Physical-only Drive backend is not configured")
+    direct = config.get("direct_rclone_program") if route == "direct" else None
     if direct:
         yield direct, {key: value for key, value in env.items() if key not in PROXY_KEYS}
         return
