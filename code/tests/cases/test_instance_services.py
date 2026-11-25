@@ -87,6 +87,24 @@ def test_full_stop_closes_detached_agents_after_admission_stops(instance, monkey
     assert calls[-1] == ('native', 'closed')
 
 
+@pytest.mark.parametrize('platform', ['macos', 'windows'])
+def test_partial_stop_keeps_excluded_services_running(instance, monkeypatch, platform):
+    selected, directory, states, calls = instance
+    monkeypatch.setattr(services, 'platform_name', lambda: platform)
+    monkeypatch.setattr(services, 'verify_definitions', lambda *a, **kw: directory)
+    monkeypatch.setattr(services, 'stop_native_agents', lambda _: calls.append(('native', 'closed')))
+    for component in services.components(selected):
+        states[services.unit_name(selected, component)] = 'active'
+
+    result = services.lifecycle('stop', selected.root, excluded_components=('postgres', 'nats'))
+
+    assert result['skipped'] == ['nats', 'postgres']
+    assert {c for c, row in result['services'].items() if row['pid']} == {'postgres', 'nats'}
+    assert {unit for action, unit in calls if action == 'stop'} == {
+        services.unit_name(selected, c) for c in services.components(selected) if c not in result['skipped']}
+    assert calls[-1] == ('native', 'closed')
+
+
 def test_foreign_root_prevents_all_process_operations(instance):
     selected, directory, states, calls = instance
     path = directory / 'tfi-fixture-worker.service'

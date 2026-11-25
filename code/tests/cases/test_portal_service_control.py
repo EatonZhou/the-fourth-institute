@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import subprocess
+from types import SimpleNamespace
 
+import psutil
 import pytest
 
 from scripts.portal_service_control import ServiceControl
@@ -103,6 +105,77 @@ def test_service_stop_timeout_never_claims_a_live_pid_has_exited(monkeypatch):
     monkeypatch.setattr(control, "status", lambda _: {"active": "inactive", "pid": 44})
     with pytest.raises(TimeoutError, match="macos service did not stop"):
         control._wait_stopped("fixture.service", timeout=0)
+
+
+@pytest.mark.parametrize("mode", ["stop", "restart", "child still running"])
+def test_macos_codex_drains_native_child_before_unloading(tmp_path, monkeypatch, mode):
+    service = "tfi-fixture-codex-app-server@codex_one.service"
+    label = ServiceControl.label(service)
+    (tmp_path / f"{label}.plist").touch()
+    child = SimpleNamespace(pid=45, create_time=lambda: 1001.0)
+    events = []
+    registered = True
+
+    def run(*args, check=True):
+        nonlocal registered
+        operation = args[1]
+        if operation == "print":
+            return subprocess.CompletedProcess(args, 0 if registered else 113,
+                                               "state = running\n pid = 44\n" if registered else "", "")
+        events.append(operation)
+        if operation == "bootout":
+            registered = False
+        return subprocess.CompletedProcess(args, 0, "", "")
+
+    def terminate():
+        events.append("terminate host")
+        # The launcher may exit before the native process finishes draining.
+        raise psutil.NoSuchProcess(44)
+
+    host = SimpleNamespace(pid=44, children=lambda *, recursive: [child], terminate=terminate,
+                           create_time=lambda: 1000.0)
+    monkeypatch.setattr(psutil, "Process", lambda pid: {44: host}[pid])
+
+    def wait_procs(processes, *, timeout):
+        assert processes == [host, child]
+        assert timeout > 0
+        events.append("wait for native child")
+        return ([host], [child]) if mode == "child still running" else (processes, [])
+
+    monkeypatch.setattr(psutil, "wait_procs", wait_procs)
+    settings = dict(platform="darwin", runner=run, agent_root=tmp_path, uid=501,
+                    shutdown_state=tmp_path / "state")
+    control = ServiceControl(**settings)
+    expected = ["terminate host", "wait for native child"]
+    if mode == "child still running":
+        with pytest.raises(TimeoutError, match="did not drain.*45"):
+            control.restart(service)
+    else:
+        getattr(control, mode)(service)
+        expected.append("bootout")
+        if mode == "restart":
+            expected.append("bootstrap")
+    assert events == expected
+    if mode == "child still running":
+        # The update controller and launcher can both exit while the Codex
+        # child still holds its session lock. A retry must still see the child.
+        registered = False
+        recycled_pid = SimpleNamespace(pid=44, create_time=lambda: 2000.0)
+        monkeypatch.setattr(psutil, "Process", lambda pid: {44: recycled_pid, 45: child}[pid])
+
+        def still_running(processes, *, timeout):
+            assert processes == [child]
+            return [], processes
+
+        monkeypatch.setattr(psutil, "wait_procs", still_running)
+        with pytest.raises(TimeoutError, match="did not drain.*45"):
+            ServiceControl(**settings).start(service)
+        assert events == expected
+
+        monkeypatch.setattr(psutil, "wait_procs", lambda processes, *, timeout: (processes, []))
+        ServiceControl(**settings).start(service)
+        assert events == [*expected, "bootstrap"]
+    assert not list(settings["shutdown_state"].glob("*.shutdown.json"))
 
 
 def test_portal_services_exposes_health_for_each_deployment():
