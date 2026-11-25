@@ -50,8 +50,9 @@ def rig(tmp_path, monkeypatch):
                               stop=lambda name: set_state(name, 'inactive'))
     def lifecycle(action, root, **kwargs):
         calls.append(action)
-        for c in states:
-            states[c]['active'] = 'inactive' if action == 'stop' or c in kwargs.get('excluded_components', ()) else 'active'
+        excluded = set(kwargs.get('excluded_components', ()))
+        for c in states.keys() - excluded:
+            states[c]['active'] = 'inactive' if action == 'stop' else 'active'
     monkeypatch.setattr(update.services, 'status', status)
     monkeypatch.setattr(update.services, 'controller', lambda _: control)
     monkeypatch.setattr(update.services, 'verify_definitions', lambda *a, **k: None)
@@ -124,6 +125,48 @@ def test_interruption_reuses_original_running_intent(rig):
     assert update.run(instance, **options)['status'] == 'updated'
     assert states['web']['active'] == 'active'
     assert states['worker']['active'] == 'inactive'
+
+
+def test_update_keeps_running_codex_accounts_across_a_retry(rig, monkeypatch):
+    instance, states, _, options = rig
+    running = 'codex-app-server@running'
+    stopped = 'codex-app-server@stopped'
+    instance.document['services']['components'].extend((running, stopped))
+    states[running] = {'active': 'active', 'load': 'loaded', 'pid': 42}
+    states[stopped] = {'active': 'inactive', 'load': 'loaded', 'pid': 0}
+    monkeypatch.setattr(update, 'load', lambda _: instance)
+    preserved = sorted((running, stopped, 'postgres', 'nats'))
+    assert update.run(instance, plan_only=True, **options)['preserved_services'] == preserved
+    lifecycle = update.services.lifecycle
+    stop_exclusions = []
+
+    def record_lifecycle(action, root, **kwargs):
+        if action == 'stop':
+            stop_exclusions.append(list(kwargs['excluded_components']))
+        return lifecycle(action, root, **kwargs)
+
+    monkeypatch.setattr(update.services, 'lifecycle', record_lifecycle)
+    child = options['child']
+
+    def interrupt_apply(*args):
+        if json.loads(Path(args[-1]).read_text())['phase'] == 'apply':
+            raise RuntimeError('interrupted')
+        return child(*args)
+
+    options['child'] = interrupt_apply
+    with pytest.raises(RuntimeError, match='interrupted'):
+        update.run(instance, **options)
+    assert update.read_receipt(instance)['preserved_services'] == preserved
+    assert states['web']['active'] == 'inactive'
+    assert all(states[c]['active'] == 'active' for c in preserved if c != stopped)
+    assert states[stopped]['active'] == 'inactive'
+
+    options['child'] = child
+    assert update.run(instance, **options)['status'] == 'updated'
+    assert stop_exclusions == [preserved, preserved]
+    assert states[running] == {'active': 'active', 'load': 'loaded', 'pid': 42}
+    assert states[stopped]['active'] == 'inactive'
+    assert states['web']['active'] == 'active'
 
 
 def test_plan_does_not_prepare_stop_or_replace_receipt(rig):

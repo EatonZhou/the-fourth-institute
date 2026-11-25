@@ -6,6 +6,7 @@ interrupted.
 """
 from __future__ import annotations
 
+import json
 import os
 import re
 import subprocess
@@ -19,6 +20,8 @@ from management_common.native_output import run_native_capture
 
 
 Runner = Callable[..., subprocess.CompletedProcess[str]]
+_CODEX_SHUTDOWN_TIMEOUT = 65  # TERM and KILL windows in the account host, plus cleanup.
+_LAUNCHD_PID = re.compile(r"(?m)^\s*pid\s*=\s*([1-9]\d*)\s*$")
 
 
 def _run(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -37,7 +40,7 @@ class ServiceControl:
     """start/stop/restart/status for a registered persistent service."""
 
     def __init__(self, *, platform: str | None = None, runner: Runner | None = None,
-                 agent_root: Path | None = None, uid: int | None = None):
+                 agent_root: Path | None = None, uid: int | None = None, shutdown_state: Path | None = None):
         value = platform or sys.platform
         self.platform = "windows" if value == "win32" else "macos" if value == "darwin" else "linux" if value.startswith("linux") else value
         if self.platform not in {"linux", "macos", "windows"}:
@@ -45,6 +48,7 @@ class ServiceControl:
         self.run = runner or _run
         self.agent_root = agent_root or Path.home() / "Library" / "LaunchAgents"
         self.uid = os.getuid() if uid is None and hasattr(os, "getuid") else uid
+        self.shutdown_state = shutdown_state
 
     @staticmethod
     def label(service: str) -> str:
@@ -100,7 +104,7 @@ class ServiceControl:
                               active="inactive", sub="dead")
             output = result.stdout or ""
             state = re.search(r"(?m)^\s*state\s*=\s*(\w+)", output)
-            pid = re.search(r"(?m)^\s*pid\s*=\s*(\d+)", output)
+            pid = _LAUNCHD_PID.search(output)
             running = state is not None and state.group(1) == "running"
             return _state(service, load="loaded", active="active" if running else "inactive",
                           sub=state.group(1) if state else "waiting",
@@ -129,6 +133,8 @@ class ServiceControl:
                 target = self._launch_target(service)
                 if state["load"] != "loaded":
                     raise RuntimeError(f"launchd job is not installed: {target}")
+                if "-codex-app-server@" in service:
+                    self._drain_codex_host(service, 0)
                 current = self.run("launchctl", "print", target, check=False)
                 if current.returncode:
                     self.run("launchctl", "bootstrap", self._launch_domain(),
@@ -148,15 +154,61 @@ class ServiceControl:
                 self.run("systemctl", "--user", "stop", service)
             elif self.platform == "macos":
                 target = self._launch_target(service)
-                if not self.run("launchctl", "print", target, check=False).returncode:
+                job = self.run("launchctl", "print", target, check=False)
+                if "-codex-app-server@" in service:
+                    pid = _LAUNCHD_PID.search(job.stdout or "") if not job.returncode else None
+                    self._drain_codex_host(service, int(pid.group(1)) if pid else 0)
+                if not job.returncode:
                     self.run("launchctl", "bootout", target)
-                    # bootout may return while the process is still exiting.
                     self._wait_stopped(service)
             else:
                 state = self.status(service)
                 if state["load"] != "not-found" and state["sub"] not in {"stopped", "dead"}:
                     self.run("sc.exe", "stop", service)
                     self._wait_stopped(service)
+
+    def _drain_codex_host(self, service: str, pid: int) -> None:
+        # The account host starts Codex in a separate process group. Keep the
+        # launchd job installed while the host handles SIGTERM and reaps it.
+        import psutil
+        from management_common.configuration_files import atomic_json
+
+        state = self.shutdown_state / (service + ".shutdown.json") if self.shutdown_state else None
+        processes = {}
+        if state is not None and state.is_file():
+            # A resumed update may find the launcher gone. Wait for the same
+            # children even after they have been reparented or the job unloaded.
+            for child_pid, created_at in json.loads(state.read_text(encoding="utf-8"))["processes"]:
+                try:
+                    process = psutil.Process(child_pid)
+                    if process.create_time() == created_at:
+                        processes[child_pid] = process
+                except psutil.NoSuchProcess:
+                    continue
+
+        host = None
+        if pid:
+            try:
+                host = psutil.Process(pid)
+                for process in [host, *host.children(recursive=True)]:
+                    processes[process.pid] = process
+            except psutil.NoSuchProcess:
+                pass
+        if processes and state is not None:
+            identities = [[process.pid, process.create_time()] for process in processes.values()]
+            atomic_json(state, {"processes": identities})
+        if host is not None:
+            try:
+                host.terminate()
+            except psutil.NoSuchProcess:
+                pass
+        if processes:
+            _, running = psutil.wait_procs(list(processes.values()), timeout=_CODEX_SHUTDOWN_TIMEOUT)
+            if running:
+                pids = ", ".join(str(process.pid) for process in running)
+                raise TimeoutError(f"Codex account host did not drain for {service} (PIDs: {pids})")
+        if state is not None:
+            state.unlink(missing_ok=True)
 
     def _wait_stopped(self, service: str, timeout: float = 90) -> None:
         deadline = time.monotonic() + timeout
@@ -175,7 +227,10 @@ class ServiceControl:
             self.run("systemctl", "--user", "restart", service)
         elif self.platform == "macos":
             target = self._launch_target(service)
-            if self.run("launchctl", "print", target, check=False).returncode:
+            if "-codex-app-server@" in service:
+                self.stop(service)
+                self.start(service)
+            elif self.run("launchctl", "print", target, check=False).returncode:
                 self.start(service)
             else:
                 self.run("launchctl", "kickstart", "-k", target)

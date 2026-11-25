@@ -22,11 +22,11 @@ SHUTDOWN_SECONDS = 20.0
 GRACE_SECONDS = 15.0
 
 
-def stop_instance(root, *, application_only=False, timeout=SHUTDOWN_SECONDS):
+def stop_instance(root, *, application_only=False, timeout=SHUTDOWN_SECONDS, excluded_components=()):
     from management_common.instance_manifest import load
     started = time.monotonic()
     from scripts.tfi_instance_manager import supervisor_environment
-    from scripts.instance_services import ON_DEMAND_JOBS, job_unit, owned_units
+    from scripts.instance_services import ON_DEMAND_JOBS, job_unit, owned_units, unit_name
     instance = load(root)
     prefix = instance.service_prefix
     if not isinstance(prefix, str) or not re.fullmatch(r"[A-Za-z0-9_-]+", prefix):
@@ -38,7 +38,8 @@ def stop_instance(root, *, application_only=False, timeout=SHUTDOWN_SECONDS):
     if remaining <= 0:
         raise TimeoutError("Instance shutdown deadline elapsed during configuration")
     return stop_units(prefix, application_only=application_only,
-                      timeout=remaining, env=env, registered_units=owned_units(instance))
+                      timeout=remaining, env=env, registered_units=owned_units(instance),
+                      excluded_units={unit_name(instance, component) for component in excluded_components})
 
 
 def verify_job(unit, root, *, env=None, runner=subprocess.run):
@@ -56,7 +57,7 @@ def verify_job(unit, root, *, env=None, runner=subprocess.run):
 
 
 def stop_units(prefix, *, application_only=False, timeout=SHUTDOWN_SECONDS,
-               env=None, runner=subprocess.run, extra_units=(), registered_units=None):
+               env=None, runner=subprocess.run, extra_units=(), registered_units=None, excluded_units=()):
     if not sys.platform.startswith("linux"):
         raise NotImplementedError("Bounded instance shutdown currently requires systemd")
     if not 0 < timeout <= SHUTDOWN_SECONDS:
@@ -92,9 +93,10 @@ def stop_units(prefix, *, application_only=False, timeout=SHUTDOWN_SECONDS,
         if set(units) - set(registered_units):
             raise ValueError('Unregistered instance services require reconciliation before shutdown')
         units = sorted(set(units) & set(registered_units))
+    excluded = set(excluded_units)
     if application_only:
-        units = [unit for unit in units if unit not in
-                 {prefix + "-postgres.service", prefix + "-nats.service"}]
+        excluded.update({prefix + "-postgres.service", prefix + "-nats.service"})
+    units = [unit for unit in units if unit not in excluded]
     if not units:
         return {"ok": True, "services": [], "forced": [], "elapsed_seconds": time.monotonic() - started}
 

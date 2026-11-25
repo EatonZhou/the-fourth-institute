@@ -5,6 +5,7 @@ from pathlib import Path
 import subprocess
 import sys
 import time
+from types import SimpleNamespace
 import uuid
 from unittest.mock import patch
 
@@ -74,9 +75,13 @@ def test_processes_remaining_after_sigkill_are_reported_as_failure():
     assert clock.now == 1
 
 
-def test_application_stop_preserves_database_and_nats():
+@pytest.mark.parametrize('keep_codex', [False, True])
+def test_application_stop_preserves_database_and_nats(keep_codex, monkeypatch):
+    monkeypatch.setattr(shutdown, 'sys', SimpleNamespace(platform='linux'))
     calls = []
     units = ["tfi-test-web.service", "tfi-test-postgres.service", "tfi-test-nats.service"]
+    excluded = ("tfi-test-codex-app-server@one.service",) if keep_codex else ()
+    units.extend(excluded)
 
     def run(argv, **kw):
         calls.append(argv)
@@ -85,9 +90,11 @@ def test_application_stop_preserves_database_and_nats():
             output = "Id=tfi-test-web.service\nActiveState=inactive\nMainPID=0\nControlPID=0"
         return subprocess.CompletedProcess(argv, 0, output, "")
 
-    assert shutdown.stop_units("tfi-test", application_only=True, runner=run)["ok"]
+    result = shutdown.stop_units("tfi-test", application_only=True, runner=run, excluded_units=excluded)
+    assert result["services"] == [units[0]]
     stop = next(call for call in calls if "stop" in call)
     assert stop[-1] == units[0] and len(stop) == 5
+    assert not any(unit in command for unit in excluded for command in calls)
 
 
 def test_stopping_accounts_preserves_user_boot_policy():
@@ -196,7 +203,8 @@ def test_registered_units_include_the_instance_job(tmp_path, monkeypatch):
     monkeypatch.setattr(shutdown, "verify_job", lambda unit, root, env=None: seen.setdefault("job", unit))
     monkeypatch.setattr(shutdown, "stop_units", lambda prefix, **kw: seen.update(kw) or {"ok": True})
     monkeypatch.setattr("scripts.instance_services.platform_name", lambda: "linux")
-    shutdown.stop_instance(root)
+    shutdown.stop_instance(root, excluded_components=('postgres',))
     assert seen["job"] == "tfi-fixture-provider-activation.service"
     assert seen["registered_units"] == {load(root).service_name(c) + ".service" for c in
                                         load(root).document["services"]["components"]} | {seen["job"]}
+    assert seen["excluded_units"] == {"tfi-fixture-postgres.service"}

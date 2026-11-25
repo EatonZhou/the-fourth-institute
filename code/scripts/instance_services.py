@@ -89,9 +89,10 @@ def controller(instance):
     if platform_name() == 'windows':
         from scripts.tfi_windows_user_services import WindowsServiceControl
         return WindowsServiceControl(definition_directory(instance))
-    if platform_name() == 'macos' and instance.document['services'].get('launch_agents_directory'):
+    if platform_name() == 'macos':
         from scripts.portal_service_control import ServiceControl
-        return ServiceControl(platform='macos', agent_root=definition_directory(instance))
+        return ServiceControl(platform='macos', agent_root=definition_directory(instance),
+                              shutdown_state=instance.directory('runtime') / 'service-locks')
     return adapter().service_controller()
 
 
@@ -267,10 +268,11 @@ def lifecycle(action, root, *, shutdown_timeout=20.0, excluded_components=(), cr
     if action not in {'status', 'start', 'stop'}:
         raise ValueError('Unsupported instance service action')
     instance = load(root)
-    if set(excluded_components) - set(components(instance)):
+    skipped = set(excluded_components)
+    if skipped - set(components(instance)):
         raise ValueError('Excluded components must be registered')
-    if excluded_components and action != 'start':
-        raise ValueError('Only startup accepts excluded components')
+    if skipped and action == 'status':
+        raise ValueError('Status requires the complete service inventory')
     if action == 'status':
         states = status(instance)
         errors = service_configuration_errors(instance)
@@ -285,11 +287,8 @@ def lifecycle(action, root, *, shutdown_timeout=20.0, excluded_components=(), cr
         control = controller(instance)
         if action == 'stop' and platform_name() == 'linux':
             from scripts.tfi_shutdown import stop_instance
-            return stop_instance(instance.root, timeout=shutdown_timeout)
-        ordered = components(instance)
-        skipped = set(excluded_components)
-        if action == 'start':
-            ordered = tuple(c for c in ordered if c not in skipped)
+            return stop_instance(instance.root, timeout=shutdown_timeout, excluded_components=skipped)
+        ordered = tuple(c for c in components(instance) if c not in skipped)
         if action == 'stop':
             ordered = tuple(reversed(ordered))
         for component in ordered:
@@ -297,9 +296,9 @@ def lifecycle(action, root, *, shutdown_timeout=20.0, excluded_components=(), cr
             if action == 'start' and component == 'postgres':
                 wait_database(instance)
         states = status(instance)
-        if action == 'stop' and any(row['active'] not in {'inactive', 'failed'} or row['pid'] for row in states.values()):
+        if action == 'stop' and any(states[c]['active'] not in {'inactive', 'failed'} or states[c]['pid'] for c in ordered):
             raise RuntimeError('Instance services still have running processes')
-        if action == 'stop':
+        if action == 'stop' and not skipped.intersection({'worker', 'execution', 'society'}):
             stop_native_agents(instance)
         if action == 'start' and any(states[c]['active'] != 'active' for c in ordered):
             raise RuntimeError('Not all instance services started successfully')

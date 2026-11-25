@@ -71,6 +71,16 @@ def read_receipt(instance):
     return json.loads(path.read_text()) if path.exists() else None
 
 
+def _services_to_keep(instance):
+    registered = set(services.components(instance))
+    accounts = {name for name in registered if name.startswith('codex-app-server@')}
+    if not accounts:
+        return []
+    # The host can use PostgreSQL to resolve its Model API, and running native
+    # tools can use the instance bus while the Worker hands off their turn.
+    return sorted(accounts | (registered & {'postgres', 'nats'}))
+
+
 def run(instance, *, prepare, child, observe, base_python=None, offline=False, plan_only=False):
     """CLI's instance control lock spans this operation, including recovery."""
     previous = read_receipt(instance)
@@ -126,8 +136,10 @@ def run(instance, *, prepare, child, observe, base_python=None, offline=False, p
             services.wait_database(instance)
         plan = record['plan'] if recovering else owners('plan')
         record['plan'] = plan
+        preserved = _services_to_keep(load(instance.root))
         if plan_only:
-            return {'status': 'planned', 'code': identity, 'plan': plan, 'services': before}
+            return {'status': 'planned', 'code': identity, 'plan': plan, 'services': before,
+                    'preserved_services': preserved}
         save('preflight')
         if plan.get('blockers'):
             raise ValueError('Feature update preflight failed; see update-code.json plan.blockers')
@@ -136,14 +148,16 @@ def run(instance, *, prepare, child, observe, base_python=None, offline=False, p
         # Persist original running intent before any stop; retry must never
         # replace it with the partially stopped state left by a failed update.
         record['mutation_started'] = True
+        record['preserved_services'] = preserved
         save('stop')
-        services.lifecycle('stop', instance.root)
+        services.lifecycle('stop', instance.root, excluded_components=preserved)
         for component in plan.get('services', []):
             services.register_component(instance.root, component)
         instance = load(instance.root)
         control = services.controller(instance)
         services.install_definitions(instance)
-        control.start(services.unit_name(instance, 'postgres'))
+        if control.status(services.unit_name(instance, 'postgres'))['active'] != 'active':
+            control.start(services.unit_name(instance, 'postgres'))
         services.wait_database(instance)
         save('apply_domains')
         record['owners'] = owners('apply', plan)
