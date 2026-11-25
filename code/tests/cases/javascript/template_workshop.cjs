@@ -4,6 +4,15 @@ const root=path.resolve(__dirname,'../../../management_portal/static');
 const context={window:{PortalCompatibility:{identifier:String},PortalI18n:{t:String},PortalUIPrimitives:{escapeHtml:String}}};
 for(const file of ['lineage_template_graph.js','lineage_template_workshop_draft.js','lineage_template_workshop_chat.js'])vm.runInNewContext(fs.readFileSync(path.join(root,file),'utf8'),context);
 const data=context.window.LineageTemplateWorkshopDraft;
+test('blank drafts and local history coalesce text, branch redo and rebase saves',()=>{
+  assert.equal(data.empty().roles.length,0);
+  const history=data.history();history.reset({title:'original'});
+  history.record({title:'a'},'title');history.record({title:'ab'},'title');
+  assert.equal(history.undo().title,'original');assert.equal(history.redo().title,'ab');
+  history.saved({title:'ab'});assert.equal(history.undo().title,'original');
+  history.record({title:'branch'});assert.equal(history.state().redo,false);
+  history.reset({title:'other resource'});assert.equal(history.state().undo,false);
+});
 const plain=value=>JSON.parse(JSON.stringify(value));
 test('application target is inferred from slots before matching, and preserves module targets',()=>{
   assert.deepEqual(plain(data.targets({kind:'structure',body:{roles:[{from:'target'}],match:[{}]}})),['resident']);

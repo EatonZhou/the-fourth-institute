@@ -63,6 +63,7 @@
     const {MIME, apply, canvas, config, esc, getContext, openEditor, request, resolveTarget,
       shelf, t, targetLabels, templatesState, toast, promptText} = dependencies;
     let dragged = '', picked = null, pickupTimer = null;
+    const collapsed = new Set();
     const username = () => window.PortalIdentity?.username() || '';
     const abort = new AbortController();
     const onCanvas = target => canvas?.contains(target) && (!config.isComposition || !!target?.closest('.templateGraphCanvas'));
@@ -89,8 +90,8 @@
           data-portal-tooltip="${esc([t(item.title),t(item.description)].filter(Boolean).join('\n'))}"
           title="${esc([t(item.title), t(item.description), t(config.onSelectTemplate ? '单击打开；拖入画布组合' : '单击拿起，双击在工坊中打开；按 Escape 或右键取消')].filter(Boolean).join('\n'))}">
           ${thumbnail(item)}<span class="templateTileTitle">${esc(t(item.title))}</span></button>${item.store_status?.has_update ? `<button type="button" class="templateUpdateBadge portalButton is-compact" data-store-update="${esc(item.template_id)}" aria-label="${esc(t('有更新'))}">${esc(config.iconOnly ? '↑' : t('有更新'))}</button>` : ''}</div>`).join('');
-        return `<section class="templateToolboxGroup" data-toolbox-group="${group.key}"><h4>${esc(t(group.label))}</h4>${
-          rows.length ? `<div class="templateToolboxCards">${cards}</div>`
+        return `<section class="templateToolboxGroup" data-toolbox-group="${group.key}"><h4>${config.collapsible ? `<button type="button" class="portalButton is-quiet is-compact" data-toolbox-collapse="${group.key}" aria-expanded="${!collapsed.has(group.key)}"><span data-portal-icon="chevron-${collapsed.has(group.key) ? 'right' : 'down'}" aria-hidden="true"></span>${esc(t(group.label))}</button>` : esc(t(group.label))}</h4>${
+          rows.length ? `<div class="templateToolboxCards" ${collapsed.has(group.key) ? 'hidden' : ''}>${cards}</div>`
             : config.iconOnly ? '' : `<p class="templateEmpty">${esc(t(group.key === 'roles' ? '还没有角色模板' : '暂无模板'))}</p>`}</section>`;
       }).join('');
     }
@@ -150,6 +151,15 @@
     }});
     abort.signal.addEventListener('abort',unsubscribe);
     listen(shelf, 'click', event => {
+      const toggle = event.target.closest('[data-toolbox-collapse]');
+      if (toggle) {
+        const key = toggle.dataset.toolboxCollapse, hide = !collapsed.has(key);
+        if (hide) collapsed.add(key); else collapsed.delete(key);
+        toggle.setAttribute('aria-expanded',String(!hide));
+        toggle.querySelector('[data-portal-icon]').dataset.portalIcon = hide ? 'chevron-right' : 'chevron-down';
+        const cards = toggle.closest('section').querySelector('.templateToolboxCards'); if (cards) cards.hidden = hide;
+        return;
+      }
       const update = event.target.closest('[data-store-update]');
       if (update) {
         event.preventDefault(); event.stopPropagation(); cancelPlacement();

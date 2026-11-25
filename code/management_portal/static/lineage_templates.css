@@ -10,7 +10,7 @@
 .templateTile[aria-current="true"] { border-color:var(--accent); background:var(--accent-soft); }
 .templateShelfIcons { padding:8px; gap:14px; }
 .templateShelfIcons .templateToolboxGroup h4 { text-align:center; font-size:11px; color:var(--muted); margin:0 0 6px; }
-.templateShelfIcons .templateToolboxCards { grid-template-columns:minmax(0,1fr); gap:6px; }
+.templateShelfIcons .templateToolboxCards { grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
 .templateShelfIcons .templateTile { padding:5px; grid-template-rows:46px; border-radius:10px; }
 .templateShelfIcons .templateThumbnail { height:46px; }
 .templateShelfIcons .templateTileTitle { display:none; }

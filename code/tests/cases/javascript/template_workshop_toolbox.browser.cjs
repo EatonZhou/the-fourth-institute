@@ -44,10 +44,10 @@ module.exports = async function sharedWorkshopToolbox(page) {
   },[temporary,installed]);
   await page.locator(`#workshopShelf [data-template-id="${temporary}"]`).waitFor({state:'detached'});
   await sameCatalog();
-  await page.evaluate(()=>{window.PortalIdentity={username:()=>'other-account'};window.dispatchEvent(new Event('portal:identity-changed'));});
+  await page.evaluate(()=>{window.PortalIdentity={...PortalIdentity,username:()=>'other-account'};window.dispatchEvent(new Event('portal:identity-changed'));});
   await page.waitForFunction(()=>!document.querySelector(`#workshopShelf [data-template-id="${parameterRecipe}"]`));
   await sameCatalog();
-  await page.evaluate(()=>{window.PortalIdentity={username:()=>'sample_admin'};window.dispatchEvent(new Event('portal:identity-changed'));});
+  await page.evaluate(()=>{window.PortalIdentity={...PortalIdentity,username:()=>'sample_admin'};window.dispatchEvent(new Event('portal:identity-changed'));});
   await page.locator(`#workshopShelf [data-template-id="${await page.evaluate(()=>parameterRecipe)}"]`).waitFor();
   await sameCatalog();
   const folder=process.env.WORKSHOP_SCREENSHOT_DIR || '/tmp/workshop-toolbox-20261125';
@@ -55,7 +55,7 @@ module.exports = async function sharedWorkshopToolbox(page) {
   for (const theme of ['auto','liquid-glass','dark']) for (const width of [1440,600]) {
     await page.setViewportSize({width,height:1000});
     await page.evaluate(theme=>{PortalTheme.setMode(theme);
-      document.querySelector('#templateWorkshop').classList.toggle('workshopChatCollapsed',innerWidth<760);workshop.fit();},theme);
+      workshop.fit();},theme);
     await page.waitForTimeout(80);
     const bounds=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth,
       save:document.querySelector('[data-workshop-save]').getBoundingClientRect().toJSON(),
@@ -72,7 +72,7 @@ module.exports = async function sharedWorkshopToolbox(page) {
   await page.screenshot({animations:'disabled',path:path.join(folder,'liquid-glass-reduced-transparency.png')});
   await media.send('Emulation.setEmulatedMedia',{features:[]}); await media.detach();
   await page.evaluate(()=>{
-    PortalTheme.setMode('auto');document.querySelector('#templateWorkshop').classList.remove('workshopChatCollapsed');
+    PortalTheme.setMode('auto');
     peerShelf.destroy();document.querySelector('#peerShelf').remove();workshop.fit();
   });
 };

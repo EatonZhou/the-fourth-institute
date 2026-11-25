@@ -89,20 +89,22 @@
         const scratch = clone(subject);
         before = clone((readElementSettings(root, settingsList, scratch) ? subject : scratch).config || {});
       }
-      json?.addEventListener('change', () => {
+      json?.addEventListener('input', () => {
         try {
           const value = JSON.parse(json.value || '{}');
           if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(t('JSON 必须是对象'));
+          delete editorState.invalidElement; json.setCustomValidity('');
           if (found) {
             Object.keys(foundJson(row)).forEach(name => delete row[name]);
             Object.assign(row, foundJson(value));
           } else row[jsonKey] = value;
           schedulePreview();
-          renderInspector(row.key);
           editorState.graph?.render();
         } catch (error) {
           status.textContent = error.message || String(error);
           status.dataset.state = 'error';
+          editorState.invalidElement = {key:row.key,text:json.value};
+          json.setCustomValidity(String(error.message || error)); schedulePreview();
         }
       });
       host.querySelector('[data-element-extra]')?.addEventListener('change', event => {

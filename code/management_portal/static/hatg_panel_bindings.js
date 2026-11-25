@@ -4,7 +4,7 @@
   if (window.PortalHatgPanelBindings) return;
 
   // Canvas drawers share pointer, keyboard and touch behavior in HATG and the workshop.
-  function bindHoverPanel({trigger, panel, open, close, isOpen}) {
+  function bindHoverPanel({trigger, panel, open, close, isOpen, keepOpen = () => false}) {
     const abort = new AbortController();
     let timer = 0, pointerType = '';
     const listen = (node, type, handler) => node.addEventListener(type, handler, {signal:abort.signal});
@@ -16,7 +16,7 @@
     const leave = () => {
       cancel();
       timer = setTimeout(() => {
-        if (!trigger.matches(':hover') && !panel.matches(':hover') && !keyboardFocus()) hide();
+        if (!trigger.matches(':hover') && !panel.matches(':hover') && !keyboardFocus() && !keepOpen()) hide();
       }, 160);
     };
     for (const node of [trigger, panel]) {

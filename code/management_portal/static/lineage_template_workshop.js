@@ -11,11 +11,16 @@
     const canvas = element('workshopCanvas');
     const palette = element('workshopTools');
     const shelf = element('workshopShelf');
+    const surface = window.TemplateWorkshopSurface.mount({root});
     const sessionId = window.PortalUIPrimitives.randomUUID();
     let runtime = null, templates = null, base = '', previewItem = null;
     let removed = false;
     let documentRevision = 0;
     let navigation = 0, editVersion = 0;
+    let restoring = false, initialization = 'reset';
+    const history = window.LineageTemplateWorkshopDraft.history(state => {
+      root.querySelectorAll('[data-workshop-history]').forEach(button => {button.disabled = !state[button.dataset.workshopHistory] || !!runtime?.view.working;});
+    });
     async function openTemplate(id) {
       if (runtime?.view.working) return;
       if (id === runtime?.draft.template_id && !previewItem) return;
@@ -46,8 +51,10 @@
       try { return JSON.stringify(runtime.readDraft()) !== base; }
       catch (_) { return true; }
     };
-    const changed = () => {
+    const changed = (group = '') => {
+      if (!runtime) return;
       editVersion += 1;
+      if (!restoring) history.record(runtime.snapshot(),group);
       element('workshopUnsaved').hidden = !dirty();
       root.dispatchEvent(new CustomEvent('workshop:draft-changed'));
     };
@@ -72,20 +79,23 @@
       templateId = result.template.template_id;
       storeId = ''; previewItem = null;
       onSaved?.(result.template);
-      runtime.edit(result.template);
-      window.dispatchEvent(new CustomEvent('portal:templates-changed',{detail:{template:result.template}}));
+      initialization = copy ? 'reset' : 'saved'; runtime.edit(result.template);
+      window.dispatchEvent(new CustomEvent('portal:templates-changed',{detail:{template:result.template,sourceSession:sessionId}}));
       await templates.load();
       changed();
       return result.template;
     }
     const editorHost = {
       create(source) {
+        runtime = null;
         const previous = form;
         form = previous.cloneNode(false); previous.replaceWith(form);
         form.innerHTML = `<header class="workshopBar">
           <input data-meta="title" aria-label="${esc(t('模板标题'))}" value="${esc(source.title)}" required>
-          <details class="workshopMore" ${source.kind === 'structure' || source.template_id ? '' : 'hidden'}><summary aria-label="${esc(t('更多'))}">…</summary><div>${source.kind === 'structure' ? [['graph', '图视图'], ['list', '列表视图'], ['json', 'JSON 视图']].map(([key,label]) => `<button type="button" data-structure-view="${key}">${esc(t(label))}</button>`).join('') : ''}${source.builtin_key ? `<button type="button" data-action="restore">${esc(t('恢复内置'))}</button>` : ''}${source.template_id ? `<button type="button" data-action="delete">${esc(t('删除'))}</button>` : ''}</div></details>
-          <button type="button" data-workshop-chat data-portal-icon="chat" aria-label="${esc(t('工坊助手'))}"></button><footer></footer></header><main class="workshopEditorContent"></main>`;
+          <button type="button" class="portalButton is-icon" data-workshop-store data-portal-icon="archive" aria-label="${esc(t('模板商店'))}" title="${esc(t('模板商店'))}"></button>
+          <nav class="workshopViewGroup" aria-label="${esc(t('视图'))}" ${source.kind === 'structure' ? '' : 'hidden'}>${[['graph','图'],['list','列表'],['json','JSON']].map(([key,label])=>`<button type="button" class="portalButton is-compact" data-structure-view="${key}" aria-pressed="${key==='graph'}">${esc(t(label))}</button>`).join('')}</nav>
+          <div class="workshopHistoryGroup" role="group" aria-label="${esc(t('草稿历史'))}">${['undo','redo'].map(key=>`<button type="button" class="portalButton is-icon" data-workshop-history="${key}" data-portal-icon="${key}" aria-label="${esc(t(key==='undo'?'撤销':'重做'))}" title="${esc(t(key==='undo'?'撤销':'重做'))}" disabled></button>`).join('')}</div>
+          <footer aria-label="${esc(t('模板操作'))}"></footer></header><main class="workshopEditorContent"></main>`;
         const cleanups = [], view = {
           root: form, form, content: form.querySelector('main'), footer: form.querySelector('footer'), cleanups,
           workshop: true, error, onChange: changed, save,
@@ -94,12 +104,15 @@
           async busy(work) {
             if (view.working) return;
             view.working = true; error(null);
+            view.root.querySelectorAll('[data-workshop-history]').forEach(button=>{button.disabled=true;});
             const buttons = [...view.footer.querySelectorAll('button')]; buttons.forEach(button => { button.disabled = true; });
             try { return await work(); } catch (exception) { error(exception); }
             finally {
               view.working = false; buttons.forEach(button => { button.disabled = false; });
               const saveButton = view.root.querySelector('[data-workshop-save]');
               if (saveButton && runtime) saveButton.disabled = !!previewItem || (!!runtime.draft.template_id && (!!runtime.draft.builtin_key || runtime.draft.created_by !== window.PortalIdentity.username()));
+              const state = history.state();
+              root.querySelectorAll('[data-workshop-history]').forEach(button=>{button.disabled=!state[button.dataset.workshopHistory];});
             }
           },
         };
@@ -111,6 +124,10 @@
         root.dataset.templateKind = runtime.draft.kind;
         tools.setEnabled(runtime.draft.kind === 'structure');
         base = JSON.stringify(runtime.readDraft());
+        const snapshot = runtime.snapshot();
+        if (initialization === 'saved') history.saved(snapshot);
+        else if (initialization !== 'keep') history.reset(snapshot);
+        initialization = 'reset';
         const saveButton = form.querySelector('[data-workshop-save]');
         saveButton.disabled = !!previewItem || (!!runtime.draft.template_id && (!!runtime.draft.builtin_key || runtime.draft.created_by !== window.PortalIdentity.username()));
         element('workshopChatSave').disabled = saveButton.disabled;
@@ -136,6 +153,7 @@
     };
     const authoringItems = window.LineageTemplateGraph.authoringItems();
     const tools = window.LineageTemplateGraph.mountTools({root:palette,items:authoringItems,onInsert:id=>{
+      if (!runtime.editorState.graph) {error(t('请切换到图视图后插入')); return;}
       void insertTemplate(id,{kind:'canvas',...runtime.editorState.graph.insertionPosition()}).catch(error);
     }});
     async function insertTemplate(id, target) {
@@ -157,7 +175,7 @@
       shelf, canvas, request: execute, getContext: () => ({lineage_id: lineageId}),
       editorHost, toast: (message, tone) => { if (tone === 'error') error(message); },
       toolboxItems:authoringItems,palette,isComposition:true,iconOnly:true,
-      selectedTemplate:() => runtime?.draft.template_id,
+      selectedTemplate:() => runtime?.draft.template_id, collapsible:true,
       onSelectTemplate:openTemplate,
       acceptTemplate: item => runtime?.draft.kind === 'structure' && item.kind === 'structure',
       resolveTarget: event => ({kind:'canvas', ...runtime.editorState.graph.position(event)}),
@@ -167,10 +185,15 @@
       if (event.target.closest('[data-workshop-store]')) {
         window.PortalTemplateStore.open({request:execute,lineageId,onOpenWorkshop:resource => onOpenWorkshop?.(resource)});
       }
-      if (event.target.closest('[data-workshop-chat]')) root.classList.toggle('workshopChatCollapsed');
+      const action = event.target.closest('[data-workshop-history]')?.dataset.workshopHistory;
+      if (action && !runtime.view.working) {
+        const value = history[action]();
+        if (value) {restoring = true; try {runtime.restore(value);} finally {restoring = false;} changed();}
+      }
     });
     listen(window, 'beforeunload', event => { if (dirty()) { event.preventDefault(); event.returnValue = ''; } });
     listen(window, 'portal:templates-changed', event => {
+      if (event.detail?.sourceSession === sessionId) return;
       const saved = event.detail?.template;
       if (saved?.template_id === templateId && runtime && !dirty() && !runtime.view.working) runtime.edit(saved);
     });
@@ -184,7 +207,7 @@
         if (dirty() && !await window.PortalUI.confirm({title:t('助手草稿已就绪'), message:t('画布有未保存的修改，是否使用助手版本？'), confirmLabel:t('使用助手版本'), cancelLabel:t('保留我的版本')})) return false;
         if (payload.kind !== runtime.draft.kind) throw new Error(t('模板 kind 不可修改；请另存为副本'));
         const savedBase = base;
-        runtime.edit({...runtime.draft,...payload});
+        initialization = 'keep'; runtime.edit({...runtime.draft,...payload});
         base = savedBase; changed();
         return true;
       },
@@ -197,7 +220,7 @@
         } else if (templateId) await templates.openEditor(templateId); else templates.newTemplate();
         return controller;
       },
-      destroy() { tools.destroy(); abort.abort(); runtime?.view.close(); templates.destroy(); },
+      destroy() { surface.destroy(); tools.destroy(); abort.abort(); runtime?.view.close(); templates.destroy(); },
     };
     return controller;
   }

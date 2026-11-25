@@ -46,7 +46,7 @@ def test_workshop_browser_with_real_instructions(lineage):
         '/static/vendor/monaco/vs/nls/lang/zh-cn.js', '/static/vendor/monaco/vs/loader.js',
         '/static/portal_code_editor.js',
         *groups['chat-workspace'], '/static/portal_hatg_loader.js',
-        '/static/lineage_template_workshop_draft.js', '/static/lineage_template_workshop.js',
+        '/static/lineage_template_workshop_draft.js', '/static/template_workshop_surface.js', '/static/lineage_template_workshop.js',
         '/static/lineage_duty_workshop_model.js', '/static/lineage_duty_workshop.js',
         '/static/lineage_template_workshop_chat.js',
         '/static/portal_template_workshop_loader.js',
@@ -70,6 +70,12 @@ def test_workshop_browser_with_real_instructions(lineage):
                 content, media = json.dumps(lineage_reads.list_lineages('sample_admin')).encode(), 'application/json'
             elif path == '/without-personal':
                 content, media = json.dumps(without_personal).encode(), 'application/json'
+            elif path == '/api/agent-conversations':
+                from urllib.parse import parse_qs, urlsplit
+                resident_id = parse_qs(urlsplit(self.path).query).get('resident', [''])[0]
+                if resident_id:
+                    ok('GetResident', {'resident_id':resident_id})
+                content, media = json.dumps({'entries':[], 'target_state':'present' if resident_id else ''}).encode(), 'application/json'
             elif path == '/api/agent-workbench/residents/projection':
                 from urllib.parse import parse_qs, urlsplit
                 from management_portal import resident_chat_projection
@@ -111,7 +117,8 @@ def test_workshop_browser_with_real_instructions(lineage):
     try:
         result = subprocess.run(['node', str(ROOT / 'tests/cases/javascript/template_workshop.browser.cjs')],
             cwd=ROOT, env={**os.environ, 'WORKSHOP_TEST_ORIGIN': f'http://127.0.0.1:{server.server_port}',
-                           'WORKSHOP_TEST_LINEAGE': lineage, 'WORKSHOP_PERSONAL_LINEAGE':personal['lineage_id']}, capture_output=True, text=True, timeout=120)
+                           'WORKSHOP_TEST_LINEAGE': lineage, 'WORKSHOP_PERSONAL_LINEAGE':personal['lineage_id'],
+                           'WORKSHOP_PERSONAL_ASSISTANT':personal['resident_id']}, capture_output=True, text=True, timeout=120)
         assert result.returncode == 0, result.stdout + result.stderr
         # The actual personal-entry retry and Family reconcile leave the helper
         # outside that Family: no implicit canvas-wide membership discovery.

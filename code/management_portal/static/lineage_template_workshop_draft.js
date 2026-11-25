@@ -2,6 +2,28 @@
   'use strict';
   const clone = value => JSON.parse(JSON.stringify(value));
   const lists = ['roles', 'components', 'wires', 'match'];
+  const empty = () => ({roles:[],components:[],wires:[],match:[],function_block:true});
+  // Local content history; resource versions and server operations stay outside it.
+  function history(onChange = () => {}) {
+    let entries = [], cursor = -1, group = '', timestamp = 0;
+    const state = () => ({undo:cursor > 0,redo:cursor >= 0 && cursor < entries.length - 1});
+    function reset(value) {entries = [clone(value)]; cursor = 0; group = ''; onChange(state());}
+    function record(value, key = '') {
+      if (cursor < 0) return reset(value);
+      if (JSON.stringify(entries[cursor]) === JSON.stringify(value)) return;
+      const now = Date.now(), merge = key && group === key && now - timestamp < 700 && cursor === entries.length - 1 && cursor > 0;
+      entries.splice(cursor + 1);
+      if (merge) entries[cursor] = clone(value);
+      else {entries.push(clone(value)); cursor++;}
+      group = key; timestamp = now; onChange(state());
+    }
+    function move(step) {
+      if (cursor + step < 0 || cursor + step >= entries.length) return null;
+      cursor += step; group = ''; onChange(state()); return clone(entries[cursor]);
+    }
+    return {reset,record,state,undo:() => move(-1),redo:() => move(1),
+      saved(value) {if (cursor < 0) reset(value); else {entries[cursor] = clone(value); group = ''; onChange(state());}}};
+  }
   function targets(template) {
     if (template.kind !== 'structure') return template.targets;
     if ((template.body.roles || []).some(row => row.from === 'target')) return ['resident'];
@@ -75,5 +97,5 @@
     };
     return append(draft.body,renameParameters(source.body),position);
   }
-  window.LineageTemplateWorkshopDraft = Object.freeze({targets, payload, append, appendTemplate});
+  window.LineageTemplateWorkshopDraft = Object.freeze({empty,history,targets, payload, append, appendTemplate});
 })();

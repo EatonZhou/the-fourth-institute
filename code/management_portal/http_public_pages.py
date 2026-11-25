@@ -134,6 +134,7 @@ class PublicPagesHttp:
                 RouteDefinition("GET", path, self.static, "portal-public-get", phase="public")
                 for path in (
                     '/static/hatg_mailbox_panel.js',
+                    '/static/template_workshop_surface.js',
                     '/static/hatg_graph_model.js',
                     '/static/hatg_lineage_state.js',
                     '/static/hatg_program_edits.js',

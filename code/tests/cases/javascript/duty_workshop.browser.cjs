@@ -19,6 +19,8 @@ module.exports = async function dutyWorkshop(page) {
   assert.equal(await page.evaluate(()=>dutyWorkshop.dirty()),false);
   await root.locator('.dutyWorkshopMemory summary').click();
   await root.locator('[data-duty-meta="prompt"]').fill('Only the duty memory changes');
+  await root.locator('[data-workshop-history="undo"]').click();assert.equal(await page.evaluate(()=>dutyWorkshop.dirty()),false);
+  await root.locator('[data-workshop-history="redo"]').click();
   await root.locator('[data-duty-save]').click();
   await page.getByRole('alertdialog').getByRole('button',{name:'取消',exact:true}).click();
   assert.equal(await page.evaluate(async()=>JSON.stringify((await execute('GetLineage',{lineage_id:sourceLineageId})).lineage)===JSON.stringify(dutyBefore)),true);
@@ -26,6 +28,8 @@ module.exports = async function dutyWorkshop(page) {
   await root.locator('[data-duty-save]').click();
   await page.getByRole('alertdialog').getByRole('button',{name:'保存',exact:true}).click();
   await page.waitForFunction(()=>!dutyWorkshop.dirty());
+  await root.locator('[data-workshop-history="undo"]').click();assert.equal(await page.evaluate(()=>dutyWorkshop.dirty()),true);
+  await root.locator('[data-workshop-history="redo"]').click();assert.equal(await page.evaluate(()=>dutyWorkshop.dirty()),false);
   assert.equal(await page.evaluate(async()=>{
     const graph=(await execute('GetLineage',{lineage_id:sourceLineageId})).lineage;
     return graph.revision===dutyBefore.revision+1 && graph.function_blocks.find(b=>b.id===dutyId).duty.memory.prompt==='Only the duty memory changes' && JSON.stringify(graph.nodes)===JSON.stringify(dutyBefore.nodes);

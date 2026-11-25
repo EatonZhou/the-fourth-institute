@@ -15,9 +15,9 @@ const {chromium} = require(path.join(repo, 'management_portal/test_framework/tau
     await page.evaluate(async lineageId => {
       window.sourceLineageId=lineageId;
       PortalI18n.apply('zh-CN');
-      window.PortalIdentity={username:()=>'sample_admin'};
+      window.PortalIdentity={username:()=>'sample_admin',userId:async()=>'sample_admin',listUIAssociations:async()=>({items:[]})};
       window.PortalAPI={get:path=>fetch(path).then(response=>response.json())};
-      window.opened=[]; window.PortalNav={openPage:url=>{opened.push(url);return Promise.resolve();}};
+      window.opened=[]; window.PortalNav={openPage:url=>{opened.push(url);return Promise.resolve();},personalAssistantTarget:async()=>null,loadChatWorkspace:async()=>{}};
       window.calls=[];
       window.execute=async(instruction,args={},options={})=>{
         calls.push({instruction,args,options});
@@ -39,20 +39,28 @@ const {chromium} = require(path.join(repo, 'management_portal/test_framework/tau
     assert.equal(await page.locator('#workshopError').isVisible(),false);
     assert.equal(await page.locator('.workshopInfo').getAttribute('open'),null);
     assert.equal(await page.locator('[data-graph-inspector]').isVisible(),false);
-    const layout=await page.evaluate(()=>({canvas:document.querySelector('#workshopCanvas').getBoundingClientRect().width,
+    const layout=await page.evaluate(()=>({canvas:document.querySelector('.workshopEditorContent').getBoundingClientRect().width,
       chat:document.querySelector('.workshopChatColumn').getBoundingClientRect().width,
       height:document.querySelector('.templateGraphCanvas').getBoundingClientRect().height,
-      tools:document.querySelector('#workshopTools').getBoundingClientRect().height}));
+      tools:document.querySelector('#workshopTools').getBoundingClientRect().height,
+      root:getComputedStyle(document.querySelector('#templateWorkshop')).height,
+      parent:getComputedStyle(document.querySelector('#templateWorkshop').parentElement).height,
+      rows:getComputedStyle(document.querySelector('#templateWorkshop')).gridTemplateRows}));
     await page.screenshot({path:'/tmp/workshop-toolbox-initial.png'});
-    assert.ok(layout.canvas>900 && layout.chat<=350 && layout.height>600 && layout.tools<65,JSON.stringify(layout));
+    assert.ok(layout.canvas>900 && layout.chat===0 && layout.height>600 && layout.tools<65,JSON.stringify(layout));
     const library = page.locator('[data-workshop-library]');
     assert.equal(await library.isVisible(),true);
     const expectedLibrary = await page.evaluate(() => execute('ListTemplates').then(result => LineageTemplatesShelf.visibleTemplates(result.templates,'sample_admin').map(t=>t.template_id).sort()));
     assert.deepEqual((await library.locator('[data-template-id]').evaluateAll(nodes=>nodes.map(n=>n.dataset.templateId))).sort(),expectedLibrary);
-    await page.locator('.hatgNode[data-node-id="target"]').click();
-    assert.equal(await page.locator('[data-graph-inspector]').isVisible(),true);
+    assert.equal(await page.evaluate(()=>workshop.template().body.roles.length),0);
+    assert.equal(await page.locator('.hatgNode').count(),0);
+    assert.equal(await page.evaluate(()=>workshop.dirty()),false);
     assert.equal(await page.locator('.templateGraphPalette').isVisible(),false);
     await require('./template_workshop_dirty.browser.cjs')(page);
+    await require('./template_workshop_experience.browser.cjs')(page);
+    await page.locator('[data-template-id="workshop_target"]').click();
+    await page.locator('.hatgNode[data-node-id="target"]').click();
+    assert.equal(await page.locator('[data-graph-inspector]').isVisible(),true);
     await require('./template_workshop_toolbox.browser.cjs')(page);
     assert.equal(await page.locator('[data-workshop-toolbox]').count(),0);
     assert.ok(await library.locator('[data-toolbox-group="errands"] .templateTile').count()>0);
@@ -278,7 +286,6 @@ const {chromium} = require(path.join(repo, 'management_portal/test_framework/tau
     await page.evaluate(async()=>{cards.destroy();window.cards=makeCards();await Promise.all(cards.getPanelsByType('workshop').map(panel=>panel.ready));});
     assert.deepEqual(await page.evaluate(()=>cards.getPanelsByType('workshop').map(panel=>panel.target().template_id).sort()),[first,builtinOriginal.id].sort());
     await page.evaluate(templateId=>cards.focusPanel(cards.getPanelsByType('workshop').find(panel=>panel.target().template_id===templateId).id),first);
-    await active.locator('.workshopMore summary').click();
     await active.locator('[data-action="delete"]').click();
     await page.getByRole('alertdialog').getByRole('button',{name:'删除',exact:true}).click();
     await page.waitForFunction(()=>cards.getPanelsByType('workshop').length===1);
@@ -301,7 +308,6 @@ const {chromium} = require(path.join(repo, 'management_portal/test_framework/tau
     await page.waitForFunction(()=>cards.getPanel('workshop').target().template_id);
     await page.evaluate(async()=>{cards.destroy();window.cards=makeComponentCards();await cards.getPanel('workshop').ready;});
     assert.equal(await active.locator('[data-meta="title"]').inputValue(),'Component draft');
-    await active.locator('.workshopMore summary').click();
     await active.locator('[data-action="delete"]').click();
     await page.getByRole('alertdialog').getByRole('button',{name:'删除',exact:true}).click();
     await entry.waitFor({state:'visible'});

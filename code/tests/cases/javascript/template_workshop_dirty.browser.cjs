@@ -42,11 +42,8 @@ module.exports = async function checkWorkshopDirtyState(page) {
     await open();
     assert.equal(await page.evaluate(()=>unloadPrevented()),false);
     // Inspecting, fitting, zooming and panning affect only the current view.
-    await root.locator('.hatgNode[data-node-id="target"]').click();
-    const roleTitle=root.locator('[data-row-field="title"]');
-    await roleTitle.fill('Changed role');
-    assert.equal(await page.evaluate(()=>dirtyWorkshop.dirty()),true);
-    await roleTitle.fill(''); await assertClean();
+    assert.equal(await root.locator('.hatgNode').count(),0);
+    assert.equal(await page.evaluate(()=>dirtyWorkshop.template().body.roles.length),0);
     await root.locator('[data-graph-fit]').click();
     const canvas=root.locator('.templateGraphCanvas');
     const box=await canvas.boundingBox();
@@ -66,6 +63,8 @@ module.exports = async function checkWorkshopDirtyState(page) {
     await title.fill(originalTitle);
     await assertClean();
     // A real node move persists body.layout, while view navigation did not.
+    await root.locator('[data-template-id="workshop_target"]').click();
+    await root.locator('[data-graph-fit]').click();
     const node=await root.locator('.hatgNode[data-node-id="target"]').boundingBox();
     await page.mouse.move(node.x+node.width/2,node.y+node.height/2);
     await page.mouse.down(); await page.mouse.move(node.x+node.width/2+35,node.y+node.height/2+25,{steps:5}); await page.mouse.up();
@@ -102,7 +101,6 @@ module.exports = async function checkWorkshopDirtyState(page) {
     await parameter.fill('5'); assert.equal(await page.evaluate(()=>dirtyWorkshop.dirty()),true);
     await parameter.fill('4'); await assertClean();
     // An invalid JSON editor must protect its text even when readDraft throws.
-    await root.locator('.workshopMore summary').click();
     await root.locator('[data-structure-view="json"]').click();
     await root.locator('.monaco-editor textarea').waitFor();
     const setCode = value => page.evaluate(value=>{

@@ -7,7 +7,7 @@
       await window.PortalHatgLoader.load();
       for (const source of ['/static/lineage_templates.css','/static/lineage_function_blocks.css','/static/template_workshop.css',
         '/static/vendor/monaco/vs/nls/lang/zh-cn.js','/static/vendor/monaco/vs/loader.js','/static/portal_code_editor.js',
-        '/static/lineage_template_workshop_draft.js','/static/lineage_template_workshop.js',
+        '/static/lineage_template_workshop_draft.js','/static/template_workshop_surface.js','/static/lineage_template_workshop.js',
         '/static/lineage_duty_workshop_model.js','/static/lineage_duty_workshop.js','/static/lineage_template_workshop_chat.js']) {
         await window.PortalUIPrimitives.loadAsset(source);
       }
@@ -47,7 +47,6 @@
         const host = root.firstElementChild;
         host.querySelectorAll('[id]').forEach(node => { node.dataset.workshopId = node.id; node.id = `${id}-${node.id}`; });
         window.PortalI18n.renderStatic(host);
-        if (root.getBoundingClientRect().width < 760) host.classList.add('workshopChatCollapsed');
         const factory = target.function_block_id ? window.LineageDutyWorkshop : window.LineageTemplateWorkshop;
         workshop = factory.mount({root:host,lineageId:target.lineage_id || '',functionBlockId:target.function_block_id || '',templateId:target.template_id || '',storeId:target.store_id || '',
           onSwitchTemplate:async resource => {

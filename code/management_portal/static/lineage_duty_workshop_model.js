@@ -71,7 +71,12 @@
       next.function_blocks = next.function_blocks.map(item => item.id === blockId ? preview.duty.after : item);
       return create(next,blockId).draft;
     }
-    return {draft,block,revision:lineage.revision,all,owned,reference,request,fromPreview,
+    function restore(value) {
+      const next = copy(value);
+      Object.keys(body).forEach(key=>delete body[key]); Object.assign(body,next.body);
+      draft.body = body; draft.meta = next.meta;
+    }
+    return {draft,block,revision:lineage.revision,all,owned,reference,request,fromPreview,restore,
       dirty:() => {const value=request();return !!value.operations.length || !!Object.keys(value.duty_changes).length;}};
   }
   window.LineageDutyWorkshopModel = Object.freeze({create});

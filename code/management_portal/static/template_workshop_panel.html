@@ -1,10 +1,11 @@
 <div class="templateWorkshop">
-  <nav class="workshopLibrary" data-workshop-library aria-label="工具箱模板"><div class="workshopLibraryBar"><button type="button" class="portalButton is-icon" data-workshop-store data-portal-icon="archive" aria-label="模板商店" title="模板商店"></button></div><div id="workshopShelf" class="templateShelf" data-workshop-library-items></div></nav>
+  <nav class="workshopLibrary" data-workshop-library aria-label="工具箱模板"><div id="workshopShelf" class="templateShelf" data-workshop-library-items></div></nav>
   <section id="workshopCanvas" class="workshopCanvas"><div id="workshopTools" class="workshopTools"></div><form id="workshopEditor"></form>
     <p id="workshopError" role="alert" hidden></p>
   </section>
-  <aside class="workshopChatColumn"><header><strong><!--portal-i18n:"工坊助手"-->工坊助手</strong><button type="button" class="portalButton" data-workshop-chat><!--portal-i18n:"收起"-->收起</button></header>
+  <div class="workshopAssistantDock" data-workshop-dock><button type="button" class="portalButton is-icon" data-workshop-assistant data-portal-icon="chat" aria-label="工坊助手" title="工坊助手 · 拖动停靠" aria-expanded="false"></button>
+  <aside class="workshopChatColumn" hidden><header><strong><!--portal-i18n:"工坊助手"-->工坊助手</strong><button type="button" class="portalButton is-icon" data-workshop-chat data-portal-icon="close" aria-label="收起工坊助手"></button></header>
     <div id="workshopChat"></div><p id="workshopChatStatus" role="status"></p>
     <p id="workshopUnsaved" hidden><span><!--portal-i18n:"助手看到的是上次保存的版本"-->助手看到的是上次保存的版本</span> <button type="button" class="portalButton is-compact" id="workshopChatSave" translate="no">Save</button></p>
-  </aside>
+  </aside></div>
 </div>

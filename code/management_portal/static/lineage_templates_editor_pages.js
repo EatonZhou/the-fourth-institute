@@ -33,8 +33,9 @@
 
     // 图视图 edits the structure as a HATG graph; 列表视图 and JSON 视图 edit the same body.
     function showStructure(mode) {
+      editorState.structureMode = mode;
       disposeCode(); editorState.graph?.destroy(); editorState.graph = null;
-      bodyPage.querySelectorAll('[data-structure-view]').forEach(item => item.setAttribute('aria-pressed', String(item.dataset.structureView === mode)));
+      bodyPage.closest('form').querySelectorAll('[data-structure-view]').forEach(item => item.setAttribute('aria-pressed', String(item.dataset.structureView === mode)));
       const content = bodyPage.querySelector('[data-structure-content]');
       if (mode === 'json') { content.innerHTML = '<div class="templateCodeEditor" data-code-editor></div>'; mountCode(content.firstElementChild, JSON.stringify(draft.body, null, 2), 'json'); return; }
       if (mode === 'list') { renderStructureLists(); return; }

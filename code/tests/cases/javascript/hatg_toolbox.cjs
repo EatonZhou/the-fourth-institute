@@ -125,14 +125,16 @@
   }
   test('new template opens a structure duty editor directly with no kind chooser',()=>{
     let draft;
+    const shared={window:{}};vm.runInNewContext(source('lineage_template_workshop_draft'),shared);
     const result=vm.runInNewContext(productionFunction('lineage_templates_editing','newTemplate')+'\nnewTemplate()',{
       templatesState:{kinds:[{key:'structure',targets:['resident','canvas'],editor:{fields:[]}}]},
       editorHost:{},
+      window:shared.window,
       t:String,edit:value=>{draft=plain(value);return 'editor';},
     });
     assert.equal(result,'editor');assert.equal(draft.kind,'structure');assert.equal(draft.category,'structure');
-    assert.deepEqual(draft.body,{roles:[{key:'target',from:'target'}],components:[],wires:[],function_block:true});
-    assert.deepEqual(draft.targets,['resident','canvas']);assert.equal(draft.behavior.persistent,true);
+    assert.deepEqual(draft.body,{roles:[],components:[],wires:[],match:[],function_block:true});
+    assert.deepEqual(draft.targets,['canvas']);assert.equal(draft.behavior.persistent,true);
   });
   test('real registry payload creates a visible personal template without using resource favorites',
     {skip:!process.env.TFI_TOOLBOX_REAL_CASE},async()=>{
