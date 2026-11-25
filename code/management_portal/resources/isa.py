@@ -581,6 +581,8 @@ def _checked_media_type(purpose: str, data: bytes, media_type: str) -> str:
 
     if len(data) > _purpose_limit(purpose):
         raise invalid(f"文件不能超过 {_purpose_limit(purpose)} 字节")
+    if not data and media_type.strip().lower().startswith("image/"):
+        raise invalid("图片内容为空（0 字节），请重新复制图片或选择原始图片文件。")
     if purpose in IMAGE_PURPOSES:
         actual_type = _post_image_type(data)
         if purpose == "avatar" and actual_type == "image/gif":

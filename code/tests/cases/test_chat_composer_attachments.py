@@ -31,3 +31,13 @@ def test_composer_attachment_cards_keep_both_positions_without_overlapping_label
         capture_output=True, text=True, timeout=60,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_composer_rejects_empty_images_and_preserves_native_clipboard_png():
+    """空图片明确失败且不能发送；真实剪贴板 PNG 经共享上传入口保留字节和预览。"""
+    result = subprocess.run(
+        ["node", str(Path(__file__).with_name("javascript") / "chat_empty_image_upload.browser.cjs")],
+        input=json.dumps({"routeScript": portal_route_script().decode()}),
+        capture_output=True, text=True, timeout=60,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

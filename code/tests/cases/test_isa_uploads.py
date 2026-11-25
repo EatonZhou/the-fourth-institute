@@ -69,6 +69,32 @@ def test_bytes_complete_an_upload_once_and_only_by_its_creator():
     assert resource_isa.read_upload(upload_id)["ready"] is True
 
 
+@pytest.mark.parametrize('media_type', ['image/png', 'image/jpeg', 'image/svg+xml', ' IMAGE/PNG '])
+def test_empty_image_upload_is_not_completed(media_type):
+    """Empty image data must never become a ready attachment."""
+    upload_id = create('conversation_attachment', b'', media_type=media_type)
+    with pytest.raises(InstructionError, match='图片内容为空') as failure:
+        resource_isa.complete_upload(upload_id, b'', actor='alice')
+    assert failure.value.code == 'instruction.invalid_arguments'
+    assert resource_isa.read_upload(upload_id)['ready'] is False
+
+
+def test_source_copy_rejects_empty_images_before_creating_upload(monkeypatch, upload_root):
+    from types import SimpleNamespace
+    monkeypatch.setattr(resource_isa, '_service', lambda: SimpleNamespace(
+        read_content=lambda *args, **kwargs: (b'', 'image/png', {'filename': 'image.png'})))
+    with pytest.raises(InstructionError, match='图片内容为空'):
+        resource_isa.create_upload(invoke('CreateUpload', {
+            'purpose': 'conversation_attachment', 'source_address': 'workspace_fixture/file/image.png'}))
+    assert not upload_root.exists()
+
+
+def test_empty_text_upload_is_still_valid():
+    upload_id = create('conversation_attachment', b'', media_type='text/plain')
+    assert resource_isa.complete_upload(upload_id, b'', actor='alice')['ready'] is True
+    assert Path(resource_isa.read_upload(upload_id)['path']).read_bytes() == b''
+
+
 @pytest.mark.parametrize('name', ['meta.json', 'META.JSON', '.write.lock', 'files', '中文 空格 🧪.bin'])
 def test_original_filename_is_separate_from_upload_records(name, permissions):
     from management_portal.resources import upload_files

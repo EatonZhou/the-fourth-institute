@@ -255,6 +255,9 @@
   async function upload(file, options = {}) {
     const fileName = String(options.fileName || file?.name || "file");
     const mediaType = String(options.mediaType || file?.type || "application/octet-stream");
+    if (mediaType.trim().toLowerCase().startsWith("image/") && Number(file?.size || 0) === 0) {
+      throw new Error("图片内容为空（0 字节），请重新复制图片或选择原始图片文件。");
+    }
     const created = await execute("CreateUpload", {
       purpose: String(options.purpose || ""),
       ...(options.target ? { target: String(options.target) } : {}),
