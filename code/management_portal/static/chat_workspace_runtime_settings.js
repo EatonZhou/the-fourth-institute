@@ -546,15 +546,20 @@
       // The server owns transfer capabilities. Prefer preservation, then summary
       // handoff; never turn an unsupported transfer into a blank session.
       const contextChoice = () => targetContextOptions().find(row => row.id === memoryMethod.value && row.enabled) || targetContextOptions().find(row => row.enabled);
+      // With a single usable method (account migration only reconstructs local
+      // memory) there is nothing to choose, so the field and its texts stay out
+      // of the card and its size does not change while the account is picked.
+      const contextSelectable = () => targetContextOptions().filter(row => row.enabled).length > 1;
       const readEditor = () => { try { return JSON.stringify(readParameters()); } catch (_) { return "invalid"; } };
       const parametersChanged = () => Boolean(current.onSave) && readEditor() !== baseline;
       const renderContext = () => {
         const choice = contextChoice();
-        find("[data-switch-context-status]").textContent = window.PortalI18n.t(!canSwitch() || initializing() ? ""
-          : !automatic() && !selected()[1] ? "请先选择账号，再选择记忆交接方式。"
+        const status = find("[data-switch-context-status]");
+        status.textContent = window.PortalI18n.t(!canSwitch() || initializing() || (!automatic() && !selected()[1]) ? ""
           : !switching() || (crossProvider() && !targetReady) ? ""
-          : choice ? choice.description || ""
+          : choice ? (contextSelectable() ? choice.description || "" : "")
           : "目标账号交接能力暂不可用，请刷新后重试。");
+        status.hidden = !status.textContent;
       };
       const update = () => {
         const choices = targetContextOptions();
@@ -587,10 +592,12 @@
         target.disabled = locked || automatic(); backend.disabled = locked; policy.disabled = locked;
         editor.element.disabled = locked; targetEditor.element.disabled = locked;
         const choice = contextChoice();
-        memoryMethod.closest("label").hidden = !switchingAccount || !choice;
+        memoryMethod.closest("label").hidden = !switchingAccount || !choice || !contextSelectable();
         memoryMethod.disabled = locked || !choice || (cross && !targetReady);
-        find("[data-switch-context-description]").textContent = window.PortalI18n.t(switchingAccount && choice?.id === "local"
+        const contextDescription = find("[data-switch-context-description]");
+        contextDescription.textContent = window.PortalI18n.t(switchingAccount && choice?.id === "local" && contextSelectable()
           ? (automatic() ? choice.description : "交接材料来自已有摘要和近期对话，可能遗漏细节和工具过程；保存配置不会立即调用目标模型。") : "");
+        contextDescription.hidden = !contextDescription.textContent;
         const changed = !cross && parametersChanged();
         let label = "保存", disabled = locked || !changed;
         if (retry) { label = "重试同一请求"; disabled = submitting; }

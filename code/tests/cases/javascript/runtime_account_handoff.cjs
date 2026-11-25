@@ -61,23 +61,24 @@ w.PortalUI.toast = (message, tone) => toasts.push([message, tone]);
     const change = async (element, value) => {
       element.value = value; element.dispatchEvent(new w.Event('change', {bubbles: true})); await flush();
     };
+    const description = selection.element.querySelector('[data-switch-context-description]');
+    // The only migration method needs no field or explanation, so the card
+    // keeps one size before and after an account is chosen.
+    const quiet = () => {
+      assert.equal(memory.closest('label').hidden, true, 'a single handoff method is not shown as a choice');
+      assert.equal(status.hidden, true); assert.equal(status.textContent, '');
+      assert.equal(description.hidden, true); assert.equal(description.textContent, '');
+    };
     await change(backend, 'claude');
     assert.equal(account.value, '');
-    assert.equal(memory.closest('label').hidden, true, 'no empty handoff control before choosing an account');
-    assert.match(status.textContent, /请先选择账号/);
+    quiet();
     assert.equal(submit.disabled, true); submit.click();
     await change(account, JSON.stringify(['claude', 'claude_one']));
-    assert.equal(memory.closest('label').hidden, false);
-    assert.equal(memory.disabled, false);
+    quiet();
     assert.equal(memory.value, 'local', 'account migration only reconstructs local memory');
-    assert.deepEqual(Array.from(memory.options, option => option.textContent), ['摘要重组']);
     assert.equal(submit.disabled, false);
-    await change(memory, 'local');
-    assert.match(status.textContent, /首条真实输入携带本地记忆/);
     await change(account, '');
-    assert.equal(memory.closest('label').hidden, true);
-    assert.match(status.textContent, /请先选择账号/);
-    assert.equal(selection.element.querySelector('[data-switch-context-description]').textContent, '');
+    quiet();
     for (const id of ['claude_two', 'claude_three']) {
       await change(account, JSON.stringify(['claude', id]));
       assert.equal(memory.closest('label').hidden, true, 'missing or unsupported capabilities must not show a blank control');
@@ -127,7 +128,7 @@ w.PortalUI.toast = (message, tone) => toasts.push([message, tone]);
     await flush();
     const backend = panel.element.querySelector('[data-session-backend]');
     backend.value = 'claude'; backend.dispatchEvent(new w.Event('change', {bubbles: true})); await flush();
-    assert.match(panel.element.querySelector('[data-switch-context-status]').textContent, /首条真实输入/);
+    assert.equal(panel.element.querySelector('[data-memory-method]').closest('label').hidden, true);
     assert.match(panel.element.querySelector('[data-runtime-save-hint]').textContent, /额度/);
     assert.doesNotMatch(panel.element.querySelector('[data-switch-context-description]').textContent, /新会话成功后才切换/,
       'manual configuration must not repeat the old immediate model handoff promise');
