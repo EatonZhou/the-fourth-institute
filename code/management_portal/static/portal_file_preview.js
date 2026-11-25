@@ -184,7 +184,8 @@
       toolbar() {
         const state = session.snapshot(), allowed = readable(), canEdit = editable();
         return {document:allowed ? state.payload : null,
-          download:allowed ? {url:source.rawUrl(state.payload || {}),filename:state.payload?.title} : null,
+          download:allowed && state.payload?.capabilities.download
+            ? {url:state.payload.downloadUrl,filename:state.payload.downloadName} : null,
           actions:{
             code:{run:() => setEditing(true),disabled:!canEdit || state.saving,active:state.editing},
             visual:{run:() => setEditing(false),disabled:!allowed || state.saving,active:!state.editing},
