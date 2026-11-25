@@ -76,6 +76,9 @@ def transfer_environment(env: dict, route: str, allowed_hosts: tuple[str, ...]):
     """Scope egress to this child environment. Direct sockets bind to the interface."""
     config = _settings()
     if route == "inherited":
+        from management_common.portal_network import proxy_environment_disabled
+        if proxy_environment_disabled():
+            env = {key: value for key, value in env.items() if key not in PROXY_KEYS}
         yield env
         return
     if route == "vps":
