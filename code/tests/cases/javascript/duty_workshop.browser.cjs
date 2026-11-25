@@ -35,8 +35,7 @@ module.exports = async function dutyWorkshop(page) {
   await root.locator('.hatgCanvas').focus(); await page.keyboard.press('Delete');
   assert.equal(await page.evaluate(()=>dutyWorkshop.dirty()),false);
   // Build a component through the same toolbox and semantic inspector as templates.
-  await root.locator('.workshopToolboxButton').hover();
-  await root.locator('[data-duty-add="loop"]').click();
+  await root.locator('[data-template-id="workshop_loop"]').click();
   await root.locator('[data-duty-element-title]').fill('Bounded loop');
   await root.locator('[data-duty-save]').click();
   await page.getByRole('alertdialog').getByRole('button',{name:'保存',exact:true}).click();
@@ -77,4 +76,22 @@ module.exports = async function dutyWorkshop(page) {
   });
   await page.screenshot({path:'/tmp/duty-workshop-browser.png'});
   await page.evaluate(()=>{dutyChat.destroy();dutyWorkshop.destroy();document.querySelector('#dutyTest').remove();});
+  await page.evaluate(async()=>{
+    const host=document.createElement('section');host.id='dutySwitch';host.style='position:fixed;inset:0;z-index:200;background:var(--panel)';document.body.append(host);
+    window.dutySwitch=PortalTemplateWorkshopLoader.create({root:host,id:'duty-switch',target:{lineage_id:sourceLineageId,function_block_id:dutyId},execute,listLineages:async()=>({lineages:[]})});
+    await dutySwitch.show();
+  });
+  const switchRoot=page.locator('#dutySwitch');
+  await switchRoot.locator('[data-duty-meta="title"]').fill('Unsaved duty name');
+  const destination=switchRoot.locator('[data-workshop-library] [data-template-id]').first();
+  const targetId=await destination.getAttribute('data-template-id');
+  await destination.click();
+  await page.getByRole('alertdialog').getByRole('button',{name:'取消',exact:true}).click();
+  assert.equal(await switchRoot.locator('[data-duty-meta="title"]').inputValue(),'Unsaved duty name');
+  await destination.click();
+  await page.getByRole('alertdialog').getByRole('button',{name:'关闭',exact:true}).click();
+  await page.waitForFunction(id=>dutySwitch.target().template_id===id,targetId);
+  await switchRoot.locator('[data-workshop-save]').waitFor();
+  assert.equal(await page.evaluate(()=>dutySwitch.snapshot().dirty),false);
+  await page.evaluate(()=>{dutySwitch.destroy();document.querySelector('#dutySwitch').remove();});
 };

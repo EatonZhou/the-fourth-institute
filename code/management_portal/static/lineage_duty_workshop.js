@@ -2,12 +2,12 @@
   'use strict';
   const t = value => window.PortalI18n.t(value);
   const esc = value => window.PortalUIPrimitives.escapeHtml(String(value ?? ''));
-  function mount({root,lineageId,functionBlockId,execute = (name,args,options) => window.PortalInstructionClient.execute(name,args,options),onSaved = () => {},onOpenWorkshop = () => {}}) {
+  function mount({root,lineageId,functionBlockId,execute = (name,args,options) => window.PortalInstructionClient.execute(name,args,options),onSaved = () => {},onOpenWorkshop = () => {},onSwitchTemplate = onOpenWorkshop}) {
     root.querySelectorAll('[id]').forEach(node => {node.dataset.workshopId ||= node.id;});
     const element = id => root.querySelector(`[data-workshop-id="${id}"],#${id}`);
     const editor = element('workshopEditor'), error = element('workshopError');
     const sessionId = crypto.randomUUID();
-    let model, graph, fields, busy = false, generation = 0, selected = '', disposed = false, disposeInspector = null;
+    let model, graph, fields, tools, busy = false, generation = 0, selected = '', disposed = false, disposeInspector = null;
     const abort = new AbortController();
     const notify = () => root.dispatchEvent(new CustomEvent('workshop:draft-changed',{bubbles:true}));
     const report = err => { error.textContent = window.PortalI18n.message(err.message || err); error.hidden = false; };
@@ -76,7 +76,7 @@
       });
     }
     function draw() {
-      disposeInspector?.(); graph?.destroy();
+      disposeInspector?.(); tools?.destroy(); graph?.destroy();
       const meta = model.draft.meta;
       const residentHolder = model.all.get(model.block.duty.holder_id)?.kind === 'resident';
       editor.innerHTML = `<header class="workshopBar"><strong>${esc(t('职责实例'))}</strong><input aria-label="${esc(t('职责名称'))}" data-duty-meta="title" value="${esc(meta.title)}">
@@ -94,18 +94,20 @@
         isReadonly:key => model.draft.body.match.some(row => row.key === key),onBeforeChange:protect,onChange:notify,onSelect:inspect});
       editor.querySelectorAll('[data-duty-meta]').forEach(control => control.addEventListener('input',() => {model.draft.meta[control.dataset.dutyMeta] = control.value; notify();}));
       editor.onsubmit = event => event.preventDefault();
-      const shelf = element('workshopShelf');
-      shelf.innerHTML = ['event_source','effect','loop','filter','selector','reducer','seed'].map(kind => `<button type="button" class="portalButton" data-duty-add="${kind}">${esc(window.PortalLineageProgram.manifest.component_kinds[kind]?.title || kind)}</button>`).join('') +
-        `<label>${esc(t('引用已有对象'))}<select data-duty-reference><option value="">${esc(t('选择对象'))}</option>${[...model.all.values()].filter(item => !model.owned.has(item.id)).map(item => `<option value="${esc(item.id)}">${esc(item.title || item.id)}</option>`).join('')}</select></label>`;
-      shelf.querySelectorAll('[data-duty-add]').forEach(button => button.onclick = () => graph.addComponent(button.dataset.dutyAdd));
-      shelf.querySelector('[data-duty-reference]').onchange = event => { protect(); model.reference(event.target.value); graph.render(); graph.select(event.target.value); event.target.value = ''; };
-      root.querySelector('[data-workshop-store]').hidden = true;
+      const palette = element('workshopTools');
+      const items = window.LineageTemplateGraph.authoringItems().filter(item => item.toolbox_group === 'primitives');
+      tools = window.LineageTemplateGraph.mountTools({root:palette,items,primitiveDrag:true,onInsert:id => graph.addComponent(items.find(item => item.template_id === id).body.components[0].kind)});
+      const reference = document.createElement('label');
+      reference.className = 'workshopToolGroup';
+      reference.innerHTML = `<span>${esc(t('引用已有对象'))}</span><select data-duty-reference aria-label="${esc(t('引用已有对象'))}"><option value="">${esc(t('选择对象'))}</option>${[...model.all.values()].filter(item => !model.owned.has(item.id)).map(item => `<option value="${esc(item.id)}">${esc(item.title || item.id)}</option>`).join('')}</select>`;
+      palette.append(reference);
+      reference.querySelector('select').onchange = event => { protect(); model.reference(event.target.value); graph.render(); graph.select(event.target.value); event.target.value = ''; };
       generation++; notify();
     }
     async function load() {
       const {lineage} = await execute('GetLineage',{lineage_id:lineageId});
       if (disposed) return;
-      model = window.LineageDutyWorkshopModel.create(lineage,functionBlockId); draw();
+      model = window.LineageDutyWorkshopModel.create(lineage,functionBlockId); draw(); await templates.load();
     }
     async function save() {
       return run(async () => {
@@ -130,14 +132,13 @@
         Object.assign(model.draft.body,candidate.body); model.draft.meta = candidate.meta; draw();
       });
     }
-    const trigger = root.querySelector('[data-workshop-toolbox]');
-    const drawer = element('workshopToolbox');
-    const hover = window.PortalHatgPanelBindings.bindHoverPanel({trigger,panel:drawer,
-      open:() => {drawer.hidden=false;trigger.setAttribute('aria-expanded','true');},
-      close:() => {drawer.hidden=true;trigger.setAttribute('aria-expanded','false');},isOpen:() => !drawer.hidden});
+    const templates = window.LineageTemplates.mount({shelf:element('workshopShelf'),canvas:element('workshopCanvas'),
+      request:execute,getContext:() => ({lineage_id:lineageId}),iconOnly:true,
+      toast:message => report(new Error(message)),onSelectTemplate:template_id => onSwitchTemplate({lineage_id:lineageId,template_id}),
+      acceptTemplate:() => false,resolveTarget:() => ({kind:'canvas'})});
     root.addEventListener('click',event => {
       if (event.target.closest('[data-workshop-chat]')) root.classList.toggle('workshopChatCollapsed');
-      if (event.target.closest('[data-workshop-toolbox]') && event.target.closest('[data-workshop-toolbox]') !== trigger) hover.close();
+      if (event.target.closest('[data-workshop-store]')) void window.PortalTemplateStore.open({request:execute,onOpenWorkshop}).catch(report);
       if (event.target.closest('[data-duty-save]')) void save().catch(() => {});
       if (event.target.closest('[data-duty-reload]')) void run(async () => {
         if (!model.dirty() || await window.PortalUI.confirm({title:t('重新载入职责？'),message:t('将丢弃当前草稿'),confirmLabel:t('重新载入')})) await load();
@@ -156,7 +157,7 @@
       documentKey:() => `${sessionId}:${generation}`,template:() => ({title:model?.block.title || t('职责工坊')}),
       draftFileKey:() => `duty-${functionBlockId}-${sessionId}`,
       assistantContext:() => `当前编辑职责实例，遵循职责草稿协议：先 GetLineage {lineage_id:"${lineageId}"}，目标 function_block_id=${functionBlockId}，基准 revision=${model.revision}。只能改该职责拥有的组件、连线及职责元数据，不得改外部元素或 Resident 配置。交回完整 JSON {lineage_id,function_block_id,revision,operations,duty_changes}，operations 使用 ApplyLineageChanges 格式，duty_changes 仅 title/description/category/prompt/memory_level。先 ApplyLineageChanges 加 dry_run:true 和 expected_version:${model.revision} 校验；禁止正式提交。将 JSON 写入本轮指定草稿路径，由用户在工坊预览、保存。`,
-      destroy() {disposed=true;abort.abort();hover.destroy();disposeInspector?.();graph?.destroy();editor.replaceChildren();},
+      destroy() {disposed=true;abort.abort();templates.destroy();tools?.destroy();disposeInspector?.();graph?.destroy();editor.replaceChildren();},
     };
   }
   window.LineageDutyWorkshop = Object.freeze({mount});

@@ -35,7 +35,7 @@
   function create(options = {}) {
     const root = options.root, id = options.panelId || options.id || window.PortalUIPrimitives.randomUUID();
     let target = {...options.target}, workshop = null, chat = null, pending = null, destroyed = false;
-    let visible = false, needsFit = true;
+    let visible = false, needsFit = true, navigation = 0;
     root.classList.add('workshopPanelHost');
     async function mount() {
       if (pending) return pending;
@@ -50,6 +50,13 @@
         if (root.getBoundingClientRect().width < 760) host.classList.add('workshopChatCollapsed');
         const factory = target.function_block_id ? window.LineageDutyWorkshop : window.LineageTemplateWorkshop;
         workshop = factory.mount({root:host,lineageId:target.lineage_id || '',functionBlockId:target.function_block_id || '',templateId:target.template_id || '',storeId:target.store_id || '',
+          onSwitchTemplate:async resource => {
+            const serial = ++navigation, previous = workshop;
+            if (!await panelCanClose() || destroyed || serial !== navigation || previous !== workshop) return;
+            chat?.destroy(); workshop?.destroy(); chat = null; workshop = null; pending = null;
+            target = {...resource,kind:'workshop'}; needsFit = true;
+            await mount();
+          },
           onOpenWorkshop:resource => {
             if (options.context) return options.emit?.('workshop-open',{resource});
             const url = new URL('/template-workshop',location.href);
@@ -84,16 +91,17 @@
       await mount();
       if (needsFit && !destroyed) { workshop.fit(); needsFit = false; }
     }
+    async function panelCanClose() {
+      try { await pending; } catch (_) { return true; }
+      return !workshop?.dirty() || window.PortalUI.confirm({title:window.PortalI18n.t('关闭工坊？'),message:window.PortalI18n.t('有未保存的修改'),confirmLabel:window.PortalI18n.t('关闭')});
+    }
     return {
       id,get ready() { return mount(); },target:() => ({...target}),
       connect() { if (!options.context) return show(); },
       show,
       hide() { visible = false; },
       disconnect() { visible = false; },
-      async canClose() {
-        try { await pending; } catch (_) { return true; }
-        return !workshop?.dirty() || window.PortalUI.confirm({title:window.PortalI18n.t('关闭工坊？'),message:window.PortalI18n.t('有未保存的修改'),confirmLabel:window.PortalI18n.t('关闭')});
-      },
+      canClose:panelCanClose,
       async openResource(resource) {
         return {accepted:resource.lineage_id === target.lineage_id && ['template_id','store_id','function_block_id'].every(key => (resource[key] || '') === (target[key] || ''))};
       },

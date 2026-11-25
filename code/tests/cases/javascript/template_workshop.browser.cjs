@@ -41,33 +41,31 @@ const {chromium} = require(path.join(repo, 'management_portal/test_framework/tau
     assert.equal(await page.locator('[data-graph-inspector]').isVisible(),false);
     const layout=await page.evaluate(()=>({canvas:document.querySelector('#workshopCanvas').getBoundingClientRect().width,
       chat:document.querySelector('.workshopChatColumn').getBoundingClientRect().width,
-      height:document.querySelector('.templateGraphCanvas').getBoundingClientRect().height}));
-    assert.ok(layout.canvas>900 && layout.chat<=350 && layout.height>750,JSON.stringify(layout));
+      height:document.querySelector('.templateGraphCanvas').getBoundingClientRect().height,
+      tools:document.querySelector('#workshopTools').getBoundingClientRect().height}));
+    await page.screenshot({path:'/tmp/workshop-toolbox-initial.png'});
+    assert.ok(layout.canvas>900 && layout.chat<=350 && layout.height>600 && layout.tools<65,JSON.stringify(layout));
     const library = page.locator('[data-workshop-library]');
     assert.equal(await library.isVisible(),true);
     const expectedLibrary = await page.evaluate(() => execute('ListTemplates').then(result => LineageTemplatesShelf.visibleTemplates(result.templates,'sample_admin').map(t=>t.template_id).sort()));
-    assert.deepEqual((await library.locator('[data-workshop-template]').evaluateAll(nodes=>nodes.map(n=>n.dataset.workshopTemplate))).sort(),expectedLibrary);
+    assert.deepEqual((await library.locator('[data-template-id]').evaluateAll(nodes=>nodes.map(n=>n.dataset.templateId))).sort(),expectedLibrary);
     await page.locator('.hatgNode[data-node-id="target"]').click();
     assert.equal(await page.locator('[data-graph-inspector]').isVisible(),true);
     assert.equal(await page.locator('.templateGraphPalette').isVisible(),false);
     await require('./template_workshop_dirty.browser.cjs')(page);
-    await page.locator('[data-workshop-toolbox]').first().click();
-    assert.equal(await page.locator('[data-toolbox-group="errands"]').count(),0);
-    assert.equal(await page.locator('[data-toolbox-group="organizations"] .templateTile').count(),0);
+    await require('./template_workshop_toolbox.browser.cjs')(page);
+    assert.equal(await page.locator('[data-workshop-toolbox]').count(),0);
+    assert.ok(await library.locator('[data-toolbox-group="errands"] .templateTile').count()>0);
+    assert.ok(await library.locator('[data-toolbox-group="organizations"] .templateTile').count()>0);
     assert.equal(await page.locator('[data-template-id]').filter({hasText:'工坊助手'}).count(),0);
     await page.locator('[data-template-id="workshop_loop"]').click();
-    await page.waitForTimeout(280);
-    await page.locator('.templateGraphCanvas').click({position:{x:650,y:500}});
     assert.equal(await page.evaluate(()=>workshop.template().body.components.filter(row=>row.kind==='loop').length),1);
     await page.keyboard.press('Escape');
     await page.locator('.templateGraphCanvas').click({position:{x:40,y:80}});
-    await page.locator('[data-workshop-toolbox]').first().click();
     await page.locator('[data-template-id="workshop_seed"]').dragTo(page.locator('.templateGraphCanvas'),{targetPosition:{x:700,y:600}});
     assert.equal(await page.evaluate(()=>workshop.template().body.components.some(row=>row.kind==='seed')),true);
-    await page.locator('[data-workshop-toolbox]').first().click();
-    await page.locator('[data-template-id="'+await page.evaluate(()=>parameterRecipe)+'"]').click();
-    await page.waitForTimeout(280);
-    await page.locator('.templateGraphCanvas').click({position:{x:850,y:700}});
+    await page.locator('.templateGraphCanvas').click({position:{x:40,y:80}});
+    await library.locator('[data-template-id="'+await page.evaluate(()=>parameterRecipe)+'"]').dragTo(page.locator('.templateGraphCanvas'),{targetPosition:{x:250,y:200}});
     assert.equal(await page.evaluate(()=>workshop.template().parameters.find(parameter=>parameter.name==='rounds').default),4);
     // Save / Save / Save As call the real stores and keep personal toolbox ownership.
     await page.locator('[data-meta="title"]').fill('Workshop saved');
@@ -131,7 +129,7 @@ const {chromium} = require(path.join(repo, 'management_portal/test_framework/tau
       await workshop.load();
       await workshop.acceptDraft({...prompt,title:'Prompt draft',body:{message:'From assistant'}});
     });
-    assert.equal(await page.locator('[data-workshop-toolbox]').first().isVisible(),false);
+    assert.equal(await page.locator('#workshopTools button:enabled').count(),0);
     assert.equal(await page.locator('[data-body-field="message"]').inputValue(),'From assistant');
     assert.equal(await page.evaluate(()=>workshop.dirty()),true);
     for(const kind of ['script','explore','familize','family_duty']) {
@@ -144,7 +142,7 @@ const {chromium} = require(path.join(repo, 'management_portal/test_framework/tau
         await workshop.load();
         await workshop.acceptDraft({...source,title:'Assistant '+kind});
       },kind);
-      assert.equal(await page.locator('[data-workshop-toolbox]').first().isVisible(),false);
+      assert.equal(await page.locator('#workshopTools button:enabled').count(),0);
       assert.equal(await page.locator('[data-meta="title"]').inputValue(),'Assistant '+kind);
       if(kind==='script') await page.waitForSelector('.monaco-editor');
       if(kind==='familize') {
@@ -156,11 +154,11 @@ const {chromium} = require(path.join(repo, 'management_portal/test_framework/tau
         const saved=await page.evaluate(async()=>(await execute('GetTemplate',{template_id:workshop.template().template_id})).template);
         assert.equal(saved.body.tasks.route.guide,'Choose by relevant expertise.');
         const destination=await page.evaluate(async()=>(await execute('ListTemplates')).templates.find(t=>t.builtin_key==='family').template_id);
-        await page.locator(`[data-workshop-template="${destination}"]`).click();
+        await library.locator(`[data-template-id="${destination}"]`).click();
         await page.waitForFunction(id=>workshop.template().template_id===id,destination);
         assert.equal(await page.locator('[data-workshop-save]').isDisabled(),true);
         await page.locator('[data-meta="title"]').fill('Unsaved Family');
-        const target=page.locator('[data-workshop-template]').filter({hasText:'Parameterized loop'});
+        const target=library.getByRole('button',{name:'Parameterized loop',exact:true});
         await target.click();
         await page.getByRole('button',{name:'继续编辑',exact:true}).click();
         assert.equal(await page.locator('[data-meta="title"]').inputValue(),'Unsaved Family');
@@ -172,15 +170,15 @@ const {chromium} = require(path.join(repo, 'management_portal/test_framework/tau
           window.deferTemplateId=id; window.releaseTemplate=null;
           return (await execute('ListTemplates')).templates.find(t=>t.builtin_key==='fixed_reminder').template_id;
         },destination);
-        await page.locator(`[data-workshop-template="${destination}"]`).click();
+        await library.locator(`[data-template-id="${destination}"]`).click();
         await page.waitForFunction(()=>typeof releaseTemplate==='function');
-        await page.locator(`[data-workshop-template="${other}"]`).click();
+        await library.locator(`[data-template-id="${other}"]`).click();
         await page.waitForFunction(id=>workshop.template().template_id===id,other);
         await page.evaluate(()=>releaseTemplate());
         await page.waitForFunction(id=>lastCompletedGet===id,destination);
         assert.equal(await page.evaluate(()=>workshop.template().template_id),other);
         await page.evaluate(()=>{window.releaseTemplate=null;window.lastCompletedGet='';});
-        await page.locator(`[data-workshop-template="${destination}"]`).click();
+        await library.locator(`[data-template-id="${destination}"]`).click();
         await page.waitForFunction(()=>typeof releaseTemplate==='function');
         await page.locator('[data-meta="title"]').fill('Keep editing while loading');
         await page.evaluate(()=>{window.deferTemplateId='';releaseTemplate();});

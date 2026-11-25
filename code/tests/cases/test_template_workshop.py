@@ -32,7 +32,7 @@ def test_workshop_browser_with_real_instructions(lineage):
 
     html = expand_document((ROOT / "management_portal/template_workshop.html").read_text())
     fragment = (ROOT / 'management_portal/static/template_workshop_panel.html').read_text().replace('<div class="templateWorkshop">','<div class="templateWorkshop" id="templateWorkshop">',1)
-    html = html.replace('<main id="workshopPage" class="workshopStandaloneHost"></main>',f'<main class="workshopStandaloneHost">{fragment}</main>')
+    html = html.replace('<main id="workshopPage" class="workshopStandaloneHost"></main>',f'<main class="workshopStandaloneHost workshopPanelHost">{fragment}</main>')
     # This harness keeps production graph, editor, dialogs and Chat, while calls
     # use the isolated test stores instead of a signed-in production session.
     import re

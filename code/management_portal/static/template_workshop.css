@@ -1,14 +1,23 @@
 .workshopStandalone { margin:0; }
 .workshopStandaloneHost { height:100dvh; }
 .workshopPanelHost { height:100%; min-height:0; min-width:0; overflow:hidden; container-type:inline-size; }
-.templateWorkshop { height:100%; display:grid; grid-template-columns:minmax(0,1fr) minmax(300px,340px); color:var(--text); background:var(--bg); }
-.workshopChatCollapsed { grid-template-columns:minmax(0,1fr); }
-.templateWorkshop:has(>[data-workshop-library]:not([hidden])) { grid-template-columns:160px minmax(0,1fr) minmax(260px,300px); }
-.templateWorkshop.workshopChatCollapsed:has(>[data-workshop-library]:not([hidden])) { grid-template-columns:160px minmax(0,1fr); }
-.workshopLibrary { min-height:0; overflow:auto; border-right:1px solid var(--border); background:var(--panel); }
-.workshopLibrary>header { padding:12px; font-weight:600; border-bottom:1px solid var(--border); }
-.workshopLibrary button { display:block; width:100%; padding:12px; text-align:left; color:inherit; background:transparent; border:0; border-bottom:1px solid var(--border); cursor:pointer; overflow-wrap:anywhere; }
-.workshopLibrary button:hover,.workshopLibrary button[aria-current="true"] { background:var(--accent-soft); color:var(--accent); }
+.templateWorkshop { height:100%; display:grid; grid-template-columns:84px minmax(0,1fr) minmax(260px,300px); color:var(--text); background:var(--bg); min-width:0; }
+.workshopChatCollapsed { grid-template-columns:84px minmax(0,1fr); }
+.workshopLibrary { min-height:0; overflow:auto; overscroll-behavior:contain; border-right:1px solid var(--border); background:var(--panel); }
+.workshopLibraryBar { display:flex; justify-content:center; position:sticky; top:0; z-index:1; padding:8px; border-bottom:1px solid var(--border); background:var(--panel); }
+.workshopTools { display:flex; flex:none; overflow-x:auto; overscroll-behavior-inline:contain; gap:12px; padding:6px 10px; border-bottom:1px solid var(--border); background:var(--panel); }
+.workshopToolGroup { display:flex; flex:none; align-items:center; gap:4px; }
+.workshopToolGroup small { color:var(--muted); font-size:11px; writing-mode:vertical-rl; }
+.workshopToolGroup + .workshopToolGroup { border-left:1px solid var(--border); padding-left:12px; }
+.workshopToolGroup button { flex:none; }
+[data-portal-theme="liquid-glass"] .workshopLibrary { background:var(--lg-surface-panel-glass,var(--panel)); backdrop-filter:blur(16px); }
+[data-portal-theme="liquid-glass"] .workshopTools { background:var(--lg-surface-bar,var(--panel)); backdrop-filter:blur(12px); }
+@media(prefers-reduced-transparency:reduce),(forced-colors:active) {
+  [data-portal-theme="liquid-glass"] .workshopLibrary,[data-portal-theme="liquid-glass"] .workshopTools { background:var(--panel); backdrop-filter:none; }
+}
+@supports not (backdrop-filter:blur(1px)) {
+  [data-portal-theme="liquid-glass"] .workshopLibrary,[data-portal-theme="liquid-glass"] .workshopTools { background:var(--panel); }
+}
 .templateRecipeGraph { height:100%; display:flex; flex-direction:column; min-height:480px; }
 .templateRecipeToolbar { display:flex; gap:12px; align-items:center; padding:6px 12px; font-size:12px; }
 .templateRecipeToolbar select { min-width:0; max-width:50%; }
@@ -16,12 +25,14 @@
 .templateRecipeGraph .templateGraphInspector { top:12px; right:12px; }
 .templateRecipeGraph .templateGraphInspector pre { white-space:pre-wrap; overflow-wrap:anywhere; font-size:12px; }
 @container (max-width:760px) {
-  .templateWorkshop:has(>[data-workshop-library]:not([hidden])) { grid-template-columns:120px minmax(0,1fr); }
-  .templateWorkshop:has(>[data-workshop-library]:not([hidden]))>.workshopChatColumn { grid-column:1 / -1; max-height:260px; }
+  .templateWorkshop { grid-template-columns:72px minmax(0,1fr); }
+  .templateWorkshop>.workshopChatColumn { grid-column:1 / -1; max-height:260px; }
+  .workshopBar { flex-wrap:wrap; }
+  .workshopBar footer { flex-basis:100%; flex-wrap:wrap; }
 }
 .templateWorkshop [hidden], .workshopChatCollapsed .workshopChatColumn { display:none !important; }
-.workshopCanvas { min-width:0; min-height:0; position:relative; }
-[data-workshop-id="workshopEditor"] { height:100%; display:flex; flex-direction:column; margin:0; }
+.workshopCanvas { min-width:0; min-height:0; position:relative; display:flex; flex-direction:column; }
+[data-workshop-id="workshopEditor"] { flex:1; min-height:0; display:flex; flex-direction:column; margin:0; }
 .workshopBar { min-height:44px; display:flex; align-items:center; gap:8px; padding:6px 10px; border-bottom:1px solid var(--border); }
 .workshopBar input { flex:1; min-width:50px; font-size:16px; background:transparent; border:0; color:inherit; }
 .workshopBar footer { display:flex; gap:6px; }
@@ -31,15 +42,12 @@
 .workshopInfo > summary { cursor:pointer; }
 .workshopMore { position:relative; }
 .workshopMore > div { position:absolute; z-index:20; right:0; top:30px; padding:8px; border:1px solid var(--border); background:var(--panel); display:grid; min-width:110px; }
-.workshopToolboxButton { position:absolute; left:12px; bottom:42px; z-index:12; }
-.workshopToolbox { position:absolute; z-index:15; bottom:80px; left:12px; width:min(360px,calc(100% - 24px)); max-height:65%; overflow:auto; padding:12px; border:1px solid var(--border); background:var(--panel); border-radius:10px; box-shadow:0 10px 35px #0003; }
-.workshopToolbox > header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
 .workshopChatColumn { min-width:0; min-height:0; border-left:1px solid var(--border); display:flex; flex-direction:column; }
 .workshopChatColumn > header { min-height:44px; display:flex; align-items:center; justify-content:space-between; padding:6px 10px; border-bottom:1px solid var(--border); }
 [data-workshop-id="workshopChat"] { min-height:0; flex:1; display:flex; }
 [data-workshop-id="workshopUnsaved"], [data-workshop-id="workshopChatStatus"] { margin:0; padding:5px 10px; font-size:12px; }
 [data-workshop-id="workshopChatStatus"]:empty { display:none; }
-[data-workshop-id="workshopError"] { position:absolute; top:54px; left:12px; right:12px; z-index:25; background:var(--panel); color:var(--danger,#c44); padding:8px; }
+[data-workshop-id="workshopError"] { flex:none; margin:0; background:var(--panel); color:var(--danger,#c44); padding:8px; }
 .dutyWorkshopContent{display:flex;flex:1;min-height:0;position:relative;overflow:hidden}
 .dutyWorkshopContent>[data-duty-graph]{flex:1;min-width:0;height:100%}
 .dutyWorkshopContent>[data-duty-inspector]{width:300px;max-width:45%;overflow:auto;padding:12px;background:var(--panel);border-left:1px solid var(--border)}

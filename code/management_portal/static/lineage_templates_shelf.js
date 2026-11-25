@@ -24,18 +24,51 @@
     return item.kind === 'structure' ? window.LineageTemplateGraph.thumbnail(item.body || {})
       : `<svg class="templateThumbnail templateModuleGlyph" viewBox="0 0 100 84" aria-hidden="true">${GLYPHS[item.kind] || GLYPHS.script}</svg>`;
   }
+  // One catalog per browser surface: every shelf observes the same revision,
+  // identity transition and mutation refresh, while retaining its own actions.
+  const subscribers = new Set();
+  let catalog = {templates:[], kinds:[]}, pending = null, epoch = 0, catalogAbort = null;
+  const catalogUser = () => window.PortalIdentity?.username() || '';
+  function publishCatalog() { subscribers.forEach(subscriber => subscriber.receive(catalog)); }
+  function refreshCatalog() {
+    if (pending) return pending;
+    const reader = subscribers.values().next().value;
+    if (!reader) return Promise.resolve();
+    const owner = epoch, user = catalogUser();
+    const task = reader.request('ListTemplates', {}).then(result => {
+      if (epoch !== owner || catalogUser() !== user) return;
+      catalog = {templates:result.templates || [], kinds:result.kinds || []}; publishCatalog();
+    }).finally(() => { if (pending === task) pending = null; });
+    pending = task; return task;
+  }
+  function subscribeCatalog(subscriber) {
+    subscribers.add(subscriber); subscriber.receive(catalog);
+    if (!catalogAbort) {
+      catalogAbort = new AbortController();
+      const refresh = () => { void refreshCatalog().catch(error => subscribers.forEach(item => item.report(error))); };
+      window.addEventListener('focus',refresh,{signal:catalogAbort.signal});
+      window.addEventListener('portal:templates-changed',() => { epoch++; pending = null; refresh(); },{signal:catalogAbort.signal});
+      window.addEventListener('portal:identity-changed',() => {
+        epoch++; pending = null; catalog = {templates:[],kinds:[]}; publishCatalog(); refresh();
+      },{signal:catalogAbort.signal});
+    }
+    return () => {
+      subscribers.delete(subscriber);
+      if (!subscribers.size) { catalogAbort.abort(); catalogAbort = null; epoch++; pending = null; catalog = {templates:[],kinds:[]}; }
+    };
+  }
   function createShelf(dependencies) {
     const missing = DEPENDENCIES.filter(name => !OPTIONAL.includes(name) && dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`LineageTemplatesShelf is missing: ${missing.join(', ')}`);
     const {MIME, apply, canvas, config, esc, getContext, openEditor, request, resolveTarget,
       shelf, t, targetLabels, templatesState, toast, promptText} = dependencies;
-    let loading = null, identity = 0, dragged = '', picked = null, pickupTimer = null;
+    let dragged = '', picked = null, pickupTimer = null;
     const username = () => window.PortalIdentity?.username() || '';
     const abort = new AbortController();
-    const onCanvas = target => canvas?.contains(target) && (!config.structureOnly || !!target?.closest('.templateGraphCanvas'));
+    const onCanvas = target => canvas?.contains(target) && (!config.isComposition || !!target?.closest('.templateGraphCanvas'));
     const listen = (node, event, handler, capture = false) => node?.addEventListener(event, handler, {signal: abort.signal, capture});
     const report = error => toast(window.PortalI18n.message(error.message || error), 'error');
-    const find = id => templatesState.templates.find(item => item.template_id === id) || null;
+    const find = id => templatesState.templates.find(item => item.template_id === id) || config.toolboxItems?.find(item => item.template_id === id) || null;
     const dropHint = document.createElement('div');
     dropHint.className = 'templateDropHint'; dropHint.hidden = true; dropHint.setAttribute('role', 'status');
     const ghost = document.createElement('div');
@@ -46,28 +79,23 @@
       if (templatesState.application && templatesState.application.lineageId !== getContext().lineage_id) templatesState.application.close();
       if (picked && (picked.lineageId !== getContext().lineage_id || picked.user !== username())) cancelPlacement();
       const user = username();
-      const visible = visibleTemplates(templatesState.templates, user).filter(item => !config.structureOnly || item.kind === 'structure');
-      shelf.innerHTML = [...(config.toolboxGroups || []), ...GROUPS].filter(group => !config.structureOnly || group.key !== 'errands').map(group => {
+      const visible = visibleTemplates(templatesState.templates, user);
+      shelf.classList.toggle('templateShelfIcons', !!config.iconOnly);
+      shelf.innerHTML = GROUPS.map(group => {
         const rows = visible.filter(item => (item.toolbox_group || groupFor(item.kind)) === group.key);
         const cards = rows.map(item => `<div class="templateTileWrap"><button type="button" class="templateTile" draggable="true"
           data-template-id="${esc(item.template_id)}" aria-label="${esc(t(item.title))}"
-          title="${esc([t(item.title), t(item.description), t('单击拿起，双击在工坊中打开；按 Escape 或右键取消')].filter(Boolean).join('\n'))}">
-          ${thumbnail(item)}<span class="templateTileTitle">${esc(t(item.title))}</span></button>${item.store_status?.has_update ? `<button type="button" class="templateUpdateBadge portalButton is-compact" data-store-update="${esc(item.template_id)}">${esc(t('有更新'))}</button>` : ''}</div>`).join('');
+          aria-current="${item.template_id === config.selectedTemplate?.()}"
+          data-portal-tooltip="${esc([t(item.title),t(item.description)].filter(Boolean).join('\n'))}"
+          title="${esc([t(item.title), t(item.description), t(config.onSelectTemplate ? '单击打开；拖入画布组合' : '单击拿起，双击在工坊中打开；按 Escape 或右键取消')].filter(Boolean).join('\n'))}">
+          ${thumbnail(item)}<span class="templateTileTitle">${esc(t(item.title))}</span></button>${item.store_status?.has_update ? `<button type="button" class="templateUpdateBadge portalButton is-compact" data-store-update="${esc(item.template_id)}" aria-label="${esc(t('有更新'))}">${esc(config.iconOnly ? '↑' : t('有更新'))}</button>` : ''}</div>`).join('');
         return `<section class="templateToolboxGroup" data-toolbox-group="${group.key}"><h4>${esc(t(group.label))}</h4>${
           rows.length ? `<div class="templateToolboxCards">${cards}</div>`
-            : `<p class="templateEmpty">${esc(t(group.key === 'roles' ? '还没有角色模板' : '暂无模板'))}</p>`}</section>`;
+            : config.iconOnly ? '' : `<p class="templateEmpty">${esc(t(group.key === 'roles' ? '还没有角色模板' : '暂无模板'))}</p>`}</section>`;
       }).join('');
     }
     function load() {
-      if (loading) return loading;
-      const owner = identity, user = username();
-      const task = request('ListTemplates', {}).then(result => {
-        if (templatesState.disposed || owner !== identity || user !== username()) return;
-        templatesState.templates = [...(config.toolboxItems || []), ...(result.templates || [])]; templatesState.kinds = result.kinds || [];
-        render(); config.onChange?.(templatesState.templates);
-      }).finally(() => { if (loading === task) loading = null; });
-      loading = task;
-      return loading;
+      return refreshCatalog();
     }
     function unsupported(item) {
       return `${t(item.title)} · ${t('请拖到支持的目标')}：${item.targets.map(kind => targetLabels()[kind]).join(' / ')}`;
@@ -114,12 +142,13 @@
       if (picked && (picked.lineageId !== getContext().lineage_id || picked.user !== username())) cancelPlacement();
       return picked ? find(picked.id) : null;
     }
-    listen(window, 'focus', () => { void load().catch(report); });
-    listen(window, 'portal:templates-changed', () => { void load().catch(report); });
-    listen(window, 'portal:identity-changed', () => {
-      identity++; loading = null; dragged = ''; cancelPlacement();
-      templatesState.templates = []; render(); void load().catch(report);
-    });
+    const unsubscribe = subscribeCatalog({request,report,receive(value) {
+      if (templatesState.disposed) return;
+      dragged = ''; cancelPlacement();
+      templatesState.templates = value.templates; templatesState.kinds = value.kinds;
+      render(); config.onChange?.(value.templates);
+    }});
+    abort.signal.addEventListener('abort',unsubscribe);
     listen(shelf, 'click', event => {
       const update = event.target.closest('[data-store-update]');
       if (update) {
@@ -130,6 +159,7 @@
       if (!tile) return;
       event.preventDefault();
       clearTimeout(pickupTimer); pickupTimer = null;
+      if (config.onSelectTemplate) { if (event.detail < 2) void Promise.resolve(config.onSelectTemplate(tile.dataset.templateId)).catch(report); return; }
       if (event.detail >= 2) return;
       // Keep the card in place until a possible second click can open its editor.
       pickupTimer = setTimeout(() => { pickupTimer = null; pickup(tile.dataset.templateId, event); }, 260);
@@ -137,13 +167,14 @@
     listen(shelf, 'dblclick', event => {
       const tile = event.target.closest('[data-template-id]');
       if (!tile) return;
-      event.preventDefault(); void openInWorkshop(tile.dataset.templateId).catch(report);
+      event.preventDefault(); if (!config.onSelectTemplate) void openInWorkshop(tile.dataset.templateId).catch(report);
     });
     listen(shelf, 'keydown', event => {
       const tile = event.target.closest('[data-template-id]');
-      if (!tile || event.key !== 'Enter') return;
+      if (!tile || !['Enter',' '].includes(event.key)) return;
       event.preventDefault(); event.stopPropagation();
-      if (event.shiftKey) void openInWorkshop(tile.dataset.templateId).catch(report);
+      if (config.onSelectTemplate) void Promise.resolve(config.onSelectTemplate(tile.dataset.templateId)).catch(report);
+      else if (event.shiftKey) void openInWorkshop(tile.dataset.templateId).catch(report);
       else pickup(tile.dataset.templateId, event);
     });
     listen(document, 'mousemove', event => {
@@ -174,7 +205,7 @@
     };
     listen(document, 'keydown', cancel, true);
     listen(document, 'contextmenu', cancel, true);
-    listen(shelf, 'dragstart', event => {
+    for (const source of [shelf, config.palette].filter(Boolean)) listen(source, 'dragstart', event => {
       const tile = event.target.closest('[data-template-id]'); if (!tile) return;
       cancelPlacement(); dragged = tile.dataset.templateId;
       event.dataTransfer.setData(MIME, dragged);
@@ -182,7 +213,7 @@
       if (item?.kind === 'prompt') event.dataTransfer.setData('text/plain', promptText(item));
       event.dataTransfer.effectAllowed = 'copy';
     });
-    listen(shelf, 'dragend', () => { dragged = ''; clearDrop(); });
+    for (const source of [shelf, config.palette].filter(Boolean)) listen(source, 'dragend', () => { dragged = ''; clearDrop(); });
     listen(canvas, 'dragover', event => {
       if (!onCanvas(event.target)) return;
       if (!dragged && !Array.from(event.dataTransfer?.types || []).includes(MIME)) return;
@@ -195,12 +226,14 @@
       if (!onCanvas(event.target)) return;
       const id = event.dataTransfer?.getData(MIME) || dragged; if (!id) return;
       event.preventDefault(); event.stopPropagation();
-      const target = resolveTarget(event, find(id)); clearDrop(); dragged = '';
+      const item = find(id); if (!item) return;
+      const {target,supported} = showTarget(event,item); clearDrop(); dragged = '';
+      if (!supported) { report(new Error(unsupported(item))); return; }
       void apply(id, target).catch(report);
     }, true);
     abort.signal.addEventListener('abort', () => { cancelPlacement(); ghost.remove(); });
     return {abort, dropHint, find, load, render, unsupported};
   }
-  const visibleTemplates = (items, user) => items.filter(item => item.builtin_key !== 'workshop_assistant' && (item.builtin_key || (user && item.created_by === user)));
+  const visibleTemplates = (items, user) => items.filter(item => !item.toolbox_group && item.builtin_key !== 'workshop_assistant' && (item.builtin_key || (user && item.created_by === user)));
   window.LineageTemplatesShelf = Object.freeze({createShelf, visibleTemplates, groupFor, storeGroupFor, thumbnail, dependencies: DEPENDENCIES});
 })();

@@ -9,22 +9,13 @@
     const element = id => root.querySelector(`[data-workshop-id="${id}"],#${id}`);
     let form = element('workshopEditor');
     const canvas = element('workshopCanvas');
-    const drawer = element('workshopToolbox');
+    const palette = element('workshopTools');
     const shelf = element('workshopShelf');
     const sessionId = window.PortalUIPrimitives.randomUUID();
     let runtime = null, templates = null, base = '', previewItem = null;
     let removed = false;
     let documentRevision = 0;
-    let libraryItems = [], navigation = 0, editVersion = 0;
-    const library = root.querySelector('[data-workshop-library]');
-    if (library) library.hidden = false;
-    function renderLibrary(items = libraryItems) {
-      libraryItems = items;
-      const host = library?.querySelector('[data-workshop-library-items]');
-      if (!host) return;
-      host.innerHTML = window.LineageTemplatesShelf.visibleTemplates(items, window.PortalIdentity.username())
-        .filter(item => !item.toolbox_group).map(item => `<button type="button" data-workshop-template="${esc(item.template_id)}" aria-current="${item.template_id === runtime?.draft.template_id}">${esc(t(item.title))}</button>`).join('');
-    }
+    let navigation = 0, editVersion = 0;
     async function openTemplate(id) {
       if (runtime?.view.working) return;
       if (id === runtime?.draft.template_id && !previewItem) return;
@@ -43,10 +34,6 @@
     }
     const abort = new AbortController();
     const listen = (node, type, handler) => node.addEventListener(type, handler, {signal: abort.signal});
-    const toolboxTrigger = root.querySelector('.workshopToolboxButton');
-    const setToolboxOpen = open => { drawer.hidden = !open; toolboxTrigger.setAttribute('aria-expanded', String(open)); };
-    const toolboxHover = window.PortalHatgPanelBindings.bindHoverPanel({trigger:toolboxTrigger,panel:drawer,
-      open:() => setToolboxOpen(true),close:() => setToolboxOpen(false),isOpen:() => !drawer.hidden});
     const error = value => {
       const node = element('workshopError');
       node.hidden = !value;
@@ -120,10 +107,9 @@
       },
       ready(value) {
         runtime = value;
-        renderLibrary();
+        templates.render();
         root.dataset.templateKind = runtime.draft.kind;
-        root.querySelector('[data-workshop-toolbox]').hidden = runtime.draft.kind !== 'structure';
-        if (runtime.draft.kind !== 'structure') toolboxHover.close();
+        tools.setEnabled(runtime.draft.kind === 'structure');
         base = JSON.stringify(runtime.readDraft());
         const saveButton = form.querySelector('[data-workshop-save]');
         saveButton.disabled = !!previewItem || (!!runtime.draft.template_id && (!!runtime.draft.builtin_key || runtime.draft.created_by !== window.PortalIdentity.username()));
@@ -148,54 +134,41 @@
         changed();
       },
     };
-    function toolboxItems() {
-      const body = (list, row) => ({roles: [], components: [], wires: [], match: [], [list]: [row]});
-      const items = [];
-      const item = (key, title, group, content) => items.push({template_id: `workshop_${key}`, builtin_key: `workshop_${key}`, kind: 'structure', title, description: '', targets: ['canvas'], toolbox_group: group, body: content});
-      for (const kind of ['event_source', 'effect', 'loop', 'filter', 'selector', 'reducer', 'seed']) {
-        const definition = window.PortalLineageProgram.manifest.component_kinds[kind];
-        item(kind, definition?.title || kind, 'primitives', body('components', {key: kind, kind, title: definition?.default_title || definition?.title || kind, config: clone(definition?.default_config || {})}));
+    const authoringItems = window.LineageTemplateGraph.authoringItems();
+    const tools = window.LineageTemplateGraph.mountTools({root:palette,items:authoringItems,onInsert:id=>{
+      void insertTemplate(id,{kind:'canvas',...runtime.editorState.graph.insertionPosition()}).catch(error);
+    }});
+    async function insertTemplate(id, target) {
+      if (runtime.draft.kind !== 'structure') throw new Error(t('当前编辑器不支持自由添加结构'));
+      runtime.readDraft();
+      const source = clone(templates.find(id));
+      if (source.kind !== 'structure') throw new Error(t('此模板不支持拖入组合，请单击打开'));
+      const incoming = source.body;
+      if (id === 'workshop_fork') {
+        const origin = runtime.draft.body.roles.find(row => row.key === runtime.editorState.graph.selected()) || runtime.draft.body.roles[0];
+        if (!origin) throw new Error(t('先添加一个角色，Fork 才有来源'));
+        incoming.roles[0].fork_of = origin.key; incoming.roles[0].fork_mode = '';
       }
-      for (const [from, title] of [['target','目标 Resident'], ['lineage_leader','Lineage Leader'], ['new','新建 Resident'], ['fork','Fork']]) {
-        item(from, t(title), 'slots', body('roles', {key: from === 'lineage_leader' ? 'leader' : from, from, ...(from === 'new' ? {settings: {}} : {})}));
-      }
-      item('existing', t('已有元素'), 'slots', body('match', {key: 'existing', kind: 'event_source', config: {}, where: {}, op: 'keep'}));
-      return items;
+      const key = window.LineageTemplateWorkshopDraft.appendTemplate(runtime.draft, source, target);
+      if (id === 'workshop_fork') runtime.draft.body.roles.find(row => row.key === key).fork_of = incoming.roles[0].fork_of;
+      runtime.renderParameters(); runtime.editorState.graph.select(key); runtime.schedulePreview();
     }
     templates = window.LineageTemplates.mount({
       shelf, canvas, request: execute, getContext: () => ({lineage_id: lineageId}),
       editorHost, toast: (message, tone) => { if (tone === 'error') error(message); },
-      toolboxGroups: [{key:'primitives', label:'原语'}, {key:'slots', label:'空位'}], toolboxItems: toolboxItems(),structureOnly:true,
-      onChange: renderLibrary,
-      acceptTemplate: item => item.kind === 'structure',
+      toolboxItems:authoringItems,palette,isComposition:true,iconOnly:true,
+      selectedTemplate:() => runtime?.draft.template_id,
+      onSelectTemplate:openTemplate,
+      acceptTemplate: item => runtime?.draft.kind === 'structure' && item.kind === 'structure',
       resolveTarget: event => ({kind:'canvas', ...runtime.editorState.graph.position(event)}),
-      async applyTemplate(id, target) {
-        if (runtime.draft.kind !== 'structure') throw new Error(t('请先打开职责模板'));
-        runtime.readDraft();
-        const source = clone(templates.find(id));
-        const incoming = source.body;
-        if (id === 'workshop_fork') {
-          const origin = runtime.draft.body.roles.find(row => row.key === runtime.editorState.graph.selected()) || runtime.draft.body.roles[0];
-          if (!origin) throw new Error(t('先添加一个角色，Fork 才有来源'));
-          incoming.roles[0].fork_of = origin.key; incoming.roles[0].fork_mode = '';
-        }
-        const key = window.LineageTemplateWorkshopDraft.appendTemplate(runtime.draft, source, target);
-        if (id === 'workshop_fork') runtime.draft.body.roles.find(row => row.key === key).fork_of = incoming.roles[0].fork_of;
-        runtime.renderParameters(); runtime.editorState.graph.select(key); runtime.schedulePreview();
-        toolboxHover.close();
-      },
+      applyTemplate:insertTemplate,
     });
     listen(root, 'click', async event => {
-      const chosen = event.target.closest('[data-workshop-template]');
-      if (chosen) { await openTemplate(chosen.dataset.workshopTemplate); return; }
       if (event.target.closest('[data-workshop-store]')) {
-        toolboxHover.close();
         window.PortalTemplateStore.open({request:execute,lineageId,onOpenWorkshop:resource => onOpenWorkshop?.(resource)});
       }
-      if (event.target.closest('[data-workshop-toolbox]') !== toolboxTrigger && event.target.closest('[data-workshop-toolbox]')) toolboxHover.close();
       if (event.target.closest('[data-workshop-chat]')) root.classList.toggle('workshopChatCollapsed');
     });
-    listen(drawer, 'portal:template-picked', () => { toolboxHover.close(); runtime.editorState.graph?.select(''); });
     listen(window, 'beforeunload', event => { if (dirty()) { event.preventDefault(); event.returnValue = ''; } });
     listen(window, 'portal:templates-changed', event => {
       const saved = event.detail?.template;
@@ -224,7 +197,7 @@
         } else if (templateId) await templates.openEditor(templateId); else templates.newTemplate();
         return controller;
       },
-      destroy() { toolboxHover.destroy(); abort.abort(); runtime?.view.close(); templates.destroy(); },
+      destroy() { tools.destroy(); abort.abort(); runtime?.view.close(); templates.destroy(); },
     };
     return controller;
   }

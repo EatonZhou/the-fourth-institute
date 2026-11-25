@@ -474,7 +474,7 @@
     render();
     controller.fit({ duration: 0, maxScale: workshop ? 1 : 1.1 });
     return Object.freeze({
-      render, select, addComponent,
+      render, select, addComponent, insertionPosition:center,
       position: event => controller.screenToPosition(event.clientX, event.clientY),
       selected: () => selected,
       fit: () => controller.fit({ duration: 0, maxScale: workshop ? 1 : 1.1 }),
@@ -483,5 +483,33 @@
     });
   }
 
-  window.LineageTemplateGraph = Object.freeze({ mount, thumbnail, removeElement, renameKey, effectiveConfig, isWireKind });
+  function authoringItems() {
+    const items = [], body = (list,row) => ({roles:[],components:[],wires:[],match:[],[list]:[row]});
+    const add = (key,title,group,content,icon) => items.push({template_id:`workshop_${key}`,kind:'structure',title,targets:['canvas'],toolbox_group:group,body:content,icon});
+    for (const kind of ['event_source','effect','loop','filter','selector','reducer','seed']) {
+      const definition = window.PortalLineageProgram.manifest.component_kinds[kind];
+      add(kind,definition.title,'primitives',body('components',{key:kind,kind,title:definition.default_title || definition.title,config:JSON.parse(JSON.stringify(definition.default_config || {}))}),definition.icon || kind);
+    }
+    for (const [from,title,icon] of [['target','目标 Resident','pin'],['lineage_leader','Lineage Leader','user'],['new','新建 Resident','plus'],['fork','Fork','fork']]) {
+      add(from,t(title),'slots',body('roles',{key:from === 'lineage_leader' ? 'leader' : from,from,...(from === 'new' ? {settings:{}} : {})}),icon);
+    }
+    add('existing',t('已有元素'),'slots',body('match',{key:'existing',kind:'event_source',config:{},where:{},op:'keep'}),'search');
+    return items;
+  }
+  function mountTools({root,items = authoringItems(),onInsert,primitiveDrag = false}) {
+    root.innerHTML = ['primitives','slots'].filter(group=>items.some(item=>item.toolbox_group===group)).map(group => `<div class="workshopToolGroup" role="group" aria-label="${esc(t(group === 'primitives' ? '原语' : '绑定空位'))}"><small>${esc(t(group === 'primitives' ? '原语' : '空位'))}</small>${items.filter(item=>item.toolbox_group===group).map(item=>`<button type="button" class="portalButton is-icon" data-template-id="${esc(item.template_id)}" draggable="true" aria-label="${esc(t(item.title))}" data-portal-tooltip="${esc(t(item.title))}" title="${esc(t(item.title))}"><span data-portal-icon="${esc(item.icon)}" aria-hidden="true"></span></button>`).join('')}</div>`).join('');
+    const abort = new AbortController();
+    root.addEventListener('click',event => {
+      const button = event.target.closest('[data-template-id]');
+      if (button && !button.disabled) onInsert(button.dataset.templateId);
+    },{signal:abort.signal});
+    if (primitiveDrag) root.addEventListener('dragstart',event => {
+      const item = items.find(item=>item.template_id === event.target.closest('[data-template-id]')?.dataset.templateId);
+      if (!item?.body.components[0]) return;
+      event.dataTransfer.setData(PRIMITIVE_MIME,item.body.components[0].kind);
+      event.dataTransfer.effectAllowed = 'copy';
+    },{signal:abort.signal});
+    return {setEnabled(enabled) {root.querySelectorAll('[data-template-id]').forEach(button=>{button.disabled=!enabled;button.draggable=enabled;});},destroy(){abort.abort();root.replaceChildren();}};
+  }
+  window.LineageTemplateGraph = Object.freeze({ mount, thumbnail, removeElement, renameKey, effectiveConfig, isWireKind, authoringItems, mountTools });
 })();
