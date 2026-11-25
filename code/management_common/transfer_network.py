@@ -24,7 +24,7 @@ def resolve_route(requested: str | None = None) -> str:
         raise ValueError("Unknown transfer network route")
     if route == "direct" and not config.get("direct_interface"):
         raise ValueError("Direct transfer interface is not configured")
-    if route == "vps" and not config.get("vps_proxy"):
+    if route == "vps" and not (config.get("vps_via_host_routing") is True or config.get("vps_proxy")):
         raise ValueError("VPS transfer proxy is not configured")
     return route
 
@@ -79,6 +79,9 @@ def transfer_environment(env: dict, route: str, allowed_hosts: tuple[str, ...]):
         yield env
         return
     if route == "vps":
+        if config.get("vps_via_host_routing") is True:
+            yield {key: value for key, value in env.items() if key not in PROXY_KEYS}
+            return
         proxy = config.get("vps_proxy", "")
         parsed = urlsplit(proxy)
         if parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.username or parsed.password:

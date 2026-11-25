@@ -22,6 +22,7 @@ LOOPBACK_NETWORKS = ("127.0.0.0/8", "::1/128")
 DEFAULT_PORT = 18084
 PROXY_FIELDS = {"http": "HTTP_PROXY", "https": "HTTPS_PROXY", "all": "ALL_PROXY", "no_proxy": "NO_PROXY"}
 PROXY_KEYS = frozenset((*PROXY_FIELDS.values(), *(k.lower() for k in PROXY_FIELDS.values())))
+PROVIDER_EGRESS_ENV = "TFI_PROVIDER_EGRESS"
 
 
 def config_path() -> Path:
@@ -124,8 +125,16 @@ def _proxy_values(entries: dict[str, str]) -> dict[str, str]:
             for field, key in PROXY_FIELDS.items()}
 
 
+def proxy_environment_disabled(instance=None) -> bool:
+    if os.environ.get(PROVIDER_EGRESS_ENV) == "tunnel":
+        return True
+    return (instance or load()).site_settings().get("deployment", {}).get("proxy_environment") == "disabled"
+
+
 def inherited_proxy_environment(instance=None) -> dict[str, str]:
     """Keep the existing Provider egress file ahead of inherited process values."""
+    if proxy_environment_disabled(instance):
+        return {}
     entries = {k: v for k, v in os.environ.items() if k in PROXY_KEYS}
     path = (instance or load()).directory('secrets') / 'host/provider-egress.env'
     entries.update({k: v for k, v in _parse(_read(path)).items() if k in PROXY_KEYS})
@@ -133,6 +142,8 @@ def inherited_proxy_environment(instance=None) -> dict[str, str]:
 
 
 def saved_proxy_environment(instance=None) -> dict[str, str] | None:
+    if proxy_environment_disabled(instance):
+        return {}
     entries = _parse(_read((instance or load()).directory('secrets') / 'network.env'))
     if not any(key in entries for key in PROXY_KEYS):
         return None

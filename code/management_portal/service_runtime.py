@@ -46,9 +46,14 @@ def clean_environment(instance: InstanceManifest, *, component: str = '', postgr
     database = instance.directory('secrets') / 'postgres.env'
     if database.is_file():
         env.update(secret_environment(instance, 'postgres.env'))
-    from management_common.portal_network import inherited_proxy_environment, saved_proxy_environment
-    proxies = saved_proxy_environment(instance)
-    env.update(inherited_proxy_environment(instance) if proxies is None else proxies)
+    from management_common import portal_network
+    proxies = portal_network.saved_proxy_environment(instance)
+    if proxies == {}:
+        env[portal_network.PROVIDER_EGRESS_ENV] = 'tunnel'
+        for key in portal_network.PROXY_KEYS:
+            env.pop(key, None)
+    else:
+        env.update(portal_network.inherited_proxy_environment(instance) if proxies is None else proxies)
     env.update(PORTAL_RESOURCE_SERVICE_MODE='client', PORTAL_SOCIETY_SERVICE_MODE='client',
                PORTAL_ISA_ROUTING='socket',
                PORTAL_RESOURCE_DATABASE_SCHEMA='resource_release',

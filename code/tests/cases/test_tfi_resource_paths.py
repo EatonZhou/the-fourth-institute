@@ -80,3 +80,19 @@ def test_ssh_selected_existing_key_preserves_bytes(isolated,monkeypatch):
     assert repo._repo_ssh_identity({'ssh_key':'id_fixture'})==private
     assert (stamp(private),stamp(public))==before
     with pytest.raises(checkout.RepoWorkspaceConflict):repo._repo_ssh_identity({'ssh_key':'../wrong'})
+
+
+def test_disabled_instance_proxy_clears_stale_parent_and_saved_values(tmp_path, monkeypatch):
+    from management_common import portal_network
+    from management_portal.resident_shell_environment import resident_process_environment
+    from management_portal.service_runtime import clean_environment
+
+    monkeypatch.delenv(portal_network.PROVIDER_EGRESS_ENV, raising=False)
+    instance = select_instance(monkeypatch, tmp_path/'instance', site={'deployment': {'proxy_environment': 'disabled'}})
+    for key in portal_network.PROXY_KEYS:
+        monkeypatch.setenv(key, 'http://old.invalid')
+    put(instance.root/'secrets/network.env', 'HTTPS_PROXY=http://saved.invalid\n')
+    put(instance.root/'secrets/host/provider-egress.env', 'https_proxy=http://host.invalid\n')
+    assert portal_network.inherited_proxy_environment(instance) == {}
+    assert not portal_network.PROXY_KEYS.intersection(clean_environment(instance, component='nats'))
+    assert not portal_network.PROXY_KEYS.intersection(resident_process_environment({})[0])

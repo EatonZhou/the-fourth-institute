@@ -78,6 +78,8 @@ def resident_process_environment(params: Mapping[str, Any]) -> tuple[dict[str, s
     environment = {key: value for key, value in os.environ.items() if key in PROCESS_ENVIRONMENT_KEYS}
     managed_proxy = portal_network.saved_proxy_environment()
     if managed_proxy is not None:
+        for key in portal_network.PROXY_KEYS:
+            environment.pop(key, None)
         environment.update(managed_proxy)
     original_identity = dict(params.get("resident_environment") or {})
     mirrored_identity = resident_identity_environment(original_identity)

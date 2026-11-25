@@ -29,7 +29,7 @@ from .transport import (
 )
 
 from management_common.instance_manifest import instance_runtime_root
-from management_common import loaded_modules, process_runtime
+from management_common import loaded_modules, portal_network, process_runtime
 from management_portal.shared_state import atomic_replace_json
 
 LOGGER = logging.getLogger(__name__)
@@ -892,6 +892,10 @@ def _elapsed_since_iso_ms(value: str) -> float:
 
 
 def main() -> int:
+    # A rolling replacement can inherit the previous manager's environment.
+    if portal_network.proxy_environment_disabled():
+        for key in portal_network.PROXY_KEYS:
+            os.environ.pop(key, None)
     loaded_modules.track()
     try:
         return ExecutionWorkerDaemon().run()
