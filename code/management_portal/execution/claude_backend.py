@@ -8,6 +8,7 @@ and reading compactions and usage from the session's transcript.
 from __future__ import annotations
 
 import logging
+from copy import copy
 from dataclasses import replace
 from typing import Any, Mapping
 
@@ -131,6 +132,19 @@ class ClaudeBackend(NativeSocketBackend):
             raise ValueError("Selected Claude route does not support images")
         return {"input_media": [item.to_payload() for item in invocation.request.input_media]}
 
-    @staticmethod
-    def client_factory():
-        return shared_claude_client()
+    _route = ""
+
+    def execute(self, invocation, context):
+        backend = copy(self)
+        backend._route = (invocation.request.runtime_options.get("provider_profile")
+                          or invocation.session.backend_route_id or AGENT_PROVIDERS["claude"].default_route)
+        return super(ClaudeBackend, backend).execute(invocation, context)
+
+    def interrupt(self, **kwargs):
+        backend = copy(self)
+        backend._route = (kwargs["backend_route_id"] or kwargs["runtime_options"].get("provider_profile")
+                          or AGENT_PROVIDERS["claude"].default_route)
+        return super(ClaudeBackend, backend).interrupt(**kwargs)
+
+    def client_factory(self):
+        return shared_claude_client(self._route)

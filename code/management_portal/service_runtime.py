@@ -76,13 +76,19 @@ def component_command(instance: InstanceManifest, component: str) -> tuple[list[
         return command, env
     if component == 'nats':
         return [str(code_environment.native_binary(code, 'nats')), '-a', '127.0.0.1', '-p', str(instance.document['network']['nats_port'])], env
-    if component in {'claude', 'claude-code'}:
+    if (component in {'claude', 'claude-code'} or component.startswith('claude-account@')):
         runtime = code_environment.provider_entry('claude_runtime_current', instance)
         executable = runtime / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
         package = code_environment.provider_entry('claude_app_server_current', instance)
         if not executable.is_file() or not (package / 'management_portal/claude_code_daemon.py').is_file():
             raise FileNotFoundError('Prepare the Claude SDK and app-server package before startup')
-        return [str(executable), '-m', 'management_portal.claude_code_daemon'], env
+        command = [str(executable), '-m', 'management_portal.claude_code_daemon']
+        if component.startswith('claude-account@'):
+            from management_portal.claude_code_client import account_socket
+            route = component.partition('@')[2]
+            env['PORTAL_CLAUDE_CODE_PROVIDER_PROFILE'] = route
+            command.extend(['--socket', str(account_socket(instance, route))])
+        return command, env
     python = str(code_environment.runtime_python(code))
     program = instance.service_program(component)
     if program is not None:
@@ -138,7 +144,7 @@ def working_directory(instance: InstanceManifest, component: str) -> Path:
     if program is not None:
         return instance.resolve(program['working_directory'])
     return (code_environment.provider_entry('claude_app_server_current', instance)
-            if component in {'claude', 'claude-code'} else instance.service_code(component))
+            if (component in {'claude', 'claude-code'} or component.startswith('claude-account@')) else instance.service_code(component))
 
 
 def launch(root: Path, component: str) -> None:

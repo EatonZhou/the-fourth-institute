@@ -71,6 +71,18 @@ def provider_runtime_services(unit: str) -> tuple[str, ...]:
     return (name,) if instance_services.controller(instance).status(name)["active"] == "active" else ()
 
 
+def claude_account_services():
+    from scripts import instance_services
+    instance = _instance()
+    components = [name for name in instance.document['services']['components']
+                  if name.startswith('claude-account@')]
+    if components:
+        instance_services.verify_definitions(instance, exact=False, selected_components=components)
+    control = instance_services.controller(instance)
+    names = [instance_services.unit_name(instance, component) for component in components]
+    return tuple(name for name in names if control.status(name)['active'] == 'active')
+
+
 def _run(*args: str, check: bool = True, capture: bool = True) -> subprocess.CompletedProcess[str]:
     env = None
     if args[:2] == ("systemctl", "--user"):

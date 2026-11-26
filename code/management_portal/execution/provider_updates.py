@@ -327,8 +327,8 @@ class ClaudeRuntime(ProviderRuntime):
 
     @property
     def services(self) -> tuple[str, ...]:
-        from scripts.portal_service_units import provider_runtime_services
-        return provider_runtime_services(self.unit_files[0])
+        from scripts.portal_service_units import claude_account_services, provider_runtime_services
+        return provider_runtime_services(self.unit_files[0]) + claude_account_services()
 
     def available(self) -> tuple[str, ...]:
         return (pypi_version("claude-agent-sdk"),)

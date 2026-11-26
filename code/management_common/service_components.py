@@ -25,4 +25,4 @@ MODULES = {
 
 def is_builtin(component: str) -> bool:
     return component in {'postgres', 'nats', 'web', 'dev-web', *MODULES} or bool(
-        re.fullmatch(r'(?:codex-app-server|kimi-account)@[A-Za-z0-9_-]+', component))
+        re.fullmatch(r'(?:codex-app-server|kimi-account|claude-account)@[A-Za-z0-9_-]+', component))

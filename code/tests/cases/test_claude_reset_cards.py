@@ -101,7 +101,7 @@ def test_claude_adapter_exports_cards_to_home_and_history(monkeypatch):
     monkeypatch.setattr(module, "read_cards", lambda _: module.parse_cards({}, now=NOW))
     client = Mock()
     client.account_usage.return_value = snapshot()
-    monkeypatch.setattr(claude_code_client, "shared_client", lambda: client)
+    monkeypatch.setattr(claude_code_client, "shared_client", lambda *args: client)
     account = SimpleNamespace(account_id="one", route_id="one", quota_policy="reserve")
     result = adapter.observe(account, passive=True)
     assert result["refresh_cards"]["available_count"] == 0

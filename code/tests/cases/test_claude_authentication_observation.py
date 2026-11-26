@@ -70,7 +70,7 @@ def test_native_auth_failure_reaches_login_observer_and_recovery(
     cache.observe(*key, {"unifiedWindows": {"five_hour": {"utilization": .1}, "seven_day": {"utilization": .2}}})
     asyncio.run(cache._refresh(profile, key))
     snapshot = cache.snapshot(*key)
-    monkeypatch.setattr("management_portal.claude_code_client.shared_client", lambda: SimpleNamespace(
+    monkeypatch.setattr("management_portal.claude_code_client.shared_client", lambda *args: SimpleNamespace(
         account_usage=lambda *args, **kwargs: cache.snapshot(*key)))
     adapter, account = claude_subscription
     login_store = Mock()
@@ -121,7 +121,7 @@ def test_usage_failure_without_auth_evidence_does_not_expire_login(monkeypatch, 
 def test_unclassified_usage_failure_checks_native_login_without_guessing(monkeypatch, logged_in, claude_subscription):
     """缺用量原文不证明认证失效；只有原生登录检查明确失败才到期。"""
     snapshot = {"quota_status": "stale", "quota_error": "Claude 未返回完整的订阅用量，请稍后刷新"}
-    monkeypatch.setattr("management_portal.claude_code_client.shared_client", lambda: SimpleNamespace(
+    monkeypatch.setattr("management_portal.claude_code_client.shared_client", lambda *args: SimpleNamespace(
         account_usage=lambda *args, **kwargs: snapshot))
     from management_portal.execution import account_login
     probe = Mock(side_effect=logged_in) if isinstance(logged_in, Exception) else Mock(return_value=logged_in)
@@ -193,7 +193,7 @@ def test_cached_auth_failure_cannot_undo_login_and_native_success_recovers_witho
 
     store = LoginStore()
     successful_login_at = store.updated
-    monkeypatch.setattr("management_portal.claude_code_client.shared_client", lambda: SimpleNamespace(
+    monkeypatch.setattr("management_portal.claude_code_client.shared_client", lambda *args: SimpleNamespace(
         account_usage=lambda *args, **kwargs: cache.snapshot(*key)))
     monkeypatch.setattr(account_login, "provider_logged_in", Mock(return_value=True))
     adapter, account = claude_subscription

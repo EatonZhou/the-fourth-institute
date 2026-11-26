@@ -101,10 +101,10 @@ def _started_codex_catalog(row, *, timeout=30.0):
 
 
 def _started_claude_catalog(row, *, timeout=30.0):
-    from management_portal.claude_code_client import ClaudeCodeClient, ClaudeCodeUnavailable
+    from management_portal.claude_code_client import ClaudeCodeUnavailable, shared_client
 
     # A reusable SDK says nothing about the new instance's listening daemon.
-    client = ClaudeCodeClient()
+    client = shared_client(row["route_id"])
     deadline = time.monotonic() + timeout
     while True:
         try:

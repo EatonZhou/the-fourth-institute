@@ -93,7 +93,7 @@ def test_claude_home_status_uses_daemon_not_api_credentials(monkeypatch, tmp_pat
     from management_portal import claude_code_client
     client = mock.Mock()
     client.account_usage.return_value = {"quota_status": "ok", "rate_limits": []}
-    monkeypatch.setattr(claude_code_client, "shared_client", lambda: client)
+    monkeypatch.setattr(claude_code_client, "shared_client", lambda *args: client)
     registration = {
         "account_id": "claude_fixture", "route_id": "fixture", "kind": "subscription_login",
         "max_concurrency": 1, "config": {"account_dir": str(tmp_path)},

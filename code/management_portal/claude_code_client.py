@@ -1,7 +1,6 @@
 from __future__ import annotations
 from management_common.portal_paths import path as portal_path
 
-import threading
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
@@ -236,13 +235,17 @@ class ClaudeCodeClient(NativeAgentClient):
         )
 
 
-_CLIENT: ClaudeCodeClient | None = None
-_CLIENT_LOCK = threading.Lock()
+def account_socket(instance, route: str) -> Path:
+    from hashlib import sha256
+    suffix = sha256(route.encode()).hexdigest()[:20]
+    return instance.directory("runtime") / "s" / f"claude-{suffix}.sock"
 
 
-def shared_client() -> ClaudeCodeClient:
-    global _CLIENT
-    with _CLIENT_LOCK:
-        if _CLIENT is None:
-            _CLIENT = ClaudeCodeClient()
-        return _CLIENT
+def shared_client(route: str = "") -> ClaudeCodeClient:
+    if route:
+        from management_common.instance_manifest import load
+        instance = load()
+        if f"claude-account@{route}" in instance.document["services"]["components"]:
+            return ClaudeCodeClient(account_socket(instance, route))
+
+    return ClaudeCodeClient()

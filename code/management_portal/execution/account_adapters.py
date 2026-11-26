@@ -288,8 +288,8 @@ class ClaudeAccounts:
         from management_portal.claude_code_client import shared_client
         if account.quota_policy == "none":
             return {"status": "ok", "rate_limits": []}
-        snapshot = (shared_client().account_usage(account.route_id, native_refresh=False) if passive
-                    else shared_client().account_usage(account.route_id, force_refresh=force))
+        snapshot = (shared_client(account.route_id).account_usage(account.route_id, native_refresh=False) if passive
+                    else shared_client(account.route_id).account_usage(account.route_id, force_refresh=force))
         if not passive:
             (ClaudeAccounts._passive_routes.add if snapshot.get("native_refresh_optional") is True
              else ClaudeAccounts._passive_routes.discard)(account.route_id)
