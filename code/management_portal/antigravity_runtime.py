@@ -1,9 +1,10 @@
-"""Stage Google's pinned CLI using the SHA-512 from its official bootstrap manifests."""
+"""Stage Google’s CLI using its platform-specific official release manifest."""
 from __future__ import annotations
 
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import sys
@@ -23,12 +24,32 @@ def credential_environment():
     return {"AGY_CLI_FORCE_FILE_TOKEN_STORAGE": "1", "AGY_CLI_DISABLE_AUTO_UPDATE": "true"}
 
 
-def distribution():
+def manifest_platform():
     system, arch = platform_key().split("-")
     target = f"{system}_{'amd64' if arch == 'x86_64' else 'arm64'}"
     if system == "linux" and list(Path("/lib").glob("libc.musl-*.so.1")):
         target += "_musl"
-    return json.loads(MANIFEST.read_text())[target]
+    return target
+
+
+def distribution():
+    return json.loads(MANIFEST.read_text())[manifest_platform()]
+
+
+def supported_version(value):
+    return (isinstance(value, str) and re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", value) is not None
+            and updates.Version(value) >= updates.Version(VERSION))
+
+
+def latest_distribution():
+    base = "https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests"
+    with urlopen(f"{base}/{manifest_platform()}.json", timeout=30) as response:
+        item = json.load(response)
+    if (not isinstance(item, dict) or not supported_version(item.get("version"))
+            or not str(item.get("url", "")).startswith("https://storage.googleapis.com/antigravity-public/antigravity-cli/")
+            or not re.fullmatch(r"[0-9a-f]{128}", str(item.get("sha512", "")))):
+        raise ValueError("Invalid official Antigravity release manifest")
+    return item
 
 
 def binary_path(root):
@@ -49,14 +70,13 @@ def _cli_args(binary, env):
 
 class AntigravityRuntime(updates.ProviderRuntime):
     def available(self):
-        distribution()
-        return (VERSION,)
+        return (latest_distribution()["version"],)
 
     def supports_versions(self, versions):
-        return tuple(versions) == (VERSION,)
+        return len(versions) == 1 and supported_version(versions[0])
 
     def installed(self):
-        return (VERSION,) if self._record(self.link()) else ("0",)
+        return (self._record(self.link()).get("version", "0"),)
 
     def prerequisites_available(self):
         platform_key()
@@ -69,7 +89,8 @@ class AntigravityRuntime(updates.ProviderRuntime):
     def _record(root):
         try:
             value = json.loads((root / "distribution.json").read_text())
-            if (value.get("version") == VERSION and value.get("sha512") == distribution()["sha512"]
+            if (supported_version(value.get("version")) and re.fullmatch(r"[0-9a-f]{128}", str(value.get("sha512", "")))
+                    and (value["version"] != VERSION or value["sha512"] == distribution()["sha512"])
                     and binary_path(root).is_file() and (root / ".portal-validated").is_file()):
                 return value
         except (OSError, ValueError, AttributeError):
@@ -79,10 +100,13 @@ class AntigravityRuntime(updates.ProviderRuntime):
     def stage(self, versions):
         if not self.supports_versions(versions):
             raise ValueError(f"Antigravity provider requires CLI {VERSION}")
-        item = distribution()
-        root = updates.RUNTIMES / f"antigravity-cli-{VERSION}"
+        version, = versions
+        item = distribution() if version == VERSION else latest_distribution()
+        if item.get("version", version) != version:
+            raise ValueError("Antigravity release manifest changed during preparation")
+        root = updates.RUNTIMES / f"antigravity-cli-{version}"
         existing = self._record(root)
-        if existing and _digest(binary_path(root)) == existing.get("binary_sha256"):
+        if existing.get("version") == version and existing["sha512"] == item["sha512"] and _digest(binary_path(root)) == existing.get("binary_sha256"):
             return root
         root.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory(dir=root) as scratch:
@@ -115,11 +139,15 @@ class AntigravityRuntime(updates.ProviderRuntime):
                 env.update({k: os.environ[k] for k in ("SystemRoot", "WINDIR", "COMSPEC", "PATHEXT") if k in os.environ})
                 env.update(USERPROFILE=scratch, APPDATA=scratch, LOCALAPPDATA=scratch, TEMP=scratch, TMP=scratch)
             with updates.phase("executable_validation"), AcpClient(_cli_args(binary, env), env=env, cwd=scratch) as client:
-                if client.initialize().get("agentInfo", {}).get("version") != VERSION:
+                welcome = client.initialize()
+                if welcome.get("agentInfo", {}).get("version") != version:
                     raise RuntimeError("Antigravity CLI handshake version mismatch")
-            record = {"version": VERSION, "sha512": item["sha512"], "binary_sha256": _digest(binary)}
+                capabilities = welcome.get("agentCapabilities") or {}
+                if not capabilities.get("loadSession") or not capabilities.get("mcpCapabilities", {}).get("http"):
+                    raise RuntimeError("Antigravity CLI lacks required session/MCP capabilities")
+            record = {"version": version, "sha512": item["sha512"], "binary_sha256": _digest(binary)}
             (stage / "distribution.json").write_text(json.dumps(record) + "\n")
-            (stage / ".portal-validated").write_text(VERSION + "\n")
+            (stage / ".portal-validated").write_text(version + "\n")
             for file in (binary, stage / "distribution.json", stage / ".portal-validated"):
                 file.replace(root / file.name)
         return root

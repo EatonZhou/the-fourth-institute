@@ -701,7 +701,8 @@ def test_account_environment_and_login_parser_are_isolated(monkeypatch, tmp_path
 
 
 @pytest.mark.parametrize("platform", ["linux", "darwin", "win32"])
-def test_installer_verifies_official_cli_before_activation(monkeypatch, tmp_path, platform):
+@pytest.mark.parametrize("version", ["1.5.18", "1.5.19"])
+def test_installer_verifies_official_cli_before_activation(monkeypatch, tmp_path, platform, version):
     payload = b"official executable"
     archive = io.BytesIO()
     if platform == "win32":
@@ -714,25 +715,26 @@ def test_installer_verifies_official_cli_before_activation(monkeypatch, tmp_path
             bundle.addfile(member, io.BytesIO(payload))
         url = "https://example.test/agy.tar.gz"
     data = archive.getvalue()
-    release = {"url": url, "sha512": hashlib.sha512(data).hexdigest()}
+    release = {"version": version, "url": url, "sha512": hashlib.sha512(data).hexdigest()}
+    monkeypatch.setattr(runtime, "latest_distribution", lambda: release)
     monkeypatch.setattr(runtime, "distribution", lambda: release)
     monkeypatch.setattr(runtime.updates, "RUNTIMES", tmp_path)
     monkeypatch.setattr(runtime, "urlopen", lambda *a, **k: io.BytesIO(data))
     monkeypatch.setattr(runtime.sys, "platform", platform)
-    target = tmp_path / "antigravity-cli-1.5.18"
+    target = tmp_path / f"antigravity-cli-{version}"
     monkeypatch.setattr(runtime.AntigravityRuntime, "link", lambda self: target)
     provider = runtime.AntigravityRuntime()
     with mock.patch("management_portal.antigravity_client.AcpClient") as client:
         handshake = client.return_value.__enter__.return_value.initialize
         handshake.return_value = {"agentInfo": {"version": "1.5.17"}}
         with pytest.raises(runtime.updates.PreparationError):
-            provider.stage((runtime.VERSION,))
+            provider.stage((version,))
         assert provider.installed() == ("0",)
-        handshake.return_value = {"agentInfo": {"version": runtime.VERSION}}
+        handshake.return_value = {"agentInfo": {"version": version}, "agentCapabilities": {"loadSession": True, "mcpCapabilities": {"http": True}}}
         assert provider.stage(provider.available()) == target
         assert client.call_args.args[0][1:3] == ["acp", "--process-per-session"]
         assert "GEMINI_API_KEY" not in client.call_args.kwargs["env"]
-    assert provider.installed() == ("1.5.18",)
+    assert provider.installed() == (version,)
     env = {"HOME": str(tmp_path), "GEMINI_HOME": str(tmp_path / "account")}
     assert runtime.command(env) == [str(runtime.binary_path(target)), "acp", "--process-per-session",
                                     "--gemini-dir", "account", "--app-data-dir", "antigravity-acp"]
@@ -741,7 +743,7 @@ def test_installer_verifies_official_cli_before_activation(monkeypatch, tmp_path
         runtime.command(env)
     release["sha512"] = "0" * 128
     with pytest.raises(ValueError, match="checksum"):
-        provider.stage((runtime.VERSION,))
+        provider.stage((version,))
 
 
 def test_legacy_installation_cannot_be_selected(monkeypatch, tmp_path):

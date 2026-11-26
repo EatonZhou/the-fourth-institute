@@ -10,7 +10,7 @@ from management_common.file_permissions import atomic_write_private_bytes
 from management_common.provider_turn_artifacts import ToolEditArtifacts
 from management_portal import antigravity_accounts as accounts
 from management_portal.antigravity_client import AcpClient, AcpTransportError, ToolServer
-from management_portal.antigravity_runtime import VERSION, command, credential_environment
+from management_portal.antigravity_runtime import command, credential_environment, supported_version
 from management_portal.antigravity_input_media import prompt_content
 from management_portal.resident_shell_environment import resident_process_environment
 from . import antigravity_cli
@@ -274,8 +274,9 @@ class AntigravityCliBackend:
             client = resources.enter_context(self.open_client(cwd, env, portal_only=portal_only,
                                                                 on_update=on_update, on_request=on_request))
             welcome = client.initialize()
-            if welcome.get("agentInfo", {}).get("version") != VERSION:
-                raise RuntimeError(f"Antigravity CLI handshake must report {VERSION}")
+            version = welcome.get("agentInfo", {}).get("version")
+            if not supported_version(version):
+                raise RuntimeError("Unsupported Antigravity CLI handshake version")
             capabilities = welcome.get("agentCapabilities") or {}
             if request.input_media and not capabilities.get("promptCapabilities", {}).get("image"):
                 raise ValueError("Antigravity ACP runtime does not support image input")
@@ -291,8 +292,8 @@ class AntigravityCliBackend:
             if not previous_id:
                 account_root = accounts.account_runtime(self.provider_id, account["account_id"])
                 if portal_only:
-                    atomic_write_private_bytes(antigravity_cli.policy_marker(account_root, session_id), VERSION.encode())
-                atomic_write_private_bytes(antigravity_cli.session_marker(account_root, session_id), VERSION.encode())
+                    atomic_write_private_bytes(antigravity_cli.policy_marker(account_root, session_id), version.encode())
+                atomic_write_private_bytes(antigravity_cli.session_marker(account_root, session_id), version.encode())
             models = accounts.save_catalog(account["account_id"], opened, capabilities)
             model = str(request.runtime_options.get("model") or models["default_model"])
             if model not in models["models"]:
