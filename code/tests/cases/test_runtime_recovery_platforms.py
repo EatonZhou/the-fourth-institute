@@ -161,7 +161,7 @@ def test_tree_observation_survives_leader_exit(tmp_path):
 def test_windows_login_environment_uses_native_bootstrap_only(tmp_path, monkeypatch, provider):
     monkeypatch.setattr(login, 'sys', SimpleNamespace(platform='win32'))
     monkeypatch.setattr(login, 'account_home', lambda *args: tmp_path/'account')
-    monkeypatch.setattr(login.portal_network, 'saved_proxy_environment', lambda: {'HTTPS_PROXY':'http://127.0.0.1:1'})
+    monkeypatch.setenv('HTTPS_PROXY', 'http://127.0.0.1:1')
     monkeypatch.setenv('SystemRoot', r'C:\Windows')
     monkeypatch.setenv('COMSPEC', r'C:\Windows\System32\cmd.exe')
     monkeypatch.setenv('ANTHROPIC_API_KEY', 'do-not-copy')

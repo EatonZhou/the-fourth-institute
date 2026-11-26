@@ -129,17 +129,9 @@ def run_host(path, binary, account_home, stop_event, *, platform=None, startup_t
     if windows:
         command += ["--ws-auth", "capability-token", "--ws-token-sha256", hashlib.sha256(token.encode()).hexdigest()]
     env = dict(os.environ, CODEX_HOME=str(account_home))
-    # Native service definitions contain configuration paths, never proxy
-    # credentials. Resolve the same saved egress as login at process startup.
-    from management_common import portal_network
-    proxy = portal_network.saved_proxy_environment()
-    if proxy is None:
-        proxy = portal_network.inherited_proxy_environment()
-    for key in portal_network.PROXY_KEYS:
-        env.pop(key, None)
-    env.update(proxy)
     env.update(extra_env or {})
-    process = spawn_process(command, cwd=str(account_home), env=env, stdin=subprocess.DEVNULL,
+    from management_common.portal_network import host_routed_environment
+    process = spawn_process(command, cwd=str(account_home), env=host_routed_environment(env), stdin=subprocess.DEVNULL,
                             stderr=subprocess.PIPE, text=True, encoding="utf-8", errors="replace")
     addresses = queue.Queue(maxsize=1)
     published = False
@@ -243,7 +235,7 @@ def main():
         from .execution.account_registrations import registration
         row = registration(args.account_id)
         if row and row["kind"] == "api_profile":
-            from .model_api_bridge import Bridge, resolve_account, local_proxy_bypass
+            from .model_api_bridge import Bridge, resolve_account
             from .model_api_wire import upstream, RESPONSES
             entry = resolve_account(row["config"]["api_id"], args.account_id)
             if upstream(entry, RESPONSES) != RESPONSES:
@@ -253,7 +245,6 @@ def main():
                                  'model_providers.portal_api.env_key="TFI_MODEL_BRIDGE_TOKEN"',
                                  "model_providers.portal_api.requires_openai_auth=false"]
                     env = {"TFI_MODEL_BRIDGE_TOKEN": bridge.token}
-                    env.update(local_proxy_bypass(env))
                     return run_host(args.socket, args.binary, home, stop, config_overrides=overrides, extra_env=env)
         return run_host(args.socket, args.binary, home, stop)
     finally:

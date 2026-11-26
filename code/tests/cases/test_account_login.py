@@ -103,8 +103,8 @@ def test_login_output_only_keeps_authorization_prompt():
     assert claude.feed("If the browser didn't open, visit: https://claude.com/cai/oauth/authorize?code=true&state=example\n")[1].startswith("https://claude.com/")
 
 
-def test_login_environment_excludes_other_credentials_and_uses_the_saved_proxy(isolated_login, tmp_path, monkeypatch):
-    """登录环境隔离其他账号和 API 凭据，只采用实例 secrets 中保存的出口设置
+def test_login_environment_excludes_other_credentials_and_ignores_instance_proxy(isolated_login, tmp_path, monkeypatch):
+    """登录环境隔离其他账号和 API 凭据，由宿主机负责出口
 
     :design: decision_7956d7cb4bde
     :importance: P1
@@ -112,15 +112,14 @@ def test_login_environment_excludes_other_credentials_and_uses_the_saved_proxy(i
     from management_common.instance_manifest import load
     monkeypatch.setenv("ANTHROPIC_API_KEY", "synthetic-other-account")
     monkeypatch.setenv("CODEX_HOME", "/other/account")
-    for key in login.PROXY_KEYS:
-        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setenv("HTTPS_PROXY", "http://inherited.invalid")
     proxy = load().directory("secrets") / "network.env"
     proxy.parent.mkdir(parents=True, exist_ok=True)
     proxy.write_text('HTTPS_PROXY="http://127.0.0.1:3128"\nANTHROPIC_API_KEY=synthetic-ignored\n')
     env = login.login_environment("claude", "login_claude")
     assert env["CLAUDE_CONFIG_DIR"] == str(account_hosting.account_home("claude", "login_claude"))
     assert "ANTHROPIC_API_KEY" not in env and "CODEX_HOME" not in env
-    assert env["HTTPS_PROXY"] == "http://127.0.0.1:3128"
+    assert "HTTPS_PROXY" not in env
     proxy.unlink()
     assert "HTTPS_PROXY" not in login.login_environment("codex", "login_codex")
 

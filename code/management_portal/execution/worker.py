@@ -893,9 +893,8 @@ def _elapsed_since_iso_ms(value: str) -> float:
 
 def main() -> int:
     # A rolling replacement can inherit the previous manager's environment.
-    if portal_network.proxy_environment_disabled():
-        for key in portal_network.PROXY_KEYS:
-            os.environ.pop(key, None)
+    for key in portal_network.PROXY_KEYS:
+        os.environ.pop(key, None)
     loaded_modules.track()
     try:
         return ExecutionWorkerDaemon().run()

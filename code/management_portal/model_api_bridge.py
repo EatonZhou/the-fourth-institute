@@ -11,7 +11,6 @@ import atexit
 import hmac
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
-import os
 import re
 import secrets
 import select
@@ -365,15 +364,6 @@ def close_bridges():
         _bridges.clear()
     for bridge in bridges:
         bridge.close()
-
-
-def local_proxy_bypass(environment):
-    """A harness reaches its private adapter directly; upstream egress is unchanged."""
-    result = dict(environment)
-    for name in ("NO_PROXY", "no_proxy"):
-        existing = environment.get(name) or os.environ.get(name, "")
-        result[name] = ",".join(filter(None, (existing, "127.0.0.1", "localhost")))
-    return result
 
 
 atexit.register(close_bridges)

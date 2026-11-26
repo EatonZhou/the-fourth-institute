@@ -242,7 +242,7 @@ def _provider_environment(profile_id: str) -> tuple[dict[str, str], dict[str, An
     if claude_provider_catalog.is_native(profile):
         env = claude_provider_catalog.login_environment(profile)
         return env, profile
-    from management_portal.model_api_bridge import connection, local_proxy_bypass
+    from management_portal.model_api_bridge import connection
     from management_portal.model_api_wire import upstream, MESSAGES
     converted = upstream(profile, MESSAGES) != MESSAGES
     base_url, auth, key = connection(profile, MESSAGES, account_id=profile.get("account_id", ""))
@@ -259,7 +259,6 @@ def _provider_environment(profile_id: str) -> tuple[dict[str, str], dict[str, An
     }
     if converted:
         env["ANTHROPIC_CUSTOM_HEADERS"] = ""
-        env.update(local_proxy_bypass(env))
     elif claude_provider_catalog.is_declared(profile):
         headers = {str(name): str(value).strip() for name, value in (profile.get("default_headers") or {}).items()
                    if str(value or "").strip()}

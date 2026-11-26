@@ -125,6 +125,11 @@ def _proxy_values(entries: dict[str, str]) -> dict[str, str]:
             for field, key in PROXY_FIELDS.items()}
 
 
+def host_routed_environment(environment):
+    """Leave outbound routing to the host for this child process."""
+    return {key: value for key, value in environment.items() if key.upper() not in PROXY_FIELDS.values()}
+
+
 def proxy_environment_disabled(instance=None) -> bool:
     if os.environ.get(PROVIDER_EGRESS_ENV) == "tunnel":
         return True

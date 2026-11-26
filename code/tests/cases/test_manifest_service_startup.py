@@ -146,14 +146,14 @@ def test_provider_launchers_use_code_owned_programs(instance, monkeypatch):
         instance_runtime.component_command(instance, 'claude-code')
 
 
-def test_saved_proxy_policy_is_loaded_privately_at_startup(instance, monkeypatch):
+def test_worker_ignores_saved_and_host_proxies(instance, monkeypatch):
     monkeypatch.setenv('HTTPS_PROXY', 'http://unrelated-host-proxy')
     private = instance.root / 'secrets'
     private.mkdir()
     (private / 'network.env').write_text('HTTPS_PROXY=""\nHTTP_PROXY=""\nALL_PROXY=""\nNO_PROXY="localhost"\n')
     environment = instance_runtime.clean_environment(instance, component='worker')
-    assert environment['HTTPS_PROXY'] == ''
-    assert environment['NO_PROXY'] == 'localhost'
+    assert 'HTTPS_PROXY' not in environment
+    assert 'NO_PROXY' not in environment
     assert 'network.env' not in linux.manifest_unit_text(instance, 'worker')
 
 

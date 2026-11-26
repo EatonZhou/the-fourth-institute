@@ -145,7 +145,6 @@ def account_main(account_id, binary, port, *, supervised=False):
         env, _ = resident_process_environment({})
         env.update(KIMI_CODE_HOME=str(target))
         env.update(kimi_windows_runtime.environment())
-        env = model_api_bridge.local_proxy_bypass(env)
         if supervised:
             kimi_account_runtime.record_service(account, binary, port)
         close_all_database_pools()
@@ -194,7 +193,8 @@ def main(argv=None) -> int:
     # The server read its registration from the Portal database; Kimi Code
     # and the shells it starts get neither its connection nor its address.
     close_all_database_pools()
-    env = dict(os.environ)
+    from management_common.portal_network import host_routed_environment
+    env = host_routed_environment(os.environ)
     for key in (
         "PORTAL_DATABASE_URL",
         "KIMI_MODEL_NAME",

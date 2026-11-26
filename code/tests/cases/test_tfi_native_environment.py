@@ -28,11 +28,10 @@ def isolated_environment(monkeypatch):
     for name in tuple(os.environ):
         monkeypatch.delenv(name)
     monkeypatch.setenv("PORTAL_INSTANCE_ROOT", instance)
-    monkeypatch.setattr(shell.portal_network, 'saved_proxy_environment', lambda: None)
 
 
 def test_shell_mirrors_identity_and_keeps_allowlist_proxy_boundary(monkeypatch):
-    """Resident Shell 环境只带记录给出的 PORTAL_ 身份与允许的变量，代理取托管设置，不继承调用者的身份、数据库地址或其他秘密"""
+    """Resident Shell 环境只带记录给出的 PORTAL_ 身份与允许的变量，出口由宿主机负责，不继承调用者的身份、数据库地址或其他秘密"""
     identity = NEW
     monkeypatch.setenv('PATH', '/test/bin')
     monkeypatch.setenv('HTTP_PROXY', 'http://worker.invalid')
@@ -40,12 +39,10 @@ def test_shell_mirrors_identity_and_keeps_allowlist_proxy_boundary(monkeypatch):
     monkeypatch.setenv('PORTAL_RESIDENT_ID', 'resident_999999999999')
     monkeypatch.setenv('ARCHIVE_LINEAGE_ID', 'lineage_999999999999')
     monkeypatch.setenv('UNRELATED_SECRET', 'fixture-only')
-    monkeypatch.setattr(shell.portal_network, 'saved_proxy_environment',
-                        lambda: {'HTTP_PROXY': 'http://managed.invalid'})
     env, actual = shell.resident_process_environment({'resident_environment': identity})
     assert actual == NEW
     assert env == {'PORTAL_INSTANCE_ROOT': os.environ['PORTAL_INSTANCE_ROOT'], 'PATH': '/test/bin',
-                   'HTTP_PROXY': 'http://managed.invalid', **NEW}
+                   **NEW}
 
 
 INVALID = [

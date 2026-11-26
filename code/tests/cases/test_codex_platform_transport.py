@@ -122,7 +122,7 @@ def test_normal_stop_removes_owned_endpoint(tmp_path, fake_codex):
 
 
 @pytest.mark.parametrize("saved", [None, {}, {"HTTPS_PROXY": "http://127.0.0.1:8888"}])
-def test_native_host_resolves_private_egress_at_startup(tmp_path, fake_codex, monkeypatch, saved):
+def test_native_host_ignores_application_proxies_at_startup(tmp_path, fake_codex, monkeypatch, saved):
     from management_common import portal_network
     monkeypatch.setenv("HTTPS_PROXY", "http://stale.invalid:1")
     inherited = {"HTTPS_PROXY": "http://127.0.0.1:9999"}
@@ -137,7 +137,7 @@ def test_native_host_resolves_private_egress_at_startup(tmp_path, fake_codex, mo
     endpoint, stop, thread, failures = start_host(tmp_path)
     try:
         assert endpoint.exists(), failures
-        assert observed[0].get("HTTPS_PROXY") == (inherited if saved is None else saved).get("HTTPS_PROXY")
+        assert "HTTPS_PROXY" not in observed[0]
         assert observed[0]["CODEX_HOME"] == str(tmp_path)
     finally:
         stop.set(); thread.join(5)

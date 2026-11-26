@@ -7,7 +7,6 @@ import re
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
-from management_common import portal_network
 from management_common.product_environment import mirror_product_env, read_product_env
 
 # What a Resident's local agent process takes from the Worker's environment.
@@ -16,8 +15,7 @@ PROCESS_ENVIRONMENT_KEYS = frozenset({
     # Windows native bridges need the same user profile as the parent for
     # authenticated local IPC. These are directories, not provider credentials.
     "USERPROFILE", "HOMEDRIVE", "HOMEPATH", "LOCALAPPDATA", "APPDATA",
-    "SSL_CERT_FILE", "SSL_CERT_DIR", "HTTPS_PROXY", "HTTP_PROXY", "ALL_PROXY", "NO_PROXY",
-    "https_proxy", "http_proxy", "all_proxy", "no_proxy",
+    "SSL_CERT_FILE", "SSL_CERT_DIR",
 })
 
 
@@ -76,11 +74,6 @@ def resident_process_environment(params: Mapping[str, Any]) -> tuple[dict[str, s
     """
 
     environment = {key: value for key, value in os.environ.items() if key in PROCESS_ENVIRONMENT_KEYS}
-    managed_proxy = portal_network.saved_proxy_environment()
-    if managed_proxy is not None:
-        for key in portal_network.PROXY_KEYS:
-            environment.pop(key, None)
-        environment.update(managed_proxy)
     original_identity = dict(params.get("resident_environment") or {})
     mirrored_identity = resident_identity_environment(original_identity)
     environment.update(mirrored_identity)

@@ -74,7 +74,7 @@ def test_kimi_account_host_filters_native_environment_and_closes_transient_adapt
     def run(command, **options):
         assert 'PORTAL_DATABASE_URL' not in options['env']
         assert options['env']['KIMI_CODE_HOME'] == str(tmp_path)
-        assert '127.0.0.1' in options['env']['NO_PROXY']
+        assert 'NO_PROXY' not in options['env']
         assert options['cwd'] == tmp_path
         raise RuntimeError('native child stopped')
     monkeypatch.setattr(provider_daemon_host, 'run', run)

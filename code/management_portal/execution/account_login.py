@@ -20,7 +20,6 @@ import time
 from urllib.parse import urlsplit
 
 from management_common.instance_manifest import instance_runtime_root
-from management_common import portal_network
 from management_common.file_lock import try_lock_descriptor
 from management_common.local_ipc import LocalListener, connect_local
 from management_common.process_runtime import run_process, spawn_process, terminate_process_tree
@@ -31,7 +30,6 @@ from .account_hosting import account_home, ensure_account_home, start_codex_inst
 
 ACTIVE = ("pending", "awaiting_user")
 LOGIN_SECONDS = 900
-PROXY_KEYS = {"HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY", "http_proxy", "https_proxy", "all_proxy", "no_proxy"}
 ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 
 
@@ -204,14 +202,7 @@ def local_login_environment(provider, account_id):
     return env
 
 
-def login_environment(provider, account_id):
-    env = local_login_environment(provider, account_id)
-    managed_proxy = portal_network.saved_proxy_environment()
-    if managed_proxy is not None:
-        env.update(managed_proxy)
-        return env
-    env.update(portal_network.inherited_proxy_environment())
-    return env
+login_environment = local_login_environment
 
 
 def provider_binary(provider):
@@ -341,7 +332,7 @@ class LoginManager:
 
     def start(self, registration):
         account_id, provider = registration["account_id"], registration["provider"]
-        # Validate runtime/proxy before acquiring a persistent session.
+        # Validate the login runtime before acquiring a persistent session.
         command, env = login_command(provider), login_environment(provider, account_id)
         ensure_account_home(provider, account_id)
         lock_path, socket_path = _session_paths(account_id)
