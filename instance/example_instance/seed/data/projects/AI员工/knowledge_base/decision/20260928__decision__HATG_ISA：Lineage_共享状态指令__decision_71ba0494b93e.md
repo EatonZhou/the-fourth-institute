@@ -4,22 +4,22 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 11
-  created_at: '2026-09-28T10:45:00Z'
+  number: 13
+  created_at: "2026-09-28T10:45:00Z"
   created_by:
-    user: tfi-exported-user
-    agent: resident_2a1fc6cd272d
-  updated_at: '2026-10-27T12:52:35Z'
+    user: "weihao"
+    agent: "resident_2a1fc6cd272d"
+  updated_at: "2026-11-26T19:31:58Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_6199a7a36480"
 importance: 8
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/society_service/isa/shared_state.py
-  - ${code_root}/management_portal/society_service/lineage_graph_state.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/isa/shared_state.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_graph_state.py
   related:
   - decision_898b8911a2ff
   - decision_4adcc1ff2f2c
