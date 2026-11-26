@@ -16,9 +16,9 @@ def create_family(lineage_id, resident_ids, actor, *, template_id=None, **option
     """Supply the saved recipe to Family assembly after its admission checks."""
     from . import familize, store
 
-    if template_id is None:
+    if not template_id:
         template_id = familize.TEMPLATE_ID
-        if not store.get(template_id)['body'].get('role_templates'):
+        if not options.get('personal_ama_id') and not store.get(template_id)['body'].get('role_templates'):
             from .builtins import template_id as builtin_id
             template_id = builtin_id('family_roles')
     return familize.familize(

@@ -179,6 +179,21 @@ def test_custom_legacy_family_recipe_is_kept_and_new_default_uses_composition(li
     assert store.get(familize.TEMPLATE_ID) == original
 
 
+def test_personal_assistant_keeps_its_original_recipe_and_configuration(monkeypatch):
+    from management_portal.society_service import templates
+    from management_portal.society_service.templates import store
+    source = {'body': {'goal': 'Personal configuration'}}
+    def get(identity):
+        assert identity == familize.TEMPLATE_ID
+        return deepcopy(source)
+    def assemble(*args, **kwargs):
+        return {'template_id': kwargs['template_id'], 'body': kwargs['load_body']()}
+    monkeypatch.setattr(store, 'get', get)
+    monkeypatch.setattr(familize, 'familize', assemble)
+    result = templates.create_family('lineage_000000000001', [], 'actor', personal_ama_id='resident_000000000001')
+    assert result == {'template_id': familize.TEMPLATE_ID, 'body': source['body']}
+
+
 def test_whole_family_uninstall_uses_existing_stop_gate_and_cleans_role_sources(lineage, charters, monkeypatch):
     import pytest
     member = resident(lineage, 'Member')
