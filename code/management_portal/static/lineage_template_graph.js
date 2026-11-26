@@ -349,7 +349,13 @@
           <div class="hatgWorld"><svg class="hatgEdges" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><defs>${WIRE_KINDS.map(kind => `<marker id="templateGraph-${kind}-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/></marker>`).join('')}</defs><g data-layer="edges"></g><g data-layer="effects"></g></svg>
             <div class="hatgEdgeLabels"></div><div class="hatgNodes"></div></div>
         </div>
-        <button type="button" class="templateGraphFit" data-graph-fit aria-label="${esc(t('适合窗口'))}" title="${esc(t('适合窗口'))}" data-portal-icon="fit-view"></button>
+        <div class="templateGraphNavigation" role="toolbar" aria-label="${esc(t('画布视图'))}">
+          <button type="button" class="portalButton is-icon" data-graph-zoom-out aria-label="${esc(t('缩小'))}" data-portal-icon="minus"></button>
+          <output data-graph-zoom aria-label="${esc(t('当前比例'))}"></output>
+          <button type="button" class="portalButton is-icon" data-graph-zoom-in aria-label="${esc(t('放大'))}" data-portal-icon="plus"></button>
+          <button type="button" class="portalButton is-compact" data-graph-reset aria-label="${esc(t('回到100%'))}">100%</button>
+          <button type="button" class="portalButton is-icon" data-graph-fit aria-label="${esc(t('适合窗口'))}" title="${esc(t('适合窗口'))}" data-portal-icon="fit-view"></button>
+        </div>
         <p class="templateGraphEmpty">${esc(t('从上方添加角色或组件，开始搭建结构。'))}</p>
         <p class="templateGraphHint" data-graph-hint role="status" hidden></p>
       </div>`;
@@ -502,6 +508,12 @@
       worldWidth: 1280,
       worldHeight: 900,
       scaleExtent: [0.2, 2],
+      zoomValue: root.querySelector('[data-graph-zoom]'),
+      zoomInButton: root.querySelector('[data-graph-zoom-in]'),
+      zoomOutButton: root.querySelector('[data-graph-zoom-out]'),
+      resetButton: root.querySelector('[data-graph-reset]'),
+      fitButton: root.querySelector('[data-graph-fit]'),
+      fitOptions: {duration:0,maxScale:workshop ? 1 : 1.1},
       nodeContent,
       portsForNode: node => program.portsForNode(node),
       connectionTargets: (source, item) => program.connectionTargets(source, item),
@@ -519,12 +531,11 @@
 
     const abort = new AbortController();
     root.addEventListener('click', event => {
-      const chip = event.target.closest('[data-add-role], [data-add-component], [data-add-found], [data-graph-fit]');
+      const chip = event.target.closest('[data-add-role], [data-add-component], [data-add-found]');
       if (!chip) return;
       if (chip.dataset.addRole) addRole(chip.dataset.addRole);
       else if (chip.dataset.addComponent) addComponent(chip.dataset.addComponent);
       else if (chip.hasAttribute('data-add-found')) addFound();
-      else controller.fit({ duration: 0, maxScale: workshop ? 1 : 1.1 });
     }, { signal: abort.signal });
     root.addEventListener('dragstart', event => {
       const chip = event.target.closest('[data-add-component]');

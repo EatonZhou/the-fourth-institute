@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-10-13'
 version:
-  number: 44
+  number: 45
   created_at: "2026-10-13"
   created_by:
     user: ""
     agent: "resident_e8fc8c899f00"
-  updated_at: "2026-11-26T05:18:24Z"
+  updated_at: "2026-11-26T06:39:22Z"
   updated_by:
     user: ""
     agent: "resident_021703e3659a"
@@ -468,3 +468,9 @@ Router 拥有 route 职责、调用其 Resident 的选人结构与指南。Stewa
 名册同步仅刷新显式 Family 引用，保留用户编辑的事件参数、脚本确认和内部连线。已撤职责及单独删除的结构不自动重建；显式 ApplyTemplate 可从角色源重装缺失职责，复用原 Resident，不覆盖其他职责／记忆。周期回顾与独立回顾安装互斥，撤下后可显式重装，共享完成事件仍单份。角色整体撤除使用 Unfamilize／DeleteFamily 的停止与在途任务检查，通用删除／拆框不能绕过。已受理任务继续由原冻结意图和原请求生命周期负责，本地撤销不撤销服务端投递。
 
 Router／Steward 接口保持原协议：target 仅本层直属成员或本 Family Steward，嵌套 Family 经门面；输出 target／confidence／scope／continue_previous 或 disposition:notice。忙碌不等于缺口；缺口 scope_reviewed、失败未转交 recover、必要改派 reassign 与完成归档 ResolveFamilyRequest 各保留原意义、理由及同 Family Steward 审批。低置信复核可能已转交，不能重复 relay。原请求、角色任务、成员副本 ID 不混用；取消不复活，重复重试保持原 ID，冻结唯一上一轮、缺失 null 与按需 GetFamilyRoutingContext 均不变。角色名称不授予权限，不开启 Router／Steward 逐轮摘要任务。
+
+### 工坊相机与 Family 目录兼容入口（2026-11-26）
+
+工坊结构、职责、角色和组织图共用 Portal 相机的放大、缩小、比例、100%、适配、平移与滚轮。相机只改变组件视图，不进入草稿历史、不产生正文 revision；不同工坊相机独立。节点持久位置仍属于正文，拖放绑定锚点继续通过同一相机转换。
+
+ListTemplates 保留原有全量读取契约，由模板目录声明 catalog_entry 主入口和 compatibility 关系。存在旧自定义 Family 与后备角色组合时，组织组默认显示角色组合主入口；旧资源通过“旧配方（自定义）”显式打开和施加。HATG 与工坊共用目录及卡片，不按名称或实例 ID 去重。用户另存模板不隐藏；旧 ID、正文、已开资源、个人助手和商店快照不迁移。

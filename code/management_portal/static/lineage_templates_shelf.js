@@ -92,11 +92,11 @@
       shelf.innerHTML = GROUPS.map(group => {
         const rows = visible.filter(item => (item.toolbox_group || groupFor(item.kind)) === group.key);
         const cards = rows.map(item => `<div class="templateTileWrap"><button type="button" class="templateTile" draggable="true"
-          data-template-id="${esc(item.template_id)}" aria-label="${esc(t(item.title))}"
+          data-template-id="${esc(item.template_id)}" aria-label="${esc(t(item.catalog_entry?.title || item.title))}"
           aria-current="${item.template_id === config.selectedTemplate?.()}"
           data-portal-tooltip="${esc([t(item.title),t(item.description)].filter(Boolean).join('\n'))}"
           title="${esc([t(item.title), t(item.description), t(config.onSelectTemplate ? '单击打开；拖入画布组合' : '单击拿起，双击在工坊中打开；按 Escape 或右键取消')].filter(Boolean).join('\n'))}">
-          ${thumbnail(item)}<span class="templateTileTitle">${esc(t(item.title))}</span></button>${item.store_status?.has_update ? `<button type="button" class="templateUpdateBadge portalButton is-compact" data-store-update="${esc(item.template_id)}" aria-label="${esc(t('有更新'))}">${esc(config.iconOnly ? '↑' : t('有更新'))}</button>` : ''}</div>`).join('');
+          ${thumbnail(item)}<span class="templateTileTitle">${esc(t(item.catalog_entry?.title || item.title))}</span></button>${(item.catalog_entry?.compatibility || []).filter(entry=>find(entry.template_id)).map(entry=>`<details class="templateCompatibility"><summary>${esc(t(entry.label))}</summary><button type="button" class="portalButton is-compact" data-compat-open="${esc(entry.template_id)}">${esc(t('打开旧配方'))}</button>${config.isComposition ? '' : `<button type="button" class="portalButton is-compact" data-template-id="${esc(entry.template_id)}">${esc(t('施加旧配方'))}</button>`}</details>`).join('')}${item.store_status?.has_update ? `<button type="button" class="templateUpdateBadge portalButton is-compact" data-store-update="${esc(item.template_id)}" aria-label="${esc(t('有更新'))}">${esc(config.iconOnly ? '↑' : t('有更新'))}</button>` : ''}</div>`).join('');
         return `<section class="templateToolboxGroup" data-toolbox-group="${group.key}"><h4>${config.collapsible ? `<button type="button" class="portalButton is-quiet is-compact" data-toolbox-collapse="${group.key}" aria-expanded="${!collapsed.has(group.key)}"><span data-portal-icon="chevron-${collapsed.has(group.key) ? 'right' : 'down'}" aria-hidden="true"></span>${esc(t(group.label))}</button>` : esc(t(group.label))}</h4>${
           rows.length ? `<div class="templateToolboxCards" ${collapsed.has(group.key) ? 'hidden' : ''}>${cards}</div>`
             : config.iconOnly ? '' : `<p class="templateEmpty">${esc(t(group.key === 'roles' ? '还没有角色模板' : '暂无模板'))}</p>`}</section>`;
@@ -191,6 +191,8 @@
         const cards = toggle.closest('section').querySelector('.templateToolboxCards'); if (cards) cards.hidden = hide;
         return;
       }
+      const legacy = event.target.closest('[data-compat-open]');
+      if (legacy) {cancelPlacement();void Promise.resolve(config.onSelectTemplate ? config.onSelectTemplate(legacy.dataset.compatOpen) : openInWorkshop(legacy.dataset.compatOpen)).catch(report);return;}
       const update = event.target.closest('[data-store-update]');
       if (update) {
         event.preventDefault(); event.stopPropagation(); cancelPlacement();
@@ -292,6 +294,9 @@
     });
     return {abort, dropHint, find, load, render, unsupported};
   }
-  const visibleTemplates = (items, user) => items.filter(item => !item.toolbox_group && item.builtin_key !== 'workshop_assistant' && (item.builtin_key || (user && item.created_by === user)));
+  const visibleTemplates = (items, user) => {
+    const visible=items.filter(item => !item.toolbox_group && item.builtin_key !== 'workshop_assistant' && (item.builtin_key || (user && item.created_by === user)));
+    return visible.filter(item=>!visible.some(main=>main.template_id===item.catalog_entry?.compatibility_of));
+  };
   window.LineageTemplatesShelf = Object.freeze({createShelf, visibleTemplates, groupFor, storeGroupFor, thumbnail, dependencies: DEPENDENCIES});
 })();

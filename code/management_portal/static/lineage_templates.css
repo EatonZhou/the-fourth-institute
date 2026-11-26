@@ -191,3 +191,6 @@
   .templateResidentSettings { grid-template-columns: 1fr; }
   .templateForm .templateDialogFooter { padding: 12px; flex-wrap: wrap; }
 }
+.templateCompatibility { font-size:11px; max-width:100%; }
+.templateCompatibility summary { cursor:pointer; color:var(--muted); }
+.templateCompatibility button { max-width:100%; white-space:normal; }

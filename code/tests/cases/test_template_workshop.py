@@ -23,7 +23,7 @@ def test_workshop_draft_semantics():
 
 
 @pytest.mark.parametrize('script', ['template_workshop.browser.cjs', 'template_workshop_reload.browser.cjs',
-                                   'template_placement.browser.cjs', 'family_roles.browser.cjs'], ids=['editing', 'reload', 'placement', 'roles'])
+                                   'template_placement.browser.cjs', 'family_roles.browser.cjs', 'workshop_views.browser.cjs'], ids=['editing', 'reload', 'placement', 'roles', 'views'])
 def test_workshop_browser_with_real_instructions(lineage, script):
     from management_portal.script_groups import expand_document
     from management_portal.society_service import principal_hierarchy_domain, lineage_reads

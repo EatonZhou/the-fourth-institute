@@ -40,7 +40,9 @@
 .workshopViewGroup [aria-pressed="true"] { color:var(--accent); border-color:var(--accent); background:var(--panel-2,var(--panel)); }
 .workshopEditorContent { grid-column:2; grid-row:3; min-width:0; min-height:0; display:flex; position:relative; flex-direction:column; }
 .workshopEditorContent > [data-page="body"] { min-height:0; flex:1; position:relative; overflow:auto; }
-.templateWorkshop .templateGraphFit { left:10px; top:10px; right:auto; bottom:auto; }
+.templateGraphNavigation { position:absolute; left:10px; top:10px; z-index:20; display:flex; align-items:center; gap:3px; max-width:calc(100% - 20px); padding:3px; border:1px solid var(--border); border-radius:var(--portal-radius-lg,10px); background:var(--panel); }
+.templateGraphNavigation output { min-width:42px; text-align:center; font-size:12px; }
+.templateGraphNavigation button { flex:none; }
 .workshopInfo { max-height:40%; overflow:auto; padding:6px 12px; border-top:1px solid var(--border); }
 .workshopInfo > summary { cursor:pointer; }
 .workshopAssistantDock { position:absolute; left:calc(var(--workshop-toolbox-width) - 18px); top:40%; width:36px; height:36px; z-index:35; }
