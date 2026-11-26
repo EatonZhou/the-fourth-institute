@@ -595,7 +595,9 @@ def run_device_ssh(device_id: str, command: str, *, actor: str) -> dict[str, Any
 
     if not isinstance(command, str) or not command.strip() or len(command) > 8192:
         raise ValueError("Provide a remote command of 1 to 8192 characters")
+    timeout = 30
     if google_cloud_devices.colab_session(device_id):
+        timeout = google_cloud_devices.COLAB_SSH_COMMAND_TIMEOUT
         argv = google_cloud_devices.colab_ssh_command(device_id, command)
     else:
         profile = managed_ssh_profile(device_id)
@@ -606,10 +608,10 @@ def run_device_ssh(device_id: str, command: str, *, actor: str) -> dict[str, Any
         try:
             completed = subprocess.run(
                 argv, stdin=subprocess.DEVNULL,
-                stdout=output, stderr=subprocess.STDOUT, timeout=30,
+                stdout=output, stderr=subprocess.STDOUT, timeout=timeout,
             )
         except subprocess.TimeoutExpired as exc:
-            raise TimeoutError("Device SSH command timed out after 30 seconds") from exc
+            raise TimeoutError(f"Device SSH command timed out after {timeout} seconds") from exc
         output.seek(0)
         data = output.read(32769)
     return {"exit_code": completed.returncode, "output": data[:32768].decode("utf-8", errors="replace"),

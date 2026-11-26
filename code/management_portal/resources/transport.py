@@ -275,6 +275,11 @@ class ResourceServiceClient:
 
             # Allow for the named-session status check before requesting allocation.
             requested_timeout = max(requested_timeout, COLAB_ALLOCATION_TIMEOUT + 12)
+        if action == "ssh.run" and resource_id.startswith("device_"):
+            from management_portal.google_cloud_devices import COLAB_SSH_COMMAND_TIMEOUT, colab_session
+
+            if colab_session(resource_id):
+                requested_timeout = max(requested_timeout, COLAB_SSH_COMMAND_TIMEOUT)
         action_timeout = max(
             self.timeout,
             requested_timeout + self._RPC_GRACE_SECONDS,

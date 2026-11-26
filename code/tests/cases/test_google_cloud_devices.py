@@ -75,6 +75,7 @@ def test_colab_actions_share_session_and_respect_device_permission(monkeypatch, 
     def run(argv, **kwargs):
         from types import SimpleNamespace
         assert argv[-2:] == ["--", "nvidia-smi -L"] and "ssh" in argv
+        assert kwargs["timeout"] == 120
         kwargs["stdout"].write(b"GPU 0")
         return SimpleNamespace(returncode=0)
     monkeypatch.setattr(device_identity_backend.subprocess, "run", run)

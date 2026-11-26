@@ -13,6 +13,7 @@ from management_common.site_config import read_site_config
 
 
 COLAB_ALLOCATION_TIMEOUT = 300
+COLAB_SSH_COMMAND_TIMEOUT = 120
 
 
 def settings() -> dict:
