@@ -12,6 +12,12 @@ Resident 是跨 Provider session 持续存在的 Agent 身份，按当前配置�
 
 默认 cwd 只决定节点从哪里启动，并向 Resident 提供工作目录导航。它不是身份、资源 ACL 或文件系统访问边界；任务需要时，Resident 可以切换到 runtime 实际允许访问的任意目录，包括其他节点的 Workspace。受认证客户端从 Portal runtime 环境或显式稳定 ID 取得 Resident/Lineage 身份，不得从 cwd 推断 principal。
 
+## 过程记录
+
+默认不生成或保存过程性 log、trace、运行转储和调试快照，也不为记录过程额外建立数据库或记录框架。
+
+仅当系统或用户明确要求记录这些内容时，才保存完成该要求所必需的最少信息。“认真验证”“保证正确”“便于复现”“保留证据”等一般要求，不自动视为保存完整过程的要求。
+
 ## 上下文与写入
 
 Portal 可以提供 Resident 摘要、`resident.md`、Binding 投影、附加引用、fork context、selected context、recent context 和授权上下文。Native backend fork 使用 backend 自身的 Context 继承；其他 fork 使用 Portal 提供的 fork 级上下文。
