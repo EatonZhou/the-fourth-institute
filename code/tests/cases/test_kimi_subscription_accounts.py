@@ -200,21 +200,22 @@ def test_login_region_replaces_foreign_flow_but_reuses_same_region(monkeypatch):
 
 
 def test_login_region_contract_and_dispatch(monkeypatch):
-    from management_portal.execution import account_login
+    from management_portal.execution import account_login, account_registrations
     from management_portal.hatg.catalog import declaration
     from unittest.mock import Mock
-    declaration("CreateProviderAccountLogin").validate_arguments({"account_id": "kimi_sub", "region": "mainland-cn"})
+    declaration("CreateProviderAccountLogin").validate_arguments({"account_id": "kimi_sub", "options": {"region": "mainland-cn"}})
     with pytest.raises(Exception):
         declaration("CreateProviderAccountLogin").validate_arguments({"account_id": "kimi_sub", "region": "cn"})
-    row = {"provider": "kimi"}
-    monkeypatch.setattr(account_login, "_registration", lambda _: row)
-    native = Mock(return_value={"session": None})
+    row = {"provider": "kimi", "kind": "subscription_login"}
+    monkeypatch.setattr(account_registrations, "registration", lambda _: row)
+    native = Mock(return_value={"session": None, "login_options": {"region": "mainland-cn"}})
     monkeypatch.setattr(login, "login", native)
-    inv = SimpleNamespace(argument={"account_id": "kimi_sub", "region": "mainland-cn"}.get)
-    account_login.open_provider_account_login(inv)
+    inv = SimpleNamespace(argument={"account_id": "kimi_sub", "options": {"region": "mainland-cn"}}.get)
+    result = account_login.open_provider_account_login(inv)
     native.assert_called_once_with(row, "open", region="mainland-cn")
+    assert result["login_options"]["values"] == {"region": "mainland-cn"}
     row["provider"] = "claude"
-    with pytest.raises(login.InstructionError, match="仅 Kimi"):
+    with pytest.raises(login.InstructionError, match="options"):
         account_login.open_provider_account_login(inv)
 
 

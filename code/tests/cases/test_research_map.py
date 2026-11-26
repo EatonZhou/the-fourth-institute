@@ -170,7 +170,8 @@ def test_handlers_read_outputs_check_teams_and_tell_open_pages(monkeypatch):
 
     result = web.get_research_map(invocation(project_id=project))
     assert result["outputs"] == {direction_id: [{"resource_id": "decision_0123456789ab", "resource_type": "decision",
-                                                 "title": "Use RTC", "url": "/r/d", "modified_at": "2026-10-28T00:00:00Z"}]}
+                                                 "title": "Use RTC", "url": "/r/d", "modified_at": "2026-10-28T00:00:00Z",
+                                                 "modified_by": ""}]}
     assert web.get_research_map(invocation(project_id=project, revision=1))["outputs"] == {}
     assert web.get_research_map(invocation(project_id=project, include_outputs=False))["outputs"] == {}
 
@@ -196,8 +197,9 @@ def test_handlers_read_outputs_check_teams_and_tell_open_pages(monkeypatch):
 
 
 def test_the_digest_lists_what_others_changed_and_produced(monkeypatch):
-    """GetResearchMapDigest 只列出别人提交的修订与新产出，按方向汇总并写成整理请求；没有动静时 count 为 0、不写请求"""
+    """普通脚本只用地图读口，列出别人提交的修订与新产出；没有动静时不写请求"""
     from management_portal import resources
+    from scripts.research_map_digest import build_digest
 
     project, steward = "DigestProject", "resident_00000000000a"
     first = store.apply(project, 0, [{"op": "add_direction", "key": "a", "title": "Speed", "stance": "focus"},
@@ -216,7 +218,9 @@ def test_the_digest_lists_what_others_changed_and_produced(monkeypatch):
     ]
     monkeypatch.setattr(resources, "get_resource_service", lambda: Resources(records))
 
-    digest = web.get_research_map_digest(invocation(caller=steward, project_id=project, since="2026-10-01T00:00:00Z"))
+    current = web.get_research_map(invocation(caller=steward, project_id=project))
+    history = web.list_research_map_changes(invocation(caller=steward, project_id=project))["changes"]
+    digest = build_digest(current, history, caller=steward, since="2026-10-01T00:00:00Z")
     assert (digest["count"], digest["revision"], digest["since"]) == (2, 3, "2026-10-01T00:00:00Z")
     by_id = {entry["direction_id"]: entry for entry in digest["directions"]}
     assert [change["summary"] for change in by_id[speed]["changes"]] == [
@@ -227,11 +231,10 @@ def test_the_digest_lists_what_others_changed_and_produced(monkeypatch):
     assert "《Speed》" in digest["prompt"] and "write-research-map/daily-tidy.md" in digest["prompt"]
     assert "新产出：experiment《Grip test》experiment_0123456789ab" in digest["prompt"]
 
-    later = web.get_research_map_digest(invocation(caller=steward, project_id=project, since=digest["until"]))
+    later = build_digest(current, history, caller=steward, since=digest["until"])
     assert (later["count"], later["directions"], later["prompt"]) == (0, [], "")
-    with pytest.raises(InstructionError) as wrong:
-        web.get_research_map_digest(invocation(project_id=project, since="yesterday"))
-    assert wrong.value.code == "instruction.invalid_arguments"
+    with pytest.raises(ValueError, match="ISO 8601"):
+        build_digest(current, history, caller=steward, since="yesterday")
 
 
 def test_the_first_map_change_draws_the_daily_digest_into_the_project_lineage(monkeypatch):

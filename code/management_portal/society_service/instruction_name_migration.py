@@ -1,61 +1,191 @@
-"""Normalize executable Society definitions at the ISA cutover."""
+"""Migrate current Society definitions when ISA contracts change.
+
+Name-only and argument-compatible changes share this owner. Operations moved
+out of ISA cannot be substituted with asynchronous ScriptRun handles: their
+owners must supply an equivalent workflow, or preflight stops with locations.
+Execution journals, approved drafts and published template history are never
+inputs to a rewrite.
+"""
 
 from copy import deepcopy
 import json
 import re
 
+from management_portal import portal_features
 from management_portal.hatg.instruction_renames import INSTRUCTION_RENAMES
 
 from . import lineage_effect_script
 
 
+_POST_MARKS = {"SetPostPinned": "UpdatePostMarks", "SetPostFeatured": "UpdatePostMarks"}
+# These are migration directions, not instruction aliases or script adapters.
+# The owning domain decides the replacement workflow and its result handling.
+_REMOVED = {
+    "PublishRelease": "RunScript（Portal 运维的 publish_release 脚本；用 GetScriptRun 读取发布结果）",
+    "InstallProviderRuntime": "RunScript（Portal 运维的 install_provider_runtime 脚本）",
+    "SetColabSessionRunning": "RunScript（Portal 运维的 colab_session 脚本）",
+    "CheckArticleRestore": "RunScript（Portal 运维的 article_restore 脚本 check 步骤；用 GetScriptRun 读取预检结果）",
+    "RestoreArticle": "RunScript（Portal 运维的 article_restore 脚本 apply 步骤；用 GetScriptRun 读取恢复结果）",
+    "GetResearchMapDigest": "GetResearchMap 与 ListResearchMapChanges（由 Project 流程汇总修订和产出变化）",
+    "GetKnowledgeTags": "ReadResource（知识标签配置资源，读取正文和版本）",
+    "UpdateKnowledgeTags": "UpdateResource（知识标签配置资源，带 expected_version 整表替换正文）",
+}
+_OBJECT_ARGUMENTS = {
+    "UpdateProviderAccountConfiguration": ("model_provider", "changes"),
+    "CreateProviderAccountLogin": ("region", "options"),
+}
+_PROVIDER_GUIDANCE = {
+    "UpdateProviderAccountConfiguration": "（配置字段放在 changes 对象中）",
+    "CreateProviderAccountLogin": "（登录选项放在 options 对象中）",
+}
 _NAME = re.compile(
-    r"(?<![A-Za-z0-9_])(?:" + "|".join(INSTRUCTION_RENAMES) + r")(?![A-Za-z0-9_])"
+    r"(?<![A-Za-z0-9_])(?:" + "|".join(
+        (*INSTRUCTION_RENAMES, *_POST_MARKS, *_REMOVED, *_PROVIDER_GUIDANCE)
+    ) + r")(?![A-Za-z0-9_])"
 )
 _PROMPT_FIELDS = {"guide", "instructions", "message", "prompt", "system_prompt", "task"}
 _REVIEW_FIELDS = {"script_draft"}
 
 
+class DefinitionMigrationRequired(ValueError):
+    """Locations and remediation only; never include a script or argument payload."""
+
+    def __init__(self, issues):
+        self.issues = issues
+        super().__init__("ISA definition migration requires owner resolution: " + json.dumps(issues))
+
+
+def _current_name(name):
+    name = INSTRUCTION_RENAMES.get(name, name)
+    return _POST_MARKS.get(name, name)
+
+
+def _post_mark_conflict(instruction, arguments):
+    # Do not turn an invalid old single-mark call into a valid dual-mark write.
+    legacy = INSTRUCTION_RENAMES.get(instruction, instruction)
+    return (legacy == "SetPostPinned" and "featured" in arguments
+            or legacy == "SetPostFeatured" and "pinned" in arguments)
+
+
+def _issue(instruction, reason, *, line=None, path=()):
+    canonical = _current_name(instruction)
+    issue = {
+        "instruction": instruction, "reason": reason, "path": list(path),
+        "action": _REMOVED.get(canonical, "Update the owning definition to the current argument contract"),
+    }
+    if line is not None:
+        issue["line"] = line
+    return issue
+
+
 def normalize_prompt(text):
-    return _NAME.sub(lambda match: INSTRUCTION_RENAMES[match[0]], text)
+    def replacement(match):
+        name = _current_name(match[0])
+        if name in _REMOVED:
+            return _REMOVED[name]
+        guidance = _PROVIDER_GUIDANCE.get(name, "")
+        if guidance and text[match.end():].startswith(guidance):
+            guidance = ""
+        return name + guidance
+
+    return _NAME.sub(replacement, text)
 
 
 def normalize_script(source):
     if not source:
         return source
+    # Optional domain owners replace complete original workflows through the
+    # feature contract. Custom or unowned variants keep the explicit diagnostics
+    # below; Society does not load feature implementations directly.
+    source = portal_features.migrate_workflow_script(source)
     try:
         calls = lineage_effect_script.parse(source).calls
     except lineage_effect_script.ScriptSyntaxError:
         # Definitions can store half-written scripts. Leave their syntax and
         # diagnostics intact until the script is made runnable.
         return source
+    replacements = {}
+    issues = []
+    for call in calls:
+        name = _current_name(call.instruction)
+        arguments = {argument.name: argument for argument in call.arguments}
+        if _post_mark_conflict(call.instruction, arguments):
+            issues.append(_issue(call.instruction, "old_single_mark_arguments_conflict", line=call.line))
+            continue
+        if name in _REMOVED:
+            issues.append(_issue(call.instruction, "operation_moved_out_of_isa", line=call.line))
+            continue
+        fields = _OBJECT_ARGUMENTS.get(name)
+        if fields is None:
+            continue
+        old, new = fields
+        if old not in arguments:
+            continue
+        if new in arguments:
+            issues.append(_issue(call.instruction, "old_and_new_arguments_conflict", line=call.line))
+            continue
+        argument = arguments[old]
+        try:
+            replacements[argument.offset] = lineage_effect_script.object_argument(new, old, argument.value)
+        except ValueError:
+            issues.append(_issue(call.instruction, "argument_requires_intermediate_variable", line=call.line))
+    if issues:
+        raise DefinitionMigrationRequired(issues)
     return lineage_effect_script.rewrite_call_source(
-        source, calls, INSTRUCTION_RENAMES, normalize_prompt,
+        source, calls, {call.instruction: _current_name(call.instruction) for call in calls
+                        if call.instruction != _current_name(call.instruction)}, normalize_prompt,
+        arguments=lambda _call, argument: replacements.get(argument.offset),
     )
 
 
 def _normalize_fields(value, *, prompt=False, script=False, instruction=False):
     if isinstance(value, list):
-        return [_normalize_fields(item, prompt=prompt, script=script, instruction=instruction)
-                for item in value]
+        result, issues = [], []
+        for index, item in enumerate(value):
+            try:
+                result.append(_normalize_fields(item, prompt=prompt, script=script, instruction=instruction))
+            except DefinitionMigrationRequired as error:
+                issues.extend({**issue, "path": [index, *issue["path"]]} for issue in error.issues)
+        if issues:
+            raise DefinitionMigrationRequired(issues)
+        return result
     if isinstance(value, dict):
+        if isinstance(value.get("arguments"), dict) and isinstance(value.get("instruction"), str):
+            if _post_mark_conflict(value["instruction"], value["arguments"]):
+                raise DefinitionMigrationRequired([_issue(value["instruction"], "old_single_mark_arguments_conflict")])
         keys = {"value", "default", "concat"}
-        return {
-            key: item if key in _REVIEW_FIELDS else _normalize_fields(
-                item,
-                prompt=key in _PROMPT_FIELDS or (prompt and key in keys),
-                script=key == "script" or (script and key in keys),
-                instruction=key == "instruction" or (instruction and key in keys),
-            )
-            for key, item in value.items()
-        }
+        result, issues = {}, []
+        for key, item in value.items():
+            try:
+                result[key] = item if key in _REVIEW_FIELDS else _normalize_fields(
+                    item,
+                    prompt=key in _PROMPT_FIELDS or (prompt and key in keys),
+                    script=key == "script" or (script and key in keys),
+                    instruction=key == "instruction" or (instruction and key in keys),
+                )
+            except DefinitionMigrationRequired as error:
+                issues.extend({**issue, "path": [key, *issue["path"]]} for issue in error.issues)
+        if issues:
+            raise DefinitionMigrationRequired(issues)
+        fields = _OBJECT_ARGUMENTS.get(result.get("instruction")) if isinstance(result.get("instruction"), str) else None
+        arguments = result.get("arguments")
+        if fields and isinstance(arguments, dict) and fields[0] in arguments:
+            old, new = fields
+            if new in arguments:
+                raise DefinitionMigrationRequired([_issue(result["instruction"], "old_and_new_arguments_conflict")])
+            result["arguments"] = {key: item for key, item in arguments.items() if key != old}
+            result["arguments"][new] = {old: arguments[old]}
+        return result
     if isinstance(value, str):
         if script:
             return normalize_script(value)
         if prompt:
             return normalize_prompt(value)
         if instruction:
-            return INSTRUCTION_RENAMES.get(value, value)
+            name = _current_name(value)
+            if name in _REMOVED:
+                raise DefinitionMigrationRequired([_issue(value, "operation_moved_out_of_isa")])
+            return name
     return value
 
 
@@ -71,14 +201,23 @@ def normalize_template(template):
     return {**template, "body": _normalize_fields(template["body"])}
 
 
-def _normalize_definition(definition):
+def _normalize_definition(definition, *, diagnostics=None):
+    def normalize(config, identity, normalizer):
+        try:
+            return normalizer(config)
+        except DefinitionMigrationRequired as error:
+            if diagnostics is None:
+                raise
+            diagnostics.extend({"kind": "definition_contract", **identity, **issue} for issue in error.issues)
+            return config
+
     program = definition["program"]
     changed_effects = set()
     effect_ids = set()
     for component in program["components"]:
         before = component.get("config")
         if isinstance(before, dict):
-            component["config"] = normalize_component_config(before)
+            component["config"] = normalize(before, {"component_id": component["id"]}, normalize_component_config)
         if component["kind"] == "effect":
             effect_ids.add(component["id"])
             if component.get("config") != before:
@@ -87,7 +226,7 @@ def _normalize_definition(definition):
     for wire in program["wires"]:
         before = wire.get("config")
         if isinstance(before, dict):
-            wire["config"] = normalize_wire_config(before)
+            wire["config"] = normalize(before, {"wire_id": wire["id"]}, normalize_wire_config)
         target = wire["target"]
         if target in effect_ids and (target in changed_effects or wire.get("config") != before):
             affected_wires[wire["id"]] = target
@@ -181,14 +320,27 @@ def check():
         for record in lineage_metadata_storage.read_many(connection):
             lineage_id = record["lineage_id"]
             definition = lineage_data_definitions.definition_from_connection(connection, lineage_id)
-            effects, wires = _normalize_definition(definition)
+            diagnostics = []
+            effects, wires = _normalize_definition(definition, diagnostics=diagnostics)
+            blocked.extend({"lineage_id": lineage_id, **issue} for issue in diagnostics)
             blocked.extend(_blockers(connection, lineage_id, effects, wires))
+        # Current, editable templates participate in the same preflight.
+        # The template store's published snapshots and versions are evidence,
+        # and are normalized only when installed into a current definition.
+        template_table = sql.Identifier(portal_database(schema="templates").schema, "templates")
+        if raw.execute("SELECT to_regclass(%s) AS relation", (template_table.as_string(raw),)).fetchone()["relation"]:
+            for row in raw.execute(sql.SQL("SELECT template_id, body FROM {}").format(template_table)):
+                try:
+                    normalize_template(row)
+                except DefinitionMigrationRequired as error:
+                    blocked.extend({"kind": "template_contract", "template_id": row["template_id"], **issue}
+                                   for issue in error.issues)
     return _report(blocked)
 
 
 def _require_clear(report):
     if report["blocked_count"]:
-        raise RuntimeError("ISA name migration blocked by unsettled Effect work: " + json.dumps(report))
+        raise RuntimeError("ISA definition migration blocked by unresolved contracts or Effect work: " + json.dumps(report))
 
 
 def _migrate_lineage(lineage_id):
@@ -205,7 +357,7 @@ def _migrate_lineage(lineage_id):
         if after != before:
             _require_clear(_report(_blockers(connection, lineage_id, effects, wires)))
             lineage_state._persist_lineage_state_transaction(
-                before, after, "Normalize ISA instruction names",
+                before, after, "Migrate current ISA instruction contracts",
                 synchronize_resource_identities=False,
                 synchronize_resident_identities=False,
             )

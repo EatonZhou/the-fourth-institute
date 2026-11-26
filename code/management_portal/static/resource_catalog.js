@@ -1323,15 +1323,23 @@
         <header><span>云资源</span><h3>使用说明</h3></header>
         <div class="deviceUsageGuide markdownBody">
           ${deviceKind(record) === "google_colab" ? window.PortalI18n.html`
-            <p>通过本设备的 RunResourceAction 启动共享会话。请求 A100 的示例：</p>
-            <pre><code>colab.start  {"hardware":"A100"}</code></pre>
-            <p>使用 ssh.run 执行 nvidia-smi 核对实际卡型。任务结束且共享会话空闲时，用 colab.stop 释放运行时并停止计费。</p>
+            <p>选定硬件后启动共享会话。任务结束且会话空闲时，停止会话以释放运行时并停止计费。</p>
             <a class="portalButton" href="https://github.com/googlecolab/google-colab-cli">Colab CLI 使用文档</a>
           ` : window.PortalI18n.html`
             <p>在 Colab 挂载 Drive 后，把项目文件放在 <code>MyDrive/Dirtybase Portal</code>。</p>
             <a class="portalButton" href="/r/decision_b06ae321a668">Portal 备份指令用法</a>
           `}
         </div>
+        ${deviceKind(record) === "google_colab" ? window.PortalI18n.html`
+          <form class="deviceSshActions" data-colab-session="${esc(record.resource_id)}">
+            <label class="portalField"><span>硬件</span><select name="hardware">
+              ${["CPU", "T4", "L4", "G4", "A100", "H100"].map(value => `<option>${value}</option>`).join("")}
+            </select></label>
+            <button class="portalButton" type="submit" value="start">启动会话</button>
+            <button class="portalButton" type="submit" value="stop">停止会话</button>
+            <span role="status" data-colab-result></span>
+          </form>
+        ` : ""}
         ${colab?.transport === "colab" ? window.PortalI18n.html`
             <div class="deviceSshActions">
               <button class="portalButton" type="button" data-device-ssh-test="${esc(record.resource_id)}">测试 SSH 连通性</button>
@@ -1786,6 +1794,40 @@
     });
   }
 
+  async function changeColabSession(form, running) {
+    const controls = [...form.elements];
+    const result = form.querySelector("[data-colab-result]");
+    if (form.dataset.busy) return;
+    form.dataset.busy = "true";
+    let run;
+    const args = {resource_id: form.dataset.colabSession, running};
+    if (running) args.hardware = form.elements.hardware.value;
+    controls.forEach(el => { el.disabled = true; });
+    try {
+      if (!running && !await window.PortalUI.confirm({
+        title: window.PortalI18n.t("停止共享会话？"),
+        confirmLabel: window.PortalI18n.t("停止会话"),
+        tone: "danger",
+      })) return;
+      const {startOperation, waitForOperation} = await import("/static/portal_operations.js");
+      if (!form.isConnected) return;
+      run = await startOperation("colab_session", args, (name, params) => {
+        if (!form.isConnected) throw new DOMException("Device details closed", "AbortError");
+        return resourceInstruction(name, params);
+      });
+      result.textContent = window.PortalI18n.text`正在处理… ${run.script_run_id}`;
+      const receipt = await waitForOperation(run, resourceInstruction, () => form.isConnected);
+      if (receipt) {
+        result.textContent = window.PortalI18n.t(receipt.outputs?.running ? "会话已启动" : "会话已停止");
+      }
+    } catch (error) {
+      result.textContent = [error.message || String(error), run?.script_run_id].filter(Boolean).join(" · ");
+    } finally {
+      delete form.dataset.busy;
+      controls.forEach(el => { el.disabled = false; });
+    }
+  }
+
   async function testDeviceSsh(deviceId, button) {
     const resultNode = button?.parentElement?.querySelector(".deviceSshTestResult");
     if (resultNode) {
@@ -1967,6 +2009,12 @@
     }
   });
   elements.detailBody.addEventListener("submit", event => {
+    const colabForm = event.target.closest("[data-colab-session]");
+    if (colabForm) {
+      event.preventDefault();
+      if (event.submitter) void changeColabSession(colabForm, event.submitter.value === "start");
+      return;
+    }
     const sshPasswordForm = event.target.closest("[data-device-ssh-password-form]");
     if (sshPasswordForm) {
       event.preventDefault();

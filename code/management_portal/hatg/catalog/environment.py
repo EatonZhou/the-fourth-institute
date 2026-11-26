@@ -25,7 +25,7 @@ MODEL_API = R("api", "object", "模型接口登记：api_id、base_url、default
 SETTINGS = ("执行设置：model_request_timing_enabled、harness_recording_enabled、permission_system_enabled、"
             "harness_retention_days")
 LOGIN_SESSION = ("登录会话：account_id、state（pending、awaiting_user、succeeded、failed、expired）、verification_code、"
-                 "verification_url、error、expires_at、requires_code_input")
+                 "verification_url、error、expires_at、requires_code_input、input_kind、input_hint")
 REGISTRATION = "账号登记：account_id、provider、kind、route_id、config、max_concurrency、enabled、version、login_state…"
 
 DECLARATIONS = (
@@ -60,18 +60,6 @@ DECLARATIONS = (
           items={"type": "string", "enum": list(COMPONENTS)}),
     ), (R("request_id", description="执行这次重启的临时单元 tfi-pair-restart-<id>"),
         R("components", "array", "请求的组件；空列表表示默认组件")), mutates=True),
-    D(name="PublishRelease", category="environment", owner="web", decides=FIXED, discovery_group="operations",
-      description="把调用者指定的 Dev 代码同步到 Release，并返回发布提交；只能在 Dev 部署执行。",
-      parameters=(
-          R("message", description="本次发布的提交说明"),
-          P("paths", "array", "要发布的文件或目录", items={"type": "string"}),
-          P("all", "boolean", "为 true 时发布全部受 Git 管理的源码"),
-      ),
-      result=(R("commit", description="Dev 上的发布提交"),
-              R("paths", "array", "Release 相对上次发布改变的文件；合并发布时含同批其他提交的改动"),
-              R("health", "object", "激活状态：status 为 pending，receipt 是激活完成后写入健康检查与发布事实的文件"),
-              P("push", "object", "把发布提交推送到各 Git 远端的结果")),
-      mutates=True, one_of=(("paths",), ("all",))),
     _d("GetDeviceStatus", FIXED, "读取 GPU、磁盘或云设备的当前状态。省略 device_id 时读取该类设备。", (
         R("kind", description="gpu 为 GPU 服务器与 GPU，disk 为磁盘，cloud 为云设备", enum=("gpu", "disk", "cloud")),
         P("device_id", description="只读取这一台：GPU 为 Device 的统一 ID，磁盘为磁盘资源 ID（如 nas_storage）"),
@@ -153,20 +141,17 @@ DECLARATIONS = (
         P("refresh", "boolean", "检查可用版本并保存观察；不安装或激活运行时"),
         P("include_runtime", "boolean", "默认 true；false 只读接入目录，不探测版本或准备状态，并忽略 refresh"),
     ), (R("providers", "array", "Provider：provider、title、kinds（当前主机可新增的账号种类）、capabilities、runtime（已装与可用版本）、"
-          "default_route_id、account_count；允许新增账号时附订阅账号的 account_directory_prefix（含末尾路径分隔符）"),), owner="execution"),
-    _d("InstallProviderRuntime", FIXED, "准备所选 Provider 的运行环境；复用已装程序，缺失时异步安装。", (
-        R("provider", description="Provider 名称"),
-    ), (R("preparation", "object", "ready、preparing、busy、failed 或 pending；ListProviders 或账号接入状态可继续观察"),), mutates=True, target="provider", owner="execution"),
+          "default_route_id、account_count；capabilities.account 列出按账号类型声明的操作和字段 schema；允许新增账号时附订阅账号的 account_directory_prefix（含末尾路径分隔符）"),), owner="execution"),
     _d("GetProviderAccountSetup", FIXED, "读取账号的运行环境、授权、模型与声明能力。", (
         R("account_id", description="执行账号 ID"),
     ), (R("setup", "object", "运行环境、准备进度、授权状态、模型目录与工具能力；尚未执行测试"),), owner="execution"),
-    _d("GetProviderAccountConfiguration", FIXED, "读取 Codex 订阅账号的原生默认 Provider 与配置版本；不返回密钥、完整配置或会话。", (
-        R("account_id", description="已登记的 Codex 订阅账号"),
-        P("include_provider_references", "boolean", "显式检查自定义 Provider 是否仍有原生持久会话引用；每种定义仅取一条，不返回会话内容。默认不查"),
-    ), (R("configuration", "object", "account_id、model_provider、effective_model_provider、model_providers（自定义 ID 列表）、version"),), owner="execution"),
-    _d("UpdateProviderAccountConfiguration", FIXED, "按调用信封 expected_version 修改 Codex 订阅账号原生默认 Provider；版本取配置读取结果。不重启账号或改写已有会话。", (
-        R("account_id", description="已登记的 Codex 订阅账号"),
-        R("model_provider", description="openai 或该账号已定义的自定义 Provider ID"),
+    _d("GetProviderAccountConfiguration", FIXED, "读取 Provider 声明的原生账号配置摘要与版本；跳过密钥和完整配置。", (
+        R("account_id", description="已登记且支持原生配置的账号"),
+        P("include_provider_references", "boolean", "在能力支持时检查相关原生持久会话引用。默认不查"),
+    ), (R("configuration", "object", "账号标识、配置版本与 Provider 声明的可公开字段"),), owner="execution"),
+    _d("UpdateProviderAccountConfiguration", FIXED, "按调用信封 expected_version 条件更新 Provider 声明的原生账号配置。版本取配置读取结果。", (
+        R("account_id", description="已登记且支持原生配置的账号"),
+        R("changes", "object", "仅包含 Provider 声明的可写字段，按账号原生配置 schema 进行验证"),
     ), (R("configuration", "object", "写入后回读的原生配置摘要与版本"),
         R("changed", "boolean", "是否执行了原生写入")), mutates=True, target="account_id", owner="execution"),
     _d("CheckProviderAccount", FIXED, "通过实际执行层发送最小测试消息；返回可观察的持久执行 ID。", (
@@ -177,16 +162,16 @@ DECLARATIONS = (
     ), (R("check", "object", "status、passed、model、configuration_current 与脱敏提示"),), owner="execution"),
     _d("CreateProviderAccountLogin", FIXED, "打开订阅账号登录会话。", (
         R("account_id", description="执行账号 ID"),
-        P("region", description="仅 Kimi：mainland-cn 中国区或 global 国际区；切换区域会替换未完成的授权流程，省略则沿用原生选择", enum=("mainland-cn", "global")),
+        P("options", "object", "此次登录的选项，按 GetProviderAccountLogin 的 login_options.schema 验证"),
     ), (R("session", "object", LOGIN_SESSION),
-        P("login_options", "object", "Kimi 登录的 regions（id、label）及当前 region")), mutates=True, target="account_id", owner="execution"),
-    _d("UpdateProviderAccountLogin", FIXED, "向已有登录会话提交 Claude 授权码或 Antigravity 完整回调地址。", (
-        R("account_id", description="执行账号 ID"), R("authorization_code", description="Claude 授权码或 Antigravity 完整回调地址；只送到当前登录进程，不保存或回显"),
-    ), (R("session", "object", "提交授权码后的" + LOGIN_SESSION),), mutates=True, target="account_id", owner="execution"),
+        P("login_options", "object", "Provider 声明的封闭 JSON Schema（schema）及当前选项（values）")), mutates=True, target="account_id", owner="execution"),
+    _d("UpdateProviderAccountLogin", FIXED, "向已有登录会话提交所需的一次性授权材料。", (
+        R("account_id", description="执行账号 ID"), R("authorization_code", description="格式由 Provider 声明，可为授权码或完整回调地址。只送到当前登录进程，不保存或回显"),
+    ), (R("session", "object", "提交授权材料后的" + LOGIN_SESSION),), mutates=True, target="account_id", owner="execution"),
     _d("GetProviderAccountLogin", FIXED, "读取登录会话和账号认证状态。", (R("account_id", description="执行账号 ID"),),
        (R("session", "any", "登录会话；尚未开始时为 null"),
         R("login_state", description="账号认证状态：logged_in、login_expired 或 logged_out"),
-        P("login_options", "object", "Kimi 登录的 regions（id、label）及当前 region；无历史流程时建议 mainland-cn")),
+        P("login_options", "object", "Provider 声明的封闭 JSON Schema（schema）及当前选项（values）")),
        owner="execution"),
     _d("CancelProviderAccountLogin", FIXED, "取消订阅账号登录并结束登录进程。", (R("account_id", description="执行账号 ID"),),
        (R("session", "any", "取消后的会话；尚未开始时为 null"),), mutates=True, target="account_id", owner="execution"),
@@ -221,13 +206,13 @@ DECLARATIONS = (
         P("verification_execution_id", description="接入流程测试回执；提供时必须匹配当前账号、模型及登记与模型 API 版本"),
     ), (R("role", "object", "写入后的角色：role、account_id、model、reasoning_effort、version…"),),
        mutates=True, target="backend_role", owner="execution"),
-    _d("GetProviderUsageEvents", FIXED, "分页读取 Codex 账号的脱敏用量与额度观察；不返回消息正文或凭证。", (
+    _d("GetProviderUsageEvents", FIXED, "分页读取声明了用量事件能力的账号的脱敏记录；不返回消息正文或凭证。", (
         R("account_id", description="执行账号 ID"), R("since", description="含时区的 ISO 时间，包含起点"),
         R("until", description="含时区的 ISO 时间，不含终点；窗口最多 60 天"),
         P("cursor", description="上一页结果的 next_cursor，原样交回；不填时读第一页"),
         P("limit", "integer", "每页最多的记录数，默认 1000", minimum=1, maximum=1000),
     ), (R("account_id", description="被读取的执行账号"),
-        R("records", "array", "脱敏记录：source（会话文件）与 record（timestamp、type、payload：会话元数据、模型、token 用量或额度窗口）"),
+        R("records", "array", "Provider 声明的脱敏记录投影"),
         R("next_cursor", description="还有后续记录时交回 cursor 读下一页；读完时为空")), owner="execution"),
     _d("UpdateProviderAccount", FIXED, "修改一个执行账号的调度设置：并发上限、相邻派发间隔与暂停阈值。", (
         R("account_id", description="执行账号 ID"),

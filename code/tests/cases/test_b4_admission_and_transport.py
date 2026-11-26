@@ -20,11 +20,6 @@ def test_required_shared_state_accepts_empty_json_string():
     declaration("UpdateSharedState").validate_arguments({"lineage_id": "lineage_123456789012", "key": "x", "expected_value": "", "value": "next"})
 
 
-def test_false_release_flag_does_not_select_the_all_alternative():
-    """PublishRelease 的 all 为假时不触发全量选项互斥"""
-    declaration("PublishRelease").validate_arguments({"paths": ["SPEC.md"], "all": False, "message": "B4 validation"})
-
-
 @pytest.mark.parametrize("flag", ["quota_reviewed", "scope_reviewed"])
 def test_review_with_reason_requires_this_familys_steward(quota_family, flag):
     """Family 审查即使提供理由仍要求本组 steward 身份"""

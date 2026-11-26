@@ -58,12 +58,14 @@ class TestProviderUsageEvents(unittest.TestCase):
         from unittest.mock import patch
         from management_portal.execution import provider_usage_events as source
         from management_portal.hatg.contracts import InstructionError
-        class Registry:
-            def get(self, account):
-                if account != 'one': raise ValueError('unknown')
-                return SimpleNamespace(codex_home=Path('/registered/one'))
+        def registration(account):
+            if account == 'one':
+                return {'account_id': 'one', 'provider': 'codex', 'kind': 'subscription_login'}
+            return None
         arguments={'account_id':'one','since':'2026-10-01T00:00:00Z','until':'2026-10-02T00:00:00Z'}
-        with patch('management_portal.execution.account_adapters.CodexRoutes',Registry),patch.object(source,'read_page',return_value={'records':[]}) as read:
+        with patch('management_portal.execution.account_registrations.registration', registration), \
+             patch('management_portal.execution.account_hosting.account_home', return_value=Path('/registered/one')), \
+             patch.object(source,'read_page',return_value={'records':[]}) as read:
             result=source.get_provider_usage_events(SimpleNamespace(argument=arguments.get))
             self.assertEqual(result,{'records':[]})
             self.assertEqual(read.call_args.args[0],Path('/registered/one/sessions'))

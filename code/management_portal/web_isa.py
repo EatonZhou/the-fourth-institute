@@ -643,27 +643,6 @@ def restart_portal(inv: Invocation) -> dict[str, Any]:
     return paired.request_restart(root, deployment, components)["request"]
 
 
-def publish_release(inv: Invocation) -> dict[str, Any]:
-    from scripts.tfi_development_runtime import configured_root
-    if _deployment() != "dev" and not configured_root():
-        raise InstructionError("instruction.forbidden", "PublishRelease 只能在 Dev 部署执行")
-    sys.path.insert(0, str(REPO_ROOT)) if str(REPO_ROOT) not in sys.path else None
-    from scripts import tfi_dev
-
-    report = tfi_dev.publish(
-        str(inv.argument("message") or ""),
-        paths=tuple(f"code/{item}" for item in inv.argument("paths") or ()),
-        all_files=bool(inv.argument("all")),
-    )
-    if not report.get("ok"):
-        raise InstructionError("instruction.failed", str(report.get("error") or "发布没有完成"), details={
-            "commit": report.get("commit"), "status": report.get("status"),
-            "push": dict(report.get("push") or {}),
-        })
-    return {"commit": str(report.get("commit") or ""), "paths": list(report.get("paths") or []),
-            "health": dict(report.get("health") or {}), "push": dict(report.get("push") or {})}
-
-
 def start_google_drive_backup(inv: Invocation) -> dict[str, Any]:
     from management_common.transfer_network import resolve_route
     from management_portal import backup_lineage
@@ -737,7 +716,6 @@ HANDLERS = {
     "GetPortalStatus": get_portal_status,
     "GetRuntimeCapacity": get_runtime_capacity,
     "RestartPortal": restart_portal,
-    "PublishRelease": publish_release,
     "GetDeviceStatus": get_device_status,
     "RunGoogleDriveBackup": start_google_drive_backup,
     "CreateTerminal": open_terminal,

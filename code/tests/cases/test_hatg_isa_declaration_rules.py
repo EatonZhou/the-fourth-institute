@@ -20,7 +20,7 @@ import pytest
 
 from management_portal.hatg import routing
 from management_portal.hatg.catalog import declaration, instruction_catalog
-from management_portal.hatg.contracts import InstructionContext
+from management_portal.hatg.contracts import InstructionContext, InstructionError
 from management_portal.hatg.instruction_renames import INSTRUCTION_RENAMES
 
 
@@ -256,13 +256,13 @@ def test_each_object_has_one_parameter_name():
 
 
 # Changes with no single object to name: a work queue, a Portal instance,
-# Portal-wide settings, the knowledge tag list and a backup export profile.
+# Portal-wide settings and a backup export profile.
 # AcceptUserAuthorization creates credentials from a verified input; it does
 # not modify that message. CorrectResourceLifecycleAssociation changes the
 # (scope_id, resource_id) allocation, not the Workspace used as read evidence.
 # Neither operation has a single resource version to use as scalar CAS.
 WITHOUT_TARGET = {"ClaimResidentSummaryJobs", "RunGoogleDriveBackup", "RestartPortal",
-                  "UpdateExecutionSettings", "UpdateKnowledgeTags",
+                  "UpdateExecutionSettings",
                   "AcceptUserAuthorization", "CorrectResourceLifecycleAssociation"}
 
 
@@ -335,8 +335,6 @@ def test_at_least_one_group_rejects_a_call_without_any_of_its_parameters():
 
     :design: decision_898b8911a2ff, decision_22227d0ad075
     """
-    from management_portal.hatg.contracts import InstructionError
-
     declaration = instruction_catalog()["ListPermissionEntries"]
     assert declaration.schema()["any_of"] == ["p", "r"]
     with pytest.raises(InstructionError) as raised:
@@ -344,6 +342,42 @@ def test_at_least_one_group_rejects_a_call_without_any_of_its_parameters():
     assert raised.value.code == "instruction.invalid_arguments"
     for arguments in ({"p": "alice"}, {"r": "@portal"}, {"p": "alice", "r": "@portal"}):
         declaration.validate_arguments(arguments)
+
+
+def test_post_marks_declares_a_partial_update_on_a_post():
+    """置顶和精华独立可选，显式 false 是有效更新，必须给出至少一个标记。"""
+    marks = declaration("UpdatePostMarks")
+    assert marks.target == "post_id"
+    assert marks.mutates
+    assert [(param.name, param.type, param.required) for param in marks.parameters] == [
+        ("post_id", "string", True), ("pinned", "boolean", False), ("featured", "boolean", False),
+    ]
+    assert marks.schema()["any_of"] == ["pinned", "featured"]
+    assert [(field.name, field.type, field.required) for field in marks.result] == [
+        ("post", "object", True),
+    ]
+    post = {"post_id": "post_aaaaaaaaaaaa"}
+    with pytest.raises(InstructionError) as raised:
+        marks.validate_arguments(post)
+    assert raised.value.code == "instruction.invalid_arguments"
+    for values in ({"pinned": False}, {"featured": False}, {"pinned": False, "featured": False}):
+        marks.validate_arguments(post | values)
+
+
+@pytest.mark.parametrize(("name", "removed", "replacement", "value"), [
+    ("UpdateProviderAccountConfiguration", "model_provider", "changes", "example"),
+    ("CreateProviderAccountLogin", "region", "options", "global"),
+])
+def test_provider_parameters_use_provider_neutral_objects(name, removed, replacement, value):
+    """Provider 自有字段随配置或登录选项对象传入，旧顶层参数明确拒绝。"""
+    command = declaration(name)
+    account = {"account_id": "example-account"}
+    assert command.parameter_map[replacement].type == "object"
+    command.validate_arguments(account | {replacement: {removed: value}})
+    with pytest.raises(InstructionError) as raised:
+        command.validate_arguments(account | {replacement: {removed: value}, removed: value})
+    assert raised.value.code == "instruction.invalid_arguments"
+    assert raised.value.details["unknown_arguments"] == [removed]
 
 
 def _listed_verbs() -> set[str]:
@@ -371,15 +405,24 @@ def _contract_values(value):
 
 
 def test_instruction_name_migration_preserves_catalog_and_default_permissions():
-    """Compare every new declaration with the pre-migration live schema and default permission slots."""
+    """保留仍在目录中的改名指令契约；三份收缩计划移除的后继指令不得留下权限槽。"""
     from management_portal.permission_system.scheme.compiler import compile_scheme
     from management_portal.permission_system.scheme.repository import builtin_documents
+    from tests.cases.test_hatg_instruction_discovery import RETIRED_PLAN_INSTRUCTIONS
 
     baseline = Path(__file__).with_name("fixtures") / "isa_renamed_contracts.json"
     expected = json.loads(baseline.read_text(encoding="utf-8"))
-    assert set(expected) == set(INSTRUCTION_RENAMES.values())
-    assert len(expected) == len(INSTRUCTION_RENAMES)
-    scheme = compile_scheme(builtin_documents()["default"])
+    assert set(expected) == set(INSTRUCTION_RENAMES.values()) - RETIRED_PLAN_INSTRUCTIONS
+    default = builtin_documents()["default"]
+    scheme = compile_scheme(default)
+    classified = {element.split(":", 1)[0] for element in default["instructions"]}
+    assert not RETIRED_PLAN_INSTRUCTIONS & classified
+    assert not {name for name in RETIRED_PLAN_INSTRUCTIONS if scheme.slots(name)}
+    assert scheme.unmapped() == []
+    assert scheme.describe("UpdatePostMarks") == {
+        "required": True,
+        "requirements": [{"element": "UpdatePostMarks", "a": "@admin", "resource": "@shared"}],
+    }
     context = InstructionContext(caller="resident_aaaaaaaaaaaa", entry="harness")
     differences = {}
     for old, new in INSTRUCTION_RENAMES.items():
@@ -387,6 +430,8 @@ def test_instruction_name_migration_preserves_catalog_and_default_permissions():
             result = routing.execute({"instruction": name, "arguments": arguments}, context)
             assert result.status == "failed" and result.error["code"] == "instruction.unknown", old
         assert not scheme.slots(old)
+        if new in RETIRED_PLAN_INSTRUCTIONS:
+            continue
         schema = declaration(new).schema()
         assert schema["instruction"] == new
         actual = {key: value for key, value in schema.items()

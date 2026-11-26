@@ -22,7 +22,12 @@ const runtimeCatalogs = {
   paid: {models: ['paid-model'], default_model: 'paid-model', efforts_by_model: {}},
 };
 window.PortalAPI = {get: async (path, options) => {
-  const accountId = new URL(path, 'http://portal.invalid').searchParams.get('account_id');
+  const url = new URL(path, 'http://portal.invalid');
+  if (url.pathname === '/api/portal-operations') {
+    assert.equal(url.searchParams.get('operation'), 'install_provider_runtime');
+    return {lineage_id: 'lineage_test', path: '/fixture/install_provider_runtime.py', runtime: 'python'};
+  }
+  const accountId = url.searchParams.get('account_id');
   assert.equal(new URL(path, 'http://portal.invalid').pathname, '/api/agent-workbench/agent-runtime-catalog');
   catalogRequests.push({accountId, signal: options.signal});
   if (holdCatalog) return new Promise(resolve => pendingCatalogs.set(accountId, resolve));
@@ -31,7 +36,11 @@ window.PortalAPI = {get: async (path, options) => {
 }};
 Object.defineProperty(window.document, 'hidden', {get: () => hidden});
 const visibility = value => { hidden = !value; window.document.dispatchEvent(new window.Event('visibilitychange')); };
-const kimiOptions = () => ({regions: [{id:'mainland-cn', label:'中国区'}, {id:'global', label:'国际区'}], region: kimiRegion || 'mainland-cn'});
+const kimiOptions = () => ({
+  schema: {type: 'object', additionalProperties: false, properties: {region: {type: 'string', title: '账号所属区域',
+    oneOf: [{const: 'mainland-cn', title: '中国区'}, {const: 'global', title: '国际区'}]}}},
+  values: {region: kimiRegion || 'mainland-cn'},
+});
 const kimiResult = () => ({login_options: kimiOptions(), session: kimiRegion ? {state:'awaiting_user',
   verification_code: kimiRegion, verification_url: `https://www.kimi.${kimiRegion === 'global' ? 'ai' : 'com'}/code/authorize_device`} : null});
 const timers = new Map(), intervals = new Map(); let timerId = 0;
@@ -44,11 +53,24 @@ window.PortalUI = {createDialogController: ({modal, onClose}) => ({
 window.PortalInstructionClient = {execute: async (name, args, options) => {
   calls.push({name, args, options});
   switch (name) {
-    case 'ListProviders': return {providers: [{provider: 'claude', kinds: ['subscription_login']}]};
+    case 'ListProviders': return {providers: [{provider: 'claude', kinds: ['subscription_login']},
+      {provider: 'codex', kinds: ['subscription_login'], capabilities: {account: {configuration: {
+        kinds: ['subscription_login'], schema: {properties: {model_provider: {type: 'string'}}},
+      }}}}]};
     case 'ListProviderAccounts': return {accounts: [{account_id: 'existing', provider: 'claude', kind: 'subscription_login',
       registration: {version: 1, enabled: true}, login_state: 'logged_in', migration_type: {id: 'claude:subscription_login', label: 'Claude Code · 订阅', default_priority: 0}},
       {account_id: 'codex', provider: 'codex', kind: 'subscription_login', migration_type: {id: 'codex:subscription_login', label: 'Codex · 订阅', default_priority: 1}},
       {account_id: 'paid', provider: 'claude', kind: 'api_profile', migration_type: {id: 'claude:api_profile:api', label: 'Claude Code · API', default_priority: 200}}]};
+    case 'GetProviderAccountConfiguration':
+      assert.equal(args.account_id, 'codex');
+      assert(!('include_provider_references' in args));
+      return {configuration: {model_provider: 'openai', model_providers: ['team'], version: 'native-v1'}};
+    case 'UpdateProviderAccountConfiguration':
+      assert.equal(args.account_id, 'codex');
+      assert.equal(args.changes.model_provider, 'team');
+      assert.equal(options.expectedVersion, 'native-v1');
+      assert.deepEqual(Object.keys(args).sort(), ['account_id', 'changes']);
+      throw Object.assign(new Error('原生配置版本已改变'), {code: 'instruction.version_conflict'});
     case 'ListModelApis': return {apis: []};
     case 'ListBackendRoles': return {roles};
     case 'RegisterProviderAccount': return {};
@@ -65,7 +87,8 @@ window.PortalInstructionClient = {execute: async (name, args, options) => {
     case 'CreateProviderAccountLogin':
       if (args.account_id === 'kimi_sub') {
         if (failLoginStart) throw Error('temporary login failure');
-        kimiRegion = args.region; return kimiResult();
+        assert(!Object.hasOwn(args, 'region'), 'login options must be nested');
+        kimiRegion = args.options.region; return kimiResult();
       }
       return {session: {state: 'pending'}};
     case 'UpdateProviderAccountLogin':
@@ -92,17 +115,28 @@ window.PortalInstructionClient = {execute: async (name, args, options) => {
         backend_priority: args.backend_priority, model: args.model, reasoning_effort: args.reasoning_effort,
         version: (roles[0]?.version || 0) + 1}];
       return {role: roles[0]};
-    case 'InstallProviderRuntime':
-      if (holdPrepare) return new Promise(resolve => { finishPrepare = resolve; });
+    case 'RunScript':
+      assert.equal(args.lineage_id, 'lineage_test');
+      assert.equal(args.path, '/fixture/install_provider_runtime.py');
+      assert.equal(args.runtime, 'python');
+      assert.equal(args.arguments.provider, provider);
+      if (holdPrepare) await new Promise(resolve => { finishPrepare = resolve; });
       preparation = prepareResult; missing = prepareResult !== 'ready';
-      return {preparation: {status: prepareResult}};
+      return {script_run_id: 'script_run_fixture', status: 'running'};
+    case 'GetScriptRun':
+      assert.equal(args.lineage_id, 'lineage_test');
+      assert.equal(args.script_run_id, 'script_run_fixture');
+      return {status: 'succeeded', outputs: {preparation: {status: prepareResult}}};
     default: throw new Error(name);
   }
 }};
 const context = vm.createContext({window, document: window.document, Node: window.Node, AbortController,
   setTimeout: fn => later(fn, timers), clearTimeout: id => timers.delete(id),
   setInterval: fn => later(fn, intervals), clearInterval: id => intervals.delete(id), URL, URLSearchParams, console});
-const source = fs.readFileSync('management_portal/static/portal_management_backend.js', 'utf8').replaceAll('export ', '');
+const operations = fs.readFileSync('management_portal/static/portal_operations.js', 'utf8').replaceAll('export ', '');
+vm.runInContext(operations, context);
+const source = fs.readFileSync('management_portal/static/portal_management_backend.js', 'utf8').replace('import("/static/portal_operations.js")', 'Promise.resolve({startOperation: globalThis.startOperation, readOperation: globalThis.readOperation})')
+  .replaceAll('export ', '');
 vm.runInContext(source, context);
 const flush = () => new Promise(resolve => setImmediate(resolve));
 const click = text => {
@@ -119,7 +153,9 @@ const openSetup = async () => {
   await flush();
 };
 (async () => {
-  await context.mount(window.document.querySelector('main'), {me: {access: {permission_system: 'open'}}});
+  await context.mount(window.document.querySelector('main'), {me: {access: {permission_system: 'open', allows: {
+    GetProviderAccountConfiguration: true, UpdateProviderAccountConfiguration: true,
+  }}}});
   await openSetup();
   assert.equal(window.document.querySelector('input[name=model]').value, 'model');
   const setupActions = () => [...window.document.querySelectorAll('dialog .backendActions button')].filter(el => !el.hidden);
@@ -127,7 +163,7 @@ const openSetup = async () => {
   assert([...window.document.querySelectorAll('button')].find(el => el.textContent === '显示详细日志').hidden);
   click('测试并完成'); await flush(); await flush();
   assert(calls.some(call => call.name === 'UpdateBackendRole' && call.args.verification_execution_id === 'execution_check'));
-  assert(!calls.some(call => ['InstallProviderRuntime', 'CreateProviderAccountLogin'].includes(call.name)));
+  assert(!calls.some(call => ['RunScript', 'CreateProviderAccountLogin'].includes(call.name)));
   assert.equal(window.document.querySelector('dialog'), null, 'a passing check completes the dialog');
   await openSetup();
   window.document.querySelector('input[name=use_default]').checked = true;
@@ -138,7 +174,7 @@ const openSetup = async () => {
   assert.match(window.document.querySelector('[data-backend-preparation-detail]').textContent, /下载并安装运行依赖/);
   assert.match(window.document.querySelector('[data-backend-setup-stages]').textContent, /准备运行环境.*进行中/);
   assert([...window.document.querySelectorAll('button')].find(el => el.textContent === '测试并完成').disabled);
-  assert.equal(calls.filter(call => call.name === 'InstallProviderRuntime').length, 1);
+  assert.equal(calls.filter(call => call.name === 'RunScript').length, 1);
   const preparingStatus = window.document.querySelector('[data-backend-setup-status]');
   const preparingText = preparingStatus.textContent;
   const modelOption = window.document.querySelector('datalist option');
@@ -157,14 +193,14 @@ const openSetup = async () => {
   assert.equal(window.document.querySelector('datalist option'), modelOption, 'unchanged model options keep their DOM identity');
   assert.equal(draft.value, 'custom-model'); assert.equal(window.document.activeElement, draft);
   draft.value = 'model';
-  assert.equal(calls.filter(call => call.name === 'InstallProviderRuntime').length, 1, 'polling must not reinstall');
+  assert.equal(calls.filter(call => call.name === 'RunScript').length, 1, 'polling must not reinstall');
   setupError = new TypeError('Load failed');
   tick(); await flush();
   assert.equal(timers.size, 1, 'a transient transport error does not stop preparation polling');
   assert.match(preparingStatus.textContent, /重新读取/);
   setupError = false;
   missing = false; tick(); await flush();
-  assert.equal(calls.filter(call => call.name === 'InstallProviderRuntime').length, 1);
+  assert.equal(calls.filter(call => call.name === 'RunScript').length, 1);
   click('测试并完成'); await flush(); await flush();
   assert(!calls.some(call => call.name === 'UpdateBackendRole'));
   assert.match(window.document.querySelector('[data-backend-setup-status]').textContent, /未通过/);
@@ -201,7 +237,7 @@ const openSetup = async () => {
   assert.match(window.document.querySelector('[data-backend-setup-status]').textContent, /准备失败/);
   assert.equal(timers.size, 0, 'failed preparation must not retry in a loop');
   click('重试'); await flush();
-  assert.equal(calls.filter(call => call.name === 'InstallProviderRuntime').length, 2);
+  assert.equal(calls.filter(call => call.name === 'RunScript').length, 2);
   prepareResult = 'ready'; click('重试'); await flush();
   assert.deepEqual(setupActions().map(el => el.textContent), ['测试并完成']);
   click('关闭');
@@ -212,13 +248,13 @@ const openSetup = async () => {
   await openSetup();
   assert.equal(timers.size, 1, 'runtime update locks are retried automatically');
   prepareResult = 'ready'; tick(); await flush();
-  assert.equal(calls.filter(call => call.name === 'InstallProviderRuntime').length, 2);
+  assert.equal(calls.filter(call => call.name === 'RunScript').length, 2);
   assert.deepEqual(setupActions().map(el => el.textContent), ['测试并完成']);
   click('关闭');
   // Observe an existing preparation, without submitting another one, and stop polling on close.
   missing = true; preparation = 'pending'; calls.length = 0;
   await openSetup();
-  assert(!calls.some(call => call.name === 'InstallProviderRuntime'));
+  assert(!calls.some(call => call.name === 'RunScript'));
   assert.equal(timers.size, 1); click('关闭'); assert.equal(timers.size, 0);
   preparation = 'missing'; holdPrepare = true; calls.length = 0;
   await openSetup(); click('关闭');
@@ -359,7 +395,7 @@ const openSetup = async () => {
   click('获取登录授权'); await flush();
   const loginLink = window.document.querySelector('dialog a');
   assert.equal(new URL(loginLink.href).hostname, 'www.kimi.com');
-  assert.equal(calls.find(c => c.name === 'CreateProviderAccountLogin').args.region, 'mainland-cn');
+  assert.equal(calls.find(c => c.name === 'CreateProviderAccountLogin').args.options.region, 'mainland-cn');
   holdLoginPoll = true; tick(); await flush();
   const oldResult = kimiResult();
   regionSelect.value = 'global'; regionSelect.dispatchEvent(new window.Event('change'));
@@ -482,6 +518,15 @@ const openSetup = async () => {
   assert.match(form.querySelector('[data-backend-priority]').textContent, /尚未保存跨后端自动切换顺序/);
   click('恢复推荐顺序');
   assert(form.querySelectorAll('[data-backend-priority-kind]').length > 0);
+  click('关闭');
+  click('原生账号配置'); await flush();
+  form = window.document.querySelector('dialog form');
+  assert.equal(form.elements.model_provider.value, 'openai');
+  change(form.elements.model_provider, 'team');
+  form.dispatchEvent(new window.Event('submit', {bubbles: true, cancelable: true}));
+  await flush();
+  assert.equal(form.elements.model_provider.value, 'team', 'preserve draft after a version conflict');
+  assert.match(form.querySelector('[role="alert"]').textContent, /原生配置版本已改变/);
   click('关闭');
   console.log('provider onboarding UI passed');
 })().catch(error => {console.error(error); process.exitCode = 1;});

@@ -64,7 +64,7 @@ A 根：全部动作（@actions）
 | 免检：处理器按固定角色核对调用者 | Family 简报与摘要材料（MaintainResidentWorkSummary、GetFamilySummaryInputs、PublishFamilyProgress，只允许本 Family 门面或 Steward）、工作摘要（UpdateResidentWorkSummary，只允许本人或 Steward）、独立摘要队列（ClaimResidentSummaryJobs 只允许 resident-summary 职责承担者，SubmitResidentSummary、ReleaseResidentSummaryJob 只允许认领者）、临时凭证（AcceptUserAuthorization 由 Society 证明调用 Resident 当前执行中的真实 User 授权来源、由引擎核验签发者持有；CreateTemporaryCredential 由引擎核对签发者此刻持有，UpdateTemporaryCredential 只允许签发者，RevokeTemporaryCredential 只允许签发者或接收者） |
 | 对参数所指记录保存的对象有 `@admin` / `@viewer`，在入口判定（`via` 槽位，decision_22227d0ad075；828f133f 起处理代码不再另问引擎） | UpdatePermissionEntry（对 `entry_id` 所指表项已保存的 `r` 要求 `@admin`，改 `r` 时对新 `r` 也要求 `@admin`）、DeletePermissionEntry（对 `entry_id` 或 `entry_ids` 每条表项已保存的 `r` 要求 `@admin`）/ GetInstructionExecution（对 `instruction_id` 所指回执记录的 Lineage 要求 `@viewer`，回执没有 Lineage 时不产生请求；另有免检槽位，只看调用者自己回执的情况由处理代码按调用者过滤） |
 | 免检：目录与创建 | GetInstructionSchema、ListInstructions、GetPermissionSystem、ListPermissionSchemes、GetPermissionScheme、GetPermissionNode、SearchPermissionNodes；CreateChatroom、CreatePost、CreateProject（创建后按创建者规则管理）；CompleteChat（使用已登记的模型接口，与运行 Resident 同级，不返回凭据） |
-| 对“共享”有 `@viewer`（全员） | 运行状态与用量（GetPortalStatus、GetDeviceStatus、GetRuntimeCapacity、GetUsage、GetProviderUsageEvents、ListProviderAccounts、ListModelApis）、目录与列表（GetKnowledgeTags、GetResidentSummaryQueue、GetResourceType、ListComponentTypes、GetTemplate、ListTemplates、ListPosts、ListProjects、ListUsers、SearchResidents、SearchResources）、只给出对象 ID 的读取（GetMoveOperation、GetWorkspaceHandoff，处理器再核对所属 Lineage） |
+| 对“共享”有 `@viewer`（全员） | 运行状态与用量（GetPortalStatus、GetDeviceStatus、GetRuntimeCapacity、GetUsage、GetProviderUsageEvents、ListProviderAccounts、ListModelApis）、目录与列表（GetResidentSummaryQueue、GetResourceType、ListComponentTypes、GetTemplate、ListTemplates、ListPosts、ListProjects、ListUsers、SearchResidents、SearchResources）、只给出对象 ID 的读取（GetMoveOperation、GetWorkspaceHandoff，处理器再核对所属 Lineage） |
 | 对参数所指对象有 `@viewer` | 聊天室读取与已读（GetChatroom、ListChatroomMessages、UpdateChatroomReadPosition，以及给出 `chatroom_id` 的 SearchMessages、ListInputHistory）、帖子读取、已读与回复（GetPost、UpdatePostReadVersion、CreateReply）、Resident 读取（GetResident、ListResidentStates）、Function Block 读取（GetLineage 结果中的 `function_blocks`）、资源读取（ReadResource、ResolveResource）、GetUser（对 `user_id`，必填；读取本人由“账号本人”规则满足） |
 | 对参数所指对象有 `@contributor` | UpdateChatroomReaction、CreateLineage（对必填的 `project_id`）、UpdateWorkspaceFile（对必填的 `address` 所在的 Workspace；只接受 Workspace 文件地址，不接受绝对路径，weihao 2026-10-18）、MaintainFamilyProgress 与 MaintainFamilyRecovery（对 `lineage_id`；本 Family 的门面与 Steward 作为 Lineage 中的 Resident 满足，2026-10-18 起不再免检） |
 | 对参数所指主体有 `@admin` | GetEffectivePermissions、CheckPermission、ListTemporaryCredentials（对必填的 `principal_id`，查看自己也写明；它当作 R 树上的这个 User 或 Resident；账号本人、Project 中的 Resident 和个人 AMA 中的 Resident 都对自己满足）、ListPermissionEntries 的 `p`（`r` 要求 `@viewer`，两者至少给一个） |
@@ -72,10 +72,12 @@ A 根：全部动作（@actions）
 | 对“公共内容”有 `@contributor` / `@admin` | Lineage 模板的 CreateTemplate、UpdateTemplate、RestoreTemplate / DeleteTemplate：Lineage 模板与 skill 同属共享定义；CreateTemplate 从选区生成时还要求对来源 Lineage 有 `@viewer` |
 | 对新资源将要落下的 R 树父节点有 `@contributor`（`place` 槽位，见第 2 节） | RegisterResource（device 落在“共享”，不带 Project 的资源落在公共内容，带 Project 的落在该 Project） |
 | 对参数所指 Lineage 有 `@admin` | DeleteFamily（删除整个 Family 及其成员，与 DeleteLineage 同级）、RunScript（对运行所属的 Lineage；以服务所属操作系统账号在主机上运行，不受沙箱限制；weihao 2026-10-19 起从“Portal 运维”改为按 Lineage 判定） |
-| 对“Portal 运维”有 `@admin` | PublishRelease、RestartPortal、CreateModelApi、UpdateModelApi、DeleteModelApi |
+| 对“Portal 运维”有 `@admin` | RestartPortal、CreateModelApi、UpdateModelApi、DeleteModelApi |
 | 对“共享”有“给 Resident 发消息” | CreateNotification（向人类参与者发通知，与发消息同级） |
 
-Lineage Effect 的执行身份、事件归属和自动运行边界以 decision_ae422b92c6f3 为唯一权威；本方案按已认证的调用者进行对应指令判定，不在此另设一套 Effect 身份或免检规则。开关开启后，开发团队的 Resident 要发布或重启 Portal，需要一条“Portal 运维”上的表项，例如 (开发团队所在 Project, `@admin`, 运维)。RunScript 按运行所属的 Lineage 要求 `@admin`（Effect 内为激活的 Lineage，Resident 省略时为其所在 Lineage，decision_8b510cbd9c58）：Lineage 挂在所属 Project 下，Project 的 admin（包括该 Project 的 Resident）能在本 Project 的 Lineage 中运行脚本，其他 Project 的主体不能。weihao 2026-10-19 接受项目 admin 因此得到无沙箱的主机脚本能力。
+帖子置顶与精华通过 `UpdatePostMarks` 修改，要求对“共享”有 `@admin`。知识标签配置使用通用资源指令权限，读取要求共享 `@viewer`，修改要求共享 `@admin`。发布、运行时准备、Colab 会话和 Article 恢复的系统脚本要求真实调用者对固定 Portal 运维 Lineage 有 `@admin`，同时满足相应领域约束。
+
+Lineage Effect 的执行身份、事件归属和自动运行边界以 decision_ae422b92c6f3 为唯一权威；本方案按已认证的调用者进行对应指令判定，不在此另设一套 Effect 身份或免检规则。开关开启后，发布通过固定 Portal 运维 Lineage 的脚本授权；`RestartPortal` 对“Portal 运维”权限节点判定。RunScript 按运行所属的 Lineage 要求 `@admin`（Effect 内为激活的 Lineage，Resident 省略时为其所在 Lineage，decision_8b510cbd9c58）：Lineage 挂在所属 Project 下，Project 的 admin（包括该 Project 的 Resident）能在本 Project 的 Lineage 中运行脚本，其他 Project 的主体不能。weihao 2026-10-19 接受项目 admin 因此得到无沙箱的主机脚本能力。
 
 生命周期关联纠正 `CorrectResourceLifecycleAssociation` 同时声明固定入口和目标 Workspace 两个判定槽：`:fixed` 显式归入 `@free`，固定资源为 `@portal`；`:resource_id` 显式归入 `@viewer`，目标类型限定为 Workspace。固定槽不豁免目标读取权限，也不授予注销、删除或修改 Workspace 的能力。资源处理器仍核验调用者是原生命周期的调用者、准入已关闭且没有活动请求，并从当前登记确认 Workspace 是原有持久 Project 根的隐式依赖；只纠正有证据的错误关联并保留审计，不删除资源、不代替生命周期完成。新指令的声明、实现、模板分类应共同交付，激活后通过正式 schema 和身份入口核对加载结果。
 
@@ -93,7 +95,7 @@ R 根（Portal）
 │   ├── 每个帖子
 │   ├── 不属于 Project 的非个人 Lineage（及其 Resident、Workspace、Family）、
 │   │   通过 Binding 加入的 Workspace、dataset、model、document、search、test、device 等
-│   ├── Portal 运维：发布、重启、模型接口登记（只有管理员）
+│   ├── Portal 运维：重启、模型接口管理
 │   ├── 公共内容：所有主体都有 admin
 │   │   ├── 不属于任何 Project 的知识条目、skill、todo、repo、review
 │   │   ├── 既不属于 Project 也不属于 Lineage 的 Workbench

@@ -48,6 +48,8 @@ def test_colab_actions_share_session_and_respect_device_permission(monkeypatch, 
     monkeypatch.setattr(google_cloud_devices, "_colab_command", lambda _: ["colab"])
     monkeypatch.setattr(permission_system, "allows", lambda actor, _, args:
                         actor in ("alice", "bob") and args["resource_id"] == device)
+    monkeypatch.setattr(permission_system, "allows_roles", lambda actor, roles:
+                        actor in ("alice", "bob") and roles == [("@contributor", device)])
     active = {}
     def read(argv, **kwargs):
         name = argv[3]

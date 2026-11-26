@@ -541,10 +541,6 @@
     "Familize": {
       "a": "@contributor"
     },
-    "SetPostFeatured": {
-      "a": "@admin",
-      "r": "@shared"
-    },
     "ForkResident:lineage_id": {
       "a": "@contributor"
     },
@@ -608,9 +604,6 @@
       "a": "@viewer"
     },
     "GetResearchMap": {
-      "a": "@viewer"
-    },
-    "GetResearchMapDigest": {
       "a": "@viewer"
     },
     "GetResidentRequest": {
@@ -735,7 +728,7 @@
     "SetComponentPaused": {
       "a": "@contributor"
     },
-    "SetPostPinned": {
+    "UpdatePostMarks": {
       "a": "@admin",
       "r": "@shared"
     },
@@ -765,22 +758,6 @@
       "a": "@viewer"
     },
     "RegisterResource": {
-      "a": "@contributor"
-    },
-    "RestoreArticle:article_id": {"a": "@admin"},
-    "RestoreArticle:resident_id": {"a": "@admin"},
-    "RestoreArticle:source_address": {"a": "@viewer"},
-    "RestoreArticle:project_id": {"a": "@contributor"},
-    "CheckArticleRestore:article_id": {
-      "a": "@admin"
-    },
-    "CheckArticleRestore:resident_id": {
-      "a": "@admin"
-    },
-    "CheckArticleRestore:source_address": {
-      "a": "@viewer"
-    },
-    "CheckArticleRestore:project_id": {
       "a": "@contributor"
     },
     "RelayFamilyMessage": {
@@ -916,10 +893,6 @@
     "UpdateProject": {
       "a": "@admin"
     },
-    "UpdateKnowledgeTags": {
-      "a": "@admin",
-      "r": "@shared"
-    },
     "UpdateResident": {
       "a": "@contributor"
     },
@@ -962,10 +935,6 @@
       "r": "@shared"
     },
     "UpdateBackendRole": {
-      "a": "@admin",
-      "r": "@shared"
-    },
-    "InstallProviderRuntime": {
       "a": "@admin",
       "r": "@shared"
     },
@@ -1209,10 +1178,6 @@
     "GetPost": {
       "a": "@viewer"
     },
-    "GetKnowledgeTags": {
-      "a": "@viewer",
-      "r": "@shared"
-    },
     "GetProviderUsageEvents": {
       "a": "@viewer",
       "r": "@shared"
@@ -1364,10 +1329,6 @@
     "PublishPulseItem": {
       "a": "@free",
       "r": "@portal"
-    },
-    "PublishRelease": {
-      "a": "@admin",
-      "r": "@operations"
     },
     "ReadResource": {
       "a": "@viewer"

@@ -12,6 +12,11 @@ from management_portal.hatg.declarations import DISCOVERY_GROUPS
 from management_portal.execution.harness_isa_tool import _description
 
 CONTEXT = InstructionContext(caller="resident_aaaaaaaaaaaa", entry="harness")
+RETIRED_PLAN_INSTRUCTIONS = {
+    "PublishRelease", "SetColabSessionRunning", "InstallProviderRuntime",
+    "CheckArticleRestore", "RestoreArticle", "GetResearchMapDigest",
+    "SetPostPinned", "SetPostFeatured", "GetKnowledgeTags", "UpdateKnowledgeTags",
+}
 
 
 def listing(**arguments):
@@ -70,6 +75,17 @@ def test_retired_translation_has_no_declaration_handler_or_callable_alias(name):
     for instruction, arguments in [(name, {}), ("GetInstructionSchema", {"instruction": name})]:
         result = routing.execute({"instruction": instruction, "arguments": arguments}, CONTEXT)
         assert result.status == "failed" and result.error["code"] == "instruction.unknown"
+
+
+def test_retired_plan_instructions_are_unknown_and_absent_from_discovery():
+    """三份收缩计划删除的指令不能通过目录、schema 或旧名调用发现。"""
+    discovered = names(listing(group="all"))
+    assert not RETIRED_PLAN_INSTRUCTIONS & discovered
+    assert "UpdatePostMarks" in discovered
+    for name in sorted(RETIRED_PLAN_INSTRUCTIONS):
+        for instruction, arguments in ((name, {}), ("GetInstructionSchema", {"instruction": name})):
+            result = routing.execute({"instruction": instruction, "arguments": arguments}, CONTEXT)
+            assert result.status == "failed" and result.error["code"] == "instruction.unknown", name
 
 
 def test_tool_description_supports_discovery_without_catalog_expansion():

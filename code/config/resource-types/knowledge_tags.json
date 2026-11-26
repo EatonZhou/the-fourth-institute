@@ -1,0 +1,13 @@
+{
+  "type": "knowledge_tags",
+  "category": "resource",
+  "title": {"zh": "知识标签配置", "en": "Knowledge tag configuration"},
+  "description": "The shared knowledge-tag singleton, read as JSON and replaced with a content-version precondition.",
+  "provider": "management_portal.resources.providers.knowledge_tags:install_resolver",
+  "catalog_section": "",
+  "catalog_order": 100,
+  "registerable": false,
+  "scope": "shared",
+  "unit": "core",
+  "enabled_by_default": true
+}

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from management_portal.hatg.contracts import InstructionError, invalid
+from management_portal.hatg.contracts import invalid
 from management_portal.hatg.kernel import Invocation
 
 from .common import lineage_moves
@@ -45,38 +45,7 @@ def get_move_operation(inv: Invocation) -> dict[str, Any]:
     return {**result, "phase": str(result.get("phase") or ""), "status": str(result.get("status") or "")}
 
 
-def get_knowledge_tags(inv: Invocation) -> dict[str, Any]:
-    from management_portal import project_registry
-
-    tags = project_registry.tags()
-    return {"tags": tags, "version": project_registry.tags_version(tags)}
-
-
-def update_knowledge_tags(inv: Invocation) -> dict[str, Any]:
-    from management_portal import project_registry
-
-    expected = inv.expected_version
-    if isinstance(expected, dict):
-        expected = expected.get("tags")
-    try:
-        saved = project_registry.replace_tags(
-            inv.argument("tags"), expected_version=None if expected is None else str(expected),
-        )
-    except project_registry.TagsChanged as exc:
-        raise InstructionError(
-            "instruction.version_conflict", "知识标签已被修改；请用 GetKnowledgeTags 重新读取后再提交",
-            details={"expected_version": expected, "current_version": exc.current_version},
-        ) from None
-    except ValueError as exc:
-        raise invalid(str(exc)) from None
-    return {"tags": saved, "version": project_registry.tags_version(saved)}
-
-
-
-
 HANDLERS = {
-    "GetKnowledgeTags": get_knowledge_tags,
-    "UpdateKnowledgeTags": update_knowledge_tags,
     "MoveResident": move_resident,
     "MoveLineageObjects": move_lineage_objects,
     "GetMoveOperation": get_move_operation,

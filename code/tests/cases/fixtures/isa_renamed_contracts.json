@@ -1,179 +1,4 @@
 {
-  "CheckArticleRestore": {
-    "category": "resource",
-    "discovery_group": "general",
-    "owner": "resource",
-    "mutates": false,
-    "streaming": false,
-    "parameters": [
-      {
-        "name": "article_id",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "resident_id",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "ordinal",
-        "type": "integer",
-        "required": true,
-        "minimum": 0,
-        "maximum": 9223372036854775807
-      },
-      {
-        "name": "tool_index",
-        "type": "integer",
-        "required": true,
-        "minimum": 0,
-        "maximum": 10000
-      },
-      {
-        "name": "tool_item_id",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "expected_hash",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "source_address",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "source_version",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "primary_file",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "primary_version",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "project_id",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "target_relative_path",
-        "type": "string",
-        "required": true
-      }
-    ],
-    "result": [
-      {
-        "name": "mode",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "apply_supported",
-        "type": "boolean",
-        "required": true
-      },
-      {
-        "name": "can_apply",
-        "type": "boolean",
-        "required": true
-      },
-      {
-        "name": "tool_evidence",
-        "type": "object",
-        "required": true
-      },
-      {
-        "name": "registration_ledger",
-        "type": "object",
-        "required": true
-      },
-      {
-        "name": "hatg_receipt",
-        "type": "object",
-        "required": true
-      },
-      {
-        "name": "identity",
-        "type": "object",
-        "required": true
-      },
-      {
-        "name": "cleanup",
-        "type": "object",
-        "required": true
-      },
-      {
-        "name": "source",
-        "type": "object",
-        "required": true
-      },
-      {
-        "name": "target",
-        "type": "object",
-        "required": true
-      },
-      {
-        "name": "current_inheritance",
-        "type": "object",
-        "required": true
-      },
-      {
-        "name": "decision",
-        "type": "object",
-        "required": true
-      },
-      {
-        "name": "scope_digest",
-        "type": "string",
-        "required": true
-      }
-    ],
-    "target": "article_id",
-    "permission": {
-      "required": true,
-      "requirements": [
-        {
-          "element": "CheckArticleRestore:article_id",
-          "argument": "article_id",
-          "a": "@admin",
-          "types": [
-            "article"
-          ]
-        },
-        {
-          "element": "CheckArticleRestore:resident_id",
-          "argument": "resident_id",
-          "a": "@admin",
-          "types": [
-            "resident"
-          ]
-        },
-        {
-          "element": "CheckArticleRestore:source_address",
-          "argument": "source_address",
-          "a": "@viewer"
-        },
-        {
-          "element": "CheckArticleRestore:project_id",
-          "argument": "project_id",
-          "a": "@contributor",
-          "types": [
-            "project"
-          ]
-        }
-      ]
-    }
-  },
   "CheckModelApi": {
     "category": "environment",
     "discovery_group": "operations",
@@ -254,13 +79,9 @@
         "required": true
       },
       {
-        "name": "region",
-        "type": "string",
-        "required": false,
-        "enum": [
-          "mainland-cn",
-          "global"
-        ]
+        "name": "options",
+        "type": "object",
+        "required": false
       }
     ],
     "result": [
@@ -354,8 +175,22 @@
         "required": true
       },
       {
-        "name": "expires_at",
+        "name": "lifetime",
+        "type": "string",
+        "required": true,
+        "enum": [
+          "task",
+          "duration"
+        ]
+      },
+      {
+        "name": "deadline_at",
         "type": "number",
+        "required": true
+      },
+      {
+        "name": "expires_at",
+        "type": "any",
         "required": true
       },
       {
@@ -503,38 +338,6 @@
           "types": [
             "resident"
           ]
-        }
-      ]
-    }
-  },
-  "InstallProviderRuntime": {
-    "category": "environment",
-    "discovery_group": "operations",
-    "owner": "execution",
-    "mutates": true,
-    "streaming": false,
-    "parameters": [
-      {
-        "name": "provider",
-        "type": "string",
-        "required": true
-      }
-    ],
-    "result": [
-      {
-        "name": "preparation",
-        "type": "object",
-        "required": true
-      }
-    ],
-    "target": "provider",
-    "permission": {
-      "required": true,
-      "requirements": [
-        {
-          "element": "InstallProviderRuntime",
-          "a": "@admin",
-          "resource": "@shared"
         }
       ]
     }
@@ -1501,80 +1304,6 @@
       ]
     }
   },
-  "SetPostFeatured": {
-    "category": "discussion",
-    "discovery_group": "application",
-    "owner": "web",
-    "mutates": true,
-    "streaming": false,
-    "parameters": [
-      {
-        "name": "post_id",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "featured",
-        "type": "boolean",
-        "required": true
-      }
-    ],
-    "result": [
-      {
-        "name": "post",
-        "type": "object",
-        "required": true
-      }
-    ],
-    "target": "post_id",
-    "permission": {
-      "required": true,
-      "requirements": [
-        {
-          "element": "SetPostFeatured",
-          "a": "@admin",
-          "resource": "@shared"
-        }
-      ]
-    }
-  },
-  "SetPostPinned": {
-    "category": "discussion",
-    "discovery_group": "application",
-    "owner": "web",
-    "mutates": true,
-    "streaming": false,
-    "parameters": [
-      {
-        "name": "post_id",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "pinned",
-        "type": "boolean",
-        "required": true
-      }
-    ],
-    "result": [
-      {
-        "name": "post",
-        "type": "object",
-        "required": true
-      }
-    ],
-    "target": "post_id",
-    "permission": {
-      "required": true,
-      "requirements": [
-        {
-          "element": "SetPostPinned",
-          "a": "@admin",
-          "resource": "@shared"
-        }
-      ]
-    }
-  },
   "UpdateChatroomReadPosition": {
     "category": "discussion",
     "discovery_group": "application",
@@ -1740,6 +1469,19 @@
       },
       {
         "name": "issued_at",
+        "type": "number",
+        "required": true
+      },
+      {
+        "name": "lifetime",
+        "type": "string",
+        "required": true,
+        "enum": [
+          "duration"
+        ]
+      },
+      {
+        "name": "deadline_at",
         "type": "number",
         "required": true
       },

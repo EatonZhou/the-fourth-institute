@@ -135,44 +135,58 @@ def release_unit_paths(dev, cfg, paths):
 
 def publish(message, check=None, push=True, *, paths=(), all_files=False, activate=True):
     """Commit selected live Dev paths and fast-forward the Release worktree."""
-    cfg = configuration()
-    main, dev = Path(cfg["main"]), Path(cfg["dev"])
-    if not message.strip():
-        raise ValueError("A publication message is required")
-    with lock(main):
-        branch(main, "main")
-        branch(dev, "dev")
-        base = git(main, "rev-parse", "HEAD")
-        git(dev, "merge-base", "--is-ancestor", base, "HEAD")
-        if check:
-            subprocess.run(check, cwd=dev, check=True)
-        selected = tuple(paths) if all_files else release_unit_paths(dev, cfg, paths)
-        if selected or all_files:
-            from scripts.portal_dev_commit import commit as commit_paths
-            source = commit_paths(dev, selected, message, all_files=all_files, baseline=base)
-        else:
-            # A caller that already committed its changes can publish that head.
-            source = git(dev, "rev-parse", "HEAD")
-        from scripts.portal_seed_inventory import verify_publication_inventory
-        verify_publication_inventory(dev, source, base)
-        changed = git(dev, "diff", "--name-only", base, source).splitlines()
-        environments = require_dependency_environments(dev, main, source, cfg['code_directory'])
-        # Git refuses only actual checkout collisions; unrelated uncommitted
-        # files in either worktree are not a publication gate.
-        git(main, "merge", "--ff-only", source)
-        commit = source
-        if push:
-            git(main, "push", cfg["remote"], "main:main")
-        result = {"ok": True, "status": "published", "commit": commit, "source": source, "pushed": push,
-                  "paths": changed, "push": {"ok": push, "remote": cfg["remote"]},
-                  "changed_paths": changed, "activation_required": bool(changed),
-                  "release_unit_paths": sorted(set(selected) - set(paths))}
-        result['dependency_environments'] = environments
-    if activate:
-        from scripts.tfi_development_runtime import request_activation
-        result["activation"] = request_activation(Path(cfg["runtime_root"]), changed, commit, parent_commit=base)
-        result["health"] = {"status": "pending", "receipt": result["activation"]["receipt"]}
-        result["activation_required"] = True
+    result = {"ok": False, "status": "failed", "commit": "", "paths": [],
+              "push": {"ok": False, "remote": REMOTE}, "health": {"status": "not_queued"}}
+    stage = "configuration"
+    try:
+        cfg = configuration()
+        main, dev = Path(cfg["main"]), Path(cfg["dev"])
+        if not message.strip():
+            raise ValueError("A publication message is required")
+        stage = "preflight"
+        with lock(main):
+            branch(main, "main")
+            branch(dev, "dev")
+            base = git(main, "rev-parse", "HEAD")
+            git(dev, "merge-base", "--is-ancestor", base, "HEAD")
+            if check:
+                subprocess.run(check, cwd=dev, check=True)
+            stage = "commit"
+            selected = tuple(paths) if all_files else release_unit_paths(dev, cfg, paths)
+            if selected or all_files:
+                from scripts.portal_dev_commit import commit as commit_paths
+                source = commit_paths(dev, selected, message, all_files=all_files, baseline=base)
+            else:
+                # A caller that already committed its changes can publish that head.
+                source = git(dev, "rev-parse", "HEAD")
+            result.update(commit=source, source=source, release_unit_paths=sorted(set(selected) - set(paths)))
+            stage = "verify"
+            changed = git(dev, "diff", "--name-only", base, source).splitlines()
+            result.update(paths=changed, changed_paths=changed, activation_required=bool(changed))
+            from scripts.portal_seed_inventory import verify_publication_inventory
+            verify_publication_inventory(dev, source, base)
+            result["dependency_environments"] = require_dependency_environments(dev, main, source, cfg['code_directory'])
+            # Git refuses only actual checkout collisions; unrelated uncommitted
+            # files in either worktree are not a publication gate.
+            stage = "fast_forward"
+            git(main, "merge", "--ff-only", source)
+            result["release_advanced"] = True
+            if push:
+                stage = "push"
+                git(main, "push", cfg["remote"], "main:main")
+                result["push"] = {"ok": True, "remote": cfg["remote"]}
+            result["pushed"] = push
+        if activate:
+            stage = "activation"
+            from scripts.tfi_development_runtime import request_activation
+            result["health"] = {"status": "unknown"}
+            result["activation"] = request_activation(Path(cfg["runtime_root"]), changed, source, parent_commit=base)
+            result["health"] = {"status": "pending", "receipt": result["activation"]["receipt"]}
+            result["activation_required"] = True
+    except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as exc:
+        exc.publication_report = {**result, "stage": stage, "error": "发布未完成"}
+        raise
+    result.update(ok=True, status="published")
     return result
 
 
@@ -244,7 +258,10 @@ def main(argv=None):
             result = configuration()
             result["worktrees"] = git(result["main"], "worktree", "list", "--porcelain")
         print(json.dumps(result, ensure_ascii=False, indent=2))
-    except (ValueError, FileExistsError, subprocess.CalledProcessError) as exc:
+    except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as exc:
+        report = getattr(exc, "publication_report", None)
+        if report is not None:
+            print(json.dumps(report, ensure_ascii=False))
         print(str(exc), file=sys.stderr)
         if isinstance(exc, subprocess.CalledProcessError):
             print(exc.stderr or "", file=sys.stderr)

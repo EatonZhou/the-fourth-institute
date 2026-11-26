@@ -37,6 +37,7 @@ links:
   - decision_898b8911a2ff
   - thinking_ca8f397a47de
 ---
+
 # HATG ISA：组织与分工指令
 
 组织与分工指令处理 Lineage 之间和 Portal 全局的组织关系：创建和管理 Project、在 Lineage 之间迁移 Resident 或一组对象。单个 Lineage 内部的增删改使用 Lineage 定义指令（decision_4637ca4a69e2）。所有指令共同遵守的调用格式、执行流程和错误语义见 decision_898b8911a2ff。
@@ -59,15 +60,13 @@ links:
 | `DeleteProject` | 是 | 删除一个 Project 及其全部内容 | 对 `project_id` 有 @admin |
 | `GetProjectDeletion` | 否 | 原删除者查询已注销项目的后续效果 | 入口免检；owner 仅允许原删除者且名称尚未重新登记 |
 | `RenameProject` | 是 | 修改 Project 的 ID 并移动项目目录，Portal 中的引用一起改 | 对 `project_id` 有 @admin |
-| `GetKnowledgeTags` | 否 | 读取 Project 登记中的知识标签 | 对“共享”有 @viewer |
-| `UpdateKnowledgeTags` | 是 | 用一份完整列表替换 Project 登记中的知识标签 | 对“共享”有 @admin |
 | `MoveResident` | 是 | 把一个 Resident 迁移到另一个 Lineage | 对 `lineage_id` 有 @contributor；对 `resident_id` 有 @admin；对 `target_lineage_id` 有 @admin |
 | `MoveLineageObjects` | 是 | 把一组对象迁移到另一个 Lineage | 对 `lineage_id` 有 @admin；对 `target_lineage_id` 有 @admin |
 | `GetMoveOperation` | 否 | 读取迁移操作的进度 | 对“共享”有 @viewer |
 
 ## Project
 
-Project 的资源操作由 ResourceService 执行；GetKnowledgeTags 与 UpdateKnowledgeTags 由 SocietyService 执行（decision_898b8911a2ff 的“指令在哪里执行”）。
+Project 的资源操作由 ResourceService 执行（decision_898b8911a2ff 的“指令在哪里执行”）。
 
 ### `CreateProject`
 
@@ -148,23 +147,13 @@ Project 的资源操作由 ResourceService 执行；GetKnowledgeTags 与 UpdateK
 - Portal 之外的挂载点位于项目目录中，或 systemd 服务配置使用该目录时拒绝改名：这些需要先由管理员迁移。
 - 移动后修改文件出错时不回滚，错误列在结果的 `files.errors` 中。
 
-### `GetKnowledgeTags`
+## 知识标签配置资源
 
-**读取全部 Project 共用的知识标签（Project 登记中的 `tag_vocab`）：每个标签的 ID、`knowledge_base` 子目录、说明与可选参数。**
+全站共用的知识标签（每项为 `id`、`folder`、`description` 与可选的 `param`）保存在 `knowledge_tags` 类型的共享单例 `knowledge_tags_7d4e9a2c6f10`。`ReadResource` 以该 ID 为 `address`，返回 JSON 数组正文 `text` 和内容版本 `version`。`UpdateResource` 以同一 ID 为 `resource_id`，在 `changes.content` 传入整张标签列表的 JSON 字符串，并在调用信封用读取到的版本作为 `expected_version`。版本冲突返回 `instruction.version_conflict`，调用者应重新读取后合并修改。
 
-- 参数：无。
-- 结果：`tags`（每项含 `id`、`folder`、`description`，需要时含 `param`）与 `version`（标签列表的内容版本）。
-- 由 SocietyService 的 Project 领域执行；任何用户和 Resident 都可以读取。
-
-### `UpdateKnowledgeTags`
-
-**用一份完整列表替换全部 Project 共用的知识标签，用于新增、改名和删除标签。**
-
-- 参数：`tags`（完整的标签列表；`folder` 缺省与 `id` 相同）。用 `GetKnowledgeTags` 返回的 `version` 作为 `expected_version`，期间标签被别人修改时返回 `instruction.version_conflict`，不覆盖。
-- 结果：保存后的 `tags` 与新的 `version`。
-- 标签 ID 以小写字母开头，只含小写字母、数字和下划线；`folder` 是 `knowledge_base` 下的一层目录名。ID 或 `folder` 重复、缺少 `description` 时拒绝修改。
-- 只改登记：新建的 Project 按其中的 `folder` 建立 `knowledge_base` 子目录；已有项目的目录迁移、历史条目的处理与模板说明由调用者完成（Skill `add-resource-type` 的 `knowledge-folders.md`；改名与删除映射见 Skill `rename-resource-type`、`disable-resource-type`）。
-- 标签决定所有项目的知识库目录，只有 Portal 管理员可以修改。
+- 标签 ID 以小写字母开头，只含小写字母、数字和下划线；`folder` 是 `knowledge_base` 下的一层目录名，缺省与 `id` 相同。ID 或 `folder` 重复、缺少 `description` 时拒绝修改。
+- 修改只改配置：新建的 Project 读取该资源，按其中的 `folder` 建立 `knowledge_base` 子目录；已有项目的目录迁移、历史条目的处理与模板说明由调用者完成（Skill `add-resource-type` 的 `knowledge-folders.md`；改名与删除映射见 Skill `rename-resource-type`、`disable-resource-type`）。
+- 用真实调用身份核验该单例的共享权限。`ReadResource` 要求对“共享”有 `@viewer`，`UpdateResource` 要求对“共享”有 `@admin`。
 
 ## 跨 Lineage 迁移
 
@@ -236,8 +225,6 @@ Notice Board 分类与 Which Resident 推荐的功能开关由当前目标 Resid
 | `DeleteProject` | `project_id` |
 | `GetProjectDeletion` | `project_id` |
 | `RenameProject` | `project_id`、`new_project_id`、`dry_run` |
-| `GetKnowledgeTags` | 无 |
-| `UpdateKnowledgeTags` | `tags` |
 | `MoveResident` | `lineage_id`、`resident_id`、`target_lineage_id`、`allow_empty_source` |
 | `MoveLineageObjects` | `lineage_id`、`object_ids`、`target_lineage_id` |
 | `GetMoveOperation` | `operation_id` |

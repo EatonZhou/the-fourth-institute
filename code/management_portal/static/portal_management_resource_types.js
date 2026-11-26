@@ -22,7 +22,19 @@ export async function mount(root, {me} = {}) {
         <th>类型</th><th>分类</th><th>标题</th><th>状态</th><th>实例数</th><th>提供者与发行单元</th><th>目录位置</th><th>可登记</th><th>操作</th>
       </tr></thead><tbody data-types-rows></tbody></table></div>
       <section data-types-detail hidden><h3 data-types-detail-title></h3><h4>类型声明</h4><pre data-types-declaration></pre><h4>动作目录</h4><pre data-types-actions></pre></section>
-    </section>`;
+    </section>
+    <details class="settingsSection" data-tags>
+      <summary>知识标签</summary>
+      <form class="backendForm" data-tags-form>
+        <p>按 JSON 数组编辑完整的标签列表。</p>
+        <label class="portalField"><span>标签列表</span><textarea name="tags" rows="12" readonly spellcheck="false"></textarea></label>
+        <div class="backendActions">
+          <button class="portalButton" type="button" data-tags-reload>重新读取</button>
+          <button class="portalButton is-primary" type="submit" disabled>保存</button>
+        </div>
+        <p role="status" data-tags-status></p>
+      </form>
+    </details>`;
   const $ = selector => root.querySelector(selector);
   const status = message => { if (!destroyed) $("[data-types-status]").textContent = message; };
   function render() {
@@ -116,6 +128,74 @@ export async function mount(root, {me} = {}) {
     const row = event.target.closest("[data-resource-type]");
     if (row) void detail(row.dataset.resourceType);
   });
+  const tagPanel = $("[data-tags]");
+  const tagForm = $("[data-tags-form]");
+  const tagText = tagForm.elements.tags;
+  const tagSave = tagForm.querySelector('button[type="submit"]');
+  const tagReload = $("[data-tags-reload]");
+  const tagStatus = $("[data-tags-status]");
+  const tagAbort = new AbortController();
+  let tagBinding, tagVersion, savedTags = "", tagBusy = false;
+  const tagCall = (name, args, options = {}) => execute(name, args, {...options, signal: tagAbort.signal});
+  async function editTags(work) {
+    if (tagBusy || destroyed) return;
+    tagBusy = true; tagSave.disabled = tagReload.disabled = true; tagText.readOnly = true;
+    try {
+      await work();
+    } catch (error) {
+      if (!destroyed) tagStatus.textContent = error.message;
+    } finally {
+      tagBusy = false;
+      if (!destroyed) {
+        tagReload.disabled = false;
+        tagText.readOnly = !tagBinding?.can_update || !tagVersion;
+        tagSave.disabled = tagText.readOnly || tagText.value === savedTags;
+      }
+    }
+  }
+  async function readTags() {
+    return editTags(async () => {
+      if (tagText.value !== savedTags && !await window.PortalUI.confirm({
+        title: t("放弃未保存的标签修改？"), confirmLabel: t("重新读取"),
+      })) return;
+      if (destroyed) return;
+      tagBinding = await window.PortalAPI.get("/api/management/knowledge-tags", {signal: tagAbort.signal, cache: "no-store"});
+      if (destroyed) return;
+      const result = await tagCall("ReadResource", {address: tagBinding.resource_id});
+      if (destroyed) return;
+      const tags = JSON.parse(result.text);
+      if (!Array.isArray(tags) || !result.version) throw new Error(t("无法读取知识标签。"));
+      tagVersion = result.version;
+      savedTags = tagText.value = JSON.stringify(tags, null, 2);
+      tagStatus.textContent = "";
+    });
+  }
+  tagPanel.addEventListener("toggle", () => { if (tagPanel.open && !tagVersion) void readTags(); });
+  tagReload.addEventListener("click", readTags);
+  tagText.addEventListener("input", () => { tagSave.disabled = tagBusy || tagText.value === savedTags; });
+  tagForm.addEventListener("submit", event => {
+    event.preventDefault();
+    if (!tagBinding?.can_update || !tagVersion || tagSave.disabled) return;
+    void editTags(async () => {
+      let tags;
+      try { tags = JSON.parse(tagText.value); }
+      catch { throw new Error(t("标签列表必须是有效的 JSON 数组。")); }
+      if (!Array.isArray(tags)) throw new Error(t("标签列表必须是有效的 JSON 数组。"));
+      try {
+        const result = await tagCall("UpdateResource", {
+          resource_id: tagBinding.resource_id, changes: {content: JSON.stringify(tags)},
+        }, {expectedVersion: tagVersion});
+        if (destroyed) return;
+        savedTags = tagText.value;
+        tagVersion = result.version;
+        tagStatus.textContent = t("已保存知识标签。");
+      } catch (error) {
+        if (error.code === "instruction.version_conflict") tagVersion = "";
+        throw error;
+      }
+    });
+  });
   await refresh();
-  return {refresh, isBusy: () => busy, destroy() { destroyed = true; detailRequest++; root.replaceChildren(); }};
+  return {refresh, isBusy: () => busy || tagBusy, hasUnsavedChanges: () => tagText.value !== savedTags,
+    destroy() { destroyed = true; tagAbort.abort(); detailRequest++; root.replaceChildren(); }};
 }

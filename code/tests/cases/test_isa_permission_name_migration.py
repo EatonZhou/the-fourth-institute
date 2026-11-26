@@ -9,11 +9,46 @@ import pytest
 from psycopg.errors import UniqueViolation
 
 from management_portal.hatg.instruction_renames import INSTRUCTION_RENAMES
+from management_portal.hatg.declarations import FIXED, On
 from management_portal.permission_system.engine import Engine
 from management_portal.permission_system.engine.model import Entry
 from management_portal.permission_system.engine.store import Store
 from management_portal.permission_system.scheme import repository
 from management_portal.permission_system.scheme.compiler import compile_scheme, declared_decisions, rules_digest
+
+
+def historical_decisions():
+    """Nov24 migration's declaration basis, before the later three-Plan retirement."""
+    return {**declared_decisions(), "SetPostPinned": FIXED, "SetPostFeatured": FIXED,
+            "InstallProviderRuntime": FIXED,
+            "CheckArticleRestore": (On("article_id", "article"), On("resident_id", "resident"),
+                                    On("source_address"), On("project_id", "project"))}
+
+
+def historical_default():
+    document = json.loads((repository.BUILTIN_DIRECTORY / "default.json").read_text())
+    document["instructions"].update({
+        "SetPostPinned": {"a": "@admin", "r": "@shared"},
+        "SetPostFeatured": {"a": "@admin", "r": "@shared"},
+        "InstallProviderRuntime": {"a": "@admin", "r": "@shared"},
+        "CheckArticleRestore:article_id": {"a": "@admin"},
+        "CheckArticleRestore:resident_id": {"a": "@admin"},
+        "CheckArticleRestore:source_address": {"a": "@viewer"},
+        "CheckArticleRestore:project_id": {"a": "@contributor"},
+    })
+    return document
+
+
+@pytest.fixture(autouse=True)
+def historical_release_scope(monkeypatch, request):
+    if request.node.name == "test_builtin_and_owned_handlers_use_only_current_names":
+        return
+    # Keep this suite focused on the earlier name-only migration. The current
+    # owner's complete migration chain, including seed loading, is exercised
+    # by test_isa_three_plan_permission_migration.py on real PostgreSQL.
+    monkeypatch.setattr(repository, "declared_decisions", historical_decisions)
+    monkeypatch.setattr(repository, "builtin_documents", lambda: {"default": historical_default()})
+    monkeypatch.setattr(repository, "migrate_three_plan_permissions", lambda store: False)
 
 
 def rename(value, mapping=INSTRUCTION_RENAMES):
@@ -22,7 +57,7 @@ def rename(value, mapping=INSTRUCTION_RENAMES):
 
 
 def legacy_rules(scheme_id="custom"):
-    document = json.loads((repository.BUILTIN_DIRECTORY / "default.json").read_text())
+    document = historical_default()
     inverse = {new: old for old, new in INSTRUCTION_RENAMES.items()}
     document["instructions"] = {rename(key, inverse): value for key, value in document["instructions"].items()}
     document["scheme_id"] = scheme_id
@@ -36,7 +71,7 @@ def legacy_rules(scheme_id="custom"):
 def seed(store):
     document = legacy_rules()
     inverse = {new: old for old, new in INSTRUCTION_RENAMES.items()}
-    declarations = {inverse.get(key, key): value for key, value in declared_decisions().items()}
+    declarations = {inverse.get(key, key): value for key, value in historical_decisions().items()}
     compiled = compile_scheme(document, instructions=declarations)
     now = time.time()
     entries = [
@@ -193,14 +228,15 @@ def test_stale_basis_digest_and_source_difference_stay_stale():
 def test_builtin_and_owned_handlers_use_only_current_names():
     from management_portal.hatg.catalog.permission import DECLARATIONS as permissions
     from management_portal.hatg.catalog.resource import DECLARATIONS as resources
-    from management_portal.resources import article_restore_preview
+    from management_portal.resources.isa import HANDLERS
     from management_portal.permission_system.management import ACTIONS
 
     for document in repository.builtin_documents().values():
         assert compile_scheme(document).unmapped() == []
     names = {item.name for item in (*permissions, *resources)}
-    assert {"CreateTemporaryCredential", "UpdateTemporaryCredential", "CheckArticleRestore"} <= names
+    assert {"CreateTemporaryCredential", "UpdateTemporaryCredential"} <= names
+    assert not {"CheckArticleRestore", "RestoreArticle"} & names
+    assert not {"CheckArticleRestore", "RestoreArticle"} & HANDLERS.keys()
     assert names.isdisjoint(INSTRUCTION_RENAMES)
     assert {"CreateTemporaryCredential", "UpdateTemporaryCredential"} <= ACTIONS.keys()
     assert ACTIONS.keys().isdisjoint(INSTRUCTION_RENAMES)
-    assert article_restore_preview.ACTION == "CheckArticleRestore"

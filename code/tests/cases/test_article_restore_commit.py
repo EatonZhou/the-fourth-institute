@@ -374,38 +374,39 @@ def test_after_restore_identity_delete_keeps_files_project_delete_removes(world)
     assert world.registry.get('article', ARTICLE) is None
 
 
-def test_preview_permission_is_not_submit_permission(permissions):
-    from management_portal import permission_system
-    from management_portal.permission_system.scheme.repository import builtin_documents
-    from management_portal.hatg.catalog import declaration
+def test_operations_lineage_admin_does_not_replace_restore_resource_roles(permissions):
+    operations = 'lineage_666666666666'
     permissions.place(Fact('project', 'Project'), Fact('resident', RESIDENT), Fact('resident', ACTOR),
-                      Fact('article', ARTICLE, {'project': 'Project'}), Fact('workspace', SOURCE))
+                      Fact('article', ARTICLE, {'project': 'Project'}), Fact('workspace', SOURCE),
+                      Fact('lineage', operations))
     args = {'article_id': ARTICLE, 'resident_id': RESIDENT, 'project_id': 'Project', 'source_address': SOURCE}
-    for key, rid in args.items():
-        permissions.grant(ACTOR, rid, 'CheckArticleRestore:' + key)
-    assert permission_system.allows(ACTOR, 'CheckArticleRestore', args)
-    assert not permission_system.allows(ACTOR, 'RestoreArticle', args)
-    assert declaration('RestoreArticle').mutates is True
-    assert builtin_documents()
+    permissions.grant(ACTOR, operations, '@admin')
+    for check in (lambda: preview._authorize(ACTOR, args, SOURCE),
+                  lambda: restore._authorize(args, ACTOR, SOURCE)):
+        with pytest.raises(PermissionError):
+            check()
 
 
 @pytest.mark.parametrize('missing', ['article_id', 'resident_id', 'source_address', 'project_id'])
-def test_restore_demands_each_exact_action_slot(permissions, missing):
-    from management_portal import permission_system
+def test_restore_demands_each_resource_role(permissions, missing):
     permissions.place(Fact('project', 'Project'), Fact('resident', RESIDENT), Fact('resident', ACTOR),
                       Fact('article', ARTICLE, {'project': 'Project'}), Fact('workspace', SOURCE))
     args = {'article_id': ARTICLE, 'resident_id': RESIDENT, 'project_id': 'Project', 'source_address': SOURCE}
+    roles = {'article_id': '@admin', 'resident_id': '@admin',
+             'source_address': '@viewer', 'project_id': '@contributor'}
     for key, rid in args.items():
         if key != missing:
-            permissions.grant(ACTOR, rid, 'RestoreArticle:' + key)
+            permissions.grant(ACTOR, rid, roles[key])
     if missing != 'source_address':
-        assert not permission_system.allows(ACTOR, 'RestoreArticle', args)
+        with pytest.raises(PermissionError):
+            restore._authorize(args, ACTOR, SOURCE)
     # Builtin shared viewer rules can already satisfy source read; an exact
-    # deny must override both those rules and an explicit leaf permit.
-    permissions.grant(ACTOR, args[missing], 'RestoreArticle:' + missing)
-    assert permission_system.allows(ACTOR, 'RestoreArticle', args)
-    permissions.deny(ACTOR, args[missing], 'RestoreArticle:' + missing)
-    assert not permission_system.allows(ACTOR, 'RestoreArticle', args)
+    # deny must override both those rules and an explicit role permit.
+    permissions.grant(ACTOR, args[missing], roles[missing])
+    restore._authorize(args, ACTOR, SOURCE)
+    permissions.deny(ACTOR, args[missing], roles[missing])
+    with pytest.raises(PermissionError):
+        restore._authorize(args, ACTOR, SOURCE)
 
 
 def test_existing_permanent_article_grant_not_silently_accepted(world):

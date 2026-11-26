@@ -1,8 +1,8 @@
 """The research map's daily digest, drawn into the Project's Project-layer Lineage.
 
-Once a day a ``time.reached`` Event starts an Effect that asks
-``GetResearchMapDigest`` what changed on the map since the last digest.  Only
-when something did does it deliver the digest to the Project Resident, the
+Once a day a ``time.reached`` Event starts a fixed RunScript policy that
+reads the map and its revisions through ISA. Only when something changed
+does it deliver the digest to the Project Resident, the
 Lineage's Leader, whose duty is to tidy those directions; a quiet day costs
 no model call.  The Effect runs as the Leader, so the Project Resident's own
 edits are not news to itself.  The watermark is the Lineage shared state
@@ -24,7 +24,7 @@ LOGGER = logging.getLogger(__name__)
 STATE_KEY = "research_map.digest_until"
 DIGEST_TIME = "07:30:00"
 TITLE = "研究地图每日整理"
-SCRIPT = r'''lineage=$(GetLineage lineage_id="${arguments.lineage_id}")
+LEGACY_SCRIPT = r'''lineage=$(GetLineage lineage_id="${arguments.lineage_id}")
 reviewed=$(GetSharedState lineage_id="${arguments.lineage_id}" key="research_map.digest_until")
 digest=$(GetResearchMapDigest project_id="${lineage.lineage.project_id}" since="${reviewed.value}")
 if [ "${digest.count}" -eq 0 ]; then
@@ -35,6 +35,32 @@ fi
 sent=$(DeliverMessage resident_id="${endpoint.target}" message="${digest.prompt}")
 UpdateSharedState lineage_id="${arguments.lineage_id}" key="research_map.digest_until" value="${digest.until}"
 output status="requested" count="${digest.count}" message_id="${sent.message_id}"'''
+
+
+def digest_script(script_path: str | None = None) -> str:
+    """The installed code owns this script; the Project Lineage owns its run."""
+    import json
+
+    path = script_path or str(Path(__file__).resolve().parents[1] / "scripts" / "research_map_digest.py")
+    return (
+        'payload:={"target":${endpoint.target}}\n'
+        'run=$(RunScript lineage_id="${arguments.lineage_id}" path=' + json.dumps(path)
+        + ' arguments="${payload}" exclusive_key="research-map:digest")\n'
+        'output script_run_id="${run.script_run_id}" status="${run.status}"'
+    )
+
+
+SCRIPT = digest_script()
+
+
+def migrate_digest_script(script: str, *, script_path: str | None = None) -> str:
+    """Pure, exact template migration; custom source and new source stay intact.
+
+    The Society definition owner must CAS the graph and refuse active Effects.
+    It must not rewrite execution journals or historical definition snapshots.
+    Install/restore may supply the target deployment's absolute script path.
+    """
+    return digest_script(script_path) if script == LEGACY_SCRIPT else script
 
 
 def key(role: str) -> str:

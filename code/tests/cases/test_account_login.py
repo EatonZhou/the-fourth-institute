@@ -461,7 +461,12 @@ def test_update_login_requires_existing_awaiting_claude_session(tmp_path, isolat
     with pytest.raises(login.InstructionError) as exc:
         login.HANDLERS["UpdateProviderAccountLogin"](SimpleNamespace(argument={
             "account_id": "login_update", "authorization_code": "synthetic-secret"}.get))
-    assert (exc.value.code, exc.value.details["reason"]) == ("instruction.conflict", "account.login_not_awaiting")
+    if provider == "codex":
+        assert (exc.value.code, exc.value.details["reason"]) == (
+            "instruction.invalid_arguments", "provider.capability_unsupported",
+        )
+    else:
+        assert (exc.value.code, exc.value.details["reason"]) == ("instruction.conflict", "account.login_not_awaiting")
     assert isolated_login.get("login_update") == before
 
 

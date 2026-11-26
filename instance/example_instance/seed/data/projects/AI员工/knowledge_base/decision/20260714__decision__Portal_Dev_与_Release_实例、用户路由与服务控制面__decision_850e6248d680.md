@@ -60,6 +60,7 @@ links:
   supersedes: []
   derived_from: []
 ---
+
 # Portal Dev 与 Release 部署、用户路由与服务控制面
 
 Portal 开发站在一个已安装实例中同时提供两个网页入口：Dev 运行共享开发工作树中的最新代码，Release 运行最后一次发布的代码。两个入口共用同一个数据库和同一组后台服务。本 Design 说明这些进程由哪些 systemd 用户服务组成、各自从哪棵源码树加载代码、浏览器请求怎样被送到其中一个入口，以及运维人员和 Agent 怎样通过服务控制面读取状态、按组件重启，并在发布后激活新代码。
@@ -97,7 +98,7 @@ Portal 开发站在一个已安装实例中同时提供两个网页入口：Dev 
 
 **服务控制面**是读取和重启这些服务的入口：命令 `./scripts/portal_services`（实现在 `scripts/portal_services.py`，在 `code/` 目录执行）和 ISA 指令 `GetPortalStatus`、`RestartPortal`。它们都调用配对运行时，只操作 systemd 用户单元，不修改数据库。
 
-**发布激活**是发布命令 `python3 code/scripts/tfi_dev.py publish`（ISA `PublishRelease`）把 Release 工作树快进并推送之后，由配对运行时按本次改动的文件重启受影响单元并检查健康的过程。它在一个由 `systemd-run --user` 启动的临时单元中运行，发布命令只拿到结果文件（receipt）的路径。
+**发布激活**是发布命令 `python3 code/scripts/tfi_dev.py publish`（经系统发布脚本由 `RunScript` 运行）把 Release 工作树快进并推送之后，由配对运行时按本次改动的文件重启受影响单元并检查健康的过程。它在一个由 `systemd-run --user` 启动的临时单元中运行，发布命令只拿到结果文件（receipt）的路径。
 
 **构建标识**（build ID）是进程启动时从环境变量 `PORTAL_BUILD_ID` 读到的代码标识：Dev Web 为 `dev-<Dev 工作树 HEAD 提交的前 12 位>`，其他组件为发布激活写入 `config/generation.env` 的 `portal-<Release 提交的前 12 位>`。它只用于显示和诊断，来源和读取方式见 `decision_99bb5dc0f96b`。
 
@@ -147,7 +148,7 @@ Portal 开发站在一个已安装实例中同时提供两个网页入口：Dev 
 
 部署路由表从清单的 deployments 直接生成。`/__portal_router/health` 返回网关健康；`/__portal_router/status` 返回数据库运行状态。登录后的 `GET /__portal_router/preference` 返回 `default_deployment`、`effective_deployment`、`preference` 与 `deployments`；POST 接受 `{"deployment":"dev"}` 或 `release`，写入 `db_portal_deployment` Cookie。不读取旧 Cookie。Cookie 仅选择入口，登录身份仍由会话验证。
 
-`portal_services status --all` 或 `--deployment dev|release` 查询部署，返回 `deployment` 或 `deployments`。`restart` 与 `request-restart` 接受部署 ID，组件名为 web、resource、execution-service、execution-worker、lineage。ISA `GetPortalStatus`、`RestartPortal` 使用 `deployment` 参数；`PublishRelease` 使用同一发布器。Web 重启只影响指定部署，其余组件由同一实例共享。
+`portal_services status --all` 或 `--deployment dev|release` 查询部署，返回 `deployment` 或 `deployments`。`restart` 与 `request-restart` 接受部署 ID，组件名为 web、resource、execution-service、execution-worker、lineage。ISA `GetPortalStatus`、`RestartPortal` 使用 `deployment` 参数；系统发布脚本（经 `RunScript` 运行）使用同一发布器。Web 重启只影响指定部署，其余组件由同一实例共享。
 
 显式 Worker 重启发送 USR1 并等待新 Worker 就绪；发布只发送 HUP，按构建版本决定是否换代。普通发布保留 PostgreSQL、NATS 与 Provider 账号服务。
 

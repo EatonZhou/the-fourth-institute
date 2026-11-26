@@ -20,7 +20,17 @@ def set_output(fields):
 
 
 def isa(name, **arguments):
-    payload = json.dumps({'instruction': name, 'arguments': arguments}).encode() + b'\n'
+    return _request({'instruction': name, 'arguments': arguments})
+
+
+def get_current_run(*, lineage_id, script_run_id):
+    """Read a run only after the relay verifies it owns that run ID."""
+    return _request({'instruction': 'GetScriptRun', 'require_current_run': True,
+                     'arguments': {'lineage_id': lineage_id, 'script_run_id': script_run_id}})
+
+
+def _request(request):
+    payload = json.dumps(request).encode() + b'\n'
     with connect_local(os.environ['PORTAL_ISA_SOCKET'], timeout=360) as client:
         client.sendall(payload)
         with client.makefile('rb') as stream:

@@ -59,6 +59,10 @@ CREATE TABLE IF NOT EXISTS {s}.scheme_migrations (
     migration_id TEXT PRIMARY KEY,
     applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+CREATE TABLE IF NOT EXISTS {s}.scheme_migration_history (
+    migration_id TEXT PRIMARY KEY,
+    records JSONB NOT NULL
+);
 CREATE TABLE IF NOT EXISTS {s}.schemes (
     scheme_id TEXT PRIMARY KEY,
     document JSONB NOT NULL,

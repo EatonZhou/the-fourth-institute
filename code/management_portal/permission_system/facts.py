@@ -155,6 +155,12 @@ def fact_from_record(record: Mapping[str, Any], kind: str) -> Fact:
     resource_id = _text(record.get("resource_id") or record.get("id"))
     if not resource_id:
         raise ValueError("A permission fact needs the resource ID")
+    if kind == "knowledge_tags":
+        if resource_id != "knowledge_tags_7d4e9a2c6f10" or record.get("resource_type") != kind:
+            raise ValueError("Knowledge tags permission facts must name the registered singleton")
+        # No creator/Project relations can turn the shared configuration into
+        # a project-owned or personal object. The provider also checks @shared.
+        return Fact(kind, resource_id, {}, live(record))
     active = live(record)
     creator = principal_id(attributes.get("created_by") or record.get("created_by") or record.get("author"))
     created_for = principal_id(attributes.get("created_for") or record.get("created_for")) if creator else ""

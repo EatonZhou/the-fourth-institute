@@ -159,6 +159,8 @@ SSH 子进程需要密码时，Portal 把秘密文件路径交给受控的 `SSH_
 
 Resource action 是资源类型为自己声明的专用操作，调用方通过 HATG 指令 `RunResourceAction`（decision_ad3e21094f14）执行。ResourceService 验证有效调用者和参数；所需等级由当前权限模板中 RunResourceAction 的要求决定，Device provider 执行相应动作。
 
+Colab 会话由 Portal 运维 Lineage 的系统脚本 `colab_session` 经 `RunScript` 管理。真实调用者需要该 Lineage 的 `@admin`，并通过 Device 的领域授权。参数为 `resource_id`、`running` 和可选的 `hardware`；`running=true` 按指定硬件分配或复用会话并可能消耗 CU，启动时必须给出 `hardware`；`running=false` 释放会话，省略 `hardware`。真实调用者须能解析所登记的 Colab Device，并具备该资源上的会话操作权限。
+
 ### `ssh.credential.save`
 
 请求包含目标 Device 和新密码。服务端先解析实际连接设备，再覆盖该设备的密码文件。成功响应只返回请求 Device ID、实际连接 Device ID 和 `credential_saved: true`。

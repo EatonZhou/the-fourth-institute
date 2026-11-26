@@ -4,11 +4,12 @@ Native SDKs, route parsing and model constraints stay behind these adapters.
 Adding a backend must not add provider tests to Resident or ExecutionRuntime.
 """
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from importlib import import_module
 from typing import Any
 
 from management_common.account_concurrency import DEFAULT_ACCOUNT_CONCURRENCY
+from .provider_account_operations import AccountOperation
 
 from .harness_capabilities import (
     ACTIVE_TURN_INPUT,
@@ -30,6 +31,19 @@ LOGGER = logging.getLogger(__name__)
 # The slash commands a Provider's session may answer, in menu order.  Which
 # of them it answers follows from what it declares (``native_commands``).
 NATIVE_COMMANDS = ("status", "goal", "plan", "model", "fast", "permissions", "compact")
+
+NATIVE_LOGIN = "management_portal.execution.account_login.native_login"
+KIMI_LOGIN_SCHEMA = {
+    "type": "object", "additionalProperties": False,
+    "properties": {"region": {
+        "type": "string", "default": "mainland-cn",
+        "oneOf": [{"const": "mainland-cn", "title": "中国区"}, {"const": "global", "title": "国际区"}],
+    }},
+}
+CODEX_CONFIGURATION_SCHEMA = {
+    "type": "object", "additionalProperties": False, "required": ["model_provider"],
+    "properties": {"model_provider": {"type": "string", "pattern": r"^[A-Za-z0-9_-]{1,80}(?![\s\S])"}},
+}
 
 
 @dataclass(frozen=True)
@@ -117,6 +131,7 @@ class AgentProvider:
     # Nominal native reading support, never per-path access or authorization.
     # Final policy belongs to the Backend (local_file_read.assess_local_file_read).
     local_file_read: bool = False
+    account_operations: dict[str, AccountOperation] = field(default_factory=dict)
 
     @property
     def api_upstream_protocols(self):
@@ -269,6 +284,10 @@ AGENT_PROVIDERS = {
                       initial_instructions_transport="system_instructions", system_context_every_turn=True,
                       harness=frozenset({PORTAL_TOOLS, NATIVE_TOOL_EVENTS, CONTEXT_USAGE_EVENTS}),
                       upstream="google",
+                      account_operations={"login": AccountOperation(
+                          NATIVE_LOGIN, authorization_kind="callback_url",
+                          authorization_hint="使用 Google 登录后，若浏览器无法打开 localhost，请粘贴地址栏中的完整回调 URL。",
+                      )},
                       system_instructions_place="ACP session 的 systemPrompt.append，恢复时完整替换",
                       credential_globs=(".gemini*",),
                       runtime_updater="management_portal.antigravity_runtime.AntigravityRuntime"),
@@ -280,6 +299,17 @@ AGENT_PROVIDERS = {
                       system_context_survives_compaction=True,
                       system_instructions_place="thread 的开发者指令，原生压缩后仍保留",
                       credential_globs=(".codex*",), runtime_updater="CodexRuntime",
+                      account_operations={
+                          "login": AccountOperation(NATIVE_LOGIN),
+                          "configuration": AccountOperation(
+                              "management_portal.execution.codex_account_configuration.configuration",
+                              schema=CODEX_CONFIGURATION_SCHEMA, references=True,
+                          ),
+                          "usage_events": AccountOperation(
+                              "management_portal.execution.provider_usage_events.codex_usage_events",
+                              kinds=("subscription_login", "api_profile"),
+                          ),
+                      },
                       # Codex subagents stay off until a Resident turns them on.
                       # A subagent runs in a thread of its own, whose turn is interrupted alone.
                       harness=frozenset({CONTEXT_USAGE_EVENTS, PORTAL_TOOLS, NATIVE_TOOL_EVENTS, AUTO_COMPACT_THRESHOLD,
@@ -298,6 +328,7 @@ AGENT_PROVIDERS = {
                       subagents_by_default=True, upstream="anthropic", api_protocol="anthropic_messages", api_protocol_conversion=True,
                       system_instructions_place="系统提示，每次进程启动都带；关闭以外的时机效果相同",
                       credential_globs=(".claude*",), runtime_updater="ClaudeRuntime",
+                      account_operations={"login": AccountOperation(NATIVE_LOGIN, authorization_kind="authorization_code")},
                       # Claude Code starts turns by itself (task notifications, messages).
                       self_started_usage="management_portal.execution.unattributed_usage.record_self_started_claude_usage"),
         AgentProvider("kimi", "Kimi Code", frozenset({"create", "turn", "fork", "compact", "release"}),
@@ -311,6 +342,10 @@ AGENT_PROVIDERS = {
                       harness=frozenset({CONTEXT_USAGE_EVENTS, PORTAL_TOOLS, NATIVE_TOOL_EVENTS, ERROR_CONTINUATION, SUBAGENTS, SUBAGENT_EVENTS,
                                          SUBAGENT_STOP}),
                       subagents_by_default=True, upstream="moonshot",
+                      account_operations={"login": AccountOperation(
+                          "management_portal.execution.kimi_account_login.account_login",
+                          schema=KIMI_LOGIN_SCHEMA,
+                      )},
                       system_instructions_place="新 session 的系统提示；之后到期时附在本轮消息前",
                       credential_globs=(".kimi*",),
                       credential_paths_provider="management_portal.kimi_code_client.credential_paths",

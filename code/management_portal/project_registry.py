@@ -1,8 +1,8 @@
 """The Project registry, stored in PostgreSQL (decision_86aed2f0e8c7).
 
-One registry document holds the whole registry -- ``schema_version``, ``status_vocab``, ``tag_vocab`` and
-the ordered ``projects`` list -- so every reader sees one consistent version
-and writers change it under the registry lock.
+The Project document and the knowledge-tags singleton share the registry lock.
+``tag_vocab`` in the read projection comes from that singleton, never a second
+persisted copy.
 """
 from __future__ import annotations
 from management_common.portal_paths import path as portal_path
@@ -27,6 +27,7 @@ from management_portal.resources.registry_store import (
 
 COLLECTION = "project_registry"
 DOCUMENT_ID = "projects"
+KNOWLEDGE_TAGS_ID = "knowledge_tags_7d4e9a2c6f10"
 SCHEMA_VERSION = 1
 CHANGE_PATH = registry_change_key(COLLECTION, DOCUMENT_ID)
 PROJECTS_ROOT = portal_path("projects")
@@ -132,13 +133,14 @@ def load() -> dict[str, Any]:
     # The Project document owner upgrades stored metadata before exposing it.
     # Cache hits above stay read-only; a new revision is checked under the same
     # registry lock used by writers, and conversion commits before this read.
-    with store.database.transaction() as connection:
-        upgrade_directory_ownership(connection)
-    revision = store.revision(COLLECTION)
-    document = store.get(COLLECTION, DOCUMENT_ID)
-    payload = empty_registry() if document is None else _normalized(document)
-    with _cache_lock:
-        _cache = (revision, payload)
+    with store.writer(COLLECTION) as writer:
+        upgrade_directory_ownership(writer.connection)
+        document, configuration = _migrate_tags(writer)
+        payload = _normalized({**document, "tag_vocab": configuration["tags"]})
+        revision = store.revision(COLLECTION)
+    if writer.committed:
+        with _cache_lock:
+            _cache = (revision, payload)
     return copy.deepcopy(payload)
 
 
@@ -177,6 +179,52 @@ def tags_version(tags: list[dict[str, Any]]) -> str:
     """A content token of the tag list: only tag changes move it."""
     encoded = json.dumps(tags, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()[:16]
+
+
+def _tag_document(tags: object) -> dict[str, Any]:
+    # Migration preserves the exact historical list and its content token.
+    # New edits use normalized_tags; migration never silently normalizes data.
+    if not isinstance(tags, list) or any(not isinstance(item, dict) for item in tags):
+        raise RuntimeError("Knowledge tags must be an array of objects")
+    return {"resource_id": KNOWLEDGE_TAGS_ID, "tags": copy.deepcopy(tags), "version": tags_version(tags)}
+
+
+def _migrate_tags(writer) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Move the old list to its singleton in the Project owner's transaction.
+
+    Conflicting identities, versions or dual sources abort the transaction;
+    a concurrent constructor or writer uses the same collection lock.
+    """
+    from .resources.errors import ResourceOperationError
+
+    raw = writer.get(COLLECTION, DOCUMENT_ID)
+    document = empty_registry() if raw is None else _normalized(raw)
+    configuration = writer.get(COLLECTION, KNOWLEDGE_TAGS_ID)
+    legacy = document.get("tag_vocab", [])
+    has_legacy = raw is not None and "tag_vocab" in raw
+    if configuration is not None:
+        expected = _tag_document(configuration.get("tags"))
+        if configuration != expected or (has_legacy and legacy != configuration["tags"]):
+            raise ResourceOperationError(
+                "instruction.conflict", "知识标签单例与旧登记冲突；未执行迁移", 409,
+                details={"resource_id": KNOWLEDGE_TAGS_ID},
+            )
+    else:
+        configuration = _tag_document(legacy)
+    # Validate everything above before changing either document.
+    if writer.get(COLLECTION, KNOWLEDGE_TAGS_ID) is None:
+        writer.put(COLLECTION, KNOWLEDGE_TAGS_ID, configuration)
+    document.pop("tag_vocab", None)
+    if has_legacy:
+        writer.put(COLLECTION, DOCUMENT_ID, document)
+    return document, configuration
+
+
+def knowledge_tags_configuration() -> dict[str, Any]:
+    """Read the singleton through its normal owner migration lifecycle."""
+    with get_registry_store().writer(COLLECTION) as writer:
+        _, configuration = _migrate_tags(writer)
+    return copy.deepcopy(configuration)
 
 
 def normalized_tags(value: object) -> list[dict[str, Any]]:
@@ -218,11 +266,19 @@ def normalized_tags(value: object) -> list[dict[str, Any]]:
 def replace_tags(value: object, *, expected_version: str | None = None) -> list[dict[str, Any]]:
     """Replace the whole tag list; ``expected_version`` guards against a concurrent change."""
     clean = normalized_tags(value)
-    with mutate() as document:
-        current = [item for item in document["tag_vocab"] if isinstance(item, dict)]
-        if expected_version is not None and str(expected_version) != tags_version(current):
-            raise TagsChanged(tags_version(current))
-        document["tag_vocab"] = clean
+    if expected_version is None:
+        raise ValueError("知识标签更新必须提供 expected_version")
+    with get_registry_store().writer(COLLECTION) as writer:
+        _, current = _migrate_tags(writer)
+        if str(expected_version) != current["version"]:
+            raise TagsChanged(current["version"])
+        updated = _tag_document(clean)
+        if updated != current:
+            writer.put(COLLECTION, KNOWLEDGE_TAGS_ID, updated)
+    # Both Project metadata and the singleton index read this shared owner.
+    # Notify the registry document so Project does not treat the config ID as
+    # an individual Project deletion.
+    announce_registry_changes(COLLECTION, {DOCUMENT_ID: "updated"})
     return copy.deepcopy(clean)
 
 
@@ -278,13 +334,15 @@ def mutate(*, before_commit: Callable[[dict[str, Any], Any], None] | None = None
     changed = False
     with store.writer(COLLECTION) as writer:
         upgrade_directory_ownership(writer.connection)
-        document = writer.get(COLLECTION, DOCUMENT_ID)
-        before = empty_registry() if document is None else _normalized(document)
+        document, configuration = _migrate_tags(writer)
+        before = _normalized({**document, "tag_vocab": configuration["tags"]})
         payload = copy.deepcopy(before)
         yield payload
         after = _only_known_fields(_normalized(payload))
-        if after != before or document is None:
-            writer.put(COLLECTION, DOCUMENT_ID, after)
+        if after["tag_vocab"] != before["tag_vocab"]:
+            raise ValueError("知识标签请通过配置资源及 expected_version 更新")
+        if after != before or writer.get(COLLECTION, DOCUMENT_ID) is None:
+            writer.put(COLLECTION, DOCUMENT_ID, {k: v for k, v in after.items() if k != "tag_vocab"})
             changed = True
         if before_commit is not None:
             before_commit(after, writer.connection)
@@ -297,10 +355,16 @@ def mutate(*, before_commit: Callable[[dict[str, Any], Any], None] | None = None
 
 def replace(payload: dict[str, Any]) -> None:
     """Write a whole registry (initial import and test fixtures)."""
-    clean = _normalized(copy.deepcopy(payload))
-    with mutate() as current:
-        current.clear()
-        current.update(clean)
+    clean = _only_known_fields(_normalized(copy.deepcopy(payload)))
+    configuration = _tag_document(clean.pop("tag_vocab"))
+    with get_registry_store().writer(COLLECTION) as writer:
+        # Explicit import replaces both owner documents in one transaction.
+        # Normal Project edits cannot mutate the configuration projection.
+        _migrate_tags(writer)
+        writer.put(COLLECTION, DOCUMENT_ID, clean)
+        writer.put(COLLECTION, KNOWLEDGE_TAGS_ID, configuration)
+    reset_cache_for_tests()
+    announce_registry_changes(COLLECTION, {DOCUMENT_ID: "updated"})
 
 
 def reset_cache_for_tests() -> None:

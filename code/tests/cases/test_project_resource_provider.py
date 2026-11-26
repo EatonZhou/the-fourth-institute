@@ -80,6 +80,11 @@ def test_project_registry_consumes_fields_and_preserves_version_metadata(metadat
     store = project_registry.get_registry_store()
     before_revision = project_registry.revision()
     assert project.load_projects_payload() == raw
+    stored = {key: value for key, value in raw.items() if key != "tag_vocab"}
+    assert store.get(project_registry.COLLECTION, project_registry.DOCUMENT_ID) == stored
+    assert project_registry.knowledge_tags_configuration()["tags"] == []
+    assert project_registry.revision() > before_revision
+    before_revision = project_registry.revision()
     records, state = ProjectRegistryAdapter().scan()
     assert [record["resource_id"] for record in records] == ["Kept"]
     assert state["project_ids"] == ["Kept"] and state["resource_errors"] == []
@@ -87,7 +92,7 @@ def test_project_registry_consumes_fields_and_preserves_version_metadata(metadat
     assert ("schema_version" in state) == ("schema_version" in raw)
     with project_registry.mutate():
         pass
-    assert store.get(project_registry.COLLECTION, project_registry.DOCUMENT_ID) == raw
+    assert store.get(project_registry.COLLECTION, project_registry.DOCUMENT_ID) == stored
     assert project_registry.revision() == before_revision
 
     with pytest.raises(project_registry.TagsChanged):
@@ -96,12 +101,12 @@ def test_project_registry_consumes_fields_and_preserves_version_metadata(metadat
         with project_registry.mutate() as document:
             document["projects"][0]["status"] = "paused"
             raise RuntimeError("abort")
-    assert store.get(project_registry.COLLECTION, project_registry.DOCUMENT_ID) == raw
+    assert store.get(project_registry.COLLECTION, project_registry.DOCUMENT_ID) == stored
     assert project_registry.revision() == before_revision
 
     with project_registry.mutate() as document:
         document["projects"][0]["status"] = "paused"
-    expected = {**raw, "projects": [{"id": "Kept", "status": "paused"}]}
+    expected = {**stored, "projects": [{"id": "Kept", "status": "paused"}]}
     assert store.get(project_registry.COLLECTION, project_registry.DOCUMENT_ID) == expected
     assert project_registry.revision() > before_revision
 

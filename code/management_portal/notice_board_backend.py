@@ -417,19 +417,38 @@ class NoticeBoardBackend:
             ),
         }
 
-    def set_pinned(self, actor: str, post_id: str, pinned: bool) -> dict[str, Any]:
+    def update_marks(
+        self, actor: str, post_id: str, *,
+        pinned: bool | None = None, featured: bool | None = None,
+    ) -> dict[str, Any]:
         clean_actor = self._require_actor(actor)
         clean_post_id = self._clean_post_id(post_id)
-        if not isinstance(pinned, bool):
+        if pinned is None and featured is None:
+            raise ValueError("pinned or featured is required")
+        if pinned is not None and not isinstance(pinned, bool):
             raise ValueError("pinned must be a boolean")
+        if featured is not None and not isinstance(featured, bool):
+            raise ValueError("featured must be a boolean")
         with self._thread_lock, self.posts.transaction():
             record = self._load_record()
-            moderation = self._load_moderation()
             post = self._find_post(record, clean_post_id)
-            post["pinned"] = pinned
-            post["pinned_at"] = _now_iso() if pinned else ""
-            post["pinned_by"] = clean_actor if pinned else ""
-            self._write_record(record)
+            moderation = self._load_moderation()
+            marked_at = _now_iso() if pinned or featured else ""
+            if pinned is not None:
+                post["pinned"] = pinned
+                post["pinned_at"] = marked_at if pinned else ""
+                post["pinned_by"] = clean_actor if pinned else ""
+                self._write_record(record)
+            if featured is not None:
+                featured_posts = moderation["featured_posts"]
+                if featured:
+                    featured_posts[clean_post_id] = {
+                        "featured_at": marked_at,
+                        "featured_by": clean_actor,
+                    }
+                else:
+                    featured_posts.pop(clean_post_id, None)
+                self._write_moderation(moderation)
         return {
             "post": self._public_post(
                 post,
@@ -438,36 +457,11 @@ class NoticeBoardBackend:
             ),
         }
 
-    def set_featured(
-        self,
-        actor: str,
-        post_id: str,
-        featured: bool,
-    ) -> dict[str, Any]:
-        clean_actor = self._require_actor(actor)
-        clean_post_id = self._clean_post_id(post_id)
-        if not isinstance(featured, bool):
-            raise ValueError("featured must be a boolean")
-        with self._thread_lock, self.posts.transaction():
-            record = self._load_record()
-            post = self._find_post(record, clean_post_id)
-            moderation = self._load_moderation()
-            featured_posts = moderation["featured_posts"]
-            if featured:
-                featured_posts[clean_post_id] = {
-                    "featured_at": _now_iso(),
-                    "featured_by": clean_actor,
-                }
-            else:
-                featured_posts.pop(clean_post_id, None)
-            self._write_moderation(moderation)
-        return {
-            "post": self._public_post(
-                post,
-                featured=self._featured_entry(moderation, clean_post_id),
-                actor=actor,
-            ),
-        }
+    def set_pinned(self, actor: str, post_id: str, pinned: bool) -> dict[str, Any]:
+        return self.update_marks(actor, post_id, pinned=pinned)
+
+    def set_featured(self, actor: str, post_id: str, featured: bool) -> dict[str, Any]:
+        return self.update_marks(actor, post_id, featured=featured)
 
     def delete_post(self, actor: str, post_id: str) -> dict[str, Any]:
         self._require_actor(actor)

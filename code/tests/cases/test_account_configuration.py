@@ -5,6 +5,7 @@ from types import SimpleNamespace
 import pytest
 
 from management_portal.execution import account_configuration as owner
+from management_portal.execution import account_registrations, codex_account_configuration as native_owner
 from management_portal.hatg.contracts import InstructionError
 
 
@@ -42,14 +43,17 @@ class NativeConfig:
 
 
 def invocation(version='native-v1', provider='openai'):
-    args = {'account_id': 'codex_test', 'model_provider': provider}
+    args = {'account_id': 'codex_test', 'changes': {'model_provider': provider}}
     return SimpleNamespace(argument=args.get, expected_version_for=lambda _: version)
 
 
 @pytest.fixture
 def native(monkeypatch):
     rpc = NativeConfig()
-    monkeypatch.setattr(owner, '_connection', lambda _: (rpc, rpc.path))
+    monkeypatch.setattr(native_owner, '_connection', lambda _: (rpc, rpc.path))
+    monkeypatch.setattr(account_registrations, 'registration', lambda account_id: {
+        'account_id': account_id, 'provider': 'codex', 'kind': 'subscription_login',
+    })
     return rpc
 
 
@@ -129,7 +133,7 @@ def test_readback_failure_preserves_committed_result(native):
 def test_missing_or_mismatched_user_layer_fails_closed(native):
     native.path = Path('/different-account/config.toml')
     with pytest.raises(InstructionError):
-        owner._read(native, Path('/accounts/codex_test/config.toml'), 'codex_test')
+        native_owner._read(native, Path('/accounts/codex_test/config.toml'), 'codex_test')
 
 
 @pytest.mark.parametrize('provider,kind', [('claude', 'subscription_login'), ('codex', 'api_profile')])
@@ -137,8 +141,9 @@ def test_only_registered_codex_subscriptions_can_be_configured(monkeypatch, prov
     from management_portal.execution import account_registrations
     monkeypatch.setattr(account_registrations, 'registration', lambda _: {'provider': provider, 'kind': kind})
     with pytest.raises(InstructionError) as error:
-        owner._connection('codex_test')
+        owner.get_configuration(invocation())
     assert error.value.code == 'instruction.invalid_arguments'
+    assert error.value.details["reason"] == "provider.capability_unsupported"
 
 
 def test_configuration_instructions_require_shared_admin():

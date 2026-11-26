@@ -15,10 +15,6 @@ ON_PROJECT = (On("project_id", "project"),)
 
 PROJECT_TYPES = ("company", "academic", "personal", "other")
 PROJECT = R("project", "object", "Project 的资源记录：resource_id、title、summary、url、capabilities 等")
-TAG_ITEM = {"type": "object", "properties": {
-    "id": {"type": "string"}, "folder": {"type": "string"},
-    "description": {"type": "string"}, "param": {"type": "string"},
-}, "required": ["id", "description"]}
 
 DECLARATIONS = (
     _d("CreateProject", FIXED, "创建一个 Project，建立项目目录、种子文件及 Project 层 Lineage 与 Leader。", (
@@ -88,15 +84,6 @@ DECLARATIONS = (
         P("busy_resident_ids", "array", "dry_run：正在执行的 Resident"),
         P("blockers", "array", "dry_run：阻止改名的挂载与服务"),
     ), mutates=True, target="project_id", owner="resource"),
-    _d("GetKnowledgeTags", FIXED, "读取全部 Project 共用的知识标签：每个标签的 ID、knowledge_base 子目录、说明与可选参数。", (), (
-        R("tags", "array", "id、folder、description 与可选的 param", items=TAG_ITEM),
-        R("version", description="标签列表的版本，用作 UpdateKnowledgeTags 的 expected_version"),
-    )),
-    _d("UpdateKnowledgeTags", FIXED, "用一份完整列表替换全部 Project 共用的知识标签，用于新增、改名和删除标签。"
-       "新建的 Project 按其中的 folder 建立 knowledge_base 子目录；已有项目的目录由调用者迁移。", (
-        R("tags", "array", "完整的标签列表；folder 缺省与 id 相同", items=TAG_ITEM),
-    ), (R("tags", "array", "保存后的完整标签列表", items=TAG_ITEM),
-        R("version", description="保存后标签列表的版本，可作下一次修改的 expected_version")), mutates=True),
     _d("MoveResident", (On("lineage_id", "lineage"), On("resident_id", "resident"), On("target_lineage_id", "lineage")), "把一个没有被流程引用的 Resident 迁移到目标 Lineage，保留其身份和会话；Family 成员随之离开 Family，继承等关系断开。", (R("lineage_id", description="对象当前所属的源 Lineage"),
         R("resident_id", description="要迁移的 Resident"),
         R("target_lineage_id", description="迁入的目标 Lineage，须与源不同"),

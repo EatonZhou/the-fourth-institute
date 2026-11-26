@@ -115,7 +115,7 @@ Resident 增加方向时，不写姿态即为候选；User 增加时默认是探
 每个 Project 层 Lineage 有一条“研究地图每日整理”流程：每天 07:30（主机所在时区）的周期 Event 启动一个 Effect，Effect 以 Lineage Leader（即 Project Resident）的身份运行：
 
 1. 从 Lineage 共享状态 `research_map.digest_until` 读出上次整理的截止时间；
-2. 调用 `GetResearchMapDigest` 汇总这之后别人提交的修订和新产出，Project Resident 自己的修订不计入；
+2. 用 `GetResearchMap` 与 `ListResearchMapChanges` 自行汇总这之后别人提交的修订和新产出（Effect 或固定脚本计算，指令集不提供汇总指令）：取 `changed_at` 晚于截止时间、`changed_by` 不是 Project Resident 自己的修订，再取 `links.related` 引用方向且修改时间晚于截止时间的资源，按方向整理成交给 Project Resident 的文字；
 3. 没有新动静时只把截止时间向前推，不叫醒任何 Resident，不调用模型；
 4. 有新动静时把汇总文字发给 Project Resident，再推进截止时间。投递失败时截止时间不变，下一次仍会包含这些动静。
 
@@ -138,7 +138,6 @@ Resident 增加方向时，不写姿态即为候选；User 增加时默认是探
 | `ApplyResearchMapChanges` | 是 | 以一组改动修改地图，成为一次新修订 | 对 `project_id` 有 @contributor |
 | `ListResearchMapChanges` | 否 | 按修订顺序列出修改记录，供回放 | 对 `project_id` 有 @viewer |
 | `UpdateResearchMapLayout` | 是 | 保存方向在画布上的位置 | 对 `project_id` 有 @contributor |
-| `GetResearchMapDigest` | 否 | 汇总一段时间内别人提交的修订和新产出，供每日整理 | 对 `project_id` 有 @viewer |
 
 ### GetResearchMap
 
@@ -161,18 +160,16 @@ Resident 增加方向时，不写姿态即为候选；User 增加时默认是探
 ### ListResearchMapChanges
 
 - 参数：`project_id`、`limit`（可选，默认 100）、`cursor`（可选）。
-- 结果：`changes` 按修订顺序排列，每项是 `revision`、`changed_at`、`changed_by`、`changes` 与修订后各方向的 `direction_id`、`parent_id`、`title`、`stance`、`teams`；还有下一页时带 `next_cursor`。
+- 结果：`changes` 按修订顺序排列，每项含 `revision`、`changed_at`、`changed_by`、本次 `changes` 和修订后各方向的 `direction_id`、`parent_id`、`title`、`stance`、`teams`、`proposal_reason`、`conclusion`。`add_note` 带 `text` 和 `refs`。`output_changes` 只在第一页返回按方向分组的当前可读产出，含 `modified_at`、`modified_by`，与修订历史独立。另有分页时返回 `next_cursor`。
 
 ### UpdateResearchMapLayout
 
 - 参数：`project_id`、`positions`（方向 ID → `{x, y}`；值为 `null` 时恢复自动排布）。
 - 结果：保存后的全部位置 `layout` 与 `layout_revision`。项目还没有地图时返回不存在。
 
-### GetResearchMapDigest
+### 每日整理的汇总材料
 
-- 参数：`project_id`；`since`（可选，ISO 8601；省略或为空时取最近 24 小时）。
-- 结果：`since`、`until`（下一次从这里算起）、`revision`、`count`（有新动静的方向数加目标修改数）、`directions`（按地图顺序，每项 `direction_id`、`title`、`stance`、`teams`、`changes` 与 `outputs`）、`goal_changes`，以及交给 Project Resident 的整理请求 `prompt`（`count` 为 0 时为空）。
-- 新动静是 `since` 之后、调用者以外的人或 Resident 提交的修订，以及在 `links.related` 中引用方向、修改时间在 `since` 之后的资源。每条修订写成一句话：新增方向及姿态与理由、姿态改为什么、结论、移动、删除、关系，以及时间线记录的种类和文字。
+每日整理 Effect 在 Project 自身的 Lineage 经 `RunScript` 调用 `research_map_digest`，脚本以真实调用者身份分页读 `ListResearchMapChanges`，并通过 `GetResearchMap(include_outputs=true)` 读取当前可见产出。范围为上次水位之后到本轮截止（含）的修订与产出，首次读最近 24 小时；按 `changed_by` / `modified_by` 排除实际调用者自己的变更，再按方向生成文字。没有新变化时不投递。需要投递时在取得有效消息回执后才以比较写入更新 `research_map.digest_until`；失败或水位被并发修改时保留原状态或已被其他运行写入的新水位。
 
 ## 参数名契约
 
@@ -184,4 +181,3 @@ Resident 增加方向时，不写姿态即为候选；User 增加时默认是探
 | `ApplyResearchMapChanges` | `project_id`、`expected_revision`、`changes` |
 | `ListResearchMapChanges` | `project_id`、`limit`、`cursor` |
 | `UpdateResearchMapLayout` | `project_id`、`positions` |
-| `GetResearchMapDigest` | `project_id`、`since` |

@@ -38,7 +38,7 @@ MAP = (
     R("notes", "array", "每个方向最近 20 条时间线：note_id、direction_id、kind（progress 进展、decision 决定、note 批注）、"
       "text、refs（资源地址）、noted_at、noted_by、revision"),
     R("outputs", "object", "direction_id → 产出：在 links.related 中引用这个方向、调用者能读的资源（resource_id、resource_type、"
-      "title、url、modified_at），新的在前；读取历史修订时为空"),
+      "title、url、modified_at、modified_by；作者未知为空），新的在前；读取历史修订时为空"),
     R("updated_at", description="这次修订的时间"), R("updated_by", description="这次修订的修改者"),
 )
 
@@ -68,22 +68,9 @@ DECLARATIONS = (
         CURSOR(),
     ), (
         R("changes", "array", "每项 revision、changed_at、changed_by、changes（这次的改动）与 directions（修订后各方向的 "
-          "direction_id、parent_id、title、stance、teams）"),
+          "direction_id、parent_id、title、stance、teams、proposal_reason、conclusion）；add_note 含正文 text、refs"),
+        P("output_changes", "object", "仅第一页：direction_id → 当前可读产出，含 modified_at/modified_by。独立于地图修订的当前索引事实，不是历史快照；按时间筛选"),
         NEXT_CURSOR(),
-    )),
-    _d("GetResearchMapDigest", "汇总研究地图在一段时间内的新动静：调用者以外的人或 Resident 提交的修订（人的决定、团队的进展与批注、新方向）和新产出，"
-       "按方向列出，并写成交给 Project Resident 整理的一段文字。Project 层 Lineage 的每日整理用它判断是否需要叫醒 Project Resident。", (
-        R("project_id", description="要汇总的 Project"),
-        P("since", description="从这个时间之后算起（ISO 8601）；省略或为空时取最近 24 小时"),
-    ), (
-        R("project_id", description="汇总的 Project"),
-        R("since", description="实际起算时间"), R("until", description="汇总截止的时间，下一次从这里算起"),
-        R("revision", "integer", "地图当前的修订号"),
-        R("count", "integer", "有新动静的方向数，加上目标的修改；为 0 时没有需要整理的内容"),
-        R("directions", "array", "有新动静的方向：direction_id、title、stance、teams、changes（revision、changed_at、changed_by、"
-          "summary）、outputs（resource_id、resource_type、title、url、modified_at）"),
-        R("goal_changes", "array", "目标的修改：revision、changed_at、changed_by、summary"),
-        R("prompt", description="交给 Project Resident 的整理请求；count 为 0 时为空"),
     )),
     _d("UpdateResearchMapLayout", "保存研究地图画布上方向的位置；位置不是地图的修订。", (
         R("project_id", description="地图所属的 Project"),

@@ -150,6 +150,28 @@ class PairedRuntimeTest(unittest.TestCase):
             health.assert_not_called()
             self.assertFalse((root / 'runtime/development-activation.json').exists())
 
+    def test_persistent_contract_migrations_quiesce_consumers_without_renaming_table_changes(self):
+        from management_common import loaded_modules
+        for path in (
+            'management_portal/permission_system/scheme/repository.py',
+            'management_portal/society_service/instruction_name_migration.py',
+        ):
+            for prefix in ('', 'code/'):
+                with self.subTest(path=prefix + path), tempfile.TemporaryDirectory() as directory:
+                    root = write_pair(Path(directory))
+                    with patch.object(loaded_modules, 'loaded', return_value={}), \
+                            patch.object(paired, 'control', return_value='') as control, \
+                            patch.object(paired, 'health', return_value={'ok': True}):
+                        result = paired.activate(root, [prefix + path], 'contract-change')
+                    self.assertIn('resource', result['quiesced'])
+                    self.assertIn('society', result['quiesced'])
+                    calls = control.call_args_list
+                    stops = [i for i, call in enumerate(calls) if call.args[0] == 'stop']
+                    restarts = [i for i, call in enumerate(calls) if call.args[0] == 'restart']
+                    self.assertLess(max(stops), min(restarts))
+                    self.assertFalse(any(call.args[0] == 'stop' and any(name in str(call) for name in
+                                         ('worker.service', 'postgres', 'nats', 'provider-')) for call in calls))
+
     def test_rename_barrier_accepts_code_relative_paths_and_drains_transitioning_services(self):
         from management_common import loaded_modules
         for state in ('reloading', 'deactivating'):

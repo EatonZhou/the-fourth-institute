@@ -488,6 +488,7 @@ modules:
       - "management_portal/resources/registry_store.py"
       - "management_portal/resources/registry_directory_records.py"
       - "management_portal/resources/article_restore*.py"
+      - "scripts/article_restore.py"
       - "management_portal/resources/query.py"
       - "management_portal/resources/changes.py"
       - "management_portal/resources/portal.py"
@@ -560,6 +561,7 @@ modules:
       - "management_portal/article_build_store.py"
       - "management_portal/device_identity_backend.py"
       - "management_portal/google_cloud_devices.py"
+      - "scripts/colab_session.py"
       - "management_portal/repo_credentials_backend.py"
       - "management_portal/repo_workspace_*.py"
       - "management_portal/search_identity_backend.py"
@@ -947,7 +949,9 @@ modules:
       - "management_portal/static/project_*.css"
       - "management_portal/static/project.*"
       - "management_portal/research_map_*.py"
+      - "scripts/research_map_digest.py"
       - "management_portal/resources/providers/direction.py"
+      - "management_portal/resources/providers/knowledge_tags.py"
       - "management_portal/watchboards/telepus.py"
     designs:
       - "decision_3e063aac15b3"
@@ -1221,6 +1225,9 @@ modules:
       - "management_portal/runtime_status.py"
       - "management_portal/directory_maintenance.py"
       - "scripts/portal_release_units.py"
+      - "scripts/portal_operations.py"
+      - "scripts/publish_release.py"
+      - "scripts/install_provider_runtime.py"
       - "scripts/claude_app_server_package.py"
       - "management_common/instance_manifest.py"
       - "management_common/host_instances.py"
@@ -2762,8 +2769,42 @@ protocols:
     designs: []
     related_designs:
       - "decision_7956d7cb4bde"
-    description: "Execution 拥有账号登记、启停、登录会话和 Backend 角色映射；账号适配器按 Provider 能力与模型 API 条目派生执行账号，Provider 登录工具维护各自的认证目录。Web 会话接口提供指令权限摘要，管理页据此呈现入口，并经指令读取和修改登记。Home 账号详情中的 AI Backend 入口定位当前账号的管理页，重新登录复用管理页的登录组件；凭据正文不进入返回值，页面权限摘要不替代指令执行时的授权。"
+    description: "Execution 拥有账号登记、启停、登录会话和 Backend 角色映射；账号适配器按 Provider 能力与模型 API 条目派生执行账号，Provider 登录工具维护各自的认证目录。账号配置通过 changes、登录通过 options 传入，由各 Provider 声明 schema、可选值与输入提示，未支持能力明确拒绝；共享页面不解释 Provider 专有字段。Web 会话接口提供指令权限摘要，管理页据此呈现入口，并经指令读取和修改登记。Home 账号详情中的 AI Backend 入口定位当前账号的管理页，重新登录复用管理页的登录组件；凭据正文不进入返回值，页面权限摘要不替代指令执行时的授权。"
     example: "Home 显示账号登录已过期 → 用户打开共享登录组件 → 组件经指令请求 Execution 打开登录会话并轮询状态 → Provider 完成认证后返回登录状态；账号登记与额度调度观察仍各自由原 owner 维护。"
+
+  - id: "portal-operations-scripts"
+    title: "固定运维 Lineage 的系统脚本调用"
+    modules:
+      - "delivery.services"
+      - "lineage.automation"
+      - "resources.access"
+      - "resources.types"
+      - "execution.providers"
+      - "interface.shell"
+      - "web.identity"
+    designs: []
+    related_designs:
+      - "decision_8b510cbd9c58"
+      - "decision_4527448ad07f"
+      - "decision_ad3e21094f14"
+      - "decision_08bb2d9141f9"
+      - "decision_956154cd02f6"
+    description: "部署配置绑定已登记的固定运维 Lineage，界面以原调用者提交 RunScript，并用 GetScriptRun 读取异步状态与结果。发布、Provider 安装、Colab 和 Article 恢复脚本复用原领域实现；运维 Lineage 的管理权限与原资源权限分别检查。脚本从受信运行上下文取得调用者和参数，可编辑输入不产生身份授权。持久权限或执行定义迁移时，先停稳旧权限消费者，再由新 owner 迁移和启动；Worker 沿既有交接继续在途执行。"
+    example: "管理页定位固定脚本与运维 Lineage → RunScript 鉴权受理 → 脚本核验当前运行身份并执行领域操作 → GetScriptRun 返回结果；发布失败保留已提交与推送失败的独立事实。"
+
+  - id: "workflow-domain-script-migration"
+    title: "领域原配脚本的当前定义迁移"
+    modules:
+      - "lineage.definition"
+      - "lineage.automation"
+      - "web.community"
+      - "delivery.services"
+    designs: []
+    related_designs:
+      - "decision_9d15ae2053c4"
+      - "decision_898b8911a2ff"
+    description: "已安装领域通过 portal_features 贡献纯脚本升级函数；Society 和种子导出复用同一规范化入口。研究地图仅精确匹配原配脚本，保留原 Project Lineage、Leader 与摘要水位。自定义脚本中的不可等价旧调用生成位置诊断并阻止切换，当前定义通过领域版本写入；历史版本、在途 journal 和待审稿不改写。"
+    example: "只读预检列出待升级原配 Effect → 确认无阻塞 → 按 Lineage 行锁复核并迁移当前定义 → 以后由原研究图流程调用摘要脚本，通知确认后 CAS 更新水位。"
 
   - id: "session-context-preservation"
     title: "会话上下文保全准备与准入引用"

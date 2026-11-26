@@ -19,6 +19,14 @@ from management_common.code_environment import runtime_python
 
 SHARED = ("resource", "execution", "society", "worker")
 
+# These owners change persisted permission identities or executable definitions.
+# Their implementation can change without changing the old-name mapping table.
+PERSISTENT_CONTRACT_OWNERS = frozenset({
+    "management_portal/hatg/instruction_renames.py",
+    "management_portal/permission_system/scheme/repository.py",
+    "management_portal/society_service/instruction_name_migration.py",
+})
+
 
 def configured_root():
     instance = load()
@@ -283,7 +291,9 @@ def activate(root, paths, commit, *, initial=False):
     from management_common.service_components import FUNCTIONAL_MODULES
     manifest = load(root)
     managed = (*SHARED, *(c for c in FUNCTIONAL_MODULES if c in manifest.document['services']['components']))
-    components = (list((*managed, "web", "dev-web", "gateway")) if initial
+    cutover = initial or any(str(path).removeprefix('code/') in PERSISTENT_CONTRACT_OWNERS
+                             for path in paths)
+    components = (list((*managed, "web", "dev-web", "gateway")) if cutover
                   else affected(paths, loaded_modules.loaded(loaded_modules.directory(root)), managed=managed))
     # Code activation never stops PostgreSQL, NATS or provider account services.
     if components:
@@ -300,8 +310,7 @@ def activate(root, paths, commit, *, initial=False):
                 continue
         selected.append(component)
     quiesced = []
-    if initial or any(str(path).removeprefix('code/') == 'management_portal/hatg/instruction_renames.py'
-                      for path in paths):
+    if cutover:
         # Renamed A nodes and executable definitions cannot coexist with old
         # readers/writers. Stop ingress first, then drain every selected owner
         # before the first new process can run its startup migration. systemctl

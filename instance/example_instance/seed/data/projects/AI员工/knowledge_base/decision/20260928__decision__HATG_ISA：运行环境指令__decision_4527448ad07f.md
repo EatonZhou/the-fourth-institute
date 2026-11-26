@@ -46,6 +46,7 @@ links:
   - decision_898b8911a2ff
   - thinking_ca8f397a47de
 ---
+
 # HATG ISA：运行环境指令
 
 运行环境指令管理 AI 社会运行所依赖的环境：查看 Portal 各服务的状态、请求重启、把 Dev 代码发布到 Release，查看 GPU 与磁盘等设备的状态，查看执行账号的额度与用量并调整调度设置，以及登记和调用普通模型接口。所有指令共同遵守的调用格式、执行流程和错误语义见 decision_898b8911a2ff。
@@ -68,7 +69,6 @@ links:
 | `GetPortalStatus` | 否 | 读取 Portal 实例与组件的运行状态 | 对“共享”有 @viewer |
 | `GetRuntimeCapacity` | 否 | 读取数据库连接、主机磁盘和执行队列的容量快照 | 对“共享”有 @viewer |
 | `RestartPortal` | 是 | 重启 Portal 实例或其中的组件 | 对“Portal 运维”有 @admin |
-| `PublishRelease` | 是 | 把指定的 Dev 代码发布到 Release | 对“Portal 运维”有 @admin |
 | `GetDeviceStatus` | 否 | 读取 GPU 或磁盘状态 | 对“共享”有 @viewer |
 | `CreateTerminal` | 是 | 为调用者打开 Portal 主机 shell 或 Device 的 SSH 终端 | 对“共享”有 @admin |
 | `RunGoogleDriveBackup` | 是 | 异步复制加密快照到 Google Drive，或校验上传与恢复 | 对“共享”有 @admin |
@@ -80,10 +80,9 @@ links:
 | `CheckModelApi` | 是 | 检测模型接口为 Agent Harness 提供哪些协议 | 对“Portal 运维”有 @admin |
 | `ListProviderAccounts` | 否 | 读取执行账号的额度、余额和调度设置 | 对“共享”有 @viewer |
 | `UpdateProviderAccount` | 是 | 修改一个执行账号的调度设置 | 对“共享”有 @admin |
-| `InstallProviderRuntime` | 是 | 复用已有运行时，缺失时按 Provider 异步准备 | 对“共享”有 @admin |
 | `GetProviderAccountSetup` | 否 | 读取运行环境、授权、模型与声明能力 | 对“共享”有 @viewer |
-| `GetProviderAccountConfiguration` | 否 | 读取 Codex 原生默认 Provider 与版本；按需检查定义的持久会话引用 | 对“共享”有 @admin |
-| `UpdateProviderAccountConfiguration` | 是 | 条件更新 Codex 原生默认 Provider，不重启或改写已有会话 | 对“共享”有 @admin |
+| `GetProviderAccountConfiguration` | 否 | 读取 Provider 声明的账号原生配置摘要与版本；声明支持时按需检查定义的持久会话引用 | 对“共享”有 @admin |
+| `UpdateProviderAccountConfiguration` | 是 | 按 Provider 声明的原生配置 schema 条件更新账号配置，不重启或改写已有会话 | 对“共享”有 @admin |
 | `CheckProviderAccount` | 是 | 通过 ExecutionService 提交最小模型回复测试 | 对“共享”有 @admin |
 | `GetProviderAccountCheck` | 否 | 读取测试结果与配置有效性 | 对“共享”有 @admin |
 | `ListProviders` | 否 | 列出 Provider、账号种类、能力与运行时状态 | 对“共享”有 @viewer |
@@ -91,7 +90,7 @@ links:
 | `UpdateProviderAccountRegistration` | 是 | 修改执行账号的登记 | 对“共享”有 @admin |
 | `DeleteProviderAccount` | 是 | 删除空闲账号及其主机目录与服务实例 | 对“共享”有 @admin |
 | `CreateProviderAccountLogin` | 是 | 打开订阅账号的登录会话 | 对“共享”有 @admin |
-| `UpdateProviderAccountLogin` | 是 | 向已有的 Claude 登录会话提交一次性授权码 | 对“共享”有 @admin |
+| `UpdateProviderAccountLogin` | 是 | 向已有的登录会话提交登录流程回填的一次性授权材料 | 对“共享”有 @admin |
 | `GetProviderAccountLogin` | 否 | 读取登录会话与账号认证状态 | 对“共享”有 @viewer |
 | `CancelProviderAccountLogin` | 是 | 取消订阅账号登录并结束登录进程 | 对“共享”有 @admin |
 | `ListBackendRoles` | 否 | 读取 Backend 角色映射 | 对“共享”有 @viewer |
@@ -153,14 +152,14 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个部署各有自
 - 指令校验组件后用 `systemd-run --user` 启动该单元并立即返回；单元按组件顺序重启，最后检查所选部署 Web 的健康（decision_37f98f8fcb4b）。调用者通过 `GetPortalStatus` 读取当前健康状态，失败详情查看该单元日志；指令返回只说明重启已经发起。重启的组件包括 Portal Web 自身时，指令先返回结果，再开始重启。
 - 独立 TFI 实例没有配对运行时，指令返回错误，服务由 `install_tfi_release` 管理。
 
-### `PublishRelease`
+### 发布 Release（系统脚本）
 
-**把调用者指定的 Dev 代码同步到 Release，并返回发布提交。**
+发布不是指令。系统脚本 `publish_release` 固定在站点 `deployment.portal_operations.lineage_id` 指定的 Portal 运维 Lineage，沿用真实调用身份，包装 `python3 code/scripts/tfi_dev.py publish`，由 `RunScript` 运行，权限为对该 Lineage 的 @admin（见 decision_850e6248d680、decision_ab9880dc4c9d 与 RunScript 的权限）。
 
-- 参数：`message`（本次发布的提交说明）、`paths`（要发布的文件或目录列表，路径相对仓库的 `code/` 目录，删除也会同步）或 `all`（为 `true` 时发布全部受 Git 管理的源码），二者必须且只能提供一个。
-- 结果：`commit`（发布提交 ID）、`paths`（Release 相对上次发布改变的文件，包含 Dev 上已有的其他提交）、`health`（`status: pending` 与激活 receipt 的路径 `receipt`）和 `push`（推送结果 `ok` 与远端名 `remote`）。
-- 未配置配对运行时时，只能在 Dev 实例上执行，发给 Release 实例返回 `instruction.forbidden`；配置了配对运行时的实例（本站）两个部署都可以执行。
-- 指令只提交发布动作；选择范围、撰写提交说明与验证功能由调用者完成。提交、Release 快进、推送和激活的顺序与失败语义统一见 decision_08bb2d9141f9。指令在激活排队后返回，服务是否已加载新代码以 `health.receipt` 指向的 receipt 为准；`push` 单独反映推送结果，不能仅凭指令受理或部分步骤完成推断全部发布成功。
+- 脚本参数：`message`（本次发布的提交说明）、`paths`（要发布的文件或目录列表，路径相对仓库的 `code/` 目录，删除也会同步）或 `all`（为 `true` 时发布全部受 Git 管理的源码），二者必须且只能提供一个。
+- 脚本输出报告：`commit`（发布提交 ID）、`paths`（Release 相对上次发布改变的文件，包含 Dev 上已有的其他提交）、`health`（`status: pending` 与激活 receipt 的路径 `receipt`）和 `push`（推送结果 `ok` 与远端名 `remote`）。
+- 本站须配置 Dev 部署，脚本在同一实例中定位该 Dev 代码根并执行发布器。
+- 脚本只提交发布动作；选择范围、撰写提交说明与验证功能由调用者完成。提交、Release 快进、推送和激活的顺序与失败语义统一见 decision_08bb2d9141f9。脚本在激活排队后结束，服务是否已加载新代码以 `health.receipt` 指向的 receipt 为准；脚本输出还提供 `status`，失败时可有 `stage` 与 `error`；`push` 单独反映推送结果，不能仅凭脚本结束或部分步骤完成推断全部发布成功。
 
 ## 设备
 
@@ -211,7 +210,7 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个部署各有自
 - `RegisterProviderAccount`：参数 `account_id`、`provider`、`kind`（`subscription_login`、`api_profile` 或 `service`）、`route_id`（可选）、`config`（可选；`api_profile` 用 `config.api_id` 引用已有模型接口）、`max_concurrency`（可选，初始并发）、`enabled`（可选）、`secret`（可选，`api_profile` 的一次性密钥，只写入密钥文件，不回显）。结果 `registration`。
 - `UpdateProviderAccountRegistration`：参数 `account_id`、`changes`（配置、`enabled` 与初始并发）。结果 `registration`。调用信封的 `expected_version` 给出登记版本（`ListProviderAccounts` 每个账号的 `registration_version`）时按它比较，版本不符以 `instruction.version_conflict` 失败；省略时直接更新。
 - `DeleteProviderAccount`：参数 `account_id`。账号仍有绑定会话或排队、运行中的执行时以 `instruction.conflict` 失败，`details` 给出 `reason: account.busy`、会话数 `session_count` 和执行数 `execution_count`；仍被 Backend 角色引用时以 `instruction.conflict`（`reason: account.role_in_use`）失败。结果为被删除的 `account_id`。
-- `CreateProviderAccountLogin`、`UpdateProviderAccountLogin`、`GetProviderAccountLogin`、`CancelProviderAccountLogin`：参数都以 `account_id` 指定订阅账号；`UpdateProviderAccountLogin` 另有 `authorization_code`（Claude 浏览器返回的授权码，只送到当前登录进程，不保存或回显）；`CreateProviderAccountLogin` 另有可选 `region`，仅用于 Kimi：`mainland-cn` 为中国区、`global` 为国际区，切换区域会替换未完成的授权流程，省略时沿用原生选择。Open、Update、Cancel 返回 `session`；Get 返回 `session`（尚未开始时为 null）与 `login_state`。每个账号同一时间只有一个登录会话。
+- `CreateProviderAccountLogin`、`UpdateProviderAccountLogin`、`GetProviderAccountLogin`、`CancelProviderAccountLogin`：参数都以 `account_id` 指定订阅账号；`UpdateProviderAccountLogin` 另有 `authorization_code`（登录流程回填的授权材料，授权码或完整回调地址，所需形式由 Provider 声明；只送到当前登录进程，不保存或回显）；`CreateProviderAccountLogin` 另有可选 `options`（对象，键与取值由 Provider 声明的登录选项决定，`GetProviderAccountLogin` 的 `login_options.schema` 给出允许的键和值，`login_options.values` 给出当前选项；例如 Kimi 声明 `region`：`mainland-cn` 为中国区、`global` 为国际区，切换区域会替换未完成的授权流程，省略时沿用原生选择）。Open、Update、Cancel 返回 `session`；Get 返回 `session`（尚未开始时为 null）与 `login_state`。每个账号同一时间只有一个登录会话。
 - 账号相关的失败使用通用错误码，`details.reason` 给出具体原因，页面按 `reason` 选择提示：
 
 | 情形 | 错误码 | `details.reason` |
@@ -219,7 +218,7 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个部署各有自
 | 账号仍有会话或执行（`DeleteProviderAccount`） | `instruction.conflict` | `account.busy` |
 | 账号仍被 Backend 角色引用（`DeleteProviderAccount`） | `instruction.conflict` | `account.role_in_use` |
 | 上一次登录进程正在结束（Open、Delete），可稍后重试 | `instruction.conflict`，`retryable` | `account.login_busy` |
-| 没有等待授权码的 Claude 登录会话（Update） | `instruction.conflict` | `account.login_not_awaiting` |
+| 没有等待授权材料的登录会话（Update） | `instruction.conflict` | `account.login_not_awaiting` |
 | 登录进程已不接收授权码，需要取消后重新开始（Update） | `instruction.conflict` | `account.login_unavailable` |
 | 尚无认证观察且原生状态查询无法执行（Get、List），可稍后重试 | `instruction.owner_unavailable`，`retryable` | `account.login_unavailable` |
 | 无法启动登录进程（Open） | `instruction.failed` | `account.login_unavailable` |
@@ -228,7 +227,7 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个部署各有自
 - `UpdateBackendRole`：参数 `backend_role`（角色名，与 `CreateResident` 的 `backend_role` 同名）、`account_id`、`model`（可选）、`reasoning_effort`（可选）。结果 `role`。调用信封的 `expected_version` 给出角色版本时按它比较，新建角色时为 0；省略时直接写入。
 
 
-接入流程先调用 `GetProviderAccountSetup(account_id)`，分别展示运行环境、授权状态、模型目录与声明的工具能力。`InstallProviderRuntime(provider)` 复用已安装程序；缺失时通过原运行时 owner 异步准备，返回 preparation，后续从 ListProviders 或 GetProviderAccountSetup 观察。`CheckProviderAccount(account_id, model?)` 创建普通持久 Execution，返回 execution_id；`GetProviderAccountCheck(account_id, execution_id)` 只读取调用者可访问的执行，核对账号、登记与模型 API 版本、完成状态和预期回复。测试不调用工具，不能据此宣称工具已实测。UpdateBackendRole 可带 `verification_execution_id`；接入页面必须带此回执，只有匹配当前账号与模型的成功测试才能完成默认设置。已有高级角色编辑保持可用。
+接入流程先调用 `GetProviderAccountSetup(account_id)`，分别展示运行环境、授权状态、模型目录与声明的工具能力。运行时的安装与准备由系统脚本 `install_provider_runtime`（参数 `provider`，由真实调用者经固定 Portal 运维 Lineage 的 `RunScript` 运行并返回 `preparation`）完成：复用已安装程序，缺失时通过运行时 owner 异步准备；进度从 `ListProviders` 或 `GetProviderAccountSetup` 观察。`CheckProviderAccount(account_id, model?)` 创建普通持久 Execution，返回 execution_id；`GetProviderAccountCheck(account_id, execution_id)` 只读取调用者可访问的执行，核对账号、登记与模型 API 版本、完成状态和预期回复。测试不调用工具，不能据此宣称工具已实测。UpdateBackendRole 可带 `verification_execution_id`；接入页面必须带此回执，只有匹配当前账号与模型的成功测试才能完成默认设置。已有高级角色编辑保持可用。
 
 ### `GetUsage`
 
@@ -245,9 +244,9 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个部署各有自
 
 ### `GetProviderUsageEvents`
 
-额度报告需要原始额度重置观察、每轮 token 计数和 fork 去重所需的会话关系。ExecutionService 从已登记的 Codex 账号读取这些记录，脚本经 ISA 分页接收；账号目录和凭证继续留在服务侧。
+额度报告需要原始额度重置观察、每轮 token 计数和 fork 去重所需的会话关系。ExecutionService 从已登记的、Provider 声明了用量事件能力的账号读取这些记录，脚本经 ISA 分页接收；账号目录和凭证继续留在服务侧。
 
-- 参数：`account_id`（Codex route ID 或已登记账号 ID）、`since`、`until`（含时区的 ISO 时间，范围左闭右开，最多 60 天）、`cursor`（可选，上一页游标）、`limit`（默认 1000，范围 1–1000）。
+- 参数：`account_id`（已登记账号 ID 或其路由 ID，账号的 Provider 须声明用量事件能力，否则返回 `instruction.invalid_arguments`，详情含 `reason=provider.capability_unsupported`）、`since`、`until`（含时区的 ISO 时间，范围左闭右开，最多 60 天）、`cursor`（可选，上一页游标）、`limit`（默认 1000，范围 1–1000）。
 - 结果：`account_id`、`records` 和 `next_cursor`。每条记录包含相对来源文件 `source` 与白名单投影 `record`：会话 ID、Provider 与 fork 来源，模型名，用户输入的发生时间，token 数和额度窗口。消息、指令、工具参数、模型回答和凭证不进入结果。
 - 为还原模型上下文和 fork 去重，窗口起点之前的会话元数据与模型切换记录可一并返回；用量与用户输入时间严格限制在窗口内。分页按文件和字节位置继续，单页最多扫描 8 MiB；扫描上限先达到时允许记录为空且返回续页游标。调用方持续读取至游标为空。
 - 查询只接受登记账号，不接受任意目录；跳过指向账号会话目录外的链接。游标绑定账号与时间范围，源文件分页期间被截断时返回参数错误，调用方重新开始查询。
@@ -336,7 +335,6 @@ Telepus 绑定、提醒及服务控制改用应用工具，见 decision_692a484e
 | `GetPortalStatus` | `deployment` |
 | `GetRuntimeCapacity` | 无 |
 | `RestartPortal` | `deployment`、`components` |
-| `PublishRelease` | `message`、`paths`、`all` |
 | `GetDeviceStatus` | `kind`、`device_id`、`refresh` |
 | `CreateTerminal` | `device_id`、`cwd`、`cols`、`rows` |
 | `RunGoogleDriveBackup` | `profile`、`network_route` |
@@ -350,16 +348,15 @@ Telepus 绑定、提醒及服务控制改用应用工具，见 decision_692a484e
 | `GetProviderUsageEvents` | `account_id`、`since`、`until`、`cursor`、`limit` |
 | `UpdateProviderAccount` | `account_id`、`max_concurrency`、`dispatch_interval_min_seconds`、`dispatch_interval_max_seconds`、`close_threshold_percent`、`close_threshold_amount`、`allow_credits` |
 | `ListProviders` | `refresh`、`include_runtime` |
-| `InstallProviderRuntime` | `provider` |
 | `GetProviderAccountSetup` | `account_id` |
 | `GetProviderAccountConfiguration` | `account_id`、`include_provider_references` |
-| `UpdateProviderAccountConfiguration` | `account_id`、`model_provider` |
+| `UpdateProviderAccountConfiguration` | `account_id`、`changes` |
 | `CheckProviderAccount` | `account_id`、`model` |
 | `GetProviderAccountCheck` | `account_id`、`execution_id` |
 | `RegisterProviderAccount` | `account_id`、`provider`、`kind`、`route_id`、`config`、`max_concurrency`、`reuse_existing`、`enabled`、`secret` |
 | `UpdateProviderAccountRegistration` | `account_id`、`changes` |
 | `DeleteProviderAccount` | `account_id` |
-| `CreateProviderAccountLogin` | `account_id`、`region` |
+| `CreateProviderAccountLogin` | `account_id`、`options` |
 | `UpdateProviderAccountLogin` | `account_id`、`authorization_code` |
 | `GetProviderAccountLogin` | `account_id` |
 | `CancelProviderAccountLogin` | `account_id` |
@@ -370,10 +367,12 @@ Telepus 绑定、提醒及服务控制改用应用工具，见 decision_692a484e
 
 ## 执行账号的原生默认配置
 
-`GetProviderAccountConfiguration` 与 `UpdateProviderAccountConfiguration` 由 ExecutionService 管理 Codex 订阅账号的原生默认 Provider。两者默认都要求对共享拥有 @admin；查询只返回 Provider ID、自定义 Provider ID 列表及原生配置版本，不暴露完整配置、凭据或会话。API Profile 的目标仍由模型 API 登记管理，不通过这组指令改变。
+`GetProviderAccountConfiguration` 与 `UpdateProviderAccountConfiguration` 由 ExecutionService 管理订阅账号的原生配置，范围与字段由 Provider 适配器声明的原生配置 schema 决定。两者默认都要求对共享拥有 @admin；查询只返回声明允许的配置摘要与原生配置版本，不暴露完整配置、凭据或会话。不声明原生配置的 Provider 返回能力不支持错误。API Profile 的目标仍由模型 API 登记管理，不通过这组指令改变。
 
-修改请求使用 `account_id`、`model_provider`，并在调用信封提供查询返回的 `expected_version`。服务先核对账号种类、配置层、定义和版本，再调用 Codex 原生 `config/value/write`，由原生配置 owner 完成原子写入及并发版本检查。修改后回读已保存和实际生效的 Provider；结果不明确时保留 unknown，写入成功但回读失败时明确 committed，调用者先读取实际状态，不盲目重试。
+修改请求使用 `account_id`、`changes`（对象，字段与取值由声明的 schema 校验），并在调用信封提供查询返回的 `expected_version`。服务先核对账号种类、配置层、定义和版本，再通过适配器调用原生写入，由原生配置 owner 完成原子写入及并发版本检查。修改后回读已保存和实际生效的配置；结果不明确时保留 unknown，写入成功但回读失败时明确 committed，调用者先读取实际状态，不盲目重试。
 
-默认值修改对后续新建会话生效，不重启账号进程、不重放输入，也不改写已存在会话的 Provider 身份。旧会话仍受原生 Provider 定义与管理策略约束；清理旧定义与修改默认值是不同操作，不能通过删除仍被引用的定义冒充历史会话迁移。
+默认值修改对后续新建会话生效，不重启账号进程、不重放输入，也不改写已存在会话的身份。旧会话仍受原生定义与管理策略约束；清理旧定义与修改默认值是不同操作，不能通过删除仍被引用的定义冒充历史会话迁移。
 
-配置查询只有显式提供 `include_provider_references=true` 时才检查自定义 Provider 的原生持久会话引用。服务按 Provider 与全部来源类型过滤，每次只取一条，并分别覆盖普通及归档会话，仅返回存在性，不返回会话 ID、预览或正文。正向结果可证明定义仍被历史引用；未命中不能证明没有尚未持久化的在途会话，不作为无损删除的承诺。
+Codex 适配器是一个例子：它声明 `model_provider`（原生默认 Provider），`changes` 写作 `{"model_provider": "openai"}` 或该账号已定义的自定义 Provider ID，服务调用 Codex 原生 `config/value/write`；查询返回 Provider ID、自定义 Provider ID 列表与版本。
+
+`include_provider_references` 是 Codex 适配器声明的检查项，声明支持时，配置查询只有显式提供 `include_provider_references=true` 才检查自定义 Provider 的原生持久会话引用。服务按 Provider 与全部来源类型过滤，每次只取一条，并分别覆盖普通及归档会话，仅返回存在性，不返回会话 ID、预览或正文。正向结果可证明定义仍被历史引用；未命中不能证明没有尚未持久化的在途会话，不作为无损删除的承诺。

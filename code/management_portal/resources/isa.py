@@ -347,6 +347,7 @@ def register_resource(inv: Invocation) -> dict[str, Any]:
 
 
 def update_resource(inv: Invocation) -> dict[str, Any]:
+    from management_common.resource_identity import get_resource_type_registry
     from .providers.knowledge import MUTABLE_RESOURCE_TYPES
 
     changes = dict(inv.argument("changes") or {})
@@ -354,8 +355,11 @@ def update_resource(inv: Invocation) -> dict[str, Any]:
     if token is None:
         token = changes.get("expected_version")
     if token is not None:
-        resource_type = inv.argument("resource_id").partition("_")[0]
-        if resource_type not in MUTABLE_RESOURCE_TYPES and resource_type != "workspace":
+        try:
+            resource_type = get_resource_type_registry().parse(inv.argument("resource_id")).resource_type
+        except ValueError as exc:
+            raise invalid(str(exc)) from exc
+        if resource_type not in MUTABLE_RESOURCE_TYPES and resource_type not in {"workspace", "knowledge_tags"}:
             raise invalid(f"{resource_type} 的 UpdateResource 不支持 expected_version")
         changes["expected_version"] = token
     with _registry_errors():
@@ -1098,24 +1102,7 @@ def correct_resource_lifecycle_association(inv):
     return correct(inv, _service())
 
 
-def preview_article_restore(inv):
-    from .article_restore_preview import preview
-    from management_portal.hatg.store import ExecutionStore
-    return preview(arguments=dict(inv.arguments), actor=inv.caller, service=_service(),
-                   receipt_store=ExecutionStore(_execution_database(), create=False))
-
-
-def restore_article(inv):
-    from .article_restore_commit import restore
-    from management_portal.hatg.store import ExecutionStore
-    return restore(arguments=dict(inv.arguments), actor=inv.caller, service=_service(),
-                   receipt_store=ExecutionStore(_execution_database(), create=False),
-                   operation_id=inv.idempotency_key or inv.instruction_id)
-
-
 HANDLERS = {
-    'RestoreArticle': restore_article,
-    'CheckArticleRestore': preview_article_restore,
     'CorrectResourceLifecycleAssociation': correct_resource_lifecycle_association,
     "CreateWorkspace": lambda inv: directory_isa.create_workspace(inv, _service()),
     "RegisterWorkspace": lambda inv: directory_isa.create_workspace(inv, _service()),
@@ -1149,8 +1136,6 @@ def binding() -> OwnerBinding:
 
 
 def _authorization_arguments(declaration, arguments, context):
-    if declaration.name in {'CheckArticleRestore', 'RestoreArticle'}:
-        return {**arguments, 'source_address': _service().parse_address(arguments.get('source_address')).root_id}
     if declaration.name in {"ReadResource", "ResolveResource"}:
         from .upload_files import file_reference
 

@@ -38,6 +38,7 @@ links:
   - decision_898b8911a2ff
   - thinking_ca8f397a47de
 ---
+
 # HATG ISA：公共讨论指令
 
 公共讨论指令处理多位参与者共同可见的讨论：Notice Board 上的帖子与回复，以及用户之间的聊天室（Chatroom）。个人动态（Pulse）的读取和公开发布属于 Pulse 类（decision_cc96fce57ab6）。人和 Resident 都可以发帖、回复、标记已读；聊天室只由用户发言，Resident 被 @ 后读取并回复。所有指令共同遵守的调用格式、执行流程和错误语义见 decision_898b8911a2ff。
@@ -64,8 +65,7 @@ links:
 | `DeletePost` | 是 | 删除帖子及其回复 | 对 `post_id` 有 @admin |
 | `CreateReply` | 是 | 回复一篇帖子 | 对 `post_id` 有 @viewer |
 | `DeleteReply` | 是 | 删除一条回复 | 免检 |
-| `SetPostPinned` | 是 | 设置或取消置顶 | 对“共享”有 @admin |
-| `SetPostFeatured` | 是 | 设置或取消精华 | 对“共享”有 @admin |
+| `UpdatePostMarks` | 是 | 设置或取消帖子的置顶、精华标记 | 对“共享”有 @admin |
 | `UpdatePostReadVersion` | 是 | 把帖子标为已读，或重新标为未读 | 对 `post_id` 有 @viewer |
 | `ListChatrooms` | 否 | 列出一位 User 所在的聊天室 | 对 `user_id` 有 @admin |
 | `GetChatroom` | 否 | 读取一个聊天室的名称、成员和可执行的操作 | 对 `chatroom_id` 有 @viewer |
@@ -136,18 +136,11 @@ links:
 - 参数：`post_id`、`reply_id`。
 - 结果：删除后的帖子。删除不改变通知版本。
 
-### `SetPostPinned`
+### `UpdatePostMarks`
 
-**设置或取消帖子的置顶；默认模板要求管理员。**
+**设置或取消帖子的置顶、精华标记；默认模板要求管理员。**
 
-- 参数：`post_id`、`pinned`。
-- 结果：更新后的帖子。
-
-### `SetPostFeatured`
-
-**设置或取消帖子的精华标记；默认模板要求管理员。**
-
-- 参数：`post_id`、`featured`。
+- 参数：`post_id`，以及 `pinned`、`featured`；两个标记至少给出一个，只改变给出的标记。
 - 结果：更新后的帖子。置顶和精华彼此独立。
 
 ### `UpdatePostReadVersion`
@@ -275,8 +268,7 @@ links:
 | `DeletePost` | `post_id` |
 | `CreateReply` | `post_id`、`content` |
 | `DeleteReply` | `post_id`、`reply_id` |
-| `SetPostPinned` | `post_id`、`pinned` |
-| `SetPostFeatured` | `post_id`、`featured` |
+| `UpdatePostMarks` | `post_id`、`pinned`、`featured` |
 | `UpdatePostReadVersion` | `post_id`、`notification_revision`、`unread` |
 | `ListChatrooms` | `user_id` |
 | `GetChatroom` | `chatroom_id` |

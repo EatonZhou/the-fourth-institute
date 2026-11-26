@@ -701,8 +701,14 @@ def rewrite_call_source(
     calls: tuple[Call, ...],
     names: Mapping[str, str],
     prompt: Callable[[str], str],
+    *,
+    arguments: Callable[[Call, Argument], str | None] | None = None,
 ) -> str:
-    """Edit parsed call heads and fixed delivery prompts at their source spans."""
+    """Edit parsed calls without rewriting comments, other literals or layout.
+
+    A definition migration may replace an argument using its parsed value.
+    Returning None leaves the original source spelling unchanged.
+    """
     replacements = []
     lexer = _Lexer(source)
 
@@ -714,6 +720,11 @@ def rewrite_call_source(
     for call in calls:
         if call.instruction in names:
             replace_word(call.offset, names[call.instruction])
+        if arguments is not None:
+            for argument in call.arguments:
+                replacement = arguments(call, argument)
+                if replacement is not None:
+                    replace_word(argument.offset, replacement)
         if call.instruction == "DeliverMessage":
             for argument in call.arguments:
                 if argument.name == "message" and isinstance(argument.value, Word):
@@ -725,6 +736,28 @@ def rewrite_call_source(
     for start, end, value in sorted(replacements, reverse=True):
         source = source[:start] + value + source[end:]
     return source
+
+
+def object_argument(name: str, field: str, value: Word | JsonValue | Call) -> str:
+    """Wrap a parsed value in a JSON object while retaining its value type.
+
+    JSON references preserve types, but cannot evaluate concatenations,
+    slices or nested calls. Those require an explicit intermediate variable
+    in the owning script, rather than a guessed change in execution order.
+    """
+    if isinstance(value, JsonValue):
+        encoded = "".join(
+            part if isinstance(part, str) else "${" + ".".join(part.path) + "}"
+            for part in value.segments
+        )
+    elif isinstance(value, Word) and value.text is not None:
+        encoded = json.dumps(value.text, ensure_ascii=False)
+    elif (isinstance(value, Word) and len(value.parts) == 1
+          and isinstance(value.parts[0], Ref) and value.parts[0].span is None):
+        encoded = "${" + ".".join(value.parts[0].path) + "}"
+    else:
+        raise ValueError("Assign this argument's value to an intermediate variable before migration")
+    return name + ":={" + json.dumps(field) + ":" + encoded + "}"
 
 
 # -- values ---------------------------------------------------------------------------

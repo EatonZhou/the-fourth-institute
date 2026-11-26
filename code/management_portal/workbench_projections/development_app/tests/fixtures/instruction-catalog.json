@@ -5,7 +5,8 @@
     "catalog_ref": "repo_711b6ab6d5c8/commit/f25572ad4949a008259d0d5fc5b02f942d0bdfea/file/management_portal/hatg/catalog/__init__.py",
     "observed_at": "2026-10-18",
     "fixture_adjustments": [
-      "Removed retired upload deletion instruction; browser uses its file endpoint."
+      "Removed retired upload deletion instruction; browser uses its file endpoint.",
+      "Applied the three ISA reduction Plans to this historical teaching catalogue."
     ]
   },
   "catalog": {
@@ -1621,22 +1622,13 @@
         "streaming": false
       },
       {
-        "instruction": "SetPostPinned",
+        "instruction": "UpdatePostMarks",
         "category": "discussion",
         "category_title": "公共讨论",
+        "discovery_group": "application",
         "owner": "web",
         "owner_title": "Portal Web",
-        "description": "设置或取消帖子的置顶。",
-        "mutates": true,
-        "streaming": false
-      },
-      {
-        "instruction": "SetPostFeatured",
-        "category": "discussion",
-        "category_title": "公共讨论",
-        "owner": "web",
-        "owner_title": "Portal Web",
-        "description": "设置或取消帖子的精华标记。",
+        "description": "设置或取消帖子的置顶和精华标记；未提供的标记不变。",
         "mutates": true,
         "streaming": false
       },
@@ -1837,26 +1829,6 @@
         "owner": "resource",
         "owner_title": "ResourceService",
         "description": "修改 Project 的 ID，并把项目目录移到 projects:<新 ID>；Portal 中的引用一起改：登记、权限、Lineage、Resident、资源索引，目录内文件、git worktree、符号链接与执行环境里的旧路径。期间项目中的 Resident 暂停接单，有 Resident 正在执行、或目录被 Portal 之外的挂载与服务使用时拒绝。历史消息与执行记录保留原文。",
-        "mutates": true,
-        "streaming": false
-      },
-      {
-        "instruction": "GetKnowledgeTags",
-        "category": "organization",
-        "category_title": "组织与分工",
-        "owner": "lineage",
-        "owner_title": "SocietyService",
-        "description": "读取全部 Project 共用的知识标签：每个标签的 ID、knowledge_base 子目录、说明与可选参数。",
-        "mutates": false,
-        "streaming": false
-      },
-      {
-        "instruction": "UpdateKnowledgeTags",
-        "category": "organization",
-        "category_title": "组织与分工",
-        "owner": "lineage",
-        "owner_title": "SocietyService",
-        "description": "用一份完整列表替换全部 Project 共用的知识标签，用于新增、改名和删除标签。新建的 Project 按其中的 folder 建立 knowledge_base 子目录；已有项目的目录由调用者迁移。",
         "mutates": true,
         "streaming": false
       },
@@ -2121,16 +2093,6 @@
         "streaming": false
       },
       {
-        "instruction": "PublishRelease",
-        "category": "environment",
-        "category_title": "运行环境",
-        "owner": "web",
-        "owner_title": "Portal Web",
-        "description": "把调用者指定的 Dev 代码同步到 Release，并返回发布提交；只能在 Dev 实例执行。",
-        "mutates": true,
-        "streaming": false
-      },
-      {
         "instruction": "GetGpuStatus",
         "category": "environment",
         "category_title": "运行环境",
@@ -2221,12 +2183,68 @@
         "streaming": false
       },
       {
+        "instruction": "GetProviderAccountConfiguration",
+        "category": "environment",
+        "category_title": "运行环境",
+        "discovery_group": "operations",
+        "owner": "execution",
+        "owner_title": "ExecutionService",
+        "description": "读取 Provider 声明的原生账号配置摘要与版本；跳过密钥和完整配置。",
+        "mutates": false,
+        "streaming": false
+      },
+      {
+        "instruction": "UpdateProviderAccountConfiguration",
+        "category": "environment",
+        "category_title": "运行环境",
+        "discovery_group": "operations",
+        "owner": "execution",
+        "owner_title": "ExecutionService",
+        "description": "按调用信封 expected_version 条件更新 Provider 声明的原生账号配置。版本取配置读取结果。",
+        "mutates": true,
+        "streaming": false
+      },
+      {
+        "instruction": "CreateProviderAccountLogin",
+        "category": "environment",
+        "category_title": "运行环境",
+        "discovery_group": "operations",
+        "owner": "execution",
+        "owner_title": "ExecutionService",
+        "description": "打开订阅账号登录会话。",
+        "mutates": true,
+        "streaming": false
+      },
+      {
+        "instruction": "UpdateProviderAccountLogin",
+        "category": "environment",
+        "category_title": "运行环境",
+        "discovery_group": "operations",
+        "owner": "execution",
+        "owner_title": "ExecutionService",
+        "description": "向已有登录会话提交所需的一次性授权材料。",
+        "mutates": true,
+        "streaming": false
+      },
+      {
+        "instruction": "GetProviderAccountLogin",
+        "category": "environment",
+        "category_title": "运行环境",
+        "discovery_group": "operations",
+        "owner": "execution",
+        "owner_title": "ExecutionService",
+        "description": "读取登录会话和账号认证状态。",
+        "mutates": false,
+        "streaming": false
+      },
+      {
         "instruction": "GetProviderUsageEvents",
         "category": "environment",
         "category_title": "运行环境",
+        "discovery_group": "operations",
         "owner": "execution",
         "owner_title": "ExecutionService",
-        "description": "分页读取 Codex 账号的脱敏用量与额度观察；不返回消息正文或凭证。",
+        "description": "分页读取声明了用量事件能力的账号的脱敏记录；不返回消息正文或凭证。",
         "mutates": false,
         "streaming": false
       },
@@ -10915,13 +10933,14 @@
         ],
         "target": "post_id"
       },
-      "SetPostPinned": {
-        "instruction": "SetPostPinned",
+      "UpdatePostMarks": {
+        "instruction": "UpdatePostMarks",
         "category": "discussion",
         "category_title": "公共讨论",
+        "discovery_group": "application",
         "owner": "web",
         "owner_title": "Portal Web",
-        "description": "设置或取消帖子的置顶。",
+        "description": "设置或取消帖子的置顶和精华标记；未提供的标记不变。",
         "mutates": true,
         "streaming": false,
         "parameters": [
@@ -10929,46 +10948,19 @@
             "name": "post_id",
             "type": "string",
             "required": true,
-            "description": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
+            "description": "要更新标记的帖子"
           },
           {
             "name": "pinned",
             "type": "boolean",
-            "required": true,
-            "description": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
-          }
-        ],
-        "result": [
-          {
-            "name": "post",
-            "type": "object",
-            "required": true,
-            "description": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
-          }
-        ],
-        "target": "post_id"
-      },
-      "SetPostFeatured": {
-        "instruction": "SetPostFeatured",
-        "category": "discussion",
-        "category_title": "公共讨论",
-        "owner": "web",
-        "owner_title": "Portal Web",
-        "description": "设置或取消帖子的精华标记。",
-        "mutates": true,
-        "streaming": false,
-        "parameters": [
-          {
-            "name": "post_id",
-            "type": "string",
-            "required": true,
-            "description": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
+            "required": false,
+            "description": "true 置顶，false 取消置顶"
           },
           {
             "name": "featured",
             "type": "boolean",
-            "required": true,
-            "description": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
+            "required": false,
+            "description": "true 设为精华，false 取消精华"
           }
         ],
         "result": [
@@ -10976,10 +10968,14 @@
             "name": "post",
             "type": "object",
             "required": true,
-            "description": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
+            "description": "帖子全文：post_id、标题、分类、作者、正文、置顶与精华状态、notification_revision 与全部回复"
           }
         ],
-        "target": "post_id"
+        "target": "post_id",
+        "any_of": [
+          "pinned",
+          "featured"
+        ]
       },
       "UpdatePostReadVersion": {
         "instruction": "UpdatePostReadVersion",
@@ -11935,128 +11931,6 @@
           }
         ],
         "target": "project_id"
-      },
-      "GetKnowledgeTags": {
-        "instruction": "GetKnowledgeTags",
-        "category": "organization",
-        "category_title": "组织与分工",
-        "owner": "lineage",
-        "owner_title": "SocietyService",
-        "description": "读取全部 Project 共用的知识标签：每个标签的 ID、knowledge_base 子目录、说明与可选参数。",
-        "mutates": false,
-        "streaming": false,
-        "parameters": [],
-        "result": [
-          {
-            "name": "tags",
-            "type": "array",
-            "required": true,
-            "description": "id、folder、description 与可选的 param",
-            "items": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string"
-                },
-                "folder": {
-                  "type": "string"
-                },
-                "description": {
-                  "type": "string"
-                },
-                "param": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "id",
-                "description"
-              ]
-            }
-          },
-          {
-            "name": "version",
-            "type": "string",
-            "required": true,
-            "description": "标签列表的版本，用作 UpdateKnowledgeTags 的 expected_version"
-          }
-        ],
-        "target": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
-      },
-      "UpdateKnowledgeTags": {
-        "instruction": "UpdateKnowledgeTags",
-        "category": "organization",
-        "category_title": "组织与分工",
-        "owner": "lineage",
-        "owner_title": "SocietyService",
-        "description": "用一份完整列表替换全部 Project 共用的知识标签，用于新增、改名和删除标签。新建的 Project 按其中的 folder 建立 knowledge_base 子目录；已有项目的目录由调用者迁移。",
-        "mutates": true,
-        "streaming": false,
-        "parameters": [
-          {
-            "name": "tags",
-            "type": "array",
-            "required": true,
-            "description": "完整的标签列表；folder 缺省与 id 相同",
-            "items": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string"
-                },
-                "folder": {
-                  "type": "string"
-                },
-                "description": {
-                  "type": "string"
-                },
-                "param": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "id",
-                "description"
-              ]
-            }
-          }
-        ],
-        "result": [
-          {
-            "name": "tags",
-            "type": "array",
-            "required": true,
-            "description": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限",
-            "items": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string"
-                },
-                "folder": {
-                  "type": "string"
-                },
-                "description": {
-                  "type": "string"
-                },
-                "param": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "id",
-                "description"
-              ]
-            }
-          },
-          {
-            "name": "version",
-            "type": "string",
-            "required": true,
-            "description": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
-          }
-        ],
-        "target": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
       },
       "MoveResident": {
         "instruction": "MoveResident",
@@ -13589,74 +13463,6 @@
         ],
         "target": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
       },
-      "PublishRelease": {
-        "instruction": "PublishRelease",
-        "category": "environment",
-        "category_title": "运行环境",
-        "owner": "web",
-        "owner_title": "Portal Web",
-        "description": "把调用者指定的 Dev 代码同步到 Release，并返回发布提交；只能在 Dev 实例执行。",
-        "mutates": true,
-        "streaming": false,
-        "parameters": [
-          {
-            "name": "message",
-            "type": "string",
-            "required": true,
-            "description": "本次发布的提交说明"
-          },
-          {
-            "name": "paths",
-            "type": "array",
-            "required": false,
-            "description": "要发布的文件或目录",
-            "items": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "all",
-            "type": "boolean",
-            "required": false,
-            "description": "为 true 时发布全部受 Git 管理的源码"
-          }
-        ],
-        "result": [
-          {
-            "name": "commit",
-            "type": "string",
-            "required": true,
-            "description": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
-          },
-          {
-            "name": "paths",
-            "type": "array",
-            "required": true,
-            "description": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
-          },
-          {
-            "name": "health",
-            "type": "object",
-            "required": true,
-            "description": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
-          },
-          {
-            "name": "push",
-            "type": "object",
-            "required": false,
-            "description": "把发布提交推送到各 Git 远端的结果"
-          }
-        ],
-        "target": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限",
-        "one_of": [
-          [
-            "paths"
-          ],
-          [
-            "all"
-          ]
-        ]
-      },
       "GetGpuStatus": {
         "instruction": "GetGpuStatus",
         "category": "environment",
@@ -14074,9 +13880,10 @@
         "instruction": "GetProviderUsageEvents",
         "category": "environment",
         "category_title": "运行环境",
+        "discovery_group": "operations",
         "owner": "execution",
         "owner_title": "ExecutionService",
-        "description": "分页读取 Codex 账号的脱敏用量与额度观察；不返回消息正文或凭证。",
+        "description": "分页读取声明了用量事件能力的账号的脱敏记录；不返回消息正文或凭证。",
         "mutates": false,
         "streaming": false,
         "parameters": [
@@ -14084,7 +13891,7 @@
             "name": "account_id",
             "type": "string",
             "required": true,
-            "description": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
+            "description": "执行账号 ID"
           },
           {
             "name": "since",
@@ -14102,13 +13909,13 @@
             "name": "cursor",
             "type": "string",
             "required": false,
-            "description": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
+            "description": "上一页结果的 next_cursor，原样交回；不填时读第一页"
           },
           {
             "name": "limit",
             "type": "integer",
             "required": false,
-            "description": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限",
+            "description": "每页最多的记录数，默认 1000",
             "minimum": 1,
             "maximum": 1000
           }
@@ -14118,22 +13925,22 @@
             "name": "account_id",
             "type": "string",
             "required": true,
-            "description": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
+            "description": "被读取的执行账号"
           },
           {
             "name": "records",
             "type": "array",
             "required": true,
-            "description": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
+            "description": "Provider 声明的脱敏记录投影"
           },
           {
             "name": "next_cursor",
             "type": "string",
             "required": true,
-            "description": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
+            "description": "还有后续记录时交回 cursor 读下一页；读完时为空"
           }
         ],
-        "target": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
+        "target": ""
       },
       "UpdateProviderAccount": {
         "instruction": "UpdateProviderAccount",
@@ -14435,6 +14242,194 @@
             "idempotency_key"
           ]
         ]
+      },
+      "GetProviderAccountConfiguration": {
+        "instruction": "GetProviderAccountConfiguration",
+        "category": "environment",
+        "category_title": "运行环境",
+        "discovery_group": "operations",
+        "owner": "execution",
+        "owner_title": "ExecutionService",
+        "description": "读取 Provider 声明的原生账号配置摘要与版本；跳过密钥和完整配置。",
+        "mutates": false,
+        "streaming": false,
+        "parameters": [
+          {
+            "name": "account_id",
+            "type": "string",
+            "required": true,
+            "description": "已登记且支持原生配置的账号"
+          },
+          {
+            "name": "include_provider_references",
+            "type": "boolean",
+            "required": false,
+            "description": "在能力支持时检查相关原生持久会话引用。默认不查"
+          }
+        ],
+        "result": [
+          {
+            "name": "configuration",
+            "type": "object",
+            "required": true,
+            "description": "账号标识、配置版本与 Provider 声明的可公开字段"
+          }
+        ],
+        "target": ""
+      },
+      "UpdateProviderAccountConfiguration": {
+        "instruction": "UpdateProviderAccountConfiguration",
+        "category": "environment",
+        "category_title": "运行环境",
+        "discovery_group": "operations",
+        "owner": "execution",
+        "owner_title": "ExecutionService",
+        "description": "按调用信封 expected_version 条件更新 Provider 声明的原生账号配置。版本取配置读取结果。",
+        "mutates": true,
+        "streaming": false,
+        "parameters": [
+          {
+            "name": "account_id",
+            "type": "string",
+            "required": true,
+            "description": "已登记且支持原生配置的账号"
+          },
+          {
+            "name": "changes",
+            "type": "object",
+            "required": true,
+            "description": "仅包含 Provider 声明的可写字段，按账号原生配置 schema 进行验证"
+          }
+        ],
+        "result": [
+          {
+            "name": "configuration",
+            "type": "object",
+            "required": true,
+            "description": "写入后回读的原生配置摘要与版本"
+          },
+          {
+            "name": "changed",
+            "type": "boolean",
+            "required": true,
+            "description": "是否执行了原生写入"
+          }
+        ],
+        "target": "account_id"
+      },
+      "CreateProviderAccountLogin": {
+        "instruction": "CreateProviderAccountLogin",
+        "category": "environment",
+        "category_title": "运行环境",
+        "discovery_group": "operations",
+        "owner": "execution",
+        "owner_title": "ExecutionService",
+        "description": "打开订阅账号登录会话。",
+        "mutates": true,
+        "streaming": false,
+        "parameters": [
+          {
+            "name": "account_id",
+            "type": "string",
+            "required": true,
+            "description": "执行账号 ID"
+          },
+          {
+            "name": "options",
+            "type": "object",
+            "required": false,
+            "description": "此次登录的选项，按 GetProviderAccountLogin 的 login_options.schema 验证"
+          }
+        ],
+        "result": [
+          {
+            "name": "session",
+            "type": "object",
+            "required": true,
+            "description": "登录会话：account_id、state（pending、awaiting_user、succeeded、failed、expired）、verification_code、verification_url、error、expires_at、requires_code_input、input_kind、input_hint"
+          },
+          {
+            "name": "login_options",
+            "type": "object",
+            "required": false,
+            "description": "Provider 声明的封闭 JSON Schema（schema）及当前选项（values）"
+          }
+        ],
+        "target": "account_id"
+      },
+      "UpdateProviderAccountLogin": {
+        "instruction": "UpdateProviderAccountLogin",
+        "category": "environment",
+        "category_title": "运行环境",
+        "discovery_group": "operations",
+        "owner": "execution",
+        "owner_title": "ExecutionService",
+        "description": "向已有登录会话提交所需的一次性授权材料。",
+        "mutates": true,
+        "streaming": false,
+        "parameters": [
+          {
+            "name": "account_id",
+            "type": "string",
+            "required": true,
+            "description": "执行账号 ID"
+          },
+          {
+            "name": "authorization_code",
+            "type": "string",
+            "required": true,
+            "description": "格式由 Provider 声明，可为授权码或完整回调地址。只送到当前登录进程，不保存或回显"
+          }
+        ],
+        "result": [
+          {
+            "name": "session",
+            "type": "object",
+            "required": true,
+            "description": "提交授权材料后的登录会话：account_id、state（pending、awaiting_user、succeeded、failed、expired）、verification_code、verification_url、error、expires_at、requires_code_input、input_kind、input_hint"
+          }
+        ],
+        "target": "account_id"
+      },
+      "GetProviderAccountLogin": {
+        "instruction": "GetProviderAccountLogin",
+        "category": "environment",
+        "category_title": "运行环境",
+        "discovery_group": "operations",
+        "owner": "execution",
+        "owner_title": "ExecutionService",
+        "description": "读取登录会话和账号认证状态。",
+        "mutates": false,
+        "streaming": false,
+        "parameters": [
+          {
+            "name": "account_id",
+            "type": "string",
+            "required": true,
+            "description": "执行账号 ID"
+          }
+        ],
+        "result": [
+          {
+            "name": "session",
+            "type": "any",
+            "required": true,
+            "description": "登录会话；尚未开始时为 null"
+          },
+          {
+            "name": "login_state",
+            "type": "string",
+            "required": true,
+            "description": "账号认证状态：logged_in、login_expired 或 logged_out"
+          },
+          {
+            "name": "login_options",
+            "type": "object",
+            "required": false,
+            "description": "Provider 声明的封闭 JSON Schema（schema）及当前选项（values）"
+          }
+        ],
+        "target": ""
       }
     }
   }

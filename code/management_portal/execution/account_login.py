@@ -24,8 +24,10 @@ from management_common.file_lock import try_lock_descriptor
 from management_common.local_ipc import LocalListener, connect_local
 from management_common.process_runtime import run_process, spawn_process, terminate_process_tree
 from management_common.portal_database import portal_database
-from management_portal.hatg.contracts import InstructionError, invalid, not_found
+from management_portal.hatg.contracts import InstructionError, invalid
 from .account_hosting import account_home, ensure_account_home, start_codex_instance, validate_account_id
+from .provider_account_operations import account_operation, unsupported, validate_fields
+from .provider_catalog import AGENT_PROVIDERS
 
 
 ACTIVE = ("pending", "awaiting_user")
@@ -360,7 +362,9 @@ class LoginManager:
     def _run(self, registration, session, command, env, lock, socket_path):
         process = listener = None
         selector = selectors.DefaultSelector()
-        parser = LoginOutputParser(registration["provider"])
+        provider = registration["provider"]
+        authorization_kind = AGENT_PROVIDERS[provider].account_operations["login"].authorization_kind
+        parser = LoginOutputParser(provider)
         observed = ("", "")
         chunks = queue.Queue(maxsize=64)
         output_done = threading.Event()
@@ -408,7 +412,7 @@ class LoginManager:
                                     break
                                 submitted += chunk
                             code = submitted.rstrip(b"\n")
-                            if (registration["provider"] in {"claude", "antigravity"} and current["state"] == "awaiting_user"
+                            if (authorization_kind and current["state"] == "awaiting_user"
                                     and 0 < len(code) <= 4096 and b"\n" not in code and b"\r" not in code
                                     and process.poll() is None):
                                 process.stdin.write(code + b"\n")
@@ -464,7 +468,8 @@ class LoginManager:
 
     def submit_code(self, registration, code):
         session = self.store.get(registration["account_id"])
-        if registration["provider"] not in {"claude", "antigravity"} or not session or session["state"] != "awaiting_user":
+        authorization_kind = AGENT_PROVIDERS[registration["provider"]].account_operations["login"].authorization_kind
+        if not authorization_kind or not session or session["state"] != "awaiting_user":
             raise InstructionError("instruction.conflict", "该账号当前没有等待授权码的登录会话",
                                    details={"reason": "account.login_not_awaiting"})
         if not isinstance(code, str) or not code.strip() or len(code.encode()) > 4096 or any(c in code for c in "\r\n\0"):
@@ -508,62 +513,58 @@ def delete_login_data(account_id):
         socket_path.unlink(missing_ok=True)
 
 
-def _registration(inv):
-    from .account_registrations import registration as read_registration
-    registration = read_registration(inv.argument("account_id"))
-    if not registration:
-        raise not_found("执行账号不存在")
-    if registration["kind"] != "subscription_login" or registration["provider"] not in {"codex", "claude", "kimi", "antigravity"}:
-        raise invalid("该账号不支持订阅登录")
-    return registration
+def native_login(registration, action, *, options=None, authorization_code=None):
+    """Adapt process-backed subscription login to the account operation."""
+    if action == "open":
+        try:
+            return {"session": LoginManager().start(registration)}
+        except (ValueError, OSError):
+            raise InstructionError("instruction.failed", "无法启动登录，请检查账号目录、Provider 安装和出口配置",
+                                   details={"reason": "account.login_unavailable"}) from None
+    if action == "submit":
+        return {"session": LoginManager().submit_code(registration, authorization_code)}
+    account_id = registration["account_id"]
+    if action == "cancel":
+        return {"session": LoginManager().cancel(account_id)}
+    return {"session": login_store().get(account_id), "login_state": get_login_state(registration)}
 
 
-def _session_result(registration, session):
-    if not session:
-        return None
-    return {**session, "requires_code_input": registration["provider"] in {"claude", "antigravity"},
-            "input_kind": "callback_url" if registration["provider"] == "antigravity" else "authorization_code",
-            "input_hint": ("使用 Google 登录后，若浏览器无法打开 localhost，请粘贴地址栏中的完整回调 URL。"
-                           if registration["provider"] == "antigravity" else "")}
+def _provider_login(inv, action):
+    registration, operation = account_operation(inv.argument("account_id"), "login")
+    arguments = {}
+    if action == "open":
+        options = inv.argument("options")
+        arguments["options"] = validate_fields({} if options is None else options, operation.schema, argument="options")
+    elif action == "submit":
+        if not operation.authorization_kind:
+            raise unsupported("login_authorization_material")
+        arguments["authorization_code"] = inv.argument("authorization_code")
+    result = dict(operation(registration, action, **arguments))
+    if result.get("session"):
+        result["session"] = {
+            **result["session"], "requires_code_input": bool(operation.authorization_kind),
+            "input_kind": operation.authorization_kind, "input_hint": operation.authorization_hint,
+        }
+    option_values = result.pop("option_values", {})
+    if operation.schema is not None and action in {"open", "get"}:
+        result["login_options"] = {"schema": operation.schema, "values": option_values}
+    return result
 
 
 def open_provider_account_login(inv):
-    registration = _registration(inv)
-    region = inv.argument("region")
-    if registration["provider"] == "kimi":
-        from .kimi_account_login import login
-        return login(registration, "open", region=region)
-    if region is not None:
-        raise invalid("仅 Kimi 订阅登录支持选择区域")
-    try:
-        session = LoginManager().start(registration)
-    except (ValueError, OSError):
-        raise InstructionError("instruction.failed", "无法启动登录，请检查账号目录、Provider 安装和出口配置",
-                               details={"reason": "account.login_unavailable"}) from None
-    return {"session": _session_result(registration, session)}
+    return _provider_login(inv, "open")
 
 
 def update_provider_account_login(inv):
-    registration = _registration(inv)
-    session = LoginManager().submit_code(registration, inv.argument("authorization_code"))
-    return {"session": _session_result(registration, session)}
+    return _provider_login(inv, "submit")
 
 
 def get_provider_account_login(inv):
-    registration = _registration(inv)
-    if registration["provider"] == "kimi":
-        from .kimi_account_login import login
-        return login(registration, "get")
-    session = login_store().get(registration["account_id"])
-    return {"session": _session_result(registration, session), "login_state": get_login_state(registration)}
+    return _provider_login(inv, "get")
 
 
 def cancel_provider_account_login(inv):
-    registration = _registration(inv)
-    if registration["provider"] == "kimi":
-        from .kimi_account_login import login
-        return login(registration, "cancel")
-    return {"session": _session_result(registration, LoginManager().cancel(registration["account_id"]))}
+    return _provider_login(inv, "cancel")
 
 
 HANDLERS = {

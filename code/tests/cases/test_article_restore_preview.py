@@ -198,10 +198,10 @@ def test_source_partial_listing_and_wrong_pdf_remain_visible(world):
     assert {'source_version', 'primary_version', 'primary_not_pdf'} <= set(result['conflicts'])
 
 
-@pytest.mark.parametrize('slot,resource', [('article_id', ARTICLE), ('resident_id', RESIDENT),
-                                         ('source_address', SOURCE), ('project_id', 'Project')])
-def test_each_permission_denial_aborts_before_content_reads(world, slot, resource):
-    world.permissions.deny(ACTOR, resource, preview.ACTION + ':' + slot)
+@pytest.mark.parametrize('role,resource', [('@admin', ARTICLE), ('@admin', RESIDENT),
+                                         ('@viewer', SOURCE), ('@contributor', 'Project')])
+def test_each_permission_denial_aborts_before_content_reads(world, role, resource):
+    world.permissions.deny(ACTOR, resource, role)
     with pytest.raises(PermissionError):
         run(world)
     assert not world.calls
@@ -252,7 +252,7 @@ def test_target_symlink_occupancy_and_late_permission_revocation(world):
     original = world.service.read_content
     def revoke(*a, **kw):
         result = original(*a, **kw)
-        world.permissions.deny(ACTOR, ARTICLE, preview.ACTION + ':article_id')
+        world.permissions.deny(ACTOR, ARTICLE, '@admin')
         return result
     world.service.read_content = revoke
     with pytest.raises(PermissionError): run(world)
@@ -336,30 +336,9 @@ def test_owner_snapshot_exact_ids_revision_and_competition(world):
     assert observation['status'] == 'indeterminate' and observation['truncated'] and not observation['clear']
 
 
-def test_formal_catalog_classification_and_handler_are_read_only(world, monkeypatch):
+def test_recovery_is_absent_from_isa_catalog_and_handlers():
     from management_portal.resources import isa
     from management_portal.hatg.catalog import instruction_catalog
-    from management_portal.permission_system.scheme.repository import builtin_documents
-    from management_portal.permission_system.scheme.compiler import compile_scheme
-    from management_portal.hatg.kernel import InstructionKernel
-    from management_portal.hatg.contracts import InstructionCall, InstructionContext
-    from management_portal.hatg.store import ExecutionStore
-    declaration = instruction_catalog()[preview.ACTION]
-    assert not declaration.mutates and 'apply' not in declaration.parameter_map
-    for document in builtin_documents().values():
-        for name, level in [('article_id', '@admin'), ('resident_id', '@admin'), ('source_address', '@viewer'), ('project_id', '@contributor')]:
-            assert document['instructions'][preview.ACTION + ':' + name] == {'a': level}
-        assert compile_scheme(document).unmapped() == []
-    monkeypatch.setattr(isa, '_service', lambda: world.service)
-    kernel = InstructionKernel(isa.binding(), store=ExecutionStore(isa._execution_database()))
-    result = kernel.execute(InstructionCall.from_payload({'instruction': preview.ACTION, 'arguments': world.args}),
-                            InstructionContext(caller=ACTOR, entry='web'))
-    assert result.status == 'committed', result.error
-    assert not result.result['can_apply']
-    bad = kernel.execute(InstructionCall.from_payload({'instruction': preview.ACTION, 'arguments': world.args | {'apply': True}}),
-                         InstructionContext(caller=ACTOR, entry='web'))
-    assert bad.status == 'failed'
-    world.permissions.deny(ACTOR, ARTICLE, preview.ACTION + ':article_id')
-    denied = kernel.execute(InstructionCall.from_payload({'instruction': preview.ACTION, 'arguments': world.args}),
-                            InstructionContext(caller=ACTOR, entry='web'))
-    assert denied.status == 'failed' and denied.error['code'] == 'instruction.not_found'
+    for name in ('CheckArticleRestore', 'RestoreArticle'):
+        assert name not in instruction_catalog()
+        assert name not in isa.HANDLERS

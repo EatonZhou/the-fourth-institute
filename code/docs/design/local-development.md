@@ -12,6 +12,8 @@ python3 code/scripts/tfi_dev.py publish --message "修复说明" --path code/相
 指定路径当前内容、已有暂存内容与祖先提交进入 Release；Dev 可以有并行修改。
 需要完整同步时使用 `--all`。`--check` 是可选的相关验证命令，不重复已有有效检查。
 
+通过 ISA 发布时，使用 `RunScript` 调用本实例固定 Portal 运维 Lineage 的系统脚本 `publish_release`，调用者须对该 Lineage 有 `@admin`。脚本 `arguments` 使用 `message`，并在相对代码根目录的 `paths` 与 `all=true` 中二选一。用 `GetScriptRun` 观察 `commit`、`paths`、`push` 和 `health.receipt`，以 receipt 的最终结果确认激活。
+
 已有实例可增加 Dev 部署（第二个 Web 入口），共用其数据库、账号、队列和共享服务。先用 `tfi_dev.py init` 在主检出旁建立 Dev worktree，再把两个 worktree 登记为实例的部署：
 
 ```bash
@@ -26,7 +28,13 @@ python3 code/scripts/tfi_development_runtime.py activate --root /实际实例目
 重启数据库和 Provider 账号服务。完整发布范围无需重启时使用 `--no-activate`，随后核对 Release 的实际 HTTP 资源。
 静态 URL 的 `portal_v` 由公共 HTTP owner 按文件内容计算 SHA-256；静态发布不依赖 Web 进程换代来更新缓存身份。
 
-首次激活或发布包含 `code/management_portal/hatg/instruction_renames.py` 时，使用停稳后切换。按反向顺序停止本次选中的旧服务，包括 Web、Dev Web、公共网关及已启用的功能服务。全部停止成功后才按启动顺序重新启动；Worker 仍通过 HUP 平滑换代。Society 先迁移现行可执行定义，再恢复工作流和启动 Effect、Family 后台处理。受影响 Effect 有未完成工作或待投递时，迁移拒绝继续，历史运行日志和回执保留。任何停止、迁移或健康检查失败均不能报告激活完成。
+首次激活，或发布变更以下任一文件时，使用停稳后切换：
+
+- `code/management_portal/hatg/instruction_renames.py`
+- `code/management_portal/permission_system/scheme/repository.py`
+- `code/management_portal/society_service/instruction_name_migration.py`
+
+该路径选齐受管共享服务、Web、Dev Web、公共网关和已启用或仍在运行的功能服务。除 Worker 外，按反向顺序停止所选服务，全部停止成功后才按启动顺序重新启动。Worker 仍通过 HUP 平滑换代；PostgreSQL、NATS 和 Provider 账号服务继续运行。Society 先迁移现行可执行定义，再恢复工作流和启动 Effect、Family 后台处理。受影响 Effect 有未完成工作或待投递时，迁移拒绝继续，历史运行日志和回执保留。任何停止、迁移或健康检查失败均不能报告激活完成。
 
 ## Resident 从哪里读取规则
 

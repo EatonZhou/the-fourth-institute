@@ -18,7 +18,7 @@ from management_portal.resource_index_knowledge import ProjectKnowledgeAdapter, 
 from management_portal.resource_index_refresh import AdapterLayer
 from management_portal.resource_index_registries import (
     ProjectRegistryAdapter, CollaborationRegistryAdapter, ResourceRegistryAdapter, DeviceRegistryAdapter,
-    SavedSearchAdapter, WorkbenchAdapter,
+    SavedSearchAdapter, WorkbenchAdapter, KnowledgeTagsRegistryAdapter,
 )
 from management_portal.resource_index_store import IndexStore
 
@@ -28,6 +28,7 @@ DEFAULT_ADAPTERS = (
     ProjectKnowledgeAdapter,
     SkillPackageAdapter,
     ProjectRegistryAdapter,
+    KnowledgeTagsRegistryAdapter,
     CollaborationRegistryAdapter,
     ResourceRegistryAdapter,
     DeviceRegistryAdapter,

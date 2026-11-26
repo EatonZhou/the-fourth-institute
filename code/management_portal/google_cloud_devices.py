@@ -58,8 +58,8 @@ def colab_ssh_command(device_id: str, *remote_command: str) -> list[str]:
 def change_colab_session(device_id: str, action: str, payload: dict, *, actor: str) -> dict:
     from management_portal import permission_system
 
-    if not permission_system.allows(actor, "RunResourceAction", {"resource_id": device_id, "action": action}):
-        raise PermissionError("Colab requires action permission on the target device")
+    if not permission_system.allows_roles(actor, [("@contributor", device_id)]):
+        raise PermissionError("Colab requires contributor permission on the target device")
     session = colab_session(device_id)
     if not session or action not in {"colab.start", "colab.stop"}:
         raise ValueError("Expected the configured Colab device and a session action")

@@ -66,6 +66,7 @@ version:
     agent: "resident_83d75ad3a6c7"
 metaness: 2
 ---
+
 # HATG ISA：指令格式、调用入口与执行规则
 
 TFI Portal 中的人和 Agent 通过同一组具名指令操作 AI 社会中的对象：读取资源、管理用户、在公共讨论中发帖、给 Resident 发消息、创建或 Fork Resident、修改 Lineage、运行协作流程、管理权限和重启 Portal。这组指令称为 HATG ISA（HATG Instruction Set Architecture，HATG 指令集架构）。HATG 是 Human–Agent Trajectory Graph 的缩写，指 Portal 组织人与 Agent 协作的对象模型；其中的核心对象是 Lineage，一个 Lineage 包含一组 Resident，以及它们之间的事件、动作和连接关系。
@@ -236,7 +237,7 @@ Lineage 运行中产生的指令（例如 Effect 生成的指令）属于哪一�
 
 1. **先用读写动词。** 读取一个对象、列出多个、按内容搜索、读取内容、订阅变化、创建、修改和删除，分别使用 `Get`、`List`、`Search`、`Read`、`Watch`、`Create`、`Update`、`Delete`。修改对象的一部分（例如表情回应、正文、已读位置）也用 `Update`，对象名写明修改的部分，例如 `UpdateChatroomReaction`、`UpdateChatroomReadPosition`。
 2. **再用控制动词。** 它们不属于某一类对象，在所有类别中含义相同：
-   - `Set`：设置对象的一个布尔或枚举状态，指令名为 `Set<对象><状态>`，必填参数给出目标状态。打开和关闭、设置和取消属于同一操作，由参数区分，例如 `SetPostPinned(pinned)`、`SetMailboxItemMuted(muted)`、`SetComponentPaused(paused)`、`SetIntakeOpen(open)`。
+   - `Set`：设置对象的一个布尔或枚举状态，指令名为 `Set<对象><状态>`，必填参数给出目标状态。打开和关闭、设置和取消属于同一操作，由参数区分，例如 `SetMailboxItemMuted(muted)`、`SetComponentPaused(paused)`、`SetIntakeOpen(open)`。
    - `Move`：改变对象的位置、顺序或归属，例如 `MoveResident`、`MoveMailboxItems`。
    - `Cancel`：停止或撤回进行中的工作。
    - `Run`：执行一次脚本、动作、交接或备份。
@@ -273,7 +274,7 @@ Lineage 运行中产生的指令（例如 Effect 生成的指令）属于哪一�
 
 | 动词 | 含义 | 例子 |
 | --- | --- | --- |
-| `Set` | 设置对象的一个布尔或枚举状态 | `SetPostPinned` |
+| `Set` | 设置对象的一个布尔或枚举状态 | `SetMailboxItemMuted` |
 | `Move` | 改变对象的位置、顺序或归属 | `MoveResident` |
 | `Cancel` | 停止或撤回进行中的工作 | `CancelInput`、`CancelSubagent` |
 | `Run` | 执行一次脚本、动作、交接或备份 | `RunScript` |
@@ -288,13 +289,13 @@ Lineage 运行中产生的指令（例如 Effect 生成的指令）属于哪一�
 | `Unbind` | 解除 `Bind` 建立的关联 | `UnbindWorkspace` |
 | `Register` | 把已存在的外部对象登记为资源 | `RegisterResource` |
 | `Unregister` | 取消登记，外部对象本身保留 | `UnregisterResource` |
-| `Publish` | 发布到更大的可见范围 | `PublishRelease`、`PublishTemplate` |
+| `Publish` | 发布到更大的可见范围 | `PublishTemplate` |
 | `Unpublish` | 撤下已公开的发布项，保留此前安装的副本 | `UnpublishTemplate` |
 | `Familize` | 把一组 Resident 组织成 Family | `Familize` |
 | `Unfamilize` | 解散 Family | `Unfamilize` |
 | `Functionalize` | 把一组组件封装为 Function Block | `Functionalize` |
 | `Unfunctionalize` | 展开 Function Block | `Unfunctionalize` |
-| `Install` | 从已发布快照或安装来源，在目标位置安装或更新可使用的副本 | `InstallStoreTemplate`、`InstallProviderRuntime` |
+| `Install` | 从已发布快照或安装来源，在目标位置安装或更新可使用的副本 | `InstallStoreTemplate` |
 
 **消息与队列**
 
@@ -419,10 +420,19 @@ Lineage 运行中产生的指令（例如 Effect 生成的指令）属于哪一�
 
 ### 进入目录的条件
 
-1. **单一操作。** 一条指令作用于一个主对象，执行一项确定的操作。多步流程用 Lineage、Effect 或 RunScript 把已有指令组合起来，不登记成新指令（见“执行原则”）。
-2. **不重复。** 只有现有指令加参数做不到时才新增。同一操作只有一个名字（见“命名规则”）。
-3. **可判定。** 每一种合法的参数组合都能确定这次调用作用在哪些对象上。权限系统据此把一次调用拆成 (调用者, A 元素, 对象) 请求；找不到对象，就无法判定。新增指令时，在声明中写判定槽：按哪个参数指向的对象判定；不作用于具体对象的指令，例如 `GetPortalStatus`，写固定槽。同一次提交在默认方案的指令分类中给每个新 A 元素选等级（decision_600ae27b0538）。漏写分类的 A 元素落在“未归类”下，只有管理员能通过，其他调用者都被拒绝。
-4. **有契约。** 所属类别的 Design 在指令表和参数名契约表中写明这条指令：主对象、参数、结果、是否改变状态、领域错误，以及判定对象（判定槽，随声明）和默认方案要求（等级与固定槽的 R 节点，以 decision_600ae27b0538 的分类为准）。默认方案要求写在指令表的“默认方案要求”列，目录测试把这一列与默认方案逐条对比，不一致就失败。
+指令集是机制与策略之间的边界：上层的人和 Agent 决定做什么、为什么做，下层的系统提供可靠的机制（thinking_ca8f397a47de）。这条边界要尽量小而稳，因此新增一条指令，要说明上层靠自己为什么做不到：
+
+1. **现有指令组合不出来。** 能由现有指令组合出来的操作，留给调用者用脚本、Lineage 或 Effect 组合，不登记成新指令；方便不构成新增理由。上层需要而指令集缺少的原语，才是新增的正当理由。同一项操作只有一个名字：调用者、入口或选项不同时，仍使用同一条指令（见“命名规则”）。
+2. **属于系统才能提供的能力。** 读写拥有服务独占的状态，或需要系统才能保证的性质（原子性、一致性），或触达调用者无法直接碰到的外部资源。
+3. **只提供机制，不含策略。** 指令说明做什么；为什么做、下一步做什么，由调用者决定（见“执行原则”）。
+4. **语义稳定。** 指令的含义不随调用者的策略变化。
+
+### 登记要求
+
+指令进入目录时，还要写明它作用的对象和契约，使所有入口按同一份声明执行：
+
+1. **可判定。** 每一种合法的参数组合都能确定这次调用作用在哪些对象上。权限系统据此把一次调用拆成 (调用者, A 元素, 对象) 请求；找不到对象，就无法判定。新增指令时，在声明中写判定槽：按哪个参数指向的对象判定；不作用于具体对象的指令，例如 `GetPortalStatus`，写固定槽。同一次提交在默认方案的指令分类中给每个新 A 元素选等级（decision_600ae27b0538）。漏写分类的 A 元素落在“未归类”下，只有管理员能通过，其他调用者都被拒绝。
+2. **有契约。** 所属类别的 Design 在指令表和参数名契约表中写明这条指令：主对象、参数、结果、是否改变状态、领域错误，以及判定对象（判定槽，随声明）和默认方案要求（等级与固定槽的 R 节点，以 decision_600ae27b0538 的分类为准）。默认方案要求写在指令表的“默认方案要求”列，目录测试把这一列与默认方案逐条对比，不一致就失败。
 
 ### 推荐流程
 
@@ -436,7 +446,7 @@ Lineage 运行中产生的指令（例如 Effect 生成的指令）属于哪一�
 
 在“命名规则”和“调用格式”之外，指令声明还要满足：
 
-- **目标对象用统一 ID 指定，且必填。** 指令作用的对象写在参数中，用统一 ID 或资源地址。不允许省略参数时默认为调用者自己；读取自己的资料也写明自己的 ID。唯一的例外是 RunScript 的 `lineage_id`：Effect 内由激活确定，Resident 省略时取其所在 Lineage（decision_8b510cbd9c58）；入口按这样确定的 Lineage 判定（要求对它有 `@admin`），User 省略时拒绝，不落到其他节点或免检。声明的 `target` 指向这个参数；修改已有对象的指令都声明 `target`，调用信封的单个 `expected_version` 按它比较。没有单一目标对象的修改不声明：认领摘要队列、新开终端、重启 Portal 实例，以及全站执行设置和知识标签列表。`AcceptUserAuthorization` 依据当前真实授权输入签发新凭证，不修改证据消息；`CorrectResourceLifecycleAssociation` 修改 `(scope_id, resource_id)` 定位的关联审计，不修改证据 Workspace，因此两者不声明单一资源 `target`。前者仍核验当前输入、签发者权限及重复签发；后者仍由生命周期准入锁与关联事务保证并发和幂等。此规则仅适用于这些明确语义，不按动词类别普遍豁免 target。
+- **目标对象用统一 ID 指定，且必填。** 指令作用的对象写在参数中，用统一 ID 或资源地址。不允许省略参数时默认为调用者自己；读取自己的资料也写明自己的 ID。唯一的例外是 RunScript 的 `lineage_id`：Effect 内由激活确定，Resident 省略时取其所在 Lineage（decision_8b510cbd9c58）；入口按这样确定的 Lineage 判定（要求对它有 `@admin`），User 省略时拒绝，不落到其他节点或免检。声明的 `target` 指向这个参数；修改已有对象的指令都声明 `target`，调用信封的单个 `expected_version` 按它比较。没有单一目标对象的修改不声明：认领摘要队列、新开终端、重启 Portal 实例，以及全站执行设置。知识标签配置作为具名资源经 `UpdateResource` 更新，以该资源为目标。`AcceptUserAuthorization` 依据当前真实授权输入签发新凭证，不修改证据消息；`CorrectResourceLifecycleAssociation` 修改 `(scope_id, resource_id)` 定位的关联审计，不修改证据 Workspace，因此两者不声明单一资源 `target`。前者仍核验当前输入、签发者权限及重复签发；后者仍由生命周期准入锁与关联事务保证并发和幂等。此规则仅适用于这些明确语义，不按动词类别普遍豁免 target。
 - **一个对象只有一种写法。** 同一个对象不能既用 ID、又用路径、账号编号或执行编号指定。指令可以作用于不同类型的对象时，每种类型一个参数，声明为“恰好给一个”，每个参数都有判定槽。例如 `GetMailbox` 用 `resident_id` 或 `user_id`。按多个条件筛选的读取指令可以声明“至少给一个”，给出的每个参数都按它的判定槽判定，例如 `ListPermissionEntries` 的 `p` 和 `r`。
 - **同一类对象在所有指令中使用同一个参数名。** 例如 Resident 一律用 `resident_id`，Project 一律用 `project_id`。
 - **分页读取一组条目用 `cursor`、`limit` 和 `next_cursor`。** `limit` 是每页最多的条数；`cursor` 是上一页结果中的 `next_cursor`，原样交回，不填时读第一页；还有下一页时结果带 `next_cursor`，它不出现或为空就表示已经读完。cursor 是不透明的字符串，调用者不解析、不自己拼写。不用 `offset`、`page_token`、`before` 这类其他名字；结果可以另外给出总数 `total`。例如 `GetConversation` 返回的 `next_cursor` 交给 `ListMessages` 继续往前读，`ListPermissionEntries` 一页页列出表项。三种读取不属于这条：按位置读取一个对象内部序列的指令用 `offset`，调用者可以从任意位置读起——`ReadScriptRunOutput`（日志的字节位置）、`GetSubagentRun`（子 agent 轨迹，界面直接从末尾附近读）、`GetTriggerPath`（一个流程的步骤、边与执行四个列表共用一个位置）；只取前几条、不翻页的读取只有 `limit`；读取某个位置之后的新变化用 Watch 指令的 `after_cursor`（见“流式指令”），`ListChatroomMessages` 的 `after` 与 `change_cursor` 读取某个位置之后的新消息和变更，也不是翻页。

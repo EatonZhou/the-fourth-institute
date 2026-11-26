@@ -14,7 +14,6 @@ from pathlib import Path, PurePosixPath
 from .article_restore import read_tool_registration, ToolEvidenceUnavailable
 from .registration import ResourceRegistrationStore, RegistrationEvidenceMissing, RegistrationEvidenceConflict
 
-ACTION = 'CheckArticleRestore'
 SOURCE_BUDGET = 8 * 1024 * 1024
 OUTPUT_BUDGET = 128 * 1024
 REQUIRED = frozenset({'article_id', 'resident_id', 'ordinal', 'tool_index', 'tool_item_id', 'expected_hash',
@@ -59,8 +58,9 @@ def _validate(arguments, service):
 
 def _authorize(actor, arguments, source_root):
     from management_portal import permission_system
-    checks = {**arguments, 'source_address': source_root}
-    if not permission_system.allows(actor, ACTION, checks):
+    requirements = [('@admin', arguments['article_id']), ('@admin', arguments['resident_id']),
+                    ('@viewer', source_root), ('@contributor', arguments['project_id'])]
+    if not permission_system.allows_roles(actor, requirements):
         raise PermissionError('Article admin, history admin, source read and target project write are required')
 
 

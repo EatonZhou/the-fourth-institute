@@ -336,32 +336,16 @@ def history(project_id: str, *, after: int = 0, limit: int = 100) -> list[dict[s
         rows = connection.execute(
             "SELECT revision, changed_at, changed_by, changes, document FROM revisions"
             " WHERE project_id=%s AND revision > %s ORDER BY revision LIMIT %s", (project_id, after, limit)).fetchall()
+        note_ids = [change["note_id"] for row in rows for change in row["changes"] if change.get("note_id")]
+        notes = {row["note_id"]: dict(row) for row in connection.execute(
+            "SELECT note_id, text, refs FROM notes WHERE project_id=%s AND note_id = ANY(%s)",
+            (project_id, note_ids)).fetchall()} if note_ids else {}
     return [{"revision": row["revision"], "changed_at": _iso(row["changed_at"]), "changed_by": row["changed_by"],
-             "changes": row["changes"],
-             "directions": [{key: item.get(key) for key in ("direction_id", "parent_id", "title", "stance", "teams")}
+             "changes": [{**change, **notes.get(change.get("note_id"), {})} for change in row["changes"]],
+             "directions": [{key: item.get(key) for key in ("direction_id", "parent_id", "title", "stance", "teams",
+                                                         "proposal_reason", "conclusion")}
                             for item in row["document"]["directions"]]}
             for row in rows]
-
-
-def activity(project_id: str, *, since: str, until: str, exclude: str = "") -> list[dict[str, Any]]:
-    """Revisions committed after ``since`` up to ``until``, oldest first, leaving out those of ``exclude``."""
-    with database().read() as connection:
-        rows = connection.execute(
-            "SELECT revision, changed_at, changed_by, changes FROM revisions WHERE project_id=%s"
-            " AND changed_at > %s AND changed_at <= %s AND changed_by <> %s ORDER BY revision",
-            (project_id, since, until, exclude)).fetchall()
-    return [{"revision": row["revision"], "changed_at": _iso(row["changed_at"]), "changed_by": row["changed_by"],
-             "changes": row["changes"]} for row in rows]
-
-
-def notes_by_id(project_id: str, note_ids: Iterable[str]) -> dict[str, dict[str, Any]]:
-    ids = sorted({str(item) for item in note_ids if item})
-    if not ids:
-        return {}
-    with database().read() as connection:
-        rows = connection.execute("SELECT note_id, kind, text, refs FROM notes WHERE project_id=%s AND note_id = ANY(%s)",
-                                  (project_id, ids)).fetchall()
-    return {row["note_id"]: dict(row) for row in rows}
 
 
 def automation(project_id: str) -> dict[str, Any] | None:

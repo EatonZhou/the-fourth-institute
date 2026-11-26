@@ -140,6 +140,35 @@ class ProjectRegistryAdapter(_PathsAdapter):
         return records, state
 
 
+class KnowledgeTagsRegistryAdapter(_PathsAdapter):
+    """Projection of the single owner-managed shared configuration."""
+
+    name = "knowledge_tags"
+    resource_types = frozenset({"knowledge_tags"})
+    registry_collections = frozenset({project_registry.COLLECTION})
+
+    def project_record(self, resource_type: str, item: dict[str, Any]) -> dict[str, Any]:
+        if resource_type != "knowledge_tags" or item.get("resource_id") != project_registry.KNOWLEDGE_TAGS_ID:
+            raise ValueError("Knowledge tags projection requires the singleton identity")
+        current = project_registry.knowledge_tags_configuration()
+        return resource_record(
+            resource_id=project_registry.KNOWLEDGE_TAGS_ID, resource_type="knowledge_tags",
+            title="知识标签", adapter=self.name,
+            attributes={"singleton": True, "version": current["version"]},
+        )
+
+    def scan(self):
+        return [self.project_record("knowledge_tags", {"resource_id": project_registry.KNOWLEDGE_TAGS_ID})], {}
+
+    def scan_changes(self, paths, previous_records, previous_state):
+        del previous_records, previous_state
+        if not any(change and change[0] == project_registry.COLLECTION
+                   for change in map(parse_registry_change_key, paths)):
+            return ChangeSet(self.name, (), ())
+        records, _ = self.scan()
+        return ChangeSet(self.name, tuple(records), ())
+
+
 class CollaborationRegistryAdapter(_PathsAdapter):
     """Index Resident/Lineage descriptors and the canonical Workspace table."""
 

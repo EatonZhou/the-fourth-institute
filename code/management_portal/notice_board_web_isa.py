@@ -89,12 +89,11 @@ def delete_reply(inv: Invocation) -> dict[str, Any]:
     return {"post": result.get("post") or {}}
 
 
-def pin_post(inv: Invocation) -> dict[str, Any]:
-    return {"post": _board().set_pinned(inv.caller, inv.argument("post_id"), bool(inv.argument("pinned"))).get("post") or {}}
-
-
-def feature_post(inv: Invocation) -> dict[str, Any]:
-    return {"post": _board().set_featured(inv.caller, inv.argument("post_id"), bool(inv.argument("featured"))).get("post") or {}}
+def update_post_marks(inv: Invocation) -> dict[str, Any]:
+    return _board().update_marks(
+        inv.caller, inv.argument("post_id"),
+        pinned=inv.argument("pinned"), featured=inv.argument("featured"),
+    )
 
 
 def mark_post_read(inv: Invocation) -> dict[str, Any]:
@@ -121,8 +120,7 @@ HANDLERS = {
     "DeletePost": delete_post,
     "CreateReply": create_reply,
     "DeleteReply": delete_reply,
-    "SetPostPinned": pin_post,
-    "SetPostFeatured": feature_post,
+    "UpdatePostMarks": update_post_marks,
     "UpdatePostReadVersion": mark_post_read,
 }
 

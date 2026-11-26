@@ -4,7 +4,7 @@
 
 账号登记、授权状态、程序可用性和 Backend 分配是不同状态。完成登记后回读相应状态，必要时用一次真实请求验证；不能把账号已登记或已登录等同于 Resident 已能执行。
 
-登记与管理使用 `RegisterProviderAccount`、`UpdateProviderAccountRegistration`、`DeleteProviderAccount`；Backend 分配使用 `UpdateBackendRole`。订阅登录使用 `CreateProviderAccountLogin`、`GetProviderAccountLogin`、`CancelProviderAccountLogin`；需要继续交互时按登录结果和 `UpdateProviderAccountLogin` 的 schema 提交。模型 API 使用 `CreateModelApi`、`UpdateModelApi`。不要从历史文件名或账号目录猜测当前登记清单。
+登记与管理使用 `RegisterProviderAccount`、`UpdateProviderAccountRegistration`、`DeleteProviderAccount`；Backend 分配使用 `UpdateBackendRole`。订阅登录先从 `GetProviderAccountLogin` 读取 Provider 声明的 `login_options.schema` 和 `login_options.values`，用 `CreateProviderAccountLogin` 的 `options` 传入所需选项，需要时用 `UpdateProviderAccountLogin` 的 `authorization_code` 提交该登录流程要求的授权材料。取消使用 `CancelProviderAccountLogin`。原生账号配置先读 `GetProviderAccountConfiguration`，再以返回版本作为 `expected_version` 调用 `UpdateProviderAccountConfiguration`，只在 `changes` 中提交适配器声明的字段。`GetProviderUsageEvents` 只适用于声明用量事件能力的账号，按该适配器的事件投影读取。模型 API 使用 `CreateModelApi`、`UpdateModelApi`。不要从历史文件名或账号目录猜测当前登记清单。
 
 - CLI Provider 可复用当前机器已有的可执行程序和已授权账号；Portal 管理的独立运行时也是可用选择，不强制用户重装或重新登录。
 - Model API 路线按模型 API 登记和探测流程处理，不套用 CLI 安装、CODEX_HOME 或 systemd 要求。
@@ -14,7 +14,7 @@
 - 新增页面默认走新登录，打开即显示可修改的待创建目录。“使用本机已有登录”按所选 Provider 发现未登记候选；可重新扫描、手填或使用“浏览”选择 Portal 主机目录。发现不代表认证有效，复用时以 `reuse_existing=true` 要求现有目录，随后按真实登录状态继续；扫描只读有界目录与标志，不读取凭据值。发现/浏览由管理页 HTTP 接口提供，按真实调用者核验既有 RegisterProviderAccount 权限，不新增 HATG 指令或权限元素。离线扫描脚本复用纯引擎，不访问 Portal 登记，可显式指定排除路径。
 - 启动 Provider 只用登记路径设置 `CODEX_HOME`、`CLAUDE_CONFIG_DIR` 等变量。每个实例运行自己的常驻进程；多个实例与终端 CLI 可以共享同一账号目录里的登录和会话，由 Provider 自己协调登录刷新。进程控制记录、socket 和 Windows Job 身份归各实例所有，启停只作用于本实例的进程。
 - Portal 的 socket、索引备份、启动记录和锁放在实例 runtime，不写进 Provider 目录。不要硬编码源站路径或 service 名称。
-- 使用现有程序或账号需按该 Provider 的实际接入方式验证。只在缺失时按支持的安装流程补依赖；失败时保留诊断，不用伪造 ready 状态绕过。
+- 使用现有程序或账号需按该 Provider 的实际接入方式验证。只在缺失时经 `RunScript` 请求运维职责 Lineage 已登记的 `install_provider_runtime`（`provider`）。用真实调用身份，对固定 Lineage 具备 `@admin`，通过 `GetScriptRun` 读回结果，再用 `ListProviders` 或 `GetProviderAccountSetup` 确认运行时就绪；脚本启动成功只表示已开始运行。
 
 已有会话继续使用已持久化的执行绑定，不因默认 Backend 或账号偏好变化而自行切换。新会话的回退遵循当前 Backend 的能力与条件，不用更换账号掩盖认证、权限或额度错误。停用账号不是强制终止会话；删除前按正式入口检查活跃登录与占用状态。
 

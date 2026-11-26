@@ -114,6 +114,14 @@ Hooks:
     Registered targets governed by a feature's workflow declarations. Each
     record carries resident_id, lineage_id, name and application; each feature
     returns only its own application targets.
+``workflow.script_migration`` ``(source: str) -> str``
+    Pure, idempotent migration of a complete feature-owned Effect script.
+    Return the original source unchanged when it is not owned. Each provider
+    receives the same original source; more than one replacement is an error.
+    Providers perform no I/O or mutations and own all workflow/result semantics.
+    Missing features contribute nothing; invalid results and errors propagate.
+    Society owns current-definition validation, in-flight guards and persistence;
+    journals, review drafts and published history never enter this hook.
 ``test.fixtures`` ``(root, manifest, actor, *, timeout) -> (report, errors)``
     Release what a test run created under ``root``; the report joins the
     cleanup receipt, errors keep the run's files for another attempt.
@@ -226,6 +234,8 @@ for _feature in FEATURES:
         _feature.contributions['instance.update'] = 'management_portal.telepus.instance_update:update'
     elif _feature.key == 'workbench':
         _feature.contributions['instance.update'] = 'management_portal.workbench_projections.instance_update:update'
+    elif _feature.key == 'projects':
+        _feature.contributions['workflow.script_migration'] = 'management_portal.research_map_automation:migrate_digest_script'
 
 
 def _load(reference: str) -> Any | None:
@@ -281,6 +291,21 @@ def contribution(hook: str) -> Any | None:
     """The part of the one installed feature contributing to ``hook``."""
     found = contributions(hook)
     return found[0][1] if found else None
+
+
+def migrate_workflow_script(source: str) -> str:
+    """Ask installed domain owners to migrate a script without chaining owners."""
+    result = source
+    for _feature, provider in contributions('workflow.script_migration'):
+        candidate = provider(source)
+        if not isinstance(candidate, str):
+            raise TypeError('feature script migration must return a string')
+        if candidate == source:
+            continue
+        if result != source:
+            raise ValueError('multiple features own the script migration')
+        result = candidate
+    return result
 
 
 def resident_input_variants(snapshot: dict, prompt: str) -> dict | None:

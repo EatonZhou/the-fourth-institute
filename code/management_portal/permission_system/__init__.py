@@ -224,6 +224,21 @@ def allows(actor: str, instruction: str, arguments: Mapping[str, Any] | None = N
     return active().allows(actor, instruction, dict(arguments or {}))
 
 
+def allows_roles(actor: str, requirements: Iterable[tuple[str, str]]) -> bool:
+    """Check explicit domain roles without inventing an ISA instruction.
+
+    Callers provide the authenticated actor and exact resource roots. This is
+    an internal permission port for domains whose operation runs in a script.
+    It does not grant roles or resolve a host process into a user identity.
+    """
+    items = list(requirements)
+    if not items or any(not action.startswith("@") or not resource for action, resource in items):
+        return False
+    if _off():
+        return _signed_in(actor)
+    return active().allows_roles(actor, items)
+
+
 def allows_each(actor: str, instructions: Iterable[str], arguments: Mapping[str, Any] | None = None) -> dict[str, bool]:
     """``{instruction: allows(...)}`` for the buttons of one object, all called with the same ``arguments``."""
     return {name: allows(actor, name, arguments) for name in dict.fromkeys(instructions)}

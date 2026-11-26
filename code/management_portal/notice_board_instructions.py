@@ -12,10 +12,10 @@ from management_portal.hatg.declarations import FIXED, InstructionDeclaration as
 CATEGORIES = {"discussion": "公共讨论"}
 
 
-def _d(name, decides, description, parameters=(), result=(), *, mutates=False, target=""):
+def _d(name, decides, description, parameters=(), result=(), *, mutates=False, target="", any_of=()):
     return D(name=name, category="discussion", owner="web", description=description, discovery_group="application",
              parameters=tuple(parameters), result=tuple(result), mutates=mutates, target=target,
-             decides=decides)
+             decides=decides, any_of=any_of)
 
 
 ON_POST = (On("post_id", "notice"),)
@@ -56,12 +56,11 @@ DECLARATIONS = (
     _d("DeleteReply", FIXED, "由回复作者删除自己的回复。", (
         R("post_id", description="回复所在的帖子"), R("reply_id", description="要删除的回复"),
     ), (POST,), mutates=True, target="post_id"),
-    _d("SetPostPinned", FIXED, "设置或取消帖子的置顶。", (
-        R("post_id", description="要置顶或取消置顶的帖子"), R("pinned", "boolean", "true 置顶，false 取消置顶"),
-    ), (POST,), mutates=True, target="post_id"),
-    _d("SetPostFeatured", FIXED, "设置或取消帖子的精华标记。", (
-        R("post_id", description="要设置精华的帖子"), R("featured", "boolean", "true 设为精华，false 取消精华"),
-    ), (POST,), mutates=True, target="post_id"),
+    _d("UpdatePostMarks", FIXED, "设置或取消帖子的置顶和精华标记；未提供的标记不变。", (
+        R("post_id", description="要更新标记的帖子"),
+        P("pinned", "boolean", "true 置顶，false 取消置顶"),
+        P("featured", "boolean", "true 设为精华，false 取消精华"),
+    ), (POST,), mutates=True, target="post_id", any_of=("pinned", "featured")),
     _d("UpdatePostReadVersion", ON_POST, "把帖子标为读到指定版本，或重新标为未读。", (
         R("post_id", description="要标记的帖子"),
         P("notification_revision", "integer", "读到的版本，取 GetPost 返回的 notification_revision；省略时为当前版本",

@@ -225,6 +225,15 @@ class PARPermissions:
             return False
         return self.passes(principal.id, instruction, arguments)
 
+    def allows_roles(self, actor, items: list[tuple[str, str]]) -> bool:
+        principal = _principal(actor)
+        if principal is None or principal.kind not in {"user", "resident"}:
+            return _is_portal(actor)
+        scheme, decisions = self._decide(principal.id, items)
+        # A missing role must not fall through to the scheme's default node.
+        return (bool(items) and all(action in scheme.trees["A"].nodes for action, _ in items)
+                and len(decisions) == len(items) and all(item.allowed for item in decisions))
+
     def _elements(self, scheme: CompiledScheme, instruction: str, parameter: str) -> list[str] | None:
         """The A elements deciding ``parameter`` of ``instruction``; ``None`` when nothing does."""
         slots = scheme.slots(instruction)

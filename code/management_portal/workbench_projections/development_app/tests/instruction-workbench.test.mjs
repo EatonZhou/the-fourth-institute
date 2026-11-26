@@ -17,14 +17,40 @@ test('catalog needs no commit or timestamp to be read', () => {
 });
 
 test('the published ISA has renamed instructions and no deleted entry points', () => {
-  for (const name of ['Functionalize','Unfunctionalize','GetKnowledgeTags','UpdateKnowledgeTags','UpdateProviderAccount'])
+  for (const name of ['Functionalize', 'Unfunctionalize', 'UpdatePostMarks', 'UpdateProviderAccount'])
     assert.ok(catalog.schemas[name], name);
   for (const name of ['Functionlize','Unfunctionlize','GetProjectTags','UpdateProjectTags','UpdateSchedulerSettings',
-    'ListFunctionBlocks','GetResidentState','CancelMailboxItem','ListMailbox','UpdateUserCategory','EmitEvent','GetTriggerPathStep','GetFunctionBlock']) {
+    'ListFunctionBlocks','GetResidentState','CancelMailboxItem','ListMailbox','UpdateUserCategory','EmitEvent','GetTriggerPathStep','GetFunctionBlock',
+    'PublishRelease', 'SetColabSessionRunning', 'InstallProviderRuntime', 'CheckArticleRestore', 'RestoreArticle', 'GetResearchMapDigest',
+    'SetPostPinned', 'SetPostFeatured', 'GetKnowledgeTags', 'UpdateKnowledgeTags']) {
     assert.equal(catalog.schemas[name], undefined, name);
+    assert.equal(catalog.instructions.some(item => item.instruction === name), false, name);
     assert.equal(lessonFor(name), null, name);
   }
   assert.equal(data.categories.find(c=>c.id==='resident_execution').title,'Resident 执行');
+});
+
+test('post marks retain the post target and the choice of either mark', () => {
+  const marks = catalog.schemas.UpdatePostMarks;
+  assert.equal(marks.target, 'post_id');
+  assert.deepEqual(marks.parameters.map(({name, type, required}) => [name, type, required]), [
+    ['post_id', 'string', true],
+    ['pinned', 'boolean', false],
+    ['featured', 'boolean', false],
+  ]);
+  assert.deepEqual(marks.any_of, ['pinned', 'featured']);
+  assert.deepEqual(marks.result.map(({name}) => name), ['post']);
+});
+
+test('Provider account changes and login options are object parameters', () => {
+  const config = catalog.schemas.UpdateProviderAccountConfiguration;
+  const login = catalog.schemas.CreateProviderAccountLogin;
+  assert.deepEqual(config.parameters.map(({name, type, required}) => [name, type, required]), [
+    ['account_id', 'string', true], ['changes', 'object', true],
+  ]);
+  assert.deepEqual(login.parameters.map(({name, type, required}) => [name, type, required]), [
+    ['account_id', 'string', true], ['options', 'object', false],
+  ]);
 });
 
 test('authored experiments remain readable when documentation is older than code', () => {

@@ -465,10 +465,15 @@ def list_providers(inv):
                 # New Kimi accounts cannot use a shared service this site lacks.
                 kinds = tuple(kind for kind in kinds if kind != "service")
         definition = AGENT_PROVIDERS.get(provider)
+        capabilities = definition.runtime_capabilities() if definition else {}
+        if definition and definition.account_operations:
+            capabilities = {**capabilities, "account": {
+                name: operation.describe() for name, operation in definition.account_operations.items()
+            }}
         own = [row for row in rows if row["provider"] == provider]
         default = default_route(own)
         item = {"provider": provider, "title": definition.label if definition else "Model API",
-                          "kinds": list(kinds), "capabilities": definition.runtime_capabilities() if definition else {},
+                          "kinds": list(kinds), "capabilities": capabilities,
                           "default_route_id": default, "account_count": len(own),
                           # The Model API protocol an api_profile account needs ("" accepts any).
                           "api_protocol": definition.api_protocol if definition else "",

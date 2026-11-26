@@ -10,7 +10,11 @@ export async function mount(container) {
       </header>
       <p data-instance-message role="status" aria-live="polite"></p>
       <div data-instance-list></div>
-    </section>`;
+    </section>
+    <details class="settingsSection" data-instance-operations>
+      <summary>Portal 运维</summary>
+      <div data-instance-operations-body></div>
+    </details>`;
   const list = container.querySelector("[data-instance-list]");
   const message = container.querySelector("[data-instance-message]");
   const reload = container.querySelector("[data-instance-refresh]");
@@ -123,9 +127,26 @@ export async function mount(container) {
     if (document.hidden) { clearTimeout(timer); timer = null; }
     else void refresh(true);
   }, {signal: controller.signal});
+  const operationsPanel = container.querySelector("[data-instance-operations]");
+  const operationsBody = container.querySelector("[data-instance-operations-body]");
+  let operations, loadingOperations = false;
+  operationsPanel.addEventListener("toggle", async () => {
+    if (!operationsPanel.open || operations || loadingOperations || destroyed) return;
+    loadingOperations = true;
+    try {
+      const {mountOperations} = await import("/static/portal_management_operations.js");
+      if (destroyed) return;
+      operationsBody.textContent = "";
+      operations = mountOperations(operationsBody, controller.signal);
+    } catch (error) {
+      if (!destroyed) operationsBody.textContent = error.message;
+    } finally {
+      loadingOperations = false;
+    }
+  }, {signal: controller.signal});
   if (visible()) await refresh();
   return {
-    refresh, isBusy: () => pending, hasUnsavedChanges: () => false,
+    refresh, isBusy: () => pending || operations?.isBusy() === true, hasUnsavedChanges: () => false,
     destroy() { destroyed = true; clearTimeout(timer); controller.abort(); }
   };
 }

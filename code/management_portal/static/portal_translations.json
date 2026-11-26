@@ -5012,10 +5012,6 @@
     "en": "Fast on",
     "zh-CN": "Fast 开"
   },
-  "SetPostFeatured": {
-    "en": "SetPostFeatured",
-    "zh-CN": "SetPostFeatured"
-  },
   "Feedback": {
     "en": "Feedback",
     "zh-CN": "反馈"
@@ -8571,10 +8567,6 @@
   "Personal access tokens": {
     "en": "Personal access tokens",
     "zh-CN": "个人访问令牌"
-  },
-  "SetPostPinned": {
-    "en": "SetPostPinned",
-    "zh-CN": "置顶帖子"
   },
   "Plan": {
     "en": "Plan",
@@ -31182,10 +31174,6 @@
     "en": "Tag \"{p0}\" is defined {p1} times in the project",
     "zh-CN": "标签 “{p0}” 在工程中定义了 {p1} 次"
   },
-  "标签列表的版本，用作 UpdateKnowledgeTags 的 expected_version": {
-    "en": "Version of the tag list, used as expected_version for UpdateKnowledgeTags",
-    "zh-CN": "标签列表的版本，用作 UpdateKnowledgeTags 的 expected_version"
-  },
   "标签只能包含 id、folder、description 与 param：{p0}": {
     "en": "Tags may only contain id, folder, description, and param: {p0}",
     "zh-CN": "标签只能包含 id、folder、description 与 param：{p0}"
@@ -42152,5 +42140,161 @@
   "商店即将上线": {"zh-CN": "商店即将上线", "en": "Store coming soon"},
   "新职责模板": {"zh-CN": "新职责模板", "en": "New duty template"},
   "单击拿起，双击在工坊中打开；按 Escape 或右键取消": {"zh-CN": "单击拿起，双击在工坊中打开；按 Escape 或右键取消", "en": "Click to pick up, double-click to open in workshop; press Escape or right-click to cancel"},
-  "{p0} · 拖到 {p1}": {"zh-CN": "{p0} · 拖到 {p1}", "en": "{p0} · Drag onto {p1}"}
+  "{p0} · 拖到 {p1}": {"zh-CN": "{p0} · 拖到 {p1}", "en": "{p0} · Drag onto {p1}"},
+  "UpdatePostMarks": {
+    "en": "UpdatePostMarks",
+    "zh-CN": "UpdatePostMarks"
+  },
+  "原生账号配置": {
+    "en": "Native account configuration",
+    "zh-CN": "原生账号配置"
+  },
+  "模型 Provider": {
+    "en": "Model provider",
+    "zh-CN": "模型 Provider"
+  },
+  "请选择登录选项，然后获取授权。": {
+    "en": "Select the sign-in options, then request authorization.",
+    "zh-CN": "请选择登录选项，然后获取授权。"
+  },
+  "请重新获取登录授权。": {
+    "en": "Request a new sign-in authorization.",
+    "zh-CN": "请重新获取登录授权。"
+  },
+  "无法显示登录选项。": {
+    "en": "Could not display the sign-in options.",
+    "zh-CN": "无法显示登录选项。"
+  },
+  "缺少脚本运行回执。": {
+    "en": "The script did not return a run receipt.",
+    "zh-CN": "缺少脚本运行回执。"
+  },
+  "Portal 运维": {
+    "en": "Portal operations",
+    "zh-CN": "Portal 运维"
+  },
+  "发布 Portal": {
+    "en": "Publish Portal",
+    "zh-CN": "发布 Portal"
+  },
+  "提交说明": {
+    "en": "Commit message",
+    "zh-CN": "提交说明"
+  },
+  "发布路径（相对 code/，每行一条）": {
+    "en": "Release paths (relative to code/, one per line)",
+    "zh-CN": "发布路径（相对 code/，每行一条）"
+  },
+  "发布全部改动": {
+    "en": "Publish all changes",
+    "zh-CN": "发布全部改动"
+  },
+  "请填写提交说明及发布范围。": {
+    "en": "Enter a commit message and select a release scope.",
+    "zh-CN": "请填写提交说明及发布范围。"
+  },
+  "恢复 Article": {
+    "en": "Restore Article",
+    "zh-CN": "恢复 Article"
+  },
+  "预检证据": {
+    "en": "Check evidence",
+    "zh-CN": "预检证据"
+  },
+  "执行恢复": {
+    "en": "Apply restoration",
+    "zh-CN": "执行恢复"
+  },
+  "证据参数（JSON 对象）": {
+    "en": "Evidence parameters (JSON object)",
+    "zh-CN": "证据参数（JSON 对象）"
+  },
+  "请填写有效的证据参数对象，并在上方选择步骤。": {
+    "en": "Enter a valid evidence object and select the step above.",
+    "zh-CN": "请填写有效的证据参数对象，并在上方选择步骤。"
+  },
+  "查看恢复合同": {
+    "en": "View the restoration contract",
+    "zh-CN": "查看恢复合同"
+  },
+  "确认发布 Portal？": {
+    "en": "Publish Portal?",
+    "zh-CN": "确认发布 Portal？"
+  },
+  "确认执行 Article 恢复？": {
+    "en": "Restore this Article?",
+    "zh-CN": "确认执行 Article 恢复？"
+  },
+  "发布已提交，等待健康检查。": {
+    "en": "Release submitted. Waiting for health checks.",
+    "zh-CN": "发布已提交，等待健康检查。"
+  },
+  "脚本已完成。": {
+    "en": "Script finished.",
+    "zh-CN": "脚本已完成。"
+  },
+  "启动会话": {
+    "en": "Start session",
+    "zh-CN": "启动会话"
+  },
+  "停止会话": {
+    "en": "Stop session",
+    "zh-CN": "停止会话"
+  },
+  "停止共享会话？": {
+    "en": "Stop the shared session?",
+    "zh-CN": "停止共享会话？"
+  },
+  "会话已启动": {
+    "en": "Session started",
+    "zh-CN": "会话已启动"
+  },
+  "会话已停止": {
+    "en": "Session stopped",
+    "zh-CN": "会话已停止"
+  },
+  "选定硬件后启动共享会话。任务结束且会话空闲时，停止会话以释放运行时并停止计费。": {
+    "en": "Select hardware and start the shared session. When the task is finished and the session is idle, stop it to free the runtime and end billing.",
+    "zh-CN": "选定硬件后启动共享会话。任务结束且会话空闲时，停止会话以释放运行时并停止计费。"
+  },
+  "知识标签": {
+    "en": "Knowledge tags",
+    "zh-CN": "知识标签"
+  },
+  "按 JSON 数组编辑完整的标签列表。": {
+    "en": "Edit the complete tag list as a JSON array.",
+    "zh-CN": "按 JSON 数组编辑完整的标签列表。"
+  },
+  "标签列表": {
+    "en": "Tag list",
+    "zh-CN": "标签列表"
+  },
+  "放弃未保存的标签修改？": {
+    "en": "Discard unsaved tag changes?",
+    "zh-CN": "放弃未保存的标签修改？"
+  },
+  "无法读取知识标签。": {
+    "en": "Could not load knowledge tags.",
+    "zh-CN": "无法读取知识标签。"
+  },
+  "标签列表必须是有效的 JSON 数组。": {
+    "en": "The tag list must be a valid JSON array.",
+    "zh-CN": "标签列表必须是有效的 JSON 数组。"
+  },
+  "已保存知识标签。": {
+    "en": "Knowledge tags saved.",
+    "zh-CN": "已保存知识标签。"
+  },
+  "Portal 运维入口尚未配置": {
+    "en": "Portal operations are not configured.",
+    "zh-CN": "Portal 运维入口尚未配置"
+  },
+  "当前身份没有运行此运维脚本的权限": {
+    "en": "You do not have permission to run this operation.",
+    "zh-CN": "当前身份没有运行此运维脚本的权限"
+  },
+  "当前身份没有读取知识标签的权限": {
+    "en": "You do not have permission to read knowledge tags.",
+    "zh-CN": "当前身份没有读取知识标签的权限"
+  }
 }

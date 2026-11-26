@@ -168,6 +168,152 @@ def migrate_instruction_names(store: Store) -> bool:
     return True
 
 
+THREE_PLAN_MIGRATION = "isa-three-plans-20261126"
+RETIRED_INSTRUCTIONS = frozenset({
+    "PublishRelease", "InstallProviderRuntime", "SetColabSessionRunning",
+    "CheckArticleRestore", "RestoreArticle", "GetResearchMapDigest",
+    "GetKnowledgeTags", "UpdateKnowledgeTags",
+})
+_OLD_MARKS = ("SetPostPinned", "SetPostFeatured")
+_NEW_MARKS = "UpdatePostMarks"
+
+
+def _retired(element: str) -> bool:
+    return element.partition(":")[0] in RETIRED_INSTRUCTIONS
+
+
+def _merge_marks(rows: list[dict], *, field: str, ignored: tuple[str, ...]) -> list[dict]:
+    """Merge only equal pairs; a one-sided allow/deny/loan cannot gain another operation."""
+    old = [row for row in rows if row[field] in _OLD_MARKS]
+    if not old:
+        return rows
+    if any(row[field] == _NEW_MARKS for row in rows):
+        raise SchemeConflict("UpdatePostMarks 已有独立表项，不能猜测合并")
+    def signature(row):
+        return {k: v for k, v in row.items() if k not in (*ignored, field)}
+    first = [row for row in old if row[field] == _OLD_MARKS[0]]
+    second = [row for row in old if row[field] == _OLD_MARKS[1]]
+    merged = []
+    for row in first:
+        matches = [item for item in second if signature(item) == signature(row)]
+        if len(matches) != 1:
+            raise SchemeConflict("置顶/精华专门权限不等价，不能扩为 UpdatePostMarks")
+        second.remove(matches[0])
+        merged.append({**row, field: _NEW_MARKS})
+    if second:
+        raise SchemeConflict("精华专门权限缺少等价置顶权限，不能扩为 UpdatePostMarks")
+    return [row for row in rows if row[field] not in _OLD_MARKS] + merged
+
+
+def _three_plan_rules(document: dict[str, Any]) -> dict[str, Any]:
+    result = copy.deepcopy(document)
+    mapped = result.get("instructions", {})
+    old = [mapped[name] for name in _OLD_MARKS if name in mapped]
+    if old:
+        if len(old) != 2 or old[0] != old[1] or _NEW_MARKS in mapped:
+            raise SchemeConflict("置顶/精华分类不等价或目标已存在，需方案 owner 先处理")
+        mapped[_NEW_MARKS] = old[0]
+    result["instructions"] = {k: v for k, v in mapped.items() if not _retired(k) and k not in _OLD_MARKS}
+    if "entries" in result:
+        result["entries"] = _merge_marks(
+            [row for row in result["entries"] if not _retired(row.get("a", ""))],
+            field="a", ignored=("id", "title"))
+    return result
+
+
+def migrate_three_plan_permissions(store: Store) -> bool:
+    """Retire current permissions atomically; keep immutable source proofs and migration history.
+
+    This runs after the older name migration, before saved schemes are loaded.
+    Activation must stop old permission writers first. No replacement script
+    inherits a retired instruction grant; its entry and domain checks apply.
+    """
+    with store.read() as con:
+        if store.execute(con, "SELECT 1 FROM {s}.scheme_migrations WHERE migration_id=%s",
+                         (THREE_PLAN_MIGRATION,)).fetchone():
+            return False
+    with store.transaction() as con:
+        store.execute(con, "SELECT pg_advisory_xact_lock(hashtextextended(%s,0))",
+                      (store.schema + ":" + THREE_PLAN_MIGRATION,))
+        if store.execute(con, "SELECT 1 FROM {s}.scheme_migrations WHERE migration_id=%s",
+                         (THREE_PLAN_MIGRATION,)).fetchone():
+            return False
+        store.execute(con, "LOCK TABLE {s}.schemes, {s}.scheme_instances, {s}.scheme_sources,"
+                      " {s}.scheme_nodes, {s}.scheme_entries, {s}.user_authorizations"
+                      " IN SHARE ROW EXCLUSIVE MODE")
+        history = []
+        def keep(table, row):
+            history.append({"table": table, "row": dict(row)})
+        for table, column in (("schemes", "document"), ("scheme_instances", "rules"), ("scheme_sources", "rules")):
+            for row in store.execute(con, f"SELECT * FROM {{s}}.{table} WHERE {column} IS NOT NULL").fetchall():
+                document = _three_plan_rules(row[column])
+                if document == row[column]:
+                    continue
+                keep(table, row)
+                encoded = json.dumps(document, ensure_ascii=False)
+                if table == "schemes":
+                    store.execute(con, "UPDATE {s}.schemes SET document=%s::jsonb,version=version+1 WHERE scheme_id=%s",
+                                  (encoded, row["scheme_id"]))
+                elif table == "scheme_instances":
+                    digest = (rules_digest(document) if rules_digest(row[column]) == row["rules_digest"]
+                              else row["rules_digest"])
+                    store.execute(con, "UPDATE {s}.scheme_instances SET rules=%s::jsonb,rules_digest=%s WHERE scheme_id=%s",
+                                  (encoded, digest, row["scheme_id"]))
+                else:
+                    store.execute(con, "UPDATE {s}.scheme_sources SET rules=%s::jsonb,digest=%s WHERE scheme_id=%s",
+                                  (encoded, source_digest(document), row["scheme_id"]))
+        nodes = [dict(row) for row in store.execute(con, "SELECT * FROM {s}.scheme_nodes WHERE tree='A'").fetchall()]
+        for row in nodes:
+            if row["id"] in _OLD_MARKS or _retired(row["id"]):
+                continue
+            if any(part in _OLD_MARKS or _retired(part) for part in row["path"]):
+                raise SchemeConflict("退休指令仍有自定义A子节点，需方案 owner 先处理")
+        for scheme_id in {row["scheme_id"] for row in nodes}:
+            old = [row for row in nodes if row["scheme_id"] == scheme_id and row["id"] in _OLD_MARKS]
+            if old:
+                if any(row["scheme_id"] == scheme_id and row["id"] == _NEW_MARKS for row in nodes):
+                    raise SchemeConflict("UpdatePostMarks 已有A节点，不能覆盖")
+                normalized = [{**row, "path": [(_NEW_MARKS if p in _OLD_MARKS else p) for p in row["path"]]}
+                              for row in old]
+                merged = _merge_marks(normalized, field="id", ignored=())
+                if len(merged) != 1:
+                    raise SchemeConflict("置顶/精华A节点不成对")
+                for row in old:
+                    keep("scheme_nodes", row)
+                store.execute(con, "DELETE FROM {s}.scheme_nodes WHERE scheme_id=%s AND tree='A' AND id=ANY(%s)",
+                              (scheme_id, list(_OLD_MARKS)))
+                row = merged[0]
+                store.execute(con, "INSERT INTO {s}.scheme_nodes(scheme_id,tree,id,parent,kind,path) VALUES (%s,%s,%s,%s,%s,%s)",
+                              tuple(row[k] for k in ("scheme_id", "tree", "id", "parent", "kind", "path")))
+        for row in nodes:
+            if _retired(row["id"]):
+                keep("scheme_nodes", row)
+                store.execute(con, "DELETE FROM {s}.scheme_nodes WHERE scheme_id=%s AND tree='A' AND id=%s",
+                              (row["scheme_id"], row["id"]))
+        entries = [dict(row) for row in store.execute(con, "SELECT * FROM {s}.scheme_entries").fetchall()]
+        for scheme_id in {row["scheme_id"] for row in entries}:
+            group = [row for row in entries if row["scheme_id"] == scheme_id]
+            merged = _merge_marks(group, field="a_node", ignored=("entry_id",))
+            for row in group:
+                if row["a_node"] in _OLD_MARKS or _retired(row["a_node"]):
+                    keep("scheme_entries", row)
+                    store.execute(con, "DELETE FROM {s}.scheme_entries WHERE scheme_id=%s AND entry_id=%s",
+                                  (scheme_id, row["entry_id"]))
+            for row in merged:
+                if row["a_node"] == _NEW_MARKS and any(x["a_node"] in _OLD_MARKS for x in group):
+                    columns = tuple(row)
+                    row["version"] += 1
+                    store.execute(con, "INSERT INTO {s}.scheme_entries (" + ",".join(columns) + ") VALUES ("
+                                  + ",".join("%s" for _ in columns) + ")", tuple(row[k] for k in columns))
+        if history:
+            store.bump(con)
+        # Datetime values are serialized only in immutable audit evidence.
+        store.execute(con, "INSERT INTO {s}.scheme_migration_history(migration_id,records) VALUES (%s,%s::jsonb)",
+                      (THREE_PLAN_MIGRATION, json.dumps(history, ensure_ascii=False, default=str)))
+        store.execute(con, "INSERT INTO {s}.scheme_migrations(migration_id) VALUES (%s)", (THREE_PLAN_MIGRATION,))
+    return True
+
+
 def installed(document: dict[str, Any], *, before: bool = False) -> dict[str, Any]:
     """The rules with their classification limited to the A elements of the instructions this Portal installs.
 
@@ -216,6 +362,7 @@ class Schemes:
         # A real store must migrate successfully before any saved rules load.
         if store is not None:
             migrate_instruction_names(store)
+            migrate_three_plan_permissions(store)
         self._compiled: dict[tuple[str, str], CompiledScheme] = {}
         self._lock = threading.Lock()
 

@@ -17,7 +17,8 @@ from management_portal.http_routes import RouteDefinition
 PAGE_INSTRUCTIONS = ("CreateUser", "GetExecutionSettings", "UpdateExecutionSettings", "ActivatePermissionScheme",
                      "UpdateProviderAccount", "CreateTerminal", "ListResourceTypes", "UpdateResourceType",
                      "ListProviders", "ListProviderAccounts", "RegisterProviderAccount",
-                     "DeleteProviderAccount", "DeleteModelApi")
+                     "DeleteProviderAccount", "DeleteModelApi",
+                     "GetProviderAccountConfiguration", "UpdateProviderAccountConfiguration")
 PAGE_ARGUMENTS = {"UpdateExecutionSettings": {"permission_system_enabled": True}}
 
 
@@ -79,6 +80,34 @@ class PortalSessionHttp:
                 "created_at": str(access.get("created_at") or ""),
             },
         })
+
+    def knowledge_tags_binding(self, request, _parsed, _actor):
+        from management_portal import permission_system
+        from management_portal.project_registry import KNOWLEDGE_TAGS_ID
+
+        actor = self.session_actor(request) or ""
+        if not permission_system.allows_roles(actor, [("@viewer", "@shared")]):
+            return self.respond(request, 403, {"error": "当前身份没有读取知识标签的权限"})
+        return self.respond(request, 200, {
+            "resource_id": KNOWLEDGE_TAGS_ID,
+            "can_update": permission_system.allows_roles(actor, [("@admin", "@shared")]),
+        })
+
+    def operation_binding(self, request, parsed, _actor):
+        from management_portal import permission_system
+        from scripts.portal_operations import OPERATIONS, run_arguments
+
+        actor = self.session_actor(request) or ""
+        operation = (parse_qs(parsed.query).get("operation") or [""])[0]
+        if operation not in OPERATIONS:
+            return self.respond(request, 404, {"error": "未知 Portal 运维操作"})
+        try:
+            binding = run_arguments(operation, {})
+        except ValueError:
+            return self.respond(request, 503, {"error": "Portal 运维入口尚未配置"})
+        if not permission_system.allows(actor, "RunScript", binding):
+            return self.respond(request, 403, {"error": "当前身份没有运行此运维脚本的权限"})
+        return self.respond(request, 200, binding)
 
     def router_preference(self, request, _parsed, _actor):
         actor = self.session_actor(request) or ""
@@ -176,6 +205,8 @@ class PortalSessionHttp:
         from management_portal.http_account_directories import account_directories
         return (
             RouteDefinition("GET", "/api/management/account-directories", account_directories, "portal-portal-get"),
+            RouteDefinition("GET", "/api/portal-operations", self.operation_binding, "portal-portal-get"),
+            RouteDefinition("GET", "/api/management/knowledge-tags", self.knowledge_tags_binding, "portal-portal-get"),
             principal_route("GET", "/api/me", self.me, "portal-portal-get"),
             principal_route("GET", "/__portal_router/preference", self.router_preference, "portal-portal-get"),
             principal_route("GET", "/api/preferences", self.preferences_get, "portal-portal-get"),

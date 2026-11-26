@@ -73,13 +73,6 @@ def get_setup(inv):
     return {"setup": result}
 
 
-def prepare(inv):
-    provider = inv.argument("provider")
-    if provider not in registrations.PROVIDER_KINDS:
-        raise invalid("未知 Provider")
-    return {"preparation": provider_updates.prepare_runtime(provider)}
-
-
 def _started_codex_catalog(row, *, timeout=30.0):
     """Wait for the socket after service start, without retrying model execution."""
     from management_portal.codex_app_server_client import client_for_socket
@@ -396,5 +389,5 @@ def require_verified(inv):
         raise invalid("请先使用当前账号和模型完成执行测试")
 
 
-HANDLERS = {"GetProviderAccountSetup": get_setup, "InstallProviderRuntime": prepare,
+HANDLERS = {"GetProviderAccountSetup": get_setup,
             "CheckProviderAccount": check, "GetProviderAccountCheck": check_result}

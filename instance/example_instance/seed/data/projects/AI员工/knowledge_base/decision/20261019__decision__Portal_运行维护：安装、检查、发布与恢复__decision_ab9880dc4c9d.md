@@ -92,7 +92,7 @@ python3 code/scripts/tfi_dev.py publish --all --message '全量同步'
 
 `request-restart dev` 不带 `--component` 时重启 Dev Web 和 resource、execution、society 三个共享服务；只需加载 Dev 页面代码时加 `--component web`。
 
-发布工具在 Dev 工作树提交指定路径（选中文件所属的浏览器兼容单元整组随行），把 Release 工作树快进到该提交，从 Release 推送 `main`，再经 `systemd-run --user` 排队一个激活任务后立即返回。检查输出中的 `ok`、`commit`、`changed_paths`、`release_unit_paths`、`push` 和 `activation.receipt`。激活任务按改动文件重启受影响的 `<service_prefix>-<组件>.service`，Worker 经 HUP 平滑换代，PostgreSQL、NATS 和 Provider 账号服务不重启；完成后把结果写入 receipt（`<实例安装根目录>/runtime/tfi-pair-publish-<id>-result.json`），检查其中的 `ok`、`components` 和 `health`（`dev`、`release`、`public`）。最近一次成功激活另存于 `runtime/development-activation.json`，激活过程的输出在 `journalctl --user -u tfi-pair-publish-<id>`。推送在排队激活之前执行：推送失败时命令报错退出，Release 工作树已经快进，但激活没有排队，服务仍运行原来的代码。以输出的 commit 核对 Release，勿用并行开发后可能已经前进的 Dev HEAD 代替。ISA `PublishRelease` 调用同一流程，其 `paths` 相对 `code/` 目录。
+发布工具在 Dev 工作树提交指定路径（选中文件所属的浏览器兼容单元整组随行），把 Release 工作树快进到该提交，从 Release 推送 `main`，再经 `systemd-run --user` 排队一个激活任务后立即返回。检查输出中的 `ok`、`commit`、`changed_paths`、`release_unit_paths`、`push` 和 `activation.receipt`。激活任务按改动文件重启受影响的 `<service_prefix>-<组件>.service`，Worker 经 HUP 平滑换代，PostgreSQL、NATS 和 Provider 账号服务不重启；完成后把结果写入 receipt（`<实例安装根目录>/runtime/tfi-pair-publish-<id>-result.json`），检查其中的 `ok`、`components` 和 `health`（`dev`、`release`、`public`）。最近一次成功激活另存于 `runtime/development-activation.json`，激活过程的输出在 `journalctl --user -u tfi-pair-publish-<id>`。推送在排队激活之前执行：推送失败时命令报错退出，Release 工作树已经快进，但激活没有排队，服务仍运行原来的代码。以输出的 commit 核对 Release，勿用并行开发后可能已经前进的 Dev HEAD 代替。系统发布脚本（经 `RunScript` 运行）调用同一流程，其 `paths` 相对 `code/` 目录。
 
 WALL 的成果发布与工程级全量发布也调用同一发布器。Portal 管理 → 执行设置中的 WALL 定时任务总开关只阻止新定时任务；既有工程计划保留，已运行任务和手动操作继续。它独立于 system Lineage 的 Event 开关。
 

@@ -752,7 +752,7 @@ async function toggleNoticeBoardPin() {
   const pinned = noticeBoardPinBtn.dataset.pinned !== "1";
   noticeBoardPinBtn.disabled = true;
   try {
-    await noticeBoardInstruction("SetPostPinned", { post_id: postId, pinned });
+    await noticeBoardInstruction("UpdatePostMarks", { post_id: postId, pinned });
     renderNoticeBoardPost(await noticeBoardInstruction("GetPost", { post_id: postId }));
     await loadNoticeBoard();
     window.PortalUI.toast(pinned ? window.PortalI18n.t("帖子已置顶") : window.PortalI18n.t("已取消置顶"), "success");
@@ -769,7 +769,7 @@ async function toggleNoticeBoardFeatured() {
   const featured = noticeBoardFeaturedBtn.dataset.featured !== "1";
   noticeBoardFeaturedBtn.disabled = true;
   try {
-    await noticeBoardInstruction("SetPostFeatured", { post_id: postId, featured });
+    await noticeBoardInstruction("UpdatePostMarks", { post_id: postId, featured });
     renderNoticeBoardPost(await noticeBoardInstruction("GetPost", { post_id: postId }));
     await loadNoticeBoard();
     window.PortalUI.toast(featured ? window.PortalI18n.t("帖子已设为精华") : window.PortalI18n.t("已取消精华"), "success");

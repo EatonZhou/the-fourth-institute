@@ -37,6 +37,7 @@ links:
   - decision_898b8911a2ff
   - thinking_ca8f397a47de
 ---
+
 # HATG ISA：资源指令
 
 资源指令让人和 Agent 查找、读取和保存 TFI Portal 中的持久内容。Resident 查资料、读取某份 Design、保存报告，页面打开资源详情，都使用这一类指令。本类指令都由 ResourceService 执行。所有指令共同遵守的调用格式、执行流程和错误语义见 decision_898b8911a2ff。
@@ -59,8 +60,6 @@ links:
 | `ListResourceTypes` | 否 | 列出全部资源类型的声明、状态与有效能力 | 对“共享”有 @viewer |
 | `GetResourceType` | 否 | 读取某个资源类型的声明、状态与有效能力 | 对“共享”有 @viewer |
 | `UpdateResourceType` | 是 | 启用或停用一个资源类型，可选信封版本前提 | 对“共享”有 @admin |
-| `CheckArticleRestore` | 否 | 预检原 Article 的恢复证据、目录与当前权限，不执行恢复 | Article/原 Resident @admin、源 @viewer、目标 Project @contributor；领域另核历史与继承读取 |
-| `RestoreArticle` | 是 | 按已核证据和明确共享决定部分恢复原 Article ID | Article/原 Resident @admin、源 @viewer、目标 Project @contributor；领域独立核验 |
 | `RegisterResource` | 是 | 登记一个新资源 | 对新对象的所属位置有 @contributor |
 | `CreateWorkspace` | 是 | 在空位置创建 Workspace | 固定槽免检；给出 `owner_id` 时对该所属对象有 @contributor |
 | `RegisterWorkspace` | 是 | 将现成目录接入为新的 Workspace | 固定槽免检；给出 `owner_id` 时对该所属对象有 @contributor |
@@ -193,33 +192,19 @@ CreateWorkspace 要求目标位置不存在；RegisterWorkspace 要求目标是�
 
 固定槽在默认方案中免检，领域继续检查可见性：原操作调用者可以读取自己的清理记录；其他调用者必须有对应对象的读取权限，否则返回 `instruction.forbidden`。注销结果与文件清理进度分别报告；清理失败不恢复登记，后台持久重试，重启后继续。该入口不授予对象权限，不提供任意目录清理或管理员重试动作。
 
-### `CheckArticleRestore`
+### Article 恢复（系统脚本）
 
-对已删除 Article 的原 ID 做有界只读证据预检，声明 `mutates=false`。输入为 `article_id`、原登记 Resident 的 `resident_id`、精确工具定位 `ordinal/tool_index/tool_item_id/expected_hash`、源目录 `source_address/source_version`、主阅读 PDF `primary_file/primary_version`、目标 `project_id/target_relative_path`；不接受 `apply`、客户端登记前像、ACL 或批准字典。目录版本是直接子项摘要，PDF 版本是字节 SHA256。
+已注销 Article 的原 ID 恢复是针对历史事故的一次性补救流程，依赖登记账本、墓碑和清理记录，不属于通用资源机制，不登记为指令。它由系统脚本 `article_restore` 完成，有两个子步骤：`check`（有界只读证据预检）和 `apply`（原 ID 部分恢复）。脚本固定在“Portal 运维”职责的 Lineage 中，经 `RunScript` 运行，权限为对所属 Lineage 的 @admin（decision_8b510cbd9c58）；脚本以宿主权限读取墓碑、登记账本、保留回执与清理记录，`arguments.step` 选择 `check` 或 `apply`。两者还须提供：`article_id`、`resident_id`、`ordinal`、`tool_index`、`tool_item_id`、`expected_hash`、`source_address`、`source_version`、`primary_file`、`primary_version`、`project_id`、`target_relative_path`；`apply` 另有 `inheritance_digest`、`decision_resident_id`、`proposal_message_id`、`decision_message_id`。
 
-四个权限槽分别要求 Article `@admin`、原 Resident `@admin`、源资源 `@viewer` 和目标 Project `@contributor`。Society 仍核验精确已删身份的历史权限与个人 AMA 边界，ResourceService 分别鉴权源目录和 PDF；读取当前继承表项还须通过 `ListPermissionEntries`。拒绝访问不能转换成普通证据缺失；返回前再次核验四个权限槽。
+脚本的行为与证据核验规则不变：`check` 只读，结果固定 `mode=dry_run`、`can_apply=false`，分别报告原工具可证事实、独立登记账本与 HATG 回执，不核定用户是否批准；`apply` 只部分恢复到同一 Article ID，主文件固定 `main.md`，说明“部分恢复”和“最终版本未找齐”，不复活 Resident，不伪造原作者或 ACL，共享范围须有真实用户对具体方案的明确决定，最终提交重核源完整递归版本、当前共享范围、权限和路径；返回 `mode=partial_restore`、`final_version_recovered=false`。脚本以该次运行的真实 User 或 Resident 身份逐项核验原 Article 与原 Resident 的 `@admin`、源 `@viewer`、目标 Project `@contributor`；拒绝访问不转换成证据缺失。`apply` 使用运行本身的 `script_run_id` 标识恢复操作。证据规则、目录事务与文件回收见 decision_956154cd02f6、decision_4aa13bc21e8e。
 
-结果固定 `mode=dry_run`、`apply_supported=false`、`can_apply=false`。原工具可证事实、独立登记账本及独立 HATG 回执分别报告；账本缺表、缺行、冲突及回执缺失不互相覆盖，缺失原因不能未经证实写成过期。历史 owner 明示的外部来源、格式或内容预算缺口保留为不可展开的事实，不能凭空结果断言原工具未保留。普通模型回话或客户端摘录不作为登记前像。
-
-目录与清理观察遵循 decision_4aa13bc21e8e；源目录及 PDF 各有8MiB读取预算，整体响应128KiB预算。源版本变化、拟用目标占用、原项目不一致等冲突分别报告。当前共享继承按启用方案与项目祖先持久权限表读取，排除临时凭证，保留截断状态，不能称为已恢复的旧 ACL 或申请者私有。
-
-`decision.status` 保持 `unknown`：预检不核定用户是否批准恢复方案。`scope_digest` 只比较当前参数、源、目标及共享范围，不是授权 token。指令不复制、编译、占位、改墓碑或权限，不调用模型，不复活 Resident；恢复写入不在此入口内。
-
-### `RestoreArticle`
-
-将已验证的剩余内容部分恢复到同一 Article ID，声明 `mutates=true`。必需参数为原ID及历史工具定位 `article_id/resident_id/ordinal/tool_index/tool_item_id/expected_hash`，候选 `source_address/source_version/primary_file/primary_version`，目标 `project_id/target_relative_path`，当前共享摘要 `inheritance_digest`，以及保存决定的 `decision_resident_id/proposal_message_id/decision_message_id`。主文件固定 `main.md`，明确“部分恢复”和“最终版本未找齐”；源版本绑定完整递归清单，不能使用只读预检的直接子项摘要代替。调用保持稳定幂等键。
-
-四个独立权限槽要求原 Article 与原 Resident `@admin`、源 `@viewer`、目标 Project `@contributor`；Preview权限不授予提交。历史 owner 的 AMA、源文件读取、决定消息读取及当前权限表项读取继续分别鉴权。最终提交重查这些权限和决定者的当前 Restore 权限。
-
-原 canonical RegisterResource 工具回执与请求必须匹配，且原项目不变；墓碑/无活登记、原稿精确路径的已完成清理由各 owner 核验。登记账本或独立 HATG 回执缺失可记录为未知并进入交叉证据恢复，冲突或拒权不可跳过。客户端前像、模型回话、单独的清理缓存记录不能替代这些证据。
-
-方案包含人可读对象、候选、目标、部分内容及当前项目共享说明，并附服务重算的范围摘要。正式决定通过 Society 的真实 User 消息验证：固定问题组的双向回答关联，或明确引用该方案的同意答复。当前支持固定共享选项，或引用下的“同意”“同意该共享范围”等明确答案；普通请求、任意消息ID及临时凭证不构成此范围的共享决定。当前继承排除临时凭证，加入原 Article 精确持久拒绝；意外直接永久许可拒绝提交。
-
-目录事务、崩溃续办及文件回收遵循 decision_4aa13bc21e8e。结果返回原 `resource_id`、`mode=partial_restore`、`primary_file=main.md`、`final_version_recovered=false`、实际恢复时间和原资源入口。首次提交及幂等返回的 `portal_url` 均由统一资源路由生成，当前 Article 入口为 `/resource/article?item=<Article ID>`；旧回执重入只规范化返回副本的地址，保留原审计。提交成功后使用已有 `created` 资源变化类型通知恢复后的活登记；幂等返回不重复通知。保留可证原标题与首次登记时间，原作者和历史ACL缺失保持未知，恢复人和时间单独审计。成功必须以正式动作提交和原ID可读为准；部署动作本身不恢复业务数据。
+Colab 会话通过固定 Portal 运维 Lineage 的系统脚本 `colab_session` 管理。脚本要求真实调用者对该 Lineage 有 `@admin`，并核对目标 Device 的解析和原会话操作权限。参数为 `resource_id` 和 `running`；启动另须 `hardware`，释放时省略它。
 
 ### `UpdateResource`
 
 **按资源类型修改正文或元数据。**
+
+知识标签配置使用固定单例 `knowledge_tags_7d4e9a2c6f10`，`changes.content` 为整张 JSON 列表的字符串；信封的 `expected_version` 须取自 `ReadResource`（decision_6591e7793116）。
 
 - 参数：`resource_id`、`changes`（要修改的字段）。
 - 结果：修改后的资源记录与 `version`。知识条目使用新版本号的字符串；其他类型返回其版本或修改时间，类型没有提供时返回空字符串。
@@ -306,8 +291,6 @@ Workspace 支持 `UnregisterResource(resource_id=workspace_id)`，要求目标 W
 
 | 指令名 | arguments 参数名 |
 | --- | --- |
-| `CheckArticleRestore` | `article_id`、`resident_id`、`ordinal`、`tool_index`、`tool_item_id`、`expected_hash`、`source_address`、`source_version`、`primary_file`、`primary_version`、`project_id`、`target_relative_path` |
-| `RestoreArticle` | `article_id`、`resident_id`、`ordinal`、`tool_index`、`tool_item_id`、`expected_hash`、`source_address`、`source_version`、`primary_file`、`primary_version`、`project_id`、`target_relative_path`、`inheritance_digest`、`decision_resident_id`、`proposal_message_id`、`decision_message_id` |
 | `SearchResources` | `q`、`resource_type`、`project_id`、`status`、`limit`、`cursor` |
 | `ResolveResource` | `address` |
 | `ReadResource` | `address`、`max_bytes`、`meta_only`、`preview` |

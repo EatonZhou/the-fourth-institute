@@ -45,20 +45,6 @@ def test_standalone_restart_is_refused_without_running_commands(monkeypatch):
             web_isa.restart_portal(invocation({"deployment": deployment}))
 
 
-def test_paired_publish_from_release_preserves_pending_activation_receipt(monkeypatch, tmp_path):
-    """PublishRelease 调用 tfi_dev 发布所选实例的 Release，路径带 code/ 前缀，并返回待确认的激活回执"""
-    from scripts import tfi_development_runtime as paired, tfi_dev
-    monkeypatch.setattr(paired, "configured_root", lambda: tmp_path)
-    monkeypatch.setattr(web_isa, "_deployment", lambda: "release")
-    health = {"status": "pending", "receipt": str(tmp_path / "result.json")}
-    calls = []
-    monkeypatch.setattr(tfi_dev, "publish", lambda message, **options: calls.append((message, options)) or
-                        {"ok": True, "commit": "abc", "paths": list(options["paths"]), "health": health})
-    result = web_isa.publish_release(invocation({"message": "fix", "paths": ["SPEC.md"]}))
-    assert result["health"] == health
-    assert result["paths"] == ["code/SPEC.md"]
-    assert calls == [("fix", {"paths": ("code/SPEC.md",), "all_files": False})]
-
 
 def test_clear_unread_updates_read_boundary_without_listing_inbox(monkeypatch):
     """清除未读只按未读的阅读状态行更新已读位置，不扫描整个收件箱"""
@@ -337,16 +323,3 @@ def test_disk_status_lists_the_disks_or_the_selected_disk(monkeypatch):
     assert every["devices"] == [disk] and every["resources"] == [disk]
     assert web_isa.get_device_status(invocation({"kind": "disk", "device_id": "device_disk0"}))["devices"] == [disk]
     assert asked == [(True, ""), (False, "device_disk0")]
-
-
-def test_publish_release_reports_the_push_to_the_remote(monkeypatch):
-    """PublishRelease 结果报告提交、待激活回执和推送结果"""
-    from scripts import tfi_dev
-
-    push = {"ok": True, "remote": "origin"}
-    health = {"status": "pending", "receipt": "/runtime/receipt.json"}
-    monkeypatch.setattr(web_isa, "_deployment", lambda: "dev", raising=False)
-    monkeypatch.setattr(tfi_dev, "publish", lambda *args, **options: {
-        "ok": True, "commit": "abc123", "paths": ["code/SPEC.md"], "health": health, "push": push})
-    result = web_isa.publish_release(invocation({"message": "m", "paths": ["SPEC.md"]}))
-    assert result == {"commit": "abc123", "paths": ["code/SPEC.md"], "health": health, "push": push}

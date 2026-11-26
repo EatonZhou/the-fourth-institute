@@ -7,6 +7,7 @@ from management_common.file_lock import try_lock_descriptor
 from management_portal.hatg.contracts import InstructionError
 from management_portal.kimi_account_runtime import client_for_route
 from .account_login import ACTIVE, _session_paths, login_store, now
+from .provider_catalog import KIMI_LOGIN_SCHEMA
 
 
 def logged_in(account_id):
@@ -25,7 +26,8 @@ def _lock(account_id):
         yield
 
 
-REGIONS = ({"id": "mainland-cn", "label": "中国区"}, {"id": "global", "label": "国际区"})
+REGIONS = tuple({"id": item["const"], "label": item["title"]}
+                for item in KIMI_LOGIN_SCHEMA["properties"]["region"]["oneOf"])
 
 
 def _flow_region(flow):
@@ -80,3 +82,9 @@ def login(row, action, *, region=None):
                 "login_state": store.login_state(account_id),
                 "login_options": {"regions": list(REGIONS),
                                   "region": _flow_region(flow) or _flow_region(session or {}) or "mainland-cn"}}
+
+
+def account_login(row, action, *, options=None):
+    result = login(row, action, region=(options or {}).get("region"))
+    values = result.pop("login_options")
+    return {**result, "option_values": {"region": values["region"]}}

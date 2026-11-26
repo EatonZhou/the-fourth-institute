@@ -44,7 +44,7 @@ Resident 本身不含模型。它每次工作都要通过一个**执行账号**�
 
 打开“Portal 管理”→“AI Backend”，依次配置 Provider、执行账号、模型 API 和 Backend 角色。页面和 HATG ISA 使用同一份站点登记：
 
-- **订阅账号**：用 `RegisterProviderAccount` 登记 Codex 或 Claude 的 `subscription_login` 账号，再在账号行打开登录会话。对应指令为 `CreateProviderAccountLogin`、`GetProviderAccountLogin`、`CancelProviderAccountLogin`；Claude 要求授权码时，用 `UpdateProviderAccountLogin` 提交到现有等待会话。订阅登记的 `config.account_dir` 保存主机目录的规范绝对路径。新建账号必须填写 `config.account_dir`，不设默认目录；指定位置不存在时创建空目录，已有目录直接使用其中的登录。删除登记保留目录。Codex 服务通过账号 ID 从正式登记读取并校验 `CODEX_HOME`，实例 runtime 清理重建后仍从登记取得账号目录。各实例运行自己的常驻进程，多个实例与终端 CLI 可共享同一账号目录，由 Provider 协调登录刷新。
+- **订阅账号**：用 `RegisterProviderAccount` 登记 Codex 或 Claude 的 `subscription_login` 账号，再在账号行打开登录会话。用 `GetProviderAccountLogin` 读取 Provider 的 `login_options.schema` 和 `login_options.values`，用 `CreateProviderAccountLogin` 的 `options` 提交适配器声明的选项。登录需要回填时，用 `UpdateProviderAccountLogin` 的 `authorization_code` 向现有会话提交该 Provider 要求的授权材料；取消使用 `CancelProviderAccountLogin`。订阅登记的 `config.account_dir` 保存主机目录的规范绝对路径。新建账号必须填写 `config.account_dir`，不设默认目录；指定位置不存在时创建空目录，已有目录直接使用其中的登录。删除登记保留目录。Codex 服务通过账号 ID 从正式登记读取并校验 `CODEX_HOME`，实例 runtime 清理重建后仍从登记取得账号目录。各实例运行自己的常驻进程，多个实例与终端 CLI 可共享同一账号目录，由 Provider 协调登录刷新。
 - **模型 API**：在新增或编辑表单中填写接口地址和 API Key，在“模型列表”中逐项添加服务商的模型标识，并选择一个默认模型。每个模型的“模型设置”中可启用或停用模型、勾选支持的推理强度，也可添加服务商提供的其他强度值。取消勾选可移除推理强度，自定义值也可点击旁边的 × 删除；保存后生效。直连该接口的 Resident 即可在对话设置中选择这些模型和推理强度。页面通过 `CreateModelApi` / `UpdateModelApi` 保存接口、默认模型和 `models` 目录；`api_profile` 执行账号通过 `config.api_id` 绑定接口。一次性 `secret` 经受控写入保存到密钥文件，更新时用 `changes.secret` 更换。不要把密钥放入账号 config、对话、日志或文档。
 - **用 API Key 运行 Agent Harness**：模型 API 默认只提供 Chat Completions。接口也支持其他协议时，在“高级设置”中声明（`protocols`）：`openai_responses`（`/responses`，Codex 使用）、`anthropic_messages`（Claude Code 使用，可指定地址和认证方式 Bearer 或 `x-api-key`）。保存接口后，后端自动提供所有协议兼容的运行器账号；“Agent 运行器”只选择接下来测试的账号，不会再登记第二个账号。Resident 可使用这些账号执行命令、编辑文件和使用工具。登记时 Portal 检查接口是否声明了该 Harness 需要的协议；仍有账号使用的协议不能撤下，接口也不能删除。
   - 不确定接口支持哪些协议时，点“高级设置”中的“检测接口协议”（`CheckModelApi`）：Portal 用表单中的地址、模型和密钥向 Chat Completions、Responses 和 Anthropic Messages 各发一次很短的请求，按结果勾选协议并选好 Anthropic 的认证方式，仍可手动修改。返回 2xx 且内容符合协议格式才算支持；检测会调用模型，可能产生少量费用，不修改登记。
@@ -180,9 +180,11 @@ Portal 管理员永远可以开关权限系统（“执行设置”中的权限�
 
 管理员启停类型前需要确认；未安装类型不能启用。停用后该类型不再出现在目录和搜索中，也不能登记新实例，已有资源仍可按 ID 读取和撤销登记。保存使用当前版本，冲突时页面刷新该行后再重试。Backup 是独立的资源维护入口，不是可启停的资源类型。
 
+全站知识标签配置使用通用资源接口。用 `ReadResource(address="knowledge_tags_7d4e9a2c6f10")` 取得 JSON 数组正文 `text` 与 `version`。保存时用 `UpdateResource` 更新同一 `resource_id`，在 `changes.content` 提交完整数组的 JSON 字符串，并在调用信封传入 `expected_version`。共享的 `@viewer` 可读，`@admin` 可写。发生版本冲突时重新读取并核对更改。Project 按同一清单的 `folder` 创建知识子目录。
+
 ### 账号
 
-执行账号在“Portal 管理”→“AI Backend”中管理。停用账号会停止向它派发新回合，已有会话保留绑定并显示停用状态；恢复后沿原绑定继续。删除账号前必须解除会话与排队/运行工作占用，活跃登录会先取消并等待进程退出。`ListProviderAccounts.registration` 返回登记的初始并发、配置、版本及有权限查看的路径；公开登录状态和 Home 调度设置各自保留所属语义。
+执行账号在“Portal 管理”→“AI Backend”中管理。停用账号会停止向它派发新回合，已有会话保留绑定并显示停用状态；恢复后沿原绑定继续。删除账号前必须解除会话与排队/运行工作占用，活跃登录会先取消并等待进程退出。`ListProviderAccounts.registration` 返回登记的初始并发、配置、版本及有权限查看的路径；公开登录状态和 Home 调度设置各自保留所属语义。运行时缺失时，用 `RunScript` 在固定 Portal 运维 Lineage 运行 `install_provider_runtime`，传入 `provider`，再用 `ListProviders` 或 `GetProviderAccountSetup` 核实就绪。原生配置和用量事件能力由适配器声明：用 `GetProviderAccountConfiguration` 读取版本与配置，更新用 `UpdateProviderAccountConfiguration` 提交 `changes` 和信封 `expected_version`；只有声明支持的账号可用 `GetProviderUsageEvents`。
 
 人类用户账号在“Portal 管理”→“用户”分栏中，选中用户后操作：
 
@@ -206,7 +208,7 @@ Portal 管理员永远可以开关权限系统（“执行设置”中的权限�
 
 ### 代码更新与发布
 
-修改或更新 Dev 的代码后，运行 `./scripts/portal_services request-restart dev` 让受影响的服务重新加载。验证通过后，在仓库根目录用 `python3 code/scripts/tfi_dev.py publish --message '<说明>' --path code/<文件>…`（或 `--all`）把改动发布到 Release；命令输出 `activation.receipt`，激活完成后该文件记录结果和各服务健康状态。发布会重启受影响的服务，正在运行的 Resident 工作会被中断，尽量在空闲时发布。完整流程见 `decision_ab9880dc4c9d`。对应指令为 `PublishRelease`、`RestartPortal`（参数 `deployment`，取值 `dev` 或 `release`）；`GetPortalStatus` 查看各部署和服务的状态。
+修改或更新 Dev 的代码后，运行 `./scripts/portal_services request-restart dev` 让受影响的服务重新加载。验证通过后，在仓库根目录用 `python3 code/scripts/tfi_dev.py publish --message '<说明>' --path code/<文件>…`（或 `--all`）把改动发布到 Release；命令输出 `activation.receipt`，激活完成后该文件记录结果和各服务健康状态。发布会重启受影响的服务，正在运行的 Resident 工作会被中断，尽量在空闲时发布。完整流程见 `decision_ab9880dc4c9d`。通过 ISA 发布时，用 `RunScript` 调用固定 Portal 运维 Lineage 中的 `publish_release`，沿用真实调用身份，并要求对该 Lineage 有 `@admin`。把 `message` 与 `paths` 或 `all=true` 放在脚本 `arguments` 中，用 `GetScriptRun` 查看发布输出，再检查 `health.receipt` 的激活结果。`RestartPortal`（参数 `deployment`，取值 `dev` 或 `release`）用于单独重启；`GetPortalStatus` 查看各部署和服务的状态。
 
 若 Resident 对话因历史消息的来源格式标记报 `invalid message origin schema`，先确认实际数据库绑定，再用 `scripts/migrate_message_origins.py --plan <私有计划> --backup <新的私有备份文件>` 检查。计划必须指定 `database`、`db_user`、`agent_schema`、`lineage_schema`，以及实际旧标记到同版 `tfi.message-origin.v1` 或 `tfi.message-origin.v2` 的 `sources` 映射。工具校验 Agent 消息元数据、展示记录及 Mailbox 消息的作者和来源身份，输出 `plan_sha256`；加 `--apply --expected-plan <该摘要>` 才执行。全部校验后先保存私有备份，再在一个事务内按原字节和行版本更新；并发变化或错误将回滚。仅来源的 schema 字符串变化，正文、作者、发起人、ID、顺序和载荷摘要保持不变。完成后重新读取真实对话；无需放宽运行时校验或重启服务。
 
@@ -215,6 +217,16 @@ Portal 管理员永远可以开关权限系统（“执行设置”中的权限�
 实例的生命周期由安装器 `scripts/tfi_release_install.py` 执行（`create`、`start`、`stop`、`update-code`、`retire`，见代码目录的 `INSTALL.md`）。创建时安装器按清单注册服务：Linux 使用 systemd 用户服务，macOS 使用 launchd，Windows 使用当前用户的监督进程。每个实例的服务名以清单中的服务名前缀开头，例如 `<前缀>-web.service`，启停只处理清单列出的服务，不同实例的服务互相隔离。配置了 Dev 部署的实例另由 `scripts/tfi_development_runtime.py` 注册 Dev Web 与入口网关（`gateway`），发布时按改动的文件重启受影响的组件。安装包或代码目录换成新版本后运行 `update-code`：准备新代码需要的依赖、刷新服务单元并重启，数据库由服务启动时自己更新。
 
 “Portal 管理 → Portal 实例”列出本机实例登记（`~/.config/tfi/instances.json`）中清单可读的实例，按清单服务显示运行、部分服务运行（列出未运行的服务）、关闭或无法读取；管理员可以提交启动或关闭，由独立的控制作业调用同一套生命周期操作。创建未完成的实例不能启动。
+
+### 系统脚本与帖子标记
+
+发布、Provider 运行时安装、Colab 会话启停和 Article 恢复使用固定 Portal 运维 Lineage 已登记的系统脚本。调用 `RunScript` 时显式给出本站 `deployment.portal_operations.lineage_id` 以及当前共享代码根下的脚本绝对路径，把业务参数放在 `arguments`，以真实调用身份通过该 Lineage 的 `@admin` 检查。原有领域检查继续生效。用返回的 `script_run_id` 和同一 `lineage_id` 调用 `GetScriptRun`，需要日志或产物时再用 `ReadScriptRunOutput`。
+
+- `colab_session` 接收 `resource_id`、`running` 和 `hardware`。分配或复用时用 `running=true` 并给出硬件规格，释放时用 `running=false` 并省略 `hardware`。分配可能消耗 CU，调用者仍须通过目标 Device 的权限检查。
+- `article_restore` 用 `arguments.step` 选择只读预检 `check` 或原 ID 部分恢复 `apply`。调用者仍须通过原 Article、登记 Resident、源资源及目标 Project 的领域检查。预检输出的摘要用于比较，恢复还须核验有权用户对实际共享方案的明确决定。具体证据与输入见 `decision_ad3e21094f14` 和 `decision_956154cd02f6`。
+- 帖子管理使用 `UpdatePostMarks`，参数为 `post_id` 以及 `pinned`、`featured` 中至少一个布尔值。省略的标记保持原值，响应中的 `post` 是更新后的帖子。默认要求对“共享”有 `@admin`。
+
+Project Lineage 的每日整理在自己的 Lineage 运行 `research_map_digest`。脚本逐页读取 `ListResearchMapChanges`，用 `GetResearchMap` 读取可见方向产出，再按本轮截止时间和真实调用身份筛选并生成按方向分组的文字。有变化且投递成功才推进相应水位；无变化时直接推进水位。
 
 ### 用量与额度
 

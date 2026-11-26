@@ -23,8 +23,9 @@ from .registration import ResourceRegistrationStore, RegistrationEvidenceMissing
 from .portal import portal_url_for_address
 from .registry_store import get_registry_store, announce_registry_changes, RegistryWriter
 
-ACTION = 'RestoreArticle'
 JOURNAL = 'article_restorations'
+# Retain the journal namespace used by already accepted recovery operations.
+CREATION_PREFIX = 'RestoreArticle:'
 SELECTORS = ('resident_id', 'ordinal', 'tool_index', 'tool_item_id', 'expected_hash')
 EXTRA = frozenset({'inheritance_digest', 'decision_resident_id', 'proposal_message_id', 'decision_message_id'})
 
@@ -35,7 +36,7 @@ def _registered(connection, collection, rid):
 
 def _arguments(arguments, service):
     if set(arguments) != observation.REQUIRED | EXTRA:
-        raise ValueError('RestoreArticle requires the exact partial restoration parameters')
+        raise ValueError('Article restore apply requires the exact partial restoration parameters')
     source_root = observation._validate({k: arguments[k] for k in observation.REQUIRED}, service)
     if arguments['primary_file'] != 'main.md':
         raise ValueError('Partial restoration requires main.md as its explanatory primary')
@@ -49,8 +50,7 @@ def _arguments(arguments, service):
 
 
 def _authorize(arguments, actor, source_root):
-    if not permission_system.allows(actor, ACTION, {**arguments, 'source_address': source_root}):
-        raise PermissionError('Restore requires its own Article/history/source/Project permissions')
+    observation._authorize(actor, arguments, source_root)
 
 
 def current_sharing(actor, arguments):
@@ -205,7 +205,7 @@ def restore(*, arguments, actor, service, receipt_store, operation_id):
             raise ValueError('The removed original manuscript path is occupied')
         creation.queue.assert_available(Path(original), connection=connection)
 
-    creation = _ArticleRecoveryCreation(rid, actor=actor, operation_id='RestoreArticle:' + operation_id,
+    creation = _ArticleRecoveryCreation(rid, actor=actor, operation_id=CREATION_PREFIX + operation_id,
         payload={**request, 'parent_id': arguments['project_id']}, verify_identity=check_identity)
     prepared = False
     try:
@@ -264,5 +264,5 @@ def restore(*, arguments, actor, service, receipt_store, operation_id):
         # Abort only this intent's proven inodes. No generic owner unregister
         # callback: failure cannot erase another live registration.
         if prepared:
-            abort_creations(actor=actor, operation_ids=['RestoreArticle:' + operation_id], unregister=None)
+            abort_creations(actor=actor, operation_ids=[CREATION_PREFIX + operation_id], unregister=None)
         raise

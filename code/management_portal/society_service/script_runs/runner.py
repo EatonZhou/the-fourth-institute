@@ -32,8 +32,9 @@ def atomic_json(path: Path, value: dict):
 
 class Relay(socketserver.ThreadingMixIn, socketserver.BaseServer):
     daemon_threads = True
-    def __init__(self, path, forward):
+    def __init__(self, path, forward, *, script_run_id: str | None = None):
         self.forward = forward
+        self.script_run_id = script_run_id
         self.listener = LocalListener(path)
         super().__init__(str(path), RelayHandler)
 
@@ -58,11 +59,21 @@ class RelayHandler(socketserver.StreamRequestHandler):
             if len(data) > 1024 * 1024:
                 raise ValueError('ISA 请求过大')
             request = json.loads(data)
-            if not isinstance(request, dict) or set(request) - {'instruction', 'arguments'}:
-                raise ValueError('只接受指令名称与参数')
+            if not isinstance(request, dict) or set(request) - {'instruction', 'arguments', 'require_current_run'}:
+                raise ValueError('ISA 请求字段无效')
             if not isinstance(request.get('instruction'), str) or not isinstance(request.get('arguments', {}), dict):
                 raise ValueError('指令参数无效')
-            result = self.server.forward(request)
+            require_current_run = request.pop('require_current_run', False)
+            if type(require_current_run) is not bool or (require_current_run and request['instruction'] != 'GetScriptRun'):
+                raise ValueError('运行绑定仅用于 GetScriptRun')
+            # The runner obtains its ID from the same private launch config as
+            # the bearer token. The script only supplies a claimed ID.
+            if require_current_run and (not self.server.script_run_id
+                    or request.get('arguments', {}).get('script_run_id') != self.server.script_run_id):
+                result = {'status': 'failed', 'error': {'code': 'instruction.permission_denied',
+                          'message': '请求与当前脚本运行不匹配'}}
+            else:
+                result = self.server.forward(request)
         except Exception as error:
             result = {'status': 'failed', 'error': {'code': 'instruction.failed', 'message': str(error)}}
         self.wfile.write(json.dumps(result, ensure_ascii=False).encode() + b'\n')
@@ -169,7 +180,7 @@ def _run(config: dict, run_dir: Path, *, socket_path: Path, forward=None):
     started = time.time()
     result = {'status': 'failed', 'exit_code': None, 'outputs': {}, 'artifacts': [], 'error_code': '',
               'stdout_truncated': False, 'stderr_truncated': False}
-    relay = Relay(socket_path, forward or http_forward(config))
+    relay = Relay(socket_path, forward or http_forward(config), script_run_id=config.get('script_run_id'))
     thread = threading.Thread(target=relay.serve_forever, daemon=True)
     thread.start()
     process = None

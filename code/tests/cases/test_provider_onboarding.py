@@ -136,8 +136,9 @@ def test_preparation_publishes_phase_before_blocking_work(monkeypatch, tmp_path)
     monkeypatch.setattr(updates, "_runtime_installed", lambda runtime: False)
     monkeypatch.setattr(updates, "runtime_available", lambda name: False)
     monkeypatch.setattr(updates, "_activate", lambda *args, **kwargs: observe("service_activation") or True)
-    monkeypatch.setattr(business_tasks, "start", lambda task_id, work: work())
-    updates.prepare_runtime("claude")
+    monkeypatch.setattr(business_tasks, "start", Mock(side_effect=AssertionError("Script owns the preparation")))
+    preparation = updates.prepare_runtime("claude", background=False)
+    assert preparation["status"] == "ready" and "owner" not in preparation
     assert observed == ["prerequisites", "download", "dependency_install", "service_activation"]
     result = json.loads((tmp_path / "provider-updates.json").read_text())["preparations"]["claude"]
     assert result["status"] == "ready" and "phase" not in result

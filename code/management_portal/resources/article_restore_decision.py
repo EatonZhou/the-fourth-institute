@@ -1,7 +1,7 @@
 """Read an explicit user's decision through Society's existing message owner."""
 from __future__ import annotations
 
-from .article_restore_preview import digest
+from .article_restore_preview import digest, _authorize
 
 APPROVE = '同意按该项目当前共享规则恢复'
 
@@ -18,8 +18,6 @@ def proposal_text(scope):
 
 def verify(arguments, actor, scope):
     from .article_restore_reads import read_message
-    from management_portal import permission_system
-
     rid = arguments['decision_resident_id']
     proposal = read_message(resident_id=rid, actor=actor, message_id=arguments['proposal_message_id'])
     answer = read_message(resident_id=rid, actor=actor, message_id=arguments['decision_message_id'])
@@ -52,8 +50,9 @@ def verify(arguments, actor, scope):
     if not approved:
         raise ValueError('Current project sharing has not been explicitly approved for this proposal')
     # A historical answer alone cannot keep revoked authority alive.
-    checks = {**arguments, 'source_address': arguments['source_address'].split('/')[0]}
-    if not permission_system.allows(user, 'RestoreArticle', checks):
-        raise PermissionError('The deciding User no longer holds the required recovery permissions')
+    try:
+        _authorize(user, arguments, arguments['source_address'].split('/')[0])
+    except PermissionError as exc:
+        raise PermissionError('The deciding User no longer holds the required recovery permissions') from exc
     return {'user': user, 'proposal_message_id': arguments['proposal_message_id'],
             'decision_message_id': arguments['decision_message_id'], 'scope_digest': digest(scope)}

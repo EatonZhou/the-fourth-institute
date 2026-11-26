@@ -370,7 +370,8 @@ export function openLogin(accountId, {onChanged = () => {}} = {}) {
     } else if (paused && !closed && !terminal) { paused = false; void poll(); }
   };
   document.addEventListener('visibilitychange', syncPollingVisibility);
-  let regionSelect, startButton, startedAt = Date.now();
+  const loginFields = [];
+  let startButton, startedAt = Date.now();
   const waiting = () => t("正在获取登录授权信息…已等待 {p0} 秒。显示授权链接或设备码后，请在浏览器完成授权。", {
     p0: Math.floor((Date.now() - startedAt) / 1000)});
   const showProgress = () => { if (!closed && pending) status.textContent = waiting(); };
@@ -383,7 +384,7 @@ export function openLogin(accountId, {onChanged = () => {}} = {}) {
   const status = node("p", waiting(), {role: "status", "data-backend-login-state": "", "aria-busy": "true"});
   const code = node("code", "", {"data-backend-login-code": ""});
   const link = node("a", t("打开授权页面"), {target: "_blank", rel: "noopener noreferrer", hidden: true});
-  const regionForm = node("div", undefined, {class: "backendForm", hidden: true});
+  const optionsForm = node("div", undefined, {class: "backendForm", hidden: true});
   const authorization = node("form", undefined, {class: "backendForm", hidden: true});
   const response = field(authorization, "浏览器返回的授权码", "authorization_code", "", {type: "password", required: true, autocomplete: "off"});
   const inputHelp = node("small", "", {class: "backendHint", id: "backend-login-help", hidden: true});
@@ -408,7 +409,7 @@ export function openLogin(accountId, {onChanged = () => {}} = {}) {
       if (!closed) { terminal = true; pending = false; clearInterval(progressTimer); status.setAttribute("aria-busy", "false"); status.textContent = t("登录已取消"); code.textContent = ""; link.hidden = true; authorization.hidden = true; response.value = ""; }
     } catch (error) { if (!closed) { status.textContent = errorText(error); cancel.disabled = false; } }
   }, true);
-  view.el.append(regionForm, status, code, link, authorization, cancel); view.open(); logins.set(accountId, view);
+  view.el.append(optionsForm, status, code, link, authorization, cancel); view.open(); logins.set(accountId, view);
   const render = result => {
     if (closed || terminal) return;
     const session = result.session || {};
@@ -438,7 +439,7 @@ export function openLogin(accountId, {onChanged = () => {}} = {}) {
     response.title = session.input_hint || "";
     submit.disabled = session.state !== "awaiting_user";
     if (session.state === "succeeded") { code.textContent = ""; link.hidden = true; onChanged(); }
-    if (regionSelect) { regionSelect.disabled = session.state === "succeeded"; startButton.disabled = session.state === "succeeded"; }
+    setOptionsDisabled(session.state === "succeeded");
     if (!terminal) schedulePoll(2000);
   };
   const poll = async () => {
@@ -460,18 +461,25 @@ export function openLogin(accountId, {onChanged = () => {}} = {}) {
     if (!closed) {
       status.textContent = errorText(error);
       if (terminal) { clearTimeout(timer); cancel.disabled = true; authorization.hidden = true; response.value = ""; }
-      if (regionSelect) { regionSelect.disabled = false; startButton.disabled = false; }
+      setOptionsDisabled(false);
     }
   };
+  function setOptionsDisabled(disabled) {
+    for (const {input} of loginFields) input.disabled = disabled;
+    if (startButton) startButton.disabled = disabled;
+  }
   const start = async () => {
     const current = ++generation;
     clearTimeout(timer); clearInterval(progressTimer); terminal = false; pending = true; startedAt = Date.now();
     code.textContent = ""; link.hidden = true; link.removeAttribute("href"); cancel.disabled = true;
     status.textContent = waiting(); status.setAttribute("aria-busy", "true");
-    if (regionSelect) { regionSelect.disabled = true; startButton.disabled = true; }
+    setOptionsDisabled(true);
     progressTimer = setInterval(showProgress, 1000);
     try {
-      const args = {account_id: accountId, ...(regionSelect ? {region: regionSelect.value} : {})};
+      const args = {account_id: accountId};
+      if (loginFields.length) {
+        args.options = Object.fromEntries(loginFields.map(({key, input, values}) => [key, values.get(input.value)]));
+      }
       const result = await call("CreateProviderAccountLogin", args, {signal: abort.signal});
       if (current === generation) render(result);
     } catch (error) { if (current === generation) failed(error); }
@@ -480,20 +488,32 @@ export function openLogin(accountId, {onChanged = () => {}} = {}) {
   void call("GetProviderAccountLogin", {account_id: accountId}, {signal: abort.signal}).then(result => {
     if (closed) return;
     const options = result.login_options;
-    if (!options?.regions?.length) { void start(); return; }
-    regionForm.hidden = false;
-    regionSelect = select(regionForm, "账号所属区域", "login_region", options.regions.map(r => [r.id, t(r.label)]), options.region);
-    hint(regionSelect, "中国区账号使用 kimi.com，国际区账号使用 kimi.ai。切换区域后请重新获取授权。");
-    startButton = button("获取登录授权", () => void start()); regionForm.append(startButton);
-    regionSelect.addEventListener("change", () => {
+    const properties = Object.entries(options?.schema?.properties || {});
+    if (!properties.length) { void start(); return; }
+    const onOptionChanged = () => {
       generation++; clearTimeout(timer); clearInterval(progressTimer); pending = false;
       code.textContent = ""; link.hidden = true; link.removeAttribute("href");
-      status.setAttribute("aria-busy", "false"); status.textContent = t("请获取所选区域的登录授权。");
-    });
+      status.setAttribute("aria-busy", "false"); status.textContent = t("请重新获取登录授权。");
+    };
+    for (const [key, spec] of properties) {
+      const choices = spec.oneOf || spec.enum?.map(value => ({const: value}));
+      if (!choices?.length || choices.some(choice => !["string", "number", "boolean"].includes(typeof choice.const))) {
+        throw new Error(t("无法显示登录选项。"));
+      }
+      const values = new Map(choices.map(choice => [String(choice.const), choice.const]));
+      const entries = choices.map(choice => [String(choice.const), choice.title ?? String(choice.const)]);
+      const initial = String(options.values?.[key] ?? spec.default ?? choices[0].const);
+      const input = select(optionsForm, spec.title || (key === "region" ? "账号所属区域" : key), "login_" + key, entries, initial);
+      if (spec.description) hint(input, spec.description);
+      input.addEventListener("change", onOptionChanged);
+      loginFields.push({key, input, values});
+    }
+    optionsForm.hidden = false;
+    startButton = button("获取登录授权", () => void start()); optionsForm.append(startButton);
     if (result.session?.state) render(result);
     else {
       pending = false; clearInterval(progressTimer); status.setAttribute("aria-busy", "false");
-      status.textContent = t("请选择账号所属区域，然后获取登录授权。");
+      status.textContent = t("请选择登录选项，然后获取授权。");
     }
   }).catch(failed);
   return view;
@@ -709,7 +729,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     const retry = button("重试", () => {
       preparationRequested = false;
       preparationReadFailures = 0;
-      void perform(reload);
+      void perform(preparationRun ? readPreparationRun : reload);
     });
     const linkedApi = () => state.apis.find(api => api.api_id === state.accounts.find(a => a.account_id === accountId)?.config?.api_id);
     const editConnection = button("编辑连接", () => { const api = linkedApi(); if (api) apiEditor(api, {accountId}); });
@@ -764,7 +784,31 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       if (!closed) status.setAttribute("aria-busy", "false");
     }
     let modelChoices = "";
+    let preparationRun = null;
+    async function readPreparationRun() {
+      let receipt;
+      try {
+        receipt = await preparationRun.read(preparationRun.ref, execute);
+      } catch (error) {
+        if (error.receipt) preparationRun = null;
+        throw error;
+      }
+      if (closed) return;
+      if (receipt.status === "running") {
+        schedulePoll(pollPreparation, 2000);
+        return;
+      }
+      preparationRun = null;
+      if (receipt.outputs?.preparation?.status === "busy") {
+        preparationRequested = false;
+        status.textContent = t("运行环境正在更新，完成后将自动继续。");
+        schedulePoll(pollPreparation, 2000);
+        return;
+      }
+      await reload();
+    }
     function pollPreparation() {
+      if (preparationRun) return perform(readPreparationRun, undefined, true);
       return perform(() => reload({polling: true}), undefined, true);
     }
     async function reload({polling = false} = {}) {
@@ -824,16 +868,15 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         } else if (!preparationRequested) {
           preparationRequested = true;
           progressMessage = "正在自动准备运行环境…";
-          const result = await execute("InstallProviderRuntime", {provider: setup.provider});
+          const {startOperation, readOperation} = await import("/static/portal_operations.js");
           if (closed) return;
-          if (result.preparation.status === "busy") {
-            // Another runtime update owns the lock; observe and retry without user action.
-            preparationRequested = false;
-            status.textContent = t("运行环境正在更新，完成后将自动继续。");
-            schedulePoll(pollPreparation, 2000);
-          } else {
-            await reload();
-          }
+          const run = await startOperation("install_provider_runtime", {provider: setup.provider}, (name, args) => {
+            if (closed) throw new DOMException("Setup was closed", "AbortError");
+            return execute(name, args);
+          }, abort.signal);
+          if (closed) return;
+          preparationRun = {ref: run, read: readOperation};
+          await readPreparationRun();
         } else {
           throw new Error(setup.preparation?.message || t("运行环境准备未完成，请重试。"));
         }
@@ -1328,6 +1371,39 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
   }
   const runnerTitle = provider => provider === "provider_api" ? t("直连模型（只对话，不执行工具）")
     : state.providers.find(item => item.provider === provider)?.title || provider;
+  function accountConfigurationOperation(account) {
+    const capability = state.providers.find(item => item.provider === account.provider)?.capabilities?.account?.configuration;
+    return capability?.kinds?.includes(account.kind) ? capability : null;
+  }
+
+  function accountConfigurationEditor(account) {
+    const {view, form} = newEditor("原生账号配置");
+    const alert = form.querySelector('[role="alert"]');
+    void run(async () => {
+      const args = {account_id: account.account_id};
+      const {configuration} = await execute("GetProviderAccountConfiguration", args);
+      if (editor !== view || destroyed) return false;
+      const current = configuration.model_provider;
+      const choices = [...new Set([current, "openai", ...configuration.model_providers].filter(Boolean))];
+      const provider = select(form, "模型 Provider", "model_provider", choices.map(value => [value, value]), current);
+      const canEdit = me.access?.allows?.UpdateProviderAccountConfiguration === true;
+      provider.disabled = !canEdit;
+      if (!canEdit) return false;
+      saveButton(form);
+      form.addEventListener("submit", event => {
+        event.preventDefault();
+        void run(async () => {
+          alert.textContent = "";
+          await execute("UpdateProviderAccountConfiguration", {
+            ...args, changes: {model_provider: provider.value},
+          }, {expectedVersion: configuration.version});
+          if (editor === view) view.close();
+        }, false, {errorTarget: alert});
+      });
+      return false;
+    }, false, {errorTarget: alert});
+  }
+
   function accountRows(accounts, linked = false) {
     return accounts.map(a => {
       const identity = node("div", a.account_id);
@@ -1339,6 +1415,8 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
           ""].filter(Boolean).join(" · "),
         actions(...(a.kind === "subscription_login" ? [button(a.login_state === "login_expired" ? "重新登录" : "登录", () => { login = openLogin(a.account_id, {onChanged: () => void refresh("accounts")}); }, !canWrite)] : []),
           button("设置与测试", () => setupEditor(a.account_id), !canWrite),
+          ...(me.access?.allows?.GetProviderAccountConfiguration === true && accountConfigurationOperation(a)?.schema?.properties?.model_provider
+            ? [button("原生账号配置", () => accountConfigurationEditor(a))] : []),
           ...(a.provider === "claude" && a.kind === "subscription_login" ? [button("编辑模型目录", () => claudeCatalogEditor(a), readonly)] : []),
           deleteControl("删除执行账号？", a.account_id, "DeleteProviderAccount", "account_id", reload, !canDeleteAccount || !Number.isInteger(a.registration_version),
             !Number.isInteger(a.registration_version) ? "Provider 内置身份没有可删除的账号登记。" : "当前身份没有删除权限。"))]};

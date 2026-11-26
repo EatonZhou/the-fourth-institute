@@ -130,18 +130,20 @@ def read_page(root: Path, *, account_id: str, since: str, until: str, cursor: st
     return {'records': records, 'next_cursor': '', 'account_id': account_id}
 
 
+def codex_usage_events(row, **query):
+    from .account_hosting import account_home
+
+    account_id = row["account_id"]
+    return read_page(account_home("codex", account_id) / "sessions", account_id=account_id, **query)
+
+
 def get_provider_usage_events(inv):
-    from management_portal.hatg.contracts import invalid, not_found
-    from .account_adapters import CodexRoutes
-    account_id = str(inv.argument('account_id') or '')
-    registry = CodexRoutes()
+    from management_portal.hatg.contracts import invalid
+    from .provider_account_operations import account_operation
+
+    row, operation = account_operation(inv.argument("account_id"), "usage_events")
     try:
-        route = registry.get(account_id)
-    except (ValueError, KeyError) as exc:
-        raise not_found('Codex 账号未登记') from exc
-    try:
-        return read_page(route.codex_home / 'sessions', account_id=account_id,
-                         since=inv.argument('since'), until=inv.argument('until'),
+        return operation(row, since=inv.argument('since'), until=inv.argument('until'),
                          cursor=inv.argument('cursor') or '', limit=inv.argument('limit') or 1000)
     except ValueError as exc:
         raise invalid(str(exc)) from exc

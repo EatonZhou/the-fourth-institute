@@ -804,7 +804,7 @@ def runtime_available(provider: str) -> bool:
         return False
 
 
-def prepare_runtime(provider: str) -> dict:
+def prepare_runtime(provider: str, *, background: bool = True) -> dict:
     """Reuse an installed runtime or prepare only the selected Provider.
 
     The same lock, staging and activation owner is used by scheduled updates.
@@ -832,7 +832,7 @@ def prepare_runtime(provider: str) -> dict:
     def work():
         with _update_state() as locked:
             if locked is None:
-                return
+                return {"status": "busy", "message": "运行环境正在准备或更新，请稍后重试。"}
             state, save = locked
             result = state.setdefault("preparations", {}).setdefault(provider, {})
             def report_phase(name):
@@ -874,6 +874,9 @@ def prepare_runtime(provider: str) -> dict:
                     result.pop(field, None)
             result["updated_at"] = datetime.now(timezone.utc).isoformat()
             save()
+            return {key: value for key, value in result.items() if key != "owner"}
+    if not background:
+        return work()
     business_tasks.start(task_id, work)
     return {"status": "preparing"}
 
