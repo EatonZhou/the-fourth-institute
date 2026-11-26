@@ -245,6 +245,31 @@ def test_shared_kimi_first_start_is_owned_and_idempotent(control, monkeypatch):
     assert not any(cmd[0] != 'systemctl' for cmd in control.commands)
 
 
+@pytest.mark.skipif(not sys.platform.startswith("linux"), reason="systemd service contract")
+def test_claude_update_with_host_routing_overrides(control):
+    target = units.install_claude_backend(app_server_only=True)
+    dropin = target.parent / (target.name + '.d') / '50-provider-egress.conf'
+    shared = target.parent / 'tfi-fixture-.service.d' / '65-no-proxy.conf'
+    egress = '[Service]\nEnvironment=TFI_PROVIDER_EGRESS=tunnel\n'
+    dropin.parent.mkdir(mode=0o700)
+    shared.parent.mkdir(mode=0o700)
+    dropin.write_text(egress)
+    shared.write_text(egress + 'UnsetEnvironment=HTTP_PROXY HTTPS_PROXY ALL_PROXY NO_PROXY http_proxy https_proxy all_proxy no_proxy\n')
+    dropin.chmod(0o600)
+    shared.chmod(0o600)
+    control.service.dropins = f'{dropin} {shared}'
+    assert units.install_claude_backend(app_server_only=True) == target
+
+    control.service.need_reload = 'yes'
+    with pytest.raises(ValueError, match="overrides"):
+        units.provider_runtime_services('portal-claude-code.service')
+    control.service.need_reload = 'no'
+    for extra in ('ExecStart=/another/program', 'User=another-user', 'Environment=PORTAL_INSTANCE_ROOT=/another/instance'):
+        dropin.write_text(egress + extra + '\n')
+        with pytest.raises(ValueError, match="overrides"):
+            units.install_claude_backend(app_server_only=True)
+
+
 def test_foreign_dropin_rejected_before_new_start(control):
     target = units.install_claude_backend(app_server_only=True)
     before = target.read_bytes()

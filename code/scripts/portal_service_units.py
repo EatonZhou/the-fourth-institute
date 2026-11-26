@@ -64,7 +64,8 @@ def provider_runtime_services(unit: str) -> tuple[str, ...]:
     instance = _instance()
     if component not in instance.document['services']['components']:
         return ()
-    instance_services.verify_definitions(instance, exact=False, selected_components=(component,))
+    instance_services.verify_definitions(instance, exact=False, selected_components=(component,),
+                                         claude_network_dropins=component == 'claude-code')
     if not _definition_path(instance, component).exists():
         return ()
     name = instance_services.unit_name(instance, component)
@@ -77,7 +78,7 @@ def claude_account_services():
     components = [name for name in instance.document['services']['components']
                   if name.startswith('claude-account@')]
     if components:
-        instance_services.verify_definitions(instance, exact=False, selected_components=components)
+        instance_services.verify_definitions(instance, exact=False, selected_components=components, claude_network_dropins=True)
     control = instance_services.controller(instance)
     names = [instance_services.unit_name(instance, component) for component in components]
     return tuple(name for name in names if control.status(name)['active'] == 'active')

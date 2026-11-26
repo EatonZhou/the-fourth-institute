@@ -76,6 +76,7 @@ class FakeControl:
         self.active = set()
         self.calls = []
         self.dropins = ''
+        self.need_reload = 'no'
 
     def status(self, name):
         defined = self.unit_path(self.directory, name).exists()
@@ -97,7 +98,7 @@ class FakeControl:
                                                stderr='')
         name = args[3]
         return subprocess.CompletedProcess(args, 0, stdout=(
-            f"FragmentPath={self.unit_path(self.directory, name)}\nDropInPaths={self.dropins}\n"), stderr='')
+            f"FragmentPath={self.unit_path(self.directory, name)}\nDropInPaths={self.dropins}\nNeedDaemonReload={self.need_reload}\n"), stderr='')
 
     def start(self, *names):
         self.calls.append(('start', *names))

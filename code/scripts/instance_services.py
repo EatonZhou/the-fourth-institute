@@ -10,6 +10,7 @@ import importlib
 import json
 import plistlib
 import shlex
+import stat
 import os
 from pathlib import Path
 import sys
@@ -200,7 +201,37 @@ def definition_root(text, platform):
     return environment.get('PORTAL_INSTANCE_ROOT')
 
 
-def verify_definitions(instance, *, exact=True, selected_components=None):
+def _claude_network_dropins(instance, component, directory, properties):
+    """Recognize the two host-routing definitions used by Claude service updates."""
+    if component != 'claude-code' and not component.startswith('claude-account@'):
+        return False
+    if properties.get('NeedDaemonReload') != 'no':
+        return False
+    egress = ['[Service]', 'Environment=TFI_PROVIDER_EGRESS=tunnel']
+    allowed = {
+        directory / (instance.service_prefix + '-.service.d') / '65-no-proxy.conf':
+            [*egress, 'UnsetEnvironment=HTTP_PROXY HTTPS_PROXY ALL_PROXY NO_PROXY http_proxy https_proxy all_proxy no_proxy'],
+        directory / (unit_name(instance, component) + '.d') / '50-provider-egress.conf': egress,
+    }
+    for filename in shlex.split(properties['DropInPaths']):
+        path = Path(filename)
+        if path not in allowed:
+            return False
+        try:
+            if path.resolve(strict=True) != path or not stat.S_ISREG(path.lstat().st_mode):
+                return False
+            for entry in (path.parent, path):
+                info = entry.stat()
+                if info.st_uid != os.getuid() or info.st_mode & 0o022:
+                    return False
+            if path.read_text(encoding='utf-8').splitlines() != allowed[path]:
+                return False
+        except (OSError, UnicodeError):
+            return False
+    return True
+
+
+def verify_definitions(instance, *, exact=True, selected_components=None, claude_network_dropins=False):
     platform = platform_name()
     native = adapter()
     directory = definition_directory(instance)
@@ -223,9 +254,11 @@ def verify_definitions(instance, *, exact=True, selected_components=None):
             raise ValueError('Instance service definition differs from its manifest: ' + path.name)
         if platform == 'linux':
             result = control.run('systemctl', '--user', 'show', name,
-                                 '--property=FragmentPath,DropInPaths', check=True)
+                                 '--property=FragmentPath,DropInPaths,NeedDaemonReload', check=True)
             properties = dict(line.split('=', 1) for line in result.stdout.splitlines() if '=' in line)
-            if properties.get('FragmentPath') != str(path) or properties.get('DropInPaths'):
+            foreign_dropins = properties.get('DropInPaths') and not (
+                claude_network_dropins and _claude_network_dropins(instance, component, directory, properties))
+            if properties.get('FragmentPath') != str(path) or foreign_dropins:
                 raise ValueError('Loaded instance service has a different definition or overrides: ' + name)
         elif platform == 'macos':
             # A plist on disk is not proof of the job launchd has loaded.
