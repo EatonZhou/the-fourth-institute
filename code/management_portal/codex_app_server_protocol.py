@@ -304,6 +304,7 @@ class TurnWaiter:
     completed_item_ids: set[str] = field(default_factory=set)
     unphased_items: dict[str, dict[str, Any]] = field(default_factory=dict)
     completion_deferred: bool = False
+    reconcile_before_completion: bool = False
     turn_snapshot_transform: Callable[[dict[str, Any]], dict[str, Any]] | None = None
     interrupt_requests: dict[str, PendingRequest] = field(default_factory=dict)
 

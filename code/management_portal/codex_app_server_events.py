@@ -13,6 +13,8 @@ import threading
 import time
 from typing import TYPE_CHECKING, Any, Callable
 
+from .execution.transport import ExecutionClaimOwnershipLost
+
 from .codex_app_server_protocol import (
     TASK_COMPLETE_GOAL_STATUSES,
     CodexTurnContinuationRequired,
@@ -298,6 +300,8 @@ class CodexEventRouter:
     def _observe_goal(
         waiter: GoalWaiter, method: str, params: dict[str, Any], error: BaseException | None,
     ) -> None:
+        if isinstance(waiter.error, ExecutionClaimOwnershipLost):
+            return
         if error is not None:
             fail_waiter(waiter, error)
         turn_id = notification_turn_id(params)
@@ -306,6 +310,10 @@ class CodexEventRouter:
         if waiter.event_callback:
             try:
                 waiter.event_callback({"method": method, "params": params})
+            except ExecutionClaimOwnershipLost as claim_lost:
+                waiter.error = claim_lost
+                waiter.event.set()
+                return
             except Exception:
                 logging.getLogger(__name__).exception("Codex goal event observation failed")
         if method == "thread/tokenUsage/updated":
@@ -327,6 +335,8 @@ class CodexEventRouter:
         self, thread_id: str, waiter: TurnWaiter, method: str, params: dict[str, Any],
         error: BaseException | None,
     ) -> None:
+        if isinstance(waiter.error, ExecutionClaimOwnershipLost):
+            return
         turn_id = notification_turn_id(params)
         if (
             waiter.turn_id
@@ -367,7 +377,12 @@ class CodexEventRouter:
                     if item_id in waiter.completed_item_ids:
                         return
                     waiter.completed_item_ids.add(item_id)
-        if method == "turn/completed" and waiter.unphased_items:
+        if method == "turn/completed" and (
+            waiter.unphased_items or (
+                waiter.reconcile_before_completion
+                and (params.get("turn") or {}).get("status") == "completed"
+            )
+        ):
             # The reader must not block on history or acknowledge an unverified
             # final response. The accepted-turn follower performs reconciliation.
             waiter.completion_deferred = True
@@ -379,10 +394,14 @@ class CodexEventRouter:
         if waiter.event_callback:
             try:
                 waiter.event_callback({"method": method, "params": params})
+            except ExecutionClaimOwnershipLost as claim_lost:
+                waiter.error = claim_lost
+                waiter.event.set()
+                return
             except Exception as callback_error:
                 logging.getLogger(__name__).warning(
                     "Provider event projection failed: thread=%s turn=%s method=%s error_type=%s",
-                    thread_id, turn_id, method, type(callback_error).__name__,
+                    thread_id, turn_id, method, type(callback_error).__name__, exc_info=True,
                 )
                 if method == "item/completed":
                     with self._state_lock:

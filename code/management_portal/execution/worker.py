@@ -88,7 +88,10 @@ class ExecutionWorker:
         with self._claims_lock:
             self._claims[execution.execution_id] = execution
         try:
-            return execution.run()
+            outcome = execution.run()
+            if outcome["status"] == "claim_lost":
+                LOGGER.info("Execution %s stopped after losing its claim", execution.execution_id)
+            return outcome
         finally:
             with self._claims_lock:
                 if self._claims.get(execution.execution_id) is execution:
@@ -214,7 +217,7 @@ class _ClaimedExecution:
             try:
                 return call()
             except ExecutionClaimOwnershipLost:
-                self.fence()
+                self.fence(interrupt_provider=False)
                 raise
             except ExecutionResponseUnknown:
                 if not retry_unknown:
@@ -400,7 +403,7 @@ class _ClaimedExecution:
                 if self._heartbeat_once(heartbeat_interval):
                     return
             except ExecutionClaimOwnershipLost:
-                self.fence()
+                self.fence(interrupt_provider=False)
                 return
             except (ExecutionServiceUnavailable, ExecutionResponseUnknown):
                 if time.monotonic() >= self.lease_deadline:
@@ -428,7 +431,7 @@ class _ClaimedExecution:
                 self.execution_id, self.claim_token,
                 timeout_seconds=min(heartbeat_interval, 0.25) if worker.shutdown_requested() else heartbeat_interval,
             )
-        if self.heartbeat_stop.is_set():
+        if self.heartbeat_stop.is_set() or self.ownership_lost.is_set():
             return True
         if status.get("cancel_requested"):
             self.cancelled.set()
@@ -459,6 +462,8 @@ class _ClaimedExecution:
         # The cancellation flag records intent, not delivery. A lost reply or
         # a Provider still starting must be retried while this Worker owns
         # the execution, until execute() actually returns.
+        if self.ownership_lost.is_set():
+            return
         try:
             self._worker.runtime.interrupt(self.execution_id)
         except Exception:

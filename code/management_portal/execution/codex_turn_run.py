@@ -40,6 +40,7 @@ from .codex_history_delivery import CodexHistoryDelivery
 from .codex_recovery import CodexRecoveryBudget
 from .codex_rollout_history import CodexCompaction, read_codex_turn_error, read_codex_turn_input_recorded
 from .contracts import ExecutionRecoveryDeferred, ExecutionRequest
+from .transport import ExecutionClaimOwnershipLost
 from .control_messages import report_harness_control
 from .provider_continuation import (
     INTERRUPTED_TURN_CONTINUATION,
@@ -388,6 +389,8 @@ class CodexTurnRun:
         if self.event_processor is not None:
             try:
                 self.event_processor.process_event(event)
+            except ExecutionClaimOwnershipLost:
+                raise
             except Exception:
                 LOGGER.exception("Codex Harness event observation failed")
         if method == "thread/tokenUsage/updated":
@@ -418,7 +421,6 @@ class CodexTurnRun:
             usage_event_id
             and usage_event_id not in self.reported_usage_events
         ):
-            self.reported_usage_events.add(usage_event_id)
             self.context.emit(
                 "token_usage_delta",
                 {
@@ -426,6 +428,7 @@ class CodexTurnRun:
                     "usage": usage_delta,
                 },
             )
+            self.reported_usage_events.add(usage_event_id)
         live_usage, context_window = _live_context_usage(
             params.get("tokenUsage")
         )
@@ -442,8 +445,8 @@ class CodexTurnRun:
         child_event_id, child_delta = codex_token_usage_delta(child_params.get("tokenUsage"))
         child_event_id = f"{params.get('traceKey') or ''}:{child_event_id}" if child_event_id else ""
         if child_event_id and child_event_id not in self.reported_usage_events:
-            self.reported_usage_events.add(child_event_id)
             self.context.emit("token_usage_delta", {"event_id": child_event_id, "usage": child_delta})
+            self.reported_usage_events.add(child_event_id)
 
     def _checkpoint_completed_turn(self, params: dict[str, Any], turn_id: str) -> None:
         completed_turn = (

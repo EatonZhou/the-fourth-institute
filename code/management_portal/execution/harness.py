@@ -12,6 +12,7 @@ from dataclasses import dataclass, field, replace
 from typing import Any, Callable, Iterator, Protocol
 
 from .contracts import ExecutionControlSignal
+from .transport import ExecutionClaimOwnershipLost
 from .harness_capabilities import (
     PORTAL_TOOLS,
     adapter_capabilities,
@@ -853,6 +854,9 @@ class AgentHarness:
     def _emit(context: Any, event_type: str, details: dict[str, Any]) -> None:
         try:
             context.emit(event_type, details)
+        except ExecutionClaimOwnershipLost:
+            if event_type != "agent_harness_completed":
+                raise
         except Exception:
             # Harness telemetry is observational and must never make Portal depend
             # on the optional Harness path.

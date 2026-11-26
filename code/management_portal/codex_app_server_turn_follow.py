@@ -13,6 +13,7 @@ import time
 import uuid
 from typing import TYPE_CHECKING, Any, Callable, Mapping
 
+from .execution.transport import ExecutionClaimOwnershipLost
 from .codex_app_server_protocol import (
     CodexAppServerError,
     CodexTurnConnectionLost,
@@ -75,6 +76,7 @@ class CodexTurnFollower:
         thread_id = waiter.thread_id
         has_controls = turn_control_provider is not None
         missing_since: float | None = None
+        completion_seen_at: float | None = None
         while True:
             if waiter.error:
                 raise waiter.error
@@ -114,6 +116,27 @@ class CodexTurnFollower:
                 continue
             if str(terminal.get("status") or "") != "completed" or terminal.get("error"):
                 raise terminal_turn_error(thread_id, terminal)
+            if waiter.reconcile_before_completion:
+                # A live completion can overtake the first read after reattach.
+                # Project the exact terminal snapshot before publishing completion.
+                if waiter.completed:
+                    try:
+                        snapshot = self.read_terminal_turn(waiter)
+                    except (CodexAppServerError, TimeoutError):
+                        snapshot = None
+                    if snapshot is None:
+                        now = time.monotonic()
+                        if completion_seen_at is None:
+                            completion_seen_at = now
+                        if now - completion_seen_at >= TURN_ACCEPTED_MISSING_GRACE_SECONDS:
+                            raise CodexTurnConnectionLost(thread_id, waiter.turn_id)
+                        waiter.event.clear()
+                        self.wait_for_turn_signal(waiter, has_controls)
+                        continue
+                    terminal = snapshot
+                    if str(terminal.get("status") or "") != "completed" or terminal.get("error"):
+                        raise terminal_turn_error(thread_id, terminal)
+                waiter.reconcile_before_completion = False
             if waiter.completion_deferred:
                 terminal = self.canonical_turn(waiter, terminal)
                 self.replay_completed_items(waiter, terminal)
@@ -210,6 +233,8 @@ class CodexTurnFollower:
         if waiter.event_callback:
             try:
                 waiter.event_callback({"method": "turn/completed", "params": waiter.completed})
+            except ExecutionClaimOwnershipLost:
+                raise
             except Exception:
                 logging.getLogger(__name__).exception("Codex completed turn observation failed")
 
@@ -376,9 +401,11 @@ class CodexTurnFollower:
             except Exception as error:
                 with self._state_lock:
                     waiter.completed_item_ids.discard(item_id)
+                if isinstance(error, ExecutionClaimOwnershipLost):
+                    raise
                 logging.getLogger(__name__).warning(
                     "Provider item replay failed: thread=%s turn=%s item=%s error_type=%s",
-                    waiter.thread_id, waiter.turn_id, item_id, type(error).__name__,
+                    waiter.thread_id, waiter.turn_id, item_id, type(error).__name__, exc_info=True,
                 )
                 continue
             with self._state_lock:

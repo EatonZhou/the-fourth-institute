@@ -51,6 +51,7 @@ from .codex_rollout_history import (
 from .codex_turn_run import CodexSession, CodexTurnRun, codex_goal_command
 from .context_seed import preserve_structured_seed
 from .contracts import ExecutionRecoveryDeferred, ExecutionRequest
+from .transport import ExecutionClaimOwnershipLost
 from .harness import (
     AgentLoopToolBatch,
     AgentLoopToolBatchProcessor,
@@ -967,6 +968,8 @@ class CodexBackend:
                         context.emit("token_usage_delta", {
                             "event_id": prefix + event_id, "usage": delta, "occurred_at": written_at,
                         })
+        except ExecutionClaimOwnershipLost:
+            return  # The next claimant uses the same rollout and usage identities.
         except Exception:  # noqa: BLE001 - usage reporting never fails a turn
             LOGGER.warning("Codex rollout usage of thread %s could not be reported", thread_id, exc_info=True)
 

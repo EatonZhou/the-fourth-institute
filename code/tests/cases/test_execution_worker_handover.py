@@ -787,6 +787,46 @@ def test_worker_interrupts_provider_after_handover_requested(
     assert scheduler.finish_called is False
 
 
+def test_worker_claim_rejection_stops_without_interrupting_new_owner(caplog) -> None:
+    """调度器确认认领权已转移时，旧 Worker 停写且不中断新认领者接管的轮次"""
+    emitter_failed = threading.Event()
+    scheduler = mock.Mock()
+    scheduler.emit.side_effect = ExecutionClaimOwnershipLost("execution claim ownership changed")
+
+    def wait_for_control(*_args, **_kwargs):
+        assert emitter_failed.wait(2)
+        return {}
+
+    def execute(_request, context):
+        try:
+            context.emit_event("provider_event", {"method": "item/completed"})
+        finally:
+            emitter_failed.set()
+
+    scheduler.wait_for_control.side_effect = wait_for_control
+    runtime = mock.Mock()
+    runtime.execute.side_effect = execute
+    worker = ExecutionWorker(build_id="old", worker_id="old", scheduler=scheduler, runtime=runtime)
+    request = ExecutionRequest.new(
+        actor="sample_admin", prompt="accepted turn", service_type="agent_session",
+        provider="codex", operation="turn", system_instructions=portal_system_instructions("resident"),
+    )
+
+    with caplog.at_level("INFO", logger="management_portal.execution.worker"):
+        result = worker.execute_claim({
+            "claim_token": "old-claim-token",
+            "execution": {"execution_id": request.execution_id, "request": request.to_payload()},
+        })
+
+    assert result["status"] == "claim_lost"
+    scheduler.emit.assert_called_once()
+    scheduler.finish.assert_not_called()
+    runtime.interrupt.assert_not_called()
+    records = [record for record in caplog.records if "stopped after losing its claim" in record.message]
+    assert len(records) == 1
+    assert records[0].exc_info is None
+
+
 def test_worker_shutdown_fences_provider_without_publishing_cancelled(
     tmp_path: Path,
 ) -> None:

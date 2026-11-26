@@ -555,6 +555,7 @@ class CodexTurnRunner:
                 turn_id=safe_turn_id,
                 event_callback=event_callback,
                 turn_snapshot_transform=turn_snapshot_transform,
+                reconcile_before_completion=event_callback is not None,
             )
             try:
                 with self._state_lock:

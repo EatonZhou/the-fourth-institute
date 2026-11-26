@@ -37,6 +37,7 @@ from management_portal.codex_app_server_protocol import (
 from management_portal import codex_app_server_threads
 from management_portal.codex_app_server_threads import codex_thread_execution_lock
 from management_portal.codex_app_server_turn_follow import CodexTurnFollower
+from management_portal.execution.transport import ExecutionClaimOwnershipLost
 
 
 def test_running_turn_normalizes_message_identity_before_replay():
@@ -1456,6 +1457,48 @@ class CodexAppServerClientTest(unittest.TestCase):
         self.assertEqual(result.response, final_item["text"])
         client.close()
 
+    def test_resume_turn_reconciles_snapshot_when_live_completion_arrives_first(self) -> None:
+        """接回期间先收到完成通知，也要补齐原轮次条目再报告完成"""
+        thread_id = "thread-fast-handover"
+        turn_id = "turn-fast-handover"
+        missed_item = {"id": "missed-command", "type": "commandExecution", "status": "completed"}
+        final_item = {"id": "final", "type": "agentMessage", "phase": "final_answer", "text": "done"}
+        client = CodexAppServerClient(self.socket_path)
+        self.addCleanup(client.close)
+
+        def request(method, *_args, **_kwargs):
+            if method == "thread/resume":
+                client.events.dispatch_notification("turn/completed", {
+                    "threadId": thread_id,
+                    "turn": {"id": turn_id, "status": "completed", "items": [final_item]},
+                })
+            return {}
+
+        client.rpc.request = mock.Mock(side_effect=request)
+        client.reads.read_active_turn = mock.Mock(return_value=None)
+        client.reads.read_task_complete_goal = mock.Mock(return_value=None)
+        client.reads.read_turn = mock.Mock(side_effect=[
+            {"id": turn_id, "status": "inProgress", "items": []},
+            {"id": turn_id, "status": "completed", "items": [missed_item, final_item]},
+        ])
+        events: list[dict] = []
+
+        with mock.patch(
+            "management_portal.codex_app_server_turn_follow."
+            "TURN_COMPLETION_RECONCILE_INTERVAL_SECONDS", 0.01,
+        ):
+            result = client.resume_turn(thread_id, turn_id, cwd="/tmp", event_callback=events.append)
+
+        self.assertEqual(result.response, "done")
+        self.assertEqual(client.reads.read_turn.call_args_list, [mock.call(thread_id, turn_id)] * 2)
+        self.assertEqual([event["method"] for event in events], [
+            "item/completed", "item/completed", "turn/completed",
+        ])
+        self.assertEqual([event["params"]["item"]["id"] for event in events[:2]], [
+            "missed-command", "final",
+        ])
+        self.assertTrue(all(call.args[0] != "turn/start" for call in client.rpc.request.call_args_list))
+
     def test_resume_turn_follows_a_compaction_successor(self) -> None:
         """恢复轮次遇到压缩轮次时跟到其后继轮次取最终回答"""
         thread_id = "019f0000-0000-7000-8000-000000000205"
@@ -2473,6 +2516,26 @@ class CodexAppServerClientTest(unittest.TestCase):
                 self.assertEqual(callback.call_count, 2)
                 self.assertEqual(waiter.agent_messages, [item["text"]])
         client.close()
+
+    def test_claim_loss_stops_live_projection_without_a_traceback(self) -> None:
+        """认领已转移时让旧观察者退出，后续通知不再投影"""
+        client = CodexAppServerClient(self.socket_path)
+        self.addCleanup(client.close)
+        claim_lost = ExecutionClaimOwnershipLost("execution claim ownership changed")
+        callback = mock.Mock(side_effect=claim_lost)
+        waiter = TurnWaiter("thread", turn_id="turn", event_callback=callback)
+        client.work.turns[waiter.thread_id] = waiter
+        identity = {"threadId": waiter.thread_id, "turnId": waiter.turn_id}
+        with self.assertNoLogs("management_portal.codex_app_server_events", level="WARNING"):
+            client.events.dispatch_notification("item/completed", {
+                **identity, "item": {"id": "done", "type": "commandExecution", "status": "completed"},
+            })
+            client.events.dispatch_notification("thread/tokenUsage/updated", {
+                **identity, "tokenUsage": {"last": {"inputTokens": 5}},
+            })
+        self.assertIs(waiter.error, claim_lost)
+        self.assertTrue(waiter.event.is_set())
+        self.assertEqual(callback.call_count, 1)
 
     def test_active_replay_defers_unfinished_items_until_their_terminal_snapshot(self) -> None:
         """重放进行中轮次的快照时，未完成的条目等到完成后才发出且只发一次"""
