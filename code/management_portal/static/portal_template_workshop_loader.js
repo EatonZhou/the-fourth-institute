@@ -105,7 +105,12 @@
         return {accepted:resource.lineage_id === target.lineage_id && ['template_id','store_id','function_block_id'].every(key => (resource[key] || '') === (target[key] || ''))};
       },
       snapshot:() => ({...target,dirty:workshop?.dirty() || false}),
-      restore(value) { if (!pending) target = {...target,...value}; },
+      restore(value) {
+        if (!pending) {
+          const {dirty, ...resource} = value;
+          target = {...target,...resource};
+        }
+      },
       destroy() { destroyed = true; chat?.destroy(); workshop?.destroy(); root.replaceChildren(); },
     };
   }

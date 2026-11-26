@@ -166,7 +166,8 @@
       if (type === 'workshop') {
         return {id:instanceId,type,title:binding.title || window.PortalI18n.t('模板工坊'),
           layoutTitle:window.PortalI18n.t('模板工坊'),defaultHidden:binding.defaultHidden === true,
-          options:{target:binding},reusable:false};
+          options:{target:binding},reusable:false,restoreOnReload:true,
+          serialize:({runtime})=>({binding:runtime.target()})};
       }
       if (type === "navigation") {
         return {

@@ -33,15 +33,22 @@
       stored.openEditors.forEach(spec => {
         if (singletonTypes.has(String(spec?.type || ""))) return;
         const restored = options.restorePanel?.(clone(spec));
-        if (restored) rawPanels.push({
-          ...restored,
-          id: String(spec.id || restored.id || ""),
-          // Packages may persist their target in a different snapshot field.
-          // Keep the saved locator across later layout saves and reloads.
-          binding: clone(restored.binding || spec.binding || null),
-          closable: true,
-          restoreOnReload: true,
-        });
+        if (restored) {
+          const panel = {
+            ...restored,
+            id: String(spec.id || restored.id || ""),
+            // Packages may persist their target in a different snapshot field.
+            // Keep the saved locator across later layout saves and reloads.
+            binding: clone(restored.binding || spec.binding || null),
+            closable: true,
+            restoreOnReload: true,
+          };
+          // A default instance can also persist its current resource. Restore
+          // its descriptor before constructing runtimes, once per instance ID.
+          const index = rawPanels.findIndex(raw => String(raw.id) === panel.id);
+          if (index < 0) rawPanels.push(panel);
+          else rawPanels[index] = panel;
+        }
       });
     }
     const descriptors = new Map(rawPanels.map(raw => {

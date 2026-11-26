@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import subprocess
 import threading
+import pytest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from tests.cases.isa_test_support import ok
@@ -21,7 +22,8 @@ def test_workshop_draft_semantics():
     assert result.returncode == 0, result.stdout + result.stderr
 
 
-def test_workshop_browser_with_real_instructions(lineage):
+@pytest.mark.parametrize('script', ['template_workshop.browser.cjs', 'template_workshop_reload.browser.cjs'], ids=['editing', 'reload'])
+def test_workshop_browser_with_real_instructions(lineage, script):
     from management_portal.script_groups import expand_document
     from management_portal.society_service import principal_hierarchy_domain, lineage_reads
     without_personal = lineage_reads.list_lineages('sample_admin')
@@ -110,13 +112,16 @@ def test_workshop_browser_with_real_instructions(lineage):
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
-            self.wfile.write(json.dumps(response).encode())
+            try:
+                self.wfile.write(json.dumps(response).encode())
+            except (BrokenPipeError, ConnectionResetError):
+                pass  # A complete page reload cancels the old page's requests.
 
     server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
-        result = subprocess.run(['node', str(ROOT / 'tests/cases/javascript/template_workshop.browser.cjs')],
+        result = subprocess.run(['node', str(ROOT / 'tests/cases/javascript' / script)],
             cwd=ROOT, env={**os.environ, 'WORKSHOP_TEST_ORIGIN': f'http://127.0.0.1:{server.server_port}',
                            'WORKSHOP_TEST_LINEAGE': lineage, 'WORKSHOP_PERSONAL_LINEAGE':personal['lineage_id'],
                            'WORKSHOP_PERSONAL_ASSISTANT':personal['resident_id']}, capture_output=True, text=True, timeout=120)
@@ -133,9 +138,10 @@ def test_workshop_browser_with_real_instructions(lineage):
         after, _ = lineage_graph_edits.commit_lineage_edit(personal['lineage_id'],'sample_admin',sync,reason='Verify workshop isolation')
         family_after = next(block['family'] for block in after['function_blocks'] if block.get('family',{}).get('personal_ama_id'))
         assert family_after['members'] == family_before['members']
-        helper = next(block for block in after['function_blocks'] if block.get('template_id') == 'template_080f09d6226a')
-        helper_ids = {element['id'] for element in helper['elements'] if element['kind'] == 'resident'}
-        assert helper_ids and not helper_ids.intersection([*family_after['members'],family_after['facade'],family_after['steward'],family_after['router']])
+        helpers = [block for block in after['function_blocks'] if block.get('template_id') == 'template_080f09d6226a']
+        for helper in helpers:
+            helper_ids = {element['id'] for element in helper['elements'] if element['kind'] == 'resident'}
+            assert helper_ids and not helper_ids.intersection([*family_after['members'],family_after['facade'],family_after['steward'],family_after['router']])
     finally:
         server.shutdown()
         server.server_close()

@@ -52,6 +52,20 @@ function mount(h, extra = {}) {
     restorePanel: spec => descriptor(spec.id), ...extra});
 }
 
+test('persisted default instance replaces its initial descriptor before runtime creation', async () => {
+  const h=createHarness(),created=[];
+  try {
+    h.window.PortalWorkbench.registerPanelPackage({type:'restore-once',version:1,presentation:{title:'Restorable',icon:'panel'},
+      sizing:{minWidth:180,minHeight:140},instances:'multiple',capabilities:[],
+      behavior:{canHide:true,canCollapse:true,canMove:true,closable:true},context:{channels:[]},persistence:{schemaVersion:1},
+      create({panelId,target}){created.push([panelId,target]);return {};}});
+    h.create({id:'restore-once',initialEditors:[{id:'editor',type:'restore-once',defaultHidden:true,options:{target:'initial'}}],
+      store:{read:()=>({schemaVersion:2,panelIds:['editor'],hidden:[],openEditors:[{id:'editor',type:'restore-once',binding:{target:'saved'}}],layout:h.window.PortalWorkbench.model.stack(['editor'])}),replace:()=>{}},
+      restorePanel:spec=>({id:spec.id,type:spec.type,options:spec.binding})});
+    await h.settle();assert.deepEqual(created,[['editor','saved']]);
+  } finally {await h.cleanup();}
+});
+
 test('restored editor keeps its locator when the package snapshot stores target separately', async () => {
   const h = createHarness(); const reload = createHarness();
   try {
