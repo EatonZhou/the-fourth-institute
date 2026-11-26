@@ -922,6 +922,26 @@ def test_rollout_preserves_previous_build_and_standalone_bindings(tmp_path):
     assert runtime.canary_command(current, "", False, {}) is None
 
 
+@pytest.mark.parametrize("session_id", ["", "existing-cli-session"])
+def test_cli_1518_session_uses_cached_login_and_advertised_options(agent, monkeypatch, session_id):
+    from management_portal.execution import antigravity_backend as backend
+
+    monkeypatch.setattr(backend, "canary_command", lambda *args: [sys.executable, str(FAKE)])
+    monkeypatch.setattr(accounts, "environment", lambda account: {
+        "GEMINI_HOME": str(agent), "FAKE_ORCHESTRATOR_MODEL": "other-model",
+    })
+    inv = invocation(agent, sid=session_id)
+    inv.request.operation = "create"
+    inv.request.runtime_options["model"] = "other-model"
+    result = AntigravityBackend().execute(inv, context()[0])
+    rows = requests(agent)
+    assert [r["method"] for r in rows] == [
+        "initialize", "session/load" if session_id else "session/new", "session/set_config_option",
+    ]
+    assert rows[1]["params"]["_meta"] == {"antigravity": {"systemPrompt": {"append": "All Portal rules"}}}
+    assert rows[2]["params"] == {"sessionId": result.backend_session_id, "configId": "model", "value": "other-model"}
+
+
 @pytest.mark.parametrize("advertised,new_checkpoint", [(False, False), (True, False), (True, True)])
 def test_compact_requires_advertisement_and_new_native_summary(agent, monkeypatch, advertised, new_checkpoint):
     from management_portal.execution import antigravity_backend as backend

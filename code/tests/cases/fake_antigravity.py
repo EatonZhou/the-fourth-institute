@@ -140,6 +140,7 @@ for line in sys.stdin:
                                         "promptCapabilities": {"image": not bool(os.environ.get("FAKE_NO_IMAGES"))}}}
         if os.environ.get("FAKE_ADDITIONAL_DIRECTORIES"):
             result["agentCapabilities"]["sessionCapabilities"] = {"additionalDirectories": {}}
+        result["agentCapabilities"]["_meta"] = {"antigravity": {"systemPrompt": {"append": True}}}
     elif method == "authenticate":
         if os.environ.get("FAKE_LOGIN"):
             print("https://accounts.google.com/o/oauth2/auth?state=s&redirect_uri=http%3A%2F%2Flocalhost%3A12345%2F", file=sys.stderr, flush=True)
@@ -151,6 +152,10 @@ for line in sys.stdin:
         if method == "session/load":
             update(sid, sessionUpdate="agent_message_chunk", content={"type": "text", "text": "old history"})
         result = {"sessionId": sid, "models": {"currentModelId": "gemini-test", "availableModels": [{"modelId": "gemini-test"}]}}
+        result["configOptions"] = [
+            {"id": "model", "category": "model", "currentValue": "gemini-test"},
+            {"id": "mode", "category": "mode", "currentValue": "default"},
+        ]
         if orchestrator := os.environ.get("FAKE_ORCHESTRATOR_MODEL"):
             result["models"]["availableModels"].append({"modelId": orchestrator, "name": "Orchestrator (Neon)"})
         if method == "session/load":

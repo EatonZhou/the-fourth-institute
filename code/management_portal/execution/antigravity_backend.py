@@ -10,9 +10,10 @@ import threading
 from management_common.provider_turn_artifacts import ToolEditArtifacts
 from management_portal import antigravity_accounts as accounts
 from management_portal.antigravity_client import AcpClient, AcpTransportError, ToolServer
-from management_portal.antigravity_runtime import canary_command, cli_binding_root, command, cli_session_marker, has_cli_binding, pin_cli_session
+from management_portal.antigravity_runtime import CLI_CANARY, canary_command, cli_binding_root, command, cli_session_marker, has_cli_binding, pin_cli_session
 from management_portal.antigravity_input_media import prompt_content
 from management_portal.resident_shell_environment import resident_process_environment
+from . import antigravity_cli
 from .antigravity_workspace import additional_directories
 from .backend_contracts import BackendResult, full_system_context
 from .context_seed import realize_portable_seed
@@ -441,19 +442,27 @@ class AntigravityBackend:
                 raise ValueError("Antigravity ACP runtime does not support image input")
             if not capabilities.get("loadSession") or (server and not cli and not capabilities.get("mcpCapabilities", {}).get("http")):
                 raise RuntimeError("Antigravity ACP runtime lacks required session/MCP capabilities")
-            authenticated = client.call("authenticate", {"methodId": "oauth-personal"})
-            meta = {"systemPrompt": {"append": full_system_context(invocation)},
-                    "disabledTools": ["start_subagent", "ask_question"]}
-            if not native:
-                meta["enabledTools"] = []
-            params = {"cwd": request.cwd, "mcpServers": [server.descriptor()] if server else [],
-                      "_meta": {"antigravity": meta}}
-            session_capabilities = capabilities.get("sessionCapabilities")
-            if isinstance(session_capabilities, dict) and isinstance(session_capabilities.get("additionalDirectories"), dict):
-                params["additionalDirectories"] = additional_directories(request) if native else []
-            if sid:
-                params["sessionId"] = sid
-            created = client.call("session/load" if sid else "session/new", params)
+            cli_1518 = bool(cli) and cli_root.name == CLI_CANARY
+            servers = [server.descriptor()] if server else []
+            authenticated = None
+            if cli_1518:
+                if servers and not capabilities.get("mcpCapabilities", {}).get("http"):
+                    raise RuntimeError("Antigravity CLI did not advertise HTTP MCP")
+                created = antigravity_cli.open_session(client, invocation, capabilities, servers, sid)
+            else:
+                authenticated = client.call("authenticate", {"methodId": "oauth-personal"})
+                meta = {"systemPrompt": {"append": full_system_context(invocation)},
+                        "disabledTools": ["start_subagent", "ask_question"]}
+                if not native:
+                    meta["enabledTools"] = []
+                params = {"cwd": request.cwd, "mcpServers": servers,
+                          "_meta": {"antigravity": meta}}
+                session_capabilities = capabilities.get("sessionCapabilities")
+                if isinstance(session_capabilities, dict) and isinstance(session_capabilities.get("additionalDirectories"), dict):
+                    params["additionalDirectories"] = additional_directories(request) if native else []
+                if sid:
+                    params["sessionId"] = sid
+                created = client.call("session/load" if sid else "session/new", params)
             sid = sid or created.get("sessionId", "")
             if not sid:
                 raise RuntimeError("Antigravity returned no session ID")
@@ -464,10 +473,11 @@ class AntigravityBackend:
             model = str(options.get("model") or discovered["default_model"])
             if model not in discovered["models"]:
                 raise ValueError("The selected model is no longer offered by this Antigravity account")
-            client.call("session/set_model", {"sessionId": sid, "modelId": model})
-            # Always retain native permission requests. Portal selects allow_once only
-            # for an owner with Full Access, never by prompt or persisted auto-approval.
-            client.call("session/set_mode", {"sessionId": sid, "modeId": "default"})
+            if cli_1518:
+                antigravity_cli.configure_session(client, sid, created, model)
+            else:
+                client.call("session/set_model", {"sessionId": sid, "modelId": model})
+                client.call("session/set_mode", {"sessionId": sid, "modeId": "default"})
             if request.operation == "create":
                 return BackendResult({"message": "", "provider": self.provider_id, "operation": "create"}, sid, route)
             if context.is_cancelled():
