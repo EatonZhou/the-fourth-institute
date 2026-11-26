@@ -1025,6 +1025,25 @@ def test_domain_elements_keep_specific_grants_denies_and_delete_admin(permission
     assert not api.allows_elements("alice", [("retired_unknown", resident)])
 
 
+def test_update_lineage_project_move_needs_target_project_admin_and_login_result_is_admin(permissions):
+    from management_portal import permission_system as api
+    from management_portal.permission_system.facts import Fact
+    lineage, target ="lineage_bbbbbbbbbbbb", "project_bbbbbbbbbbbb"
+    permissions.users("alice", category="intern")
+    permissions.place(Fact("project", target), Fact("lineage", lineage))
+    permissions.grant("alice", lineage, a="@contributor")
+    assert api.allows("alice", "UpdateLineage", {"lineage_id": lineage, "changes": {"title": "x"}})
+    move = {"lineage_id": lineage, "changes": {"project_id": target}}
+    permissions.grant("alice", target, a="@contributor")
+    assert not api.allows("alice", "UpdateLineage", move)
+    permissions.grant("alice", target, a="@admin")
+    assert api.allows("alice", "UpdateLineage", move)
+    permissions.users("bob", category="intern")
+    assert not api.allows("bob", "GetProviderAccountLogin", {"account_id": "account_a"})
+    permissions.grant("bob", "@shared", a="@admin")
+    assert api.allows("bob", "GetProviderAccountLogin", {"account_id": "account_a"})
+
+
 def test_check_modes_temp_projection_and_entry_array(permissions):
     from management_portal.permission_system.management import Management
     from management_portal.permission_system import schemes

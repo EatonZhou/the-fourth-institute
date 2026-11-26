@@ -8,7 +8,6 @@ from dataclasses import dataclass, field
 from importlib import import_module
 from typing import Any
 
-from management_common.account_concurrency import DEFAULT_ACCOUNT_CONCURRENCY
 from .provider_account_operations import AccountOperation
 
 from .harness_capabilities import (
@@ -68,7 +67,6 @@ class AgentProvider:
     # The Provider's Backend, as ``module.Class`` (``build_backend``).
     adapter: str = ""
     runtime_package: str = ""
-    default_concurrency: int = DEFAULT_ACCOUNT_CONCURRENCY
     # Where a Resident's resident.md travels: ``user_prompt`` in front of the
     # turn's user message, or ``system_instructions`` with Portal's system
     # instructions (resident_execution_provider.INITIAL_INSTRUCTION_TRANSPORTS,

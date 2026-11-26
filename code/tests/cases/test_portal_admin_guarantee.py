@@ -42,12 +42,15 @@ def _update(caller, username, **changes):
     for field, handler in (("status", web_isa.update_user_status), ("category", web_isa.update_user_category)):
         if field in changes:
             assert set(changes) == {field}
-            return handler(SimpleNamespace(caller=caller, argument={"user_id": username, **changes}.get))
-    return web_isa.update_user(SimpleNamespace(caller=caller, argument={"user_id": username, "changes": changes}.get))
+            return handler(SimpleNamespace(caller=caller, argument={"user_id": username, **changes}.get,
+                                           expected_version_for=lambda _object_id: None))
+    return web_isa.update_user(SimpleNamespace(caller=caller, argument={"user_id": username, "changes": changes}.get,
+                                               expected_version_for=lambda _object_id: None))
 
 
 def _delete(caller, username):
-    return web_isa.delete_user(SimpleNamespace(caller=caller, argument={"user_id": username}.get))
+    return web_isa.delete_user(SimpleNamespace(caller=caller, argument={"user_id": username}.get,
+                                               expected_version_for=lambda _object_id: None))
 
 
 def test_administrators_always_turn_the_switch_and_activate_schemes(permissions, monkeypatch):  # noqa: F811

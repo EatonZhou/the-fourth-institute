@@ -80,6 +80,15 @@ def _normalize_user(username: str, value: object) -> dict[str, Any]:
     }
 
 
+class AccessVersionConflict(RuntimeError):
+    """The account records changed after the caller read the revision it passed back."""
+
+    def __init__(self, expected: object, current: object) -> None:
+        super().__init__("账号记录的版本已经变化")
+        self.expected_version = expected
+        self.current_version = current
+
+
 class PortalAccessStore:
     """Shared User identity, active-account state and session invalidation."""
 
@@ -109,6 +118,20 @@ class PortalAccessStore:
 
     def _revision(self) -> int:
         return self.state.revision()
+
+    def require_revision(self, expected: object) -> None:
+        """Raise ``AccessVersionConflict`` unless the account revision is ``expected``.
+
+        Call it inside the account transaction that makes the write: the
+        identity lock is then held, so no other account write can come
+        between this comparison and the caller's own.
+        """
+        if expected is None:
+            return
+        with self._transaction():
+            current = self._revision()
+        if str(current) != str(expected):
+            raise AccessVersionConflict(expected, current)
 
     def _normalize(self, raw: object) -> dict[str, Any]:
         if (
@@ -241,9 +264,11 @@ class PortalAccessStore:
         revoke_sessions: bool = False,
         revoke_personal_tokens: bool = True,
         require_new: bool = False,
+        expected_revision: object | None = None,
     ) -> dict[str, Any]:
         clean_username = validate_user_id(username)
-        with self._transaction():
+        with self._writing():
+            self.require_revision(expected_revision)
             payload = self._read_uncached()
             if require_new and clean_username in payload["users"]:
                 raise FileExistsError("username already exists or has been deleted")
@@ -391,16 +416,6 @@ class PortalUserDirectory:
 
     def load(self) -> dict:
         return self.state.read({"humans": [], "agents": []})
-
-    def ensure_human(self, username: str) -> bool:
-        username = validate_user_id(username)
-        with self.state.transaction():
-            payload = self.load()
-            if any(item["id"] == username for item in payload["humans"]):
-                return False
-            payload["humans"].append({"id": username, "name": username})
-            self.state.replace(payload)
-            return True
 
 
 def list_users() -> list[dict]:

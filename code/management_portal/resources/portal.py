@@ -7,10 +7,11 @@ from urllib.parse import parse_qs, quote, unquote, urlsplit
 
 from management_common.resource_identity import get_resource_type_registry
 
-KNOWLEDGE_ENTRY_TYPES = frozenset({
-    "meeting", "question", "idea", "insight", "decision", "plan", "thinking",
-    "risk", "concept", "information", "patent", "material", "todo", "review",
-})
+# Knowledge entries open in the shared knowledge page; Experiment has its own page.
+KNOWLEDGE_ENTRY_TYPES = frozenset(
+    kind for kind, declaration in get_resource_type_registry().declarations.items()
+    if declaration["category"] == "knowledge_entry" and kind != "experiment"
+)
 # The core pages of each type.  An installed feature with its own page for a
 # type replaces the entry (``resource.portal_routes``): with the Projects page a
 # Project opens there instead of in the knowledge filtered by it.

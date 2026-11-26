@@ -11,7 +11,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from .accounts import DefaultAccountUnavailable, ExecutionAccount
+from .accounts import ExecutionAccount
 from .provider_catalog import AGENT_PROVIDERS
 
 ACCOUNT_WIDE_CLAUDE_WINDOWS = frozenset({"five_hour", "seven_day"})

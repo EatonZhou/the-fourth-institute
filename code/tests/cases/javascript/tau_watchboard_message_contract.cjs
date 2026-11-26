@@ -29,7 +29,7 @@ const routeScript=execFileSync(process.env.TAU_PYTHON||'python3',['-c','from man
    const body=req.postDataJSON();calls.push(body);const args=body.arguments;
    let result;
    if(body.instruction==='GetConversation')result={resident:{resident_id:rid},messages:[message],cursor:1,state:{work_state:'idle'},controls:{can_send:true},queue:{items:[]}};
-   else if(body.instruction==='ListInputHistory')result={items:[]};
+   else if(body.instruction==='ListResidentInputHistory')result={items:[]};
    else if(body.instruction==='DeliverMessage')result={resident_id:rid,message_id:args.message.message_id,accepted:true,input_state:{state:'queued'}};
    else throw Error('Unexpected fixture instruction '+body.instruction);
    await route.fulfill({json:{instruction:body.instruction,instruction_id:'inst_fixture',status:'committed',replayed:false,result}});

@@ -249,13 +249,19 @@ class RouterCore:
         if quoted:
             message["quote"] = {"message_id": str(quoted["message_id"])}
         try:
-            self.portal.deliver(actor, resident_id, message,
-                                activation_policy="inject_active_turn" if inject else "enqueue_and_trigger")
+            self.portal.deliver(actor, resident_id, message)
         except Exception as exc:  # noqa: BLE001 - reported to the user, never retried as someone else
             self._audit(state, "deliver_failed", {"resident_id": resident_id, "error": _failure_text(exc)})
             if quoted and _not_found(exc):
                 return self._reply(["被引用的消息所在的对话已不可用，请直接发送。"])
             return self._reply([f"消息未能送达：{_failure_text(exc)}"])
+        if inject:
+            # Injection operates on the waiting message; an idle Resident has already
+            # started it, which is the same outcome.
+            try:
+                self.portal.inject(actor, resident_id, message_id)
+            except Exception as exc:  # noqa: BLE001
+                self._audit(state, "inject_skipped", {"resident_id": resident_id, "error": _failure_text(exc)})
         self.store.record_input(chat_id, resident_id, message_id, telegram_message_id, excerpt=text)
         self.store.link_message(chat_id, telegram_message_id, resident_id, message_id)
         self._audit(state, "message_delivered", {"resident_id": resident_id, "message_id": message_id,

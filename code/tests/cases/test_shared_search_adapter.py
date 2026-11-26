@@ -457,3 +457,30 @@ def test_paper_search_freezes_owner_project_scope_before_batching(tmp_path, monk
             semantic_search_jobs.get_search('paper', public['search_id'], actor='alice')
             assert jobs.submitted == submitted
             assert jobs.getter(public['search_id'])['project'] == project
+
+
+def test_paper_candidates_from_the_index_carry_paper_id_and_projects(monkeypatch):
+    """Paper 候选取自资源索引记录（ID 字段为 id），语义搜索以 paper_id 命名候选并带上 Project 列表
+
+    :design: decision_eb066fbea4ed
+    """
+    record = {'resource_id': 'paper_0123456789ab', 'resource_type': 'paper', 'title': 'T', 'summary': 'A',
+              'attributes': {'year': '2026', 'has_pdf': True, 'has_analysis': False, 'has_summary': False,
+                             'project_ids': ['ACLink']}}
+    monkeypatch.setattr(paper_search, 'get_resource_service',
+                        lambda: SimpleNamespace(query=lambda **kwargs: {'resources': [record], 'total': 1}))
+    assert adapter.minimal_catalog('paper', paper_search.semantic_search_catalog(actor='alice')) == [
+        {'paper_id': 'paper_0123456789ab', 'title': 'T', 'abstract': 'A', 'year': '2026', 'projects': ['ACLink']}]
+
+
+def test_resource_candidates_are_not_cut_at_one_query_page(monkeypatch):
+    """资源页面的候选是全部可读记录，搜索层不设数量上限
+
+    :design: decision_eb066fbea4ed
+    """
+    rows = [{'resource_id': f'repo_{number:012x}', 'resource_type': 'repo', 'title': f'R{number}', 'attributes': {}}
+            for number in range(5003)]
+    monkeypatch.setattr('management_portal.resources.get_resource_service', lambda: SimpleNamespace(
+        query=lambda **kwargs: {'resources': rows[kwargs['offset']:kwargs['offset'] + kwargs['limit']], 'total': len(rows)}))
+    catalog = adapter.authorized_catalog({'surface': 'repo', 'created_by': 'alice'})
+    assert len(catalog) == 5003

@@ -13,7 +13,6 @@ tests and one-off scripts use.
 """
 from __future__ import annotations
 
-import copy
 import importlib
 import logging
 import os
@@ -216,18 +215,62 @@ def discovery_groups() -> list[dict[str, Any]]:
     ]
 
 
-def list_instructions(category: str = "", group: str = "") -> list[dict[str, Any]]:
+def _selected_declarations(category: str = "", group: str = "") -> list[Any]:
     selected = group or ("all" if category else "general")
-    items = []
-    for name in sorted(instruction_catalog()):
-        declaration = instruction_catalog()[name]
-        if category and declaration.category != category:
-            continue
-        if selected != "all" and declaration.discovery_group != selected:
-            continue
-        summary = declaration.summary()
-        items.append(summary)
-    return items
+    catalog = instruction_catalog()
+    return [catalog[name] for name in sorted(catalog)
+            if (not category or catalog[name].category == category)
+            and (selected == "all" or catalog[name].discovery_group == selected)]
+
+
+SHORT_DESCRIPTION_LIMIT = 60
+_SENTENCE_END = "。.！!？?"
+_SOFT_BREAKS = "，；、：,;:"
+
+
+def short_description(text: str, limit: int = SHORT_DESCRIPTION_LIMIT) -> str:
+    """The first sentence of ``text``, at most about ``limit`` characters, never cut inside a word."""
+    text = " ".join(str(text or "").split())
+    end = next((index for index, char in enumerate(text)
+                if char in _SENTENCE_END and (char in "。！？" or index + 1 == len(text) or text[index + 1] == " ")), -1)
+    sentence = text[:end + 1] if end >= 0 else text
+    if len(sentence) <= limit:
+        return sentence
+    window = sentence[:limit]
+    cut = max(window.rfind(char) for char in _SOFT_BREAKS)
+    if cut < limit // 3:
+        # Without a usable punctuation break, cut at a space so a Latin word stays whole.
+        cut = window.rfind(" ")
+    if cut < limit // 3:
+        return window.rstrip() + "…"
+    return window[:cut].rstrip() + "…"
+
+
+def instruction_page(category: str = "", group: str = "", *, detail: bool = False,
+                     limit: int = 0, cursor: str = "") -> tuple[list[dict[str, Any]], str]:
+    """One page of the selected instructions and the next cursor ("" when no page follows).
+
+    Without ``detail`` an item is the name, category, ``mutates`` and a one-sentence description
+    (``streaming`` only when true); GetInstructionSchema reads the full declaration.
+    """
+    from .declarations import cursor_offset, offset_cursor
+
+    selected = _selected_declarations(category, group)
+    start = cursor_offset(cursor)
+    # No limit: the rest of the selection in one page.
+    limit = limit or max(len(selected) - start, 1)
+    page = selected[start:start + limit]
+    if detail:
+        items = [declaration.summary() for declaration in page]
+    else:
+        items = []
+        for declaration in page:
+            item = {"instruction": declaration.name, "category": declaration.category,
+                    "mutates": declaration.mutates, "description": short_description(declaration.description)}
+            if declaration.streaming:
+                item["streaming"] = True
+            items.append(item)
+    return items, offset_cursor(start + limit if start + limit < len(selected) else None)
 
 
 def instruction_schema(name: str) -> dict[str, Any]:
@@ -258,8 +301,12 @@ def _run_self_description(
             category = str(call.arguments.get("category") or "")
             # Every caller discovers instructions here first, so the agent guide is named here too.
             group = str(call.arguments.get("group") or "")
-            result: Any = {"instructions": list_instructions(category, group),
-                           "groups": discovery_groups(), "guide": "/guide/agent.md"}
+            items, next_cursor = instruction_page(
+                category, group, detail=bool(call.arguments.get("detail")),
+                limit=int(call.arguments.get("limit") or 0), cursor=str(call.arguments.get("cursor") or ""))
+            result: Any = {"instructions": items, "groups": discovery_groups(), "guide": "/guide/agent.md"}
+            if next_cursor:
+                result["next_cursor"] = next_cursor
         elif call.instruction == "GetInstructionSchema":
             result = {"schema": instruction_schema(str(call.arguments["instruction"]))}
         elif call.instruction == "GetInstructionExecution":
@@ -297,4 +344,4 @@ def _run_self_description(
             raise InstructionError("instruction.unknown", call.instruction)
     except Exception as exc:  # noqa: BLE001
         return failed_result(instruction_id, call.instruction, normalize_error(exc))
-    return InstructionResult(instruction_id, call.instruction, "committed", result=copy.deepcopy(result))
+    return InstructionResult(instruction_id, call.instruction, "committed", result=result)

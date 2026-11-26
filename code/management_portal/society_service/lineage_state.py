@@ -16,7 +16,7 @@ from typing import Any, Callable, Iterable, Iterator, Mapping
 
 from management_common.file_lock import lock_stream
 from management_common.projection_receipts import project_committed
-from management_portal.resources.workspace_files import _write_text
+from management_portal.shared_state import atomic_replace_text as _write_text
 
 from .errors import LineageConflictError
 from .effect_script_candidate import reconcile
@@ -25,7 +25,7 @@ from .lineage_event_conditions import _scheduled_time_reached as _event_schedule
 from . import lineage_definition_normalization, lineage_read_cache
 from . import lineage_definition_merge, lineage_subgraph
 from .lineage_definition_normalization import LINEAGE_MEMBERSHIP_VALUES
-from .lineage_values import _clone_json, _safe_actor, _text
+from .lineage_values import _clone_json, _text
 from . import lineage_access_policy, lineage_view_projection
 from .lineage_access_policy import actor_can_manage_lineage as _actor_can_manage_lineage
 from .lineage_view_projection import node_resident_id as _node_resident_id
@@ -226,14 +226,6 @@ def _requested_lineage_project_id(
     if resource_port.project_root(project_id, actor=actor) is not None:
         return project_id
     raise ValueError(f"项目不存在或当前用户无权访问: {project_id}")
-
-
-def require_lineage_manager(lineage_id: str, actor: str) -> str:
-    """Authorize a change to the Lineage without exposing its storage details."""
-
-    actor_id = _safe_actor(actor)
-    lineage_aggregate.ensure_manager(lineage_aggregate.read_lineage(lineage_id, actor=actor_id), actor_id)
-    return actor_id
 
 
 def _ensure_visible(lineage: dict[str, Any], actor: str) -> None:

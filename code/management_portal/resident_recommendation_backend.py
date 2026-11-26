@@ -24,7 +24,6 @@ from .resident_handoff import (
 PORTAL_ROOT = current_instance().code_root()
 RECOMMENDATION_UI_NAMESPACE = "resident-recommendation"
 RECOMMENDATION_UI_KEY = "latest"
-RECOMMENDATION_CAPABILITY = "resident-discovery"
 RECOMMENDATION_ARGUMENT_BUDGET = 56_000
 RECOMMENDATION_PROMPT_BUDGET = 128_000
 

@@ -126,13 +126,14 @@ def test_summaries_include_what_their_maintainer_needs(discovery, monkeypatch):
                                   "updated_at": "", "title": "新成员", "lineage_id": "lineage_e26fbccf5b06"},
     }
 
-    def maintenance_view(actor, resident_id):
-        assert actor == "resident_cccccccccccc"
-        if resident_id not in written:
-            raise PermissionError("无权读取这个 Resident")
-        return written[resident_id]
+    batches = []
 
-    monkeypatch.setattr(work_summary, "maintenance_view", maintenance_view)
+    def maintenance_views(actor, resident_ids, *, visible=frozenset(), strict=False):
+        assert actor == "resident_cccccccccccc"
+        batches.append(list(resident_ids))
+        return {rid: written[rid] for rid in resident_ids if rid in written}
+
+    monkeypatch.setattr(work_summary, "maintenance_views", maintenance_views)
     result = _invoke(resident_isa.get_resident_summaries, {
         "resident_ids": ["resident_aaaaaaaaaaaa", "resident_cccccccccccc", "resident_bbbbbbbbbbbb"],
         "fields": ["current_focus"], "include_maintenance": True,
@@ -144,12 +145,13 @@ def test_summaries_include_what_their_maintainer_needs(discovery, monkeypatch):
     assert own["resident_id"] == "resident_cccccccccccc" and own["title"] == "新成员"
     assert (own["summary"], own["revision"], own["missing_message_ids"]) == ({}, 0, ["msg_1"])
     assert result["unavailable_resident_ids"] == ["resident_bbbbbbbbbbbb"]
+    assert batches == [["resident_aaaaaaaaaaaa", "resident_cccccccccccc", "resident_bbbbbbbbbbbb"]]
     plain = _invoke(resident_isa.get_resident_summaries, {"resident_ids": ["resident_aaaaaaaaaaaa"]})["summaries"][0]
     assert "revision" not in plain
     assert "pending_message_ids" not in plain
 
 
-@pytest.mark.parametrize("name", ["UpdateResidentWorkSummary", "PublishFamilyProgress"])
+@pytest.mark.parametrize("name", ["UpdateResidentWorkSummary"])
 def test_work_summary_writes_reject_removed_revision_argument(name):
     """摘要写入不声明旧版本参数，入口在分派前拒绝它。"""
     from management_portal.hatg.contracts import InstructionError

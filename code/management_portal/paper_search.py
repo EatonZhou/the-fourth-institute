@@ -108,4 +108,11 @@ def resource_index_papers_by_ids(paper_ids, *, actor: str = "") -> list[dict]:
 
 def semantic_search_catalog(*, actor: str, project: str = "") -> list[dict]:
     papers = resource_index_papers(actor=actor)
-    return _filter_papers(papers, {"project": project}) if project else papers
+    if project:
+        papers = _filter_papers(papers, {"project": project})
+    # A Paper search names its candidates and results by paper_id; an index record's own ID is "id".
+    return [
+        {**paper, "paper_id": paper.get("paper_id") or paper.get("id"),
+         "projects": paper.get("projects") or paper.get("project_ids")}
+        for paper in papers
+    ]

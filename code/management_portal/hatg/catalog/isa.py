@@ -1,17 +1,23 @@
 """Self-description instructions (decision_aa4fdbac8364)."""
 from __future__ import annotations
 
-from ..declarations import DISCOVERY_GROUPS, FIXED, Fixed, InstructionDeclaration as D, On, P, R
+from ..declarations import CURSOR, DISCOVERY_GROUPS, FIXED, Fixed, InstructionDeclaration as D, NEXT_CURSOR, On, P, R
 
 
 DECLARATIONS = (
     # The catalog lists the installed categories as the enum of ``category``.
     D(name="ListInstructions", category="isa", owner="entry", decides=FIXED,
-      description="按需发现指令；默认仅列通用能力，其他能力按 group 或 category 展开，group=all 显式读取完整目录。发现分组不授予或限制调用权限。",
+      description="按需发现指令；默认仅列通用能力，其他能力按 group 或 category 展开，group=all 显式读取完整目录。"
+                  "每项只给指令名、类别、是否改变状态和一句简短说明，完整说明与参数用 GetInstructionSchema 读取。发现分组不授予或限制调用权限。",
       parameters=(P("category", description="只列出这一对象类别；单独指定时跨发现分组查询"),
                   P("group", description="发现分组；与 category 同填时取交集；均省略时为 general",
-                    enum=(*DISCOVERY_GROUPS, "all"))),
-      result=(R("instructions", "array", "指令名、类别、拥有服务、说明、是否改变状态和是否流式"),
+                    enum=(*DISCOVERY_GROUPS, "all")),
+                  P("detail", "boolean", "为 true 时每项带完整摘要（类别标题、发现分组、拥有服务、完整说明、是否流式）；默认只给简短形式"),
+                  CURSOR("上一页 next_cursor，省略时从第一页读起"),
+                  P("limit", "integer", "每页条数；省略时一次返回所选范围的全部指令", minimum=1, maximum=500)),
+      result=(R("instructions", "array", "每项包含 instruction、category、mutates、一句简短 description；"
+                "流式指令另带 streaming；detail=true 时为完整摘要"),
+              NEXT_CURSOR("还有更多指令时返回"),
               R("groups", "array", "各发现分组的名称、标题、指令数量与可查询类别；仅含已安装能力，不代表权限"),
               R("guide", "string", "Agent 指引的地址（Portal 内路径），按任务说明身份、调用方式和常用指令"))),
     D(name="GetInstructionSchema", category="isa", owner="entry", decides=FIXED,

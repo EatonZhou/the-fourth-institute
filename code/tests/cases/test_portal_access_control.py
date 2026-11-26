@@ -516,3 +516,47 @@ def test_open_mode_lets_any_user_view_and_manage_lineages_and_residents(
     for actor in ("viewer", "contributor", "project-admin", "outsider"):
         assert resident_access.resident_visible_to_actor(resident, actor) is True
         assert resident_access.can_manage(resident, actor) is True
+
+
+def test_user_record_writes_compare_the_account_revision_in_their_transaction(isolated_portal_case) -> None:
+    """用户记录写入在账号事务内比较访问存储的全局修订号，别的账号写入已使令牌失效后，旧令牌的更新以 version_conflict 失败且不写入"""
+    from types import SimpleNamespace
+
+    from management_portal import web_isa
+    from management_portal.hatg.contracts import InstructionError
+    from management_portal.portal_access_control import AccessVersionConflict
+
+    with isolated_portal_case():
+        store = PortalAccessStore()
+        store.upsert_user("CASE-A", actor="CASE-A")
+        store.upsert_user("engineer", actor="CASE-A")
+        store.upsert_user("other", actor="CASE-A")
+        stale = store._revision()
+        # Another account write moves the token after it was read.
+        store.upsert_user("other", actor="CASE-A", display_name="Changed")
+        current = store._revision()
+        assert current != stale
+
+        before = store.session_version("engineer")
+        with pytest.raises(AccessVersionConflict) as raised:
+            store.upsert_user("engineer", actor="CASE-A", revoke_sessions=True, expected_revision=stale)
+        assert (raised.value.expected_version, raised.value.current_version) == (stale, current)
+        assert store.session_version("engineer") == before
+
+        # The instruction layer reports it in the kernel's version_conflict form.
+        inv = SimpleNamespace(caller="CASE-A", argument={"user_id": "engineer"}.get,
+                              expected_version_for=lambda _object_id: stale)
+        with pytest.raises(InstructionError) as conflict:
+            web_isa.revoke_user_sessions(inv)
+        assert conflict.value.code == "instruction.version_conflict"
+        assert conflict.value.details == {"object_id": "engineer", "expected_version": stale, "current_version": current}
+        assert store.session_version("engineer") == before
+
+        # The same token that is current passes, and then the second holder of it loses.
+        inv = SimpleNamespace(caller="CASE-A", argument={"user_id": "engineer"}.get,
+                              expected_version_for=lambda _object_id: current)
+        web_isa.revoke_user_sessions(inv)
+        assert store.session_version("engineer") == before + 1
+        with pytest.raises(InstructionError):
+            web_isa.revoke_user_sessions(inv)
+        assert store.session_version("engineer") == before + 1

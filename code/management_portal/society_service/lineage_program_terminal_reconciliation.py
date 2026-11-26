@@ -37,7 +37,6 @@ class ProgramTerminalResident(Protocol):
     def handle_resident_message_completion(self, resident_id: str, actor: str, message_id: str, **options: Any) -> dict[str, Any]: ...
     def resident_input_reconciliation_state(self, node: dict[str, Any], message_id: str, actor: str) -> dict[str, Any]: ...
     def handle_resident_message_terminal(self, resident_id: str, actor: str, message_id: str, **options: Any) -> dict[str, Any]: ...
-    def notify_program_resident_invocation_terminal(self, lineage_id: str, resident_id: str, message_id: str, invocations: list[dict[str, Any]], *, status: str) -> bool: ...
 
 
 class ProgramTerminalFlow(Protocol):
@@ -799,17 +798,6 @@ def _drain_backlogs(lineage_ids: Iterable[str], actor_id: str, *, ports: Program
     }
 
 
-def handle_node_message_completed(
-    resident_id: str, actor: str, message_id: str, *, completed_at: str = "",
-    lineage_id: str = "", program_event_source_ids: set[str] | None = None,
-    ports: ProgramTerminalPorts,
-) -> dict[str, Any]:
-    return handle_resident_message_terminal(
-        resident_id, actor, message_id, completed_at=completed_at, lineage_id=lineage_id,
-        terminal_status="completed", program_event_source_ids=program_event_source_ids, ports=ports,
-    )
-
-
 def _finish_completed_terminal(prepared: ResidentTerminalWork, *, ports: ProgramTerminalPorts) -> dict[str, Any]:
     actor_id, source_message_id = prepared.actor, prepared.message_id
     source_completed_at, program_event_source_ids = prepared.completed_at, prepared.event_source_ids
@@ -1021,10 +1009,6 @@ def finish_resident_terminal(prepared: ResidentTerminalWork, *, ports: ProgramTe
             ordinary_count += len(item.invocations)
             paths.setdefault(item.lineage_id, set()).update(
                 str(row["trigger_path_id"]) for row in item.invocations if row.get("trigger_path_id")
-            )
-            ports.resident.notify_program_resident_invocation_terminal(
-                item.lineage_id, item.node_id, prepared.message_id,
-                item.invocations, status=prepared.status,
             )
         if item.operator_claim is not None:
             result = lineage_program_execution.finish_operator_completion(

@@ -323,6 +323,14 @@ class ResidentConversationRepository:
     ) -> list[dict[str, Any]]:
         return self.history.public_messages(resident_id, limit=limit)
 
+    def public_messages_many(
+        self,
+        resident_ids: Sequence[object],
+        *,
+        limit: int = 0,
+    ) -> dict[str, list[dict[str, Any]]]:
+        return self.history.public_messages_many(resident_ids, limit=limit)
+
     def messages_before_input(self, resident_id: str, message_id: str, *, limit: int) -> list[dict]:
         return self.history.messages_before_input(resident_id, message_id, limit=limit)
 

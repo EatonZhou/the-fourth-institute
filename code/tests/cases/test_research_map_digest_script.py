@@ -1,6 +1,6 @@
 """Research map reads feed an ordinary, caller-authorized daily script.
 
-:module: web.organization
+:module: workflow.project
 :design: decision_9d15ae2053c4
 """
 from types import SimpleNamespace

@@ -27,7 +27,6 @@ MAX_EVENT_CURSORS = 256
 MAX_EVENT_FIRE_CURSORS = 256
 # An Event Source watching several Residents keeps one observation per Resident.
 MAX_WATCHED_RESIDENTS = 200
-TERMINAL_INVOCATION_STATUSES = frozenset({"completed", "failed", "cancelled"})
 # Every stored runtime object is normalized when it is written: ProgramWork
 # normalizes each object it loads and flushes. Reads return the stored objects
 # as they are once lineage_meta records that this rule wrote all of them.

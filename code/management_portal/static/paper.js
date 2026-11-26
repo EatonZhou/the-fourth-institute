@@ -429,7 +429,7 @@
     currentPaperChatPanel, currentPaperChatWorkspace,
   } = paperModule("PortalPaperChat").createChat({
     $, alertError, applyPaneCollapse, collectionChatScope, collectionItems, collectionPaperIds,
-    collectionVisibleCount, currentPaperWorkbench, esc, isCollectionMode, md, paperApi, state,
+    collectionVisibleCount, currentPaperWorkbench, esc, isCollectionMode, paperApi, state,
   });
 
   const {

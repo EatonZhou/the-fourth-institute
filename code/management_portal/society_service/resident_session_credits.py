@@ -50,13 +50,6 @@ def authorization(restart):
             "confirmed_by": restart.actor_id, "confirmed_at": now_iso()}
 
 
-def prepared_policy(policy, authorization, execution_id):
-    return {**policy, "credits_scope": {
-        "account_id": authorization["account_id"], "operation_id": authorization["operation_id"],
-        "execution_id": execution_id,
-    }}
-
-
 def promote(record, authorization, provider_session_ref):
     from . import resident_backend, resident_record_domain
     if not provider_session_ref:

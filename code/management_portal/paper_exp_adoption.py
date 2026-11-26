@@ -2,7 +2,6 @@
 import hashlib
 import json
 import re
-from pathlib import Path
 
 from . import isa_client, paper_state_store as store, paper_job_ownership as owner
 

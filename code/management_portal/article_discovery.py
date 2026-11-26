@@ -122,7 +122,8 @@ def discover_article_roots(
             articles.append(
                 inspect_article_root(path)
             )
-        except ValueError as exc:
+        except (ValueError, OSError) as exc:
+            # One unreadable or vanished directory must not stop the whole scan.
             skipped.append({"path": str(path), "reason": str(exc)})
     return articles, skipped
 

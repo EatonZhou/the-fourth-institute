@@ -2,7 +2,7 @@
 
 The caller is ``p``.  Each decision slot the instruction declares names its
 A element, which the scheme places under an A class node (an unclassified
-one sits under the default node, "未归类" in the default scheme); the
+one sits under the default node, "管理" (``@admin``) in the default scheme); the
 resources an argument names are its ``r`` (one request per resource; an
 address such as ``workspace_x/a.md`` counts as its root ID).  A fixed slot
 asks about the R node the scheme gives it, else the R default node

@@ -20,7 +20,7 @@ import pytest
 
 from management_portal import antigravity_accounts as accounts, antigravity_runtime as runtime
 from management_portal.antigravity_client import AcpClient, AcpError, AuthenticationRequired
-from management_portal.execution.antigravity_backend import AntigravityBackend
+from management_portal.execution.antigravity_cli_backend import AntigravityCliBackend as AntigravityBackend
 from management_portal.execution.backend_contracts import BackendContext
 from management_portal.execution.provider_failures import ProviderOutcomeUnknown
 from management_portal.execution.harness import HarnessTool
@@ -697,7 +697,8 @@ def test_account_environment_and_login_parser_are_isolated(monkeypatch, tmp_path
     parser = login.LoginOutputParser("antigravity")
     _, url = parser.feed("https://accounts.google.com/o/oauth2/auth?state=123\n")
     assert url.endswith("state=123")
-    assert login._session_result({"provider": "antigravity"}, {"state": "pending"})["requires_code_input"]
+    from management_portal.execution.provider_catalog import AGENT_PROVIDERS
+    assert AGENT_PROVIDERS["antigravity"].account_operations["login"].authorization_kind == "callback_url"
 
 
 @pytest.mark.parametrize("platform", ["linux", "darwin", "win32"])

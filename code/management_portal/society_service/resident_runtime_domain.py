@@ -162,10 +162,6 @@ def resident_backend_binding(record: dict[str, Any]) -> dict[str, Any]:
             "model": str(read_resident_runtime_settings(record).get("model") or "")}
 
 
-def resident_folder_for_id(record: dict, target_resident_id: str) -> Path:
-    return resident_record_domain.resident_workspace_path(record) / "residents" / resident_domain_common.safe_id(target_resident_id)
-
-
 def _resident_workspace_scope_record(
     record: dict,
 ) -> dict[str, Any]:

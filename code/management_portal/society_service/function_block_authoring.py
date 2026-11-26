@@ -148,31 +148,6 @@ def update_duty_in_body(body, function_block_id, actor, *, description=None, cat
     return deepcopy(block)
 
 
-def create_duty_in_body(body, holder_id, actor, *, description, prompt, memory_level="session",
-                        category="custom"):
-    """A duty made of a prompt alone: a Function Block without elements."""
-    held = duties(body, holder_id)
-    bid = "fbi_" + secrets.token_hex(6)
-    now = _now()
-    duty = normalize_duty({"holder_id": holder_id, "description": description, "category": category,
-                           "position": held[-1]["duty"]["position"] + 1 if held else 0,
-                           "memory": {"level": memory_level, "prompt": prompt}})
-    if not duty["description"]:
-        raise ValueError("A duty needs a description")
-    if not duty.get("memory"):
-        raise ValueError("A duty without elements needs a prompt")
-    block = {"id": bid, "title": duty["description"][:140], "template_id": None, "x": None, "y": None,
-             "elements": [], "duty": duty, "created_at": now, "created_by": actor,
-             "updated_at": now, "updated_by": actor}
-    candidate = {**body, "function_blocks": [*(body.get("function_blocks") or []), block]}
-    _check_memory(candidate, block)
-    body["function_blocks"] = normalize_blocks(candidate, actor, previous=body)
-    created = find_block(body, bid)
-    if "duty" not in created:
-        raise ValueError("A duty's holder must be a Resident in this Lineage")
-    return deepcopy(created)
-
-
 def order_duties_in_body(body, holder_id, function_block_ids, actor):
     """Renumber the holder's duties in the given order; every duty is listed once."""
     held = {b["id"]: b for b in duties(body, holder_id)}

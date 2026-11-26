@@ -4,7 +4,6 @@ from urllib.parse import parse_qs
 from management_portal import http_auth, http_request_body, http_responses
 from management_portal.home_explanation_media import Media
 from management_portal.home_explanation_review import ReviewService, AuthoringService
-import json
 from management_portal.http_media_range import plan_media_response
 
 

@@ -61,7 +61,7 @@ class SearchStore:
             else:
                 _notify(self._local.changed)
 
-    def load(self, *, strict: bool = False):
+    def load(self):
         with self._read() as connection:
             rows = connection.execute('SELECT * FROM jobs WHERE surface=ANY(%s) ORDER BY created_at,search_id', (list(self.surfaces),))
             return [storage.decode(row) for row in rows]
@@ -154,6 +154,12 @@ def stored_run_input(search_id):
     with database().read() as connection:
         row = connection.execute('SELECT input_json FROM run_inputs WHERE search_id=%s', (search_id,)).fetchone()
         return row[0] if row else None
+
+
+def search_ids():
+    """Every Search ID in use, deleted searches included."""
+    with database().read() as connection:
+        return {row[0] for row in connection.execute('SELECT search_id FROM jobs')}
 
 
 def fingerprint():

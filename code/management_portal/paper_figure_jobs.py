@@ -28,16 +28,6 @@ PAPER_FIGURE_IMAGE_MAX_PIXELS = 40_000_000
 FIGURE_EXPLANATION_RESULT_SCHEMA = "tfi.paper.figure-explanation.result.v1"
 
 
-def _env_int(name: str, default: int, *, minimum: int = 0) -> int:
-    try:
-        return max(minimum, int(os.getenv(name, str(default)) or str(default)))
-    except ValueError:  # a setting that is not an integer
-        return max(minimum, int(default))
-
-
-FIGURE_DRAFT_STALE_SECONDS = _env_int("PAPER_FIGURE_DRAFT_STALE_SECONDS", 90 * 60, minimum=1)
-
-
 def upload_figure_input_image(payload: dict, actor: str) -> dict:
     paper_id = str(payload.get("paper_id") or "").strip()
     data = payload.get("data_bytes")
@@ -404,7 +394,6 @@ def _queue_figure_draft(payload: dict, actor: str) -> dict:
         if not figure:
             raise KeyError("figure not found")
         generated = figure.get("generated") if isinstance(figure.get("generated"), list) else []
-        now = _now()
         for existing in generated:
             same_request = (isinstance(existing, dict) and str(existing.get("request") or "").strip() == request
                 and str(existing.get("source_generated_id") or "").strip() == source_generated_id

@@ -32,6 +32,7 @@ def _add(left: dict[str, int], right: dict[str, int]) -> dict[str, int]:
 
 class OpenCodeBackend(NativeSocketBackend):
     provider_id = PROVIDER
+    session_state_dir = PROVIDER
     # OpenCode does not mark its last message as the answer.
     marks_answer_phases = False
 

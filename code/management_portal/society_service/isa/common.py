@@ -52,12 +52,6 @@ def lineage_graph_edits():
     return lineage_graph_edits
 
 
-def lineage_program_edits():
-    from management_portal.society_service import lineage_program_edits
-
-    return lineage_program_edits
-
-
 def lineage_moves():
     from management_portal.society_service import lineage_moves
 

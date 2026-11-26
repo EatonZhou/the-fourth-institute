@@ -1,9 +1,7 @@
 """Directory aliases use unprivileged NTFS junctions on Windows."""
 from __future__ import annotations
 import ctypes
-import os
 from pathlib import Path
-import secrets
 import struct
 import sys
 from management_common.filesystem_paths import filesystem_path, logical_path
@@ -29,23 +27,6 @@ def create_directory_link(path: Path, target: Path) -> None:
         create_windows_junction(path, target)
     else:
         path.symlink_to(target, target_is_directory=True)
-
-
-def replace_directory_link(source: Path, target: Path) -> None:
-    source, target = filesystem_path(source), filesystem_path(target)
-    # MoveFileEx cannot replace an existing directory junction. Preserve the
-    # previous alias until the new one is installed, with rollback on failure.
-    if sys.platform != "win32" or not is_directory_link(target):
-        os.replace(source, target)
-        return
-    backup = target.with_name(f".{target.name}.{secrets.token_hex(8)}.bak")
-    os.rename(target, backup)
-    try:
-        os.rename(source, target)
-    except BaseException:
-        os.rename(backup, target)
-        raise
-    remove_directory_link(backup)
 
 
 def create_windows_junction(path: Path, target: Path) -> None:

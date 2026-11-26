@@ -16,7 +16,7 @@ def bind_paper(owners, monkeypatch):
     from management_portal import society_service, resident_workspace_adapter as adapter
     monkeypatch.setenv('PORTAL_SOCIETY_SERVICE_MODE', 'local')
     monkeypatch.setenv('PORTAL_RESOURCE_SERVICE_PROCESS', '1')
-    for install in (workbench.install_resolver, workbench.install_mutation_provider, workbench.install_action_provider):
+    for install in (workbench.install_resolver, workbench.install_mutation_provider):
         install(owners.resource)
     from management_portal.resource_index_registries import WorkbenchAdapter
     index_adapter = WorkbenchAdapter()

@@ -7,7 +7,7 @@ from typing import Any
 
 from management_common.database_time import decode_times, instant, iso_time
 
-from .contracts import TOKEN_USAGE_KEYS, execution_timestamp
+from .contracts import TOKEN_USAGE_KEYS, execution_timestamp, positive_int
 from .scheduler_changes import SchedulerChanges
 from .scheduler_rows import ACTIVE_STATUSES, assert_owner, compact_json, json_object
 
@@ -16,17 +16,9 @@ TOKEN_USAGE_SCHEMA = "tfi.execution-token-usage.v1"
 RESIDENT_ID_RE = re.compile(r"^resident_[0-9a-f]{12}$")
 
 
-def _nonnegative_int(value: object) -> int:
-    try:
-        number = int(value or 0)
-    except (TypeError, ValueError):
-        return 0
-    return number if number > 0 else 0
-
-
 def _first_usage_value(payload: dict[str, Any], *keys: str) -> int:
     for key in keys:
-        value = _nonnegative_int(payload.get(key))
+        value = positive_int(payload.get(key))
         if value:
             return value
     return 0

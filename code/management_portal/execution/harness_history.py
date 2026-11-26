@@ -108,11 +108,3 @@ def bounded_int(
     except (TypeError, ValueError):
         number = default
     return max(minimum, min(maximum, number))
-
-
-def positive_int(value: object) -> int:
-    try:
-        number = int(value or 0)
-    except (TypeError, ValueError):
-        return 0
-    return number if number > 0 else 0

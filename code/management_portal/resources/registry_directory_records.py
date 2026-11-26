@@ -5,6 +5,9 @@ common derived relation rows in the authoritative writer's transaction.
 """
 
 COLLECTIONS = ('repo', 'article', 'paper', 'knowledge', 'report')
+# The trigger condition of the directory-dependency source guard; the text is
+# part of the installed trigger definition and must stay as it is.
+GUARD_CONDITION = "NEW.collection IN ('article','repo','paper','knowledge','report')"
 
 
 def locations(collection, document):

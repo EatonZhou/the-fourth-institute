@@ -417,8 +417,10 @@ class ChatReads:
                 limit=max(0, int(limit)),
             ))
 
-    def read_chat_messages_many(self, agent_ids: Sequence[str]) -> dict[str, list[dict[str, Any]]]:
+    def read_chat_messages_many(self, agent_ids: Sequence[str], *, limit: int = 0) -> dict[str, list[dict[str, Any]]]:
         """Read current Chats together, retaining each trace's occurrence order.
+
+        With ``limit`` each Chat contributes its newest ``limit`` messages, as ``read_chat_messages`` does.
 
         Search consumes bounded batches through this owner, using the same Chat
         policy and content projection as a single conversation. Database reads
@@ -433,6 +435,7 @@ class ChatReads:
             if not traces:
                 return messages
             floors = chat_floors(connection, traces.values())
+            newest = max(0, int(limit))
             rows = connection.execute(
                 "WITH requested AS (SELECT * FROM unnest(%s::text[], %s::bigint[]) "
                 "AS wanted(sequence_id, floor)) "
@@ -440,9 +443,11 @@ class ChatReads:
                 "FROM requested CROSS JOIN LATERAL ("
                 "SELECT * FROM chat_message_positions position "
                 "WHERE position.sequence_id=requested.sequence_id AND position.source_kind<>'sync' "
-                f"AND position.ordinal>requested.floor AND {SHOWN_POSITION} OFFSET 0"
-                ") position ORDER BY requested.sequence_id, position.ordinal",
-                (list(traces.values()), [floors.get(trace, 0) for trace in traces.values()]),
+                f"AND position.ordinal>requested.floor AND {SHOWN_POSITION} "
+                + ("ORDER BY position.ordinal DESC LIMIT %s" if newest else "OFFSET 0")
+                + ") position ORDER BY requested.sequence_id, position.ordinal",
+                (list(traces.values()), [floors.get(trace, 0) for trace in traces.values()],
+                 *([newest] if newest else [])),
             ).fetchall()
             projected = self.messages_from_rows(rows)
         by_trace: dict[str, list[dict[str, Any]]] = {}

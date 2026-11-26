@@ -53,7 +53,6 @@ MAX_ATTACHMENTS = 10
 MAX_TITLE_CHARS = 80
 MAX_MEMBERS = 50
 MAX_MENTIONS = 5
-RECENT_LIMIT = 20
 MAX_PAGE_SIZE = 200
 DELIVERY_HISTORY_LIMIT = 100
 PORTAL_AUTHOR = "portal"
@@ -727,7 +726,7 @@ def _sync_permissions(room, *, deleted, connection):
 
 
 def forward_source(actor: object, chatroom_id: object, message_id: object) -> dict[str, str]:
-    """One Chatroom message as ForwardMessages forwards it, read with the caller's own access."""
+    """One Chatroom message as ForwardMessagesToResident / ForwardMessagesToChatroom forward it, read with the caller's own access."""
 
     viewer = _actor(actor)
     clean_id = _chatroom_id(chatroom_id)

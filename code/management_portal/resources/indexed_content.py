@@ -2,8 +2,8 @@
 
 Knowledge, indexed records and the Lineage, Resident and Family providers
 resolve and read through these; the Repo and Article backends add their own
-kinds (``git_file``, ``article_section``) on top
-(``resource_identity_backend.read_resolved_resource_content``).
+kinds on top (``git_file`` in ``resource_identity_backend``, ``article_section``
+in ``article_sections``).
 """
 from __future__ import annotations
 

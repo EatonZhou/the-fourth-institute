@@ -228,10 +228,11 @@ class KnowledgeHttp:
 
     def post_detail_delete(self, request, payload, actor):
         kb_id = str(payload.get('kb_id') or '').strip()
-        # Keep this surface's Knowledge admission (including Article's read-only
-        # projection), then let the resource owner commit and fence its index.
+        # Keep this surface's Knowledge admission (Article's read-only projection
+        # and Experiment's instruction-only deletion), then let the resource owner
+        # commit and fence its index.
         record = self.knowledge_backend().resolve_item_record(kb_id, active_only=False, actor=actor)
-        if record.get('type') == 'article':
+        if record.get('type') in {'article', 'experiment'}:
             raise PermissionError('This resource cannot be deleted from Knowledge detail')
         result = self.resource_service().unregister(kb_id, actor=actor)
         return self.respond(request, 200, {**result, 'kb_id': kb_id})
@@ -240,9 +241,6 @@ class KnowledgeHttp:
         return self.respond(request, 200, self.knowledge_item_chat_backend().knowledge_item_chat_backend.prepare(
             actor, str(payload.get('kb_id') or ''), str(payload.get('message') or ''),
             purpose=str(payload.get('purpose') or 'send'), project_id=str(payload.get('project_id') or '')))
-
-    def post_chat(self, request, payload, actor):
-        return self.respond(request, 200, self.knowledge_item_chat_backend().knowledge_item_chat_backend.send_message(actor, str(payload.get('kb_id') or '').strip(), str(payload.get('content') or ''), payload.get('attachments') if isinstance(payload.get('attachments'), list) else [], payload.get('context_refs') if isinstance(payload.get('context_refs'), dict) else {}, message_id=str(payload.get('message_id') or ''), project_id=str(payload.get('project_id') or '')))
 
     def post_search_start(self, request, payload, actor):
         result = semantic_search_jobs.start_search('knowledge', payload, actor)
@@ -305,7 +303,6 @@ class KnowledgeHttp:
             RouteDefinition("POST", "/knowledge/api/detail/save", self.post_route(self.post_detail_save), "knowledge"),
             RouteDefinition("POST", "/knowledge/api/detail/delete", self.post_route(self.post_detail_delete), "knowledge"),
             RouteDefinition("POST", "/knowledge/api/item-chat/prepare", self.post_route(self.post_chat_prepare), "knowledge"),
-            RouteDefinition("POST", "/knowledge/api/item-chat", self.post_route(self.post_chat), "knowledge"),
             RouteDefinition("POST", "/knowledge/api/semantic-search/start", self.post_route(self.post_search_start), "knowledge"),
             RouteDefinition("POST", "/knowledge/api/semantic-search/refresh", self.post_route(self.post_search_refresh), "knowledge"),
             RouteDefinition("POST", "/knowledge/api/semantic-search/delete", self.post_route(self.post_search_delete), "knowledge"),

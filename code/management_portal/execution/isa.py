@@ -447,7 +447,7 @@ def _registration_public(row, actor, *, login_states=None):
 
 def list_providers(inv):
     from management_common.antigravity_platform import supports_account_isolation
-    from .account_registrations import PROVIDER_KINDS, config_fields, default_route, registrations
+    from .account_registrations import PROVIDER_KINDS, default_route, registrations
     from .provider_catalog import AGENT_PROVIDERS
     from .provider_updates import provider_runtime_status
     include_runtime = inv.argument("include_runtime") is not False

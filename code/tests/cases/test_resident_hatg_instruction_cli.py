@@ -157,6 +157,16 @@ def test_list_and_schema_use_the_self_description_instructions(monkeypatch, cloc
     ]
 
 
+def test_results_are_printed_as_compact_json(monkeypatch, clock, capsys):
+    """命令行输出紧凑 JSON，不缩进；list 的 detail/limit/cursor 原样传给 ListInstructions"""
+    sent = []
+    monkeypatch.setattr(cli, "urlopen", lambda request, timeout: sent.append(json.loads(request.data)) or committed({"a": [1, 2]}))
+    assert cli.main(["--resident-id", RESIDENT, "list", "--detail", "--limit", "50", "--cursor", "50"]) == 0
+    out = capsys.readouterr().out
+    assert out.count("\n") == 1 and '"result":{"a":[1,2]}' in out
+    assert sent[0]["arguments"] == {"detail": True, "limit": 50, "cursor": "50"}
+
+
 def test_the_injected_identity_wins_and_a_conflicting_flag_is_refused(monkeypatch, clock):
     """HATG 命令行以注入的 PORTAL_RESIDENT_ID 为准，冲突的 --resident-id 被拒绝"""
     monkeypatch.setenv("PORTAL_RESIDENT_ID", RESIDENT)

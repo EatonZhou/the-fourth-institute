@@ -325,7 +325,6 @@ modules:
       - "management_portal/claude_app_server_version.txt"
       - "management_portal/kimi_code_server.py"
       - "management_portal/provider_daemon_host.py"
-      - "scripts/kimi_account_server.py"
       - "management_portal/dsh_runtime"
       - "management_portal/opencode_bridge.py"
       - "systemd/portal-kimi-code-config.toml"
@@ -481,7 +480,6 @@ modules:
     code_paths:
       - "management_portal/resources/access.py"
       - "management_portal/file_access_policy.py"
-      - "management_portal/resources/action.py"
       - "management_portal/resources/index.py"
       - "management_portal/resources/index_runtime.py"
       - "management_portal/resources/registration.py"
@@ -777,6 +775,7 @@ modules:
     code_paths:
       - "management_portal/society_service/lineage_program*.py"
       - "management_portal/society_service/lineage_event*.py"
+      - "management_portal/society_service/lineage_blackboard_events.py"
       - "management_portal/society_service/lineage_effect*.py"
       - "management_portal/society_service/lineage_release_events.py"
       - "management_portal/society_service/lineage_graph_state.py"
@@ -797,6 +796,18 @@ modules:
       - "decision_68215b3a825b"
       - "decision_8b510cbd9c58"
       - "decision_5ff0cb51ed84"
+    layer: "service"
+    level: "component"
+  - id: "lineage.blackboard"
+    title: "Lineage 黑板"
+    parent: "lineage"
+    responsibility: "保存黑板条目的身份、顺序、保留期限和各读取者的游标；按 Resident 的 attach 权限或用户的 Lineage 权限提供读写。"
+    instruction_owners: []
+    code_paths:
+      - "management_portal/society_service/blackboard_storage.py"
+      - "management_portal/society_service/isa/blackboard.py"
+    designs:
+      - "decision_ed2c1ed5c245"
     layer: "service"
     level: "component"
   - id: "execution.scheduling"
@@ -2200,7 +2211,7 @@ protocols:
     related_designs:
       - "decision_9ad68dd077d4"
     description: "Society 按调用者和 Family 门面保存 Mute/Solo；查看者的当前偏好过滤对话、进度与问题，发送者在输入受理时冻结的偏好约束 Router 候选及最终转交。Mute 同时隐藏直属成员关联的门面往来、排除后续自动选择和延续，Solo 可显式选择已 Mute 成员；问题答案仍交原承接者，非 Solo 的合法引用可直接选择成员。两项不改变权限、成员接单状态、在途工作或 Mailbox 通知。旧 Mute/Exclude 合并读取为 Mute，修改后清空旧 Exclude；私有旧字段保留已受理输入的不可变快照，不作为独立公开控制。"
-    example: "用户在门面开启某成员 Mute → UpdateFamilyChatPreferences 保存个人偏好 → 服务端分页与浏览器增量按当前查看者隐藏其往来 → 下一条输入受理时冻结路由约束 → Router 候选与 RelayFamilyMessage 最终检查均排除自动选中该成员。进入该成员 Solo 可继续显式对话，退出后恢复 Mute；解除 Mute 恢复历史可见，不重派旧输入，原问题回答和 Mailbox 提醒照常。"
+    example: "用户在门面开启某成员 Mute → UpdateFamilyChatPreferences 保存个人偏好 → 服务端分页与浏览器增量按当前查看者隐藏其往来 → 下一条输入受理时冻结路由约束 → Router 候选与 RelayMessage 最终检查均排除自动选中该成员。进入该成员 Solo 可继续显式对话，退出后恢复 Mute；解除 Mute 恢复历史可见，不重派旧输入，原问题回答和 Mailbox 提醒照常。"
 
   - id: "resource-type-registration"
     title: "资源类型适配、登记与索引接口"
@@ -2375,7 +2386,7 @@ protocols:
     designs: []
     related_designs:
       - "decision_1e2eb869bc10"
-    description: "Adapter 将原生提问/批准请求归一为可关联的内容项；Lineage 保存问题与来源消息，回答必须引用同一来源及当前可回答项，再交回对应执行。浏览器是问题/回答数据消费者，不直接充当 Provider socket 客户端。结构化权限卡片要求精确 credentials，用户明确选择后沿 MessageLending 原子投递与签发，接收方处理该回答结束时凭证失效。自然语言授权保持原消息，不改造为问题回答、不从旧问题推导权限；Resident 理解后沿 user-authorization-acceptance 协议接受。"
+    description: "Adapter 将原生提问/批准请求归一为可关联的内容项；Lineage 保存问题与来源消息，回答必须引用同一来源及当前可回答项，再交回对应执行。浏览器是问题/回答数据消费者，不直接充当 Provider socket 客户端。结构化权限卡片要求精确 credentials，用户明确选择后由 PrepareResidentInput 固定回答消息、CreateTemporaryCredential 签发，再以相同参数 DeliverMessage 投递，接收方处理该回答结束时凭证失效。自然语言授权保持原消息，不改造为问题回答、不从旧问题推导权限；Resident 理解后沿 user-authorization-acceptance 协议接受。"
     example: "原生 requestApproval/userInput → Adapter 内容项 → Lineage 问题消息 → prepare_question_answer(source_message_id,entries) → 原执行的回答入口 → 观察已关闭问题。Codex 原生异步提问按已观察问题和原生调用 ID 持久化为独立问题组，轮次结束后仍可回答；不占最终答复身份，accepted 不代表落库或授权。恢复日志只校验已受理调用身份，不从工具参数补造正文；身份不明则延后。原生异步问题没有 credentials 字段，权限请求/接受仍沿正式授权来源与凭证路径。"
 
   - id: "user-authorization-acceptance"
@@ -2404,7 +2415,7 @@ protocols:
     related_designs:
       - "decision_15f7df737ed5"
     description: "主体 kind/id 区分用户与 Resident Mailbox；消息及输入状态由 Lineage 提供，用户待办、pin/read 等观看者数据由 Web 按用户持久化。ISA 列表与浏览器操作共同采用稳定 item/todo ID，变更后重读对应主体视图。"
-    example: "portal_mailbox_todos.execute(List/Create/Update/Delete/MoveMailboxTodo) → 目录 owner 派发 → mailbox_todos.owner(caller) 的数据库事务 → 返回条目；消息来源通过 principal.mailbox_origin 规范化。"
+    example: "portal_mailbox_todos.js 用 SearchResources/RegisterResource/UpdateResource/UnregisterResource 操作 mailbox_todo 资源 → ResourceService 的资源类型 owner 派发 → mailbox_todos.owner(caller) 的数据库事务 → 返回条目；消息来源通过 principal.mailbox_origin 规范化。"
 
   - id: "business-resident-invocation"
     title: "业务目录、Resident 调用与接受回执"

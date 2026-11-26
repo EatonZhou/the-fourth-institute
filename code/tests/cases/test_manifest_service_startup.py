@@ -56,6 +56,23 @@ def test_launch_uses_selected_code_python_and_manifest_port(instance):
         assert env['PORTAL_INSTANCE_ROOT'] == str(instance.root)
 
 
+def test_build_identity_is_read_from_the_release_generation_at_process_start(instance):
+    """Release 组件的构建标识取自激活写入的 generation.env，缺省时不设置；Dev Web 取 Dev 工作树 HEAD"""
+    generation = instance.deployment_runtime('release') / 'generation.env'
+    assert 'PORTAL_BUILD_ID' not in instance_runtime.clean_environment(instance, component='web')
+    generation.parent.mkdir(parents=True)
+    generation.write_text('PORTAL_BUILD_ID=portal-0123456789ab\n')
+    for component in ('web', 'resource', 'execution', 'society', 'worker'):
+        assert instance_runtime.clean_environment(instance, component=component)['PORTAL_BUILD_ID'] == 'portal-0123456789ab'
+    assert 'PORTAL_BUILD_ID' not in instance_runtime.clean_environment(instance, component='nats')
+    code = instance.code_root('dev')
+    code.mkdir(parents=True)
+    for args in (('init', '-q'), ('-c', 'user.name=t', '-c', 'user.email=t@example.invalid', 'commit', '-q', '--allow-empty', '-m', 'x')):
+        subprocess.run(['git', *args], cwd=code, check=True)
+    head = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=code, capture_output=True, text=True, check=True).stdout.strip()
+    assert instance_runtime.clean_environment(instance, component='dev-web')['PORTAL_BUILD_ID'] == 'dev-' + head[:12]
+
+
 def test_service_environment_does_not_inherit_another_instance(instance, monkeypatch):
     monkeypatch.setenv('HOME', '/host/user')
     monkeypatch.setenv('PORTAL_INSTANCE_ROOT', '/another/instance')

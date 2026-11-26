@@ -9,7 +9,6 @@ from collections.abc import Iterable
 from contextlib import contextmanager
 from typing import Any, Callable, Iterator
 
-from management_common.site_config import read_site_config
 
 from .contracts import execution_timestamp
 from .scheduler_rows import compact_json, json_object

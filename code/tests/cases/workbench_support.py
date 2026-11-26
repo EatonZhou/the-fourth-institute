@@ -15,7 +15,6 @@ def bind_resource_service(store, root, monkeypatch):
     monkeypatch.setattr(service, "get_resource_service", lambda: resources)
     workbench.install_resolver(resources)
     workbench.install_mutation_provider(resources)
-    workbench.install_action_provider(resources)
     return resources
 
 

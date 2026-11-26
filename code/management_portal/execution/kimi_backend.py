@@ -10,16 +10,16 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import replace
-from pathlib import Path
 from typing import Any, Callable
 
+from management_common.portal_paths import path as portal_path
 from management_portal import kimi_portal_tools
 from management_portal.kimi_code_client import KimiCodeDetached, shared_client as shared_kimi_client
 
-from .backend_contracts import BackendContext, BackendInvocation, BackendResult, _positive_int
-from .contracts import ExecutionRecoveryDeferred
+from .backend_contracts import BackendContext, BackendInvocation, BackendResult
+from .contracts import ExecutionRecoveryDeferred, positive_int
 from .kimi_tool_gateway import KimiToolGateway, publish_catalog
-from .native_session_compaction import NativeCompaction, kimi_wire_path, read_kimi_latest_compaction
+from .native_session_compaction import kimi_wire_path, read_kimi_latest_compaction
 from .native_socket_backend import NativeSocketBackend
 from .provider_catalog import AGENT_PROVIDERS
 from .provider_turn_usage import epoch_ms, kimi_turn_usage, read_kimi_turn_usage
@@ -33,17 +33,6 @@ def _kimi_home() -> str:
     return str(kimi_code_server.DEFAULT_HOME)
 
 
-def _kimi_wire(session_id: str) -> Path | None:
-    return kimi_wire_path(_kimi_home(), session_id)
-
-
-def kimi_latest_compaction(session_id: str) -> NativeCompaction | None:
-    """The newest compaction of a Kimi Code session, read from its wire file."""
-
-    path = _kimi_wire(session_id)
-    return read_kimi_latest_compaction(path) if path else None
-
-
 # How long a Kimi turn waits for Kimi Code to register Portal tools that are new to it.
 PORTAL_TOOL_REGISTRATION_WAIT_SECONDS = 36.0
 
@@ -51,6 +40,11 @@ PORTAL_TOOL_REGISTRATION_WAIT_SECONDS = 36.0
 class KimiBackend(NativeSocketBackend):
     provider_id = "kimi"
     scopes_item_ids = False
+
+    @classmethod
+    def session_residue(cls, session_id, config_dir=""):
+        wire = kimi_wire_path(portal_path("provider-state") / "kimi-code", session_id)
+        return [wire.parents[2]] if wire else []
 
     @staticmethod
     def local_file_read_policy(invocation):
@@ -206,7 +200,7 @@ class KimiBackend(NativeSocketBackend):
         if observed is None:
             return None
         status = self.client_factory().get_status(session_id)
-        return replace(observed, context_window=_positive_int(status.get("max_context_tokens")))
+        return replace(observed, context_window=positive_int(status.get("max_context_tokens")))
 
     def turn_usage(self, result, observed):
         return kimi_turn_usage(result.usage, observed)

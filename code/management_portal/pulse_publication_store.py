@@ -55,6 +55,13 @@ def latest_items(connection, limit: int = 30) -> list[dict]:
     return [decode_times(row, ('published_at',)) for row in rows]
 
 
+def get(connection, publication_id: str) -> dict | None:
+    row = connection.execute(
+        f'SELECT {",".join(FIELDS)} FROM publications WHERE publication_id=%s', (publication_id,)
+    ).fetchone()
+    return decode_times(row, ('published_at',)) if row else None
+
+
 def source_items(connection, owner: str, sources: list[tuple[str, str]]) -> list[dict]:
     """Current summary badges must include publications older than the public page."""
     if not sources:

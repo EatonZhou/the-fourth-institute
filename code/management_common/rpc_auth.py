@@ -72,8 +72,8 @@ def load_rpc_signing_key(
         raise RuntimeError(
             "Portal RPC signing key metadata is unavailable"
         ) from exc
-    # Windows st_mode reflects the read-only attribute, not NTFS ACLs.  The
-    # default Windows key lives under the current user's LocalAppData tree.
+    # Windows st_mode reflects the read-only attribute, not NTFS ACLs; the
+    # private-file helpers verify the ACL when the key is created and read.
     if (platform or sys.platform) != "win32" and permissions & 0o077:
         raise RuntimeError(
             "Portal RPC signing key permissions are too broad"

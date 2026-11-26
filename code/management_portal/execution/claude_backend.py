@@ -10,11 +10,14 @@ from __future__ import annotations
 import logging
 from copy import copy
 from dataclasses import replace
+from pathlib import Path
 from typing import Any, Mapping
 
+from management_common.portal_paths import path as portal_path
 from management_portal.claude_code_client import shared_client as shared_claude_client
 
-from .backend_contracts import BackendInvocation, _positive_int
+from .backend_contracts import BackendInvocation
+from .contracts import positive_int
 from .claude_transcript_compaction import claude_transcript_path, read_claude_latest_compaction
 from .harness import InvocationTransformResult
 from .native_session_compaction import NativeCompaction
@@ -27,6 +30,17 @@ LOGGER = logging.getLogger(__name__)
 
 class ClaudeBackend(NativeSocketBackend):
     provider_id = "claude"
+
+    @classmethod
+    def session_residue(cls, session_id, config_dir=""):
+        # Host account directories are outside Portal resource ownership.
+        if not config_dir:
+            return []
+        root = Path(config_dir).absolute()
+        owned_roots = [portal_path(area) for area in ("provider-state", "lineages", "projects")]
+        if not any(root.is_relative_to(area) and root != area for area in owned_roots):
+            return []
+        return [*(root / "projects").glob("*/" + session_id + ".jsonl"), *(root / "projects").glob("*/" + session_id)]
 
     @staticmethod
     def local_file_read_policy(invocation):
@@ -105,7 +119,7 @@ class ClaudeBackend(NativeSocketBackend):
         """
 
         del threshold_percent
-        tokens = _positive_int(max_context_tokens)
+        tokens = positive_int(max_context_tokens)
         if invocation.request.operation != "turn":
             return InvocationTransformResult(invocation, False, "operation_not_supported")
         if not tokens:
@@ -120,7 +134,7 @@ class ClaudeBackend(NativeSocketBackend):
         )
 
     def compaction_options(self, options: Mapping[str, Any], backend_session_id: str = "") -> dict[str, Any]:
-        tokens = _positive_int(options.get("auto_compact_window_tokens"))
+        tokens = positive_int(options.get("auto_compact_window_tokens"))
         return {"auto_compact_window_tokens": tokens} if tokens else {}
 
 

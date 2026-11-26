@@ -13,7 +13,6 @@ from typing import Any, Mapping
 
 from .model_api_protocols import PROTOCOLS
 
-CONFIGURATION_SETTINGS = frozenset({"prompt_context", "backend_options"})
 API_RUNTIME_SETTINGS = ("model", "prompt_context", "backend_options", "prompt_injection", "agent_harness")
 
 API_PARAMETERS = frozenset().union(*(adapter.parameters for adapter in PROTOCOLS.values()))

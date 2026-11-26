@@ -69,7 +69,6 @@ class ResidentDeliveryContext:
     business_ref: str = ""
     # A Family reply's source in the actual sender's Conversation, not the facade's.
     reply_source_message_id: str = ""
-    lending: Any = None
     channel: str = ""
     workflow_context: Any = None
 
@@ -231,28 +230,40 @@ def _request_items(resident_id: str, messages: list[dict[str, Any]]) -> list[dic
     return items
 
 
-def _scan_requests(resident_id: str, actor: str) -> list[dict[str, Any]]:
-    target = _target(resident_id, actor)
-    if not resident_access.can_manage_resident(target.record, actor):
+def _scan_requests(resident_ids: list[str], actor: str) -> list[dict[str, Any]]:
+    """The native requests in the recent messages of every given Resident the actor may manage.
+
+    The Residents the actor cannot see or manage are left out; the conversations are read together.
+    """
+    targets = []
+    for resident_id in dict.fromkeys(resident_ids):
+        try:
+            target = _target(resident_id, actor)
+        except (KeyError, PermissionError):
+            continue
+        if resident_access.can_manage_resident(target.record, actor):
+            targets.append(target)
+    if not targets:
         return []
     repository = resident_conversation_stream.get_repository()
-    messages = repository.public_messages(target.resident_id, limit=REQUEST_SCAN_MESSAGES)
-    messages = repository.tool_status_messages(messages, resident_id=target.resident_id)
-    if family_facade.is_facade(target.record):
-        messages = family_facade.project_messages(target.record, messages)
-    return _request_items(target.resident_id, messages)
+    histories = repository.public_messages_many([target.resident_id for target in targets], limit=REQUEST_SCAN_MESSAGES)
+    items = []
+    for target in targets:
+        try:
+            messages = repository.tool_status_messages(histories.get(target.resident_id, []), resident_id=target.resident_id)
+            if family_facade.is_facade(target.record):
+                messages = family_facade.project_messages(target.record, messages)
+        except (KeyError, PermissionError):
+            continue
+        items.extend(_request_items(target.resident_id, messages))
+    return items
 
 
 def list_resident_requests(resident_ids: list[str], actor: str) -> list[dict[str, Any]]:
     """Pending native questions and approvals of the given Residents."""
 
     candidates = [str(item).strip() for item in resident_ids or [] if str(item or "").strip()]
-    result = []
-    for resident_id in dict.fromkeys(candidates):
-        try:
-            result.extend(item for item in _scan_requests(resident_id, actor) if item["status"] == "pending")
-        except (KeyError, PermissionError):
-            continue
+    result = [item for item in _scan_requests(candidates, actor) if item["status"] == "pending"]
     return sorted(result, key=lambda item: item["created_at"])
 
 
@@ -368,7 +379,6 @@ def deliver_resident_input(
             protocol_input=message,
             business_ref=trusted_context.business_ref,
             reply_source_message_id=trusted_context.reply_source_message_id,
-            lending=trusted_context.lending,
             channel=trusted_context.channel,
         ) or {}
     if resident_input_scope.permits(resident_id, actor, message_id):

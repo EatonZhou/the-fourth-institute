@@ -1,6 +1,6 @@
 """Registry-owned directory facts remain transactional without policy callbacks.
 
-:module: resources.directory-lifecycle
+:module: resource.service
 :design: decision_4aa13bc21e8e
 """
 from pathlib import Path

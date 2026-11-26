@@ -443,11 +443,12 @@ class InstructionKernel:
             if store is not None:
                 store.finish(
                     instruction_id, status="committed", now=now_iso(), result=result,
-                    error=error.to_dict(),
+                    error=error.to_dict(), declaration=invocation.declaration,
                 )
             return failed_result(instruction_id, call.instruction, error)
         if store is not None:
-            store.finish(instruction_id, status="committed", now=now_iso(), result=result)
+            store.finish(instruction_id, status="committed", now=now_iso(), result=result,
+                         declaration=invocation.declaration)
         return InstructionResult(instruction_id, call.instruction, "committed", result=result)
 
     def _settle_failure(self, instruction_id: str, call: InstructionCall, error: InstructionError) -> InstructionResult:

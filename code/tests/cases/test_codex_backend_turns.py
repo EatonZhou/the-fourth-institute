@@ -165,6 +165,7 @@ def test_codex_backend_resumes_an_accepted_turn_after_disconnect() -> None:
         thread_id,
         turn_id,
         cwd="/tmp",
+        require_exact_turn=False,
         config={
             "show_raw_agent_reasoning": True,
             "model_reasoning_summary": "auto",

@@ -5,9 +5,10 @@ gives a post's version token.
 """
 from __future__ import annotations
 
-from typing import Any
+from contextlib import contextmanager
+from typing import Any, Iterator
 
-from management_portal.hatg.contracts import invalid
+from management_portal.hatg.contracts import InstructionError, invalid
 from management_portal.hatg.kernel import Invocation
 
 
@@ -15,6 +16,26 @@ def _board():
     from management_portal import notice_board_backend
 
     return notice_board_backend.notice_board
+
+
+def _expected(inv: Invocation) -> Any:
+    """The notification revision the caller expects for the post this call targets."""
+    return inv.expected_version_for(str(inv.argument("post_id") or ""))
+
+
+@contextmanager
+def _version_conflict(inv: Invocation) -> Iterator[None]:
+    """The board compares the token in its write transaction; report a mismatch in the kernel's form."""
+    from management_portal.notice_board_backend import PostVersionConflict
+
+    try:
+        yield
+    except PostVersionConflict as exc:
+        raise InstructionError(
+            "instruction.version_conflict", str(exc),
+            details={"object_id": exc.post_id, "expected_version": exc.expected_version,
+                     "current_version": exc.current_version},
+        ) from exc
 
 
 def list_posts(inv: Invocation) -> dict[str, Any]:
@@ -60,23 +81,28 @@ def update_post(inv: Invocation) -> dict[str, Any]:
     if unknown:
         raise invalid("changes 只能包含 title、category、content")
     current = _board().get_post(inv.caller, inv.argument("post_id")).get("post") or {}
-    result = _board().update_post(
-        inv.caller,
-        inv.argument("post_id"),
-        str(changes.get("title", current.get("title") or "")),
-        str(changes.get("content", current.get("content") or "")),
-        changes.get("category", current.get("category")),
-    )
+    with _version_conflict(inv):
+        result = _board().update_post(
+            inv.caller,
+            inv.argument("post_id"),
+            str(changes.get("title", current.get("title") or "")),
+            str(changes.get("content", current.get("content") or "")),
+            changes.get("category", current.get("category")),
+            expected_revision=_expected(inv),
+        )
     return {"post": result.get("post") or {}}
 
 
 def delete_post(inv: Invocation) -> dict[str, Any]:
-    _board().delete_post(inv.caller, inv.argument("post_id"))
+    with _version_conflict(inv):
+        _board().delete_post(inv.caller, inv.argument("post_id"), expected_revision=_expected(inv))
     return {"post_id": inv.argument("post_id")}
 
 
 def create_reply(inv: Invocation) -> dict[str, Any]:
-    result = _board().add_reply(inv.caller, inv.argument("post_id"), inv.argument("content"))
+    with _version_conflict(inv):
+        result = _board().add_reply(inv.caller, inv.argument("post_id"), inv.argument("content"),
+                                    expected_revision=_expected(inv))
     post = result.get("post") or {}
     return {
         "reply": result.get("reply") or {},
@@ -85,15 +111,19 @@ def create_reply(inv: Invocation) -> dict[str, Any]:
 
 
 def delete_reply(inv: Invocation) -> dict[str, Any]:
-    result = _board().delete_reply(inv.caller, inv.argument("post_id"), inv.argument("reply_id"))
+    with _version_conflict(inv):
+        result = _board().delete_reply(inv.caller, inv.argument("post_id"), inv.argument("reply_id"),
+                                       expected_revision=_expected(inv))
     return {"post": result.get("post") or {}}
 
 
 def update_post_marks(inv: Invocation) -> dict[str, Any]:
-    return _board().update_marks(
-        inv.caller, inv.argument("post_id"),
-        pinned=inv.argument("pinned"), featured=inv.argument("featured"),
-    )
+    with _version_conflict(inv):
+        return _board().update_marks(
+            inv.caller, inv.argument("post_id"),
+            pinned=inv.argument("pinned"), featured=inv.argument("featured"),
+            expected_revision=_expected(inv),
+        )
 
 
 def mark_post_read(inv: Invocation) -> dict[str, Any]:
@@ -102,12 +132,16 @@ def mark_post_read(inv: Invocation) -> dict[str, Any]:
     revision = inv.argument("notification_revision")
     if revision is None:
         revision = int((board.get_post(inv.caller, post_id).get("post") or {}).get("notification_revision") or 1)
-    return _read_receipt(board, inv.caller, board.mark_post_read(inv.caller, post_id, revision))
+    with _version_conflict(inv):
+        result = board.mark_post_read(inv.caller, post_id, revision, expected_revision=_expected(inv))
+    return _read_receipt(board, inv.caller, result)
 
 
 def set_post_unread(inv: Invocation) -> dict[str, Any]:
     board = _board()
-    return _read_receipt(board, inv.caller, board.mark_post_unread(inv.caller, inv.argument("post_id")))
+    with _version_conflict(inv):
+        result = board.mark_post_unread(inv.caller, inv.argument("post_id"), expected_revision=_expected(inv))
+    return _read_receipt(board, inv.caller, result)
 
 
 def _read_receipt(board, actor, result):

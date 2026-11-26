@@ -476,7 +476,8 @@ class ReviewService:
 
     def _notify_requester(self, record, actor):
         recipient = record['requested_by']
-        recipient_key = 'resident_id' if re.fullmatch('resident_[0-9a-f]{12}', str(recipient)) else 'user_id'
+        resident_recipient = bool(re.fullmatch('resident_[0-9a-f]{12}', str(recipient)))
+        recipient_key, delivery = ('resident_id', 'DeliverMessage') if resident_recipient else ('user_id', 'DeliverUserMessage')
         notice = record.get('feedback_delivery', {})
         if notice.get('status') == 'delivered' or notice.get('attempts', 0) >= 3:
             return record
@@ -496,7 +497,7 @@ class ReviewService:
                        '视频须重做受影响分镜/音轨并生成新固定视频。不可只重送原字节、替换quality标签或把受理称为通过。'
                        '独立审核要求修改时继续修订实际产物并复审，不按轮次数停止。仅passed、显式取消或具体无法继续的blocked停止；'
                        'blocked/cancelled保留原因，不自动重试生成。'}
-            receipt = self.call(actor, 'DeliverMessage', {recipient_key: recipient, 'business_ref': record['subject']['ref'],
+            receipt = self.call(actor, delivery, {recipient_key: recipient, 'business_ref': record['subject']['ref'],
                 'message': {'content_parts': [{'type': 'text', 'text': json.dumps(payload, ensure_ascii=False)}]}},
                 'quality-review-feedback:' + record['id'])
             if not receipt.get('message_id'):

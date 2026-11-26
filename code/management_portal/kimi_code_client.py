@@ -348,12 +348,11 @@ class KimiCodeClient:
 
         check_control()
         payload = {"instruction": instruction} if instruction else {}
-        response = self._request(
+        self._request(
             "POST",
             f"sessions/{quote(session_id, safe='')}:compact",
             payload,
         )
-        result = response if isinstance(response, dict) else {}
         idle_samples = 0
         while idle_samples < 2:
             check_control()
@@ -399,7 +398,6 @@ class KimiCodeClient:
             "prompt_id": steered_id,
         })
         submitted = submitted if isinstance(submitted, dict) else {}
-        user_message_id = str(submitted.get("user_message_id") or "")
         if str(submitted.get("status") or "") != "queued":
             # The running prompt ended in between and this one started a turn
             # of its own: stop it; Portal runs the input as its next turn.

@@ -1,7 +1,6 @@
 from __future__ import annotations
 from management_common.portal_paths import path as portal_path
 
-from management_portal.ai_provider_registry import AIProviderRegistry
 
 import argparse
 import asyncio
@@ -46,7 +45,6 @@ from management_common.product_environment import mirror_product_env
 from management_portal.resident_shell_environment import portal_database_environment, resident_identity_environment, resident_identity_fingerprint
 from management_portal.claude_tool_bridge import ClaudeToolBridge
 from management_portal.claude_account_usage import ClaudeAccountUsage
-from management_portal.claude_runtime import native_cli_path
 from management_common.provider_subagent_runs import PROGRESS_METHOD, SubagentRuns
 
 

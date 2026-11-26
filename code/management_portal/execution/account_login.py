@@ -11,7 +11,6 @@ from pathlib import Path
 import re
 import selectors
 import queue
-import shlex
 import shutil
 import subprocess
 import sys
@@ -168,10 +167,6 @@ def get_login_state(registration, *, states=None):
                                details={"reason": "account.login_unavailable"}, retryable=True) from None
     store.observe(account_id, "logged_in" if logged_in else "logged_out", observed_at=observed_at)
     return store.login_state(account_id)
-
-
-def record_login_state(account_id, state, *, observed_at=None):
-    login_store().observe(account_id, state, observed_at=observed_at)
 
 
 def local_login_environment(provider, account_id):

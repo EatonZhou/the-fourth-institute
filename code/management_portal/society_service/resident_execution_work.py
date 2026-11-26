@@ -30,7 +30,6 @@ SCHEMA = "tfi.resident-execution.v1"
 SCHEMA_VERSION = 1
 TERMINAL_OUTCOMES = TERMINAL_STATUSES
 INVALID_ACTIVATION_REASON = "activation_policy.invalid"
-FOLDER_SCHEMA = "lineage-folder-v3"
 PROMPT_BUILDER_VERSION = "resident-prompt-v4-runtime-context"
 CONVERSATION_PROJECTION_INTENTS = "conversation_projection_intents"
 CONVERSATION_PROJECTION_INTENT_LIMIT = 64
@@ -1051,16 +1050,13 @@ def write(
     )
 
 
-def admit(record: Mapping[str, object], job: dict[str, Any], message: Mapping[str, Any], *, lending=None) -> None:
+def admit(record: Mapping[str, object], job: dict[str, Any], message: Mapping[str, Any]) -> None:
     """Commit immutable input, execution/queue state and publication intent together."""
     from .resident_conversation_stream import get_repository
     resident_id = resident_lineage.resident_id(record)
     def commit():
         get_repository().accept_user_message(resident_id, message)
         write(record, job, delivery_message_id=str(message["message_id"]))
-        if lending is not None:
-            with get_lineage_data_store().database.transaction() as connection:
-                lending.issue(connection, resident_id, str(message["message_id"]))
     with invariant_locks.resident_conversation_lock(resident_id):
         get_lineage_data_store().transaction(commit)
 

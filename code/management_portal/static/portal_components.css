@@ -125,28 +125,11 @@ body.portalBoardShell .portalUser {
   min-height: 35px;
 }
 
-body.portalBoardShell .portalLogoutLink {
-  appearance: none;
-  padding: 4px 10px;
-  border: 1px solid currentColor;
-  border-radius: 6px;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 12px;
-  text-decoration: none;
-  opacity: 0.7;
-}
-
 body.portalBoardShell .portalUser > form,
 .portalUserMenuFooter form {
   margin: 0;
 }
 
-body.portalBoardShell .portalLogoutLink:hover {
-  opacity: 1;
-}
 
 .portalUserMenu {
   position: relative;

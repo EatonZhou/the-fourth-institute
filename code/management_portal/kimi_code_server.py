@@ -175,7 +175,6 @@ def main(argv=None) -> int:
     if host not in {"127.0.0.1", "::1", "localhost"}:
         raise RuntimeError("Portal Kimi Code server must listen on a loopback address")
     port = listener['port']
-    profile_id = provider_profile_id()
     profile = provider_profile()
     binary = DEFAULT_BINARY
     if not binary.is_file():

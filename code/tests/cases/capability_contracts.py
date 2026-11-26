@@ -110,7 +110,6 @@ WITHHELD: dict[str, dict[str, str]] = {
     "antigravity": {
         capabilities.ACTIVE_TURN_INPUT: f"{_ANTIGRAVITY}: input during a running turn is unverified",
         capabilities.ERROR_CONTINUATION: f"{_ANTIGRAVITY}: a failure keeps its first reason and starts no model retry",
-        "compact": f"{_ANTIGRAVITY}: native compaction is unverified",
         "handover_keeps_turn": f"{_ANTIGRAVITY}: a handover whose delivery is uncertain fails the turn; "
                                "the input is never sent again",
     },

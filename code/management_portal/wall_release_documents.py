@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from .wall_documents import PARSER, frontmatter, index_file, index_sources, inside, plain, read_source
+from .wall_documents import PARSER, frontmatter, index_file, index_sources, plain, read_source
 
 MAX_SOURCE_COUNT = 512
 MAX_INPUT_BYTES = 8 * 1024 * 1024

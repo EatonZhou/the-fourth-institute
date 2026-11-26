@@ -19,7 +19,6 @@ def test_type_listing_batches_state_reads_and_next_call_sees_changes(
         service = ResourceService(
             resolver_loader=lambda service: None,
             mutation_provider_loader=lambda service: None,
-            action_provider_loader=lambda service: None,
             index_provider=SimpleNamespace(supports_type=lambda kind: False, type_counts=lambda: {}),
         )
         monkeypatch.setattr(isa, '_service', lambda: service)

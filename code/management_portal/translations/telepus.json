@@ -182,5 +182,6 @@
   "连接暂时中断，正在重新确认绑定状态…": {
     "en": "Connection interrupted. Checking binding status again…",
     "zh-CN": "连接暂时中断，正在重新确认绑定状态…"
-  }
+  },
+  "请填写 Telegram id token。": {"en": "Enter the Telegram id token.", "zh-CN": "请填写 Telegram id token。"}
 }

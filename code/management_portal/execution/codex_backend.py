@@ -36,7 +36,7 @@ from management_portal.resident_shell_environment import (
 )
 
 from .account_adapters import CodexAccountRoute, CodexRoutes
-from .backend_contracts import BackendContext, BackendInvocation, BackendResult, _positive_int
+from .backend_contracts import BackendContext, BackendInvocation, BackendResult
 from .codex_rollout_history import (
     CODEX_ASYNC_NOTIFICATION_TOOL,
     CODEX_ASYNC_QUESTION_TOOL,
@@ -50,7 +50,7 @@ from .codex_rollout_history import (
 )
 from .codex_turn_run import CodexSession, CodexTurnRun, codex_goal_command
 from .context_seed import preserve_structured_seed
-from .contracts import ExecutionRecoveryDeferred, ExecutionRequest
+from .contracts import ExecutionRecoveryDeferred, ExecutionRequest, positive_int
 from .transport import ExecutionClaimOwnershipLost
 from .harness import (
     AgentLoopToolBatch,
@@ -749,9 +749,9 @@ class CodexBackend:
             1,
             (effective_context_window * requested_percent) // 100,
         )
-        if _positive_int(max_context_tokens):
-            requested_limit = min(requested_limit, _positive_int(max_context_tokens))
-        previous_limit = _positive_int(
+        if positive_int(max_context_tokens):
+            requested_limit = min(requested_limit, positive_int(max_context_tokens))
+        previous_limit = positive_int(
             config_overrides.get("model_auto_compact_token_limit")
         )
         # Enabling a supposedly earlier policy must not accidentally relax an
@@ -815,12 +815,12 @@ class CodexBackend:
         ):
             raise ValueError("Codex config_overrides must be an object")
         config_overrides = dict(raw_overrides or {})
-        configured_context_window = _positive_int(
+        configured_context_window = positive_int(
             config_overrides.get("model_context_window")
         )
-        catalog_context_window = _positive_int(
+        catalog_context_window = positive_int(
             model_info.get("context_window")
-        ) or _positive_int(model_info.get("max_context_window"))
+        ) or positive_int(model_info.get("max_context_window"))
         context_window = configured_context_window or catalog_context_window
         if not context_window:
             session = invocation.session
@@ -845,7 +845,7 @@ class CodexBackend:
                 "model_context_window_unavailable",
                 {"model": model},
             )
-        effective_percent = _positive_int(
+        effective_percent = positive_int(
             model_info.get("effective_context_window_percent")
         ) or 95
         effective_percent = max(1, min(100, effective_percent))

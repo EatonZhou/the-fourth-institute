@@ -196,7 +196,7 @@ def start_search(surface_name: str, payload: dict, actor: str = "") -> dict:
         "run_generation": 1,
         "execution_contract": shared_search_adapter.CONTRACT,
         "surface": declared.name,
-        "query": query[:800],
+        "query": query,
         "status": "queued",
         "step": "queued",
         "progress": 0,

@@ -379,24 +379,40 @@ class ResidentContextStore:
         return [_decode(row) for row in rows]
 
     def work_summary(self, resident_id: str) -> dict[str, Any]:
+        return self.work_summaries([resident_id])[resident_id]
+
+    def work_summaries(self, resident_ids: Iterable[str]) -> dict[str, dict[str, Any]]:
+        """The written summary of each Resident, read in one pass (an empty one for a Resident without)."""
         from . import summary_layers
+        ids = list(dict.fromkeys(resident_ids))
+        if not ids:
+            return {}
+        items: dict[str, dict[str, Any]] = {}
         with self.read() as connection:
-            row = connection.execute("SELECT w.*,l.layers,l.maintenance FROM work_summaries w LEFT JOIN work_summary_layers l USING(resident_id) WHERE resident_id=%s", (resident_id,)).fetchone()
-            missing = connection.execute("SELECT message_id FROM work_summary_rounds WHERE resident_id=%s AND NOT covered ORDER BY message_id",
-                                         (resident_id,)).fetchall()
-            item = _decode(row) if row else {"resident_id": resident_id, "revision": 0, "updated_at": "", "writer_id": ""}
-            item.setdefault("summary", {})
-            layers, state = summary_layers.initial(item["summary"], item.get("updated_at"))
-            if row and row["layers"] is not None:
-                layers, state = json_value(row["layers"]), json_value(row["maintenance"])
-            pending = self._pending_work_rounds(connection, resident_id, state)
-        item["source_versions"] = json_value(item.get("source_versions", "{}"))
-        item["missing_message_ids"] = [r["message_id"] for r in missing]
-        due = summary_layers.due(layers, state)
-        item["pending_message_ids"] = sorted(pending[due["level"]])
-        maintenance = {key: state[key] for key in ("phase_at", "phase_rounds", "long_term_at", "long_term_rounds")}
-        item.update(layers=layers, maintenance=maintenance, consolidation=due)
-        return item
+            rows = {row["resident_id"]: row for row in connection.execute(
+                "SELECT w.*,l.layers,l.maintenance FROM work_summaries w LEFT JOIN work_summary_layers l USING(resident_id) "
+                "WHERE resident_id = ANY(%s)", (ids,)).fetchall()}
+            missing: dict[str, list[str]] = {}
+            for row in connection.execute(
+                    "SELECT resident_id,message_id FROM work_summary_rounds WHERE resident_id = ANY(%s) AND NOT covered "
+                    "ORDER BY message_id", (ids,)).fetchall():
+                missing.setdefault(row["resident_id"], []).append(row["message_id"])
+            for resident_id in ids:
+                row = rows.get(resident_id)
+                item = _decode(row) if row else {"resident_id": resident_id, "revision": 0, "updated_at": "", "writer_id": ""}
+                item.setdefault("summary", {})
+                layers, state = summary_layers.initial(item["summary"], item.get("updated_at"))
+                if row and row["layers"] is not None:
+                    layers, state = json_value(row["layers"]), json_value(row["maintenance"])
+                pending = self._pending_work_rounds(connection, resident_id, state)
+                item["source_versions"] = json_value(item.get("source_versions", "{}"))
+                item["missing_message_ids"] = missing.get(resident_id, [])
+                due = summary_layers.due(layers, state)
+                item["pending_message_ids"] = sorted(pending[due["level"]])
+                maintenance = {key: state[key] for key in ("phase_at", "phase_rounds", "long_term_at", "long_term_rounds")}
+                item.update(layers=layers, maintenance=maintenance, consolidation=due)
+                items[resident_id] = item
+        return items
 
     @staticmethod
     def _pending_work_rounds(connection: Any, resident_id: str, state: dict) -> dict:

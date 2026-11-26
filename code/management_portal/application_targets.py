@@ -16,9 +16,10 @@ from __future__ import annotations
 
 from management_common.operation_errors import OperationError
 from management_common.portal_database import portal_database
+from management_portal.semantic_search_surfaces import RESOURCE_SCOPES
 
 
-SEARCH_SURFACES = ("knowledge", "skill", "repo", "article", "experiment", "paper", "wall")
+SEARCH_SURFACES = (*RESOURCE_SCOPES, "paper", "wall")
 CHAT_TYPES = ("knowledge", "skill", "repo", "article", "experiment", "device")
 CORE_APPLICATIONS = {
     "resident_discovery": {"target": "resident"},

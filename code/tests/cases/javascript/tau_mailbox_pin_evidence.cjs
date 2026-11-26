@@ -23,7 +23,7 @@ const {observeMailboxPin} = require(process.env.TAU_PIN_MODULE || path.join(code
     request.on('data', chunk => { raw += chunk; });
     request.on('end', () => {
       const body = JSON.parse(raw);
-      const target = body.instruction === 'SetMailboxItemPinned' && body.arguments.key === key && body.arguments.pinned === true;
+      const target = body.instruction === 'UpdateMailboxItem' && body.arguments.key === key && body.arguments.pinned === true;
       if (target) counts.pin++; else counts.states++;
       const send = () => {
         response.writeHead(200, {'Content-Type': 'application/json'});
@@ -51,12 +51,12 @@ const {observeMailboxPin} = require(process.env.TAU_PIN_MODULE || path.join(code
     await page.goto(origin);
     await page.evaluate(key => {
       window.pin = () => fetch('/api/instructions/execute', {method: 'POST',
-        body: JSON.stringify({instruction: 'SetMailboxItemPinned', arguments: {key, pinned: true}})}).then(r => r.json());
+        body: JSON.stringify({instruction: 'UpdateMailboxItem', arguments: {key, pinned: true}})}).then(r => r.json());
       document.querySelector('#pin').onclick = () => {
         window.pinAction = Promise.all([
           fetch('/api/instructions/execute', {method: 'POST', body: JSON.stringify({instruction: 'ListResidentStates', arguments: {}})}),
-          fetch('/api/instructions/execute', {method: 'POST', body: JSON.stringify({instruction: 'SetMailboxItemPinned', arguments: {key: 'private-unselected-target', pinned: true}})}),
-          fetch('/api/instructions/execute', {method: 'POST', body: JSON.stringify({instruction: 'SetMailboxItemPinned', arguments: {key, pinned: false}})}),
+          fetch('/api/instructions/execute', {method: 'POST', body: JSON.stringify({instruction: 'UpdateMailboxItem', arguments: {key: 'private-unselected-target', pinned: true}})}),
+          fetch('/api/instructions/execute', {method: 'POST', body: JSON.stringify({instruction: 'UpdateMailboxItem', arguments: {key, pinned: false}})}),
           window.pin(),
         ]);
       };

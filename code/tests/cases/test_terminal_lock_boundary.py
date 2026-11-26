@@ -19,7 +19,7 @@ from tests.cases.test_lineage_program_runtime_integration import (  # noqa: F401
 
 @pytest.mark.parametrize("status,phase", [
     ("completed", "evidence"), ("completed", "dispatch"), ("completed", "backlog"),
-    ("failed", "notify"), ("cancelled", "notify"), ("failed", "dispatch"),
+    ("failed", "dispatch"), ("cancelled", "dispatch"),
     ("completed", "deferred"),
 ])
 def test_terminal_io_allows_another_real_input(input_delivery, monkeypatch, tmp_path, status, phase):
@@ -45,9 +45,6 @@ def test_terminal_io_allows_another_real_input(input_delivery, monkeypatch, tmp_
         slow("evidence")
         return {"invocations": invocations}
 
-    def notify(*args, **kw):
-        slow("notify")
-
     def dispatch(*args, **kw):
         slow("dispatch")
         return []
@@ -58,7 +55,7 @@ def test_terminal_io_allows_another_real_input(input_delivery, monkeypatch, tmp_
 
     ports = terminal.ProgramTerminalPorts(
         state=SimpleNamespace(lineage_scope=invariant_locks.lineage_scope, now_iso=lambda: "2026-11-05T10:00:00Z"),
-        resident=SimpleNamespace(notify_program_resident_invocation_terminal=notify),
+        resident=SimpleNamespace(),
         flow=SimpleNamespace(program_execution_ports=lambda: None, drain_program_event_wire_backlog=backlog),
         directory=SimpleNamespace(lineage_execution_authority=authority, lineage_ids_for_resident=lambda _: [lid]),
     )

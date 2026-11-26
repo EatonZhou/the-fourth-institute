@@ -43,7 +43,6 @@ Provider session) and the replay starts again from the real size.
 """
 
 from __future__ import annotations
-from management_common.site_config import read_site_config
 
 import json
 import random

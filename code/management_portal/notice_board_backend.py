@@ -76,6 +76,25 @@ def _now_datetime() -> datetime:
     return datetime.now(timezone.utc)
 
 
+class PostVersionConflict(RuntimeError):
+    """The post's notification revision is not the one the caller read."""
+
+    def __init__(self, post_id: str, expected: object, current: int) -> None:
+        super().__init__(f"{post_id} 的版本已经变化")
+        self.post_id = post_id
+        self.expected_version = expected
+        self.current_version = current
+
+
+def _require_post_revision(post: dict[str, Any], expected: object | None) -> None:
+    """Compare the caller's token with the post inside the write transaction that is about to change it."""
+    if expected is None:
+        return
+    current = int(post["notification_revision"])
+    if str(current) != str(expected):
+        raise PostVersionConflict(post["post_id"], expected, current)
+
+
 class NoticeBoardBackend:
     def __init__(
         self,
@@ -300,6 +319,7 @@ class NoticeBoardBackend:
         title: str,
         content: str,
         category: object | None = None,
+        expected_revision: object | None = None,
     ) -> dict[str, Any]:
         clean_actor = self._require_actor(actor)
         clean_post_id = self._clean_post_id(post_id)
@@ -318,6 +338,7 @@ class NoticeBoardBackend:
             record = self._load_record()
             moderation = self._load_moderation()
             post = self._find_post(record, clean_post_id)
+            _require_post_revision(post, expected_revision)
             previous_mentions = self._mentions_in_text(post["content"])
             edited_at = _now_iso()
             post["title"] = clean_title
@@ -369,7 +390,8 @@ class NoticeBoardBackend:
         }[Path(clean_image_id).suffix.casefold()]
         return base64.b64decode(str(document.get("data_base64") or "")), content_type
 
-    def add_reply(self, actor: str, post_id: str, content: str) -> dict[str, Any]:
+    def add_reply(self, actor: str, post_id: str, content: str, *,
+                  expected_revision: object | None = None) -> dict[str, Any]:
         clean_actor = self._require_actor(actor)
         clean_post_id = self._clean_post_id(post_id)
         clean_content = self._clean_text(
@@ -383,6 +405,7 @@ class NoticeBoardBackend:
             moderation = self._load_moderation()
             reads = self._load_reads(record)
             post = self._find_post(record, clean_post_id)
+            _require_post_revision(post, expected_revision)
             replies = post["replies"]
             if len(replies) >= MAX_REPLIES_PER_POST:
                 raise ValueError("this post has reached its reply limit")
@@ -420,6 +443,7 @@ class NoticeBoardBackend:
     def update_marks(
         self, actor: str, post_id: str, *,
         pinned: bool | None = None, featured: bool | None = None,
+        expected_revision: object | None = None,
     ) -> dict[str, Any]:
         clean_actor = self._require_actor(actor)
         clean_post_id = self._clean_post_id(post_id)
@@ -432,6 +456,7 @@ class NoticeBoardBackend:
         with self._thread_lock, self.posts.transaction():
             record = self._load_record()
             post = self._find_post(record, clean_post_id)
+            _require_post_revision(post, expected_revision)
             moderation = self._load_moderation()
             marked_at = _now_iso() if pinned or featured else ""
             if pinned is not None:
@@ -463,12 +488,13 @@ class NoticeBoardBackend:
     def set_featured(self, actor: str, post_id: str, featured: bool) -> dict[str, Any]:
         return self.update_marks(actor, post_id, featured=featured)
 
-    def delete_post(self, actor: str, post_id: str) -> dict[str, Any]:
+    def delete_post(self, actor: str, post_id: str, *, expected_revision: object | None = None) -> dict[str, Any]:
         self._require_actor(actor)
         clean_post_id = self._clean_post_id(post_id)
         with self._thread_lock, self.posts.transaction() as connection:
             record = self._load_record()
             post = self._find_post(record, clean_post_id)
+            _require_post_revision(post, expected_revision)
             mentioned_actors = self._mentioned_actors_in_post(post)
             record["posts"].remove(post)
             reads = self._load_reads(record)
@@ -489,6 +515,8 @@ class NoticeBoardBackend:
         actor: str,
         post_id: str,
         notification_revision: object,
+        *,
+        expected_revision: object | None = None,
     ) -> dict[str, Any]:
         clean_actor = self._require_actor(actor)
         clean_post_id = self._clean_post_id(post_id)
@@ -501,6 +529,7 @@ class NoticeBoardBackend:
         with self._thread_lock, self.posts.transaction():
             record = self._load_record()
             post = self._find_post(record, clean_post_id)
+            _require_post_revision(post, expected_revision)
             reads = self._load_reads(record)
             accepted_revision = min(
                 requested_revision,
@@ -530,7 +559,7 @@ class NoticeBoardBackend:
             "unread": saved_revision < current_revision,
         }
 
-    def mark_post_unread(self, actor: str, post_id: str) -> dict[str, Any]:
+    def mark_post_unread(self, actor: str, post_id: str, *, expected_revision: object | None = None) -> dict[str, Any]:
         """Move the read position back to just before the latest reply."""
 
         clean_actor = self._require_actor(actor)
@@ -538,6 +567,7 @@ class NoticeBoardBackend:
         with self._thread_lock, self.posts.transaction():
             record = self._load_record()
             post = self._find_post(record, clean_post_id)
+            _require_post_revision(post, expected_revision)
             reads = self._load_reads(record)
             current_revision = int(post["notification_revision"])
             revision = max(0, current_revision - 1)
@@ -557,6 +587,8 @@ class NoticeBoardBackend:
         actor: str,
         post_id: str,
         reply_id: str,
+        *,
+        expected_revision: object | None = None,
     ) -> dict[str, Any]:
         clean_actor = self._require_actor(actor)
         clean_post_id = self._clean_post_id(post_id)
@@ -565,6 +597,7 @@ class NoticeBoardBackend:
             record = self._load_record()
             moderation = self._load_moderation()
             post = self._find_post(record, clean_post_id)
+            _require_post_revision(post, expected_revision)
             reply = next(
                 (
                     item

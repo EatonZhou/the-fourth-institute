@@ -20,10 +20,6 @@ import logging
 import threading
 from typing import Any, Callable
 
-from .contracts import (
-    EXECUTION_INPUT_CONTROL_SCHEMA,
-    EXECUTION_TURN_SETTINGS_CONTROL_SCHEMA,
-)
 from .control_messages import report_harness_control
 
 LOGGER = logging.getLogger(__name__)

@@ -101,7 +101,6 @@ class ResidentInput:
     speaking_member: str
     reply_source_message_id: str = ""
     quote: Mapping[str, Any] | None = None
-    lending: Any = None
     channel: str = ""
 
     @property
@@ -577,14 +576,13 @@ def persist_resident_input(
     protocol_input: Mapping[str, Any] | None = None,
     business_ref: str = "",
     reply_source_message_id: str = "",
-    lending=None,
     channel: str = "",
 ) -> dict:
     """Admit one input to the Resident and make it the work its activation policy asks for."""
     request = _input_request(
         resident_id, actor, content, context_refs, working_directory, runtime_context,
         additional_skills, activation_policy, lineage_id, input_media, message_id,
-        protocol_input, business_ref, reply_source_message_id, lending, channel,
+        protocol_input, business_ref, reply_source_message_id, channel,
     )
     return _admit_input(request)
 
@@ -620,7 +618,7 @@ def preflight_resident_input(resident_id: str, actor: str, envelope: Mapping[str
 def _input_request(
     resident_id, actor, content, context_refs, working_directory, runtime_context,
     additional_skills, activation_policy, lineage_id, input_media, message_id,
-    protocol_input, business_ref, reply_source_message_id, lending, channel="",
+    protocol_input, business_ref, reply_source_message_id, channel="",
 ) -> ResidentInput:
     """The normalized request shared by read-only preflight and durable intake."""
     from .outward_messages import speaking_for
@@ -660,7 +658,6 @@ def _input_request(
         relay=_input_relay(business_ref, actor_id, resident_id, protocol_input),
         speaking_member=speaking_for(actor_id),
         reply_source_message_id=reply_source_message_id,
-        lending=lending,
         channel=channel,
     )
     resident_prepared_inputs.check_authored_input(
@@ -756,7 +753,7 @@ def _admit_input(request: ResidentInput) -> dict[str, Any]:
         if record.get("deleted_at"):
             raise ValueError("该 Resident 已删除，不能接收消息")
         request = _with_question_answer(request, record)
-        if (request.lending is None and not request.relay.sender
+        if (not request.relay.sender
                 and resident_prepared_inputs.releasing_approval(message_id) is None
                 and resident_prepared_inputs.approval_for(resident_id, request.protocol_input) is not None
                 and not existing_resident_delivery(resident_id, request.with_business_ref(request.user_message(resident_id)))):
@@ -765,16 +762,12 @@ def _admit_input(request: ResidentInput) -> dict[str, Any]:
         resident_handoff_selection.prepare(record, request.protocol_input,
             resident_conversation_stream.get_repository(),
             relay_source=request.relay.source if request.relay.sender else None)
-        if request.lending is not None and request.message.lstrip().startswith("/"):
-            raise ValueError("即时命令没有可借出权限的处理轮次")
         if family_facade.is_facade(record):
             return _deliver_to_facade(request, record, environment)
         if request.activation.waits_as_info:
             return _hold_info(request, record)
         capabilities = resident_execution_provider.provider_for(record).capabilities
         if request.activation.joins_active_turn and _already_in_active_turn(request, record, capabilities):
-            if request.lending is not None:
-                request.lending.replay(resident_id, message_id)
             return _receipt(request)
         _require_supported_input(request, capabilities)
         input_record = copy.deepcopy(record)
@@ -919,8 +912,6 @@ def _deliver_to_facade(
     facade_message = copy.deepcopy(facade_item)
     facade_message_id = str(facade_message.get("message_id") or "")
     if request.activation.waits_as_info:
-        if request.lending is not None:
-            raise ValueError("门面的 info 消息立即结束，不能随它借出权限")
         if not existing_resident_delivery(record_id, facade_item):
             with _input_commit(request):
                 # Handed to the steward on arrival; the facade's trace gets it
@@ -940,12 +931,8 @@ def _deliver_to_facade(
     approval = resident_prepared_inputs.releasing_approval(facade_message_id)
     if approval is not None and approval.next_hop(record_id):
         return _deliver_projected_permission_answer(request, record, facade_item, approval=approval)
-    if request.lending is not None and request.lending.recipient_id not in {"", record_id}:
-        return _deliver_projected_permission_answer(request, record, facade_item)
 
     if family_role_quota_questions.question_of(record_id, facade_message) is not None:
-        if request.lending is not None:
-            raise ValueError("门面额度回答立即结束，不能随它借出权限")
         # The facade asked this itself; the Router never routes the answer.
         # DeliverMessage carries out the choice once the answer is stored.
         if not existing_resident_delivery(record_id, facade_item):
@@ -959,18 +946,13 @@ def _deliver_to_facade(
             )
         return _receipt(request)
     replayed = existing_resident_delivery(record_id, facade_item)
-    if replayed:
-        if request.lending is not None:
-            request.lending.replay(record_id, facade_message_id)
-    else:
-        with _input_commit(request) as connection:
+    if not replayed:
+        with _input_commit(request):
             resident_lifecycle_domain.accept_resident_user_message(request.resident_id, facade_message)
             family_recovery.register(record, facade_message)
             resident_conversation_stream.get_repository().set_input_state(
                 request.resident_id, facade_message_id, "queued",
             )
-            if request.lending is not None:
-                request.lending.issue(connection, request.resident_id, facade_message_id)
 
     if request.relay.delegated and request.relay.source is not None:
         # The inner facade has accepted the copy. Its routing effects need
@@ -1005,8 +987,8 @@ def _deliver_to_facade(
 
 
 def _deliver_projected_permission_answer(request: ResidentInput, record: dict, message: dict, *,
-                                         approval: resident_prepared_inputs.Approval | None = None) -> dict:
-    """Admit the facade trace, exact member answer and loans in one transaction.
+                                         approval: resident_prepared_inputs.Approval) -> dict:
+    """Admit the facade trace and the exact member answer in one transaction.
 
     Unlike an ordinary routed request, consent cannot wait for a Router to
     choose its recipient. Every nested facade follows the original question;
@@ -1017,9 +999,8 @@ def _deliver_projected_permission_answer(request: ResidentInput, record: dict, m
 
     resident_id, message_id = request.resident_id, request.message_id
     projected = family_facade.relayed_reply(record, answered_set(message))
-    recipient_id = approval.recipient if approval is not None else request.lending.recipient_id
-    if (not projected or projected["worker_id"] != recipient_id
-            or (approval is not None and projected["member_id"] != approval.next_hop(resident_id))):
+    if (not projected or projected["worker_id"] != approval.recipient
+            or projected["member_id"] != approval.next_hop(resident_id)):
         raise ValueError("原问题的提问成员已不可用，请重新加载问题")
     repository = resident_conversation_stream.get_repository()
     # The outer state lock discards deferred publication/wakes on rollback.
@@ -1032,7 +1013,7 @@ def _deliver_projected_permission_answer(request: ResidentInput, record: dict, m
             family_recovery.register(record, message)
             repository.set_input_state(resident_id, message_id, "queued")
             source = _accepted_relay_source(request)
-            if approval is not None and source is not None:
+            if source is not None:
                 # The next hop checks the accepted upstream link before it
                 # can inherit the unchanged question answer's author.
                 parent = resident_record_domain.find_resident_for_admission(source[0])
@@ -1040,13 +1021,12 @@ def _deliver_projected_permission_answer(request: ResidentInput, record: dict, m
                     raise ValueError("原问题的门面已不可用，请重新加载问题")
                 family_facade.record_relay_link(parent, source[1], resident_id, message_id)
         result = resident_domain_port.relay_family_message(resident_id, message_id, projected["member_id"],
-                                           request.actor_id, lending=request.lending)
-        if result.get("status") != "relayed" or (approval is not None and result.get("message_id") != message_id):
+                                           request.actor_id)
+        if result.get("status") != "relayed" or result.get("message_id") != message_id:
             raise ValueError("提问成员暂时不能接收授权回答，请稍后重试；尚未交出权限")
-        if approval is not None:
-            # Persist the receipt before commit. Regular deferred relay
-            # completion publishes Chat after the approval is committed.
-            family_facade.record_relay_link(record, message_id, projected["member_id"], message_id)
+        # Persist the receipt before commit. Regular deferred relay
+        # completion publishes Chat after the approval is committed.
+        family_facade.record_relay_link(record, message_id, projected["member_id"], message_id)
     if not replayed:
         invariant_locks.defer_until_state_unlock(lambda: resident_held_infos.release_with(record, message_id))
         invariant_locks.defer_until_state_unlock(lambda: lineage_message_events.wake_watchers(record, message_id))
@@ -1063,20 +1043,16 @@ def _hold_info(request: ResidentInput, record: dict[str, Any]) -> dict[str, Any]
     record_id = resident_domain_common.record_resident_id(record)
     info_item = request.with_business_ref(request.user_message(record_id))
     if existing_resident_delivery(record_id, info_item):
-        if request.lending is not None:
-            request.lending.replay(record_id, request.message_id)
         return _receipt(request)
     held_message = copy.deepcopy(info_item)
     held_message_id = str(held_message.get("message_id") or "")
 
-    with _input_commit(request) as connection:
+    with _input_commit(request):
         resident_held_infos.hold(record, info_item)
         resident_lifecycle_domain.accept_resident_user_message(request.resident_id, held_message)
         resident_conversation_stream.get_repository().set_input_state(
             request.resident_id, held_message_id, "queued",
         )
-        if request.lending is not None:
-            request.lending.issue(connection, request.resident_id, held_message_id)
     invariant_locks.defer_until_state_unlock(
         lambda: lineage_message_events.wake_watchers(record, held_message_id)
     )
@@ -1331,11 +1307,8 @@ def _bootstrap_session(request: ResidentInput, record: dict[str, Any], prepared:
         lineage_id=request.lineage_id,
         delivery_message_id=request.message_id if prepared.deferred_delivery else "",
         user_message=request.user_message(resident_domain_common.record_resident_id(record), prepared.file_references),
-        lending=request.lending,
         intake_request=request,
     )
-    if request.lending is not None and not request.lending.issued:
-        request.lending.replay(request.resident_id, request.message_id)
     record["session_state"] = resident_record_domain.record_backend_session_state(record)
     record["last_error"] = ""
     record["updated_at"] = resident_domain_common.now_iso()
@@ -1362,8 +1335,6 @@ def _enqueue(
         bound_job=running,
         require_execution_binding=True,
     ):
-        if request.lending is not None:
-            request.lending.replay(request.resident_id, request.message_id)
         return _receipt(request, deferred_delivery=prepared.deferred_delivery)
     queue_item = _queue_item(request, record, prepared, runtime_settings, user_item, now)
     record_message = _user_message_recorder(
@@ -1395,7 +1366,7 @@ def _enqueue(
         job[resident_state.INTAKE_FIELD] = intake_state
     with _input_commit(request):
         if prepared.deferred_delivery:
-            resident_execution_work.admit(record, job, user_item, lending=request.lending)
+            resident_execution_work.admit(record, job, user_item)
         else:
             resident_execution_work.write(record, job)
     if not running:
@@ -1501,7 +1472,6 @@ def queue_bootstrap_resident_session(
     business_ref: str = "",
     lineage_id: str = "",
     delivery_message_id: str = "",
-    lending=None,
     intake_request: ResidentInput | None = None,
 ) -> dict[str, Any]:
     message = str(message or "")
@@ -1584,7 +1554,7 @@ def queue_bootstrap_resident_session(
                   user_message_id, actor_id, activation_policy=activation_policy))
     with commit:
         if delivery_message_id:
-            resident_execution_work.admit(record, job, user_item, lending=lending)
+            resident_execution_work.admit(record, job, user_item)
         else:
             resident_execution_work.write(record, job)
     return job

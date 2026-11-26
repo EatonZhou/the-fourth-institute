@@ -70,13 +70,6 @@ SEED_CONFIG_FIELDS = {
     "dismissed_at", "dismissed_by", "dismissal_reason",
     "dismissal_source", "updated_at",
 }
-# What happens to a Seed after it is created: adopted, dismissed.  A Function
-# Block definition does not set these; re-expanding its instance keeps them.
-SEED_LIFECYCLE_FIELDS = frozenset({
-    "status", "promoted_resident_id", "promotion_purpose", "promoted_at",
-    "dismissed_at", "dismissed_by", "dismissal_reason", "dismissal_source",
-    "updated_at",
-})
 PACKET_OPERATOR_IMPLEMENTATIONS = {"rules", "resident"}
 RULE_REDUCE_STRATEGIES = {"join", "first", "highest_priority"}
 EFFECT_OUTCOME_EVENT_TYPE = "effect.succeeded"

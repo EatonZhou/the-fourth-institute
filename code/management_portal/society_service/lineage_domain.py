@@ -380,45 +380,6 @@ def dispatch_resident_terminal_observers(
     )
 
 
-def _notify_program_resident_invocation_terminal(
-    lineage_id: str,
-    resident_id: str,
-    message_id: str,
-    invocations: list[dict[str, Any]],
-    *,
-    status: str,
-) -> bool:
-    """Notify from terminal facts; node state is read from the invocation ledger."""
-
-    if not invocations:
-        return False
-    latest = invocations[-1]
-    terminal_status = _text(status, 40) or "failed"
-    with lineage_aggregate.lineage_scope(lineage_id):
-        lineage = lineage_aggregate.read_lineage_state(lineage_id)
-        node = next(
-            (
-                item
-                for item in lineage.get("nodes") or []
-                if isinstance(item, dict)
-                and str(item.get("id") or "") == resident_id
-            ),
-            None,
-        )
-        if node is None:
-            return False
-        current_last_run = (
-            node.get("last_execution")
-            if isinstance(node.get("last_execution"), dict)
-            else {}
-        )
-        current_message_id = str(current_last_run.get("message_id") or "")
-        if current_message_id and current_message_id != message_id:
-            # A newer queued invocation owns the visible node projection.
-            return False
-    return True
-
-
 def _resume_program_execution_principal(
     lineage_id: str,
     event: lineage_primitives.LineageEvent,

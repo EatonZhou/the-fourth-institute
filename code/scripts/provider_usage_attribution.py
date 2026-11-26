@@ -87,7 +87,7 @@ def antigravity_evidence(chat, at, request_id):
     Credits: credit_type=1 (GOOGLE_ONE_AI=1), credit_amount=2 (int64).
     credit_cost alone is a model cost, not proof a credits wallet was charged.
     """
-    from management_portal.execution.antigravity_backend import _pb_fields
+    from management_portal.execution.antigravity_history import _pb_fields
     result = []
     if 13 in chat:
         result.append({'scope': 'request_metadata', 'source': 'antigravity.ChatModelMetadata.credit_cost',

@@ -268,28 +268,10 @@ function detailVersionHtml(parsed, item) {
         `;
 }
 
-async function copyTextToClipboard(text) {
-  const value = String(text || "");
-  if (!value) return;
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(value);
-    return;
-  }
-  const input = document.createElement("textarea");
-  input.value = value;
-  input.setAttribute("readonly", "");
-  input.style.position = "fixed";
-  input.style.left = "-9999px";
-  document.body.appendChild(input);
-  input.select();
-  document.execCommand("copy");
-  input.remove();
-}
-
 async function copyKnowledgeIdFromDetail(target) {
   const id = target?.dataset?.copyKbId || "";
   if (!id) return;
-  await copyTextToClipboard(id);
+  if (!await window.PortalUI.copyText(id)) return;
   target.classList.add("copied");
   setTimeout(() => target.classList.remove("copied"), 900);
 }

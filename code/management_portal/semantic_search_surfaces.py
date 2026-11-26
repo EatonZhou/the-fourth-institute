@@ -1,7 +1,7 @@
 """Semantic search surfaces and the Residents that serve them.
 
-Each surface (Paper, Knowledge, WALL …) has a Resident in semantic_search_residents.  Every
-active Portal user may invoke it.
+Each surface (Paper, Knowledge, WALL …) has the Resident that the application
+target ``semantic_search:<surface>`` names.  Every active Portal user may invoke it.
 """
 from __future__ import annotations
 

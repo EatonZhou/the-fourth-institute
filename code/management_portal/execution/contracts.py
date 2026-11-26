@@ -793,6 +793,15 @@ def execution_timestamp() -> str:
     )
 
 
+def positive_int(value: object) -> int:
+    """``value`` as a count: anything that is not a positive integer reads as 0."""
+    try:
+        number = int(value or 0)
+    except (TypeError, ValueError):
+        return 0
+    return number if number > 0 else 0
+
+
 def usage_total(usage: dict[str, Any], *, include_cached_input: bool) -> int:
     """Use the reported total, excluding cached input only when requested."""
     def nonnegative(key):

@@ -60,6 +60,7 @@ def family(delivery_resident, monkeypatch):
     members = {wrong, right}
     monkeypatch.setattr(family_facade, "family_member_ids", lambda record: set(members))
     monkeypatch.setattr(family_facade, "family_steward_id", lambda record: steward)
+    monkeypatch.setattr(family_facade, "relay_target_ids", lambda record: sorted({*members, steward}))
     marks = {}
     monkeypatch.setattr(family_facade, "validate_relay", lambda business_ref, actor: marks.get(business_ref))
     told = []

@@ -15,7 +15,7 @@ from management_portal.execution.session_manager import RuntimeSession
 from management_portal.execution.codex_backend import CodexBackend
 from management_portal.execution.kimi_backend import KimiBackend
 from management_portal.execution.claude_backend import ClaudeBackend
-from management_portal.execution.antigravity_backend import AntigravityBackend
+from management_portal.execution.antigravity_cli_backend import AntigravityCliBackend as AntigravityBackend
 from management_portal.execution.native_options import KimiOptions
 from management_portal.execution.harness_capabilities import NATIVE_TOOL_EVENTS
 

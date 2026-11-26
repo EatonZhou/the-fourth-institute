@@ -1,6 +1,6 @@
 """Paper startup and idle Reader layout, without user data or model calls.
 
-:module: web.workflows
+:module: workflow.paper
 :design: decision_528bf9985705
 :importance: P1
 """

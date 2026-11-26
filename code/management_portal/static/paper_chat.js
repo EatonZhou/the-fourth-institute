@@ -8,7 +8,7 @@
   // selections added to the draft, sending and stopping.
   const DEPENDENCIES = Object.freeze([
     "$", "alertError", "applyPaneCollapse", "collectionChatScope", "collectionItems", "collectionPaperIds",
-    "collectionVisibleCount", "currentPaperWorkbench", "esc", "isCollectionMode", "md", "paperApi", "state",
+    "collectionVisibleCount", "currentPaperWorkbench", "esc", "isCollectionMode", "paperApi", "state",
   ]);
 
   function createChat(dependencies) {
@@ -16,15 +16,8 @@
     if (missing.length) throw new Error(`PortalPaperChat is missing: ${missing.join(", ")}`);
     const {
       $, alertError, applyPaneCollapse, collectionChatScope, collectionItems, collectionPaperIds,
-      collectionVisibleCount, currentPaperWorkbench, esc, isCollectionMode, md, paperApi, state,
+      collectionVisibleCount, currentPaperWorkbench, esc, isCollectionMode, paperApi, state,
     } = dependencies;
-
-    function chatMarkdown(text) {
-      return window.PortalChatWorkspace.renderMarkdownWithAttachmentRefs(text, {
-        renderMarkdown: md,
-        previewUrlForPath: window.PortalFileLinks.imagePreviewUrl,
-      });
-    }
 
     let paperChatWorkspace = null;
     let paperChatPanel = null;
@@ -478,14 +471,6 @@
       paperChatPanel?.updateControls?.();
     }
 
-    function hasPendingChat() {
-      return window.PortalResidentProtocol.stateView(paperChatPanel?.snapshot?.()?.state).working;
-    }
-
-    function paperChatHasUploadingAttachments() {
-      return (paperChatPanel?.attachments?.() || []).some(item => item.uploading);
-    }
-
     function updateChatComposerState() {
       paperChatPanel?.updateControls?.();
     }
@@ -540,13 +525,6 @@
       return true;
     }
 
-    async function submitChat(payload = null) {
-      const data = payload || paperChatWorkspace?.payload?.() || {};
-      const message = String(data.text || "").trim();
-      if (!message || state.chatSendInFlight) return;
-      await submitChatMessage(message, { fromComposer: true });
-    }
-
     async function submitChatMessage(message, options = {}) {
       const text = String(message || "").trim();
       if (!text || state.chatSendInFlight) return;
@@ -561,18 +539,6 @@
         }, { clear: options.fromComposer === true });
       } catch (err) {
         alertError(err);
-      } finally {
-        state.chatSendInFlight = false;
-        updateChatComposerState();
-      }
-    }
-
-    async function stopPaperChat() {
-      if (!hasPendingChat() || state.chatSendInFlight) return;
-      state.chatSendInFlight = true;
-      updateChatComposerState();
-      try {
-        await paperChatPanel?.stop?.();
       } finally {
         state.chatSendInFlight = false;
         updateChatComposerState();

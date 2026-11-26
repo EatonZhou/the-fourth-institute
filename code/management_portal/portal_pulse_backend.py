@@ -264,7 +264,7 @@ def _find_private_item(actor: str, period: str, key: str, item_id: str) -> dict:
     payload = _read_json(_summary_path(period, key), {})
     if not isinstance(payload, dict):
         return {}
-    private = _private_summary(payload, actor, _read_publications())
+    private = _private_summary(payload, actor, {})  # only the item list matters here
     for item in private.get("items") or []:
         if item.get("id") == item_id:
             return item
@@ -277,7 +277,6 @@ def update_publication(actor: str, payload: dict) -> dict:
         raise PermissionError("需要登录后操作")
     action = str(payload.get("action") or "publish").strip().lower()
     with pulse_publication_store.database().transaction(pulse_publication_store.LOCK) as connection:
-        items = pulse_publication_store.items(connection)
         if action == "publish":
             period = str(payload.get("source_period") or "").strip()
             key = str(payload.get("source_key") or "").strip()
@@ -288,7 +287,7 @@ def update_publication(actor: str, payload: dict) -> dict:
             if not source:
                 raise PermissionError("只能发布自己的 Pulse 条目")
             pub_id = _publication_id(actor_id, period, key, item_id)
-            publication = next((item for item in items if item["publication_id"] == pub_id), None)
+            publication = pulse_publication_store.get(connection, pub_id)
             if publication is None:
                 publication = {
                     "publication_id": pub_id,
@@ -310,7 +309,7 @@ def update_publication(actor: str, payload: dict) -> dict:
                 raise ValueError("source_period、source_key 和 item_id 必填")
             # A publication's ID is its owner's item, so the item names it.
             pub_id = _publication_id(actor_id, period, key, item_id)
-            target = next((item for item in items if item["publication_id"] == pub_id), None)
+            target = pulse_publication_store.get(connection, pub_id)
             if not target or target["owner"] != actor_id:
                 raise PermissionError("只能撤回自己发布的 Pulse 条目")
             pulse_publication_store.remove(connection, pub_id)

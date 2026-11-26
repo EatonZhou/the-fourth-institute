@@ -45,7 +45,7 @@ function mailboxProjectionEventMetadata(detail, { residentId, entryKey }) {
   const changes = detail?.projection_changes, details = detail?.projection_details;
   return {
     // Absence stays absence; the event often has no read_revision. The exact
-    // SetMailboxItemRead response owns that revision, not this notification.
+    // UpdateMailboxItem response owns that revision, not this notification.
     snapshot_required: {present: own(detail, 'snapshot_required'),
       type: own(detail, 'snapshot_required') ? type(detail.snapshot_required) : 'missing',
       value: typeof detail?.snapshot_required === 'boolean' ? detail.snapshot_required : null},

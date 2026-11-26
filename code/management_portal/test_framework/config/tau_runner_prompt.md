@@ -46,7 +46,7 @@ WALL 等后台工作使用本轮新目录时，在启动工作前通过 `tau_wor
 - 原生账号下拉按实际 label 选择，value 可能不同。运行设置切换标签可能只切本地视图，不保证产生新请求；操作完成关闭的对话框不再截图。
 - Playwright 的 has 子定位从候选节点内部解析。搜索状态控件可以随着结果出现而消失；空集合不说明产品失败。多个同名面板按当前分屏和目标身份选择。
 - Workspace 目录可能经文件 GET 或 ISA 读取，缓存重开可能没有请求。以用户可见目录为准，记录实际采用的传输；不要强等 ReadResource。
-- GetMessage 的正文在 message.content_parts。HATG 组件身份在 CreateComponent 的 result.component_id，GetLineage 中对应组件字段是 id。
+- GetMessage 的正文在 message.content_parts。HATG 组件身份在 ApplyLineageChanges 的 result.created_ids（按操作的 ref 对应见 result.refs），GetLineage 中对应组件字段是 id。
 - 查看 Trigger Path 的执行关联时展开实际 summary；这里的关联是普通文本，不是可点击链接。
 - 先等待页面完成挂载，再使用正常 Fit、滚动和缩放查看。画布集合、截图和计时都可作为观察材料，不要求完整原始基线。
 - 写请求超时后先读当前状态或同一幂等调用回执再决定下一步，避免重复创建。只读终态查询可以跨越短暂断线继续等待。

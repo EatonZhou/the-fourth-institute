@@ -45,6 +45,11 @@ class ArticlesHttp:
             return operation(request, parsed, actor, {**params, "action": action})
         return route
 
+    def require_write(self, article_id, user):
+        """Viewers read; saving, creating, uploading, settings and builds need contributor."""
+        if not permission_system.allows_roles(user, [("@contributor", article_id)]):
+            raise PermissionError("需要当前 Article 的协作权限才能修改。")
+
     def list_articles(self, request, parsed, actor):
         articles = []
         user = self.session_actor(request) or ""
@@ -263,7 +268,9 @@ class ArticlesHttp:
         if not re.fullmatch(r"article_[0-9a-f]{12}", article_id):
             return ROUTE_NOT_FOUND
         try:
-            self.require_resource(article_id, self.session_actor(request) or "")
+            user = self.session_actor(request) or ""
+            self.require_resource(article_id, user)
+            self.require_write(article_id, user)
             if (
                 action == "upload"
                 and str(request.headers.get("Content-Type") or "")
@@ -372,7 +379,9 @@ class ArticlesHttp:
         if not re.fullmatch(r"article_[0-9a-f]{12}", article_id):
             return ROUTE_NOT_FOUND
         try:
-            self.require_resource(article_id, self.session_actor(request) or "")
+            user = self.session_actor(request) or ""
+            self.require_resource(article_id, user)
+            self.require_write(article_id, user)
             if action == "stop":
                 return self.respond(request, 200, article_build.stop_article_compile(article_id))
             payload = self.read_json(request)

@@ -24,8 +24,7 @@ class _Resources:
                 "resource_type": "project" if resource_id.startswith("project_") else "article",
                 "title": resource_id, "projects": list(self.projects)}
 
-    def action(self, resource_id, action, *, actor):
-        assert actor == "alice" and action == "summary.read"
+    def read_summary(self, resource_id):
         return {"text": self.project_summary}
 
     def resolve(self, resource_id, *, actor):
@@ -87,11 +86,10 @@ def backend(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
             "lineage_id": "lineage_knowledge01",
         },
     )
-    monkeypatch.setattr(
-        "management_portal.knowledge_item_chat_backend.agent_context_selection.resolve",
-        lambda *_args, **_kwargs: [],
-    )
-    return KnowledgeItemChatBackend(resource_service=_Resources(source)), service
+    resources = _Resources(source)
+    from management_portal.resources.providers import project
+    monkeypatch.setattr(project, "project_summary", resources.read_summary)
+    return KnowledgeItemChatBackend(resource_service=resources), service
 
 
 def test_knowledge_item_state_projects_the_canonical_resident_chat(backend) -> None:
@@ -156,22 +154,6 @@ def test_settings_preparation_route_forwards_intent_and_authenticated_actor(back
     assert not service.invocations
 
 
-def test_knowledge_message_uses_resource_body_as_runtime_context(backend) -> None:
-    """知识条目对话消息经 DeliverMessage 投递，条目正文作为上下文引用随消息发送"""
-    chat, service = backend
-    chat.send_message("alice", "article_test", "inspect")
-    instruction, actor = service.invocations[0]
-    assert actor == "alice"
-    assert instruction["instruction"] == "DeliverMessage"
-    payload = instruction["arguments"]
-    assert payload["resident_id"] == "resident_knowledge01"
-    assert payload["activation_policy"] == "enqueue_and_trigger"
-    parts = payload["message"]["content_parts"]
-    assert parts[0] == {"type": "text", "text": "inspect"}
-    assert parts[1]["type"] == "context_reference"
-    assert "Current article" in parts[1]["context"]["context_text"]
-
-
 def test_project_context_refreshes_for_existing_resident_and_validates_before_prepare(backend, monkeypatch):
     chat, service = backend
     first = chat.prepare("alice", "article_test", "first")
@@ -180,54 +162,12 @@ def test_project_context_refreshes_for_existing_resident_and_validates_before_pr
     second = chat.prepare("alice", "article_test", "second")
     assert second["resident_id"] == first["resident_id"]
     assert "Updated shared goal" in second["initial_context"]["context_text"]
-    chat.send_message("alice", "article_test", "send")
-    parts = service.invocations[-1][0]["arguments"]["message"]["content_parts"]
-    assert "Updated shared goal" in parts[1]["context"]["context_text"]
     chat._resources.projects = ["project_test", "project_second"]
     monkeypatch.setattr(chat, "_ensure", lambda *a, **kw: pytest.fail("must validate project first"))
     with pytest.raises(ValueError, match="请选择"):
         chat.prepare("alice", "article_test", "ambiguous")
     with pytest.raises(PermissionError):
-        chat.send_message("alice", "article_test", "unrelated", project_id="project_foreign")
-    assert len(service.invocations) == 1
-
-
-def test_knowledge_image_is_stored_for_actor_and_delivered_as_image(backend, monkeypatch) -> None:
-    """知识条目对话中的图片以发送者身份存入 Resident 工作区，并作为图片投递"""
-    chat, service = backend
-    uploads = []
-
-    def save_image(payload, actor):
-        uploads.append((payload, actor))
-        return {"filename": "screenshot.png", "path": "/staging/alice/screenshot.png", "content_type": "image/png"}
-
-    monkeypatch.setattr(
-        knowledge_item_chat_backend,
-        "get_society_service",
-        lambda: SimpleNamespace(workspace=SimpleNamespace(save_workspace_pasted_image=save_image)),
-    )
-    chat.send_message("alice", "article_test", "请看图片", [{
-        "name": "screenshot.png", "mime": "image/png", "data_url": "data:image/png;base64,aW1hZ2U=",
-    }], message_id="image_message")
-    assert uploads == [({
-        "resident_id": "resident_knowledge01", "filename": "screenshot.png",
-        "content_type": "image/png", "data_base64": "aW1hZ2U=",
-    }, "alice")]
-    instruction, actor = service.invocations[0]
-    assert actor == "alice"
-    payload = instruction["arguments"]
-    assert payload["message"]["message_id"] == "image_message"
-    assert payload["message"]["content_parts"][-1] == {
-        "type": "image", "media_type": "image", "source_type": "local_path",
-        "source": "/staging/alice/screenshot.png", "name": "screenshot.png",
-    }
-
-
-def test_knowledge_attachment_rejects_unverified_local_paths(backend) -> None:
-    """知识条目对话拒绝未经核实的本地路径附件，只接受 base64 data URL"""
-    chat, service = backend
-    with pytest.raises(ValueError, match="base64 data URL"):
-        chat.send_message("alice", "article_test", "inspect", [{"path": "/staging/other/secret.png"}])
+        chat.prepare("alice", "article_test", "unrelated", project_id="project_foreign")
     assert service.invocations == []
 
 
@@ -247,8 +187,8 @@ def test_knowledge_resource_identity_must_match_resolution(tmp_path: Path) -> No
         chat.get_state("alice", "article_test")
 
 
-def test_repo_chat_resolves_directory_for_read_prepare_and_send(backend, tmp_path, monkeypatch):
-    """Repo 根不是字节文档；聊天读取、准备及发送均授权解析目录，沿用 Resident 入口。"""
+def test_repo_chat_resolves_directory_for_read_and_prepare(backend, tmp_path, monkeypatch):
+    """Repo 根不是字节文档；聊天读取与准备均授权解析目录，沿用 Resident 入口。"""
     from urllib.parse import urlparse
     from management_portal.http_knowledge import KnowledgeHttp
     chat, service = backend
@@ -303,15 +243,11 @@ def test_repo_chat_resolves_directory_for_read_prepare_and_send(backend, tmp_pat
     assert chat.prepare("alice", repo_id, "", purpose="settings")["resident_id"]
     assert chat.prepare("alice", repo_id, "inspect")["resident_id"]
     assert service.invocations == [], "preparation must not send a model task"
-    chat.send_message("alice", repo_id, "inspect")
-    context = service.invocations[0][0]["arguments"]["message"]["content_parts"][1]["context"]["context_text"]
-    assert str(directory) in context and repo_id in context
-    assert calls == [(repo_id, "alice")] * 4
-    assert [entry["title"] for entry in prepared] == ["ArchExplorer"] * 3
+    assert calls == [(repo_id, "alice")] * 3
+    assert [entry["title"] for entry in prepared] == ["ArchExplorer"] * 2
     resources.denied = True
     for operation in [lambda: chat.get_state("alice", repo_id),
-                      lambda: chat.prepare("alice", repo_id, "inspect"),
-                      lambda: chat.send_message("alice", repo_id, "inspect")]:
+                      lambda: chat.prepare("alice", repo_id, "inspect")]:
         with pytest.raises(PermissionError, match="revoked"):
             operation()
-    assert len(service.invocations) == 1
+    assert service.invocations == []

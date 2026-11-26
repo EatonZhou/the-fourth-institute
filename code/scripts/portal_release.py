@@ -3,13 +3,11 @@ from __future__ import annotations
 import re
 import subprocess
 from pathlib import Path
-from scripts.portal_source_layout import SHARED_ROOT
-from management_common.portal_paths import resolve_directory
-from management_common.site_config import read_site_config
+from management_common.instance_manifest import current_instance
 
-# The code directory of the Release worktree; its Git directory is one level up.
-RELEASE_ROOT = resolve_directory(read_site_config().get('deployment', {}).get(
-    'release_root', str(SHARED_ROOT.parent / 'tfi-release')))
+# The code directory of the Release worktree, as registered in the selected
+# instance manifest; its Git directory is one level up.
+RELEASE_ROOT = current_instance().code_root('release')
 
 
 def is_deployed(root: Path | None = None) -> bool:

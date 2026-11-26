@@ -32,7 +32,10 @@ python3 code/scripts/tfi_development_runtime.py activate --root /实际实例目
 
 - `code/management_portal/hatg/instruction_renames.py`
 - `code/management_portal/permission_system/scheme/repository.py`
+- `code/management_portal/permission_system/scheme/d066_migration.py`
 - `code/management_portal/society_service/instruction_name_migration.py`
+- `code/management_portal/society_service/isa_contract_migration.py`
+- `code/management_portal/society_service/facade_members.py`
 
 该路径选齐受管共享服务、Web、Dev Web、公共网关和已启用或仍在运行的功能服务。除 Worker 外，按反向顺序停止所选服务，全部停止成功后才按启动顺序重新启动。Worker 仍通过 HUP 平滑换代；PostgreSQL、NATS 和 Provider 账号服务继续运行。Society 先迁移现行可执行定义，再恢复工作流和启动 Effect、Family 后台处理。受影响 Effect 有未完成工作或待投递时，迁移拒绝继续，历史运行日志和回执保留。任何停止、迁移或健康检查失败均不能报告激活完成。
 

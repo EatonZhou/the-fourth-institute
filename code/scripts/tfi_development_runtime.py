@@ -85,11 +85,6 @@ def configure(root, repo, dev, dev_port, release_port):
     return document['deployments']
 
 
-def run(root, mode):
-    from management_portal.service_runtime import launch
-    launch(root, 'dev-web' if mode == 'web' else 'gateway')
-
-
 def affected(paths, loaded=None, *, managed=SHARED):
     """Select the responsible processes, including both Web consumers.
 
@@ -349,7 +344,7 @@ def activate(root, paths, commit, *, initial=False):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("configure", "activate", "web", "gateway", "reload", "apply"))
+    parser.add_argument("action", choices=("configure", "activate", "reload", "apply"))
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--repo", type=Path, default=Path(__file__).resolve().parents[2])
     parser.add_argument("--dev", type=Path, help="The Dev worktree (default: <repo>-dev, see tfi_dev.py init)")
@@ -368,11 +363,8 @@ def main():
         value = activate(args.root, [], commit, initial=True)
     elif args.action == "reload":
         value = restart(args.root, args.deployment, args.component)
-    elif args.action == "apply":
-        value = apply_request(args.root, args.request)
     else:
-        run(args.root, args.action)
-        return
+        value = apply_request(args.root, args.request)
     print(json.dumps(value, ensure_ascii=False, indent=2))
 
 

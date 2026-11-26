@@ -443,3 +443,49 @@ def test_get_post_instruction_reports_edit_and_delete_permissions(tmp_path: Path
     assert permissions("alice")["can_edit"] is True and permissions("alice")["can_delete"] is True
     assert permissions("reader")["can_edit"] is True and permissions("reader")["can_delete"] is True
     assert set(permissions("alice")) == {"can_edit", "can_delete"}
+
+
+def test_post_instructions_compare_the_token_in_the_write_transaction(tmp_path: Path, monkeypatch) -> None:
+    """帖子指令在写事务内比较通知修订号，令牌已被回复推进后，用旧令牌的标记、编辑、已读位置和删除都以 version_conflict 失败且不写入"""
+    from types import SimpleNamespace
+
+    from management_portal import notice_board_web_isa
+    from management_portal.hatg.contracts import InstructionError
+
+    backend = NoticeBoardBackend()
+    post_id = backend.create_post("alice", "Plan", "body")["post"]["post_id"]
+    monkeypatch.setattr(notice_board_web_isa, "_board", lambda: backend)
+    stale = int(backend.get_post("alice", post_id)["post"]["notification_revision"])
+    # Another caller replies after the token was read (and after the kernel's early check would have passed).
+    backend.add_reply("bob", post_id, "a reply")
+    current = int(backend.get_post("alice", post_id)["post"]["notification_revision"])
+    assert current == stale + 1
+
+    def call(handler, token, **arguments):
+        inv = SimpleNamespace(caller="alice", argument={"post_id": post_id, **arguments}.get,
+                              expected_version_for=lambda _object_id: token)
+        return handler(inv)
+
+    calls = {
+        "UpdatePostMarks": (notice_board_web_isa.update_post_marks, {"pinned": True}),
+        "UpdatePost": (notice_board_web_isa.update_post, {"changes": {"title": "Edited"}}),
+        "SetPostUnread": (notice_board_web_isa.set_post_unread, {}),
+        "UpdatePostReadVersion": (notice_board_web_isa.mark_post_read, {"notification_revision": stale}),
+        "CreateReply": (notice_board_web_isa.create_reply, {"content": "late"}),
+        "DeletePost": (notice_board_web_isa.delete_post, {}),
+    }
+    for name, (handler, arguments) in calls.items():
+        with pytest.raises(InstructionError) as raised:
+            call(handler, stale, **arguments)
+        assert raised.value.code == "instruction.version_conflict", name
+        assert raised.value.details == {"object_id": post_id, "expected_version": stale, "current_version": current}, name
+    unchanged = backend.get_post("alice", post_id)["post"]
+    assert unchanged["title"] == "Plan" and not unchanged.get("pinned") and unchanged["reply_count"] == 1
+
+    # The current token passes; a second write that still holds the first token loses once the token moved.
+    call(notice_board_web_isa.update_post_marks, current, pinned=True)
+    assert backend.get_post("alice", post_id)["post"]["pinned"] is True
+    call(notice_board_web_isa.create_reply, current, content="mine")
+    with pytest.raises(InstructionError) as raised:
+        call(notice_board_web_isa.create_reply, current, content="mine too")
+    assert raised.value.details["current_version"] == current + 1

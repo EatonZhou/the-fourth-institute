@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from .harness_tool_semantics import inline_media_bytes
 
-import re
 from pathlib import Path
 from typing import Any
 
@@ -36,7 +35,6 @@ DEFAULT_MAX_OFFLOADS_PER_TURN = 8
 MAX_OFFLOADS_PER_TURN = 100
 MAX_AFTER_TOOL_BATCH_CAPTURE_BYTES = 16 * 1024 * 1024
 _PLACEHOLDER_PREFIX = "[AgentHarness offloaded large tool output"
-_ARTIFACT_HANDLE_SEARCH_RE = re.compile(r"ha1_[0-9a-f]{64}")
 
 
 class ToolOutputOffloadingFeature:

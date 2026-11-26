@@ -430,7 +430,7 @@ def test_old_action_declaration_and_discovery_are_removed(permissions):
     from management_portal.hatg import declarations, routing
     assert not hasattr(declarations, 'ResourceActionDeclaration')
     assert not hasattr(routing, '_resource_actions')
-    listed = routing.list_instructions(group='all')
+    listed, _next = routing.instruction_page(group='all', detail=True)
     assert 'RunResourceAction' not in {item['instruction'] for item in listed}
     assert all('resource_actions' not in item for item in listed)
     schema = routing.instruction_schema('CheckDeviceSsh')

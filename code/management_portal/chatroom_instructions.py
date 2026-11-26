@@ -94,7 +94,7 @@ DECLARATIONS = (
     _d("UpdateChatroomReadPosition", ON_CHATROOM, "把聊天室标为调用者已读到指定位置；省略位置时读到最新消息。", (
         R("chatroom_id", description="聊天室 ID"), P("through", "integer", "浏览器实际展示到的消息位置", minimum=0),
     ), (
-        R("chatroom_id", description="聊天室 ID"), R("unread_count", "integer", "调用者剩余的未读消息数"),
+        R("chatroom_id", description="聊天室 ID"), R("unread_count", "integer", "调用者剩余的未读消息数", replay=True),
         P("muted", "boolean", "调用者是否设置了免打扰"),
         P("attention_unread", "boolean", "有需要提醒的未读：有未读且未免打扰，或有未读的 @"),
         P("unread_mentions", "array", "未读的 @ 调用者的消息：message_id、ordinal"),

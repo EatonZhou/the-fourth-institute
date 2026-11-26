@@ -14,13 +14,11 @@ import threading
 import time
 from typing import Any
 
-from management_common.product_environment import read_product_env
 
 from management_portal import model_api_store
 from management_portal.ai_provider_registry import AIProviderRegistry
 
 
-DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 18484
 DEFAULT_ALLOWED_IPS = "127.0.0.1,::1"
 DEFAULT_MAX_BYTES = 4 * 1024 * 1024

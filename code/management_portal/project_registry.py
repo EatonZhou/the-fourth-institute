@@ -17,8 +17,6 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
-import yaml
-
 from management_portal.resources.registry_store import (
     announce_registry_changes,
     get_registry_store,
@@ -336,11 +334,6 @@ def project_roots() -> list[tuple[str, Path]]:
             output.append((project_id, path))
     output.sort(key=lambda value: len(str(value[1])), reverse=True)
     return output
-
-
-def yaml_text() -> str:
-    """The registry rendered as the YAML document Portal used to serve."""
-    return yaml.safe_dump(load(), allow_unicode=True, sort_keys=False)
 
 
 @contextmanager

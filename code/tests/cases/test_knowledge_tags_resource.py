@@ -1,6 +1,6 @@
 """The knowledge-tag singleton replaces its two retired ISA instructions.
 
-:module: resources.types
+:module: isa.instructions
 :design: decision_6591e7793116
 """
 import copy

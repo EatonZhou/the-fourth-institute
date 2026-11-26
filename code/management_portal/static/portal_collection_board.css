@@ -199,20 +199,6 @@
   -webkit-line-clamp: 4;
 }
 
-.portalRelevanceBadge {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 7px;
-  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--border));
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--accent) 9%, var(--panel));
-  color: var(--accent);
-  font-size: 10px;
-  font-weight: 650;
-  line-height: 1.35;
-  white-space: nowrap;
-}
-
 .portalCollectionFilterSummary { width: 100%; margin: -4px 0 10px; }
 .portalProjectToggle:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 2px; }
 

@@ -6,9 +6,7 @@ absent.
 """
 from __future__ import annotations
 
-import os
 from pathlib import Path
-from management_portal.shared_state import atomic_replace_text as _write_text
 
 
 MAX_WORKSPACE_COPY_FILES = 60_000

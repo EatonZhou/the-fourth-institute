@@ -11,7 +11,8 @@ import logging
 from dataclasses import replace
 from typing import Any, Mapping
 
-from .backend_contracts import BackendInvocation, _positive_int
+from .backend_contracts import BackendInvocation
+from .contracts import positive_int
 from .harness import InvocationTransformResult
 from .native_session_compaction import dsh_session_path, read_dsh_latest_compaction, read_dsh_request_config
 from .native_socket_backend import NativeSocketBackend
@@ -29,6 +30,7 @@ LOGGER = logging.getLogger(__name__)
 
 class DshBackend(NativeSocketBackend):
     provider_id = "dsh"
+    session_state_dir = "dsh"
     marks_answer_phases = False
 
     def interrupt(
@@ -115,7 +117,7 @@ class DshBackend(NativeSocketBackend):
             return InvocationTransformResult(invocation, False, "operation_not_supported")
         options = dict(invocation.request.runtime_options)
         options["auto_compact_percent"] = max(1, min(99, int(threshold_percent)))
-        options["auto_compact_max_tokens"] = _positive_int(max_context_tokens)
+        options["auto_compact_max_tokens"] = positive_int(max_context_tokens)
         return InvocationTransformResult(
             replace(invocation, request=replace(invocation.request, runtime_options=options)),
             True,
@@ -136,8 +138,8 @@ class DshBackend(NativeSocketBackend):
 
         from management_portal.dsh_client import STATE, compaction_ratio
 
-        percent = _positive_int(options.get("auto_compact_percent"))
-        bound = _positive_int(options.get("auto_compact_max_tokens"))
+        percent = positive_int(options.get("auto_compact_percent"))
+        bound = positive_int(options.get("auto_compact_max_tokens"))
         if not percent and not bound:
             return 0.0
         ratio = (percent or 80) / 100

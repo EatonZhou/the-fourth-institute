@@ -273,7 +273,8 @@ def test_tex_lookup_uses_installed_user_platform_directory(tmp_path, monkeypatch
     tools = tmp_path / relative
     tools.mkdir(parents=True)
     monkeypatch.setattr(tex_tool_paths.sys, "platform", platform)
-    monkeypatch.setattr(article_toolchain.Path, "home", lambda: tmp_path)
+    monkeypatch.setattr(tex_tool_paths.Path, "home", lambda: tmp_path)
+    monkeypatch.delenv("ARTICLE_TOOL_HOME", raising=False)
     monkeypatch.delenv("APPDATA", raising=False)
     assert tex_tool_paths.tinytex_bin_dirs() == (tools,)
     assert str(tools) in article_toolchain._tex_search_path()

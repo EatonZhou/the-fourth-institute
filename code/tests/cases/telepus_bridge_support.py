@@ -49,6 +49,7 @@ class FakePortal:
         self.event_log: dict[str, list[dict]] = {facade: [], EXACT: []}
         self.cancelled: list[tuple[str, str]] = []
         self.closed: list[tuple[str, str]] = []
+        self.injected: list[tuple[str, str]] = []
         self.mailboxes: dict[str, list[dict]] = {EXACT: []}
         self.active: dict[str, str] = {}
 
@@ -101,6 +102,7 @@ class FakePortal:
         return {}
 
     def inject(self, actor, resident_id, message_id):
+        self.injected.append((resident_id, message_id))
         return {}
 
     def close_questions(self, actor, resident_id, source_message_id):

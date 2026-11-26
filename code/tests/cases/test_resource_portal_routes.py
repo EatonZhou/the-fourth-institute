@@ -277,7 +277,7 @@ def test_shared_skill_chat_route_accepts_global_read_scope(tmp_path) -> None:
                 assert response.status == 200
                 assert json.loads(response.read().decode("utf-8"))["kb_id"] == skill_id
 
-        get_state.assert_called_once_with(actor, skill_id)
+        get_state.assert_called_once_with(actor, skill_id, project_id="")
     finally:
         server.shutdown()
         thread.join(timeout=5)

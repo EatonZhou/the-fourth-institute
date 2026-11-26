@@ -173,7 +173,7 @@ def observe_account(account_id):
                 chunks.append(content.get("text", ""))
 
     sample = {"status": "unknown", "rate_limits": []}
-    from management_portal.execution.account_observation import cancel_resource, check_cancelled, cancelled
+    from management_portal.execution.account_observation import cancel_resource, check_cancelled
     check_cancelled()
     try:
         env = environment(account_id)

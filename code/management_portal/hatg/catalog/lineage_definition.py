@@ -5,10 +5,10 @@ from ..declarations import FIXED, ON_LINEAGE, PLACEMENT, InstructionDeclaration 
 
 
 def _d(name, description, parameters=(), result=(), *, mutates=False, streaming=False,
-       target="lineage_id", one_of=(), decides=ON_LINEAGE):
+       target="lineage_id", decides=ON_LINEAGE):
     return D(name=name, category="lineage_definition", owner="lineage", description=description,
              parameters=tuple(parameters), result=tuple(result), mutates=mutates,
-             streaming=streaming, target=target, one_of=one_of, decides=decides)
+             streaming=streaming, target=target, decides=decides)
 
 
 HANDOFF_ITEMS = P(
@@ -57,7 +57,8 @@ DECLARATIONS = (
     _d("UpdateLineage", "修改 Lineage 的名称、说明、所属项目、Leader、碎片或头像。", (
         R("lineage_id", description="要修改的 Lineage"),
         R("changes", "object", "title、description、project_id、leader_resident_id、fragments、avatar；avatar 为 {sprite_index: 0–41}、{upload_id}（CreateUpload purpose=avatar 的已完成上传）或 null（恢复为名称首字）；fragments 是碎片的完整新列表，每项 {id?, content, attachments?}，省略 id 的项是新碎片，列表中没有的碎片被删除"),
-    ), (R("lineage", "object", "修改后的元数据与碎片"),), mutates=True),
+    ), (R("lineage", "object", "修改后的元数据与碎片"),), mutates=True,
+        decides=(On("lineage_id", "lineage"), On("changes.project_id", "project", optional=True))),
     _d("UpdateLineageLayout", "保存 Lineage 画布上成员、组件和 Function Block 实例的坐标；只推进布局版本，不改定义 revision，也不重新编译。", (
         R("lineage_id", description="要保存布局的 Lineage"),
         R("positions", "array", "每项 {object_id, x, y}，最多 512 项；按对象后写覆盖，已不存在的对象列入 missing_object_ids",
@@ -65,8 +66,8 @@ DECLARATIONS = (
     ), (
         R("applied", "array", "已保存的 {object_id, object_kind, x, y}"),
         R("missing_object_ids", "array", "已不存在、未保存坐标的对象 ID"),
-        R("layout_revision", "integer", "保存后 Lineage 的布局版本；有坐标被保存时加一"),
-        R("layout_updated_at", description="布局最近一次保存的时间"),
+        R("layout_revision", "integer", "保存后 Lineage 的布局版本；有坐标被保存时加一", replay=True),
+        R("layout_updated_at", description="布局最近一次保存的时间", replay=True),
     ), mutates=True),
     _d("DeleteLineage", "删除整个 Lineage，其中的 Resident 和文件夹一并删除，不能恢复。", (R("lineage_id", description="要删除的 Lineage"),), (
         R("lineage_id", description="被删除的 Lineage"), R("resident_ids", "array", "随之删除的 Resident ID"),

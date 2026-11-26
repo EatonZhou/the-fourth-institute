@@ -115,7 +115,6 @@ def test_lineage_and_project_avatars_are_set_and_cleared_through_their_updates(m
     monkeypatch.setattr(definition, "lineage_reads", lambda: pytest.fail("an avatar-only change wrote the definition"))
     monkeypatch.setattr(definition, "lineage_lifecycle", lambda: pytest.fail("an avatar-only change wrote the definition"))
     monkeypatch.setattr(definition, "lineage_graph_edits", lambda: pytest.fail("an avatar-only change wrote the definition"))
-    monkeypatch.setattr(definition, "lineage_program_edits", lambda: pytest.fail("an avatar-only change wrote the definition"))
     monkeypatch.setattr(definition, "lineage_branches", lambda: pytest.fail("an avatar-only change wrote the definition"))
     monkeypatch.setattr(definition, "lineage_handoffs", lambda: pytest.fail("an avatar-only change wrote the definition"))
     result = definition.update_lineage(invoke("UpdateLineage", {"lineage_id": LINEAGE, "changes": {"avatar": {"sprite_index": 5}}}))

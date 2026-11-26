@@ -152,3 +152,18 @@ def test_shared_chat_context_resolver_adds_inline_resources(monkeypatch) -> None
 
     assert refs["resources"][0]["address"] == "repo_0123456789ab"
     assert calls == [(None, "检查 repo_0123456789ab", "sample_admin")]
+
+
+def test_missing_resource_or_inner_file_is_saved_as_not_found() -> None:
+    """资源或内部文件不存在都保存为 not_found，状态只有设计规定的四种失败值
+
+    :design: decision_a4e5f03c8b9b
+    """
+    class Service(_FakeResourceService):
+        def reference(self, address: str, *, actor: str = "") -> dict:
+            raise FileNotFoundError(address) if "/file/" in address else KeyError(address)
+
+    refs = resolve_resource_references(
+        content="repo_0123456789ab/file/src/gone.py article_abcdef012345", actor="sample_admin", service=Service(),
+    )
+    assert [item["status"] for item in refs] == ["not_found", "not_found"]

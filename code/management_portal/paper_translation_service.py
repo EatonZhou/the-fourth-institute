@@ -16,7 +16,6 @@ from psycopg.types.json import Jsonb
 from management_common.domain_database import DomainDatabase
 from management_portal.paper_translation_cache import TranslationCache
 from management_portal.paper_translation_google import GoogleTransport, GoogleTimeout
-from management_portal.paper_reader_annotations import Conflict, _canonical
 from management_portal.paper_translation_kimi_api import RECIPE as KIMI_RECIPE, TranslationConfigurationUnavailable, configuration as kimi_api_configuration
 
 LOGGER = logging.getLogger(__name__)
@@ -424,7 +423,7 @@ def production_service():
             if actor_principal(actor).kind == 'user' and not _portal_user_allowed(actor): raise PermissionError('account disabled')
             return actor
         def configuration(context):
-            actor = authenticate(context)
+            authenticate(context)
             entry = shared_ai_provider_registry.get('deepseek_primary')
             if entry.get('provider') != 'deepseek' or not any(m.get('id') == MODEL and m.get('enabled', True) for m in entry.get('models', [])):
                 raise ValueError('DeepSeek Flash configuration unavailable')

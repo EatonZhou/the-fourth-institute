@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+import subprocess
 import sys
 
 from management_common import code_environment
@@ -10,6 +11,37 @@ from management_common.instance_manifest import InstanceManifest, load
 from management_common.service_components import MODULES
 
 from management_common.secret_environment import secret_environment
+
+BUILD_IDENTITY_COMPONENTS = frozenset({'web', 'resource', 'execution', 'society', 'worker'})
+
+
+def build_identity(instance: InstanceManifest, component: str) -> str:
+    """The code identity a process reports, read when it starts (decision_99bb5dc0f96b).
+
+    Activation writes the Release identity into the deployment runtime before it
+    restarts the affected components; Dev Web reports the Dev worktree HEAD.
+    """
+    if component == 'dev-web':
+        if 'dev' not in instance.deployments:
+            return ''
+        try:
+            result = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=instance.code_root('dev'),
+                                    capture_output=True, text=True, timeout=10)
+        except (OSError, subprocess.SubprocessError):
+            return ''
+        return 'dev-' + result.stdout.strip()[:12] if result.returncode == 0 and result.stdout.strip() else ''
+    if component not in BUILD_IDENTITY_COMPONENTS:
+        return ''
+    try:
+        lines = (instance.deployment_runtime('release') / 'generation.env').read_text(encoding='utf-8').splitlines()
+    except OSError:
+        return ''
+    for line in lines:
+        name, separator, value = line.partition('=')
+        if separator and name.strip() == 'PORTAL_BUILD_ID':
+            return value.strip()
+    return ''
+
 
 def clean_environment(instance: InstanceManifest, *, component: str = '', postgres: bool = False) -> dict[str, str]:
     """Keep the OS user environment and select exactly one instance.
@@ -28,6 +60,9 @@ def clean_environment(instance: InstanceManifest, *, component: str = '', postgr
                PYTHONDONTWRITEBYTECODE='1', PYTHONUTF8='1')
     if component:
         env.update(instance.service_environment(component))
+        build_id = build_identity(instance, component)
+        if build_id:
+            env['PORTAL_BUILD_ID'] = build_id
     if postgres:
         library = instance.document['dependencies']['postgres']['lib']
         if os.name == 'nt':

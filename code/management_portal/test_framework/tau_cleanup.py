@@ -116,7 +116,7 @@ class TauTeamCleanup:
                 atomic_replace_json(path, state)
                 entry["receipt"] = self.release_member(lineage_id, resident_id, request["key"])
                 if self._resident(lineage_id, resident_id) is not None:
-                    raise RuntimeError("DeleteResident has not removed the member")
+                    raise RuntimeError("Releasing the member has not removed it")
                 entry.update(status="deleted", error="")
                 emit(f"TAU 已清理临时成员：{resident_id}，保留团队 {lineage_id}\n")
             except Exception as exc:

@@ -1,6 +1,6 @@
 """Changes other services make to the saved instances inside their own transactions.
 
-Both run with the permission system on or off, on the rows of every
+All of them run with the permission system on or off, on the rows of every
 scheme's saved instance, in plain SQL on the permission schema; nothing
 here imports the PAR implementation.
 
@@ -10,6 +10,9 @@ here imports the PAR implementation.
   §5.6).  Issuing a credential for a message takes the same lock (``lock``),
   so a credential issued while the input ends is either seen and deleted,
   or refused because the input has ended.
+- ``activate_prepared``: SocietyService admits a Resident's input, and the
+  pending task credentials prepared for that message are enabled in the
+  admission transaction.
 - ``rename_paths``: a Project's ID changes; the tree paths that name it are
   rewritten so the renamed Project keeps its place and its rows.
 

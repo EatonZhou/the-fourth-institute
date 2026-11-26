@@ -10,7 +10,6 @@ if TYPE_CHECKING:
 
 
 from management_common.knowledge_resource_types import (
-    KNOWLEDGE_TYPES as RESOURCE_TYPES,
     MUTABLE_RESOURCE_TYPES,
     MARKDOWN_REGISTERABLE_RESOURCE_TYPES,
 )

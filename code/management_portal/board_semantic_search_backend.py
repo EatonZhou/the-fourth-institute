@@ -4,7 +4,6 @@ from __future__ import annotations
 import re
 
 
-
 SURFACES = {"wall"}
 
 
@@ -15,16 +14,9 @@ def _surface(value: object) -> str:
     return surface
 
 
-
-
-def _compact_text(value: object, limit: int) -> str:
-    return re.sub(r"\s+", " ", str(value or "")).strip()[:limit].rstrip()
-
-
-
-
-
-
+def _compact_text(value: object) -> str:
+    """Whitespace-normalized text, in full: the search layer sets no size limit."""
+    return re.sub(r"\s+", " ", str(value or "")).strip()
 
 
 def _wall_catalog(project: str, actor: str) -> list[dict]:
@@ -45,8 +37,8 @@ def _wall_catalog(project: str, actor: str) -> list[dict]:
             "domain": block.get("domain", ""),
             "source_id": block.get("source_id", ""),
             "source_title": block.get("source_title", ""),
-            "preview": _compact_text(block.get("preview"), 800),
-            "content": _compact_text(block.get("content"), 4000),
+            "preview": _compact_text(block.get("preview")),
+            "content": _compact_text(block.get("content")),
         }
         for block in payload.get("blocks", [])
     ]

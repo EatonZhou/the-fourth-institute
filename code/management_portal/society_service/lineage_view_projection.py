@@ -167,12 +167,7 @@ def resource_projection(
             ),
             "status": status,
             "state": work_state,
-            "updated_at": _text(
-                record.get("interaction_updated_at")
-                or record.get("updated_at")
-                or "",
-                80,
-            ),
+            "updated_at": _text(record.get("updated_at") or "", 80),
             "is_leader": resident_id
             == str(lineage.get("leader_resident_id") or ""),
         }

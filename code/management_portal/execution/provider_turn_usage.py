@@ -35,6 +35,8 @@ from pathlib import Path
 from collections.abc import Iterator, Mapping
 from typing import Any
 
+from .contracts import positive_int
+
 TOKEN_USAGE_KEYS = (
     "input_tokens",
     "cached_input_tokens",
@@ -95,14 +97,6 @@ def _observed(requests: list[dict[str, Any]], *, prefix: str) -> ObservedTurnUsa
             if request["usage"]
         ),
     )
-
-
-def _count(value: Any) -> int:
-    try:
-        number = int(value or 0)
-    except (TypeError, ValueError):
-        return 0
-    return number if number > 0 else 0
 
 
 def _canonical(input_tokens: int, cached: int, output: int, reasoning: int) -> dict[str, int]:
@@ -191,17 +185,17 @@ def anthropic_request_usage(raw: object) -> dict[str, int]:
     data = raw if isinstance(raw, Mapping) else {}
     details = data.get("output_tokens_details")
     details = details if isinstance(details, Mapping) else {}
-    cache_read = _count(data.get("cache_read_input_tokens"))
+    cache_read = positive_int(data.get("cache_read_input_tokens"))
     input_tokens = (
-        _count(data.get("input_tokens"))
-        + _count(data.get("cache_creation_input_tokens"))
+        positive_int(data.get("input_tokens"))
+        + positive_int(data.get("cache_creation_input_tokens"))
         + cache_read
     )
     return _canonical(
         input_tokens,
         cache_read,
-        _count(data.get("output_tokens")),
-        _count(details.get("thinking_tokens")) or _count(details.get("reasoning_tokens")),
+        positive_int(data.get("output_tokens")),
+        positive_int(details.get("thinking_tokens")) or positive_int(details.get("reasoning_tokens")),
     )
 
 
@@ -277,22 +271,22 @@ def claude_context_window(model_usage: object, model: str = "") -> int:
     entries = {
         str(name): value
         for name, value in (model_usage.items() if isinstance(model_usage, Mapping) else ())
-        if isinstance(value, Mapping) and _count(value.get("contextWindow"))
+        if isinstance(value, Mapping) and positive_int(value.get("contextWindow"))
     }
     if not entries:
         return 0
     if model:
         for name, value in entries.items():
             if name == model or name.startswith(model):
-                return _count(value.get("contextWindow"))
+                return positive_int(value.get("contextWindow"))
 
     def size(value: Mapping[str, Any]) -> int:
         return sum(
-            _count(value.get(key))
+            positive_int(value.get(key))
             for key in ("inputTokens", "cacheReadInputTokens", "cacheCreationInputTokens")
         )
 
-    return _count(max(entries.values(), key=size).get("contextWindow"))
+    return positive_int(max(entries.values(), key=size).get("contextWindow"))
 
 
 def claude_turn_usage(
@@ -321,11 +315,11 @@ def claude_turn_usage(
 
 
 def _kimi_request_usage(raw: Mapping[str, Any]) -> dict[str, int]:
-    cache_read = _count(raw.get("inputCacheRead"))
+    cache_read = positive_int(raw.get("inputCacheRead"))
     return _canonical(
-        _count(raw.get("inputOther")) + cache_read + _count(raw.get("inputCacheCreation")),
+        positive_int(raw.get("inputOther")) + cache_read + positive_int(raw.get("inputCacheCreation")),
         cache_read,
-        _count(raw.get("output")),
+        positive_int(raw.get("output")),
         0,
     )
 
@@ -376,14 +370,14 @@ def read_kimi_turn_usage(path: str | Path, *, since_ms: int, until_ms: int = 0) 
                 legacy = hashlib.sha256(line.encode('utf-8')).hexdigest()[:32]
                 identity = legacy if ordinal == 1 else f'{legacy}:{ordinal}'
             if (
-                not identity or _count(record.get("time")) < since_ms
-                or (until_ms and _count(record.get("time")) > until_ms)
+                not identity or positive_int(record.get("time")) < since_ms
+                or (until_ms and positive_int(record.get("time")) > until_ms)
             ):
                 continue
             requests.append({
                 "id": identity,
                 "usage": _kimi_request_usage(record["usage"]),
-                "at": _from_epoch_ms(_count(record.get("time"))),
+                "at": _from_epoch_ms(positive_int(record.get("time"))),
                 "context": agent == "main" and str(record.get("usageScope") or "turn") == "turn",
                 "model": str(record.get("model") or ""),
             })
@@ -408,11 +402,11 @@ def kimi_reported_usage(raw: object) -> dict[str, int]:
     """
 
     data = raw if isinstance(raw, Mapping) else {}
-    uncached = _count(data.get("input_tokens"))
-    cached = _count(data.get("cached_input_tokens"))
-    created = _count(data.get("cache_creation_tokens"))
-    output = _count(data.get("output_tokens"))
-    includes_writes = created and cached >= created and _count(data.get("total_tokens")) == (
+    uncached = positive_int(data.get("input_tokens"))
+    cached = positive_int(data.get("cached_input_tokens"))
+    created = positive_int(data.get("cache_creation_tokens"))
+    output = positive_int(data.get("output_tokens"))
+    includes_writes = created and cached >= created and positive_int(data.get("total_tokens")) == (
         uncached + cached + output
     )
     cache_read = cached - created if includes_writes else cached
@@ -470,7 +464,7 @@ def _dsh_events(path: str | Path, kind: str, since_ms: int, until_ms: int) -> It
             continue
         if not isinstance(event, dict) or event.get("type") != kind or not isinstance(event.get("data"), dict):
             continue
-        moment = _count(event.get("time"))
+        moment = positive_int(event.get("time"))
         if moment >= since_ms and not (until_ms and moment > until_ms):
             yield event
 
@@ -491,16 +485,16 @@ def _dsh_requests(path: str | Path, session_id: str, since_ms: int, until_ms: in
         usage = event["data"].get("usage")
         if not isinstance(usage, dict) or not isinstance(event.get("seq"), int):
             continue
-        cache_read = _count(usage.get("cacheReadTokens"))
+        cache_read = positive_int(usage.get("cacheReadTokens"))
         requests.append({
             "id": f"{session_id}:{event['seq']}",
             "usage": _canonical(
-                _count(usage.get("inputTokens")) + cache_read + _count(usage.get("cacheWriteTokens")),
+                positive_int(usage.get("inputTokens")) + cache_read + positive_int(usage.get("cacheWriteTokens")),
                 cache_read,
-                _count(usage.get("outputTokens")),
-                _count(usage.get("reasoningTokens")),
+                positive_int(usage.get("outputTokens")),
+                positive_int(usage.get("reasoningTokens")),
             ),
-            "at": _from_epoch_ms(_count(event.get("time"))),
+            "at": _from_epoch_ms(positive_int(event.get("time"))),
         })
     return requests
 
@@ -522,7 +516,7 @@ def read_dsh_context_window(path: str | Path) -> int:
         if not isinstance(event, dict) or event.get("type") != "request/context":
             continue
         data = event.get("data")
-        window = _count((data if isinstance(data, dict) else event).get("contextWindow")) or window
+        window = positive_int((data if isinstance(data, dict) else event).get("contextWindow")) or window
     return window
 
 
@@ -530,7 +524,7 @@ def observed_turn_usage(reported: object, observed: ObservedTurnUsage | None) ->
     """The Execution usage of a turn whose Provider already reports canonical usage."""
 
     data = reported if isinstance(reported, Mapping) else {}
-    last_query = {key: _count(data.get(key)) for key in TOKEN_USAGE_KEYS if _count(data.get(key))}
+    last_query = {key: positive_int(data.get(key)) for key in TOKEN_USAGE_KEYS if positive_int(data.get(key))}
     if observed is None or observed.turn.get("total_tokens", 0) < last_query.get("total_tokens", 0):
         return dict(data)
     return usage_payload(observed.turn, observed.context, observed.context_window)

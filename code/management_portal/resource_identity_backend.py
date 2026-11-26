@@ -804,6 +804,7 @@ def update_repo_policy(
     """Persist Portal Git behavior without changing the checkout."""
     with _repo_writer() as writer:
         record = _locked_repo(writer, repo_id)
+        require_git_source(record)
         record["push_enabled"] = bool(push_enabled)
         record["updated_at"] = utc_now_iso()
         _put_repo(writer, record)
@@ -831,6 +832,7 @@ def update_repo_ssh_key(
         raise FileNotFoundError(f"Repo SSH key not found: {clean_key}")
     with _repo_writer() as writer:
         record = _locked_repo(writer, repo_id)
+        require_git_source(record)
         record["ssh_key"] = clean_key
         record["updated_at"] = utc_now_iso()
         _put_repo(writer, record)
@@ -962,8 +964,5 @@ def read_resolved_resource_content(
             raise FileNotFoundError(address)
         content_type = mimetypes.guess_type(resolved["relative_path"])[0] or "application/octet-stream"
         return proc.stdout, content_type, resolved
-    if kind == "article_section":
-        from . import article_sections
-        return article_sections.read_article_section(resolved, max_bytes=max_bytes)
     return indexed_content.read_resolved_resource_content(
         resolved, address=address, actor=actor, max_bytes=max_bytes)

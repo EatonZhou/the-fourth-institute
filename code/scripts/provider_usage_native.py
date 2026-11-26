@@ -113,7 +113,7 @@ def antigravity_rows(source, gaps):
     usage=4, chat_start_metadata=9 (created_at=4), response_model=19,
     model_display_name=21, response_model_full=22.
     """
-    from management_portal.execution.antigravity_backend import _pb_fields, _step_usage
+    from management_portal.execution.antigravity_history import _pb_fields, _step_usage
     from scripts.provider_usage_attribution import antigravity_evidence
     with sqlite_read(source['path']) as c:
         if not c.execute("SELECT 1 FROM sqlite_master WHERE type='table' LIMIT 1").fetchone():

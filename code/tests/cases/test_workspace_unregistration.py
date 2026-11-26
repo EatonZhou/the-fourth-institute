@@ -63,3 +63,28 @@ def test_nonadmin_denied_by_real_permission_scheme(workspace, monkeypatch):
     with pytest.raises(PermissionError):
         workspace.service.unregister(WID, actor='bob')
     call(workspace).raise_for_error()
+
+
+def test_unregister_compares_the_token_in_the_service_mutation(workspace):
+    """UnregisterResource 在资源变更域内、删除之前比较版本令牌，跳过内核预读时旧令牌也以 version_conflict 失败且资源保留"""
+    from types import SimpleNamespace
+
+    from management_portal.hatg.contracts import InstructionError
+    from management_portal.resources import isa
+
+    stale = workspace.resolve()['version']
+    workspace.update({'title': 'Moved on', 'expected_version': stale}).raise_for_error()
+    current = workspace.resolve()['version']
+    assert current != stale
+
+    def unregister(token):
+        return isa.unregister_resource(SimpleNamespace(
+            argument={'resource_id': WID}.get, caller='alice', expected_version_for=lambda _object_id: token))
+
+    with pytest.raises(InstructionError) as raised:
+        unregister(stale)
+    assert raised.value.code == 'instruction.version_conflict'
+    assert raised.value.details == {'expected_version': stale, 'current_version': current}
+    assert workspace.store.rows([WID])
+    unregister(current)
+    assert not workspace.store.rows([WID])

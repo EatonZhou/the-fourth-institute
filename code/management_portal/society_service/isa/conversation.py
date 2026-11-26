@@ -355,7 +355,14 @@ def watch_conversation_events(inv: Invocation) -> Iterator[list[dict[str, Any]]]
             resident_id, inv.caller, cursor, limit=limit, input_message_id=input_message_id,
         )
         events = result.get("events") or []
-        if initial or events or time.monotonic() - last_yield >= STREAM_HEARTBEAT_SECONDS:
+        watermark = int(result["cursor"])
+        snapshot_required = cursor > watermark
+        if snapshot_required:
+            # The cursor is ahead of the log (a stale or foreign cursor): waiting would
+            # never deliver. Tell the reader to take a snapshot and continue from here.
+            cursor = watermark
+            events = []
+        if snapshot_required or initial or events or time.monotonic() - last_yield >= STREAM_HEARTBEAT_SECONDS:
             if events:
                 cursor = int(events[-1]["cursor"])
             last_yield = time.monotonic()
@@ -364,7 +371,8 @@ def watch_conversation_events(inv: Invocation) -> Iterator[list[dict[str, Any]]]
             # the log has no readable events. Its cursor remains the last event
             # actually delivered, so reconnecting cannot skip a limited batch.
             yield [*({"cursor": int(event["cursor"]), "event": event} for event in events),
-                   {"cursor": cursor, "high_watermark": int(result["cursor"])}]
+                   {"cursor": cursor, "high_watermark": watermark,
+                    **({"snapshot_required": True} if snapshot_required else {})}]
             if events:
                 continue
         if wait_for_shutdown(STREAM_POLL_SECONDS):

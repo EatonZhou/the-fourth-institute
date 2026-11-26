@@ -276,19 +276,20 @@ def get_resident_summaries(inv: Invocation) -> dict[str, Any]:
         if isinstance(item, dict)
     }
     maintenance = inv.argument("include_maintenance") is True
+    views: dict[str, dict[str, Any]] = {}
     if maintenance:
         from ..resident_context import work_summary
+        # Every Resident with a context row was already authorized for this caller by ``contexts``.
+        try:
+            views = work_summary.maintenance_views(inv.caller, resident_ids, visible=set(rows))
+        except Exception as exc:  # noqa: BLE001 - every failure maps to one instruction error
+            raise _summary_service_error(exc) from exc
     summaries: list[dict[str, Any]] = []
     unavailable: list[str] = []
     for resident_id in resident_ids:
         item = rows.get(resident_id)
         summary = item.get("summary") if isinstance(item, dict) and isinstance(item.get("summary"), dict) else None
-        written: dict[str, Any] = {}
-        if maintenance:
-            try:
-                written = work_summary.maintenance_view(inv.caller, resident_id)
-            except (KeyError, PermissionError):
-                written = {}
+        written = views.get(resident_id) or {}
         if not summary and not written:
             unavailable.append(resident_id)
             continue

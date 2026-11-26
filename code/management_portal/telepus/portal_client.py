@@ -151,9 +151,6 @@ class PortalClient:
             arguments["input_message_id"] = input_message_id
         return self.call(actor, "GetConversation", arguments)
 
-    def earlier_messages(self, actor: str, resident_id: str, cursor: str, limit: int = 200) -> dict[str, Any]:
-        return self.call(actor, "ListMessages", {"resident_id": resident_id, "cursor": cursor, "limit": limit})
-
     def events(self, actor: str, resident_id: str, after_cursor: int, limit: int = 500) -> tuple[list[dict[str, Any]], int]:
         """Conversation events after ``after_cursor`` and the cursor to resume from."""
         items = self.first_batch(actor, "WatchConversationEvents", {

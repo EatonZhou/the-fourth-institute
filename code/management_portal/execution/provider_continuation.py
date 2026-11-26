@@ -14,8 +14,8 @@ from __future__ import annotations
 import time
 from typing import Any, Callable
 
-from .backend_contracts import BackendContext, BackendInvocation, _positive_int
-from .contracts import ExecutionControlSignal, ExecutionRecoveryDeferred
+from .backend_contracts import BackendContext, BackendInvocation
+from .contracts import ExecutionControlSignal, ExecutionRecoveryDeferred, positive_int
 from .harness import ProviderErrorRecoveryPolicy
 from .provider_egress import egress_state, location_restricted, route_upstream
 from .provider_failures import is_egress_block_failure, is_network_failure, is_usage_limit_failure
@@ -127,8 +127,8 @@ def provider_error_continuation(
         checkpoint = getattr(invocation, "recovery_checkpoint", None)
         state = checkpoint.get("provider_recovery_state") if isinstance(checkpoint, dict) else None
     state = dict(state) if isinstance(state, dict) else {}
-    used = _positive_int(state.get("provider_error_continue_count"))
-    egress_used = _positive_int(state.get("egress_block_continue_count"))
+    used = positive_int(state.get("provider_error_continue_count"))
+    egress_used = positive_int(state.get("egress_block_continue_count"))
     text = str(error).casefold()
     session = getattr(invocation, "session", None)
     upstream = route_upstream(provider_id, str(getattr(session, "backend_route_id", "") or ""))

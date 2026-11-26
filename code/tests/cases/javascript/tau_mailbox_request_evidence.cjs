@@ -61,7 +61,7 @@ const {observeMailboxRequests, readMailboxSocietyPrerequisites} = require(proces
     assert.equal((await readMailboxSocietyPrerequisites(pageA)).navigation_ready,false);
 
     // Earlier original requests cannot be retroactively recovered.
-    await pageA.evaluate(id=>window.fixtureRead('ListInputHistory',id,'original-before-registration'),target);
+    await pageA.evaluate(id=>window.fixtureRead('ListResidentInputHistory',id,'original-before-registration'),target);
     const before = apiCount;
     const options = {origin,residentId:target,requestId:observer.requestId};
     captureA = await observeMailboxRequests({...options,page:pageA});
@@ -69,11 +69,11 @@ const {observeMailboxRequests, readMailboxSocietyPrerequisites} = require(proces
     assert.equal(apiCount,before); assert.deepEqual(captureA.snapshot().records,[]);
     await pageA.evaluate(async ({target,other})=>{
       await window.fixtureRead('GetResidentSummaries',other,'original-unlisted-operation');
-      await window.fixtureRead('ListInputHistory',target,'original-own-history');
-      await window.fixtureRead('ListInputHistory',other,'original-other-history');
+      await window.fixtureRead('ListResidentInputHistory',target,'original-own-history');
+      await window.fixtureRead('ListResidentInputHistory',other,'original-other-history');
       await window.fixtureProjection(target);
     },{target,other});
-    await pageB.evaluate(id=>window.fixtureRead('ListInputHistory',id,'original-b-history'),target);
+    await pageB.evaluate(id=>window.fixtureRead('ListResidentInputHistory',id,'original-b-history'),target);
     const original = await captureA.stop(), originalB = await captureB.stop();
     assert.equal(original.records.length,4); assert.equal(originalB.records.length,1);
     assert.equal(original.records[0].submitted_instruction,'GetResidentSummaries');
@@ -90,14 +90,14 @@ const {observeMailboxRequests, readMailboxSocietyPrerequisites} = require(proces
     assert.ok(!JSON.stringify(original).includes(other));
     assert.ok(!JSON.stringify(original).includes('foreign.secret_code'));
     const stable = JSON.stringify(original);
-    await pageA.evaluate(id=>window.fixtureRead('ListInputHistory',id,'after-stop'),target);
+    await pageA.evaluate(id=>window.fixtureRead('ListResidentInputHistory',id,'after-stop'),target);
     assert.equal(JSON.stringify(captureA.snapshot()),stable);
 
     // Duplicate IDs and identical GETs cannot acquire invented exact callers.
     captureA = await observeMailboxRequests({...options,page:pageA});
     await pageA.evaluate(async id=>{
-      await window.fixtureRead('ListInputHistory',id,'same-token');
-      await window.fixtureRead('ListInputHistory',id,'same-token');
+      await window.fixtureRead('ListResidentInputHistory',id,'same-token');
+      await window.fixtureRead('ListResidentInputHistory',id,'same-token');
       await window.fixtureProjection(id); await window.fixtureProjection(id);
     },target);
     const duplicates = await captureA.stop();

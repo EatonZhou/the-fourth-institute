@@ -550,7 +550,7 @@ def test_plain_text_delivery_no_longer_mints_or_rewrites_authorization(active, m
                "content_parts": [{"type": "text", "text": "我给你临时凭证"}]}
     arguments = {"resident_id": active.resident, "message": message}
     def deliver(inv, resident_id, body, **kwargs):
-        assert body == message and kwargs["lending"] is None
+        assert body == message and "lending" not in kwargs
         return {"message_id": body["message_id"]}
     monkeypatch.setattr(conversation, "deliver", deliver)
     inv = SimpleNamespace(argument=arguments.get, caller="lender", idempotency_key="ordinary-delivery")

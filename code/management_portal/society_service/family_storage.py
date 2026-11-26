@@ -40,13 +40,6 @@ def ensure_duty_schema(connection: Any) -> None:
             connection.execute(f"ALTER TABLE {table} {', '.join(additions)}")
 
 
-def operating_role_ids(connection: Any) -> list[str]:
-    return [row["resident_id"] for row in connection.execute(
-        "SELECT fr.resident_id FROM family_residents fr JOIN families f USING(family_id) "
-        "WHERE fr.role IN ('router','steward') AND f.deleted_at IS NULL ORDER BY fr.resident_id"
-    ).fetchall()]
-
-
 def create_schema(connection: Any) -> None:
     family_chat_storage.create_schema(connection)
     connection.execute("""CREATE TABLE families (
@@ -269,32 +262,6 @@ def routing_nodes(connection: Any, family_id: str) -> set[str]:
         "UNION SELECT element_id node_id FROM function_block_elements WHERE function_block_id=%s "
         "AND element_key IN ('inbox','router','route_relay')", (family_id, family_id),
     ).fetchall()}
-
-
-def credential_peers(connection: Any, resident_ids: list[str]) -> dict[str, dict[str, tuple[str, ...]]]:
-    """The live formal peers of each Resident, including every Family role.
-
-    Credentials are shared within each directly joined Family. This reads
-    domain facts, not a descriptor projection or cached routing roster.
-    """
-    if not resident_ids:
-        return {}
-    rows = connection.execute('''
-        SELECT own.resident_id, peer.resident_id AS peer_id, f.family_id
-        FROM family_residents own JOIN families f USING(family_id)
-        JOIN lineages l ON l.lineage_id=f.lineage_id AND l.deleted_at IS NULL
-        JOIN lineage_nodes n ON n.node_id=f.family_id AND n.deleted_at IS NULL
-        JOIN residents caller ON caller.resident_id=own.resident_id AND caller.deleted_at IS NULL
-        JOIN family_residents peer ON peer.family_id=f.family_id AND peer.resident_id<>own.resident_id
-        JOIN residents holder ON holder.resident_id=peer.resident_id AND holder.deleted_at IS NULL
-        WHERE own.resident_id=ANY(%s) AND f.deleted_at IS NULL
-        ORDER BY own.resident_id, peer.resident_id, f.family_id
-    ''', (resident_ids,)).fetchall()
-    peers: dict[str, dict[str, list[str]]] = {}
-    for row in rows:
-        peers.setdefault(row['resident_id'], {}).setdefault(row['peer_id'], []).append(row['family_id'])
-    return {rid: {peer: tuple(families) for peer, families in values.items()}
-            for rid, values in peers.items()}
 
 
 def families_around(connection: Any, resident_id: str, *, max_hops: int = 4) -> list[dict]:

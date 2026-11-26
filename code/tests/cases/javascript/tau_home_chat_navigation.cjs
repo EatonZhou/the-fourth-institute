@@ -81,13 +81,13 @@ const runtimeState = () => ({work_state:'idle', execution_gate:graphReadinessSam
           // subscription without manufacturing conversation events.
           return route.fulfill({contentType:'text/event-stream',body:'event: end\ndata: {}\n\n'});
         }
-        if (!/^(Get|List|Search|Read)|^SetMailboxItemRead$/.test(body.instruction)
+        if (!/^(Get|List|Search|Read)|^UpdateMailboxItem$/.test(body.instruction)
             && !(readinessSamples && ['ForkResident','UpdateResident'].includes(body.instruction))
             && !(lineageCreationSamples && body.instruction === 'CreateLineage')) {
           errors.push(`Unexpected local instruction: ${body.instruction}`);
           return route.fulfill({ status: 400, json: { error: { code: 'fixture.unexpected_instruction' } } });
         }
-        if (body.instruction === 'SetMailboxItemRead') result = { item: { resident_id: residentId, unread: false, read_revision: 1 } };
+        if (body.instruction === 'UpdateMailboxItem') result = { item: { resident_id: residentId, unread: false, read_revision: 1 } };
         if (body.instruction === 'GetConversation') result = { resident, messages: [], queue: { items: [] }, controls: { can_send: true }, state: runtimeState() };
         if (body.instruction === 'GetResident') result = {resident};
         if (body.instruction === 'UpdateResident') {

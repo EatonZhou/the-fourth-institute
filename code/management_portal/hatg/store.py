@@ -32,6 +32,7 @@ RECOVERY_HOLD_DAYS = 30
 RETRY_GUARD_DAYS = 365
 LONG_LIVED_SWEEP_SECONDS = 3600
 RETRY_GUARDS = "instruction_retry_guards"
+PROJECTION_PENDING_CODE = "instruction.projection_pending"
 # An executing record can be settled only after its live execution lock has
 # been released (including automatically when the owning process dies).
 TABLE = "instruction_executions"
@@ -78,6 +79,13 @@ def create_schema(connection: Any) -> None:
     )
     connection.execute(f"CREATE INDEX IF NOT EXISTS {TABLE}_expiry_idx ON {TABLE}(updated_at,instruction_id) "
                        "WHERE recovery_key='' AND status IN ('committed','failed')")
+    # Pending projections are a handful of rows among hundreds of thousands;
+    # the partial index keeps the maintenance read off the primary-key scan.
+    # Guarded so a restart does not take a table lock when it already exists.
+    if connection.execute("SELECT to_regclass(current_schema() || '.' || %s)",
+                          (f"{TABLE}_pending_idx",)).fetchone()[0] is None:
+        connection.execute(f"CREATE INDEX IF NOT EXISTS {TABLE}_pending_idx ON {TABLE}(instruction_id) "
+                           f"WHERE (error_json::jsonb ->> 'code') = '{PROJECTION_PENDING_CODE}'")
     # Only a one-way request digest survives expiry. It is a replay fence,
     # not an instruction history: no identity, arguments or result are kept.
     connection.execute(f"CREATE TABLE IF NOT EXISTS {RETRY_GUARDS} ("
@@ -228,7 +236,7 @@ class ExecutionStore:
         with self.database.read() as connection:
             rows = connection.execute(
                 f"SELECT * FROM {TABLE} WHERE instruction_id > %s "
-                "AND error_json::jsonb ->> 'code' = 'instruction.projection_pending' "
+                f"AND (error_json::jsonb ->> 'code') = '{PROJECTION_PENDING_CODE}' "
                 "ORDER BY instruction_id LIMIT %s", (after, PRUNE_BATCH_SIZE),
             ).fetchall()
         return [_record(row) for row in rows]
@@ -419,8 +427,12 @@ class ExecutionStore:
         now: str,
         result: Any = None,
         error: Mapping[str, Any] | None = None,
+        declaration: Any = None,
     ) -> None:
         refs = references(result)
+        if declaration is not None and isinstance(result, Mapping) and isinstance(refs, dict):
+            # The fields the declaration marks for replay are kept as reported.
+            refs.update({name: result[name] for name in declaration.replay_fields if name in result})
         stored_error = None
         if error:
             stored_error = {

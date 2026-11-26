@@ -1,7 +1,5 @@
-"""Public imports retained for existing callers and account usage readers."""
+"""Antigravity runtime options: permission presets and its native slash commands."""
 from management_portal import antigravity_accounts as accounts
-from .antigravity_cli_backend import AntigravityCliBackend as AntigravityBackend
-from .antigravity_history import _pb_fields, _step_usage
 from .native_options import NativeOptions
 
 

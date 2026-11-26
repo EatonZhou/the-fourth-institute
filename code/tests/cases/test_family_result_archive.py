@@ -10,8 +10,8 @@ import pytest
 
 from management_portal.society_service import (
     family_facade,
-    family_recovery,
     family_supervision,
+    relay_review_resolution,
     resident_access,
     resident_conversation_stream,
 )
@@ -40,8 +40,8 @@ def prepared(family, *, legacy=False, state="failed", source_state="completed", 
 
 
 def archive(family, root, source, actor="sample_admin"):
-    return run("ResolveFamilyRequest", dict(resident_id=family["facade"], message_id=root,
-               steward_message_id=source, reason="复核已完成原组织目标，复用真实创建结果"), actor=actor)
+    return run("ResolveRelayedRequest", dict(resident_id=family["facade"], message_id=root,
+               review_message_id=source, reason="复核已完成原组织目标，复用真实创建结果"), actor=actor)
 
 
 @pytest.mark.parametrize("legacy", [False, True])
@@ -78,13 +78,14 @@ def test_archive_rejects_outsider_and_existing_work(family, monkeypatch):
     from management_portal.society_service import resident_directory_domain
     root, source, _ = prepared(family)
     monkeypatch.setattr(resident_access, "can_manage", lambda *args: False)
+    monkeypatch.setattr(family_facade, "is_own_steward", lambda facade, actor: actor == family["steward"])
     with pytest.raises(PermissionError):
-        family_recovery.archive_result(family["facade"], root, source, family["wrong"], reason="非管理者")
+        relay_review_resolution.resolve(family["facade"], root, source, family["wrong"], reason="非管理者")
     # The own steward remains authorized without borrowing the request author.
-    family_recovery.archive_result(family["facade"], root, source, family["steward"], reason="核验组织成果")
+    relay_review_resolution.resolve(family["facade"], root, source, family["steward"], reason="核验组织成果")
     _, other, _ = prepared(family)
     with pytest.raises(ValueError):
-        family_recovery.archive_result(family["facade"], root, other, family["steward"], reason="不能覆盖关联")
+        relay_review_resolution.resolve(family["facade"], root, other, family["steward"], reason="不能覆盖关联")
 
 
 def test_relay_target_includes_only_own_steward_and_roster(family):

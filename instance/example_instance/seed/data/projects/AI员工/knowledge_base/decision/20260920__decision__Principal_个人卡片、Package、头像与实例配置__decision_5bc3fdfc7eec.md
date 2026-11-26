@@ -17,7 +17,6 @@ importance: 8
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/resources/action.py
   - ${code_root}/management_portal/static/portal_user_avatar.js
   - ${code_root}/management_portal/static/portal_resident_avatar.js
   - ${code_root}/management_portal/static/portal_avatar_editor.js

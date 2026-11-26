@@ -146,7 +146,6 @@ HANDLERS = {
     "LeaveChatroom": leave_chatroom,
     "DeleteChatroom": delete_chatroom,
     "ListChatroomMessages": list_chatroom_messages,
-    # The Web part of two core instructions: calls with chatroom_id run here (argument_owners).
     "SearchChatroomMessages": search_chatroom_messages,
     "ListChatroomInputHistory": list_chatroom_input_history,
     "UpdateChatroomMessage": update_chatroom_message,

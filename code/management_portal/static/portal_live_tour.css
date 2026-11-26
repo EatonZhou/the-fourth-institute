@@ -199,9 +199,6 @@
   box-shadow: 0 18px 54px rgba(17, 30, 45, .24);
 }
 
-.portalUiLiveExample > p { color: var(--muted, #667384); }
-.portalUiLiveExample [data-portal-ui-live-result] { display: grid; gap: 12px; margin-top: 14px; }
-
 @keyframes portalLiveTourClick {
   50% { transform: translate(-3px, -2px) scale(.78); }
 }

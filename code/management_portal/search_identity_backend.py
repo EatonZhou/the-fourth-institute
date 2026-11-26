@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from contextlib import ExitStack, contextmanager
-from typing import Any, Iterable, Iterator
+from typing import Any, Iterator
 from urllib.parse import unquote
 from management_portal.resources.portal import portal_url_for_search
 
@@ -25,20 +25,21 @@ class _DomainJobs:
         return self._jobs.locked()
 
     def load(self) -> list[dict[str, Any]]:
-        return self._jobs.load(strict=True)
+        return self._jobs.load()
+
+    def get(self, search_id: str) -> dict[str, Any] | None:
+        return self._jobs.get(search_id)
 
     def write(self, jobs: list[dict[str, Any]]) -> None:
         self._jobs.write(jobs)
 
 
-def _search_stores(*, include_board: bool = True) -> dict[str, Any]:
-    stores = {
+def _search_stores() -> dict[str, Any]:
+    return {
         "paper": _DomainJobs(semantic_search_store.PAPER_SEARCHES),
         "knowledge": _DomainJobs(semantic_search_store.KNOWLEDGE_SEARCHES),
+        "board": _DomainJobs(semantic_search_store.BOARD_SEARCHES),
     }
-    if include_board:
-        stores["board"] = _DomainJobs(semantic_search_store.BOARD_SEARCHES)
-    return stores
 
 
 @contextmanager
@@ -193,26 +194,33 @@ def scan_search_ids(*, apply: bool = False) -> dict[str, Any]:
     }
 
 
-def generate_search_id(
-    *,
-    additional_ids: Iterable[object] = (),
-    include_board: bool = True,
-) -> str:
-    sources = _search_stores(include_board=include_board)
+def generate_search_id() -> str:
+    """A Search ID no saved search of any surface (deleted ones included) uses."""
     with identity_lock():
-        with _job_store_locks(sources):
-            stores = {store_name: source.load() for store_name, source in sources.items()}
-            plan = _identity_plan(stores)
-            if plan["invalid"] or plan["collisions"]:
-                raise ValueError("cannot allocate a Search ID while search identity data is invalid")
-            used = {
-                stripped_text(job.get("search_id"))
-                for jobs in plan["planned"].values()
-                for job in jobs
-                if get_resource_service().is_valid_id(job.get("search_id"), "search")
-            }
-        used.update(stripped_text(value) for value in additional_ids if stripped_text(value))
-        return get_resource_service().new_id("search", used)
+        used = semantic_search_store.search_ids()
+    return get_resource_service().new_id("search", used)
+
+
+def _search_record(surface: str, job: dict[str, Any]) -> dict[str, Any]:
+    """The Search resource a stored search is: its identity, creator and run summary."""
+    deleted = bool(job.get("deleted"))
+    search_id = stripped_text(job.get("search_id"))
+    return {
+        "id": search_id,
+        "type": "search",
+        "search_id": search_id,
+        "search_kind": "semantic",
+        "surface": surface,
+        "project": stripped_text(job.get("project")),
+        "resource_scope": surface if surface in RESOURCE_SCOPES else "",
+        "query": stripped_text(job.get("query")),
+        "status": "deleted" if deleted else stripped_text(job.get("status")),
+        "created_by": stripped_text(job.get("created_by")),
+        "created_at": int(job.get("created_at") or 0),
+        "updated_at": int(job.get("updated_at") or 0),
+        "result_count": int(job.get("result_count") or 0),
+        "deleted": deleted,
+    }
 
 
 def load_search_resources(*, include_deleted: bool = True) -> list[dict[str, Any]]:
@@ -220,34 +228,12 @@ def load_search_resources(*, include_deleted: bool = True) -> list[dict[str, Any
     plan = _identity_plan(stores)
     if plan["invalid"] or plan["collisions"]:
         raise ValueError("Search identity data contains invalid or duplicate IDs")
-    records: list[dict[str, Any]] = []
-    for store_name, jobs in plan["planned"].items():
-        for job in jobs:
-            surface = _job_surface(store_name, job)
-            deleted = bool(job.get("deleted"))
-            if deleted and not include_deleted:
-                continue
-            search_id = stripped_text(job.get("search_id"))
-            records.append(
-                {
-                    "id": search_id,
-                    "type": "search",
-                    "search_id": search_id,
-                    "search_kind": "semantic",
-                    "surface": surface,
-                    "project": stripped_text(job.get("project")),
-                    "resource_scope": (
-                        surface if surface in RESOURCE_SCOPES else ""
-                    ),
-                    "query": stripped_text(job.get("query")),
-                    "status": "deleted" if deleted else stripped_text(job.get("status")),
-                    "created_by": stripped_text(job.get("created_by")),
-                    "created_at": int(job.get("created_at") or 0),
-                    "updated_at": int(job.get("updated_at") or 0),
-                    "result_count": int(job.get("result_count") or 0),
-                    "deleted": deleted,
-                }
-            )
+    records: list[dict[str, Any]] = [
+        _search_record(_job_surface(store_name, job), job)
+        for store_name, jobs in plan["planned"].items()
+        for job in jobs
+        if include_deleted or not job.get("deleted")
+    ]
     records.sort(
         key=lambda item: (
             int(item.get("updated_at") or item.get("created_at") or 0),
@@ -294,27 +280,7 @@ def scan_search_resources() -> tuple[list[dict[str, Any]], list[dict[str, str]]]
             if search_id in rejected_ids or bool(job.get("deleted")):
                 continue
             try:
-                surface = _job_surface(store_name, job)
-                records.append(
-                    {
-                        "id": search_id,
-                        "type": "search",
-                        "search_id": search_id,
-                        "search_kind": "semantic",
-                        "surface": surface,
-                        "project": stripped_text(job.get("project")),
-                        "resource_scope": (
-                            surface if surface in RESOURCE_SCOPES else ""
-                        ),
-                        "query": stripped_text(job.get("query")),
-                        "status": stripped_text(job.get("status")),
-                        "created_by": stripped_text(job.get("created_by")),
-                        "created_at": int(job.get("created_at") or 0),
-                        "updated_at": int(job.get("updated_at") or 0),
-                        "result_count": int(job.get("result_count") or 0),
-                        "deleted": False,
-                    }
-                )
+                records.append(_search_record(_job_surface(store_name, job), job))
             except Exception as exc:
                 errors.append(
                     {
@@ -344,8 +310,15 @@ def resolve_search_address(
         raise ValueError(f"invalid Search address: {address}")
     if separator:
         raise ValueError(f"Search resources do not define nested addresses: {address}")
-    records = load_search_resources(include_deleted=True)
-    record = next((item for item in records if item["id"] == root_id), None)
+    # One search by ID: the table is not read whole to resolve an address.
+    record = next(
+        (
+            _search_record(_job_surface(store_name, job), job)
+            for store_name, source in _search_stores().items()
+            if (job := source.get(root_id)) is not None
+        ),
+        None,
+    )
     if not record:
         raise KeyError(root_id)
     search_id = stripped_text(record.get("search_id"))

@@ -167,7 +167,7 @@ function documentProbe(content, receive) {
     dispatch('portal:state-read', { transport_id: 'state-request', consumer: 'private-consumer',
       reader_id: 'private-reader', reasons: null });
     for (const transport_id of ['todo-request', 'state-request']) {
-      dispatch('portal:state-read', {instruction: 'ListMailboxTodos', transport_id,
+      dispatch('portal:state-read', {instruction: 'SearchResources', transport_id,
         consumer: 'mailbox_todos', reader_id: 'mailbox-todos-1', reasons: ['refresh_timer']});
     }
     for (const [transport_id, reader] of [
@@ -198,7 +198,7 @@ async function injectedContract(observe) {
       body: { instruction: 'ListResidentStates', arguments: { resident_ids: ['private-resident'] } },
     })),
     {url: '/api/instructions/execute', method: 'POST', headers: {'x-portal-request-id': 'todo-request'},
-      body: {instruction: 'ListMailboxTodos', arguments: {user_id: 'private-todo-user'}}},
+      body: {instruction: 'SearchResources', arguments: {resource_type: 'mailbox_todo', user_id: 'private-todo-user'}}},
     ...['conversation-request', 'ambiguous-conversation', 'ambiguous-conversation'].map(transportId => ({
       url: '/api/agent-conversations?resident=private-conversation-target', headers: {'x-portal-request-id': transportId},
     })),
@@ -260,7 +260,7 @@ async function injectedContract(observe) {
     assert.equal(reads[4].reader_id, null);
     assert.deepEqual(reads[4].reasons, ['unknown']);
     assert.equal(reads[5].request_id, starts[7].request_id);
-    assert.equal(reads[5].instruction, 'ListMailboxTodos');
+    assert.equal(reads[5].instruction, 'SearchResources');
     assert.equal(reads[5].consumer, 'mailbox_todos');
     assert.equal(reads[5].reader_id, 'mailbox-todos-1');
     assert.deepEqual(reads[5].reasons, ['refresh_timer']);
@@ -339,7 +339,7 @@ async function residentContract(observe) {
   await client.watchboard(resident_id);
   await client.forwardTargets({ residentId: resident_id });
   await client.runtimeCatalog({ residentId: resident_id });
-  const operations = ['DeleteResident', 'GetConversation', 'GetInputState', 'GetMailbox',
+  const operations = ['GetConversation', 'GetInputState', 'GetMailbox',
     'GetResidentInitialization', 'ListMessages', 'GetResidentRequest'];
   const inputs = [
     ...actualReads,

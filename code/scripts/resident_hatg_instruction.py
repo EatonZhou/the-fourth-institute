@@ -231,6 +231,9 @@ def main(argv: list[str] | None = None) -> int:
     listing = commands.add_parser("list", help="ListInstructions")
     listing.add_argument("--group", choices=("general", "application", "internal", "operations", "all"), default="")
     listing.add_argument("--category", default="")
+    listing.add_argument("--detail", action="store_true", help="每项带完整摘要；默认只有名称、类别、mutates 和一句说明")
+    listing.add_argument("--limit", type=int, default=0, help="每页条数；省略时一次返回全部")
+    listing.add_argument("--cursor", default="", help="上一页的 next_cursor")
     schema = commands.add_parser("schema", help="GetInstructionSchema")
     schema.add_argument("instruction")
     for name in ("call", "watch"):
@@ -253,7 +256,8 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "list":
             body = {"schema": SCHEMA, "instruction": "ListInstructions",
                     "arguments": {key: value for key, value in
-                                  (("category", args.category), ("group", args.group)) if value}}
+                                  (("category", args.category), ("group", args.group), ("detail", args.detail),
+                                   ("limit", args.limit), ("cursor", args.cursor)) if value}}
         elif args.command == "schema":
             body = {"schema": SCHEMA, "instruction": "GetInstructionSchema",
                     "arguments": {"instruction": args.instruction}}
@@ -273,12 +277,12 @@ def main(argv: list[str] | None = None) -> int:
                          request_timeout=getattr(args, "request_timeout", 360),
                          max_attempts=getattr(args, "max_attempts", None))
     except InstructionFailed as exc:
-        print(json.dumps(exc.payload, ensure_ascii=False, indent=2))
+        print(json.dumps(exc.payload, ensure_ascii=False, separators=(",", ":")))
         return 1
     except (OSError, RuntimeError, ValueError, json.JSONDecodeError) as exc:
         print(json.dumps({"status": "failed", "error": {"code": "", "message": str(exc)}}, ensure_ascii=False))
         return 1
-    print(json.dumps(result, ensure_ascii=False, indent=2))
+    print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
     return 0
 
 

@@ -49,10 +49,6 @@ class MailboxConflict(ValueError):
     """The queue changed or the items cannot be organized this way."""
 
 
-def _address(record: Mapping[str, Any]) -> tuple[str, str]:
-    return resident_lineage.lineage_id(record), resident_lineage.resident_id(record)
-
-
 def is_group_item(item: Mapping[str, Any]) -> bool:
     return bool(item.get("mailbox_members"))
 
@@ -309,12 +305,6 @@ def finish_group(record: Mapping[str, Any], group_id: str, terminal_state: str, 
             error=error, updated_at=withdrawn_at,
         )
     return member_ids
-
-
-def reopen_group(record: Mapping[str, Any], group_id: str) -> list[str]:
-    """A finished group waits again (a requeued round); returns its members, which wait with it."""
-
-    return members_of(record, group_id)
 
 
 def project_input_state(record: Mapping[str, Any], message_id: str, state: dict[str, Any]) -> dict[str, Any]:

@@ -118,12 +118,7 @@ def resolve_resource(inv: Invocation) -> dict[str, Any]:
     return {"resource": record, "target": target, "operations": operations}
 
 
-def _resource_version(record: dict[str, Any]) -> str:
-    """Use the provider's version number, never a serialized audit record."""
-    value = record.get("version")
-    if isinstance(value, dict):
-        value = value.get("number")
-    return str(value if value is not None else record.get("updated_at") or "")
+from .service_mutations import resource_version as _resource_version
 
 
 @_file_read_errors
@@ -370,7 +365,9 @@ def update_resource(inv: Invocation) -> dict[str, Any]:
 
 def unregister_resource(inv: Invocation) -> dict[str, Any]:
     with _registry_errors():
-        record = _service().unregister(inv.argument("resource_id"), actor=inv.caller, **INDEX_WAIT)
+        record = _service().unregister(inv.argument("resource_id"), actor=inv.caller,
+                                       expected_version=inv.expected_version_for(inv.argument("resource_id")),
+                                       **INDEX_WAIT)
     return {**record, "resource_id": inv.argument("resource_id")}
 
 

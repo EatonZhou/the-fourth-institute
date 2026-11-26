@@ -295,7 +295,7 @@ class Creation:
     @contextmanager
     def prepare(self, artifacts):
         """Persist intent before any filesystem effect; artifacts are (path, kind)."""
-        from .directory_registrations import assert_empty_location, is_deleted
+        from .directory_registrations import assert_empty_location
         self.scope_id = current_lifecycle()
         self.lifecycle = LifecycleStore() if self.scope_id else None
         lease = self.lifecycle.owner_lease(self.scope_id) if self.lifecycle else nullcontext()
@@ -485,7 +485,6 @@ class Creation:
     @contextmanager
     def registration(self, connection):
         """Enlist completion, reservation release and scope in the owner transaction."""
-        from .directory_registrations import is_deleted
         if not self._active:
             raise RuntimeError('Creation requires an active preparation lease')
         self._assert_scope_open(connection)

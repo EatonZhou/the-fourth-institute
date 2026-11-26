@@ -63,12 +63,12 @@ DECLARATIONS = (
     ), (POST,), mutates=True, target="post_id", any_of=("pinned", "featured")),
     _d("SetPostUnread", ON_POST, "把调用者的帖子阅读状态退回到最新回复之前。", (
         R("post_id", description="要标为未读的帖子"),
-    ), (R("read_revision", "integer", "调用者在这篇帖子上保存的已读版本"),
-        R("unread_count", "integer", "调用者在全部帖子中仍未读的帖子数")), mutates=True, target="post_id"),
+    ), (R("read_revision", "integer", "调用者在这篇帖子上保存的已读版本", replay=True),
+        R("unread_count", "integer", "调用者在全部帖子中仍未读的帖子数", replay=True)), mutates=True, target="post_id"),
     _d("UpdatePostReadVersion", ON_POST, "把帖子标为读到指定版本。", (
         R("post_id", description="要标记的帖子"),
         P("notification_revision", "integer", "读到的版本，取 GetPost 返回的 notification_revision；省略时为当前版本",
           minimum=0),
-    ), (R("read_revision", "integer", "调用者在这篇帖子上保存的已读版本"),
-        R("unread_count", "integer", "调用者在全部帖子中仍未读的帖子数")), mutates=True, target="post_id"),
+    ), (R("read_revision", "integer", "调用者在这篇帖子上保存的已读版本", replay=True),
+        R("unread_count", "integer", "调用者在全部帖子中仍未读的帖子数", replay=True)), mutates=True, target="post_id"),
 )

@@ -134,6 +134,18 @@ def resolve_article_address(
     raise ValueError(f"unsupported nested article address: {address}")
 
 
+def read_resolved_resource_content(
+    resolved: dict[str, Any], *, address: str = "", actor: str = "", max_bytes: int = 4 * 1024 * 1024
+) -> tuple[bytes, str, dict[str, Any]]:
+    """Article's reader: sections are its own kind; files and records read as indexed content."""
+    if resolved.get("target_kind") == "article_section":
+        return read_article_section(resolved, max_bytes=max_bytes)
+    from management_portal.resources import indexed_content
+
+    return indexed_content.read_resolved_resource_content(
+        resolved, address=address, actor=actor, max_bytes=max_bytes)
+
+
 def read_article_section(
     resolved: dict[str, Any], *, max_bytes: int = 4 * 1024 * 1024
 ) -> tuple[bytes, str, dict[str, Any]]:

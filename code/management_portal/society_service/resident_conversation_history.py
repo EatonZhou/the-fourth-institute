@@ -84,6 +84,12 @@ class ConversationHistory:
     ) -> list[dict[str, Any]]:
         return self.read_messages(resident_id, limit=limit)
 
+    def public_messages_many(self, resident_ids: Sequence[object], *, limit: int = 0) -> dict[str, list[dict[str, Any]]]:
+        """``public_messages`` of several Residents in one read."""
+        ids = [required_resident_id(resident_id) for resident_id in resident_ids]
+        return {stream_id: [message_from_storage(message) for message in stored]
+                for stream_id, stored in self.agent_data.read_chat_messages_many(ids, limit=limit).items()}
+
     def messages_before_input(self, resident_id: str, message_id: str, *, limit: int) -> list[dict]:
         """Bound history to a durable input identity and the current context reset."""
         return [message_from_storage(message) for message in self.agent_data.read_chat_messages_through_turn(

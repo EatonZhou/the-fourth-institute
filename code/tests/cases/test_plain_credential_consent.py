@@ -9,15 +9,53 @@ from pathlib import Path
 
 import pytest
 
+from types import SimpleNamespace
+
+from management_common.async_questions import CREDENTIAL_APPROVE, question_answer_id
+from management_portal import permission_system
+from management_portal.permission_system import temporary
+from management_portal.society_service import lifecycle, resident_conversation_stream
 from management_portal.society_service.isa import conversation
-from tests.cases.test_credential_delivery_atomicity import delivery, loans  # noqa: F401
 from tests.cases.resident_execution_test_support import resident_record  # noqa: F401
 from tests.cases.resident_execution_test_support import VALID_PNG_BYTES
-from tests.cases.permission_test_support import permissions  # noqa: F401
+from tests.cases.permission_test_support import permissions, Fact  # noqa: F401
+
+
+@pytest.fixture
+def delivery(resident_record, permissions, monkeypatch):
+    """A Resident with an unanswered credential question and a lender who could grant it."""
+    monkeypatch.setattr(lifecycle, "wake_execution_binding", lambda *args: None)
+    resident = resident_record["resident_id"]
+    permissions.users("lender")
+    permissions.place(Fact("resident", resident))
+    permissions.grant("lender", resident, "@admin")
+    requests = [{"a": "@contributor", "resource_id": f"decision_{index:012x}"} for index in (1, 2, 3)]
+    for item in requests:
+        permissions.place(Fact("decision", item["resource_id"]))
+        permissions.grant("lender", item["resource_id"])
+    repository = resident_conversation_stream.get_repository()
+    from tests.cases.test_resident_question_credentials import fence
+    repository.append_message(resident, {"message_id": "msg_permission_question", "role": "agent", "author_id": resident,
+        "content_parts": [{"type": "text", "text": fence({"title": "Allow?", "credentials": requests})}]})
+    message_id = question_answer_id(resident, "msg_permission_question")
+    arguments = {"resident_id": resident, "message": {
+        "message_id": message_id, "role": "user", "content_parts": [
+            {"type": "text", "text": CREDENTIAL_APPROVE},
+            {"type": "async_question_answer", "source_message_id": "msg_permission_question",
+             "answers": [{"question_index": 0, "answer": CREDENTIAL_APPROVE}]}]}}
+    from management_portal.hatg.contracts import InstructionContext
+    inv = SimpleNamespace(argument=arguments.get, caller="lender", idempotency_key="permission-delivery",
+                          context=InstructionContext("lender", "web"))
+    return SimpleNamespace(record=resident_record, resident=resident, repository=repository, requests=requests,
+                           message_id=message_id, inv=inv, arguments=arguments, permissions=permissions)
+
+
+def loans(delivery):
+    _scheme, engine, _instance = permission_system.active().current()
+    return temporary.listing(engine.store, delivery.resident)
 
 
 def plain(delivery, text):
-    delivery.arguments.pop("temporary_credentials", None)
     delivery.arguments["message"] = {
         "message_id": "msg_" + "9" * 32, "role": "user",
         "content_parts": [{"type": "text", "text": text}],

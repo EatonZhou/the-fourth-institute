@@ -115,7 +115,7 @@ class ProjectRegistryAdapter(_PathsAdapter):
         for item in payload.get("projects") or []:
             if not isinstance(item, dict):
                 continue
-            project_id = stripped_text(item.get("id") or item.get("name"))
+            project_id = stripped_text(item.get("id"))
             try:
                 record = self.project_record("project", item)
             except Exception as exc:

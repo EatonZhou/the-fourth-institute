@@ -6,7 +6,6 @@ import shutil
 import time
 import uuid
 from management_common.file_lock import lock_descriptor, try_lock_descriptor
-from pathlib import Path
 from management_common.portal_paths import path as portal_path
 
 from management_portal import business_tasks

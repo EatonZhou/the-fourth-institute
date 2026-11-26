@@ -77,7 +77,7 @@ def feature_requirements(types):
 
 def resolve(snapshot, source, *, additional_ids=()):
     from management_common.resource_identity import get_resource_type_registry
-    from management_portal.resources.providers.ownership import KNOWLEDGE_TYPES
+    from management_common.knowledge_resource_types import KNOWLEDGE_TYPES
     from management_portal.application_targets import CHAT_TYPES
     from management_portal.portal_features import FEATURES
     declarations = get_resource_type_registry().declarations

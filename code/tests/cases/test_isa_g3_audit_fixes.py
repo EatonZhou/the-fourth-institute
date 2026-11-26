@@ -19,7 +19,7 @@ from tests.cases.test_resident_folder_creation_contract import future_creation_s
 
 
 def call(arguments, caller="bob"):
-    return SimpleNamespace(caller=caller, argument=arguments.get)
+    return SimpleNamespace(caller=caller, argument=arguments.get, expected_version_for=lambda _object_id: None)
 
 
 def test_bootstrap_delivery_keeps_the_business_reference(delivery_resident):
@@ -188,7 +188,7 @@ def test_publishing_a_pulse_item_returns_a_stable_publication(monkeypatch):
     pulse = portal_pulse_backend
     monkeypatch.setattr(pulse, "_find_private_item", lambda *args: {"id": "item-one", "text": "work"})
     monkeypatch.setattr(pulse, "get_home_payload", lambda *args: {"publications": []})
-    arguments = {"source_period": "daily", "source_key": "2026-09-29", "item_id": "item-one", "published": True}
+    arguments = {"source_period": "daily", "source_key": "2026-09-29", "item_id": "item-one"}
     result = pulse_tools.publish_pulse_item(call(arguments))
     assert result["publication"]["publication_id"].startswith("pub_")
     assert result["publication"]["owner"] == "bob"
@@ -196,16 +196,16 @@ def test_publishing_a_pulse_item_returns_a_stable_publication(monkeypatch):
     assert len(pulse._read_publications()["items"]) == 1
 
 
-def test_publish_pulse_item_published_false_retracts_by_item(monkeypatch):
-    """PublishPulseItem published=false 按来源条目撤回调用者自己的发布，结果不带 publication"""
+def test_unpublish_pulse_item_retracts_by_item(monkeypatch):
+    """UnpublishPulseItem 按来源条目撤回调用者自己的发布，结果不带 publication"""
     pulse = portal_pulse_backend
     monkeypatch.setattr(pulse, "_find_private_item", lambda *args: {"id": "item-one", "text": "work"})
     monkeypatch.setattr(pulse, "get_home_payload", lambda *args: {"publications": []})
     item = {"source_period": "daily", "source_key": "2026-09-29", "item_id": "item-one"}
-    pulse_tools.publish_pulse_item(call({**item, "published": True}))
+    pulse_tools.publish_pulse_item(call(item))
     with pytest.raises(PermissionError):
-        pulse_tools.publish_pulse_item(call({**item, "published": False}, caller="alice"))
+        pulse_tools.unpublish_pulse_item(call(item, caller="alice"))
     assert len(pulse._read_publications()["items"]) == 1
-    retracted = pulse_tools.publish_pulse_item(call({**item, "published": False}))
+    retracted = pulse_tools.unpublish_pulse_item(call(item))
     assert retracted == {"pulse": {"publications": []}}
     assert pulse._read_publications()["items"] == []

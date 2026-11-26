@@ -189,12 +189,7 @@ def test_finish_agent_consumes_prepared_handoffs_without_settlement(completion, 
         assert c.lid not in locks._OWNERS
         calls.append('evidence')
         return {'reply': ''}
-    def notify(*a, **k):
-        assert c.lid not in locks._OWNERS
-        assert a[3] == invocations
-        calls.append('notify')
-    c.ports.resident = SimpleNamespace(completed_message_evidence=evidence,
-                                       notify_program_resident_invocation_terminal=notify)
+    c.ports.resident = SimpleNamespace(completed_message_evidence=evidence)
     c.ports.flow = SimpleNamespace(dispatch_lineage_program_event=lambda *a, **k: pytest.fail('No routes'))
     monkeypatch.setattr(owner.lineage_program_resident_inputs, 'settle_resident_handoffs',
                         lambda *a, **k: pytest.fail('Already settled'))
@@ -202,7 +197,7 @@ def test_finish_agent_consumes_prepared_handoffs_without_settlement(completion, 
     result = owner.finish_agent_completion(c.lid, EXECUTOR_ID, {'id': EXECUTOR_ID},
         'msg_claim', 'sample_admin', '2026-11-05T00:00:00Z', invocations, ports=c.ports)
     assert result['invocations'] == invocations
-    assert calls == ['evidence', 'notify']
+    assert calls == ['evidence']
 
 
 def test_legacy_agent_entry_only_settles_then_delegates(monkeypatch):

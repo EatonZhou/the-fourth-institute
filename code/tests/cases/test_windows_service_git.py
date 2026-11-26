@@ -19,6 +19,7 @@ class ServiceGitTests(unittest.TestCase):
                 root=root, directory=lambda name: root / name,
                 service_environment=lambda component: {},
                 service_code=lambda component: code, code_root=lambda: code,
+                deployment_runtime=lambda name: root / 'runtime' / name,
                 internal_web_origin=lambda: 'http://127.0.0.1:1',
                 document={'network': {'nats_port': 14300}})
             def native(selected, package):

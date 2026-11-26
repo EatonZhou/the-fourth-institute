@@ -314,7 +314,6 @@
 .portalRuntimeSettingsHint { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
 .portalRuntimeSettingsEditor { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 10px; }
 .portalRuntimeSettingsEditor[hidden] { display: none; }
-.portalRuntimeSectionTitle { margin: 6px 0 0; padding-top: 12px; border-top: 1px solid var(--border); font-size: 13px; }
 .portalRuntimeSettingsForm .portalDetailFooter { flex-wrap: wrap; }
 /* The runtime panel: account and parameters on one page, in a dialog or in place. */
 .portalSessionRestartOverlay .portalRuntimeSettingsSurface {
@@ -348,14 +347,6 @@
 /* In place the panel blends into the host page: no card, no fill. */
 .portalRuntimePanel.is-inline { display: grid; gap: 8px; padding: 0; border: 0; background: none; }
 .portalRuntimePanel.is-inline .portalRuntimePanelFooter { padding: 0; border: 0; background: none; }
-
-.portalChatWorkspaceRoot .chatExtensionTools {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.portalChatWorkspaceRoot .chatExtensionTools[hidden] { display: none; }
 
 .filterPopover {
   position: fixed;
@@ -395,12 +386,6 @@
 .filterSection { display: grid; gap: 2px; }
 .filterSection + .filterSection { margin-top: 5px; padding-top: 5px; border-top: 1px solid var(--border, rgba(148, 163, 184, 0.32)); }
 .filterLabel { padding: 3px 8px 2px; color: var(--muted, #64748b); font-size: 10px; font-weight: 800; text-transform: uppercase; }
-
-.chatExtensionMenu {
-  width: 290px;
-  min-width: 290px;
-  max-width: 340px;
-}
 
 .chatSessionSwitch {
   position: relative;
@@ -509,9 +494,6 @@
 }
 .chatHarnessTiming[aria-disabled="true"] { opacity: 0.62; }
 .chatExtensionDivider { height: 1px; margin: 4px 8px; background: var(--border, rgba(148, 163, 184, 0.32)); }
-.chatExtensionMenu .filterOption.danger { color: var(--danger, #dc2626); }
-.chatExtensionMenu .filterOption:disabled { color: var(--muted, #64748b); opacity: 0.62; cursor: default; }
-.chatExtensionMenu .filterOption:disabled:hover { background: transparent; color: var(--muted, #64748b); }
 
 .portalChatWorkspaceRoot .forwardDock {
   position: absolute;

@@ -154,19 +154,20 @@ function instructionEvidenceScope(body) {
       return { instruction: body.instruction,
         residentCount: Array.isArray(ids) && ids.every(item => typeof item === 'string') ? new Set(ids).size : null };
     }
-    const operations = new Set(['GetResident', 'GetResidentSettings', 'UpdateResidentSettings',
-      'GetResidentInitialization', 'GetResidentRequest', 'ListResidentRequests',
-      'ListMessages', 'ListInputHistory', 'SearchMessages', 'GetMessage', 'GetSentPrompt',
-      'GetPromptInjectionPreview', 'GetMailbox', 'WatchMailbox', 'ListMailboxTodos',
-      'GetConversation', 'WatchConversationEvents', 'GetInputState', 'DeleteResident', 'ClearContext',
-      'GetFamilyChatPreferences', 'UpdateFamilyChatPreferences',
-      'RestartSession', 'GetSessionRestart', 'CancelSessionRestart', 'CancelInput', 'DeliverMessage']);
-    if (!operations.has(body?.instruction)) return {};
-    if (body.instruction === 'ListMailboxTodos') {
+    // Mailbox Todos are a resource type; only their search is a Todo read.
+    if (body?.instruction === 'SearchResources' && body.arguments?.resource_type === 'mailbox_todo') {
       const user = body.arguments?.user_id;
       return { instruction: body.instruction, resourceScope: typeof user === 'string' && user.length > 0 && user.length <= 256
         ? {kind: 'user', mode: body.instruction, target_sha256: createHash('sha256').update(user).digest('hex')} : undefined };
     }
+    const operations = new Set(['GetResident', 'GetResidentSettings', 'UpdateResidentSettings',
+      'GetResidentInitialization', 'GetResidentRequest', 'ListResidentRequests',
+      'ListMessages', 'ListResidentInputHistory', 'SearchResidentMessages', 'GetMessage', 'GetSentPrompt',
+      'GetPromptInjectionPreview', 'GetMailbox', 'WatchMailbox',
+      'GetConversation', 'WatchConversationEvents', 'GetInputState', 'ClearContext',
+      'GetFamilyChatPreferences', 'UpdateFamilyChatPreferences',
+      'RestartSession', 'GetSessionRestart', 'CancelSessionRestart', 'CancelInput', 'DeliverMessage']);
+    if (!operations.has(body?.instruction)) return {};
     const target = body.arguments?.resident_id;
     return { instruction: body.instruction, resourceScope: typeof target === 'string' && /^resident_[0-9a-f]{12}$/.test(target)
       ? { kind: 'resident', mode: body.instruction, target_sha256: createHash('sha256').update(target).digest('hex') }
@@ -467,7 +468,7 @@ async function observeBrowser(context, { evidenceDir }) {
           request_association: match ? 'portal_request_identity' : 'unavailable_no_unique_transport_identity' });
       } else if (data.kind === 'portal_state_read') {
         const instruction = data.instruction == null ? 'ListResidentStates'
-          : ['ListResidentStates', 'ListMailboxTodos'].includes(data.instruction) ? data.instruction : null;
+          : ['ListResidentStates', 'SearchResources'].includes(data.instruction) ? data.instruction : null;
         const transportId = /^[a-z0-9-]{1,96}$/.test(data.transport_id || '') ? data.transport_id : null;
         const candidates = (transportRequests.get(transportId ? `request:${transportId}` : null) || [])
           .filter(request => instruction && request.document === doc && request.frame === state
@@ -680,7 +681,7 @@ async function observeBrowser(context, { evidenceDir }) {
       if (!item || typeof item !== 'object') return;
       emit({ kind: 'portal_state_read',
         instruction: item.instruction == null ? 'ListResidentStates'
-          : ['ListResidentStates', 'ListMailboxTodos'].includes(item.instruction) ? item.instruction : 'unknown',
+          : ['ListResidentStates', 'SearchResources'].includes(item.instruction) ? item.instruction : 'unknown',
         transport_id: /^[a-z0-9-]{1,96}$/.test(item.transport_id || '') ? item.transport_id : null,
         consumer: ['inbox', 'chat', 'state_subscription', 'mailbox_todos'].includes(item.consumer) ? item.consumer : 'unknown',
         reader_id: /^(state-[1-9][0-9]{0,10}|mailbox-todos-[1-9][0-9]{0,10}|chat-reconciliation)$/.test(item.reader_id || '') ? item.reader_id : null,

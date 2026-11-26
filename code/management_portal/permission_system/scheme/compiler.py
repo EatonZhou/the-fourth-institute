@@ -43,9 +43,11 @@ so an entry on that node opens it, and a fixed slot, which names no object,
 adds ``"r": <R class node>``, the node it asks about.  The compiler knows no
 node by name; "viewer" or "admin" are titles a scheme gives its own A nodes.
 An element the scheme does not classify sits under the A default node, and
-an unclassified fixed slot asks about the R default node (the default scheme
-puts them under "未归类" on "共享", so only administrators pass them); an
-argument slot still judges the objects its argument names.
+an unclassified fixed slot asks about the R default node.  A built-in
+template never leaves a slot unclassified (loading it reports each missing
+element); only a custom scheme relies on the defaults, which the default
+scheme sets to "管理" on "共享".  An argument slot still judges the objects
+its argument names.
 
 Compiling checks the structure only: that the declared nodes form trees (one
 root, declared parents, no cycle), that every placement names a relation the

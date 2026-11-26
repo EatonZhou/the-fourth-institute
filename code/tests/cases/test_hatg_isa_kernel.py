@@ -459,6 +459,57 @@ def test_prune_continues_over_several_batches_and_frees_stale_recovery_holds(ker
         assert connection.execute("SELECT count(*) FROM instruction_retry_guards").fetchone()[0] == 5
 
 
+def test_pending_projection_read_uses_the_partial_index(kernel):
+    """待补投影读取走部分索引，不按主键扫整张表；索引只建一次"""
+    with kernel.store.database.read() as connection:
+        assert connection.execute("SELECT to_regclass(current_schema() || '.instruction_executions_pending_idx')"
+                                  ).fetchone()[0] is not None
+        connection.execute("SET enable_seqscan = off")
+        plan = "\n".join(row[0] for row in connection.execute(
+            "EXPLAIN SELECT * FROM instruction_executions WHERE instruction_id > '' "
+            "AND (error_json::jsonb ->> 'code') = 'instruction.projection_pending' "
+            "ORDER BY instruction_id LIMIT 128").fetchall())
+    assert "instruction_executions_pending_idx" in plan
+
+
+def test_a_replay_returns_the_result_fields_the_declaration_marks(kernel):
+    """声明里标 replay 的结果字段在执行记录中原样保留，重放时返回；未标注的非引用字段不保留"""
+    from management_portal.hatg.declarations import InstructionDeclaration, R
+
+    declaration = InstructionDeclaration(
+        name="UpdateProviderAccount", category="execution", owner="execution", description="d", mutates=True,
+        result=(R("modified_at", description="修改时间", replay=True), R("note", description="说明")),
+    )
+    assert declaration.replay_fields == ("modified_at",)
+    call = scheduler_call(idempotency_key="replay-fields")
+    kernel.store.begin(instruction_id="inst_exe_replay", call=call, declaration=declaration, caller="alice",
+                       entry="web", scope=("caller", "alice"), now="2026-11-27T00:00:00.000Z")
+    kernel.store.finish("inst_exe_replay", status="committed", now="2026-11-27T00:00:01.000Z",
+                        result={"account_id": "acct_one", "modified_at": "2026-11-27T00:00:00Z", "note": "x" * 500},
+                        declaration=declaration)
+    saved = kernel.store.get("inst_exe_replay")["references"]
+    assert saved == {"account_id": "acct_one", "modified_at": "2026-11-27T00:00:00Z"}
+
+
+def test_advisory_lock_sessions_are_reused_and_release_their_lock(kernel):
+    """advisory lock 复用空闲连接：释放后同一个键可再次取得，不在每次调用新开连接；失败后的连接被丢弃"""
+    database = kernel.store.database
+    with database.advisory_lock(4242, blocking=False) as first:
+        assert first is True
+        with database.advisory_lock(4242, blocking=False) as second:
+            assert second is False  # held by the first session
+    assert len(database._lock_connections) >= 1
+    reused = database._lock_connections[-1]
+    with database.advisory_lock(4242, blocking=False) as again:
+        assert again is True
+        assert database._lock_connections == [] or reused not in database._lock_connections
+    with pytest.raises(RuntimeError):
+        with database.advisory_lock(4242, blocking=False):
+            raise RuntimeError("handler failed")
+    with database.advisory_lock(4242, blocking=False) as after_failure:
+        assert after_failure is True
+
+
 def test_a_lost_connection_without_a_key_does_not_invite_a_retry():
     """无幂等键的变更指令在连接中断后结果未知，不标记可重试；带键的仍可重试，只读不受影响"""
     from management_portal.hatg.socket_rpc import _forbid_blind_retry

@@ -45,7 +45,7 @@ MODULE_GROUPS = (
     ModuleGroup("security", "3. 用户、权限与安全", (
         node("security.identity-access", "身份、成员关系与访问控制", "decision_3fe3cca8fd95", "decision_34158fdd4078", "decision_ae422b92c6f3", "decision_5bc3fdfc7eec", "decision_b820faf42218", "decision_600ae27b0538"),
         node("security.network-boundary", "网络边界与安全入口", "decision_fb910c43ab07", "decision_85222f2d316b"),
-        node("security.device-credentials", "登录认证、设备凭据与管理控制", "decision_3bce8b455a3c", "decision_6c3d74a9bc9d", "decision_ad7bdfde49ef", "decision_626fb02b3894", "decision_30528aff7035", "decision_ea13b85216d0", "decision_d397f2d99f89", "decision_3286d4167180"),
+        node("security.device-credentials", "登录认证、设备凭据与管理控制", "decision_3bce8b455a3c", "decision_6c3d74a9bc9d", "decision_ad7bdfde49ef", "decision_626fb02b3894", "decision_30528aff7035", "decision_ea13b85216d0", "decision_d397f2d99f89", "decision_3286d4167180", "decision_2b7707be0587"),
     )),
     ModuleGroup("resource", "4. 资源注册、搜索与内容管理", (
         node("resource.identity", "统一资源身份、解析与授权", "decision_4a9ba5dfada6", "decision_a4e5f03c8b9b"),

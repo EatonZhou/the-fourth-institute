@@ -78,3 +78,15 @@ def test_suggest_projects_and_authorizes_only_needed_candidates(isolated_portal_
         assert [item["resource_id"] for item in found["resources"]] == [records[2]["resource_id"], records[3]["resource_id"]]
         assert projected_ids == [record["resource_id"] for record in records[:4]]
         assert authorized_ids == [record["resource_id"] for record in records[2:4]]
+
+
+def test_suggest_leaves_out_excluded_types(isolated_portal_case):
+    """联想可以排除整个资源类型（个人 Todo 只经带所有者范围的查询发现）
+
+    :design: decision_8dc6b3d03ca7
+    """
+    with isolated_portal_case():
+        store = IndexStore()
+        store.publish_snapshot("skill", [_record(1)], {})
+        assert [item["resource_type"] for item in store.suggest(actor="test-actor", q="Match")["resources"]] == ["skill"]
+        assert store.suggest(actor="test-actor", q="Match", excluded_types=("skill",))["resources"] == []

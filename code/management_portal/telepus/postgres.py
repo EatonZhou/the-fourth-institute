@@ -86,14 +86,6 @@ class Connection:
     def rollback(self) -> None:
         self._conn.rollback()
 
-    def column_names(self, table: str) -> set[str]:
-        rows = self._conn.execute(
-            "SELECT column_name FROM information_schema.columns "
-            "WHERE table_schema = %s AND table_name = %s",
-            (self.schema, table),
-        ).fetchall()
-        return {str(row[0]) for row in rows}
-
     def __enter__(self) -> "Connection":
         return self
 

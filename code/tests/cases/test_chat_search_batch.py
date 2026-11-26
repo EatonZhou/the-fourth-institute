@@ -41,6 +41,20 @@ def test_batch_chat_preserves_reset_fork_notice_payload_and_occurrence_order():
     assert store.read_chat_messages_many([]) == {}
 
 
+def test_batch_chat_limit_keeps_the_newest_messages_of_each_resident():
+    """批量读取带 limit 时，每个 Resident 与逐个读取一样只给最新的 limit 条
+
+    :design-point:"""
+    store = AgentDataStore()
+    a, b = [f"resident_{i:012x}" for i in range(4, 6)]
+    for index in range(5):
+        say(store, a, f"a{index}", "text")
+    say(store, b, "b0", "text")
+    expected = {rid: store.read_chat_messages(rid, limit=2) for rid in (a, b)}
+    assert store.read_chat_messages_many([a, b], limit=2) == expected
+    assert [m["message_id"] for m in expected[a]] == ["a3", "a4"]
+
+
 @pytest.mark.parametrize("size", [1, 53])
 def test_search_batches_reads_with_exact_casefold_pagination_and_neighbors(monkeypatch, size):
     """跨 Resident 搜索按批读取，大小写折叠匹配、分页和前后相邻消息准确

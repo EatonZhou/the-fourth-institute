@@ -1219,5 +1219,22 @@
   "，不读取用户级配置": {
     "en": "，does not read user-level configuration",
     "zh-CN": "，不读取用户级配置"
-  }
+  },
+  "无法打开 Article": {"zh-CN": "无法打开 Article", "en": "Unable to open Article"},
+  "Article 列表加载失败": {"zh-CN": "Article 列表加载失败", "en": "Failed to load the Article list"},
+  "保存响应缺少版本，修改已保留。": {"zh-CN": "保存响应缺少版本，修改已保留。", "en": "The save response did not include a version. Your changes are retained."},
+  "显示或隐藏左侧栏": {"zh-CN": "显示或隐藏左侧栏", "en": "Show or hide the left sidebar"},
+  "本地时间": {"zh-CN": "本地时间", "en": "Local time"},
+  "尚未配置远端仓库。": {"zh-CN": "尚未配置远端仓库。", "en": "No remote repository is configured."},
+  "请先保存编辑中的更改，再进行此操作。": {"zh-CN": "请先保存编辑中的更改，再进行此操作。", "en": "Save your edits before doing this."},
+  "· 差异过大，仅显示部分内容": {"zh-CN": "· 差异过大，仅显示部分内容", "en": "· Diff too large; showing part of it"},
+  "新 PDF 加载失败，已保留原预览。": {"zh-CN": "新 PDF 加载失败，已保留原预览。", "en": "The new PDF failed to load. The previous preview is kept."},
+  "新 PDF 页面渲染失败。": {"zh-CN": "新 PDF 页面渲染失败。", "en": "The new PDF page failed to render."},
+  "Article 已注销；所属目录和文件已进入删除流程。": {"zh-CN": "Article 已注销；所属目录和文件已进入删除流程。", "en": "Article unregistered; its directory and files have entered the deletion process."},
+  "保存失败，修改已保留": {"zh-CN": "保存失败，修改已保留", "en": "Save failed; changes retained"},
+  "外部修改待核对，自动保存已暂停": {"zh-CN": "外部修改待核对，自动保存已暂停", "en": "External changes need review; autosave paused"},
+  "已自动保存": {"zh-CN": "已自动保存", "en": "Autosaved"},
+  "{p0} 已在其他地方更新或删除；已保留你的未保存修改，请核对后再保存。": {"zh-CN": "{p0} 已在其他地方更新或删除；已保留你的未保存修改，请核对后再保存。", "en": "{p0} was updated or deleted elsewhere. Your unsaved changes are retained; review them before saving."},
+  "PDF 更新失败，已保留原预览：{p0}": {"zh-CN": "PDF 更新失败，已保留原预览：{p0}", "en": "PDF update failed; the previous preview is kept: {p0}"},
+  "删除「{p0}」的 Article 注册及其所属目录？\n目录和文件将永久删除，无法恢复。": {"zh-CN": "删除「{p0}」的 Article 注册及其所属目录？\n目录和文件将永久删除，无法恢复。", "en": "Delete the Article registration of “{p0}” and its directory?\nThe directory and files will be permanently deleted and cannot be recovered."}
 }

@@ -58,12 +58,12 @@ def test_invalid_network_file_is_rejected_without_rewriting_it(isolated):
 def test_tool_defaults_follow_user_home(isolated,monkeypatch):
     home,_=isolated
     from management_portal import resource_identity_backend as rid,repo_workspace_network as repo,article_texlab_backend as texlab
-    from management_portal import article_toolchain
-    importlib.reload(rid);importlib.reload(repo);importlib.reload(article_toolchain)
+    from management_common import latex_toolchain,tex_tool_paths
+    importlib.reload(rid);importlib.reload(repo)
     assert rid.DEFAULT_SSH_KEY_ROOT==repo._SSH_KEY_ROOT==home/'.ssh'
-    assert all(str(p).startswith(str(home)) for p in article_toolchain.tinytex_bin_dirs())
+    assert all(str(p).startswith(str(home)) for p in tex_tool_paths.tinytex_bin_dirs())
     tiny=home/'.TinyTeX/bin/x86_64-linux';tiny.mkdir(parents=True)
-    assert str(tiny) in article_toolchain._tex_search_path().split(':')
+    assert str(tiny) in latex_toolchain._tex_search_path().split(':')
     executable=put(home/'.local/bin/texlab','#!/bin/sh\n');executable.chmod(0o700)
     monkeypatch.setenv('PATH', str(home/'empty-bin'))
     assert texlab._texlab_command()==str(executable)

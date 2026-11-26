@@ -16,7 +16,6 @@ async function scenario(browser,patched){
    const finish=()=>{
     let result;
     if(body.instruction==='ListResidentStates')result={states:missing?[]:(body.arguments.resident_ids||[]).map(id=>({resident_id:id,state:{status:'idle'},viewer_state:{unread:false},cursor:1}))};
-    else if(body.instruction==='DeleteResident')result={resident_id:rid};
     else result={resident_id:rid,resident:{resident_id:rid},provider_session:{id:'bound'},private_result:'PRIVATE_BODY'};
     const error=!body.instruction&&status!==200;
     res.writeHead(error?status:200,{'content-type':'application/json'});

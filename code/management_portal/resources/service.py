@@ -277,10 +277,11 @@ class ResourceService:
         resource_type: str = "",
         wait_for_index: bool = False,
         index_timeout: float = 45.0,
+        expected_version: object = None,
     ) -> dict[str, Any]:
         return service_mutations.unregister(
             self, resource_id, actor=actor, resource_type=resource_type, wait_for_index=wait_for_index,
-            index_timeout=index_timeout,
+            index_timeout=index_timeout, expected_version=expected_version,
         )
 
     def _named_operation_target(self, resource_id, resource_types, *, actor, instruction,
@@ -414,6 +415,8 @@ class ResourceService:
             limit=limit,
             resource_type=resource_type,
             records_projector=self._collaboration_descriptors,
+            # Private Todos are found only through an explicit owner scope.
+            excluded_types=("mailbox_todo",),
         )
 
     def get(self, resource_id: str, *, actor: str = "") -> dict[str, Any]:

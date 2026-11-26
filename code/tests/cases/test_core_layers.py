@@ -63,13 +63,13 @@ TIERS = (
     resources.registry_store resources.registry_directory_records resources.directory_ownership_upgrade resources.deleted_identity_boundary resources.schema resources.timing
     resources.workspace_store
     access_audit_store agent_token_auth application_targets conversation_read_state conversation_receipt_store
-    identity_store project_registry resident_view_projection semantic_search_surfaces shared_state
+    identity_store office_preview project_registry resident_view_projection semantic_search_surfaces shared_state
     workflow_bindings_store
     """),
     ("policy", "permission_system permission_system.* portal_access_control user_enrollment file_access_policy"),
     ("resources", """
     resources resources.* hatg.kernel hatg.maintenance hatg.routing hatg.slow_call_profile hatg.socket_rpc
-    avatar_database avatar_store device_identity_backend isa_client project_rename project_seeds resident_avatar provider_session_relocation directory_move_owner
+    avatar_database avatar_store device_identity_backend google_cloud_devices isa_client project_rename project_seeds resident_avatar provider_session_relocation directory_move_owner
     """),
     ("execution", """
     execution execution.* agent_prompt_context agent_skill_context ai_provider_registry antigravity_* business_tasks

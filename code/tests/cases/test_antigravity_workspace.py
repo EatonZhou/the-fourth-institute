@@ -6,7 +6,8 @@ import pytest
 from management_common import host_instances
 from management_common.instance_manifest import load
 from management_portal import antigravity_accounts as accounts
-from management_portal.execution.antigravity_backend import AntigravityBackend, AntigravityOptions
+from management_portal.execution.antigravity_backend import AntigravityOptions
+from management_portal.execution.antigravity_cli_backend import AntigravityCliBackend as AntigravityBackend
 from management_portal.execution.backend_contracts import BackendInvocation
 from management_portal.society_service.resident_session_backend_domain import build_backend_session_operation_request
 from management_portal.society_service.resident_turn_scope import filesystem_scope

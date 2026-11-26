@@ -1,6 +1,6 @@
 """Installed feature facts for permission previews never initialize their owners.
 
-:module: resources.types
+:module: security.identity-access
 :importance: P1
 """
 import pytest

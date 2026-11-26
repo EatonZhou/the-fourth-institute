@@ -1298,7 +1298,7 @@ def update_item_text(
                 content = replace_knowledge_body(previous_primary, body)
             previous_project = _yaml_front_matter(previous_primary).get("project")
             if _yaml_front_matter(content).get("project") != previous_project:
-                raise ValueError("Use the target Project knowledge.move action to change Knowledge project membership")
+                raise ValueError("Use MoveKnowledgeItems to change Knowledge project membership")
             document_metaness(_yaml_front_matter(content))
         elif body is not None:
             raise ValueError("Knowledge body update requires a Knowledge Markdown primary")

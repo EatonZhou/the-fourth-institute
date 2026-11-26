@@ -1,6 +1,6 @@
 """Lineage Event and Packet identity encoding.
 
-:module: lineage.program
+:module: lineage.hatg
 :design: decision_4adcc1ff2f2c
 """
 import pytest

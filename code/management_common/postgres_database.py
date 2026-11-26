@@ -28,6 +28,8 @@ class _SharedPool:
 
 
 _POOL_REGISTRY_LOCK = threading.Lock()
+# Idle advisory-lock sessions kept per database for reuse.
+_IDLE_LOCK_CONNECTIONS = 8
 _POOL_REGISTRY: dict[tuple[int, str, str, int, int, float, bool], _SharedPool] = {}
 _READY_SCHEMAS: set[tuple[int, str, str]] = set()
 
@@ -309,6 +311,11 @@ class PostgresDatabase:
         self._pool: Any = None
         self._pool_pid = 0
         self._pool_key: tuple[int, str, str, int, int, float, bool] | None = None
+        # Idle connections kept for advisory locks: a lock is held on its own
+        # session for as long as its caller works, so it cannot share a pooled
+        # transaction connection, but it need not be opened anew for each call.
+        self._lock_connections: list[Any] = []
+        self._lock_connections_pid = 0
 
     def _current_connection(self) -> PostgresConnection | None:
         current = _CURRENT_CONNECTIONS.get()
@@ -564,15 +571,59 @@ class PostgresDatabase:
 
     @contextmanager
     def advisory_lock(self, key: int, *, blocking: bool = True, shared: bool = False) -> Iterator[bool]:
-        psycopg, _row_factory, _pool = _postgres_modules()
-        with psycopg.connect(self.dsn, autocommit=True, connect_timeout=30) as connection:
-            connection.execute("SET lock_timeout = '90s'")
-            suffix = '_shared' if shared else ''
+        suffix = '_shared' if shared else ''
+        connection = self._take_lock_connection()
+        held = False
+        try:
             if blocking:
                 connection.execute(f"SELECT pg_advisory_lock{suffix}(%s)", (key,))
+                held = True
                 yield True
             else:
-                yield bool(connection.execute(f"SELECT pg_try_advisory_lock{suffix}(%s)", (key,)).fetchone()[0])
+                held = bool(connection.execute(f"SELECT pg_try_advisory_lock{suffix}(%s)", (key,)).fetchone()[0])
+                yield held
+        except BaseException:
+            # Do not reuse a session whose state after a failure is unknown;
+            # closing it also releases any lock it holds.
+            self._discard_lock_connection(connection)
+            raise
+        else:
+            self._release_lock_connection(connection, key, suffix, held)
+
+    def _take_lock_connection(self) -> Any:
+        psycopg, _row_factory, _pool = _postgres_modules()
+        with self._pool_lock:
+            if self._lock_connections_pid != os.getpid():
+                # A forked child must not use its parent's sessions.
+                self._lock_connections = []
+                self._lock_connections_pid = os.getpid()
+            while self._lock_connections:
+                connection = self._lock_connections.pop()
+                if not connection.closed:
+                    return connection
+        connection = psycopg.connect(self.dsn, autocommit=True, connect_timeout=30)
+        connection.execute("SET lock_timeout = '90s'")
+        return connection
+
+    def _release_lock_connection(self, connection: Any, key: int, suffix: str, held: bool) -> None:
+        try:
+            if held:
+                connection.execute(f"SELECT pg_advisory_unlock{suffix}(%s)", (key,))
+        except Exception:
+            self._discard_lock_connection(connection)
+            return
+        with self._pool_lock:
+            if len(self._lock_connections) < _IDLE_LOCK_CONNECTIONS and not connection.closed:
+                self._lock_connections.append(connection)
+                return
+        self._discard_lock_connection(connection)
+
+    @staticmethod
+    def _discard_lock_connection(connection: Any) -> None:
+        try:
+            connection.close()
+        except Exception:
+            pass
 
     def close(self) -> None:
         with self._pool_lock:

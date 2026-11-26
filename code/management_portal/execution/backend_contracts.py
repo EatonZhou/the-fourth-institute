@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from copy import deepcopy
 from typing import Any, Callable, Mapping, Protocol
 
-from .contracts import ExecutionRequest, ProviderInputBinding
+from .contracts import ExecutionRequest, ProviderInputBinding, positive_int
 from .harness import (
     AgentLoopProviderEventProcessor,
     AgentLoopToolBatchProcessor,
@@ -24,14 +24,6 @@ from .harness import (
 )
 from .provider_activity_events import _compact_provider_activity_event
 from .session_manager import RuntimeSession
-
-
-def _positive_int(value: object) -> int:
-    try:
-        number = int(value or 0)
-    except (TypeError, ValueError):
-        return 0
-    return number if number > 0 else 0
 
 
 _CONTEXT_USAGE_ALIASES = {
@@ -59,9 +51,9 @@ def _live_context_usage(
     usage = {
         target: number
         for target, source in _CONTEXT_USAGE_ALIASES.items()
-        if (number := _positive_int(current.get(source))) > 0
+        if (number := positive_int(current.get(source))) > 0
     }
-    return usage, _positive_int(payload.get("modelContextWindow"))
+    return usage, positive_int(payload.get("modelContextWindow"))
 
 
 @dataclass(frozen=True)
@@ -357,7 +349,7 @@ class BackendContext:
         if self._update_context_usage is not None:
             self._update_context_usage(
                 dict(usage or {}),
-                _positive_int(model_context_window),
+                positive_int(model_context_window),
             )
 
     def has_turn_control_provider(self) -> bool:

@@ -405,7 +405,7 @@ def test_full_text_update_cannot_leave_half_migrated_project(relocation, monkeyp
         "kb_id": KNOWLEDGE_ID, "path": str(source), "selected_path": str(source),
         "selected_file_id": "primary", "type": "thinking"})
     before = source.read_text()
-    with pytest.raises(ValueError, match="knowledge.move"):
+    with pytest.raises(ValueError, match="MoveKnowledgeItems"):
         kb.update_item_text(KNOWLEDGE_ID, before.replace("project: AlignMe", "project: Destination"),
                             actor=ACTOR, expected_version=3)
     assert source.read_text() == before

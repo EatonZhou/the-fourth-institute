@@ -127,9 +127,7 @@ def test_concurrent_operator_terminal_cannot_fall_back_to_ordinary_output(comple
     c.ports.state.now_iso = lambda: AT
     c.ports.state.lineage_scope = lambda *a, **k: nullcontext()
     c.ports.resident = SimpleNamespace(
-        completed_message_evidence=lambda *a: {'reply': 'raw executor reply'},
-        notify_program_resident_invocation_terminal=lambda *a, **k:
-            pytest.fail('Duplicate Operator callback must not send an ordinary notification'))
+        completed_message_evidence=lambda *a: {'reply': 'raw executor reply'})
     c.ports.flow = SimpleNamespace(dispatch_lineage_program_event=lambda *a, **k: {})
     terminal = lineage_program_terminal_reconciliation
     owner = lineage_program_execution
@@ -207,9 +205,7 @@ def test_committed_unlinked_handoff_is_settled_after_dispatch_cancel(completion,
         lineage_domain._register_program_agent_invocation(*args)
         raise RuntimeError('test injection: registration reply lost after durable handoff commit')
     c.ports.resident = SimpleNamespace(send_node_message=lambda *a, **k: {'message_id': mid},
-        register_program_agent_invocation=commit_then_lose_ack,
-        notify_program_resident_invocation_terminal=lambda *a, **k:
-            pytest.fail('No ordinary notification allowed'))
+        register_program_agent_invocation=commit_then_lose_ack)
     c.ports.state.lineage_scope = lambda *a, **k: nullcontext()
     c.ports.state.now_iso = lambda: at
     result = owner.try_dispatch_operator(c.lid, 'sample_admin', OPERATOR_ID, event, ports=c.ports)

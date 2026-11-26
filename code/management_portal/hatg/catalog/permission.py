@@ -36,7 +36,6 @@ _AUTH_DIFF = ("授权差报告（decision_b820faf42218 §5.12），只报告、�
               "两边都有的不列）、gained 与 lost（得到、失去的 A 节点）、principals、resources；移动元素的组只涉及一个元素，"
               "另含 element、instruction、a（before、after 分类节点），固定槽还有 resource（before、after R 节点，r 即这个 R 节点）；"
               "remapped 为要求改变的指令：total 与 items（instruction、before、after，各为要求列表）")
-_PREPARED = ("regenerate（实例缺失或由其他规则生成时重新生成）、added_nodes、moved_nodes、removed_nodes、added_entries、removed_entries")
 _SCOPE = "exact（只匹配该节点，默认）、subtree（该节点及其下所有节点与元素）或 ancestors（该节点及其祖先）"
 
 

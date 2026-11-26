@@ -16,6 +16,8 @@ from typing import Any
 from management_common.json_columns import json_text, json_value
 from management_common.portal_database import portal_database
 
+from .registry_directory_records import COLLECTIONS, GUARD_CONDITION
+
 SCHEMA = "resource_registry"
 SCHEMA_VERSION = "tfi.resource-registry.v2"
 
@@ -129,7 +131,7 @@ class RegistryWriter:
 
     def put(self, collection: str, document_id: str, document: Mapping[str, Any]) -> None:
         self._check(collection)
-        if collection in {'article', 'repo', 'paper', 'knowledge', 'report'}:
+        if collection in COLLECTIONS:
             from management_common.directory_dependencies import prepare_write
             prepare_write(self._connection)
         from .deleted_identity_boundary import check_registry_write
@@ -254,7 +256,7 @@ class RegistryStore:
                     guard_new_table(connection, table='"' + self.database.schema + '".registry_documents',
                         kind='resource', key="collection || ':' || {row}.document_id",
                         watched=['collection', 'document_id', 'document_json'],
-                        condition="NEW.collection IN ('article','repo','paper','knowledge','report')")
+                        condition=GUARD_CONDITION)
                 # Existing stores are used as they stand. A format label or an
                 # unrelated table cannot establish whether a particular query
                 # works; required structures are exercised by that query.
@@ -415,7 +417,7 @@ class RegistryStore:
             raise ValueError('Borrowed registry writer requires an active owning transaction')
         context = self.database.transaction() if connection is None else nullcontext(connection)
         with context as connection:
-            if names_set.intersection({'article', 'repo', 'paper', 'knowledge', 'report'}):
+            if names_set.intersection(COLLECTIONS):
                 from management_common.directory_dependencies import installed
                 if installed(connection):
                     from management_common.directory_cleanup_store import DirectoryCleanupStore
@@ -503,7 +505,7 @@ def registered_paths(*, connection):
     from pathlib import Path
     from management_common.directory_cleanup_store import get_directory_cleanup_store
     from management_common.instance_locations import located_path
-    from .registry_directory_records import COLLECTIONS, locations
+    from .registry_directory_records import locations
     get_directory_cleanup_store().lock(connection)
     with get_registry_store().writer(*COLLECTIONS, connection=connection) as writer:
         return tuple(Path(located_path(item['path'])) for collection in COLLECTIONS

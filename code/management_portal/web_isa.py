@@ -11,7 +11,6 @@ wrap keep their own storage and checks.
 from __future__ import annotations
 
 import importlib
-import os
 import re
 import sys
 import time
@@ -405,22 +404,46 @@ def get_user(inv: Invocation) -> dict[str, Any]:
 
 
 @contextmanager
-def _administrator_change(caller: str, username: str, **change: Any) -> Iterator[None]:
+def _administrator_change(caller: str, username: str, *, expected_revision: Any = None, **change: Any) -> Iterator[None]:
     """The administrator list is the Portal 管理员 guarantee's, in either mode (decision_b820faf42218 §3.1).
 
     The change is checked and written in the block under one account
     transaction, so concurrent changes are judged one after the other and
-    none leaves the list without an active administrator.
+    none leaves the list without an active administrator.  The account
+    revision the caller read (``expected_revision``) is compared in that
+    same transaction, before the block writes.
     """
     from management_portal.permission_system.administrators import list_change
 
     try:
         with list_change(caller, username, **change):
+            _access().require_revision(expected_revision)
             yield
     except PermissionError as exc:
         raise InstructionError("instruction.forbidden", str(exc)) from exc
     except ValueError as exc:
         raise invalid(str(exc)) from exc
+
+
+def _user_token(inv: Invocation) -> Any:
+    """The account revision the caller expects for the User this call targets."""
+    return inv.expected_version_for(str(inv.argument("user_id") or ""))
+
+
+@contextmanager
+def _user_version_conflict(inv: Invocation) -> Iterator[None]:
+    """Report the account store's comparison failure in the kernel's version_conflict form."""
+    from management_portal.portal_access_control import AccessVersionConflict
+
+    key = str(inv.argument("user_id") or "")
+    try:
+        yield
+    except AccessVersionConflict as exc:
+        raise InstructionError(
+            "instruction.version_conflict", f"{key} 的版本已经变化",
+            details={"object_id": key, "expected_version": exc.expected_version,
+                     "current_version": exc.current_version},
+        ) from exc
 
 
 def _set_user_category(inv: Invocation, username: str, category: Any) -> bool:
@@ -437,7 +460,7 @@ def _set_user_category(inv: Invocation, username: str, category: Any) -> bool:
         raise not_found(f"用户不存在：{username}")
     if category == permission_system.user_category(username):
         return False
-    with _administrator_change(inv.caller, username, category=category):
+    with _administrator_change(inv.caller, username, expected_revision=_user_token(inv), category=category):
         changed = permission_system.set_user_category(username, category, actor=inv.caller)
     if changed:
         _access().audit(inv.caller, "user_category_updated", target=username, details={"category": category})
@@ -517,13 +540,19 @@ def update_user(inv: Invocation) -> dict[str, Any]:
     has_avatar = "avatar" in changes
     avatar_payload = changes.pop("avatar", None)
     user: dict[str, Any] = {}
-    if changes:
-        result = web("web_accounts")._admin_access_action(inv.caller, {
-            "action": "update", "username": username,
-            "display_name": changes.get("display_name"),
-            "email": changes.get("recovery_email"),
-        })
-        user = result.get("user") or {}
+    expected = _user_token(inv)
+    with _user_version_conflict(inv):
+        if changes:
+            result = web("web_accounts")._admin_access_action(inv.caller, {
+                "action": "update", "username": username,
+                "display_name": changes.get("display_name"),
+                "email": changes.get("recovery_email"),
+                "expected_revision": expected,
+            })
+            user = result.get("user") or {}
+        elif has_avatar:
+            # An avatar lives in its own store: the token is only checked, under the account lock.
+            _access().require_revision(expected)
     result = dict(user or {"username": username, **_access().user(username)})
     if has_avatar:
         result["avatar"] = _set_avatar(username, avatar_payload, inv.caller)
@@ -544,11 +573,12 @@ def update_user_status(inv: Invocation) -> dict[str, Any]:
     username, status = inv.argument("user_id"), inv.argument("status")
     if status not in {"active", "disabled"}:
         raise invalid("status 须为 active 或 disabled")
-    with _administrator_change(inv.caller, username, status=status):
-        result = web("web_accounts")._admin_access_action(inv.caller, {
-            "action": "update", "username": username, "status": status,
-            "revoke_sessions": status == "disabled",
-        })
+    with _user_version_conflict(inv):
+        with _administrator_change(inv.caller, username, expected_revision=_user_token(inv), status=status):
+            result = web("web_accounts")._admin_access_action(inv.caller, {
+                "action": "update", "username": username, "status": status,
+                "revoke_sessions": status == "disabled",
+            })
     return {"user": result.get("user") or {}}
 
 
@@ -557,7 +587,8 @@ def update_user_category(inv: Invocation) -> dict[str, Any]:
 
     _require_account_administrator(inv.caller)
     username = inv.argument("user_id")
-    changed = _set_user_category(inv, username, inv.argument("category"))
+    with _user_version_conflict(inv):
+        changed = _set_user_category(inv, username, inv.argument("category"))
     return {"user": {"username": username, **_access().user(username),
                      "category": permission_system.user_category(username)},
             "category_changed": changed}
@@ -569,16 +600,20 @@ def reset_user_password(inv: Invocation) -> dict[str, Any]:
         raise invalid("修改自己的密码须在 Settings 中验证当前密码")
     password = inv.argument("new_password")
     web("web_accounts")._PORTAL_CREDENTIALS.validate_password(password)
-    result = web("web_accounts")._admin_access_action(inv.caller, {
-        "action": "reset_password", "username": username, "password": password,
-    })
+    with _user_version_conflict(inv):
+        result = web("web_accounts")._admin_access_action(inv.caller, {
+            "action": "reset_password", "username": username, "password": password,
+            "expected_revision": _user_token(inv),
+        })
     return {"user": result.get("user") or {}}
 
 
 def revoke_user_sessions(inv: Invocation) -> dict[str, Any]:
-    result = web("web_accounts")._admin_access_action(inv.caller, {
-        "action": "revoke_sessions", "username": inv.argument("user_id"),
-    })
+    with _user_version_conflict(inv):
+        result = web("web_accounts")._admin_access_action(inv.caller, {
+            "action": "revoke_sessions", "username": inv.argument("user_id"),
+            "expected_revision": _user_token(inv),
+        })
     return {"user": result.get("user") or {}}
 
 
@@ -601,7 +636,8 @@ def delete_user(inv: Invocation) -> dict[str, Any]:
     from management_portal import permission_system
 
     username = str(inv.argument("user_id") or "")
-    with _administrator_change(inv.caller, username, delete=True):
+    with _user_version_conflict(inv), _administrator_change(
+            inv.caller, username, expected_revision=_user_token(inv), delete=True):
         if permission_system.user_category(username) == "portal_admin":
             _access().upsert_user(username, actor=inv.caller, status="disabled", revoke_sessions=True)
     result = web("web_accounts")._admin_access_action(inv.caller, {"action": "delete", "username": inv.argument("user_id")})
@@ -653,15 +689,7 @@ def set_user_navigation_favorite(inv: Invocation) -> dict[str, Any]:
     return {"items": _navigation_items(user_id)}
 
 
-
-
-
-
 # -- Portal services -----------------------------------------------------------------
-
-
-def _deployment() -> str:
-    return str(os.getenv("PORTAL_DEPLOYMENT") or "dev").strip() or "dev"
 
 
 def get_runtime_capacity(inv: Invocation) -> dict[str, Any]:
@@ -775,26 +803,10 @@ def version_of(inv: Invocation, object_id: str) -> Any:
     return None
 
 
-def _argument_not_installed(name: str, arguments: list[str]):
-    def handler(inv: Invocation) -> dict[str, Any]:
-        raise invalid(f"{name} 的 {'、'.join(arguments)} 由没有安装的功能处理", arguments=arguments)
-
-    return handler
-
-
 def binding() -> OwnerBinding:
-    from management_portal.hatg.catalog import instruction_catalog
-
     # The installed features' Web instruction handlers (``web.instructions``) join the core ones.
     handlers = {**HANDLERS, **{name: handler for _feature, module in portal_features.contributions("web.instructions")
                                for name, handler in module.HANDLERS.items()}}
-    # A core instruction that Web runs only for a feature's argument (argument_owners:
-    # SearchMessages and ListInputHistory with chatroom_id) refuses those calls
-    # when the feature is not installed.
-    for name, declaration in instruction_catalog().items():
-        if declaration.owner != "web" and "web" in declaration.owners and name not in handlers:
-            handlers[name] = _argument_not_installed(
-                name, [argument for argument, owner in declaration.argument_owners if owner == "web"])
     return OwnerBinding(owner="web", handlers=handlers, streams={"WatchMailbox": watch_inbox}, version_of=version_of, recover_projections=recover_projections)
 
 

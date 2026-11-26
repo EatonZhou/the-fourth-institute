@@ -142,8 +142,10 @@ def _ensure_session_signing_key() -> None:
         except OSError:
             key = os.urandom(32)
             _SESSION_SIGNING_KEY_PATH.parent.mkdir(parents=True, exist_ok=True)
-            _SESSION_SIGNING_KEY_PATH.write_bytes(key)
-            os.chmod(_SESSION_SIGNING_KEY_PATH, 0o600)
+            # Owner-only from creation, and never over an existing key that merely could not be read.
+            descriptor = os.open(_SESSION_SIGNING_KEY_PATH, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            with os.fdopen(descriptor, "wb") as stream:
+                stream.write(key)
         if len(key) < 32:
             raise RuntimeError("Portal session signing key must be at least 32 bytes")
 
@@ -269,9 +271,8 @@ def _admin_access_action(actor: str, payload: dict) -> dict:
             display_name=payload.get("display_name"),
             email=payload.get("email"),
             status=payload.get("status"),
-
-
             revoke_sessions=bool(payload.get("revoke_sessions")),
+            expected_revision=payload.get("expected_revision"),
         )
         if previous_email.casefold() != str(user.get("email") or "").casefold():
             _PORTAL_PASSWORD_RESETS.invalidate_user(username)
@@ -281,16 +282,19 @@ def _admin_access_action(actor: str, payload: dict) -> dict:
             raise ValueError("修改自己的密码须在 Settings 中验证当前密码")
         if username not in _load_users() and not _PORTAL_ACCESS.user(username)["configured"]:
             raise KeyError("user not found")
-        _PORTAL_CREDENTIALS.set_password(
-            username,
-            str(payload.get("password") or ""),
-        )
-        _PORTAL_PASSWORD_RESETS.invalidate_user(username)
-        user = _PORTAL_ACCESS.upsert_user(
-            username,
-            actor=actor,
-            revoke_sessions=True,
-        )
+        # The revision is compared under the same identity lock as the password and the session write.
+        with _PORTAL_ACCESS._writing():
+            _PORTAL_ACCESS.require_revision(payload.get("expected_revision"))
+            _PORTAL_CREDENTIALS.set_password(
+                username,
+                str(payload.get("password") or ""),
+            )
+            _PORTAL_PASSWORD_RESETS.invalidate_user(username)
+            user = _PORTAL_ACCESS.upsert_user(
+                username,
+                actor=actor,
+                revoke_sessions=True,
+            )
         _PORTAL_ACCESS.audit(actor, "password_reset", target=username)
         return {"user": user}
     if action == "revoke_sessions":
@@ -301,6 +305,7 @@ def _admin_access_action(actor: str, payload: dict) -> dict:
                 username,
                 actor=actor,
                 revoke_sessions=True,
+                expected_revision=payload.get("expected_revision"),
             )
         }
     if action == "delete":

@@ -76,7 +76,7 @@ def test_explicit_groups_partition_the_catalog_without_changing_categories():
     assert sum(map(len, groups)) == len(set.union(*groups))
     assert set.union(*groups) == names(listing(group="all")) == set(instruction_catalog())
     for group in DISCOVERY_GROUPS:
-        result = listing(group=group)
+        result = listing(group=group, detail=True)
         assert all(item["discovery_group"] == group for item in result["instructions"])
     assert instruction_catalog()["ApplyLineageChanges"].category == "lineage_definition"
     assert instruction_catalog()["ListInstructions"].category == "isa"
@@ -90,6 +90,54 @@ def test_category_alone_crosses_groups_and_combined_filter_intersects():
         "RequestResidentSummaryRebuild", "GetResidentSummaryQueue", "ClaimResidentSummaryJobs",
         "SubmitResidentSummary", "ReleaseResidentSummaryJob",
     }
+
+
+def test_listing_items_are_short_and_paged_by_cursor():
+    """目录默认每项只有名称、类别、mutates 和一句短说明，limit/cursor 分页，detail 给完整摘要
+
+    :design: decision_898b8911a2ff
+    """
+    result = listing(group="all")
+    assert "next_cursor" not in result
+    assert len(result["instructions"]) == len(instruction_catalog())
+    for item in result["instructions"]:
+        assert set(item) <= {"instruction", "category", "mutates", "description", "streaming"}
+        assert len(item["description"]) <= 61
+    seen, cursor = [], ""
+    while True:
+        page = listing(group="all", limit=100, **({"cursor": cursor} if cursor else {}))
+        assert len(page["instructions"]) <= 100
+        seen += [item["instruction"] for item in page["instructions"]]
+        cursor = page.get("next_cursor", "")
+        if not cursor:
+            break
+    assert seen == [item["instruction"] for item in result["instructions"]]
+    full = listing(group="all", detail=True)["instructions"][0]
+    assert {"owner", "category_title", "discovery_group"} <= set(full)
+
+
+def test_short_description_ends_at_a_sentence_or_clause_never_inside_a_word():
+    """说明取第一句；过长时在标点或空格处截断"""
+    short = routing.short_description
+    assert short("读取一个对象。完整说明在后面。") == "读取一个对象。"
+    assert short("a" * 10) == "a" * 10
+    clause = short("按需发现指令，" + "字" * 30 + "，" + "字" * 80)
+    assert clause == "按需发现指令，" + "字" * 30 + "…"
+    words = short("Read one object " * 10)
+    assert words.endswith("…") and not words[:-1].endswith("Rea")
+
+
+def test_resident_batch_reads_share_one_limit():
+    """ListResidentStates、ListResidentRequests 的 resident_ids 与摘要批量读取共用同一个上限
+
+    :design: decision_898b8911a2ff
+    """
+    from management_portal.society_service.resident_context.evidence import MAX_SUMMARY_RESIDENTS
+    for name in ("ListResidentStates", "ListResidentRequests"):
+        parameter = instruction_catalog()[name].parameter_map["resident_ids"]
+        assert parameter.max_length == MAX_SUMMARY_RESIDENTS == 128
+        too_many = routing.execute({"instruction": name, "arguments": {"resident_ids": ["resident_x"] * 129}}, CONTEXT)
+        assert too_many.status == "failed" and too_many.error["code"] == "instruction.invalid_arguments"
 
 
 def test_unknown_group_is_rejected():

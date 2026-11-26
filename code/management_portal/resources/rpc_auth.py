@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import os
 
-from management_common.rpc_auth import (
-    RPC_AUTH_MAX_AGE_SECONDS, RPC_AUTH_SCHEMA, load_rpc_signing_key, sign_rpc_auth, verify_rpc_auth,
-)
+from management_common.rpc_auth import load_rpc_signing_key, sign_rpc_auth
 
 
 # Bringing the active scheme's instance up to date needs every object ResourceService

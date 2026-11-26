@@ -99,7 +99,7 @@ def test_search_reads_all_pages_with_literal_matches_and_room_isolation(lineage,
 
 
 def test_chatroom_input_history_and_search_page_with_cursor(lineage):
-    """ListInputHistory 与 SearchMessages 带 chatroom_id 时在 Web 执行，用 cursor 翻页，只在还有更多时返回 next_cursor"""
+    """ListChatroomInputHistory 与 SearchChatroomMessages 在 Web 执行，用 cursor 翻页，只在还有更多时返回 next_cursor"""
     from types import SimpleNamespace
 
     from management_portal import chatroom_web_isa, web_isa
@@ -113,8 +113,8 @@ def test_chatroom_input_history_and_search_page_with_cursor(lineage):
     bodies = lambda page: [rooms._message_text(m) for m in page['messages']]  # noqa: E731
     catalog = instruction_catalog()
     handlers = web_isa.binding().handlers
-    for name, handler in (('ListInputHistory', chatroom_web_isa.list_chatroom_input_history),
-                          ('SearchMessages', chatroom_web_isa.search_chatroom_messages)):
+    for name, handler in (('ListChatroomInputHistory', chatroom_web_isa.list_chatroom_input_history),
+                          ('SearchChatroomMessages', chatroom_web_isa.search_chatroom_messages)):
         assert catalog[name].owner_for({'chatroom_id': room}) == 'web'
         assert handlers[name] is handler
 

@@ -63,7 +63,6 @@ class ProgramExecutionState(Protocol):
 class ProgramResidentDelivery(Protocol):
     def send_node_message(self, node: dict[str, Any], prompt: str, actor: str, **options: Any) -> object: ...
     def register_program_agent_invocation(self, lineage_id: str, target_id: str, message_id: str, event: lineage_primitives.LineageEvent, source_wire_id: str, actor: str) -> dict[str, Any]: ...
-    def notify_program_resident_invocation_terminal(self, lineage_id: str, resident_id: str, message_id: str, invocations: list[dict[str, Any]], *, status: str) -> bool: ...
     def completed_message_evidence(self, node: dict[str, Any], message_id: str, actor: str) -> dict[str, Any]: ...
 
 
@@ -530,7 +529,7 @@ def _settle_operator_turn(
     event: lineage_primitives.LineageEvent,
     ports: ProgramExecutionPorts,
 ) -> None:
-    """Settle the turn's handoff (anything but completed, failed or cancelled counts as cancelled) and notify."""
+    """Settle the turn's handoff (anything but completed, failed or cancelled counts as cancelled)."""
 
     ledger_status = (
         status
@@ -542,17 +541,13 @@ def _settle_operator_turn(
         result={"error": output["error"]} if output and output.get("error") else None,
     )
     completed_at = ports.state.now_iso()
-    invocations = lineage_program_resident_inputs.settle_resident_handoffs(
+    lineage_program_resident_inputs.settle_resident_handoffs(
         lineage_id,
         message_id=expected_execution_id,
         resident_id=executor_resident_id,
         status=ledger_status,
         completed_at=completed_at,
         output=output,
-    )
-    ports.resident.notify_program_resident_invocation_terminal(
-        lineage_id, executor_resident_id, expected_execution_id, invocations,
-        status=ledger_status,
     )
 
 
@@ -765,10 +760,9 @@ def finish_agent_completion(
     *,
     ports: ProgramExecutionPorts,
 ) -> dict[str, Any]:
-    """Read evidence, notify and route already settled handoffs; never settle again."""
+    """Read evidence and route already settled handoffs; never settle again."""
     _lineage_scope = ports.state.lineage_scope
     _read_lineage = ports.state.read_lineage
-    _notify_program_resident_invocation_terminal = ports.resident.notify_program_resident_invocation_terminal
     _completed_message_evidence = ports.resident.completed_message_evidence
     dispatch_lineage_program_event = ports.flow.dispatch_lineage_program_event
 
@@ -778,15 +772,6 @@ def finish_agent_completion(
         evidence = {}
     # Chat-initiated turns have no incoming HATG invocation; their Output
     # still starts a fresh Packet path after the Resident completes.
-    if invocations:
-        _notify_program_resident_invocation_terminal(
-            lineage_id,
-            source_node_id,
-            message_id,
-            invocations,
-            status="completed",
-        )
-
     with _lineage_scope(lineage_id):
         lineage = _read_lineage(lineage_id, actor=actor)
         plan = _compiled_program(lineage)

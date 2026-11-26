@@ -9,6 +9,7 @@ from typing import Any
 
 from management_portal.codex_app_server_client import codex_token_usage_delta
 
+from .contracts import positive_int
 from .provider_turn_usage import epoch_ms
 
 
@@ -64,7 +65,7 @@ def read_codex_context_window(path: Path | str, *, model: str) -> int:
                         return observed_window
                 if context_turn_id:
                     if payload.get("type") == "task_started" and payload.get("turn_id") == context_turn_id:
-                        return _positive_int(payload.get("model_context_window"))
+                        return positive_int(payload.get("model_context_window"))
                 elif not observed_window:
                     _, observed_window = _token_count_observation(payload)
     except (OSError, ValueError, _ActiveHistoryScanLimit):
@@ -430,7 +431,7 @@ def codex_subagent_rollouts(
             parent = str(spawn.get("parent_thread_id") or "") if isinstance(spawn, dict) else ""
             child = str(meta.get("id") or "") if parent else ""
             if parent and child:
-                headers[child] = (parent, path, _positive_int(meta.get("subagent_history_start_ordinal")))
+                headers[child] = (parent, path, positive_int(meta.get("subagent_history_start_ordinal")))
         day += timedelta(days=1)
     found: list[tuple[str, Path, int]] = []
     parents = {thread_id}
@@ -507,14 +508,6 @@ def _token_count_observation(payload: object) -> tuple[int, int]:
         else {}
     )
     return (
-        _positive_int(usage.get("input_tokens")),
-        _positive_int(info.get("model_context_window")),
+        positive_int(usage.get("input_tokens")),
+        positive_int(info.get("model_context_window")),
     )
-
-
-def _positive_int(value: object) -> int:
-    try:
-        number = int(value or 0)
-    except (TypeError, ValueError):
-        return 0
-    return number if number > 0 else 0

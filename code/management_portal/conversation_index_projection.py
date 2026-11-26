@@ -350,10 +350,7 @@ def resident_entries(
                     updated_at=resident.get("activity_at") or _latest_time(
                         public_completion.get("completed_at"),
                         actor_last_user_message_at,
-                        (
-                            resident.get("interaction_updated_at")
-                            or resident.get("last_token_usage_at")
-                        )
+                        resident.get("last_token_usage_at")
                         if last_user_is_actor
                         else "",
                     ),

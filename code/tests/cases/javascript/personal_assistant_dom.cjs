@@ -177,8 +177,8 @@ function inbox(t) {
     return { entries: [], content_signature: "empty", ready: true, unread_count: 0 };
   } };
   w.PortalInstructionClient = { execute: async instruction => {
-    assert.equal(instruction, "ListMailboxTodos");
-    return { items: [], pending_count: 0 };
+    assert.equal(instruction, "SearchResources");
+    return { items: [], next_cursor: "" };
   } };
   for (const name of ["portal_state.js", "portal_text.js", "portal_ui_primitives.js", "portal_refresh_coordinator.js",
     "resident_protocol.js", "portal_conversation_store.js", "portal_mailbox_todos.js", "portal_agent_inbox.js"]) {

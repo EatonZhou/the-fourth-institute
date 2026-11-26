@@ -3,29 +3,15 @@ from pathlib import Path
 import re
 
 from management_common.file_retention import provider_session_ended
-from management_common.portal_paths import path as portal_path
 
 
 def _paths(provider, session_id, config_dir):
     if not re.fullmatch(r'[A-Za-z0-9_-]+', session_id or ''):
         return []
-    paths = []
-    if provider in {'kimi', 'kimi-code'}:
-        from .native_session_compaction import kimi_wire_path
-        wire = kimi_wire_path(portal_path('provider-state') / 'kimi-code', session_id)
-        if wire:
-            paths.append(wire.parents[2])
-    elif provider in {'dsh', 'deepseek', 'opencode'}:
-        path = portal_path('provider-state') / ('opencode' if provider == 'opencode' else 'dsh') / session_id
-        if path.exists():
-            paths.append(path)
-    elif provider in {'claude', 'claude-code'} and config_dir:
-        # Host account directories are outside Portal resource ownership.
-        root = Path(config_dir).absolute()
-        owned_roots = [portal_path(area) for area in ('provider-state', 'lineages', 'projects')]
-        if any(root.is_relative_to(area) and root != area for area in owned_roots):
-            paths.extend((root / 'projects').glob('*/' + session_id + '.jsonl'))
-            paths.extend((root / 'projects').glob('*/' + session_id))
+    from .provider_catalog import AGENT_PROVIDERS
+    definition = AGENT_PROVIDERS.get(provider)
+    residue = getattr(definition.backend_class(), 'session_residue', None) if definition and definition.adapter else None
+    paths = residue(session_id, config_dir) if residue else []
     if paths:
         from .account_registrations import registrations
         host_homes = [Path(row['config']['account_dir']).expanduser().resolve()

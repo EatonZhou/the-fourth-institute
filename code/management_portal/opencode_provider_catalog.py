@@ -19,11 +19,9 @@ without the runtime offers no route.
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 import sys
 from typing import NamedTuple
-from management_common.portal_paths import path as portal_path, resolve_directory
 from management_common.site_config import read_site_config
 from management_common.code_environment import provider_entry
 

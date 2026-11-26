@@ -133,7 +133,7 @@ export function createEvidenceLoader({ resources, sdk, signal }) {
   }
   async function instructions(data) {
     if (data.mode !== 'current') return [];
-    const reply = await sdk.hatg('ListInstructions', {}); check();
+    const reply = await sdk.hatg('ListInstructions', { detail: true }); check();
     data.instructions = (reply.instructions || reply.result?.instructions || []).map(x => ({ ...x, instruction: x.instruction || x.name }));
     return data.instructions;
   }

@@ -9,14 +9,14 @@ if TYPE_CHECKING:
 
 
 def install_resolver(service: "ResourceService") -> None:
-    from management_portal import article_sections, resource_identity_backend
+    from management_portal import article_sections
 
     service.register_resolver(
         "article",
         lambda address, **context: canonical_resolution(
             article_sections.resolve_article_address(address)
         ),
-        read_content=resource_identity_backend.read_resolved_resource_content,
+        read_content=article_sections.read_resolved_resource_content,
     )
 
 

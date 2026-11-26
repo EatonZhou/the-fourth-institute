@@ -1022,8 +1022,9 @@ class IndexStore:
         limit: int = 30,
         resource_type: str = "",
         records_projector: ResourceRecordsProjector | None = None,
+        excluded_types: Iterable[str] = (),
     ) -> dict[str, Any]:
-        enabled_types = self.resource_types.enabled_types()
+        enabled_types = self.resource_types.enabled_types() - frozenset(excluded_types)
         query = ResourceQuery.from_kwargs({
             "actor": actor, "q": q, "limit": limit,
             "resource_types": [resource_type] if resource_type else [],

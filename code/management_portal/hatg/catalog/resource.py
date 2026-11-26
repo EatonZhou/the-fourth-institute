@@ -4,10 +4,10 @@ from __future__ import annotations
 from ..declarations import CURSOR, FIXED, NEXT_CURSOR, InstructionDeclaration as D, On, P, R
 
 
-def _d(name, decides, description, parameters=(), result=(), *, mutates=False, target="", one_of=()):
+def _d(name, decides, description, parameters=(), result=(), *, mutates=False, target=""):
     return D(name=name, category="resource", owner="resource", description=description,
              parameters=tuple(parameters), result=tuple(result), mutates=mutates,
-             target=target, one_of=one_of, decides=decides)
+             target=target, decides=decides)
 
 
 RESOURCE_RECORD = R("resource", "object", "资源记录")
@@ -181,6 +181,6 @@ DECLARATIONS = (
         R("content", description="文件文本内容", allow_empty=True),
     ), (
         R("version", description="写入后的内容摘要"),
-        R("modified_at", description="修改时间"),
+        R("modified_at", description="修改时间", replay=True),
     ), mutates=True, target="address"),
 )

@@ -3,10 +3,8 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from .harness_history import (
-    approximate_value_tokens,
-    positive_int,
-)
+from .contracts import positive_int
+from .harness_history import approximate_value_tokens
 
 LOGGER = logging.getLogger(__name__)
 

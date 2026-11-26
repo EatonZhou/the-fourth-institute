@@ -1022,7 +1022,6 @@ def command_list(args: argparse.Namespace, registry: dict) -> int:
         result = paper_resources.load_paper_resources(args.paper_root)
     elif args.resource_type == "search":
         result = search_backend.load_search_resources(
-            actor=args.actor,
             include_deleted=args.include_deleted,
         )
     elif args.resource_type in COLLABORATION_TYPES:

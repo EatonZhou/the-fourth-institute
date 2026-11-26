@@ -1511,7 +1511,6 @@ body.resizingWorkbenchPane { cursor: col-resize; user-select: none; }
 body.resizingWorkbenchRow { cursor: row-resize; user-select: none; }
 
 @media (max-width: 760px) {
-  .portalWorkbenchWorkspaceLabel { display: none; }
   .portalWorkbenchStage:not(.has-chrome-toolbar):not(.has-tab-toolbar) { grid-template-rows: 28px minmax(0, 1fr); }
   .portalWorkbenchCustomizeButton > span:not(.portalIcon) { display: none; }
 }

@@ -43,7 +43,6 @@ def _rationed_quota(sample):
     quota = dict(sample.get("quota") or {"status": "unknown"})
     if quota.get("status") == "unknown":
         return quota
-    observed = quota.get("observed_at") or 0
     from .quota_reset_time import reset_epoch_seconds
     resets = [reset_epoch_seconds(w.get('resets_at'))
               for w in quota.get('windows') or sample.get('rate_limits') or [] if isinstance(w, dict)]

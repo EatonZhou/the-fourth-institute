@@ -410,11 +410,6 @@ class ConversationMessages:
 
         return self.state_store.mailbox_entry(required_resident_id(resident_id), str(message_id or "").strip()) is not None
 
-    def stored_messages(self, resident_id: str, message_ids: Sequence[str]) -> dict[str, dict[str, Any]]:
-        """Selected messages with the same trace, Mailbox, consumed-member precedence as stored_message."""
-        return {message: value for (_, message), value in
-                self.stored_messages_many([(resident_id, identity) for identity in message_ids]).items()}
-
     def stored_messages_many(self, requests: Sequence[tuple[str, str]]) -> dict[tuple[str, str], dict[str, Any]]:
         """Selected stored messages across holders; trace, Mailbox and consumed-group precedence is preserved."""
         wanted = list(dict.fromkeys(requests))

@@ -114,7 +114,7 @@ def migrate_dependencies(connection, *, identities=None, identity_source=None, c
         raise ValueError('Migration requires exactly one explicit identity source')
     if identity_source is not None and not callable(identity_source):
         raise ValueError('Migration identity source must be callable')
-    from .directory_registrations import COLLECTIONS, refresh_directory_dependency
+    from .registry_directory_records import COLLECTIONS, GUARD_CONDITION, refresh_directory_dependency
     from .workspace_store import initialize_directory_owner as initialize_workspaces, refresh_directory_dependency as refresh_workspace
     from .registry_store import initialize_directory_owner as initialize_registry
     check_budget()
@@ -150,7 +150,7 @@ def migrate_dependencies(connection, *, identities=None, identity_source=None, c
     table = '"' + _database_schema('resource_registry') + '".registry_documents'
     deps.install_source_guard(connection, table=table, kind='resource',
         key="collection || ':' || {row}.document_id", watched=['collection', 'document_id', 'document_json'],
-        condition="NEW.collection IN ('article','repo','paper','knowledge','report')")
+        condition=GUARD_CONDITION)
     for row in connection.execute(f'SELECT collection,document_id,document_json FROM {table} WHERE collection=ANY(%s)',
                                    (list(COLLECTIONS),)).fetchall():
         check_budget()

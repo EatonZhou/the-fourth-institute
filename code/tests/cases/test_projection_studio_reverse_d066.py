@@ -1,7 +1,7 @@
 """D066 reverse-plan caller migration; isolated Store and controlled ISA boundary.
 
 :design: plan_d0669e2e82de, decision_f67ae5e70793
-:module: workbench.projections
+:module: workflow.studio
 """
 from __future__ import annotations
 

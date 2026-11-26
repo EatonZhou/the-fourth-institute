@@ -23,7 +23,6 @@ body[data-resource-detail-embedded] > #archiveModal {
 }
 
 /* ── Board layout ── */
-.detailExploreButton { text-decoration: none; }
 .portalButton.active {
   border-color: var(--accent);
   color: var(--accent);
@@ -950,22 +949,6 @@ body[data-resource-detail-hide-graph] .knowledgeGraphSection {
   object-fit: contain;
   cursor: zoom-in;
 }
-.detailImagePreview {
-  min-height: 220px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--panel-2);
-  padding: 12px;
-}
-.detailImagePreview img {
-  display: block;
-  max-width: 100%;
-  max-height: 72vh;
-  object-fit: contain;
-}
 .markdownBody:not(:where(.portalChatWorkspaceRoot *)) .mathBlock {
   display: block;
   margin: 0.35em 0 1em;
@@ -990,15 +973,6 @@ body[data-resource-detail-hide-graph] .knowledgeGraphSection {
   font-family: "Cambria Math", "STIX Two Math", "Latin Modern Math", ui-serif, Georgia, serif;
   font-size: 1.02em;
   line-height: 1.35;
-}
-.markdownBody:not(:where(.portalChatWorkspaceRoot *)) .mathText {
-  font-family: ui-serif, Georgia, serif;
-  font-size: 0.94em;
-}
-.markdownBody:not(:where(.portalChatWorkspaceRoot *)) .mathDouble {
-  font-family: "Cambria Math", "STIX Two Math", ui-serif, Georgia, serif;
-  font-weight: 700;
-  letter-spacing: 0.02em;
 }
 .markdownBody:not(:where(.portalChatWorkspaceRoot *)) blockquote {
   border-left: 3px solid var(--accent);

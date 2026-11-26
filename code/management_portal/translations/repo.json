@@ -1063,5 +1063,12 @@
   "读取 Git 状态": {
     "en": "Reading Git status",
     "zh-CN": "读取 Git 状态"
-  }
+  },
+  "删除「{p0}」的 Repo 注册及其所属目录？\nGit checkout、分支、提交和工作文件将永久删除，无法恢复。": {"zh-CN": "删除「{p0}」的 Repo 注册及其所属目录？\nGit checkout、分支、提交和工作文件将永久删除，无法恢复。", "en": "Delete the Repo registration of “{p0}” and its directory?\nThe Git checkout, branches, commits and working files will be permanently deleted and cannot be recovered."},
+  "开发工作台工具": {"zh-CN": "开发工作台工具", "en": "Development workbench tools"},
+  "鼠标选中代码后自动加入聊天；也可将当前文件加入聊天，讨论或修改当前仓库。": {"zh-CN": "鼠标选中代码后自动加入聊天；也可将当前文件加入聊天，讨论或修改当前仓库。", "en": "Code you select with the mouse is added to the chat automatically; you can also add the current file to the chat to discuss or change this repository."},
+  "文件树": {"zh-CN": "文件树", "en": "File tree"},
+  "聊天": {"zh-CN": "聊天", "en": "Chat"},
+  "Repo 开发工作台": {"zh-CN": "Repo 开发工作台", "en": "Repo development workbench"},
+  "刷新文件状态": {"zh-CN": "刷新文件状态", "en": "Refresh file status"}
 }

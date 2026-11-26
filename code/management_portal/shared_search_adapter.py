@@ -11,8 +11,8 @@ from management_portal.semantic_search_runs import SearchRunSuperseded, require_
 
 
 CONTRACT = 'system_surface_search.v1'
-# These are input-size limits, NOT tokenizer estimates or Provider timeouts.
-# Character and byte ceilings jointly bound every frozen input snapshot.
+# The only fields of a record a candidate carries, each in full: the search
+# layer sets no size limit; capacity belongs to the AI execution.
 TEXT_FIELDS = ('title', 'preview', 'summary', 'abstract', 'content_excerpt', 'content',
                'project', 'type', 'resource_type', 'status', 'authors', 'venue', 'year', 'domain')
 LIST_FIELDS = ('projects', 'tags', 'module_path', 'assignees')
@@ -127,9 +127,12 @@ def authorized_catalog(job: dict) -> list[dict]:
         records = [row for row in payload.get('items') or []
                    if row.get('type') not in {'skill', 'experiment'}]
     else:
+        from management_portal import resource_views
         from management_portal.resources import get_resource_service
 
-        payload = get_resource_service().query(actor=actor, resource_types=[surface], limit=5000, include_attributes=True)
+        # Every readable record, not the first query page: the search layer sets no candidate limit.
+        payload = resource_views._query_all(
+            get_resource_service(), actor=actor, resource_types=[surface], include_attributes=True)
         records = []
         for row in payload.get('resources') or []:
             if row.get('resource_type') != surface:

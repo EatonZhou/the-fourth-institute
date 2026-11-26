@@ -27,7 +27,7 @@ const residentId = 'resident_111111111111', otherId = 'resident_222222222222';
       window.PortalEvents = { isConnected: () => true, connect() {} };
       window.PortalAPI = { get: async () => ({ config: {}, restart: null }) };
       window.PortalInstructionClient = { execute: async name => {
-        if (name === 'ListInputHistory') return { entries: [] };
+        if (name === 'ListResidentInputHistory') return { entries: [] };
         throw new Error('Unexpected instruction: ' + name);
       } };
     });

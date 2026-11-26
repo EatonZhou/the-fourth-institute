@@ -33,9 +33,11 @@ def _change_publication(inv: Invocation, *, published: bool) -> dict[str, Any]:
         "source_key": inv.argument("source_key"),
         "item_id": inv.argument("item_id"),
     })
-    payload = {"pulse": _pulse().get_home_payload(inv.caller)}
+    # update_publication already returns the caller's fresh Pulse view.
+    publication = result.pop("publication", None) or {}
+    payload = {"pulse": result}
     if published:
-        payload["publication"] = result.get("publication") or {}
+        payload["publication"] = publication
     return payload
 
 

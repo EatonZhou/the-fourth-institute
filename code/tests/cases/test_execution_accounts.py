@@ -387,7 +387,7 @@ def test_registered_backend_catalog_provides_accounts_without_common_layer_chang
     """新注册的后端目录无需修改通用层即可提供默认路线账号"""
     from management_portal.execution.account_adapters import ConfiguredAccounts
     from management_portal.execution import account_registrations
-    definition = SimpleNamespace(provider="future", default_route="primary", default_concurrency=8,
+    definition = SimpleNamespace(provider="future", default_route="primary",
         routes=Mock(side_effect=AssertionError("account routes come from registrations")))
     read = Mock(return_value=[{"account_id": "future_primary", "provider": "future", "kind": "api_profile",
                                "route_id": "primary", "config": {"api_id": "future_api"}, "max_concurrency": 8}])
@@ -409,6 +409,7 @@ def test_a_dsh_route_runs_as_many_turns_at_once_as_claude_code_and_kimi_code():
     :design: decision_276105b5d67b
     """
     # Each DSH session has its own process; one route used to run one DSH turn at a time in all of Portal.
+    from management_common.account_concurrency import DEFAULT_ACCOUNT_CONCURRENCY
     from management_portal.execution.account_adapters import ConfiguredAccounts
     from management_portal.execution.provider_catalog import AGENT_PROVIDERS
     from tests.cases.model_api_test_support import DEEPSEEK_PRIMARY, register_apis
@@ -417,8 +418,7 @@ def test_a_dsh_route_runs_as_many_turns_at_once_as_claude_code_and_kimi_code():
     register_accounts({"account_id": "dsh_deepseek", "provider": "dsh", "kind": "api_profile",
                        "route_id": "deepseek", "config": {"api_id": DEEPSEEK_PRIMARY["id"]}})
     accounts = ConfiguredAccounts(AGENT_PROVIDERS["dsh"]).accounts()
-    assert accounts and {account.max_concurrency for account in accounts} == {
-        AGENT_PROVIDERS["claude"].default_concurrency, AGENT_PROVIDERS["kimi"].default_concurrency} == {10}
+    assert accounts and {account.max_concurrency for account in accounts} == {DEFAULT_ACCOUNT_CONCURRENCY} == {10}
 
 
 @pytest.mark.parametrize("limit", [True, 1.5, 0, 257])
@@ -463,7 +463,7 @@ def test_reroute_updates_native_options_with_route_before_dispatch(provider):
     if provider == "claude":
         adapter = ClaudeAccounts()
     else:
-        adapter = ConfiguredAccounts(SimpleNamespace(provider=provider, default_route="alpha", default_concurrency=8))
+        adapter = ConfiguredAccounts(SimpleNamespace(provider=provider, default_route="alpha"))
     accounts = ExecutionAccounts((adapter,))
     scheduler = Scheduler(accounts=accounts)
     incoming = ExecutionRequest.new(actor="test-actor", prompt="route", service_type="agent_session", provider=provider,

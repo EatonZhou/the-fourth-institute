@@ -34,9 +34,11 @@ class ProjectRegistryYaml:
     """The Project registry read and written as the YAML document it used to be."""
 
     def read_text(self, encoding: str = "utf-8") -> str:
+        import yaml
+
         from management_portal import project_registry
 
-        return project_registry.yaml_text()
+        return yaml.safe_dump(project_registry.load(), allow_unicode=True, sort_keys=False)
 
     def read_bytes(self) -> bytes:
         return self.read_text().encode("utf-8")

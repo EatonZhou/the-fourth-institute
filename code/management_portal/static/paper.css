@@ -338,9 +338,7 @@ body {
 }
 .paperRow:hover, .paperRow.selected { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 12%, transparent); }
 .paperRowHead { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: start; }
-.paperRowActions, .paperFavoriteFilter { display: flex; align-items: center; gap: 8px; }
-.paperFavoriteFilter { font-size: 12px; cursor: pointer; }
-.paperFavoriteFilter input { width: auto; }
+.paperRowActions { display: flex; align-items: center; gap: 8px; }
 .portalButton.paperFavorite { flex:0 0 auto; box-sizing:border-box; width:28px; height:28px; min-width:28px; min-height:28px; padding:0; display:inline-flex; align-items:center; justify-content:center; font-size:18px; line-height:1; border:0; background:transparent; box-shadow:none; color:var(--muted); }
 .paperFavorite[aria-pressed="false"], .paperFavorite[aria-pressed="true"] { background:transparent; border:0; box-shadow:none; }
 .paperFavorite:hover, .paperFavorite:focus-visible { background:var(--panel-2); }
@@ -569,14 +567,6 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.readerPath {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--muted);
-  font: 9.5px/1.3 var(--mono);
-}
 .readerHeadActions {
   min-width: 0;
   display: flex;
@@ -608,18 +598,11 @@ body {
 .paperReadingApp { height: 100%; display: flex; flex-direction: column; }
 .paperReadingToolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 16px; border-bottom: 1px solid #ccd1d6; }
 .paperReadingToolbar strong { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.paperReadingToolbar button, .paperReadingHighlights button { font: inherit; cursor: pointer; padding: 6px 10px; }
+.paperReadingToolbar button { font: inherit; cursor: pointer; padding: 6px 10px; }
 .paperTranslationMode { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; white-space: nowrap; font-size: 13px; }
 .paperReadingToolbar > a, .paperReadingToolbar > button { flex-shrink: 0; white-space: nowrap; }
 .paperReadingToolbar button:disabled { cursor: default; opacity: .5; }
 .paperReadingStatus { margin: 0; padding: 6px 16px; font-size: 13px; }
-.paperReadingBody { display: flex; flex: 1; min-height: 0; overflow: hidden; }
-.paperReadingPdf { flex: 1; min-width: 0; height: 100%; background: #59616b; overscroll-behavior: contain; }
-.paperReadingHighlights { flex: 0 0 min(280px, 40vw); padding: 12px; overflow: auto; overflow-wrap: anywhere; }
-.paperReadingHighlights[hidden] { display: none; }
-.paperReadingHighlights h2 { font-size: 16px; }
-.paperReadingHighlights article { padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid #ccd1d6; }
-.paperHighlightJump { display: block; width: 100%; text-align: left; margin-bottom: 8px; }
 .paperReadingViewer { flex: 1; min-height: 0; width: 100%; border: 0; background: #59616b; }
 .paperTranslation { padding: 4px 12px; border-bottom: 1px solid #ccd1d6; font-size: 13px; }
 .leftBody.is-personal > :not(.paperPersonal) { display: none !important; }
@@ -655,23 +638,12 @@ body {
   text-align: center;
   line-height: 1.45;
 }
-.paperReadingPdf.pdfJsViewer { min-height: 0; box-sizing: border-box; }
 .pdfJsViewer iframe {
   width: min(100%, 1000px);
   height: calc(100vh - 220px);
   min-height: 620px;
   border: 0;
   background: #fff;
-}
-.pdfJsPage {
-  position: relative;
-  background: #fff;
-  box-shadow: 0 8px 26px rgba(15, 23, 42, .28);
-}
-.pdfJsPage canvas {
-  display: block;
-  width: 100%;
-  height: auto;
 }
 .textLayer {
   position: absolute;
@@ -697,7 +669,6 @@ body {
 .markdownBody:not(:where(.portalChatWorkspaceRoot *)) p { margin: .65em 0; }
 .markdownBody:not(:where(.portalChatWorkspaceRoot *)) pre { overflow: auto; padding: 10px; border-radius: 7px; background: var(--panel-2); }
 .markdownBody:not(:where(.portalChatWorkspaceRoot *)) code { font-family: var(--mono); font-size: .92em; }
-.reviewFlow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin: 12px 0; }
 .reviewCard { display: grid; gap: 8px; border-color: color-mix(in srgb, var(--accent) 28%, var(--border)); }
 .reviewCard ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: 12px; line-height: 1.55; }
 .reviewOutput { display: grid; gap: 10px; }
@@ -758,7 +729,7 @@ body {
   .workspaceControls > #modeTabs { flex-wrap: wrap; }
 }
 @media (max-width: 760px) {
-  .overviewGrid, .readerGrid, .reviewFlow, .formGrid, .figureWorkspace { grid-template-columns: 1fr; }
+  .overviewGrid, .readerGrid, .formGrid, .figureWorkspace { grid-template-columns: 1fr; }
   .figureWorkspace { height: auto; min-height: 0; overflow: visible; }
   .figureList, .figureDetailPane { overflow: visible; }
   .workspaceTitle { font-size: 17px; }
@@ -805,7 +776,6 @@ body {
 .paperReadingDialog .paperTranslationMode { gap:5px; font-size:12px; color:#626262; }
 .paperReadingDialog .paperReadingToolbar a { font-size:12px; color:#3b668e; text-decoration:none; padding:4px; border-radius:4px; }
 .paperReadingDialog .paperReadingToolbar a:hover { text-decoration:underline; background:#eaeaea; }
-.paperReadingDialog .paperAIScope { margin:0; padding:7px 10px; font-size:11px; color:#737373; }
 .paperReadingDialog .paperAIPanel > :is(button,[role="alert"]) { margin:4px 10px; }
 .paperReadingDialog .paperAIPanel > details :is(select,textarea) { width:100%; margin-top:8px; box-sizing:border-box; }
 @media(max-width:760px) {
@@ -858,8 +828,6 @@ body.resizingReaderAI { cursor:col-resize; user-select:none; }
 .paperReadingStatus > button { font:inherit; }
 .paperReadingStatus[data-empty="true"] { display:none; }
 .paperTranslationActions { display:flex; gap:4px; margin-top:6px; }
-.paperReaderAssistantPicker { padding:10px; font-size:13px; }
-.paperReaderAssistantPicker .paperResearchSelector { padding:0; border:0; }
 .paperResearchChatHost > .paperResearchSelector { padding:0; }
 .paperResearchChatHost > .paperResearchSelector > select[hidden], .paperResearchChatHost > .paperResearchSelector > button[hidden] { display:none!important; }
 .paperResearchTitleTrigger { cursor:pointer; display:inline-flex; align-items:center; gap:6px; }

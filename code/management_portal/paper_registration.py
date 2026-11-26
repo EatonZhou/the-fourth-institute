@@ -17,7 +17,7 @@ from management_portal.paper_registration_metadata import (
     _heuristic_paper_registration_classification, _identifier_paper_registration_metadata,
 )
 from management_portal.paper_store import (
-    LOCK, PAPER_STORE, _load_json, _paper_store_file, _safe_file_path, _update_paper_fields, _validate_local_pdf_source, _write_json,
+    LOCK, PAPER_STORE, _load_json, _paper_store_file, _update_paper_fields, _validate_local_pdf_source, _write_json,
 )
 from management_portal.paper_summaries import _start_summary_task
 

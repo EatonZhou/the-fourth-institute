@@ -262,7 +262,8 @@ def test_exact_route_now_injects_and_stop_clears_the_queue(chat):
     """Telepus 精准路由下 /now 插入当前工作，/stop 停止当前任务并清空队列"""
     chat.send(EXACT)
     chat.send("/now 补充一句")
-    assert chat.portal.delivered[-1][1] == "inject_active_turn"
+    assert chat.portal.delivered[-1][1] == "enqueue_and_trigger"
+    assert chat.portal.injected == [(EXACT, chat.portal.delivered[-1][2]["message_id"])]
     chat.portal.active[EXACT] = "m_active"
     chat.portal.mailboxes[EXACT] = [{"message_id": "m_q1", "preview": "排队"}]
     chat.send("/stop")

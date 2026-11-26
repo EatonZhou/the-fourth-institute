@@ -427,6 +427,8 @@ def test_exported_tree_refuses_git_history_and_mutation_even_with_git_nearby(tmp
     operations = [
         lambda: resource_identity_backend.resolve_repo_address(record["id"] + "/commit/" + sha + "/file/" + relative),
         lambda: resource_identity_backend.update_repo_remote(record["id"], name="origin", url="https://example.invalid/repo.git"),
+        lambda: resource_identity_backend.update_repo_policy(record["id"], push_enabled=True),
+        lambda: resource_identity_backend.update_repo_ssh_key(record["id"], ssh_key=""),
         lambda: repo_workspace_history.list_repo_commits(record["id"]),
         lambda: repo_workspace_files.write_repo_file(record["id"], "new.txt", "must not write"),
     ]

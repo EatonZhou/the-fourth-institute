@@ -913,5 +913,16 @@
   "测试团队": {"en": "Test team", "zh-CN": "测试团队"},
   "用例目录": {"en": "Case catalog", "zh-CN": "用例目录"},
   "用例读取失败": {"en": "Could not read the case", "zh-CN": "用例读取失败"},
-  "运行读取失败": {"en": "Could not read the run", "zh-CN": "运行读取失败"}
+  "运行读取失败": {"en": "Could not read the run", "zh-CN": "运行读取失败"},
+  "次最近运行 · {p0} 份报告 · {p1} 个产品问题": {"en": "recent runs · {p0} reports · {p1} product issues", "zh-CN": "次最近运行 · {p0} 份报告 · {p1} 个产品问题"},
+  "{p0} 个运行异常": {"en": "{p0} run errors", "zh-CN": "{p0} 个运行异常"},
+  "已报告": {"en": "Reported", "zh-CN": "已报告"},
+  "用例问题": {"en": "Case issue", "zh-CN": "用例问题"},
+  "工具问题": {"en": "Tool issue", "zh-CN": "工具问题"},
+  "执行偏差": {"en": "Execution deviation", "zh-CN": "执行偏差"},
+  "当前选择的实现、执行方式或运行环境没有可用的匹配组合。": {"en": "No available combination matches the selected implementation, execution mode or runtime environment.", "zh-CN": "当前选择的实现、执行方式或运行环境没有可用的匹配组合。"},
+  "此实现需要作为 TAU Campaign 运行，不能加入普通测试运行。": {"en": "This implementation must run as a TAU Campaign and cannot be added to an ordinary test run.", "zh-CN": "此实现需要作为 TAU Campaign 运行，不能加入普通测试运行。"},
+  "诊断信息": {"en": "Diagnostics", "zh-CN": "诊断信息"},
+  "使用报告": {"en": "Usage report", "zh-CN": "使用报告"},
+  "产品问题": {"en": "Product issue", "zh-CN": "产品问题"}
 }

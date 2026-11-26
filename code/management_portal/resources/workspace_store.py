@@ -32,12 +32,6 @@ LOCATION_CHECK = (
 )
 
 
-# The prefix of locations below a stored location; an area root
-# (``projects:``) already ends with its separator. For statements with
-# parameters, so the LIKE wildcard is escaped.
-LOCATION_PREFIX_SQL = "CASE WHEN {column} LIKE '%%:' THEN {column} ELSE rtrim({column},'/') || '/' END"
-
-
 def canonical_path(value: object) -> str:
     raw = str(value or "").strip()
     if not raw or not Path(raw).expanduser().is_absolute():
@@ -47,11 +41,6 @@ def canonical_path(value: object) -> str:
         raise ValueError("Workspace cannot use the filesystem root")
     # Match paths materialized from release SQL and the '/' prefix queries.
     return resolved.as_posix()
-
-
-def stored_path(value: object) -> str:
-    """The stored location of an absolute Workspace path."""
-    return stored_location(canonical_path(value))
 
 
 def _located(row):
@@ -342,18 +331,6 @@ class WorkspaceStore:
             self._insert(conn, workspace_id, absolute, stored)
             return workspace_id
         return self.database.write(write)
-
-    def deleted_under(self, paths, *, connection=None) -> list[str]:
-        """Deleted Workspaces registered at or below these directories."""
-        roots = sorted({stored_path(path) for path in paths if path})
-        if not roots:
-            return []
-        with nullcontext(connection) if connection is not None else self.database.read() as conn:
-            rows = conn.execute(
-                f"SELECT w.workspace_id FROM {self.table} w JOIN unnest(%s::text[]) AS r(path) "
-                f"ON w.path=r.path OR starts_with(w.path, {LOCATION_PREFIX_SQL.format(column='r.path')}) "
-                "WHERE w.deleted_at IS NOT NULL ORDER BY w.workspace_id", (roots,)).fetchall()
-        return list(dict.fromkeys(row["workspace_id"] for row in rows))
 
     def mark_deleted(self, workspace_id, *, deleted_at, deleted_by, connection):
         from management_common.directory_dependencies import prepare_write

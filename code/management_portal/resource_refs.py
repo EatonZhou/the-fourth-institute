@@ -296,9 +296,7 @@ def resolve_resource_references(
             out.append(normalize_stored_resource_references([reference])[0])
         except PermissionError as exc:
             out.append(_failed_reference(address, "forbidden", exc))
-        except FileNotFoundError as exc:
-            out.append(_failed_reference(address, "file_not_found", exc))
-        except KeyError as exc:
+        except (KeyError, FileNotFoundError) as exc:
             out.append(_failed_reference(address, "not_found", exc))
         except ValueError as exc:
             out.append(_failed_reference(address, "invalid", exc))

@@ -17,7 +17,6 @@ import threading
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass
-from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable
 
 from management_common.file_lock import try_lock_descriptor, unlock_descriptor

@@ -20,19 +20,6 @@
       paperStateHtml, renderAnalysisControls, state, submitChatMessage, readerChat,
     } = dependencies;
 
-    function shortPath(value, maxLength = 44) {
-      const text = String(value || "").trim();
-      if (!text) return "";
-      const parts = text.split("/").filter(Boolean);
-      let display = text;
-      if (parts.length >= 2) {
-        display = `.../${parts.slice(-2).join("/")}`;
-      } else if (parts.length === 1) {
-        display = parts[0];
-      }
-      return display.length > maxLength ? `...${display.slice(-maxLength)}` : display;
-    }
-
     let fullscreenReader = null;
     let readerSplitCleanup = null;
     let analysisFraction = .55;

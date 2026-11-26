@@ -126,6 +126,13 @@ def test_an_empty_poll_keeps_the_checkpoint_for_a_later_append(event_stream):
     assert [item['cursor'] for item in watch(cursor)[:-1]] == [3]
 
 
+def test_a_cursor_ahead_of_the_log_asks_for_a_snapshot(event_stream):
+    """游标超前于事件日志时发 snapshot_required 并回到当前高水位，而不是一直等待"""
+    append_events(event_stream['repository'], 1, 3)
+    assert watch(99) == [{'cursor': 3, 'high_watermark': 3, 'snapshot_required': True}]
+    assert watch(3) == [{'cursor': 3, 'high_watermark': 3}]
+
+
 def test_internal_high_watermark_and_invocation_backlog_stay_compatible(event_stream):
     """超过 500 条积压事件时内部读取的高水位与交接分页读取保持一致"""
     repository = event_stream['repository']

@@ -28,6 +28,14 @@ class ResourceIndex(Protocol):
         """Project immutable records as one query snapshot before filtering."""
         ...
 
+    def project_changes(
+        self,
+        projects: Iterable[str],
+        *,
+        records_projector: ResourceRecordsProjector | None = None,
+        **kwargs: Any,
+    ) -> dict[str, str]: ...
+
     def suggest(
         self,
         *,

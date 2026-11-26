@@ -38,6 +38,33 @@ def test_article_git_route_preserves_conflict_status_and_actor(monkeypatch):
     stage.assert_called_once_with("article_0123456789ab", ["main.tex"], staged=True)
 
 
+def test_article_write_routes_need_contributor_not_only_viewer(monkeypatch):
+    """文章保存、新建、上传、设置、编译和停止只有 viewer 角色时返回 403，不触及后端"""
+    from management_portal import article_build, article_settings, permission_system
+
+    roles = Mock(return_value=False)
+    save, compile_, stop = Mock(), Mock(), Mock()
+    monkeypatch.setattr(http_auth, "_get_session_username", lambda request: "alice")
+    monkeypatch.setattr(http_request_body, "_read_request_json", lambda request: {})
+    monkeypatch.setattr(http_responses, "_serve_json", lambda request, status, value: (status, value))
+    monkeypatch.setattr(web_resources, "_require_resource", Mock())
+    monkeypatch.setattr(permission_system, "allows_roles", roles)
+    monkeypatch.setattr(article_files, "write_article_file", save)
+    monkeypatch.setattr(article_settings, "update_article_settings", save)
+    monkeypatch.setattr(article_build, "compile_article_pdf", compile_)
+    monkeypatch.setattr(article_build, "stop_article_compile", stop)
+
+    for action in ("file", "entries", "upload", "settings", "compile", "stop", "install-dependencies"):
+        route = _route("POST", f"/api/articles/{{article_id}}/{action}")
+        path = f"/api/articles/article_0123456789ab/{action}"
+        status, _body = route.handler(SimpleNamespace(headers={}), urlparse(path), "ignored", route.template_params(path))
+        assert status == 403, action
+    roles.assert_called_with("alice", [("@contributor", "article_0123456789ab")])
+    save.assert_not_called()
+    compile_.assert_not_called()
+    stop.assert_not_called()
+
+
 def test_article_files_get_uses_registered_route_and_session_actor(monkeypatch):
     """文章文件列表接口经注册路由以会话用户检查权限后返回文件"""
     require_resource = Mock()

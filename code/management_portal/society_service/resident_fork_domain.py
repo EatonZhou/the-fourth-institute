@@ -35,7 +35,6 @@ from functools import wraps
 import inspect
 
 from typing import Any, Mapping
-from pathlib import Path
 
 
 _FORK_CREATION = ContextVar('resident_fork_creation', default=None)
@@ -778,10 +777,6 @@ def complete_derived_resident_identity(
     resident.clear()
     resident.update(canonical)
     return resident
-
-
-def resident_runtime_dir_for_id(record: dict, target_resident_id: str) -> Path:
-    return resident_runtime_domain.resident_folder_for_id(record, target_resident_id) / "runtime"
 
 
 def inherit_derived_resident_runtime_from_source(

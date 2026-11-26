@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .contracts import TOKEN_USAGE_KEYS, execution_timestamp
+from .contracts import TOKEN_USAGE_KEYS, execution_timestamp, positive_int
 
 from .provider_catalog import AGENT_PROVIDERS
 
@@ -30,20 +30,12 @@ class ExecutionCancelled(InterruptedError):
 
 
 
-def _positive_int(value: object) -> int:
-    try:
-        number = int(value or 0)
-    except (TypeError, ValueError):
-        return 0
-    return number if number > 0 else 0
-
-
 def _clean_context_usage(value: object) -> dict[str, int]:
     data = value if isinstance(value, dict) else {}
     return {
         key: number
         for key in TOKEN_USAGE_KEYS
-        if (number := _positive_int(data.get(key))) > 0
+        if (number := positive_int(data.get(key))) > 0
     }
 
 
@@ -533,7 +525,7 @@ class _ExecutionAttempt:
                 str(recovery.get("turn_id") or ""),
             ),
             context_usage=_clean_context_usage(recovery.get("context_usage")),
-            model_context_window=_positive_int(
+            model_context_window=positive_int(
                 recovery.get("model_context_window")
             ),
             context_usage_at=str(recovery.get("context_usage_at") or ""),
@@ -652,7 +644,7 @@ class _ExecutionAttempt:
         model_context_window: int,
     ) -> None:
         normalized = _clean_context_usage(usage)
-        context_window = _positive_int(model_context_window)
+        context_window = positive_int(model_context_window)
         if not normalized and not context_window:
             return
 

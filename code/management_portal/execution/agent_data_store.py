@@ -603,8 +603,8 @@ class AgentDataStore:
     ) -> list[dict[str, Any]]:
         return self.chat.read_chat_messages(agent_id, limit=limit)
 
-    def read_chat_messages_many(self, agent_ids: Sequence[str]) -> dict[str, list[dict[str, Any]]]:
-        return self.chat.read_chat_messages_many(agent_ids)
+    def read_chat_messages_many(self, agent_ids: Sequence[str], *, limit: int = 0) -> dict[str, list[dict[str, Any]]]:
+        return self.chat.read_chat_messages_many(agent_ids, limit=limit)
 
     def read_chat_messages_through_turn(
         self,

@@ -300,7 +300,7 @@ test('failed Mailbox read rolls back optimistic state and can be retried', async
   assertUnread(false); // Promise still pending: optimism must precede the API result.
   assert.deepEqual(app.toasts, []);
   assert.deepEqual(app.saves[0].args, { key, unread: false });
-  assert.equal(app.saves[0].instruction, 'SetMailboxItemRead');
+  assert.equal(app.saves[0].instruction, 'UpdateMailboxItem');
   // The revision shown travels with the change: a newer alert refuses it.
   assert.deepEqual(app.saves[0].options.expectedVersion, { [key]: '5' });
   failed.reject(Object.assign(new Error('fixture save failed'), { code: 'instruction.failed' }));

@@ -1,6 +1,6 @@
 """Mailbox Todo resources preserve ownership, ordering and versioned writes.
 
-:module: resources.types
+:module: isa.instructions
 :design: decision_c54e68a82d7a
 """
 import hashlib

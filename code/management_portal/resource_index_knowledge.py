@@ -10,6 +10,7 @@ from typing import Any, Callable, Iterable
 import knowledge_board_lan.knowledge_source as knowledge_source
 import skill_board_lan.skill_backend as skill_backend
 
+from management_common.resource_identity import get_resource_type_registry
 from management_common.text_values import stripped_text, unique_texts
 from management_portal import project_registry
 from management_portal.resources.schema import resource_relation
@@ -31,23 +32,8 @@ def _project_statuses(projects: Iterable[dict[str, Any]]) -> dict[str, str]:
 class ProjectKnowledgeAdapter(_PathsAdapter):
     name = "project_knowledge"
     resource_types = frozenset(
-        {
-            "meeting",
-            "question",
-            "idea",
-            "insight",
-            "decision",
-            "plan",
-            "experiment",
-            "thinking",
-            "risk",
-            "concept",
-            "information",
-            "patent",
-            "material",
-            "review",
-            "todo",
-        }
+        kind for kind, declaration in get_resource_type_registry().declarations.items()
+        if declaration["category"] == "knowledge_entry"
     )
     roots = (
         Path(str(portal_path('projects'))),

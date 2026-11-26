@@ -1,7 +1,7 @@
 """Application tool declarations for Pulse."""
 
 from management_portal.application_tool_contracts import ApplicationToolDeclaration as D
-from management_portal.hatg.declarations import FIXED, ON_USER, P, R
+from management_portal.hatg.declarations import FIXED, ON_USER, R
 
 
 TOOL_REFS = {

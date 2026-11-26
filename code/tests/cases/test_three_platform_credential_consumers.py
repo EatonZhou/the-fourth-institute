@@ -111,30 +111,42 @@ def test_cli_rejects_hardlink_before_sending_token(tmp_path, monkeypatch):
     assert calls == []
 
 
+PROXY = {'http': '', 'https': 'http://proxy.invalid:8080', 'all': '', 'no_proxy': ''}
+
+
+def network_instance(tmp_path, monkeypatch):
+    from tests.cases.instance_test_support import select_instance
+    monkeypatch.delenv('TFI_PROVIDER_EGRESS', raising=False)
+    instance = select_instance(monkeypatch, tmp_path / 'instance')
+    target = network.config_path(); target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(b'ORIGINAL=1\n')
+    return target
+
+
 def test_network_security_failure_precedes_payload_and_replace(tmp_path, monkeypatch):
-    tmp_path = tmp_path / 'network-write'
-    tmp_path.mkdir()
-    target = tmp_path / 'network.env'; target.write_bytes(b'original')
-    def reject(path, mode):
-        assert path.read_bytes() == b''
+    from management_common import configuration_files
+    target = network_instance(tmp_path, monkeypatch)
+    def reject(temporary, existing):
+        assert temporary.read_bytes() == b''
         raise PermissionError('ACL cannot be verified')
-    monkeypatch.setattr(private, 'set_created_file_permissions', reject)
-    with pytest.raises(PermissionError): network._write(target, b'new proxy config')
-    assert target.read_bytes() == b'original'
-    assert sorted(p.name for p in tmp_path.iterdir()) == ['network.env']
+    monkeypatch.setattr(configuration_files, 'preserve_config_permissions', reject)
+    with pytest.raises(PermissionError): network.update_proxy(PROXY, expected_revision=network.read_settings()['revision'])
+    assert target.read_bytes() == b'ORIGINAL=1\n'
+    assert not [p for p in target.parent.iterdir() if p.name.startswith('.network-')]
 
 
 def test_network_consumer_needs_no_fchmod(tmp_path, monkeypatch):
     # Real atomic write with an isolated Windows-style permissions boundary.
-    calls=[]
-    def secure(path, mode):
-        assert mode == 0o600 and path.read_bytes() == b''
-        calls.append(path)
-    monkeypatch.setattr(private, 'set_created_file_permissions', secure)
-    monkeypatch.setattr(network, 'os', SimpleNamespace(**{n:getattr(os,n) for n in ('fdopen','fsync','replace')}))
-    target = tmp_path / 'network.env'
-    network._write(target, b'new config')
-    assert target.read_bytes() == b'new config' and calls
+    from management_common import configuration_files
+    target = network_instance(tmp_path, monkeypatch)
+    calls = []
+    def preserve(temporary, existing):
+        assert temporary.read_bytes() == b''
+        calls.append(temporary)
+    monkeypatch.setattr(configuration_files, 'preserve_config_permissions', preserve)
+    monkeypatch.setattr(network, 'os', SimpleNamespace(**{**vars(os), 'name': 'nt'}))
+    network.update_proxy(PROXY, expected_revision=network.read_settings()['revision'])
+    assert b'ORIGINAL=1' in target.read_bytes() and b'proxy.invalid' in target.read_bytes() and calls
 
 
 def test_downloaded_cli_carries_private_owner_and_works_without_repo(tmp_path, monkeypatch):

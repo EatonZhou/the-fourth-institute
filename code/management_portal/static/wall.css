@@ -1,16 +1,12 @@
 .wallPage { margin: 0; height: 100dvh; min-height: 640px; overflow: auto; display: flex; flex-direction: column; background: var(--bg); color: var(--text); font-family: var(--portal-font); }
 .wallPage, .wallPage * { box-sizing: border-box; }
 .wallPage [hidden] { display: none !important; }
-.wallHeader { flex: none; border-bottom: 1px solid var(--border); background: var(--panel); }
-.wallWorkspace { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 10px; flex: 1; min-height: 0; overflow: hidden; }
-.wallWorkspace > .portalActivityRail { position: relative; inset: auto; width: 52px; height: 100%; min-height: 0; }
-.wallWorkspaceViews, .wallWorkspaceView { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
+.wallWorkspaceView { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
 .wallWorkspaceView { flex: 1; overflow-y: auto; }
 .wallWorkspaceView > .wallToolbar { flex: none; }
 /* The shared launcher owns its edge clearance on both sides. */
 .wallWorkspaceView { padding-left: var(--portal-agent-inbox-left-clearance, 0px); padding-right: var(--portal-agent-inbox-right-clearance, 0px); }
 .wallWorkspaceView > .wallToolbar { border-bottom: 1px solid var(--border); background: var(--panel); }
-@media (max-width: 640px) { .wallWorkspace { gap: 6px; } }
 .wallToolbar { padding: 10px 18px 12px; display: grid; gap: 10px; }
 .wallCommandRow { --wall-command-height: 38px; display: grid; grid-template-columns: minmax(120px, 170px) minmax(0, 1fr); align-items: start; gap: 8px; }
 .wallCommandRow > .wallField select { width: 100%; height: var(--wall-command-height); }

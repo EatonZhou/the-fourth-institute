@@ -59,13 +59,41 @@ def _family(record: dict) -> tuple[dict, dict]:
 
 def maintenance_view(actor: str, resident_id: str) -> dict:
     """The written summary with what its maintainer needs: revision, sources, uncovered rounds and writer."""
-    record = _visible(actor, resident_id)
-    item = resident_context().store.work_summary(resident_id)
-    if item["missing_message_ids"] and _tracks_work_rounds(record):
-        reminder = _work_summary_reminder(record, resident_id, item["missing_message_ids"])
-        if reminder is not None:
-            item["reminder"] = reminder
-    return {**item, "title": str(record.get("title") or ""), "lineage_id": str(record.get("lineage_id") or "")}
+    return maintenance_views(actor, [resident_id], strict=True)[resident_id]
+
+
+def maintenance_views(actor: str, resident_ids: list[str], *, visible: set[str] | frozenset[str] = frozenset(),
+                      strict: bool = False) -> dict[str, dict]:
+    """``maintenance_view`` of each Resident the actor may read: one authorization and one read for the batch.
+
+    ``visible`` are IDs the caller already authorized for ``actor``. An ID that is not visible or has no record
+    is left out, or raises PermissionError/KeyError when ``strict``.
+    """
+    context = resident_context()
+    ids = list(dict.fromkeys(resident_ids))
+    unchecked = [rid for rid in ids if rid not in visible]
+    allowed = set(visible) | (context.source.authorized_resident_ids(actor, unchecked) if unchecked else set())
+    records: dict[str, dict] = {}
+    for resident_id in ids:
+        if resident_id not in allowed:
+            if strict:
+                raise PermissionError("无权读取这个 Resident")
+            continue
+        try:
+            records[resident_id] = _record(resident_id)
+        except KeyError:
+            if strict:
+                raise
+    items = context.store.work_summaries(list(records))
+    views: dict[str, dict] = {}
+    for resident_id, record in records.items():
+        item = items[resident_id]
+        if item["missing_message_ids"] and _tracks_work_rounds(record):
+            reminder = _work_summary_reminder(record, resident_id, item["missing_message_ids"])
+            if reminder is not None:
+                item["reminder"] = reminder
+        views[resident_id] = {**item, "title": str(record.get("title") or ""), "lineage_id": str(record.get("lineage_id") or "")}
+    return views
 
 
 def _tracks_work_rounds(record: dict) -> bool:

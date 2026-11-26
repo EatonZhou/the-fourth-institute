@@ -351,13 +351,6 @@ class ResidentRecords:
             return list(dict.fromkeys(workspace_paths))
         return self.database.write(write)
 
-    def delete_workspaces_under(self, paths, *, deleted_at: str, deleted_by: str) -> list[str]:
-        """Unregister everything within the deleted object's directories."""
-        from .resident_workspace_deletion import delete_workspaces
-        return self.database.write(lambda connection: delete_workspaces(
-            connection, paths=paths, deleted_at=deleted_at, deleted_by=deleted_by,
-        ))
-
     def resident_deletion(self, resident_id: str) -> dict[str, Any] | None:
         """Historical projection of the same retained identity, never a second row."""
         with self.database.snapshot() as connection:

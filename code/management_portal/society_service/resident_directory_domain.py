@@ -39,8 +39,6 @@ from . import resident_domain_common
 
 RECENT_RESIDENT_MESSAGES = 120
 
-OWNER_DERIVED_RESIDENT_LIMIT = 0
-
 RESIDENT_RESOURCE_PROJECTION_SCHEMA = "tfi.resident-resource-projection.v1"
 
 RESIDENT_RESOURCE_ACTIVITY_LIMIT = 24
@@ -757,7 +755,6 @@ def get_resident_resource_projection(resident_id: str) -> dict[str, Any]:
     updated_at = max(
         (
             str(record.get("last_interaction_at") or ""),
-            str(record.get("interaction_updated_at") or ""),
             str(record.get("updated_at") or ""),
         ),
         default="",
@@ -777,11 +774,7 @@ def get_resident_resource_projection(resident_id: str) -> dict[str, Any]:
         "user_message_count": resident_lifecycle_domain.resident_user_message_count(target.resident_id),
         "created_at": str(record.get("created_at") or ""),
         "updated_at": updated_at,
-        "last_interaction_at": str(
-            record.get("last_interaction_at")
-            or record.get("interaction_updated_at")
-            or ""
-        ),
+        "last_interaction_at": str(record.get("last_interaction_at") or ""),
         "resident_state": resident_protocol_state,
         "resident_cursor": int(conversation.get("cursor") or 0),
         "errors": errors,

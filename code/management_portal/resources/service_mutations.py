@@ -7,8 +7,17 @@ from contextlib import nullcontext
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any
 
+from .errors import ResourceVersionConflict
 from .mutation import mutation_payload
 from .locking import serialized_mutation, mutation_projection_scope
+
+
+def resource_version(record: Mapping[str, Any]) -> str:
+    """Use the provider's version number, never a serialized audit record."""
+    value = record.get("version")
+    if isinstance(value, dict):
+        value = value.get("number")
+    return str(value if value is not None else record.get("updated_at") or "")
 
 if TYPE_CHECKING:
     from .service import ResourceService
@@ -323,6 +332,7 @@ def unregister(
     resource_type: str = "",
     wait_for_index: bool = False,
     index_timeout: float = 45.0,
+    expected_version: object = None,
 ) -> dict[str, Any]:
     identity = service._existing_identity(resource_id, resource_type, actor=actor)
     service._ensure_mutation_providers(identity.resource_type)
@@ -339,6 +349,13 @@ def unregister(
     # both cases.
     scope = nullcontext() if provider.owner_managed_unregistration else mutation_projection_scope(identity.resource_id)
     with scope:
+        if expected_version is not None:
+            # Compared with the resource's own version once this resource's mutation
+            # scope is held, immediately before the provider deletes it.
+            current = resource_version(service.get(identity.resource_id, actor=actor))
+            if current != str(expected_version):
+                raise ResourceVersionConflict(f"{identity.resource_id} 的版本已经变化",
+                                              expected_version=expected_version, current_version=current)
         result = provider.unregister(identity.resource_id, actor=str(actor or ""))
         with mutation_projection_scope(identity.resource_id):
             return service._complete_mutation(

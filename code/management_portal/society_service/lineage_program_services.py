@@ -45,7 +45,6 @@ class ProgramServiceHost(Protocol):
     _send_node_message: Callable[..., Any]
     _node_has_active_execution: Callable[..., Any]
     _register_program_agent_invocation: Callable[..., Any]
-    _notify_program_resident_invocation_terminal: Callable[..., Any]
     _completed_message_evidence: Callable[..., Any]
     dispatch_lineage_program_event: Callable[..., Any]
     _program_control_authority: Callable[..., Any]
@@ -173,9 +172,6 @@ class _ResidentDeliveryGateway(_BoundHost):
 
     def register_program_agent_invocation(self, lineage_id: str, target_id: str, message_id: str, event: lineage_primitives.LineageEvent, source_wire_id: str, actor: str) -> dict[str, Any]:
         return self._host._register_program_agent_invocation(lineage_id, target_id, message_id, event, source_wire_id, actor)
-
-    def notify_program_resident_invocation_terminal(self, lineage_id: str, resident_id: str, message_id: str, invocations: list[dict[str, Any]], *, status: str) -> bool:
-        return self._host._notify_program_resident_invocation_terminal(lineage_id, resident_id, message_id, invocations, status=status)
 
     def completed_message_evidence(self, node: dict[str, Any], message_id: str, actor: str) -> dict[str, Any]:
         return self._host._completed_message_evidence(node, message_id, actor)

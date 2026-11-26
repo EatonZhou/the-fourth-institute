@@ -13,8 +13,10 @@ from __future__ import annotations
 import logging
 import secrets
 from contextlib import nullcontext
+from pathlib import Path
 from typing import Any, Mapping
 
+from management_common.portal_paths import path as portal_path
 from management_common.provider_turn_artifacts import ToolEditArtifacts
 from management_portal.native_agent_transport import NativeAgentDetached, NativeAgentUnavailable
 from management_portal.resident_shell_environment import may_inherit_portal_database
@@ -24,11 +26,10 @@ from .backend_contracts import (
     BackendInvocation,
     BackendResult,
     _live_context_usage,
-    _positive_int,
     full_system_context,
 )
 from .context_seed import realize_portable_seed
-from .contracts import ExecutionRecoveryDeferred
+from .contracts import ExecutionRecoveryDeferred, positive_int
 from .harness_capabilities import SUBAGENTS
 from .native_session_compaction import NativeCompaction
 from .native_tool_events import NativeToolEventTranslator, provider_activity
@@ -176,8 +177,8 @@ def _report_context_usage(invocation: BackendInvocation, usage: Mapping[str, Any
     """Tell the Harness observer how full the context was after the turn."""
 
     context_usage = usage.get("context")
-    tokens = _positive_int(context_usage.get("inputTokens")) if isinstance(context_usage, Mapping) else 0
-    window = _positive_int(usage.get("modelContextWindow"))
+    tokens = positive_int(context_usage.get("inputTokens")) if isinstance(context_usage, Mapping) else 0
+    window = positive_int(usage.get("modelContextWindow"))
     if tokens and window:
         _report_tool_events(invocation, [{
             "method": "thread/tokenUsage/updated",
@@ -197,12 +198,12 @@ def compaction_note(outcome: Mapping[str, Any]) -> str:
 
     if not outcome.get("compacted"):
         return "没有足够的历史可以压缩，会话未改变。"
-    before = _positive_int(outcome.get("pre_tokens"))
-    after = _positive_int(outcome.get("context_tokens"))
+    before = positive_int(outcome.get("pre_tokens"))
+    after = positive_int(outcome.get("context_tokens"))
     if before and after:
         return f"上下文从约 {before:,} token 压缩到约 {after:,} token。"
-    items = _positive_int(outcome.get("shadowed_items"))
-    removed = _positive_int(outcome.get("shadowed_tokens"))
+    items = positive_int(outcome.get("shadowed_items"))
+    removed = positive_int(outcome.get("shadowed_tokens"))
     if items:
         note = f"较早的 {items} 条历史已换成一份摘要（约 {removed:,} token）"
         return note + (f"，压缩后上下文约 {after:,} token。" if after else "。")
@@ -218,6 +219,18 @@ class NativeSocketBackend:
     # commentary.
     marks_answer_phases: bool = True
     scopes_item_ids: bool = True
+    # The directory under ``provider-state`` that holds one folder per session
+    # of this Provider; empty when the Provider keeps its sessions elsewhere.
+    session_state_dir: str = ""
+
+    @classmethod
+    def session_residue(cls, session_id: str, config_dir: str = "") -> list[Path]:
+        """The Portal-owned paths a released session leaves behind (``session_retention``)."""
+
+        if not cls.session_state_dir:
+            return []
+        path = portal_path("provider-state") / cls.session_state_dir / session_id
+        return [path] if path.exists() else []
 
     def prepare_turn_tools(self, invocation, context):
         from .native_harness_tools import prepare_tools
@@ -403,7 +416,7 @@ class NativeSocketBackend:
                 backend_route_id=route_id,
                 config_dir=str(options.get("config_dir") or ""),
             )
-        context_tokens = _positive_int(outcome.get("context_tokens"))
+        context_tokens = positive_int(outcome.get("context_tokens"))
         return BackendResult(
             output={
                 "message": compaction_note(outcome),

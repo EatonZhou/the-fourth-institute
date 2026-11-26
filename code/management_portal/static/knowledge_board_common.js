@@ -6,7 +6,6 @@
 
 // ── markdown renderer (shared) ────────────────────────────────────────
 const renderMarkdown = (src, options = {}) => window.MD.render(src, options) || "<p></p>";
-const renderInlineMarkdown = (text) => window.MD.renderInline(text);
 const escapeHtml = (value) => window.PortalUIPrimitives.escapeHtml(value);
 const portalIcon = (name, options = {}) => window.PortalUIPrimitives.iconHtml(name, options);
 const knowledgeStateHtml = (message, options = {}) => window.PortalUIPrimitives.asyncStateHtml({
