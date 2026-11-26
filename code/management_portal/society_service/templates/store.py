@@ -100,6 +100,10 @@ def ensure_builtins():
             row["builtin_key"] for row in read_rows(connection, "installed_builtins")
         }
         for raw in definitions():
+            if raw['builtin_key'] == 'family_roles':
+                original = next((row for row in rows.values() if row.get('builtin_key') == 'family'), None)
+                if not original or original['body'].get('role_templates'):
+                    continue
             template = normalize(raw)
             key = raw["builtin_key"]
             template_id = raw["template_id"]

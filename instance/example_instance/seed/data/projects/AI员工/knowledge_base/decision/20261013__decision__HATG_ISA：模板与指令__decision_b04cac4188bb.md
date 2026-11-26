@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-10-13'
 version:
-  number: 43
+  number: 44
   created_at: "2026-10-13"
   created_by:
     user: ""
     agent: "resident_e8fc8c899f00"
-  updated_at: "2026-11-26T05:05:17Z"
+  updated_at: "2026-11-26T05:18:24Z"
   updated_by:
     user: ""
     agent: "resident_021703e3659a"
@@ -459,7 +459,7 @@ CreateTemplate.from_selection 选择这条职责时生成 family_duty 配方，�
 
 role 模板是单一 Resident 的可模板化配置、分层记忆和职责组合，不是 structure.roles 绑定声明。首批内置 Router 与 Steward 在共用目录的角色组；body 包含 role_key、resident（provider／account／settings）、memories（唯一 key、level、prompt）、duties（唯一 key、title、guide、prompt）及显式外部 bindings（Family、门面、名册、同伴、共享 member_done）。不携带会话、执行、账本、凭证或权限。角色可在工坊独立查看、Save As 编辑；未绑定所属 Family 不运行。
 
-Family 配方 role_templates 按角色键引用同一模板 ID；新组装解析版本并安装实际角色框及职责框，源模板更新不自动修改实例。family.router／steward 仍是绑定唯一真值，role_bindings 指向对应实例；角色框恰好包含该 Resident。配置只用于新节点初始化；对已有 Resident 施加角色不静默覆盖后端，模板含后端改动时明确要求经节点设置处理。未绑定、类型冲突或重复安装明确拒绝。旧 Family／未声明角色引用的旧配方不自动迁移，个人助手沿原生命周期。
+Family 配方 role_templates 按角色键引用同一模板 ID；新组装解析版本并安装实际角色框及职责框，源模板更新不自动修改实例。family.router／steward 仍是绑定唯一真值，role_bindings 指向对应实例；角色框恰好包含该 Resident。配置只用于新节点初始化；对已有 Resident 施加角色不静默覆盖后端，模板含后端改动时明确要求经节点设置处理。未绑定、类型冲突或重复安装明确拒绝。旧 Family／未声明角色引用的旧配方不自动迁移，个人助手沿原生命周期。 已自定义且尚未引用角色的旧内置 Family 配方保持原内容；此时额外提供 Family（角色组合）配方供默认新建使用，显式选择旧配方仍沿旧语义。未自定义的原内置配方直接引用角色，不重复提供该后备条目。
 
 角色源版本记录于角色及每条职责来源；实际指南只归职责的按需记忆，触发提示词只归职责参数，工作指南文件是这些记录的投影。UpdateDuty 与 ApplyLineageChanges 的 duty_changes 对 Family 角色职责支持 task_prompt，保留 ${facts} 并仅允许 facts、guide_path、guide_version。工坊原子预览／保存、冲突检查和草稿历史沿用同一职责责任方。
 

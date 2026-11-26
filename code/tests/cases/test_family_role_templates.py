@@ -162,6 +162,23 @@ def test_role_task_prompt_preview_and_invalid_save_are_atomic(lineage, charters)
     assert family_tasks.configured(after, parent)['route']['prompt'] == request['duty_changes']['task_prompt']
 
 
+def test_custom_legacy_family_recipe_is_kept_and_new_default_uses_composition(lineage, charters):
+    from management_portal.society_service.templates import store
+    from tests.cases.isa_test_support import ACTOR
+    source = store.get(familize.TEMPLATE_ID)
+    source['body'].pop('role_templates')
+    source['body']['goal'] = 'Keep the custom old recipe'
+    store.save(source, ACTOR, template_id=source['template_id'])
+    original = deepcopy(store.get(familize.TEMPLATE_ID))
+    fallback = next(t for t in ok('ListTemplates')['templates'] if t.get('builtin_key') == 'family_roles')
+    assert fallback['body']['role_templates']
+    f = ok('Familize', {'lineage_id': lineage, 'resident_ids': [resident(lineage, 'Member')]})
+    body, parent = current(lineage, f['family_id'])
+    assert len(family_roles.role_blocks(body, parent)) == 2
+    assert parent['template_id'] == fallback['template_id']
+    assert store.get(familize.TEMPLATE_ID) == original
+
+
 def test_whole_family_uninstall_uses_existing_stop_gate_and_cleans_role_sources(lineage, charters, monkeypatch):
     import pytest
     member = resident(lineage, 'Member')

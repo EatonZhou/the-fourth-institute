@@ -414,6 +414,12 @@ def definitions():
                 },
             }
         )
+    # Sites may have customized the original Family recipe. Never overwrite
+    # it to introduce composition; the ledger installs this fallback only on
+    # such sites, and the default constructor selects it for new Families.
+    from copy import deepcopy
+    composed = deepcopy(next(item for item in templates if item['builtin_key'] == 'family'))
+    templates.append({**composed, 'builtin_key': 'family_roles', 'title': 'Family（角色组合）'})
     templates.extend({'builtin_key': 'family_role_' + key, 'kind': 'role', 'category': 'structure',
                       'title': key.title(), 'description': '所属 Family 的独立角色；共享对象通过外部绑定接入。',
                       'targets': ['resident'], 'parameters': [], 'body': role.definition(key)} for key in role.KEYS)
