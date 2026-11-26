@@ -877,6 +877,17 @@ def test_multi_step_turn_separates_turn_sum_from_context_window_usage(agent):
     assert contract["model_context_window"] == 1000
 
 
+def test_pinned_cli_disables_its_updater_only_for_its_own_process(agent):
+    factory = mock.Mock()
+    backend = AntigravityBackend(client_factory=factory)
+    request = invocation(agent).request
+    env = {"GEMINI_HOME": str(agent)}
+    backend.open_client(request, "antigravity_one", env, cli_command=["agy", "acp"])
+    assert factory.call_args.kwargs["env"] == {**env, "AGY_CLI_DISABLE_AUTO_UPDATE": "true"}
+    backend.open_client(request, "antigravity_one", env)
+    assert factory.call_args.kwargs["env"] == {"GEMINI_HOME": str(agent)}
+
+
 def test_cli_rollout_follows_binding_and_permission_profile(tmp_path, monkeypatch):
     root = tmp_path / runtime.CLI_CANARY
     root.mkdir()

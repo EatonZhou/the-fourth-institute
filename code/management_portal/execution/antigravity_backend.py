@@ -241,6 +241,10 @@ class AntigravityBackend:
         self.client_factory = client_factory
 
     def open_client(self, request, account_id, env, *, cli_command=None, **callbacks):
+        if cli_command:
+            # Portal binds sessions to a checksum-verified CLI build. Its own
+            # background updater would replace that build between turns.
+            env = {**env, "AGY_CLI_DISABLE_AUTO_UPDATE": "true"}
         return self.client_factory(cli_command or command(), env=env, cwd=request.cwd, **callbacks)
 
     def prepare_context_seed(self, invocation):
