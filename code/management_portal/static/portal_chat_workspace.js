@@ -914,8 +914,8 @@
     });
     const historyPreviewUrl = () => state.messageRenderOptions?.previewUrlForPath || options.previewUrlForPath;
     const history = createInputHistory({
-      // The host reads the person's inputs from the server (ListInputHistory with
-      // resident_id or chatroom_id); a Chat without that has no input history.
+      // The host reads the person's inputs from the server (ListResidentInputHistory or
+      // ListChatroomInputHistory); a Chat without that has no input history.
       loadPage: options.onLoadInputHistory ? async (scope, pageToken) => {
         const page = await options.onLoadInputHistory(scope, pageToken);
         if (!page) return null;

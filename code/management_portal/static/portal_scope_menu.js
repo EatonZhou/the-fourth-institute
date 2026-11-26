@@ -279,7 +279,7 @@
           confirmLabel: t("删除"), tone: "danger",
         });
         if (!confirmed) return;
-        await guarded(owner, line, () => run("DeletePermissionEntry", {entry_id: button.dataset.deleteEntry}, "scope-menu-delete"));
+        await guarded(owner, line, () => run("DeletePermissionEntry", {entry_ids: [button.dataset.deleteEntry]}, "scope-menu-delete"));
         if (owner === context) await renderPackage(owner);
       }));
     }

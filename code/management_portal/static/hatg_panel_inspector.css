@@ -1005,32 +1005,3 @@ body:has(.hatgPrimitiveCard.dragging) .programInspectorPanel {
 }
 .programInspectorLifecycle dt { color: var(--muted); }
 .programInspectorLifecycle dd { min-width: 0; margin: 0; overflow-wrap: anywhere; color: var(--text); }
-
-.programRunObservation {
-  display: grid;
-  gap: 7px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 9px;
-  background: var(--panel-2);
-}
-.programRunObservation > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.programRunObservation > header strong { font-size: 10px; }
-.programRunObservation > header button { min-height: 24px; padding: 3px 8px; }
-.programRunObservation > p,
-.programRunObservation > small,
-.programRunInvocationList p { margin: 0; color: var(--muted); font-size: 8px; line-height: 1.4; }
-.programRunInvocationList { display: grid; gap: 5px; }
-.programRunInvocationList article {
-  display: grid;
-  gap: 2px;
-  border-left: 2px solid var(--program-inspector-tone);
-  padding: 5px 7px;
-  background: var(--panel);
-  font-size: 8px;
-}
-.programRunInvocationList article strong,
-.programRunInvocationList article span,
-.programRunInvocationList article small { overflow-wrap: anywhere; }
-.programRunInvocationList article small { color: var(--muted); }
-}

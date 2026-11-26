@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Any, Callable, NamedTuple
 
 from management_common.limit_contract import normalize_optional_limit
-from . import lineage_primitives
+from . import blackboard_storage, lineage_primitives
 from .lineage_program_arguments import normalize_invoke_profiles
 from .lineage_program_fields import _boolean, _client_key, _reject_unknown_fields
 from .lineage_program_vocabulary import (
@@ -111,11 +111,23 @@ def _target_ports(ends: _WireEnds, source_port: str, target_port: str) -> tuple[
     return source_port, target_port
 
 
+def _attach_ports(ends: _WireEnds, source_port: str, target_port: str) -> tuple[str, str]:
+    if not ends.source_resident:
+        raise ValueError("attach wire 的来源必须是当前 Lineage 的 Resident")
+    if ends.target_kind != "blackboard":
+        raise ValueError("attach wire 的目标必须是黑板")
+    source_port = source_port or "attach"
+    if source_port != "attach" or target_port:
+        raise ValueError("attach 把 Resident 直接绑定到黑板，不使用端口")
+    return source_port, target_port
+
+
 # Which ports each wire kind connects, and the default port of each end.
 _WIRE_PORT_RULES: dict[str, Callable[[_WireEnds, str, str], tuple[str, str]]] = {
     "route": _route_ports,
     "watch": _watch_ports,
     "target": _target_ports,
+    "attach": _attach_ports,
 }
 
 
@@ -208,6 +220,13 @@ def _normalize_wire(
     if kind == "watch":
         return result
     config = item.get("config") if isinstance(item.get("config"), dict) else {}
+    if kind == "attach":
+        _reject_unknown_fields(config, ("access",), "attach wire config")
+        access = _text(config.get("access"), 16).lower()
+        if access not in blackboard_storage.ATTACH_ACCESS:
+            raise ValueError("attach wire 的 access 必须是 read、write 或 read_write")
+        result["config"] = {"access": access}
+        return result
     if kind == "target":
         # A Target binds its object directly and has no delivery settings.
         _reject_unknown_fields(config, (), "target wire config")

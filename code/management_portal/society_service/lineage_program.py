@@ -18,7 +18,7 @@ from .lineage_program_event_scope import (
 from .lineage_program_fields import _reject_unknown_fields, _resident_id
 from .lineage_program_vocabulary import (
     EVENT_SOURCE_DELIVERY_OBSERVER_TYPES, EVENT_SOURCE_EFFECT_OBSERVER_TYPES,
-    EVENT_SOURCE_HANDOFF_OBSERVER_TYPES, EVENT_SOURCE_OBSERVER_TYPES, PACKET_OPERATOR_KINDS,
+    BLACKBOARD_EVENT_TYPES, EVENT_SOURCE_HANDOFF_OBSERVER_TYPES, EVENT_SOURCE_OBSERVER_TYPES, PACKET_OPERATOR_KINDS,
     _HANDOFF_ID_RE, _RESIDENT_ID_RE, authoring_event_type,
 )
 from .lineage_program_wires import _normalize_wire
@@ -120,6 +120,10 @@ def _watch_subject(
             if event_type not in EVENT_SOURCE_OBSERVER_TYPES:
                 raise ValueError(f"{event_type} Event Source 不能观察 Event Source")
             return {"subject_event_source_id": subject_id}
+        if subject_kind == "blackboard":
+            if event_type not in BLACKBOARD_EVENT_TYPES:
+                raise ValueError(f"{event_type} Event Source 不能观察黑板")
+            return {"subject_blackboard_id": subject_id}
         raise ValueError("Watch Subject 原语类型无效")
     if _HANDOFF_ID_RE.fullmatch(subject_id):
         if event_type not in EVENT_SOURCE_HANDOFF_OBSERVER_TYPES:

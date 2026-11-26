@@ -9,8 +9,10 @@
     "seed",
     ...PACKET_OPERATOR_KINDS,
     "loop",
+    "blackboard",
   ]);
-  const WIRE_TYPES = Object.freeze(["route", "target", "watch"]);
+  const WIRE_TYPES = Object.freeze(["route", "target", "watch", "attach"]);
+  const ATTACH_ACCESS = Object.freeze(["read", "write", "read_write"]);
   const ID_PREFIX = Object.freeze({
     event_source: "event_source",
     effect: "effect",
@@ -19,6 +21,7 @@
     selector: "selector",
     reducer: "reducer",
     loop: "loop",
+    blackboard: "blackboard",
     wire: "wire",
   });
 
@@ -187,6 +190,16 @@
           { id: "stop", type: "route", direction: "out", label: window.PortalI18n.t("Stop") },
         ],
       },
+      blackboard: {
+        title: window.PortalI18n.t("黑板"),
+        description: window.PortalI18n.t("Lineage 内 Resident 共用的读写消息板：连接 attach 的 Resident 按读写权限追加或读取条目；写入不会激活任何人。"),
+        icon: "blackboard",
+        tone: "slate",
+        id_prefix: ID_PREFIX.blackboard,
+        default_title: "新黑板",
+        default_config: { retention: { max_entries: 200, max_total_bytes: 1048576 } },
+        ports: [],
+      },
     },
     resident_kinds: {
       agent: {
@@ -195,6 +208,7 @@
         ports: [
           { id: "invoke", type: "invoke", direction: "in", label: "Invoke" },
           { id: "output", type: "route", direction: "out", label: "输出" },
+          { id: "attach", type: "attach", direction: "out", label: window.PortalI18n.t("黑板"), binding: "attach" },
         ],
       },
     },
@@ -230,7 +244,16 @@
         description: window.PortalI18n.t("Event Source 从观察端点直接绑定被观察对象。"),
         tone: "slate",
         source_kinds: ["event_source"],
-        target_kinds: ["agent", "event_source", "effect", "wire", "handoff"],
+        target_kinds: ["agent", "event_source", "effect", "wire", "handoff", "blackboard"],
+      },
+      attach: {
+        title: "Attach",
+        description: window.PortalI18n.t("把 Resident 连到黑板；连线的 access（read、write、read_write）决定它能读还是能写，不触发执行。"),
+        tone: "cyan",
+        source_kinds: ["agent"],
+        target_kinds: ["blackboard"],
+        delivery_config: [],
+        default_config: { access: "read_write" },
       },
     },
   };
@@ -578,6 +601,11 @@
             max_rounds: Math.max(1, Math.trunc(finiteNumber(sourceConfig.max_rounds, 5))),
             completion: text(sourceConfig.completion) === "rearm" ? "rearm" : "complete",
           }
+      : hasCanonicalConfig && kind === "blackboard"
+        ? {
+            ...(text(sourceConfig.description) ? { description: text(sourceConfig.description) } : {}),
+            retention: clone(object(sourceConfig.retention)),
+          }
       : PACKET_OPERATOR_KINDS.includes(kind)
         ? normalizePacketOperatorConfig(
             kind,
@@ -676,7 +704,9 @@
       label: text(source.label),
       config: ["route"].includes(type)
           ? deliveryConfig
-          : {},
+          : type === "attach"
+            ? { access: ATTACH_ACCESS.includes(text(sourceConfig.access)) ? text(sourceConfig.access) : "read_write" }
+            : {},
     };
   }
 
@@ -822,6 +852,7 @@
       route: window.PortalI18n.t("从这里输出消息或事件，沿 Route 交给下游输入。"),
       target: window.PortalI18n.t("从这里为动作绑定作用对象；这条绑定只指定目标，不会启动目标节点。"),
       watch: window.PortalI18n.t("从这里指定事件要监听的对象；监听关系本身不会启动该对象。"),
+      attach: window.PortalI18n.t("从这里连到黑板；连线的 access 决定这个 Resident 能读还是能写，不触发执行。"),
     };
     return direction === "out" ? text(outputHelp[type]) : "";
   }
@@ -914,6 +945,7 @@
       return [{ ...objectTarget, node_kind: subjectKind === "resident" ? "agent" : subjectKind }];
     }
     if (isRelation) return [];
+    if (source?.type === "attach") return kind === "blackboard" ? [objectTarget] : [];
     if (source?.type === "target") return [objectTarget];
     return portsForNode(item).filter(port => port.direction === "in");
   }
@@ -968,7 +1000,7 @@
         return { ok: false, reason: "watch_subject_occupied", source, target };
       }
     }
-    const binding = ["watch", "target"].includes(source.type);
+    const binding = ["watch", "target", "attach"].includes(source.type);
     if (!source.node_id || !target.node_id || !source.port_id || (!binding && !target.port_id)) {
       return { ok: false, reason: "missing_endpoint", source, target };
     }
@@ -1115,6 +1147,9 @@
       source_port: validation.source.port_id,
       target: validation.target.node_id,
       ...(validation.target.port_id ? { target_port: validation.target.port_id } : {}),
+      ...(validation.source.type === "attach"
+        ? { config: { access: ATTACH_ACCESS.includes(text(options.access)) ? text(options.access) : "read_write" } }
+        : {}),
       label: text(options.label),
     };
   }

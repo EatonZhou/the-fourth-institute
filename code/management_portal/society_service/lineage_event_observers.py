@@ -25,7 +25,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Callable, NamedTuple
 
 from . import (
-    lineage_message_events, lineage_primitives, lineage_program_observations,
+    lineage_blackboard_events, lineage_message_events, lineage_primitives, lineage_program_observations,
     lineage_program_runtime, lineage_program_schedules, lineage_release_events, trigger_paths,
 )
 from .lineage_event_conditions import (
@@ -52,6 +52,7 @@ class Facts:
     release_publications: dict[str, dict[str, Any]] = field(default_factory=dict)
     graph_state: dict[str, Any] | None = None
     context_pressures: dict[str, dict[str, Any]] = field(default_factory=dict)
+    blackboard_entries: dict[str, dict[str, Any]] = field(default_factory=dict)
 
 
 class Source(NamedTuple):
@@ -331,6 +332,57 @@ def _message_received(scan: Scan, source: Source) -> None:
             lineage_message_events.arrival_cursor(subject_id, arrival.get("occurrence_id") or arrival["message_id"]),
             **_value_commit(locator, previous_signature, signature,
                             lineage_message_events.cursor_value(arrival["cursor"])),
+        )
+        previous_signature = signature
+
+
+def _blackboard_entry_created(scan: Scan, source: Source) -> None:
+    """Entries written to the watched blackboard after the source's cursor, one Event each."""
+    prefetched = scan.facts.blackboard_entries.get(source.id)
+    if prefetched is None or source.exhausted:
+        return
+    locator = prefetched["locator"]
+    if prefetched["base_signature"] is None:
+        # First look: entries written later count, earlier ones do not.
+        observed = scan.observe(
+            source, locator,
+            lineage_blackboard_events.cursor_signature(prefetched["cursor"]),
+            lineage_blackboard_events.cursor_value(prefetched["cursor"]),
+        )
+        if observed["status"] == "baseline":
+            scan.baseline_count += 1
+        return
+    stored = lineage_program_observations.observation_state(scan.runtime_sources, source.id, source.subject)
+    if (
+        str(stored.get("state_locator") or "") != locator
+        or str(stored.get("state_signature") or "") != prefetched["base_signature"]
+    ):
+        # The baseline moved after the prefetch; the next pass rereads.
+        return
+    previous_signature = prefetched["base_signature"]
+    entries = prefetched["entries"]
+    wanted = str(source.config.get("entry_kind") or "")
+    if wanted:
+        entries = [entry for entry in entries if entry.get("kind") == wanted]
+    if not entries or not source.config.get("subscriber_routes"):
+        # Nothing to report, or nobody subscribes: the baseline still moves, so a
+        # subscriber connected later sees only what is written from then on.
+        if prefetched["cursor"] != prefetched["base_cursor"]:
+            scan.commit(
+                source, locator, previous_signature,
+                lineage_blackboard_events.cursor_signature(prefetched["cursor"]),
+                lineage_blackboard_events.cursor_value(prefetched["cursor"]),
+            )
+        return
+    for entry in entries:
+        signature = lineage_blackboard_events.cursor_signature(entry["seq"])
+        event = lineage_blackboard_events.entry_event(source.id, prefetched["board_id"], entry)
+        # Each Event advances the cursor only from the previous one, so an Event
+        # that is not accepted is read again.
+        scan.emit(
+            source, event, f"blackboard_entry:{prefetched['board_id']}:{entry['seq']}",
+            **_value_commit(locator, previous_signature, signature,
+                            lineage_blackboard_events.cursor_value(entry["seq"])),
         )
         previous_signature = signature
 
@@ -799,6 +851,7 @@ OBSERVERS: dict[str, Callable[[Scan, Source], None]] = {
     "file.changed": _file_changed,
     "residents.all_finished": _residents_all_finished,
     lineage_message_events.MESSAGE_RECEIVED_EVENT: _message_received,
+    lineage_blackboard_events.EVENT: _blackboard_entry_created,
     "resident.work_started": _work_started,
     "resident.work_duration_exceeded": _work_duration_exceeded,
     "resident.queue_pressure_exceeded": _queue_pressure_exceeded,

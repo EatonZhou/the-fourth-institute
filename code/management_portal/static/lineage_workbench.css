@@ -323,142 +323,9 @@
       button.residentSubgroupCount {
         cursor: pointer;
       }
-      .agentItem {
-        width: 100%;
-        text-align: left;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        background: var(--panel);
-        color: var(--text);
-        position: relative;
-        overflow: visible;
-      }
-      .agentItem.menuOpen { z-index: 12; }
-      .agentSelect {
-        width: 100%;
-        border: none;
-        background: transparent;
-        color: inherit;
-        padding: 10px 36px 10px 10px;
-        display: grid;
-        grid-template-columns: auto minmax(0, 1fr);
-        gap: 9px;
-        align-items: center;
-        text-align: left;
-        border-radius: 8px;
-      }
-      .agentSelect.noStatusDot { grid-template-columns: minmax(0, 1fr); }
-      .agentItem.active { border-color: var(--accent); box-shadow: inset 4px 0 0 var(--accent-2); background: color-mix(in srgb, var(--accent) 8%, var(--panel)); }
-      @keyframes portalRunningPulse {
-        0%, 100% { opacity: .34; transform: scale(.985); }
-        50% { opacity: 1; transform: scale(1); }
-      }
-      .agentItem.working,
-      .residentMemberItem.working {
-        border-color: color-mix(in srgb, var(--accent) 52%, var(--border));
-        background: color-mix(in srgb, var(--accent) 8%, var(--panel));
-      }
-      .agentItem.working::after,
-      .residentMemberItem.working::after {
-        content: "";
-        position: absolute;
-        inset: -1px;
-        border: 1px solid color-mix(in srgb, var(--accent) 52%, transparent);
-        border-radius: inherit;
-        box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 25%, transparent);
-        pointer-events: none;
-        animation: portalRunningPulse 2.4s ease-in-out infinite;
-      }
-      @media (prefers-reduced-motion: reduce) {
-        :root:not([data-portal-motion="full"]) .agentItem.working::after,
-        :root:not([data-portal-motion="full"]) .residentMemberItem.working::after {
-          animation: none;
-          opacity: .55;
-        }
-      }
-      :root[data-portal-motion="reduced"] .agentItem.working::after,
-      :root[data-portal-motion="reduced"] .residentMemberItem.working::after { animation: none; opacity: .55; }
-      .agentItem.unread:not(.active):not(.working),
-      .residentMemberItem.unread:not(.active):not(.working) {
-        border-color: color-mix(in srgb, var(--accent-2) 54%, var(--border));
-        background: color-mix(in srgb, var(--accent-2) 7%, var(--panel));
-      }
-      .sessionUnreadDot {
-        position: absolute;
-        right: 31px;
-        top: 8px;
-        width: 7px;
-        height: 7px;
-        border-radius: 999px;
-        background: var(--accent-2);
-        box-shadow: 0 0 0 2px var(--panel);
-        pointer-events: none;
-      }
-      .residentMemberItem .sessionUnreadDot {
-        right: 29px;
-        top: 7px;
-        width: 6px;
-        height: 6px;
-      }
       .agentMain { min-width: 0; overflow: hidden; }
       .agentTitle { display: block; min-width: 0; font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .agentTitle.withIcon {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-      }
-      .agentTitleText {
-        display: block;
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
       .agentMeta { display: block; min-width: 0; margin-top: 3px; color: var(--muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .residentMemberItem {
-        width: calc(100% - 8px);
-        min-width: 0;
-        position: relative;
-        border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
-        border-radius: 7px;
-        background: color-mix(in srgb, var(--panel-2) 54%, var(--panel));
-        color: var(--text);
-        overflow: visible;
-      }
-      .residentMemberItem:hover {
-        border-color: color-mix(in srgb, var(--accent) 46%, var(--border));
-        background: color-mix(in srgb, var(--accent) 7%, var(--panel));
-      }
-      .residentMemberItem.active {
-        border-color: var(--accent);
-        box-shadow: inset 3px 0 0 var(--accent-2);
-        background: color-mix(in srgb, var(--accent) 9%, var(--panel));
-      }
-      .residentMemberSelect {
-        width: 100%;
-        border: none;
-        background: transparent;
-        color: inherit;
-        padding: 7px 32px 7px 9px;
-        text-align: left;
-      }
-      .agentMenuBtn {
-        position: absolute;
-        right: 5px;
-        bottom: 5px;
-        width: 25px;
-        height: 23px;
-        border: none;
-        border-radius: 6px;
-        background: transparent;
-        color: var(--muted);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
-      }
-      .agentMenuBtn:hover,
-      .agentMenuBtn.active { background: var(--panel-2); color: var(--accent); }
-      .agentMenuBtn svg { width: 15px; height: 15px; stroke: currentColor; }
       .agentCardMenu {
         position: fixed;
         left: 0;
@@ -945,12 +812,6 @@
         padding: 0 9px 9px;
       }
       .residentLabel { color: var(--muted); font-size: 11px; font-weight: 700; line-height: 1.4; }
-      .residentFieldHead {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 6px;
-      }
       .residentInput, .residentSelect, .residentTextarea {
         min-width: 0;
         width: 100%;
@@ -1081,18 +942,4 @@
 /* Project and Lineage rows use the shared navigation tree rows
  * (portalNavRow, portal_workbench.css). The Resident entry cards above them
  * (Which Resident, the personal assistant) keep the Agent card. */
-.principalKind {
-  flex: 0 0 auto;
-  padding: 1px var(--portal-space-1);
-  border-radius: var(--portal-space-1);
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-  color: color-mix(in srgb, var(--accent) 35%, var(--text));
-  font-size: 10px;
-  line-height: 1.4;
-  font-weight: 600;
-}
-.principalUnavailableCard .agentSelect { display: block; cursor: default; }
-.principalUnavailableCard .agentMeta { white-space: normal; overflow-wrap: anywhere; }
-.principalUnavailableCard .principalAccessLock { position: absolute; right: 10px; bottom: 9px; width: 14px; height: 14px; color: var(--muted); }
-.agentItem.locked .agentTitle { color: var(--muted); }
 .whichResidentRequestDetails { color: var(--muted); font-size: inherit; }

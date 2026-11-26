@@ -10,7 +10,7 @@ from typing import Any, Callable
 from management_common.limit_contract import normalize_optional_limit
 from .effect_script_candidate import normalize_effect_config as normalize_effect_config
 from . import (
-    lineage_graph_state, lineage_primitive_definitions, lineage_primitives,
+    blackboard_storage, lineage_graph_state, lineage_primitive_definitions, lineage_primitives,
     lineage_recurring_schedule,
 )
 from .lineage_program_event_scope import RESIDENT_SCOPES, SCOPED_RESIDENT_EVENT_TYPES
@@ -415,6 +415,12 @@ def _release_misfire_policy(config: dict[str, Any]) -> dict[str, Any]:
     return {"misfire_policy": policy} if policy else {}
 
 
+def _blackboard_kind_filter(config: dict[str, Any]) -> dict[str, Any]:
+    # Named ``entry_kind``: a compiled Event Source already carries its component ``kind``.
+    kind = _text(config.get("entry_kind"), blackboard_storage.MAX_KIND_CHARS)
+    return {"entry_kind": kind} if kind else {}
+
+
 _RECURRING_SCHEDULE_FIELDS = (
     "recurrence_kind",
     "interval_seconds",
@@ -468,6 +474,7 @@ _EVENT_SOURCE_CONFIG_STEPS: tuple[tuple[frozenset[str], Callable[[dict[str, Any]
     (frozenset({"file.changed"}), _changed_file_path),
     (frozenset({"portal.release_published"}), _release_misfire_policy),
     (frozenset({"time.reached"}), _time_schedule),
+    (frozenset({"blackboard.entry_created"}), _blackboard_kind_filter),
 )
 
 
@@ -493,6 +500,7 @@ _COMPONENT_CONFIG_NORMALIZERS: dict[str, Callable[[dict[str, Any]], dict[str, An
     "effect": normalize_effect_config,
     "seed": _seed_config,
     "loop": _loop_config,
+    "blackboard": blackboard_storage.normalize_config,
 }
 
 

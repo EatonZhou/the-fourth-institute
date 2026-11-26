@@ -58,6 +58,7 @@
 
   function programWireTargetPlaceholder(wire) {
     const allowed = programWireAllowedTargetKinds(wire);
+    if (wire?.type === "attach") return "blackboard_…";
     const residentAllowed = ["agent", "role"].some(kind => (
       allowed.has(kind)
     ));
@@ -73,6 +74,7 @@
 
   function programWireTargetHint(wire) {
     const allowed = programWireAllowedTargetKinds(wire);
+    if (wire?.type === "attach") return window.PortalI18n.t("选择当前 HATG 的黑板；修改 ID 与在画布重新连接会更新同一条连线。");
     const names = [
       ...(allowed.has("agent") ? ["Agent"] : []),
       ...(allowed.has("role") ? ["Role"] : []),

@@ -118,8 +118,8 @@ def _validate_composed_fields(
                 )
 
 
-WATCH_KINDS = frozenset({"resident", "event_source", "wire", "effect", "handoff"})
-COMPONENT_KINDS = ("event_source", "effect", "filter", "selector", "reducer", "loop", "seed")
+WATCH_KINDS = frozenset({"resident", "event_source", "wire", "effect", "handoff", "blackboard"})
+COMPONENT_KINDS = ("event_source", "effect", "filter", "selector", "reducer", "loop", "seed", "blackboard")
 
 
 def _validate_event_types(payload: dict[str, Any]) -> None:

@@ -105,6 +105,8 @@
               : effectScriptLabel(config.script) || "编写要运行的脚本"
             : node.kind === "loop"
               ? `最多 ${config.max_rounds || 5} 轮`
+            : node.kind === "blackboard"
+              ? `最多 ${(config.retention || {}).max_entries || 200} 条`
             : `${config.operator_implementation === "resident" ? "Resident 语义执行" : "确定性规则执行"}${node.kind === "selector" ? ` · ${(config.branches || []).length} 个分支` : ""}`;
         if (event) {
           const runtime = programEventSourceRuntime(node.id);

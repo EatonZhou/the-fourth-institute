@@ -8,7 +8,6 @@
 
   const FIRST_RING = 320;
   const RING_STEP = 250;
-  const STANCE_ORDER = Object.freeze({ focus: 0, explore: 1, candidate: 2, watch: 3, concluded: 4, dropped: 5 });
 
   function tree(directions) {
     const known = new Set(directions.map(item => item.direction_id));
@@ -115,10 +114,5 @@
     return parts.join("；");
   }
 
-  function sortByStance(items) {
-    return [...items].sort((left, right) => (STANCE_ORDER[left.stance] ?? 9) - (STANCE_ORDER[right.stance] ?? 9));
-  }
-
-  window.PortalProjectMapLayout = Object.freeze({ tree, radial, bounds, heat, visible, counts, describe, sortByStance,
-    FIRST_RING, RING_STEP });
+  window.PortalProjectMapLayout = Object.freeze({ tree, radial, bounds, heat, visible, counts, describe });
 })();

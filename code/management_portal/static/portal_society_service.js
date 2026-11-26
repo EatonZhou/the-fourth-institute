@@ -335,6 +335,22 @@
       deleteProgramWire(payload = {}) {
         return editProgram(payload, { op: "delete", kind: "wire", id: payload.wire_id }, "wire-delete");
       },
+      listBoardEntries(payload = {}) {
+        // cursor "0" reads from the oldest kept entry instead of from this user's read position.
+        return execute("ListBoardEntries", { cursor: "0", limit: 200, ...pick(payload, ["lineage_id", "board_id", "cursor", "limit", "author_id", "kind"]) });
+      },
+      createBoardEntry(payload = {}) {
+        const lineageId = requiredLineageId(payload.lineage_id);
+        return mutate(lineageId, "CreateBoardEntry", {
+          lineage_id: lineageId, ...pick(payload, ["board_id", "text", "kind", "data", "refs", "supersedes", "expires_at"]),
+        }, { idempotency_key: payload.idempotency_key }, "board-entry", { definition: false, reload: false });
+      },
+      deleteBoardEntry(payload = {}) {
+        const lineageId = requiredLineageId(payload.lineage_id);
+        return mutate(lineageId, "DeleteBoardEntry", {
+          lineage_id: lineageId, ...pick(payload, ["board_id", "entry_id"]),
+        }, { idempotency_key: payload.idempotency_key }, "board-entry-retract", { definition: false, reload: false });
+      },
       listTriggerPaths(payload = {}) {
         return execute("ListTriggerPaths", pick(payload, ["lineage_id", "resident_id", "cursor", "limit"]));
       },

@@ -12,7 +12,7 @@ from typing import Any
 from management_common.database_time import decode_times
 from management_common.json_columns import json_value
 
-from . import edge_storage
+from . import blackboard_storage, edge_storage
 from .lineage_definition_contract import EDGE_FAMILIES, PROGRAM_SCHEMA
 from .definition_collections import column, declarations, decode, typed_values, upsert_many, validate_fields
 
@@ -160,6 +160,9 @@ def put(connection: Any, lineage_id: str, value: Mapping[str, Any]) -> None:
     component_rows = []
     for item in components:
         validate_fields(item, {"id", "kind", "x", "y", *COMPONENT_FIELDS}, "component")
+        if blackboard_storage.is_board(item):
+            # Blackboards are stored beside the graph tables (blackboard_storage).
+            continue
         component_nodes.append({"node_id": item["id"], "lineage_id": lineage_id, "node_type": item["kind"]})
         component_rows.append({"node_id": item["id"], **typed_values(item, COMPONENT_FIELDS)})
     _put_nodes(connection, component_nodes)
@@ -186,6 +189,9 @@ def put(connection: Any, lineage_id: str, value: Mapping[str, Any]) -> None:
     edge_ids = {e["id"] for e in all_edges}
     if len(edge_ids) != len(all_edges):
         raise ValueError("Graph edge IDs must be unique")
+    blackboard_storage.put(connection, lineage_id, value)
+    boards = blackboard_storage.board_ids(value)
+    all_edges = [e for e in all_edges if not blackboard_storage.is_binding(e, boards)]
     edge_rows, observations = [], []
     for item in all_edges:
         validate_fields(item, {"id", "type", "kind", "family", "source", "target", "source_port", "target_port", *EDGE_FIELDS, "items", "execution"}, "edge")
@@ -257,6 +263,9 @@ def read_many(connection: Any, lineage_ids: list[str]) -> dict[str, dict[str, An
         else:
             item["family"] = EDGE_FAMILIES[kind]
             result[row["lineage_id"]]["edges"].append(item)
+    for lid, boards in blackboard_storage.read_many(connection, lineage_ids).items():
+        result[lid]["program"]["components"].extend(boards["components"])
+        result[lid]["program"]["wires"].extend(boards["wires"])
     for value in result.values():
         value["nodes"].sort(key=lambda n: n["id"])
         for name in ("components",):
@@ -289,6 +298,7 @@ def active_objects(connection: Any, lineage_id: str) -> dict[str, str]:
                for n in active_nodes(connection, [lineage_id])}
     for row in connection.execute('SELECT edge_id,edge_type FROM lineage_edges WHERE lineage_id=%s AND deleted_at IS NULL', (lineage_id,)).fetchall():
         objects[row['edge_id']] = 'wire' if row['edge_type'] in WIRE_TYPES else 'edge'
+    objects.update(blackboard_storage.active_objects(connection, lineage_id))
     return objects
 
 
@@ -302,8 +312,9 @@ def assert_writable_ids(connection: Any, value: Mapping[str, Any]) -> None:
         LEFT JOIN residents r ON r.resident_id=n.node_id
         WHERE n.node_id=ANY(%s) AND (n.deleted_at IS NOT NULL OR r.deleted_at IS NOT NULL)
         UNION ALL SELECT edge_id FROM lineage_edges WHERE edge_id=ANY(%s) AND deleted_at IS NOT NULL""", (node_ids,edge_ids)).fetchall()
+    deleted = [r['id'] for r in deleted] + blackboard_storage.deleted_ids(connection, [*node_ids, *edge_ids])
     if deleted:
-        raise ValueError('Deleted graph IDs cannot be reused: ' + ', '.join(r['id'] for r in deleted))
+        raise ValueError('Deleted graph IDs cannot be reused: ' + ', '.join(deleted))
 
 
 def delete_missing(connection: Any, lineage_id: str, current: set[str], desired: set[str], now: str) -> None:
@@ -312,6 +323,7 @@ def delete_missing(connection: Any, lineage_id: str, current: set[str], desired:
         return
     connection.execute("UPDATE lineage_nodes SET deleted_at=%s WHERE lineage_id=%s AND node_id=ANY(%s) AND node_type<>'resident' AND deleted_at IS NULL", (now,lineage_id,removed))
     connection.execute("UPDATE lineage_edges SET deleted_at=%s WHERE lineage_id=%s AND edge_id=ANY(%s) AND deleted_at IS NULL", (now,lineage_id,removed))
+    blackboard_storage.delete_missing(connection, lineage_id, removed, now)
     connection.execute('DELETE FROM function_block_elements WHERE element_id=ANY(%s)', (removed,))
     connection.execute('DELETE FROM lineage_layout_positions WHERE lineage_id=%s AND object_id=ANY(%s)', (lineage_id,removed))
     for table in ("workspace_handoff_work", "context_absorption_work"):
@@ -324,5 +336,6 @@ def transfer(connection: Any, source: str, target: str, object_ids: list[str]) -
         from management_common.directory_dependencies import prepare_write
         prepare_write(connection)
     connection.execute('UPDATE function_blocks SET lineage_id=%s WHERE lineage_id=%s AND function_block_id=ANY(%s)', (target,source,object_ids))
+    blackboard_storage.transfer(connection, source, target, object_ids)
     for table, key in (('lineage_nodes','node_id'), ('lineage_edges','edge_id')):
         connection.execute(f'UPDATE {table} SET lineage_id=%s WHERE lineage_id=%s AND {key}=ANY(%s) AND deleted_at IS NULL', (target,source,object_ids))

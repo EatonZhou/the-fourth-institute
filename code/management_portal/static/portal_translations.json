@@ -42296,5 +42296,139 @@
   "当前身份没有读取知识标签的权限": {
     "en": "You do not have permission to read knowledge tags.",
     "zh-CN": "当前身份没有读取知识标签的权限"
-  }
+  },
+  "黑板": {
+    "en": "Blackboard",
+    "zh-CN": "黑板"
+  },
+  "共享消息板": {
+    "en": "Shared board",
+    "zh-CN": "共享消息板"
+  },
+  "拖动黑板到 HATG 画布": {
+    "en": "Drag a blackboard onto the HATG canvas",
+    "zh-CN": "拖动黑板到 HATG 画布"
+  },
+  "黑板（Blackboard）：Resident 之间读写共享的消息板，写入不激活任何人；用 Resident 的黑板端口连到它": {
+    "en": "Blackboard: a message board Residents read and write; writing wakes no one. Connect a Resident's blackboard port to it.",
+    "zh-CN": "黑板（Blackboard）：Resident 之间读写共享的消息板，写入不激活任何人；用 Resident 的黑板端口连到它"
+  },
+  "Lineage 内 Resident 共用的读写消息板：连接 attach 的 Resident 按读写权限追加或读取条目；写入不会激活任何人。": {
+    "en": "A message board shared by the Residents of a Lineage: Residents attached to it append or read entries according to their access; writing wakes no one.",
+    "zh-CN": "Lineage 内 Resident 共用的读写消息板：连接 attach 的 Resident 按读写权限追加或读取条目；写入不会激活任何人。"
+  },
+  "把 Resident 连到黑板；连线的 access（read、write、read_write）决定它能读还是能写，不触发执行。": {
+    "en": "Attach a Resident to a blackboard; the wire's access (read, write, read_write) decides whether it can read or write. It triggers nothing.",
+    "zh-CN": "把 Resident 连到黑板；连线的 access（read、write、read_write）决定它能读还是能写，不触发执行。"
+  },
+  "从这里连到黑板；连线的 access 决定这个 Resident 能读还是能写，不触发执行。": {
+    "en": "Connect from here to a blackboard; the wire's access decides whether this Resident can read or write. It triggers nothing.",
+    "zh-CN": "从这里连到黑板；连线的 access 决定这个 Resident 能读还是能写，不触发执行。"
+  },
+  "选择当前 HATG 的黑板；修改 ID 与在画布重新连接会更新同一条连线。": {
+    "en": "Choose a blackboard of this HATG; changing the ID or reconnecting on the canvas updates the same wire.",
+    "zh-CN": "选择当前 HATG 的黑板；修改 ID 与在画布重新连接会更新同一条连线。"
+  },
+  "观察的黑板": {
+    "en": "Watched blackboard",
+    "zh-CN": "观察的黑板"
+  },
+  "黑板新条目": {
+    "en": "Blackboard entry created",
+    "zh-CN": "黑板新条目"
+  },
+  "所选黑板上每写入一个条目产生一次 Event，不含正文：payload 有 entry_id、seq、author_id、kind。可按 kind 过滤；没有订阅者时不产生 Event。": {
+    "en": "One Event per entry written to the chosen blackboard, without its text: the payload has entry_id, seq, author_id and kind. Can be filtered by kind; with no subscriber no Event is produced.",
+    "zh-CN": "所选黑板上每写入一个条目产生一次 Event，不含正文：payload 有 entry_id、seq、author_id、kind。可按 kind 过滤；没有订阅者时不产生 Event。"
+  },
+  "只观察这个 kind": {
+    "en": "Only this kind",
+    "zh-CN": "只观察这个 kind"
+  },
+  "Lineage 内 Resident 共用的读写消息板：有写连线的 Resident 追加条目，有读连线的 Resident 自己决定何时读取；条目按保留策略清理，写入不激活任何人。没有输入输出端口。": {
+    "en": "A message board shared by the Residents of a Lineage: Residents with a write attachment append entries and those with a read attachment read when they choose; entries are cleaned up by the retention policy and writing wakes no one. It has no input or output ports.",
+    "zh-CN": "Lineage 内 Resident 共用的读写消息板：有写连线的 Resident 追加条目，有读连线的 Resident 自己决定何时读取；条目按保留策略清理，写入不激活任何人。没有输入输出端口。"
+  },
+  "新黑板": {
+    "en": "New blackboard",
+    "zh-CN": "新黑板"
+  },
+  "状态读取失败": {"zh-CN": "状态读取失败", "en": "Failed to read status"},
+  "查看共同回复": {"zh-CN": "查看共同回复", "en": "View shared replies"},
+  "Provider 未提供可核对的文件改动详情。": {"zh-CN": "Provider 未提供可核对的文件改动详情。", "en": "The Provider did not supply verifiable file change details."},
+  "Provider 未提供此文件的差异内容。": {"zh-CN": "Provider 未提供此文件的差异内容。", "en": "The Provider did not supply the diff for this file."},
+  "账号配置已保存，交接材料已冻结；上下文将在首条真实输入时交接，该输入仍需满足目标账号的额度要求。": {"zh-CN": "账号配置已保存，交接材料已冻结；上下文将在首条真实输入时交接，该输入仍需满足目标账号的额度要求。", "en": "Account settings saved. The handover material is frozen; the context is handed over with the first real input, which must still meet the target account's quota requirements."},
+  "账号配置已保存，上下文已完整保留。": {"zh-CN": "账号配置已保存，上下文已完整保留。", "en": "Account settings saved. The context is fully retained."},
+  "账号配置已保存，将在下一条真实输入时创建空白 Session。": {"zh-CN": "账号配置已保存，将在下一条真实输入时创建空白 Session。", "en": "Account settings saved. A blank Session will be created on the next real input."},
+  "账号配置已保存，请刷新查看上下文状态。": {"zh-CN": "账号配置已保存，请刷新查看上下文状态。", "en": "Account settings saved. Refresh to check the context status."},
+  "账号配置已保存，等待首条真实输入交接": {"zh-CN": "账号配置已保存，等待首条真实输入交接", "en": "Account settings saved; waiting for the first real input to hand over"},
+  "请选择目标后端的模型。": {"zh-CN": "请选择目标后端的模型。", "en": "Choose a model for the target backend."},
+  "正在加载工作区…": {"zh-CN": "正在加载工作区…", "en": "Loading workspace…"},
+  "工作区未能完成初始化，请刷新后重试。": {"zh-CN": "工作区未能完成初始化，请刷新后重试。", "en": "The workspace could not finish initializing. Refresh and try again."},
+  "模板商店": {"zh-CN": "模板商店", "en": "Template Store"},
+  "Workspace 视图暂未恢复：节点 Binding 尚未完整到齐，请重试。": {"zh-CN": "Workspace 视图暂未恢复：节点 Binding 尚未完整到齐，请重试。", "en": "The Workspace view is not restored yet: the node Bindings are not all available. Try again."},
+  "HATG 模板版本不匹配，请刷新页面后重试。": {"zh-CN": "HATG 模板版本不匹配，请刷新页面后重试。", "en": "The HATG template version does not match. Refresh the page and try again."},
+  "请把提示词模板拖到一个可访问的 Resident 节点或聊天输入框": {"zh-CN": "请把提示词模板拖到一个可访问的 Resident 节点或聊天输入框", "en": "Drag the prompt template onto an accessible Resident node or a chat input."},
+  "状态已保存": {"zh-CN": "状态已保存", "en": "Status saved"},
+  "没有可用模型": {"zh-CN": "没有可用模型", "en": "No models available"},
+  "其他额度待确认": {"zh-CN": "其他额度待确认", "en": "Other quotas pending confirmation"},
+  "其他额度已耗尽": {"zh-CN": "其他额度已耗尽", "en": "Other quotas exhausted"},
+  "摘要只显示部分额度，模型专属或其他周期的限额仍可能阻止调用。": {"zh-CN": "摘要只显示部分额度，模型专属或其他周期的限额仍可能阻止调用。", "en": "The summary shows only some quotas; model-specific or other-period limits may still block calls."},
+  "剩余 0%*，上次读数，待刷新确认": {"zh-CN": "剩余 0%*，上次读数，待刷新确认", "en": "0% left*, last reading, pending refresh"},
+  "剩余 0%": {"zh-CN": "剩余 0%", "en": "0% left"},
+  "见详情": {"zh-CN": "见详情", "en": "See details"},
+  "余额暂不可用": {"zh-CN": "余额暂不可用", "en": "Balance temporarily unavailable"},
+  "最大并行数": {"zh-CN": "最大并行数", "en": "Max parallelism"},
+  "保存并行数": {"zh-CN": "保存并行数", "en": "Save parallelism"},
+  "读取 Close 阈值": {"zh-CN": "读取 Close 阈值", "en": "Read Close threshold"},
+  "保存 Close 阈值": {"zh-CN": "保存 Close 阈值", "en": "Save Close threshold"},
+  "Mailbox 排队：待更新": {"zh-CN": "Mailbox 排队：待更新", "en": "Mailbox queue: pending update"},
+  "已提交，正在刷新状态": {"zh-CN": "已提交，正在刷新状态", "en": "Submitted; refreshing status"},
+  "删除结果未确认，请刷新后核对条目状态。": {"zh-CN": "删除结果未确认，请刷新后核对条目状态。", "en": "The deletion result is not confirmed. Refresh and check the entry status."},
+  "图已被其他操作修改，Watchboard 操作未提交。请检查最新状态后重新操作。": {"zh-CN": "图已被其他操作修改，Watchboard 操作未提交。请检查最新状态后重新操作。", "en": "The graph was changed by another operation, so the Watchboard operation was not submitted. Check the latest state and try again."},
+  "Watchboard 操作未提交，最新状态读取失败。请刷新后重新操作。": {"zh-CN": "Watchboard 操作未提交，最新状态读取失败。请刷新后重新操作。", "en": "The Watchboard operation was not submitted and the latest state could not be read. Refresh and try again."},
+  "预览失败": {"zh-CN": "预览失败", "en": "Preview failed"},
+  "暂无可访问的 Project。": {"zh-CN": "暂无可访问的 Project。", "en": "No accessible Projects."},
+  "正在读取聊天室。": {"zh-CN": "正在读取聊天室。", "en": "Loading chatrooms."},
+  "无法确认 Resident 状态，请稍后重试。": {"zh-CN": "无法确认 Resident 状态，请稍后重试。", "en": "Unable to confirm the Resident status. Try again later."},
+  "设置消息免打扰失败": {"zh-CN": "设置消息免打扰失败", "en": "Failed to set mute"},
+  "Solo 视图以外的成员不受影响。": {"zh-CN": "Solo 视图以外的成员不受影响。", "en": "Members outside the Solo view are not affected."},
+  "访问地址已复制。": {"zh-CN": "访问地址已复制。", "en": "Access address copied."},
+  "无法自动复制，请手动选择地址复制。": {"zh-CN": "无法自动复制，请手动选择地址复制。", "en": "Unable to copy automatically. Select the address and copy it manually."},
+  "此实例已禁用应用代理": {"zh-CN": "此实例已禁用应用代理", "en": "The application proxy is disabled for this instance"},
+  "正在读取解释页…": {"zh-CN": "正在读取解释页…", "en": "Loading the explanation page…"},
+  "汇报版本与资源地址不一致，请刷新后重试。": {"zh-CN": "汇报版本与资源地址不一致，请刷新后重试。", "en": "The report version does not match the resource address. Refresh and try again."},
+  "正在加载文档预览…": {"zh-CN": "正在加载文档预览…", "en": "Loading document preview…"},
+  "文档预览失败，请稍后重试或下载原文件查看。": {"zh-CN": "文档预览失败，请稍后重试或下载原文件查看。", "en": "Document preview failed. Try again later or download the original file."},
+  "Family 已变化，请重新打开菜单。": {"zh-CN": "Family 已变化，请重新打开菜单。", "en": "The Family changed. Reopen the menu."},
+  "在当前帐号额度用完时是否自动切换": {"zh-CN": "在当前帐号额度用完时是否自动切换", "en": "Whether to switch automatically when the current account's quota runs out"},
+  "开启后仅按默认帐号选择排序切换；关闭时额度不足会打开手动选择。未修改时沿用既有策略。": {"zh-CN": "开启后仅按默认帐号选择排序切换；关闭时额度不足会打开手动选择。未修改时沿用既有策略。", "en": "When on, switching follows only the default account selection order; when off, insufficient quota opens a manual choice. Leaving it unchanged keeps the existing policy."},
+  "无权限": {"zh-CN": "无权限", "en": "No permission"},
+  "成员的 Backend 或账号已变更，请重新打开设置。": {"zh-CN": "成员的 Backend 或账号已变更，请重新打开设置。", "en": "The member's Backend or account changed. Reopen the settings."},
+  "额度自动切换设置已保存。": {"zh-CN": "额度自动切换设置已保存。", "en": "Quota auto-switch setting saved."},
+  "Session 切换结果尚未确认，请刷新查看状态": {"zh-CN": "Session 切换结果尚未确认，请刷新查看状态", "en": "The Session switch result is not confirmed yet. Refresh to check the status."},
+  "Lineage 已创建，但 Familize 未完成。": {"zh-CN": "Lineage 已创建，但 Familize 未完成。", "en": "Lineage created, but Familize did not complete."},
+  "关闭工坊？": {"zh-CN": "关闭工坊？", "en": "Close the workshop?"},
+  "有未保存的修改": {"zh-CN": "有未保存的修改", "en": "There are unsaved changes"},
+  "保存失败，未保存的修改仍保留在编辑器中。": {"zh-CN": "保存失败，未保存的修改仍保留在编辑器中。", "en": "Save failed. The unsaved changes remain in the editor."},
+  "团队对话": {"zh-CN": "团队对话", "en": "Team chat"},
+  "无法确认这条授权回答的准备状态": {"zh-CN": "无法确认这条授权回答的准备状态", "en": "Unable to confirm the readiness of this authorization answer"},
+  "无法确认这条回答的任务凭证": {"zh-CN": "无法确认这条回答的任务凭证", "en": "Unable to confirm the task credential of this answer"},
+  "按需云算力": {"zh-CN": "按需云算力", "en": "On-demand cloud compute"},
+  "云存储": {"zh-CN": "云存储", "en": "Cloud storage"},
+  "RTL 仿真与 FPGA 设计": {"zh-CN": "RTL 仿真与 FPGA 设计", "en": "RTL simulation and FPGA design"},
+  "ASIC 后端与门级后仿": {"zh-CN": "ASIC 后端与门级后仿", "en": "ASIC backend and gate-level post-simulation"},
+  "FPGA 板卡下载与实板验证": {"zh-CN": "FPGA 板卡下载与实板验证", "en": "FPGA board download and on-board verification"},
+  "剩余计算单元": {"zh-CN": "剩余计算单元", "en": "Remaining compute units"},
+  "每小时消耗": {"zh-CN": "每小时消耗", "en": "Hourly burn"},
+  "活跃运行时": {"zh-CN": "活跃运行时", "en": "Active runtimes"},
+  "总容量": {"zh-CN": "总容量", "en": "Total capacity"},
+  "已用容量": {"zh-CN": "已用容量", "en": "Used capacity"},
+  "可用容量": {"zh-CN": "可用容量", "en": "Available capacity"},
+  "请选择团队": {"zh-CN": "请选择团队", "en": "Choose a team"},
+  "团队成员": {"zh-CN": "团队成员", "en": "Team members"},
+  "团队暂无成员": {"zh-CN": "团队暂无成员", "en": "The team has no members yet"},
+  "团队读取失败，请重试。": {"zh-CN": "团队读取失败，请重试。", "en": "Failed to read the team. Try again."},
+  "<span class=\"chatroomPinnedMark\" data-portal-icon=\"pin\" role=\"img\" aria-label=\"已置顶\" title=\"已置顶\"></span>": {"zh-CN": "<span class=\"chatroomPinnedMark\" data-portal-icon=\"pin\" role=\"img\" aria-label=\"已置顶\" title=\"已置顶\"></span>", "en": "<span class=\"chatroomPinnedMark\" data-portal-icon=\"pin\" role=\"img\" aria-label=\"Pinned\" title=\"Pinned\"></span>"},
+  "<span class=\"portalDocumentTabPin\" data-portal-icon=\"pin\" aria-label=\"已锁定\"></span>": {"zh-CN": "<span class=\"portalDocumentTabPin\" data-portal-icon=\"pin\" aria-label=\"已锁定\"></span>", "en": "<span class=\"portalDocumentTabPin\" data-portal-icon=\"pin\" aria-label=\"Locked\"></span>"}
 }

@@ -187,6 +187,23 @@
         if (response?.component) await selectAfterProjection(response, selectSaved, selection);
         return response;
       }
+      if (component.kind === "blackboard") {
+        const response = await applyProgramMutation(
+          mutation => societyService.saveProgramComponent({ ...mutation,
+            lineage_id: state.lineage.lineage_id,
+            expected_version: definitionRevisions.get(form),
+            component_id: component.id,
+            component: {
+              title: String(data.get("title") || "").trim(),
+              config: window.PortalLineageElementFields.blackboardConfigFromFields(form),
+            },
+          }),
+          "黑板已保存。",
+          { draftForm: form },
+        );
+        if (response?.component) await selectAfterProjection(response, selectSaved, selection);
+        return response;
+      }
       if (isPacketOperatorComponent(component)) {
         const { config, error } = window.PortalLineageElementFields.operatorConfigFromFields(form, component);
         if (error) {
@@ -261,6 +278,8 @@
           ? { kind: "resident", ids: watchedResidentSet }
         : watchKinds.has("resident")
           ? { kind: "resident", id: subjectResidentId }
+          : watchKinds.has("blackboard")
+            ? { kind: "blackboard", id: String(data.get("subject_blackboard_id") || "").trim().toLowerCase() }
           : watchKinds.has("effect")
             ? (watchedEffectSet ? { kind: "effect", ids: watchedEffectSet } : { kind: "effect", id: subjectEffectId })
             : watchKinds.has("wire") && deliverySubjectKind === "wire"
@@ -446,7 +465,9 @@
                   ...window.PortalLineageElementFields.deliveryConfigFromFields(form),
                 },
               }
-            : {}),
+            : wire.type === "attach"
+              ? { config: { access: String(data.get("attach_access") || "read_write") } }
+              : {}),
         },
       }), "连线已保存。");
     }

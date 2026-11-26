@@ -20,7 +20,7 @@ from typing import Any, Callable
 from management_common.limit_contract import limit_reached, normalize_optional_limit
 
 from . import (
-    lineage_graph_state, lineage_message_events, lineage_primitives, lineage_program_event_scope,
+    lineage_blackboard_events, lineage_graph_state, lineage_message_events, lineage_primitives, lineage_program_event_scope,
     lineage_program_observations, lineage_program_runtime, lineage_program_schedules,
     lineage_release_events, trigger_paths,
 )
@@ -154,6 +154,8 @@ def _read_facts(
         # the Lineage graph lock like the other Resident facts.
         message_arrivals=lineage_message_events.prefetch_message_arrivals(lineage_id, message_sources, actor_id),
         release_publications=lineage_release_events.prefetch(lineage_id, plan),
+        # Blackboard entries are read outside the Lineage graph lock too.
+        blackboard_entries=lineage_blackboard_events.prefetch(lineage_id, plan),
         # Graph State owns its own lock and persistence contract; this is its
         # narrow live projection.
         graph_state=lineage_graph_state.read_state(lineage_id) if state_condition_sources else None,

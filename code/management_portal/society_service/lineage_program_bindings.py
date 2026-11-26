@@ -192,6 +192,7 @@ def reconcile_event_source_watch_binding(
         "event_source",
         "effect",
         "wire",
+        "blackboard",
     }:
         raise ValueError("Watch Subject kind 无效")
 
@@ -220,7 +221,7 @@ def reconcile_event_source_watch_binding(
         and not _RESIDENT_ID_RE.fullmatch(subject_id)
     ):
         raise ValueError("Watch Resident 不在当前 HATG")
-    if subject_kind in {"event_source", "effect"}:
+    if subject_kind in {"event_source", "effect", "blackboard"}:
         subject = components.get(subject_id) or {}
         if subject.get("kind") != subject_kind:
             raise ValueError(f"Watch {subject_kind} 不在当前 HATG")

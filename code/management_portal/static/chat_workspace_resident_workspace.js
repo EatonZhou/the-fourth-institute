@@ -254,7 +254,7 @@
         return items.map((item, index) => ({ item, index, key: this.messageKey(item, index, items) }))
           .filter(entry => this.forwardSelected.has(entry.key))
           .map(entry => ({
-            // ForwardMessages reads each selected message by its IDs.
+            // ForwardMessagesToResident / ForwardMessagesToChatroom read each selected message by its IDs.
             resident_id: String(this.residentTarget?.resident_id || ""),
             message_id: String(entry.item?.message_id || entry.item?.id || ""),
             role: messageRole(entry.item),

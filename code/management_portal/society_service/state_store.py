@@ -12,7 +12,7 @@ from management_common import directory_dependencies
 from management_common.portal_database import portal_database
 from . import trigger_path_storage, family_storage, resident_storage, program_work_storage, domain_work_storage, relation_work_storage, resident_execution_storage
 from . import resident_delivery_storage, resident_prepared_inputs
-from . import facade_members
+from . import blackboard_storage, facade_members
 from . import graph_storage, definition_collections, lineage_metadata_storage, duty_storage
 from . import wire_delivery_storage
 from . import (
@@ -444,6 +444,8 @@ class LineageDataStore:
         duty_storage.create_schema(connection)
         family_storage.ensure_duty_schema(connection)
         facade_members.ensure_schema(connection)
+        # Blackboards joined the store after installation; their tables are created when absent.
+        blackboard_storage.ensure_schema(connection)
         resident_prepared_inputs.ensure_schema(connection)
         # Existing data is used by its owners. A metadata tag or an unrelated
         # table/column difference must not disable every Resident. Operations
@@ -566,9 +568,6 @@ class LineageDataStore:
 
     def remove_residents(self, tombstones: Iterable[Mapping[str, Any]]) -> list[str]:
         return self.residents.remove_residents(tombstones)
-
-    def delete_workspaces_under(self, paths, *, deleted_at: str, deleted_by: str) -> list[str]:
-        return self.residents.delete_workspaces_under(paths, deleted_at=deleted_at, deleted_by=deleted_by)
 
     def resident_deletion(self, resident_id: str) -> dict[str, Any] | None:
         return self.residents.resident_deletion(resident_id)

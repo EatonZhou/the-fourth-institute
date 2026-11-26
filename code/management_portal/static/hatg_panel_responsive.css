@@ -83,7 +83,6 @@
   .hatgTitleBlock { flex-basis: 180px; }
   .hatgViewSwitch { grid-template-columns: repeat(3, minmax(48px, 1fr)); }
   .hatgViewTab { padding: 4px 8px; text-align: center; }
-  .graphViewportHint { display: none; }
   .graphVisibilitySummary { display: none; }
 }
 
@@ -125,7 +124,7 @@
 .hatgViewTab span { min-width:0; font:inherit; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .graphNavigationBar { max-width:calc(100% - 2 * var(--hatg-navigation-inset)); font-size:11px; }
 .graphViewportCluster, .graphViewportControls, .graphNavigator { flex-wrap:nowrap; max-width:100%; }
-.graphNavigator .graphNavigatorToolBtn, .graphZoomResetBtn, .graphViewportHint { font-size:inherit; }
+.graphNavigator .graphNavigatorToolBtn, .graphZoomResetBtn { font-size:inherit; }
 .graphNodeSearchCluster { max-width:100%; min-width:0; }
 .graphNodeSearchResults { max-width:100%; }
 }

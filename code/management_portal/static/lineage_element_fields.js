@@ -44,6 +44,36 @@
     };
   }
 
+  // ---------- Blackboard ----------
+
+  function blackboardFieldsHtml(config = {}, readonly = false) {
+    const retention = config.retention || {};
+    const disabled = readonly ? " disabled" : "";
+    return i18n().html`<label><span>说明</span><textarea name="board_description" maxlength="4000" rows="3" placeholder="这块黑板放什么、什么时候该读；团队约定的 kind 取值也写在这里"${disabled}>${esc(config.description || "")}</textarea></label>
+      <label><span>最多条数</span><input name="board_max_entries" type="number" min="1" max="1000" value="${esc(retention.max_entries || 200)}"${disabled}></label>
+      <label><span>总字节上限</span><input name="board_max_total_bytes" type="number" min="65536" max="33554432" value="${esc(retention.max_total_bytes || 1048576)}"${disabled}></label>
+      <label><span>最长保留（秒，可空）</span><input name="board_max_age" type="number" min="1" value="${esc(retention.max_age || "")}"${disabled}></label>
+      <label><span>条目最长有效期（秒，可空）</span><input name="board_max_entry_ttl" type="number" min="1" value="${esc(retention.max_entry_ttl || "")}"${disabled}></label>
+      <p class="programInspectorNote">写入不会激活任何 Resident。超过条数或字节上限时从最旧的条目开始清理；撤回的条目保留序号。长期内容请写成文件或知识后在条目里引用。</p>`;
+  }
+
+  function blackboardConfigFromFields(root) {
+    const whole = (name, fallback) => {
+      const raw = String(value(root, name, "") || "").trim();
+      return raw === "" ? fallback : Math.trunc(Number(raw));
+    };
+    const retention = {
+      max_entries: whole("board_max_entries", 200),
+      max_total_bytes: whole("board_max_total_bytes", 1048576),
+    };
+    const maxAge = whole("board_max_age", null);
+    const ttl = whole("board_max_entry_ttl", null);
+    if (maxAge) retention.max_age = maxAge;
+    if (ttl) retention.max_entry_ttl = ttl;
+    const description = String(value(root, "board_description", "") || "").trim();
+    return { ...(description ? { description } : {}), retention };
+  }
+
   // ---------- Effect ----------
 
   // Non-streaming instructions an Effect script may call (decision_4adcc1ff2f2c “Effect：用脚本组合指令”).
@@ -54,7 +84,7 @@
   function ensureInstructionCatalog() {
     if (instructionCatalog) return Promise.resolve(instructionCatalog);
     if (!instructionCatalogLoading) {
-      instructionCatalogLoading = global.PortalInstructionClient.execute("ListInstructions", {})
+      instructionCatalogLoading = global.PortalInstructionClient.execute("ListInstructions", { detail: true })
         .then(result => i18n().definition(result))
         .then(result => {
           instructionCatalog = (result?.instructions || [])
@@ -921,6 +951,8 @@
     invokeProfileKey,
     loopFieldsHtml,
     loopConfigFromFields,
+    blackboardFieldsHtml,
+    blackboardConfigFromFields,
     ensureInstructionCatalog,
     instructionOptionsHtml,
     effectFieldsHtml,

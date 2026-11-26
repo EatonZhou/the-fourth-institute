@@ -11,7 +11,7 @@ from ..lineage_versions import DEFINITION_MUTATIONS, VERSION_DESCRIPTION
 
 from ..declarations import CATEGORIES, InstructionDeclaration, merge
 from . import (
-    conversation, environment, family, family_internal, function_block, isa, lineage_definition,
+    blackboard, conversation, environment, family, family_internal, function_block, isa, lineage_definition,
     lineage_run, lineage_state, mailbox, organization, permission, resident, resident_execution,
     resource, directory, user, script_run, template,
 )
@@ -47,6 +47,7 @@ def instruction_catalog() -> dict[str, InstructionDeclaration]:
         resident_execution.DECLARATIONS,
         lineage_definition.DECLARATIONS,
         lineage_state.DECLARATIONS,
+        blackboard.DECLARATIONS,
         lineage_run.DECLARATIONS,
         script_run.DECLARATIONS,
         function_block.DECLARATIONS,

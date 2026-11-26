@@ -438,4 +438,4 @@ a.projectResourceTile:hover { border-color: color-mix(in srgb, var(--accent) 45%
 .projectListHeading h1, .projectHeroTitle h1, .projectHeroMain h1 { font-size:var(--portal-page-title-size); font-weight:var(--portal-page-title-weight); line-height:var(--portal-page-title-line-height); }
 .projectGroupHead, .projectSectionHead h2 { font-size:var(--portal-section-title-size); font-weight:var(--portal-section-title-weight); line-height:var(--portal-section-title-line-height); font-family:var(--portal-font); }
 button.projectTag { font-family:inherit; }
-.projectListHeading p, .projectHeroSubtitle { font-size:var(--portal-subtitle-size); font-weight:var(--portal-subtitle-weight); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.projectListHeading p { font-size:var(--portal-subtitle-size); font-weight:var(--portal-subtitle-weight); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }

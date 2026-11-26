@@ -88,7 +88,7 @@
     const cleanResidentId = String(residentId || "").trim();
     if (cleanResidentId) {
       const forkButton = panel.querySelector(`[data-member-resident-id="${CSS.escape(cleanResidentId)}"]`);
-      if (forkButton) return forkButton.closest(".residentMemberItem") || forkButton;
+      if (forkButton) return forkButton;
       return panel.querySelector(`[data-resident-card="${CSS.escape(cleanResidentId)}"]`)
         || panel.querySelector(`[data-resident-id="${CSS.escape(cleanResidentId)}"]`);
     }

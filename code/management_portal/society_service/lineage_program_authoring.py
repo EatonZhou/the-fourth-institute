@@ -32,7 +32,7 @@ def new_component_details(payload: dict[str, Any]) -> tuple[str, str, str, dict[
         raise ValueError("未知的 HATG 程序组件类型")
     component_id = f"{kind}_{secrets.token_hex(6)}"
     title = _text(payload.get("title"), 120) or {
-        "event_source": "新 Event", "effect": "新 Effect", "seed": "新 Seed", "loop": "循环",
+        "event_source": "新 Event", "effect": "新 Effect", "seed": "新 Seed", "loop": "循环", "blackboard": "新黑板",
         **PACKET_OPERATOR_DEFAULT_TITLES,
     }[kind]
     defaults = {
@@ -40,6 +40,7 @@ def new_component_details(payload: dict[str, Any]) -> tuple[str, str, str, dict[
         "effect": DEFAULT_EFFECT_CONFIG,
         "loop": {"max_rounds": 3, "completion": "complete"},
         "seed": {},
+        "blackboard": {},
     }
     config = (
         _clone_json(payload.get("config"))

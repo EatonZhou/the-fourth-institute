@@ -1045,6 +1045,32 @@
         "required": true,
         "multiple": true
       }
+    },
+    "blackboard.entry_created": {
+      "category": "graph_control",
+      "title": "黑板新条目",
+      "description": "所选黑板上每写入一个条目产生一次 Event，不含正文：payload 有 entry_id、seq、author_id、kind。可按 kind 过滤；没有订阅者时不产生 Event。",
+      "fields": [
+        {
+          "path": "watch.subject",
+          "type": "watch-reference",
+          "label": "观察的黑板",
+          "required": true
+        },
+        {
+          "path": "config.entry_kind",
+          "type": "text",
+          "label": "只观察这个 kind",
+          "max_length": 32,
+          "placeholder": "claim"
+        }
+      ],
+      "watch_contract": {
+        "allowed_kinds": [
+          "blackboard"
+        ],
+        "required": true
+      }
     }
   },
   "component_types": {
@@ -1172,6 +1198,15 @@
           "kind": "route"
         }
       ]
+    },
+    "blackboard": {
+      "title": "黑板",
+      "description": "Lineage 内 Resident 共用的读写消息板：有写连线的 Resident 追加条目，有读连线的 Resident 自己决定何时读取；条目按保留策略清理，写入不激活任何人。没有输入输出端口。",
+      "config_fields": [
+        "description",
+        "retention"
+      ],
+      "ports": []
     }
   }
 }

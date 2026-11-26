@@ -69,6 +69,8 @@ def _event_source_watch_projection(
         key = "subject_effect_id"
     elif subject_component.get("kind") == "event_source":
         key = "subject_event_source_id"
+    elif subject_component.get("kind") == "blackboard":
+        key = "subject_blackboard_id"
     elif _HANDOFF_ID_RE.fullmatch(subject_id):
         key = "subject_handoff_id"
     else:
@@ -177,6 +179,31 @@ def _compiled_effect(component: dict[str, Any], wires: list[dict[str, Any]]) -> 
         "endpoint_routes": routes,
         "incoming_packet_wire_ids": _incoming_wire_ids(wires, component_id, {"route"}),
         "incoming_invocation_wire_ids": _incoming_wire_ids(wires, component_id, {"route"}),
+    }
+
+
+def _compiled_blackboard(component: dict[str, Any], wires: list[dict[str, Any]]) -> dict[str, Any]:
+    """A blackboard's retention and the Residents attached to it, with their access."""
+
+    board_id = str(component["id"])
+    config = authoring_component_config(component)
+    return {
+        "board_id": board_id,
+        "title": str(component.get("title") or ""),
+        "description": str(config.get("description") or ""),
+        "retention": deepcopy(config.get("retention") or {}),
+        "attachments": sorted(
+            (
+                {
+                    "wire_id": str(wire["id"]),
+                    "resident_id": str(wire["source"]),
+                    "access": str((wire.get("config") or {}).get("access") or ""),
+                }
+                for wire in wires
+                if wire["kind"] == "attach" and wire["target"] == board_id
+            ),
+            key=lambda item: item["wire_id"],
+        ),
     }
 
 
@@ -366,6 +393,11 @@ def _compile_program(program: object, node_list: list[dict[str, Any]]) -> dict[s
         for component in components
         if component["kind"] == "loop"
     }
+    blackboards = {
+        str(component["id"]): _compiled_blackboard(component, wires)
+        for component in components
+        if component["kind"] == "blackboard"
+    }
     packet_operators = {
         str(component["id"]): _compiled_packet_operator(component, wires, components_by_id)
         for component in components
@@ -397,6 +429,7 @@ def _compile_program(program: object, node_list: list[dict[str, Any]]) -> dict[s
         "operator_executors": operator_executors,
         "effects": effects,
         "loops": loops,
+        "blackboards": blackboards,
         "invoke_routes": invoke_routes,
         "wires": wires,
     }

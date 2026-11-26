@@ -149,6 +149,7 @@
     seed: strokeIcon('<path d="M12 21v-9M8 21h8"/><path d="M12 12C12 8 9.5 5 4 5c0 4.5 3 7 8 7Z"/><path d="M12 14.5c0-3.5 2.5-6 7.5-6 0 4-2.5 6-7.5 6Z"/>'),
     verify: strokeIcon('<path d="M9 11l2 2 4-5"/><circle cx="12" cy="13" r="9"/>'),
     component: strokeIcon('<path d="M5 5h14v14H5zM9 9h6M9 13h6"/>'),
+    blackboard: strokeIcon('<rect x="3.5" y="4.5" width="17" height="12" rx="1.5"/><path d="M7 9h6M7 12.5h9M8 20.5l1.5-4M16 20.5l-1.5-4"/>'),
     "theme-auto": strokeIcon('<path d="M12 3a9 9 0 1 0 9 9M12 3v18M12 7a5 5 0 0 1 0 10"/>'),
     "theme-light": strokeIcon('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2m-7.1-17.1 1.4 1.4m11.4 11.4 1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/>'),
     "theme-dark": strokeIcon('<path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5 7 7 0 1 0 20.5 14.5Z"/>'),

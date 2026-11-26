@@ -178,8 +178,6 @@
 .hatgToolboxToggle { flex:none; width:34px; height:34px; padding:7px; border-radius:50%; }
 .hatgToolboxToggle svg, .hatgToolboxHeaderActions svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.6; }
 .hatgToolbox { position:absolute; inset:var(--hatg-navigation-inset, 10px) auto 54px var(--hatg-navigation-inset, 10px); width:min(360px, calc(100% - 2 * var(--hatg-navigation-inset, 10px) - 44px)); min-width:0; box-sizing:border-box; z-index:10; display:flex; flex-direction:column; border:1px solid var(--border); border-radius:12px; background:var(--panel); box-shadow:0 8px 28px #0002; }
-.hatgToolboxSubbar { display:flex; flex-wrap:wrap; gap:6px; min-width:0; }
-.hatgToolboxSubbar > * { max-width:100%; }
 .hatgToolbox[hidden] { display:none; }
 .hatgToolboxHeader { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid var(--border); }
 .hatgToolboxHeader h3 { margin:0; font-size:14px; }

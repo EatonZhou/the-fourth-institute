@@ -365,6 +365,8 @@ class Schemes:
             migrate_three_plan_permissions(store)
             from .d066_migration import migrate
             migrate(store)
+            from .blackboard_migration import migrate as migrate_blackboard
+            migrate_blackboard(store)
         self._compiled: dict[tuple[str, str], CompiledScheme] = {}
         self._lock = threading.Lock()
 
@@ -448,10 +450,11 @@ class Schemes:
         """The rules version of a scheme (built-in schemes have version 0)."""
         if scheme_id in self._builtin:
             return 0
-        try:
-            return self.get(scheme_id, connection)["version"]
-        except SchemeNotFound:
-            return 0
+        # Every permission decision reads this: fetch the version alone, not the whole rules document.
+        with self.store.read(connection) as connection:
+            row = self.store.execute(
+                connection, "SELECT version FROM {s}.schemes WHERE scheme_id = %s", (scheme_id,)).fetchone()
+        return int(row["version"]) if row is not None else 0
 
     # -- where a copy came from (§5.11) ----------------------------------------------------
 

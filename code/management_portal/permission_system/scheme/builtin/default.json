@@ -544,6 +544,21 @@
     "DeleteSharedState": {
       "a": "@contributor"
     },
+    "CreateBoardEntry": {
+      "a": "@contributor"
+    },
+    "DeleteBoardEntry": {
+      "a": "@contributor"
+    },
+    "ListBoardEntries": {
+      "a": "@viewer"
+    },
+    "WatchBoard": {
+      "a": "@viewer"
+    },
+    "SetBoardReadPosition": {
+      "a": "@viewer"
+    },
     "DeleteUser": {
       "a": "@admin",
       "r": "@shared"
@@ -949,8 +964,11 @@
     "MoveDuties": {
       "a": "@contributor"
     },
-    "UpdateLineage": {
+    "UpdateLineage:lineage_id": {
       "a": "@contributor"
+    },
+    "UpdateLineage:changes.project_id": {
+      "a": "@admin"
     },
     "UpdateLineageLayout": {
       "a": "@contributor"
@@ -998,7 +1016,7 @@
       "r": "@shared"
     },
     "GetProviderAccountLogin": {
-      "a": "@viewer",
+      "a": "@admin",
       "r": "@shared"
     },
     "RegisterProviderAccount": {

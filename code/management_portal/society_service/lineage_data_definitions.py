@@ -8,7 +8,7 @@ from typing import Any
 from management_common.database_time import iso_time
 from .read_snapshot import request_cached
 from . import (
-    definition_collections, duty_storage, family_storage, graph_storage, lineage_data_runtime, lineage_metadata_storage,
+    blackboard_storage, definition_collections, duty_storage, family_storage, graph_storage, lineage_data_runtime, lineage_metadata_storage,
     lineage_state_domains, program_work_storage, trigger_path_storage, wire_delivery_storage,
 )
 from .lineage_data_columns import now_iso_millis
@@ -267,6 +267,9 @@ class LineageDefinitions:
                 "SELECT n.lineage_id FROM lineage_nodes n LEFT JOIN residents r ON r.resident_id=n.node_id WHERE n.node_id=%s AND n.deleted_at IS NULL AND (n.node_type<>'resident' OR r.deleted_at IS NULL) UNION ALL SELECT lineage_id FROM lineage_edges WHERE edge_id=%s AND deleted_at IS NULL",
                 (object_id,object_id),
             ).fetchone()
+            if row is None:
+                found = blackboard_storage.lineage_for_object(connection, object_id)
+                return found
         return str(row["lineage_id"]) if row is not None else ""
 
     def lineage_revision(self, lineage_id: str) -> int:
@@ -432,6 +435,7 @@ class LineageDefinitions:
                 trigger_path_storage.cancel(connection, path["trigger_path_id"], at=deleted_at)
             for table in (*program_work_storage.COLUMNS, *wire_delivery_storage.COLUMNS, "lineage_shared_state", "lineage_drafts"):
                 connection.execute(f'DELETE FROM {table} WHERE lineage_id=%s', (lineage_id,))
+            blackboard_storage.purge_lineage(connection, lineage_id)
             self.deletions.delete(lineage_id)
             connection.execute('DELETE FROM project_lineage_entries WHERE lineage_id=%s', (lineage_id,))
             self.project_graphs.synchronize(connection, projects)

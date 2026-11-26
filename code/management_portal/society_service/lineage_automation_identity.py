@@ -22,6 +22,7 @@ AUTOMATIC_EVENT_TYPES = {
     "resident.state_changed", "resident.work_duration_exceeded", "resident.work_started",
     "resident.work_finished", "resident.work_failed", "resident.work_cancelled",
     "residents.all_finished", "residents.all_idle", "workspace_handoff.ready", "workspace_handoff.failed",
+    "blackboard.entry_created",
 }
 
 

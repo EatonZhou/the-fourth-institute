@@ -14,7 +14,7 @@ from .lineage_program_event_scope import (
     RESIDENT_SUBJECT_EVENT_TYPES, event_source_resident_scope, event_source_subject_ids,
 )
 from .lineage_program_vocabulary import (
-    EVENT_SOURCE_DELIVERY_OBSERVER_TYPES, EVENT_SOURCE_EFFECT_OBSERVER_TYPES,
+    BLACKBOARD_EVENT_TYPES, EVENT_SOURCE_DELIVERY_OBSERVER_TYPES, EVENT_SOURCE_EFFECT_OBSERVER_TYPES,
     EVENT_SOURCE_HANDOFF_OBSERVER_TYPES, EVENT_SOURCE_OBSERVER_TYPES,
 )
 
@@ -201,6 +201,8 @@ def program_diagnostics(
             diagnostics.append(_diagnostic("event.missing_effect_subject", source_id, f"{event_type} 尚未指定要观察的 Effect"))
         if event_type in EVENT_SOURCE_HANDOFF_OBSERVER_TYPES and not source.get("subject_handoff_id"):
             diagnostics.append(_diagnostic("event.missing_handoff_subject", source_id, f"{event_type} 尚未指定要观察的工作区交接"))
+        if event_type in BLACKBOARD_EVENT_TYPES and not source.get("subject_blackboard_id"):
+            diagnostics.append(_diagnostic("event.missing_blackboard_subject", source_id, f"{event_type} 尚未指定要观察的黑板"))
         if not source.get("subscriber_routes") and event_type not in EVENT_SOURCE_OBSERVER_TYPES:
             watched = any(
                 (other or {}).get("subject_event_source_id") == source_id for other in event_sources.values()

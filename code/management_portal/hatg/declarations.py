@@ -11,7 +11,7 @@ fixed slot asks about (decision_b820faf42218 §3.2).
 from __future__ import annotations
 
 import copy
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Mapping
 
 from .contracts import invalid
@@ -27,6 +27,7 @@ CATEGORIES: dict[str, str] = {
     "resident_execution": "Resident 执行",
     "lineage_definition": "Lineage 定义",
     "lineage_state": "Lineage 共享状态",
+    "blackboard": "黑板",
     "lineage_run": "Lineage 运行",
     "script_run": "脚本运行",
     "function_block": "Function Block",
@@ -91,6 +92,9 @@ class Param:
     properties: Mapping[str, Mapping[str, Any]] | None = None
     items: Mapping[str, Any] | None = None
     allow_empty: bool = False
+    # A result field kept whole in the execution record: a replayed call
+    # returns it (object IDs and state flags are always kept).
+    replay: bool = False
 
     def __post_init__(self) -> None:
         if self.type not in PARAM_TYPES:
@@ -274,12 +278,19 @@ class InstructionDeclaration:
     decides: tuple[DecisionSlot, ...] = ()
     # Discovery is independent of object category, routing and authorization.
     discovery_group: str = "general"
+    # Derived once: validation, fingerprints and permission requests read these on every call.
+    _parameter_map: dict = field(init=False, repr=False, compare=False, default_factory=dict)
+    _replay_fields: tuple = field(init=False, repr=False, compare=False, default=())
+    _elements: tuple = field(init=False, repr=False, compare=False, default=())
 
     @property
     def elements(self) -> tuple[tuple[str, DecisionSlot], ...]:
-        return decision_elements(self.name, self.decides)
+        return self._elements
 
     def __post_init__(self) -> None:
+        object.__setattr__(self, "_parameter_map", {param.name: param for param in self.parameters})
+        object.__setattr__(self, "_replay_fields", tuple(param.name for param in self.result if param.replay))
+        object.__setattr__(self, "_elements", decision_elements(self.name, self.decides))
         if self.discovery_group not in DISCOVERY_GROUPS:
             raise RuntimeError(f"{self.name} 使用未知发现分组 {self.discovery_group}")
         # The category is checked when the catalog is built: a feature's
@@ -330,7 +341,12 @@ class InstructionDeclaration:
 
     @property
     def parameter_map(self) -> dict[str, Param]:
-        return {param.name: param for param in self.parameters}
+        return self._parameter_map
+
+    @property
+    def replay_fields(self) -> tuple[str, ...]:
+        """Result fields a replayed call returns as first reported."""
+        return self._replay_fields
 
     @property
     def owners(self) -> tuple[str, ...]:

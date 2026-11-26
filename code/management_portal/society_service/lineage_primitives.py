@@ -417,6 +417,9 @@ def normalize_event_payload(raw: object) -> dict[str, Any]:
         "publication_id",
         "previous_commit",
         "source",
+        "board_id",
+        "entry_id",
+        "kind",
     ):
         value = _text(item.get(key), MAX_EVENT_PAYLOAD_TEXT)
         if value:
@@ -446,6 +449,7 @@ def normalize_event_payload(raw: object) -> dict[str, Any]:
         "max_rounds",
         "relay_depth",
         "sequence",
+        "seq",
     ):
         try:
             value = int(item.get(key))

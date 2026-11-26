@@ -25,6 +25,8 @@ _EVENT_CONTRACT_FIELDS = {
     'subject_event_source_id': (True, lambda event_source: str(event_source.get('subject_event_source_id') or '')),
     'subject_wire_id': (True, lambda event_source: str(event_source.get('subject_wire_id') or '')),
     'subject_effect_id': (True, lambda event_source: str(event_source.get('subject_effect_id') or '')),
+    'subject_blackboard_id': (False, lambda event_source: str(event_source.get('subject_blackboard_id') or '')),
+    'entry_kind': (False, lambda event_source: str(event_source.get('entry_kind') or '')),
     'state_domain': (False, lambda event_source: str(event_source.get('state_domain') or '')),
     'threshold_percent': (False, lambda event_source: event_source.get('threshold_percent')),
     'duration_seconds': (False, lambda event_source: event_source.get('duration_seconds')),

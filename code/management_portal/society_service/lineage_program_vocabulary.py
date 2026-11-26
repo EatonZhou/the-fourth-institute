@@ -20,9 +20,11 @@ PROGRAM_COMPONENT_KINDS = {
     "effect",
     "seed",
     "loop",
+    "blackboard",
     *PACKET_OPERATOR_KINDS,
 }
-PROGRAM_WIRE_KINDS = {"route", "target", "watch"}
+# ``attach`` joins a Resident to a blackboard (decision_ed2c1ed5c245); it is a passive binding like Watch.
+PROGRAM_WIRE_KINDS = {"route", "target", "watch", "attach"}
 EVENT_SOURCE_TYPES = set(
     lineage_primitive_definitions.type_definitions("event")
 )
@@ -92,6 +94,9 @@ EVENT_SOURCE_EFFECT_OBSERVER_TYPES = set(
 EVENT_SOURCE_HANDOFF_OBSERVER_TYPES = set(
     lineage_primitive_definitions.event_types_watching("handoff")
 )
+BLACKBOARD_EVENT_TYPES = set(
+    lineage_primitive_definitions.event_types_watching("blackboard")
+)
 
 
 MAX_TITLE_CHARS = 120
@@ -114,7 +119,7 @@ STATE_CONDITION_OPERATORS = {
 }
 
 _COMPONENT_ID_RE = re.compile(
-    r"^(?:event_source|effect|seed|loop|filter|selector|reducer)_"
+    r"^(?:event_source|effect|seed|loop|blackboard|filter|selector|reducer)_"
     r"[a-z0-9][a-z0-9_-]{2,95}$"
 )
 _WIRE_ID_RE = re.compile(r"^wire_[a-z0-9][a-z0-9_-]{2,95}$")

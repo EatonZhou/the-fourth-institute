@@ -33,6 +33,7 @@ CATEGORY_DECISIONS = {
     "resident_execution": "2a3ff353165c",
     "lineage_definition": "4637ca4a69e2",
     "lineage_state": "71ba0494b93e",
+    "blackboard": "ed2c1ed5c245",
     "lineage_run": "68215b3a825b",
     "script_run": "8b510cbd9c58",
     "function_block": "5b5653c3eaa5",

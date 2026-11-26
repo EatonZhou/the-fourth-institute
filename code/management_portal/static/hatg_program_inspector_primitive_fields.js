@@ -74,6 +74,10 @@
         );
         return window.PortalI18n.html`<label data-primitive-field data-field-path="watch.subject"${watchVisibility}><span>${esc(field.label || window.PortalI18n.t("监听的 Resident"))}</span><span class="programReferenceControl"><input name="subject_resident_id" list="programEventResidentOptions" maxlength="80" autocomplete="off" spellcheck="false" placeholder="选择或粘贴任意 resident_* ID" value="${esc(subjectResidentId)}" data-program-reference-input data-reference-original="${esc(watchWire?.target || "")}" data-reference-status-id="programEventReferenceStatus" data-reference-noun="监听连线"${readonly ? " disabled" : ""}>${watchIsLocatable ? window.PortalI18n.html`<button type="button" data-program-reference-locate="${esc(watchWire.id)}" data-reference-focus-node-id="${esc(watchWire.target)}">定位</button>` : ""}</span><small id="programEventReferenceStatus" class="programReferenceStatus"></small><small>可直接观察其他 Lineage 的 Resident；当前 HATG 节点仅作为快捷候选。</small><datalist id="programEventResidentOptions">${programResidentOptions(context.typeId, config.state_domain || "intake")}</datalist></label>`;
       }
+      if (allowedKinds.includes("blackboard")) {
+        const boards = displayedProgram().components.filter(item => item.kind === "blackboard");
+        return window.PortalI18n.html`<label data-primitive-field data-field-path="watch.subject"><span>${esc(field.label || window.PortalI18n.t("观察的黑板"))}</span><select name="subject_blackboard_id"${readonly ? " disabled" : ""}><option value="">请选择黑板</option>${boards.map(item => window.PortalI18n.html`<option value="${esc(item.id)}"${watchWire?.target === item.id ? " selected" : ""}>${esc(item.title || item.id)}</option>`).join("")}</select><small>黑板上每写入一个条目产生一次 Event，不含正文；没有订阅者时不产生 Event。</small></label>`;
+      }
       if (allowedKinds.includes("effect") && contract.multiple) {
         const selected = new Set(displayedProgram().wires
           .filter(item => item.type === "watch" && item.source === component.id)

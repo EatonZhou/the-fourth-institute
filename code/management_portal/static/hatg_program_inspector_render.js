@@ -200,6 +200,77 @@
         panel.querySelector("[data-program-delete]")?.addEventListener("click", () => {
           deleteProgramComponent(component.id).catch(() => {});
         });
+      } else if (component?.kind === "blackboard") {
+        const config = component.config || {};
+        const attached = (state.lineage?.program?.wires || []).filter(item => item.kind === "attach" && item.target === component.id);
+        panel.dataset.inspectorKind = "blackboard";
+        panel.dataset.componentId = component.id;
+        panel.innerHTML = window.PortalI18n.html`<div class="programInspectorHead">
+          <span><em>BLACKBOARD</em><strong>黑板</strong></span>
+          <button type="button" data-program-inspector-close aria-label="关闭黑板设置" data-portal-icon="close"></button>
+        </div>
+        <form class="programInspectorForm" data-program-component-form>
+          ${programResourceAddressHtml("component", component.id)}
+          <label><span>名称</span><input name="title" maxlength="120" value="${esc(component.title || "")}" required${readonly ? " disabled" : ""}></label>
+          ${window.PortalLineageElementFields.blackboardFieldsHtml(config, readonly)}
+          <dl class="programInspectorLifecycle"><div><dt>已连接的 Resident</dt><dd>${attached.length ? attached.map(item => `${esc(item.source)}（${esc(item.config?.access || "read_write")}）`).join("、") : "尚无；从 Resident 的黑板端口连线到这里"}</dd></div></dl>
+          <div class="programInspectorActions" data-portal-inbox-avoid>
+            <button type="button" data-program-delete${readonly ? " disabled" : ""}>删除</button>
+            <button type="submit" data-program-save${readonly ? " disabled" : ""}>保存黑板</button>
+          </div>
+        </form>
+        <section class="programInspectorForm" data-blackboard-entries aria-label="黑板条目">
+          <div class="programInspectorActions" data-portal-inbox-avoid><strong>条目</strong><button type="button" data-blackboard-refresh>刷新</button></div>
+          <ol class="programInspectorList" data-blackboard-list></ol>
+          <label><span>写入条目（以你的身份）</span><textarea name="entry_text" rows="3" maxlength="16384"${readonly ? " disabled" : ""}></textarea></label>
+          <label><span>kind（可空）</span><input name="entry_kind" maxlength="32"${readonly ? " disabled" : ""}></label>
+          <div class="programInspectorActions" data-portal-inbox-avoid><button type="button" data-blackboard-write${readonly ? " disabled" : ""}>写入</button></div>
+        </section>`;
+        const lineageId = state.lineage?.lineage_id || "";
+        const list = panel.querySelector("[data-blackboard-list]");
+        const loadEntries = async () => {
+          const result = await societyService.listBoardEntries({ lineage_id: lineageId, board_id: component.id });
+          if (!list || !panel.contains(list)) return;
+          const entries = result?.entries || [];
+          list.innerHTML = entries.length
+            ? entries.map(entry => window.PortalI18n.html`<li data-seq="${esc(entry.seq)}"><small>#${esc(entry.seq)} · ${esc(entry.author_id)} · ${esc(formatDate(entry.created_at))}${entry.kind ? ` · ${esc(entry.kind)}` : ""}${entry.retracted ? " · 已撤回" : ""}</small>
+              <div>${entry.retracted ? "（已撤回）" : esc(entry.text)}</div>${entry.retracted || readonly ? "" : `<button type="button" data-blackboard-retract="${esc(entry.entry_id)}">撤回</button>`}</li>`).join("")
+            : "<li>还没有条目。</li>";
+        };
+        panel.querySelector("[data-blackboard-refresh]")?.addEventListener("click", () => loadEntries().catch(error => toast(error.message || String(error), "error")));
+        panel.querySelector("[data-blackboard-write]")?.addEventListener("click", async () => {
+          const textArea = panel.querySelector('[name="entry_text"]');
+          const text = String(textArea?.value || "").trim();
+          if (!text) return;
+          try {
+            await societyService.createBoardEntry({
+              lineage_id: lineageId, board_id: component.id, text,
+              kind: String(panel.querySelector('[name="entry_kind"]')?.value || "").trim() || undefined,
+            });
+            if (textArea) textArea.value = "";
+            await loadEntries();
+          } catch (error) {
+            toast(error.message || String(error), "error");
+          }
+        });
+        list?.addEventListener("click", async event => {
+          const entryId = event.target?.closest?.("[data-blackboard-retract]")?.dataset?.blackboardRetract;
+          if (!entryId) return;
+          try {
+            await societyService.deleteBoardEntry({ lineage_id: lineageId, board_id: component.id, entry_id: entryId });
+            await loadEntries();
+          } catch (error) {
+            toast(error.message || String(error), "error");
+          }
+        });
+        loadEntries().catch(() => {});
+        panel.querySelector("[data-program-component-form]")?.addEventListener("submit", event => {
+          event.preventDefault();
+          saveProgramComponentFromInspector(component.id, event.currentTarget, { onSaved }).catch(() => {});
+        });
+        panel.querySelector("[data-program-delete]")?.addEventListener("click", () => {
+          deleteProgramComponent(component.id).catch(() => {});
+        });
       } else if (component?.kind === "event_source") {
         const hasCanonicalConfig = Boolean(
           component.config
@@ -393,7 +464,13 @@
           ? "Route 传递消息、事件或两者组成的路由包。参数映射、排队策略和过期时间属于这条路线；筛选、分支和合并由相应原语处理。"
           : wire.type === "target"
             ? "Target 将 Effect 的具名端点绑定到对象，不触发执行。"
-            : "Watch 绑定 Event Source 观察的对象。";
+            : wire.type === "attach"
+              ? "Attach 把 Resident 连到黑板，不触发执行；access 决定它能读、能写，还是两者都行。"
+              : "Watch 绑定 Event Source 观察的对象。";
+        const attachAccess = wire.type === "attach" ? (wire.config?.access || "read_write") : "";
+        const attachFieldHtml = wire.type === "attach"
+          ? window.PortalI18n.html`<label><span>黑板权限</span><select name="attach_access"${readonly ? " disabled" : ""}><option value="read"${attachAccess === "read" ? " selected" : ""}>只读（read）</option><option value="write"${attachAccess === "write" ? " selected" : ""}>只写（write）</option><option value="read_write"${attachAccess === "read_write" ? " selected" : ""}>读写（read_write）</option></select></label>`
+          : "";
         panel.innerHTML = window.PortalI18n.html`<div class="programInspectorHead">
           <span><em>${esc(String(wire.type || "").toUpperCase())} WIRE</em><strong>配置连线</strong></span>
           <button type="button" data-program-inspector-close aria-label="关闭连线设置" data-portal-icon="close"></button>
@@ -403,6 +480,7 @@
           <label><span>标签</span><input name="label" maxlength="120" value="${esc(wire.label || "")}"${readonly ? " disabled" : ""}></label>
           <label><span>${programWireTargetLabel(wire)}</span><input name="target_endpoint_id" list="programWireTargetOptions" maxlength="110" autocomplete="off" spellcheck="false" placeholder="${programWireTargetPlaceholder(wire)}" value="${esc(wire.target)}"${readonly ? " disabled" : ""}><small>${esc(programWireTargetHint(wire))}</small></label>
           <datalist id="programWireTargetOptions">${programWireTargetOptions(wire)}</datalist>
+          ${attachFieldHtml}
           ${programDeliveryWireFieldsHtml(wire, readonly)}
           ${programExecutionExplanationHtml(wire.id)}
           <p class="programInspectorNote">${wireNote}</p>

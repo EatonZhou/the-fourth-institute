@@ -13,7 +13,7 @@ if (config.project) root.querySelector('#new').hidden = true;
 const controller = new AbortController();
 const $ = s => root.querySelector(s);
 const rowKey = itemKey;
-const esc = v => String(v ?? '').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const esc = v => window.PortalUIPrimitives.escapeHtml(v);
 const call = async (...args) => {
   controller.signal.throwIfAborted();
   const result = await window.PortalInstructionClient.execute(...args);

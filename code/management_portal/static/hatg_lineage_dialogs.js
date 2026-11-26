@@ -267,7 +267,8 @@
             lineage_id: state.lineage.lineage_id,
             title,
             description,
-            project_id: projectId,
+            // Moving a Lineage to another Project needs Project admin rights; an unchanged Project is not sent.
+            ...(projectId !== String(state.lineage.project_id || "") ? { project_id: projectId } : {}),
             leader_resident_id: $id("lineageLeaderInput").value,
             expected_version: Number(event.currentTarget.dataset.revision),
           })).lineage || {};

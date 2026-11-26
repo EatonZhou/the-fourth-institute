@@ -11,7 +11,7 @@ from functools import wraps
 
 from management_portal.hatg.kernel import InstructionKernel, Invocation, OwnerBinding
 
-from . import resource_creation, conversation, definition, execution, families, function_blocks, organization, residents, runs, shared_state, script_runs, templates, system_workflows
+from . import blackboard, resource_creation, conversation, definition, execution, families, function_blocks, organization, residents, runs, shared_state, script_runs, templates, system_workflows
 from .common import guard_definition_handler
 from ..lineage_definition_scope import guard_source_scope
 
@@ -31,7 +31,7 @@ def _scoped_handler(name, handler):
 
 def _handlers() -> dict[str, Any]:
     merged: dict[str, Any] = {}
-    for module in (resource_creation, residents, conversation, execution, definition, shared_state, runs, families, function_blocks, organization, script_runs, templates, system_workflows):
+    for module in (resource_creation, residents, conversation, execution, definition, shared_state, blackboard, runs, families, function_blocks, organization, script_runs, templates, system_workflows):
         for name, handler in module.HANDLERS.items():
             if name in merged:
                 raise RuntimeError(f"SocietyService 重复登记指令实现：{name}")
@@ -40,7 +40,7 @@ def _handlers() -> dict[str, Any]:
 
 
 def _streams() -> dict[str, Any]:
-    return {**conversation.STREAMS, **definition.STREAMS, **runs.STREAMS}
+    return {**conversation.STREAMS, **definition.STREAMS, **runs.STREAMS, **blackboard.STREAMS}
 
 
 def record_scope(inv: Invocation) -> tuple[str, str]:
