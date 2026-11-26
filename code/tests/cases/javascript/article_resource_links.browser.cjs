@@ -9,8 +9,12 @@ const routeScript = fs.readFileSync(0, 'utf8');
 const base = path.resolve(__dirname, '../../../management_portal/static');
 const id = 'article_0123456789ab';
 const nested = id + '/file/main.tex';
+const workspaceFile = 'workspace_3b0fde01f618/file/talk_tfi/';
+const fileAddresses = [workspaceFile + 'TFI_Agent_Dynamics_Talk_EN_v2.pptx',
+  workspaceFile + encodeURIComponent('第四大学_Agent动力学_汇报初稿_v1.pptx'),
+  workspaceFile + '中文 稿件.pptx'];
 const scripts = ['portal_state', 'portal_text', 'portal_i18n', 'portal_ui_primitives',
-  'portal_preview_contract', 'portal_resource_chips', 'markdown'];
+  'portal_preview_contract', 'portal_resource_chips', 'markdown', 'chat_workspace_message_content'];
 const html = '<!doctype html><meta charset="utf-8"><main id="chat"></main><output id="notice"></output>' +
   '<script src="/routes.js"></script>' + scripts.map(name => `<script src="/static/${name}.js"></script>`).join('') +
   `<script>
@@ -23,7 +27,11 @@ window.PortalAPI={raw:(url,options)=>fetch(url,options),get:async url=>{
 }};
 window.renderLinks=markdown=>{
   const chat=document.getElementById('chat');
-  chat.innerHTML=MD.render(markdown);
+  const renderer=PortalChatWorkspaceMessageContent.createMessageContent({
+    escapeHtml:PortalUIPrimitives.escapeHtml,resourceChips:PortalResourceChips,
+  });
+  chat.innerHTML=renderer.renderMessageContent({role:'assistant',content_parts:[{type:'text',text:markdown}]},
+    {renderMarkdown:source=>MD.render(source)});
   PortalResourceChips.enhance(chat,{onResourcePreview:async request=>{
     previews.push({address:request.address,document:await request.load()});return true;
   }});
@@ -45,9 +53,12 @@ window.renderLinks=markdown=>{
     }
     if (url.pathname === '/api/resources/reference') {
       const address = url.searchParams.get('address');
+      const office = address.startsWith(workspaceFile);
       res.writeHead(denied ? 403 : 200, {'Content-Type':'application/json'});
       return res.end(JSON.stringify(denied ? {error:'无权读取'} : {
-        resource_type:'article',title:'Fixture paper',content_kind:'text',media_type:'text/plain',filename:'main.tex',
+        resource_type:office ? 'workspace' : 'article',title:'Fixture paper',content_kind:office ? 'binary' : 'text',
+        media_type:office ? 'application/vnd.openxmlformats-officedocument.presentationml.presentation' : 'text/plain',
+        filename:office ? decodeURIComponent(address.split('/').at(-1)) : 'main.tex',
         url: address === id ? '/resource/article?item=' + id : '/api/resources/content?address=' + encodeURIComponent(address),
       }));
     }
@@ -101,6 +112,47 @@ window.renderLinks=markdown=>{
     assert.equal(await page.evaluate(() => previews[0].address), nested);
     assert.match(await page.evaluate(() => previews[0].document.content), /documentclass/);
     assert.equal(new URL(page.url()).pathname, '/lineage');
+
+    // A whole inline-code address is a reference, including the nested file path.
+    // Use the reported English and encoded Chinese addresses, plus unencoded spaces.
+    const reply = fileAddresses.map(address => '`' + address + '`').join('\n\n');
+    await reset(reply);
+    const chips = page.locator('#chat .portalResourceChip');
+    assert.equal(await chips.count(), fileAddresses.length);
+    assert.deepEqual(await chips.locator('code').allTextContents(), fileAddresses, 'preserve reply text');
+    const rendered = await page.locator('#chat').innerHTML();
+    await page.evaluate(() => PortalResourceChips.enhance(document.getElementById('chat')));
+    assert.equal(await chips.count(), fileAddresses.length, 'repeated enhancement never nests links');
+    // Recreate from the same persisted reply, as on refresh, restoring the preview host.
+    await reset(reply);
+    assert.equal(await page.locator('#chat').innerHTML(), rendered);
+    for (let i = 0; i < fileAddresses.length; i += 1) {
+      const expected = await chips.nth(i).getAttribute('data-resource-address');
+      assert.equal(decodeURIComponent(expected), decodeURIComponent(fileAddresses[i]));
+      assert.equal(await chips.nth(i).getAttribute('href'), '/r/' + encodeURIComponent(expected));
+      await chips.nth(i).click();
+      await page.waitForFunction(count => previews.length === count, i + 1);
+      const preview = await page.evaluate(i => previews[i], i);
+      assert.equal(preview.address, expected);
+      assert.equal(preview.document.kind, 'office');
+      assert.equal(new URL(preview.document.preview_url, origin).searchParams.get('address'), expected);
+      assert.equal(new URL(preview.document.preview_url, origin).searchParams.get('preview'), 'pdf');
+      assert.equal(new URL(preview.document.download_url, origin).searchParams.has('preview'), false);
+      assert.equal(new URL(page.url()).pathname, '/lineage', 'file preview stays in Chat');
+    }
+    await reset('`' + id + '`\n\n```text\n' + fileAddresses[0] + '\n```\n\n' +
+      '`cat ' + fileAddresses[0] + '`\n\n`/tmp/' + fileAddresses[0] + '`');
+    await page.evaluate(address => {
+      const span = document.createElement('span');
+      span.setAttribute('data-resource-chip-skip', '');
+      const code = document.createElement('code');
+      code.textContent = address;
+      span.append(code);
+      document.getElementById('chat').append(span);
+      PortalResourceChips.enhance(document.getElementById('chat'));
+    }, fileAddresses[0]);
+    assert.equal(await chips.count(), 1, 'root IDs still work; code blocks, commands and local paths stay literal');
+    assert.equal(await page.locator('#chat pre a, #chat [data-resource-chip-skip] a').count(), 0);
 
     await reset('[打开论文](' + id + ')');
     // Even a successful hover cache cannot authorize a later click.

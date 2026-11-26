@@ -402,8 +402,8 @@
         code.closest("pre, a, button")
         || code.closest("[data-resource-chip-skip]")
       ) return;
-      const address = String(code.textContent || "").trim();
-      if (!isRootId(address) && !navigationReferenceRoute(address)) return;
+      const address = normalizePortalReference(code.textContent);
+      if (!address) return;
       const chip = resourceChipElement(address);
       if (!chip) return;
       code.replaceWith(chip);
