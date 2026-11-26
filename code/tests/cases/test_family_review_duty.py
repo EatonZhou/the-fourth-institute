@@ -130,6 +130,28 @@ def test_owned_review_effect_retains_scoped_facade_identity(team):
                lineage_id=body['lineage_id'], event=SimpleNamespace(type='time.reached')).caller == context.caller
 
 
+@pytest.mark.parametrize(("table", "column"), [
+    (None, None),
+    ("families", "role_bindings"),
+    ("function_blocks", "role_json"),
+])
+def test_duty_schema_only_locks_tables_with_missing_columns(isolate_portal_databases, table, column):
+    from management_portal.society_service.state_store import LineageDataStore, lineage_data_schema_matches
+
+    database = LineageDataStore().database
+    if table:
+        database.write(lambda connection: connection.execute(f"ALTER TABLE {table} DROP COLUMN {column}"))
+    with database.transaction() as connection:
+        LineageDataStore(database=database)
+        actual = connection.execute("""
+            SELECT c.relname FROM pg_locks l JOIN pg_class c ON c.oid=l.relation
+            WHERE l.pid=pg_backend_pid() AND l.granted AND l.mode='AccessExclusiveLock'
+            AND l.relation IN ('families'::regclass, 'function_blocks'::regclass)
+        """).fetchall()
+        assert {row["relname"] for row in actual} == ({table} if table else set())
+        assert lineage_data_schema_matches(connection)
+
+
 def test_additive_schema_upgrade_leaves_existing_family_in_legacy_mode(lineage, charters):
     from management_common import directory_dependencies
     from management_portal.society_service.state_store import get_lineage_data_store, LineageDataStore, lineage_data_schema_matches

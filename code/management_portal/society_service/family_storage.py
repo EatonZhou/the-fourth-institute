@@ -14,10 +14,29 @@ RECOVERY_INDEXES = {"family_steward_recovery_idx": "ON family_residents(resident
 
 
 def ensure_duty_schema(connection: Any) -> None:
-    """Additive upgrade; existing Families retain legacy generation until opted in."""
-    connection.execute("ALTER TABLE families ADD COLUMN IF NOT EXISTS independent_duties TEXT[] NOT NULL DEFAULT '{}'")
-    connection.execute("ALTER TABLE families ADD COLUMN IF NOT EXISTS role_bindings JSONB NOT NULL DEFAULT '{}'::jsonb")
-    connection.execute("ALTER TABLE function_blocks ADD COLUMN IF NOT EXISTS role_json JSONB")
+    """Add absent columns under the Lineage store's schema-initialization lock."""
+    existing = {
+        (row["table_name"], row["column_name"])
+        for row in connection.execute(
+            "SELECT table_name, column_name FROM information_schema.columns "
+            "WHERE table_schema=current_schema() AND table_name IN ('function_blocks', 'families')"
+        ).fetchall()
+    }
+    # Match the graph read's lock order when both tables need upgrading.
+    for table, columns in (
+        ("function_blocks", {"role_json": "JSONB"}),
+        ("families", {
+            "independent_duties": "TEXT[] NOT NULL DEFAULT '{}'",
+            "role_bindings": "JSONB NOT NULL DEFAULT '{}'::jsonb",
+        }),
+    ):
+        additions = [
+            f"ADD COLUMN {column} {definition}"
+            for column, definition in columns.items()
+            if (table, column) not in existing
+        ]
+        if additions:
+            connection.execute(f"ALTER TABLE {table} {', '.join(additions)}")
 
 
 def operating_role_ids(connection: Any) -> list[str]:
