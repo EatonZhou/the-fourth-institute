@@ -169,11 +169,25 @@ def put(connection: Any, lineage_id: str, value: Mapping[str, Any]) -> None:
              json_text(item.get("config") or {}, ensure_ascii=False, sort_keys=True, separators=(",", ":"))))
 
 
+def has_definition_tables(connection: Any) -> bool:
+    """Whether the blackboard definition tables exist in the connected schema.
+
+    A schema that predates blackboards (a read-only cold read before SocietyService has
+    run ``ensure_schema``) has no persisted blackboards.  Only the missing relation is
+    answered here; any other SQL error still propagates from the real statements.
+    """
+
+    row = connection.execute(
+        "SELECT to_regclass('lineage_blackboards') IS NOT NULL AND "
+        "to_regclass('lineage_blackboard_bindings') IS NOT NULL AS present").fetchone()
+    return bool(row["present"])
+
+
 def read_many(connection: Any, lineage_ids: list[str]) -> dict[str, dict[str, list[dict]]]:
     """Per Lineage: the blackboard components and attach wires, in definition form."""
 
     result: dict[str, dict[str, list[dict]]] = {lid: {"components": [], "wires": []} for lid in lineage_ids}
-    if not lineage_ids:
+    if not lineage_ids or not has_definition_tables(connection):
         return result
     for row in connection.execute(
         "SELECT * FROM lineage_blackboards WHERE lineage_id=ANY(%s) AND deleted_at IS NULL ORDER BY board_id",
@@ -202,6 +216,8 @@ def read_many(connection: Any, lineage_ids: list[str]) -> dict[str, dict[str, li
 
 
 def active_objects(connection: Any, lineage_id: str) -> dict[str, str]:
+    if not has_definition_tables(connection):
+        return {}
     objects = {row["board_id"]: "component" for row in connection.execute(
         "SELECT board_id FROM lineage_blackboards WHERE lineage_id=%s AND deleted_at IS NULL", (lineage_id,)).fetchall()}
     objects.update({row["wire_id"]: "wire" for row in connection.execute(
@@ -213,7 +229,7 @@ def active_objects(connection: Any, lineage_id: str) -> dict[str, str]:
 def deleted_ids(connection: Any, object_ids: list[str]) -> list[str]:
     """Identities of deleted blackboards or attach wires among ``object_ids`` (never reusable)."""
 
-    if not object_ids:
+    if not object_ids or not has_definition_tables(connection):
         return []
     return [row["id"] for row in connection.execute(
         "SELECT board_id AS id FROM lineage_blackboards WHERE board_id=ANY(%s) AND deleted_at IS NOT NULL "
@@ -223,7 +239,7 @@ def deleted_ids(connection: Any, object_ids: list[str]) -> list[str]:
 
 def delete_missing(connection: Any, lineage_id: str, removed: Iterable[str], now: Any) -> None:
     ids = sorted(set(removed))
-    if not ids:
+    if not ids or not has_definition_tables(connection):
         return
     when = instant(now) if now else datetime.now(timezone.utc)
     connection.execute(
@@ -243,6 +259,8 @@ def delete_missing(connection: Any, lineage_id: str, removed: Iterable[str], now
 def purge_lineage(connection: Any, lineage_id: str) -> None:
     """A deleted Lineage takes its blackboards, their entries and read positions with it."""
 
+    if not has_definition_tables(connection):
+        return
     boards = [row["board_id"] for row in connection.execute(
         "SELECT board_id FROM lineage_blackboards WHERE lineage_id=%s", (lineage_id,)).fetchall()]
     if boards:
@@ -253,7 +271,7 @@ def purge_lineage(connection: Any, lineage_id: str) -> None:
 
 
 def transfer(connection: Any, source: str, target: str, object_ids: list[str]) -> None:
-    if not object_ids:
+    if not object_ids or not has_definition_tables(connection):
         return
     connection.execute(
         "UPDATE lineage_blackboards SET lineage_id=%s WHERE lineage_id=%s AND board_id=ANY(%s) AND deleted_at IS NULL",
@@ -264,6 +282,8 @@ def transfer(connection: Any, source: str, target: str, object_ids: list[str]) -
 
 
 def lineage_for_object(connection: Any, object_id: str) -> str:
+    if not has_definition_tables(connection):
+        return ""
     row = connection.execute(
         "SELECT lineage_id FROM lineage_blackboards WHERE board_id=%s AND deleted_at IS NULL "
         "UNION ALL SELECT lineage_id FROM lineage_blackboard_bindings WHERE wire_id=%s AND deleted_at IS NULL",

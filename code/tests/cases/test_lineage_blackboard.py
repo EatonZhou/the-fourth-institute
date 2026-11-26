@@ -348,3 +348,40 @@ def test_purging_a_lineage_removes_boards_entries_and_positions(lineage):
     assert store().database.write(purge) == {"blackboard_entries": 0, "blackboard_read_positions": 0, "blackboard_heads": 0}
     with store().database.read() as connection:
         assert blackboard_storage.active_objects(connection, lineage) == {}
+
+
+class _Rollback(Exception):
+    pass
+
+
+def test_schema_without_blackboard_tables_reads_as_no_persisted_blackboards(lineage):
+    """升级冷读：已有 schema 缺黑板表时按无持久黑板处理，真实 SQL 错误仍然传播"""
+    outcome: dict = {}
+
+    def cold(connection):
+        connection.execute("ALTER TABLE lineage_blackboards RENAME TO lineage_blackboards_hidden")
+        connection.execute("ALTER TABLE lineage_blackboard_bindings RENAME TO lineage_blackboard_bindings_hidden")
+        outcome["read_many"] = blackboard_storage.read_many(connection, [lineage])
+        outcome["active"] = blackboard_storage.active_objects(connection, lineage)
+        outcome["deleted"] = blackboard_storage.deleted_ids(connection, ["component_x"])
+        outcome["owner"] = blackboard_storage.lineage_for_object(connection, "component_x")
+        blackboard_storage.delete_missing(connection, lineage, ["component_x"], None)
+        blackboard_storage.purge_lineage(connection, lineage)
+        blackboard_storage.transfer(connection, lineage, "lineage_other", ["component_x"])
+        raise _Rollback
+
+    with pytest.raises(_Rollback):
+        store().database.write(cold)
+    assert outcome == {"read_many": {lineage: {"components": [], "wires": []}}, "active": {},
+                       "deleted": [], "owner": ""}
+
+    def broken(connection):
+        connection.execute("ALTER TABLE lineage_blackboards RENAME COLUMN deleted_at TO deleted_when")
+        with pytest.raises(Exception) as caught:
+            blackboard_storage.read_many(connection, [lineage])
+        outcome["error"] = type(caught.value).__name__
+        raise _Rollback
+
+    with pytest.raises(_Rollback):
+        store().database.write(broken)
+    assert outcome["error"] == "UndefinedColumn"
