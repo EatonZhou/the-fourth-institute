@@ -52,6 +52,7 @@ def test_explicit_kimi_private_cache_and_final_official_wire(owner):
     {'enabled':False},{'provider':'openrouter'},{'kind':'anthropic_messages'},
     {'default_model':'unknown'}, {'base_url':'http://api.moonshot.cn/v1'},
     {'base_url':'https://api.moonshot.cn.evil.test/v1'},
+    {'base_url':'http://127.0.0.1:1944/v1'}, {'base_url':'http://127.0.0.1:bad/v1'},
     {'default_parameters':{'tools':[]}}])
 def test_incompatible_registration_rejected_before_submit(owner,change):
     registry=setup(owner);registry.entry.update(change)
@@ -109,3 +110,9 @@ def test_http_reports_missing_selected_api_as_503():
     req=SimpleNamespace(headers={'Host':'fixture','Origin':'http://fixture','Content-Type':'application/json','Content-Length':'200','X-Reader-Principal':'a'})
     result=definition.handler(req,urlsplit('/paper/api/reader/translation'),'a')
     assert result[0]==503 and result[1]['error']['code']=='service_unavailable'
+
+
+def test_translation_uses_registered_local_relay():
+    registry = Registry()
+    registry.entry['base_url'] = 'http://127.0.0.1:942/v1'
+    assert configuration(registry, SYSTEM)['base_url'] == registry.entry['base_url']

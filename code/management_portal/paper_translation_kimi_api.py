@@ -20,10 +20,16 @@ def configuration(registry, instruction):
     model = entry.get('default_model')
     enabled_models = {m.get('id') for m in entry.get('models', []) if m.get('enabled', True)}
     url = urlsplit(entry.get('base_url', ''))
+    official_api = url.scheme == 'https' and url.hostname in {'api.moonshot.cn', 'api.moonshot.ai'}
+    # The administrator can register the local HTTPS relay on a reserved port.
+    try:
+        local_relay = url.scheme == 'http' and url.hostname == '127.0.0.1' and 0 < (url.port or 0) < 1024
+    except ValueError:
+        local_relay = False
     if (entry.get('enabled') is False or entry.get('provider') != 'moonshot'
             or entry.get('kind') != 'openai_compatible_chat'
             or model not in MODELS or model not in enabled_models
-            or url.scheme != 'https' or url.hostname not in {'api.moonshot.cn', 'api.moonshot.ai'}
+            or not (official_api or local_relay)
             or url.username or url.password or url.query or url.fragment or url.path.rstrip('/') != '/v1'):
         raise TranslationConfigurationUnavailable('Moonshot translation registration is incompatible')
     defaults = entry.get('default_parameters') or {}
