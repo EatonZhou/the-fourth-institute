@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from .lineage_program_event_dispatch import ProgramEventAuthority
 
 from . import (
+    lineage_event_delivery,
     lineage_instruction_context,
     lineage_operator_runtime,
     lineage_primitives,
@@ -22,6 +23,7 @@ from . import (
     lineage_program_packet_routing,
     lineage_program_resident_inputs,
     lineage_program_vocabulary,
+    lineage_program_wire_queue,
     resident_message_contract,
     trigger_paths,
     wire_delivery_budget,
@@ -997,22 +999,51 @@ class _PacketDispatch:
             self.lineage_id, self.lineage, packet_route, self.actor,
             authority=self.ports.flow.event_authority(),
         )
+        policy = batch.config.get("unavailable_policy") or lineage_program_vocabulary.DEFAULT_EVENT_UNAVAILABLE_POLICY
+        # Loop output and ordinary Resident replies open independent Packet
+        # paths. Event Sources have already claimed their own wire, and
+        # Packet Operators settle output through their enclosing activation.
+        fifo = (
+            self.source_node_id.startswith(("loop_", "resident_"))
+            and policy == "queue"
+            and not _bool(batch.config.get("parallel"), False)
+        )
         budget = wire_delivery_budget.views(str(self.lineage["lineage_id"]), {batch.wire_id: batch.config})[batch.wire_id]
-        if can_consume:
+        if can_consume and not fifo:
             return _dispatch_program_packet_to_agent(
                 self.lineage, batch.target_id, self.event, packet_invocation, self.actor, ports=self.ports,
             )
         if budget["message_limit_reached"]:
             return {"status": "dropped", "reason": "message_limit_reached", "target_id": batch.target_id}
-        return _defer_program_event_route(
+        cursor = f"packet:{self.event.id}:{self.source_node_id}:{batch.wire_id}:{packet.get('id')}"
+        queued = _defer_program_event_route(
             self.lineage_id,
             self.source_node_id,
             packet_route,
             self.event,
-            f"packet:{self.event.id}:{self.source_node_id}:{batch.wire_id}:{packet.get('id')}",
-            reason=reason,
+            cursor,
+            reason=reason or "wire_backlog",
             invocation=packet_invocation,
         )
+        if not can_consume or queued["status"] != "queued":
+            return queued
+        # Admission and replay claim the same durable FIFO. Only send live
+        # if this Packet is still the head and nobody else claimed it.
+        pending = lineage_program_wire_queue.claim_pending_event(
+            self.lineage_id, batch.wire_id, cursor=cursor, require_head=True,
+            event_source_id=self.source_node_id, target_id=batch.target_id,
+        )
+        if not pending or not pending.get("dispatch_token"):
+            return queued
+        return lineage_event_delivery.deliver_and_settle(
+            self.lineage_id, batch.wire_id, batch.target_id, pending["dispatch_token"],
+            lambda: {
+                "wire_id": batch.wire_id,
+                **_dispatch_program_packet_to_agent(
+                    self.lineage, batch.target_id, self.event, packet_invocation, self.actor, ports=self.ports,
+                ),
+            },
+        ).result
 
     def to_invoke_target(self, batch: lineage_program_packet_routing.PacketWireBatch, packet: dict[str, Any]) -> dict[str, Any]:
         arguments, prompt = self.invocation_input(batch.wire_id, packet)

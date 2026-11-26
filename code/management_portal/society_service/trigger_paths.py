@@ -125,7 +125,10 @@ def begin_event(lineage_id: str, source_id: str, event: Mapping[str, Any], *, ca
         return identity
 
 
-def event_settled(identity: str, source_id: str, occurrence_id: str, *, error: str = "") -> None:
+def event_settled(
+    identity: str, source_id: str, occurrence_id: str, *, error: str = "",
+    deliveries: list[dict[str, Any]] | None = None, all_dropped: bool = False,
+) -> None:
     with data_store().database.transaction() as connection:
         # A persisted delivery still owns transport recovery. Accepting its
         # Event is final, while the delivery step remains waiting.
@@ -138,9 +141,15 @@ def event_settled(identity: str, source_id: str, occurrence_id: str, *, error: s
         if settled and settled["status"] in storage.STEP_TERMINAL:
             _settle(connection, identity)
             return
-        storage.transition_step(connection, step,
-                                status="failed" if error and not waiting else "completed", at=now(),
-                                result={"error": error} if error else {})
+        result = {"error": error} if error else {}
+        if deliveries:
+            result["deliveries"] = deliveries
+        status = "completed"
+        if error and not waiting:
+            status = "failed"
+        elif all_dropped:
+            status = "skipped"
+        storage.transition_step(connection, step, status=status, at=now(), result=result)
         _settle(connection, identity)
 
 

@@ -585,14 +585,11 @@ def dispatch_program_event(
                 cursor_suffix=str(fire.get("generation") or 0),
             )
         )
-    failed_deliveries = [
-        item
-        for item in result.get("results") or []
-        if (
-            isinstance(item, dict)
-            and str(item.get("status") or "")
-            in {"failed", "queue_full"}
-        )
+    deliveries = [item for item in result.get("results") or [] if isinstance(item, dict)]
+    failed_deliveries = [item for item in deliveries if item.get("status") == "failed"]
+    dropped_deliveries = [
+        item for item in deliveries
+        if item.get("status") in lineage_program_occurrences.DROPPED_DELIVERY_STATUSES
     ]
     if failed_deliveries:
         failed_wire_ids = sorted({
@@ -631,6 +628,16 @@ def dispatch_program_event(
             lineage_id, event_source_id, generation=int(fire.get("generation") or 0),
             occurrence_count=int(fire.get("occurrence_count") or 0),
         )
-    trigger_paths.event_settled(trigger_path_id, event_source_id, normalized_input.id,
-                               error="delivery failed" if failed_deliveries else "")
+    first_failure = failed_deliveries[0] if failed_deliveries else {}
+    trigger_paths.event_settled(
+        trigger_path_id, event_source_id, normalized_input.id,
+        error=(_text(first_failure.get("error") or first_failure.get("reason"), 500) or "delivery failed")
+        if first_failure else "",
+        deliveries=[
+            {key: item[key] for key in ("wire_id", "target_id", "status", "reason", "queue_limit", "pending_count")
+             if key in item}
+            for item in [*failed_deliveries, *dropped_deliveries]
+        ],
+        all_dropped=bool(dropped_deliveries) and len(dropped_deliveries) == len(deliveries),
+    )
     return result

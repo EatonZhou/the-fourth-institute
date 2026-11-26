@@ -53,7 +53,7 @@ def claim_generic_deliveries(
             continue
         parallel = bool((routes_by_id[wire_id].get("config") or {}).get("parallel"))
         pending = lineage_program_wire_queue.claim_pending_event(
-            lineage_id, wire_id, cursor=cursor if parallel else "",
+            lineage_id, wire_id, cursor=cursor, require_head=not parallel,
             event_source_id=event_source_id,
             target_id=str(routes_by_id[wire_id].get("target_id") or ""),
         )

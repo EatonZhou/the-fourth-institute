@@ -37,7 +37,7 @@ from typing import Any
 
 from management_common.actor_identity import canonical_actor_id
 from management_common.async_questions import decode_question_content, question_set
-from management_common.principal import actor_principal, message_recipients
+from management_common.principal import Principal, actor_principal, message_attribution, message_recipients
 from management_common.provider_interactions import INTERACTIVE_TOOL_NAMES
 
 
@@ -116,6 +116,24 @@ def _open_place(resident_id: str, input_id: str, message_id: str, author: str, r
     return place
 
 
+def _input_user(message: Mapping[str, Any]) -> str:
+    if message.get("role") != "user":
+        return ""
+    author = message.get("author_id")
+    if not isinstance(author, str) or not author.strip():
+        return ""
+    try:
+        origin = message_attribution(message).get("origin")
+        if origin is None:
+            principal = actor_principal(author)
+        else:
+            sender = origin["sender"]
+            principal = Principal.from_dict(origin["initiated_by"] if sender["kind"] == "mailbox" else sender)
+        return principal.id if principal.kind == "user" and principal.id.casefold() != "system" else ""
+    except (TypeError, ValueError):
+        return ""
+
+
 def asked_users(resident_id: str, message: Mapping[str, Any], repository: Any) -> dict[str, str]:
     """``{user: resident to open}`` for each User an Agent message asks."""
 
@@ -126,8 +144,8 @@ def asked_users(resident_id: str, message: Mapping[str, Any], repository: Any) -
     message_id = str(message.get("message_id") or "")
     for input_id in _answered_inputs(resident_id, message):
         stored = repository.message(resident_id, input_id) or {}
-        author = canonical_actor_id(stored.get("author_id"))
-        if stored.get("role") != "user" or not author or actor_principal(author).kind != "user":
+        author = _input_user(stored)
+        if not author:
             continue
         key = _user_key(author)
         asked.setdefault(key, _open_place(resident_id, input_id, message_id, key, repository))

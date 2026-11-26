@@ -658,7 +658,6 @@ def recover_pending_program_work_as_service() -> dict[str, Any]:
     )
 
 
-@_lineage_scoped
 def reconcile_lineage_system_events_as_service(
     lineage_id: str,
 ) -> dict[str, Any]:

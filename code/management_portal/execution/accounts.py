@@ -24,6 +24,10 @@ class DefaultAccountUnavailable(ValueError):
     """No eligible automatic account is currently available for a valid provider."""
 
 
+class AccountLoginRequired(ValueError):
+    """The native account is signed out or its authorization has expired."""
+
+
 @dataclass(frozen=True)
 class ExecutionAccount:
     account_id: str
@@ -274,6 +278,9 @@ class ExecutionAccounts:
                     if definition.local_catalog:
                         try:
                             route.update(self.runtime_catalog(account.account_id))
+                        except AccountLoginRequired as error:
+                            LOGGER.warning("Runtime catalog requires login for %s: %s", account.account_id, error)
+                            continue
                         except Exception:  # noqa: BLE001 - one broken route must not hide the others
                             LOGGER.warning("Runtime catalog unavailable for %s", account.account_id, exc_info=True)
                             continue

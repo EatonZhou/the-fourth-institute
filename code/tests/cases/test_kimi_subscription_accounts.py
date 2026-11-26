@@ -11,6 +11,40 @@ import pytest
 
 from management_portal import kimi_account_runtime as runtime, kimi_provider_catalog as catalog
 from management_portal.execution import account_registrations, kimi_account_login as login
+from management_portal.execution.accounts import ExecutionAccount, ExecutionAccounts
+
+
+def test_kimi_runtime_catalog_distinguishes_login_from_unexpected_failures(monkeypatch, caplog):
+    def request(method, path):
+        assert (method, path) == ("GET", "auth")
+        return {"managed_provider": {"status": "unauthenticated"}}
+
+    def failed_request(method, path):
+        raise OSError("native host unavailable")
+
+    clients = {
+        "kimi_logged_out": SimpleNamespace(_request=request),
+        "kimi_broken": SimpleNamespace(_request=failed_request),
+    }
+    monkeypatch.setattr(runtime, "client_for_route", clients.__getitem__)
+    monkeypatch.setattr(account_registrations, "registrations", lambda: [])
+
+    class Adapter:
+        provider = "kimi"
+
+        def accounts(self):
+            return tuple(ExecutionAccount(name, self.provider, name, name) for name in clients)
+
+        def catalog(self, account):
+            return catalog.catalog({"kind": "subscription_login", "route_id": account.route_id})
+
+    execution_accounts = ExecutionAccounts((Adapter(),), provider_registry=SimpleNamespace(entries=lambda: []))
+    result = execution_accounts.runtime_catalog(include_backends=True)
+    kimi = next(row for row in result["backends"] if row["provider"] == Adapter.provider)
+    assert kimi["routes"] == []
+    logged_out, broken = [record for record in caplog.records if record.name == "management_portal.execution.accounts"]
+    assert "kimi_logged_out" in logged_out.getMessage() and logged_out.exc_info is None
+    assert "kimi_broken" in broken.getMessage() and broken.exc_info[0] is OSError
 
 
 @pytest.mark.parametrize('busy', [False, True])

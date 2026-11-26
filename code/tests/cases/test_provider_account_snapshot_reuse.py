@@ -5,6 +5,39 @@ from types import SimpleNamespace
 import pytest
 
 from management_portal.execution import account_registrations, account_selection, accounts, isa
+from management_portal.hatg.catalog import environment
+
+
+def test_provider_account_quota_observation_times_use_unix_seconds(monkeypatch):
+    codex_time = 1795662115.1234567
+    resets_at = 1795662200
+    timestamps = {"codex": codex_time, "claude": "1970-01-02T08:00:00.125+08:00",
+                  "antigravity": "1970-01-02T00:00:00.125Z", "unknown": None, "invalid": "unavailable"}
+    samples = [
+        {"account_id": provider, "provider": provider,
+         "rate_limits": [{"observed_at": observed_at, "resets_at": resets_at, "stale": True}],
+         "refresh_cards": {"observed_at": observed_at, "available_count": 0}}
+        for provider, observed_at in timestamps.items()
+    ]
+    before = deepcopy(samples)
+
+    def snapshot(refresh, *, account_facts):
+        account_facts.update(registrations=[], login_states={})
+        return {"accounts": samples}
+
+    monkeypatch.setattr(isa, "_accounts_snapshot", snapshot)
+    monkeypatch.setattr(accounts, "default_execution_accounts", lambda **kwargs: SimpleNamespace(adapters={}))
+    result = isa.list_provider_accounts(SimpleNamespace(caller="fixture", argument=lambda name: None))
+    expected = [codex_time, 86400.125, 86400.125, None, None]
+    assert [item["rate_limits"][0]["observed_at"] for item in result["accounts"]] == expected
+    assert [item["refresh_cards"]["observed_at"] for item in result["accounts"]] == expected
+    assert all(item["rate_limits"][0]["resets_at"] == resets_at for item in result["accounts"])
+    assert all(item["rate_limits"][0]["stale"] for item in result["accounts"])
+    assert samples == before
+    declaration = next(d for d in environment.DECLARATIONS if d.name == "ListProviderAccounts")
+    fields = declaration.result[0].schema()["items"]["properties"]
+    assert fields["rate_limits"]["items"]["properties"]["observed_at"]["type"] == ["number", "null"]
+    assert fields["refresh_cards"]["properties"]["observed_at"]["type"] == ["number", "null"]
 
 
 @pytest.mark.parametrize('detail', ['', 'codex-low'])

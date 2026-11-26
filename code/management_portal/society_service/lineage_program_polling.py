@@ -60,15 +60,55 @@ def _pending_recovery_events(runtime: dict[str, Any], handoffs: list[dict[str, A
     return [item.get("event") or {} for item in pending if not item.get("recovery_blocked")]
 
 
+def _recover_pending_events(
+    lineage_id: str,
+    pending_events: list[dict[str, Any]],
+    *,
+    ports: ProgramPollingPorts,
+    failure: Callable[[str, Exception], None],
+) -> tuple[int, int, int]:
+    from management_common.principal import OperationIdentity
+    from . import lineage_primitives, lineage_recovery_policy
+
+    checked = emitted = retry_after = 0
+    seen: set[str] = set()
+    drained = False
+    for raw_event in pending_events:
+        if lineage_recovery_policy.permanent_error(raw_event):
+            continue
+        try:
+            event = lineage_primitives.normalize_event(raw_event)
+            if not event.identity:
+                raise PermissionError("Pending Event has no verified identity; explicit reissue is required")
+            identity = OperationIdentity.from_dict(event.identity)
+            key = str(identity.to_dict())
+            if key in seen:
+                continue
+            seen.add(key)
+            with lineage_instruction_context.event_scope(event, identity.principal.id):
+                recovery = ports.reconcile_lineage_runtime(
+                    lineage_id, identity.principal.id, recovery_only=True, drain=not drained,
+                )
+            backlog = recovery.get("program_event_backlog") or {}
+            drained = drained or bool(backlog.get("complete"))
+            delay = int(backlog.get("retry_after_seconds") or 0)
+            if delay > 0:
+                retry_after = min(retry_after or delay, delay)
+            checked += int(recovery.get("checked_node_count") or 0)
+            emitted += int(recovery.get("program_created_count") or 0)
+            for item in recovery.get("recovery_failures") or []:
+                failure(lineage_id, PermissionError(str(item.get("error") or "Recovery denied")))
+        except (KeyError, PermissionError, OSError, RuntimeError, ValueError) as exc:
+            failure(lineage_id, exc)
+    return checked, emitted, retry_after
+
+
 def poll_all_system_events(
     *,
     ports: ProgramPollingPorts,
     recovery_only: bool = False,
 ) -> dict[str, Any]:
     """Recover persisted work first; new observations need explicit live authority."""
-    from management_common.principal import OperationIdentity
-    from . import lineage_primitives
-
     checked = emitted = recovered = failed = blocked = 0
     failure_samples: list[dict[str, str]] = []
     retry_lineage_ids: list[str] = []
@@ -125,34 +165,16 @@ def poll_all_system_events(
             except errors as exc:
                 failure(lineage_id, exc)
                 continue
-        seen: set[str] = set()
         # Each identity settles only its own handoffs, but every queued Event
         # is delivered under the identity it saved; one drain that finishes
         # covers the Lineage for this pass.
-        drained = False
-        for raw_event in pending_events:
-            if lineage_recovery_policy.permanent_error(raw_event):
-                continue
-            try:
-                event = lineage_primitives.normalize_event(raw_event)
-                if not event.identity:
-                    raise PermissionError("Pending Event has no verified identity; explicit reissue is required")
-                identity = OperationIdentity.from_dict(event.identity)
-                key = str(identity.to_dict())
-                if key in seen:
-                    continue
-                seen.add(key)
-                with lineage_instruction_context.event_scope(event, identity.principal.id):
-                    recovery = ports.reconcile_lineage_runtime(
-                        lineage_id, identity.principal.id, recovery_only=True, drain=not drained,
-                    )
-                drained = drained or bool((recovery.get("program_event_backlog") or {}).get("complete"))
-                recovered += int(recovery.get("checked_node_count") or 0)
-                emitted += int(recovery.get("program_created_count") or 0)
-                for item in recovery.get("recovery_failures") or []:
-                    failure(lineage_id, PermissionError(str(item.get("error") or "Recovery denied")))
-            except errors as exc:
-                failure(lineage_id, exc)
+        recovered_count, emitted_count, retry_after = _recover_pending_events(
+            lineage_id, pending_events, ports=ports, failure=failure,
+        )
+        recovered += recovered_count
+        emitted += emitted_count
+        if retry_after > 0 and lineage_id not in retry_lineage_ids:
+            retry_lineage_ids.append(lineage_id)
 
         has_automatic = not recovery_only and _has_automatic_sources(lineage, runtime)
         has_absorption = any(
@@ -230,8 +252,21 @@ def reconcile_system_events_as_service(
     lineage, status = _runtime_lineage(clean_id, ports=ports)
     if lineage is None:
         return {"lineage_id": clean_id, "status": status, "checked": 0}
-    if not _has_automatic_sources(lineage, lineage_program_runtime.read_runtime(clean_id)):
-        return {"lineage_id": clean_id, "event_count": 0, "events": []}
+    runtime = lineage_program_runtime.read_runtime(clean_id)
+    if not _has_automatic_sources(lineage, runtime):
+        handoffs = lineage_program_resident_inputs.pending_resident_handoffs(clean_id)
+        failures: list[Exception] = []
+        _, emitted, retry_after = _recover_pending_events(
+            clean_id, _pending_recovery_events(runtime, handoffs),
+            ports=ports, failure=lambda _lineage_id, exc: failures.append(exc),
+        )
+        if failures and retry_after == 0:
+            raise failures[0]
+        return {
+            "lineage_id": clean_id, "event_count": emitted, "events": [],
+            "retry_after_seconds": retry_after,
+            **({"recovery_failures": [str(failure) for failure in failures]} if failures else {}),
+        }
     try:
         actor = ports.lineage_runtime_actor(lineage)
         with lineage_instruction_context.automatic_scope(actor):

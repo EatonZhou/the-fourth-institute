@@ -372,6 +372,7 @@ def claim_pending_event(
     wire_id: str,
     *,
     cursor: str = "",
+    require_head: bool = False,
     event_source_id: str = "",
     target_id: str = "",
 ) -> dict[str, Any] | None:
@@ -399,14 +400,16 @@ def claim_pending_event(
             return None
         pending = (
             next((item for item in pending_events if str(item.get("cursor") or "") == cursor), None)
-            if cursor else pending_events[0]
+            if cursor and not require_head else pending_events[0]
         )
-        if pending is None:
+        if pending is None or (cursor and str(pending.get("cursor") or "") != cursor):
             return None
         if event_source_id and str(pending.get("event_source_id") or "") != event_source_id:
             return None
-        if target_id and runtime.get("operators", {}).get(target_id, {}).get("paused"):
-            return {"status": "paused", "component_id": target_id}
+        component_ids = {identifier for identifier in (event_source_id, target_id) if identifier}
+        for component_id in sorted(component_ids):
+            if runtime["operators"].get(component_id, {}).get("paused"):
+                return {"status": "paused", "component_id": component_id}
         retry_at = lineage_recurring_schedule.parse_utc(pending.get("retry_at"))
         if retry_at is not None and retry_at > _utc_now():
             # A failed attempt waits out its delay however often the Lineage is reconciled.

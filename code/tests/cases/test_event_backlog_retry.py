@@ -10,16 +10,96 @@ however often the Lineage is looked at again.
 
 from __future__ import annotations
 
+import pytest
+
 from management_portal.society_service import (
     component_runtime, lineage_domain, lineage_program_backlog, lineage_program_runtime,
-    lineage_program_wire_queue,
+    lineage_program_wire_queue, trigger_paths,
 )
 from tests.cases import society_service_test_support as support
 from tests.cases.test_lineage_program_runtime_integration import (  # noqa: F401
-    ACTOR, WORK_A, WORK_B, _component, _wire, _worker, runtime_store,
+    ACTOR, PRODUCER_A, WORK_A, WORK_B, _component, _wire, _worker, runtime_store,
 )
 
 SOURCE = "event_source_backlog"
+
+
+@pytest.mark.parametrize("wake", ["next_packet", "scheduled_retry"])
+@pytest.mark.parametrize("source", ["loop", "resident"])
+def test_old_packet_is_delivered_when_resident_becomes_idle(runtime_store, monkeypatch, wake, source):
+    """The next Packet cannot overtake a waiting Packet, and retry needs no new Event."""
+    busy = True
+    sent = []
+    monkeypatch.setattr(support, "NODE_ACTIVE_JOB_RESOLVER", lambda node, actor: node["id"] == WORK_A and busy)
+    monkeypatch.setattr(support, "NODE_MESSAGE_SENDER", lambda node, prompt, actor: (
+        sent.append(prompt) or {"message_id": f"job_fifo_{len(sent)}"}
+    ))
+    monkeypatch.setattr(support, "RESIDENT_MESSAGE_EVIDENCE_RESOLVER", lambda resident, message, actor: (
+        {"reply": message} if resident == PRODUCER_A else {}
+    ))
+    wire = "wire_packet_fifo"
+    config = {"unavailable_policy": "queue", "queue_limit": 2}
+    components, wires = [], [_wire(wire, "route", PRODUCER_A, WORK_A, config=config)]
+    if source == "loop":
+        components.append({"id": "loop_round", "kind": "loop", "config": {"max_rounds": 2}})
+        wires = [
+            _wire("wire_loop_in", "route", PRODUCER_A, "loop_round"),
+            {**_wire(wire, "route", "loop_round", WORK_A, config=config), "source_port": "continue"},
+        ]
+    lineage_id = support.create_lineage_with_resident_members({
+        "title": "Packet FIFO", "nodes": [_worker(PRODUCER_A), _worker(WORK_A)],
+        "program": {"components": components, "wires": wires},
+    }, ACTOR)["lineage_id"]
+    first = support.complete_resident_message(PRODUCER_A, ACTOR, "job_packet_first", lineage_id=lineage_id)
+    assert sent == []
+    assert wire in lineage_program_runtime.read_runtime(lineage_id)["event_wires"], first
+    backlog = lineage_program_backlog.drain_event_backlog(
+        lineage_id, ACTOR, authority=lineage_domain._program_control_authority(),
+    )
+    # Do not claim a live Resident's queue head just to probe availability.
+    assert backlog["attempted_count"] == 0
+    busy_retry = backlog["retry_after_seconds"]
+    busy = False
+    if wake == "next_packet":
+        second = support.complete_resident_message(PRODUCER_A, ACTOR, "job_packet_second", lineage_id=lineage_id)
+        assert sent == ["job_packet_first", "job_packet_second"], second["program_event_backlog"]
+    else:
+        if source == "loop":
+            component_runtime.set_paused(lineage_id, "loop_round", True, ACTOR)
+            lineage_domain.reconcile_lineage_system_events_as_service(lineage_id)
+            assert sent == []
+            component_runtime.set_paused(lineage_id, "loop_round", False, ACTOR)
+        retry = lineage_domain.reconcile_lineage_system_events_as_service(lineage_id)
+        assert sent == ["job_packet_first"], retry
+    pending = lineage_program_runtime.read_runtime(lineage_id)["event_wires"].get(wire, {})
+    assert pending.get("pending_events", []) == []
+    assert busy_retry > 0
+
+
+def test_queue_full_trigger_path_retains_rejected_wire_and_drop_status(runtime_store, monkeypatch):
+    """A bounded queue rejection is a visible drop, not a failed delivery."""
+    monkeypatch.setattr(support, "NODE_ACTIVE_JOB_RESOLVER", lambda node, actor: True)
+    wire = "wire_backlog_full"
+    lineage_id = support.create_lineage_with_resident_members({
+        "title": "Full queue", "nodes": [_worker(WORK_A)],
+        "program": {
+            "components": [_component(SOURCE, "event_source", event_type="manual.triggered")],
+            "wires": [_wire(wire, "route", SOURCE, WORK_A, config={"unavailable_policy": "queue", "queue_limit": 1})],
+        },
+    }, ACTOR)["lineage_id"]
+    first, second = [
+        lineage_domain.emit_program_manual_event(lineage_id, {"event_source_id": SOURCE}, ACTOR)
+        for _ in range(2)
+    ]
+
+    assert trigger_paths.get(lineage_id, first["trigger_path_id"])["status"] == "active"
+    assert second["results"][0]["status"] == "queue_full"
+    path = trigger_paths.get(lineage_id, second["trigger_path_id"])
+    assert path["status"] == "completed"
+    step, = path["steps"]
+    assert step["status"] == "skipped"
+    outcome, = step["result"]["deliveries"]
+    assert (outcome["wire_id"], outcome["status"]) == (wire, "queue_full")
 
 
 def test_a_failing_wire_waits_alone_and_is_not_retried_before_its_delay(runtime_store, monkeypatch):

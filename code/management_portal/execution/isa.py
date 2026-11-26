@@ -8,12 +8,14 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import math
 import re
 from contextlib import nullcontext
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+from management_common.database_time import epoch_seconds, instant
 from management_portal import model_api_store, usage_read_model
 from management_portal.hatg.contracts import InstructionError, invalid, not_found
 from management_portal.hatg.kernel import InstructionKernel, Invocation, OwnerBinding
@@ -701,6 +703,19 @@ def _accounts_snapshot(refresh: bool, *, account_facts=None) -> dict[str, Any]:
     return _client().accounts(force_refresh=refresh)
 
 
+def _public_observation_time(sample: dict[str, Any]) -> dict[str, Any]:
+    if "observed_at" not in sample:
+        return sample
+    value = sample["observed_at"]
+    if value is None or type(value) is int or (type(value) is float and math.isfinite(value)):
+        return sample
+    try:
+        seconds = epoch_seconds(instant(value)) if isinstance(value, str) else None
+    except (ValueError, OverflowError):
+        seconds = None
+    return {**sample, "observed_at": seconds}
+
+
 def list_provider_accounts(inv: Invocation) -> dict[str, Any]:
     account_facts = {}
     snapshot = _accounts_snapshot(bool(inv.argument("refresh")), account_facts=account_facts)
@@ -733,6 +748,14 @@ def list_provider_accounts(inv: Invocation) -> dict[str, Any]:
         accounts = [item for item in accounts if str(item.get("account_id") or item.get("id") or "") == account_id]
         if not accounts:
             raise not_found(f"执行账号不存在：{account_id}")
+    for item in accounts:
+        if isinstance(item.get("rate_limits"), list):
+            item["rate_limits"] = [
+                _public_observation_time(window) if isinstance(window, dict) else window
+                for window in item["rate_limits"]
+            ]
+        if isinstance(item.get("refresh_cards"), dict):
+            item["refresh_cards"] = _public_observation_time(item["refresh_cards"])
     from .accounts import default_execution_accounts
     from .account_selection import select
     from .provider_catalog import AGENT_PROVIDERS

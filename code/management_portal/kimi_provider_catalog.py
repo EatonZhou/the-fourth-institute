@@ -1,6 +1,8 @@
 """Kimi API account models come from their bound Model API, not the service template."""
-from management_portal.ai_provider_registry import AIProviderRegistry, shared_ai_provider_registry
 import json
+
+from management_portal.ai_provider_registry import AIProviderRegistry, shared_ai_provider_registry
+from management_portal.execution.accounts import AccountLoginRequired
 
 
 def profile(account):
@@ -15,8 +17,11 @@ def catalog(account):
         from .kimi_account_runtime import client_for_route
         client = client_for_route(account["route_id"])
         auth = client._request("GET", "auth")
-        if (auth.get("managed_provider") or {}).get("status") != "authenticated":
-            raise ValueError("请先完成 Kimi Code 订阅登录")
+        status = (auth.get("managed_provider") or {}).get("status")
+        if status in (None, "unauthenticated", "expired", "revoked"):
+            raise AccountLoginRequired("请先完成 Kimi Code 订阅登录")
+        if status != "authenticated":
+            raise ValueError("Kimi Code 返回了无法识别的登录状态")
         config = client._request("GET", "config")
         entries = {name: model for name, model in config.get("models", {}).items()
                    if model.get("provider") == "managed:kimi-code"}

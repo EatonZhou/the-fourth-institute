@@ -7,7 +7,7 @@ from __future__ import annotations
 import pytest
 
 from management_common.async_questions import question_answer_id, question_message_parts
-from management_common.principal import message_origin
+from management_common.principal import mailbox_origin, message_origin
 from management_portal import permission_system
 from management_portal.society_service import (
     family_facade, resident_access, resident_conversation_records, resident_conversation_stream,
@@ -111,7 +111,8 @@ def test_pending_batches_identity_without_workspace_reads(resident_record, allow
     monkeypatch.setattr(resident_record_domain, 'find_resident', forbidden)
     listed = _pending('CASE-A')
     assert {item['source_message_id'] for item in listed} == {source['message_id'] for source in sources}
-    assert batches == [holders]
+    assert len(batches) == 1
+    assert sorted(batches[0]) == sorted(holders)
     record_property('before_full_resident_reads', len(holders))
     record_property('after_full_resident_reads', 0)
     record_property('after_identity_batches', len(batches))
@@ -227,6 +228,40 @@ def test_resident_inputs_question_marks_and_managers_ask_no_one(resident_record,
     _ask(repo, resident_id, "CASE-A", text="要不要继续？请告诉我？")
     assert _pending("CASE-A") == []
     assert _pending(other) == []
+
+
+def test_repair_asks_the_user_who_merged_a_mailbox_input(resident_record, allowed, monkeypatch):
+    resident_id = resident_record["resident_id"]
+    repo = resident_conversation_stream.get_repository()
+    request = resident_input_queue_domain.build_message("user", "合并的输入")
+    request.update(author_id="mailbox", origin=mailbox_origin("CASE-A"))
+    repo.append_message(resident_id, request)
+    asked = resident_input_queue_domain.build_message("agent", CARD, resident_id)
+    asked["reply_to_message_id"] = request["message_id"]
+    with monkeypatch.context() as patch:
+        def unavailable(*args):
+            raise RuntimeError("index unavailable during delivery")
+
+        patch.setattr(user_pending_questions, "rows_for", unavailable)
+        repo.append_message(resident_id, asked)
+    user_pending_questions.maintain()
+    assert [item["source_message_id"] for item in _pending("CASE-A")] == [asked["message_id"]]
+    assert _pending("someone-else") == []
+
+
+@pytest.mark.parametrize("origin", [
+    None,
+    mailbox_origin("resident_0afd9a0731f7"),
+    {**mailbox_origin("CASE-A"), "initiated_by": {"kind": "user", "id": "mailbox"}},
+    {**mailbox_origin("CASE-A"), "sender": "mailbox"},
+    message_origin("someone-else", initiated_by="CASE-A"),
+])
+def test_mailbox_input_without_a_valid_user_origin_is_skipped(monkeypatch, origin):
+    from types import SimpleNamespace
+
+    monkeypatch.setattr(user_pending_questions, "_answered_inputs", lambda *args: ["input"])
+    repo = SimpleNamespace(message=lambda *args: {"role": "user", "author_id": "mailbox", "origin": origin})
+    assert user_pending_questions.asked_users("resident_0afd9a0731f7", {}, repo) == {}
 
 
 def test_closing_removes_the_question_and_announces_it(resident_record, allowed):

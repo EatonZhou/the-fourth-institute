@@ -217,6 +217,9 @@ def mark_event_fanout_complete(
             source["fanout_settled_generation"] = generation
 
 
+DROPPED_DELIVERY_STATUSES = frozenset({"dropped", "queue_full", "discarded"})
+
+
 def record_event_delivery_summary(
     lineage_id: str,
     event_source_id: str,
@@ -237,7 +240,7 @@ def record_event_delivery_summary(
         status = _item_id(status, field="delivery status")
         statuses[status] = statuses.get(status, 0) + 1
     queued_statuses = {"queued", "replaced"}
-    dropped_statuses = {"dropped", "queue_full", "discarded"}
+    dropped_statuses = DROPPED_DELIVERY_STATUSES
     failed_statuses = {
         "failed",
         "unavailable",

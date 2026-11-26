@@ -65,6 +65,12 @@ def select_route(
         if route_entry:
             source_id, route = route_entry
             if can_consume(route):
+                source = event_sources.get(source_id) or {}
+                # Loop ports have synthetic source IDs in the compiled plan.
+                # Packet deliveries are queued under the actual Loop ID.
+                component_id = source.get("component_id")
+                if source.get("kind") == "loop" and component_id == runtime_view[wire_id].get("oldest_event_source_id"):
+                    source_id = str(component_id)
                 return wire_id, source_id, route
     return None
 
@@ -227,6 +233,7 @@ def drain_event_backlog(
     # A wire whose head was not delivered, is waiting for its retry or is
     # being delivered elsewhere sits out this drain; the other wires keep going.
     held_wire_ids: set[str] = set()
+    busy_targets = False
     waiting_attempt_count = 0
     # A closed Event Source or Effect keeps its queued Events until it opens.
     # Opening notifies the Lineage, so they are not claimed meanwhile.
@@ -251,17 +258,21 @@ def drain_event_backlog(
                 plan = _compiled_program(lineage)
                 runtime_view = _program_invoke_wire_runtime_view(lineage)
                 stale = False
-            selected = select_route(
-                lineage, plan, runtime_view,
-                lambda route: str(route.get("wire_id") or "") not in held_wire_ids
-                and str(route.get("target_id") or "") not in closed_ids
-                and str((runtime_view.get(str(route.get("wire_id") or "")) or {}).get("oldest_event_source_id") or "")
-                not in closed_ids
-                and lineage_program_execution.program_event_route_can_consume(
+            def ready(route: dict[str, Any]) -> bool:
+                nonlocal busy_targets
+                wire_id = str(route.get("wire_id") or "")
+                oldest_source = (runtime_view.get(wire_id) or {}).get("oldest_event_source_id")
+                if wire_id in held_wire_ids or route.get("target_id") in closed_ids or oldest_source in closed_ids:
+                    return False
+                available, reason = lineage_program_execution.program_event_route_can_consume(
                     lineage_id, lineage, route, actor_id,
                     authority=_program_event_authority(),
-                )[0],
-            )
+                )
+                if reason in {"resident_running", "packet_operator_working", "packet_operator_runtime_unavailable"}:
+                    busy_targets = True
+                return available
+
+            selected = select_route(lineage, plan, runtime_view, ready)
         if selected is None:
             complete = True
             break
@@ -310,11 +321,15 @@ def drain_event_backlog(
                 waiting_attempt_count = max(waiting_attempt_count, int(pending.get("attempt_count") or 1))
             continue
         delivered_count += 1
-    # Failed attempts wait for their stored retry time; a target that is
-    # closed or busy is looked at again after the same delay.
+    # Failed attempts wait for their stored retry time. Busy targets need
+    # another scan even though their heads did not need a delivery claim.
+    # A paused component is woken when it opens.
+    stored_retry = lineage_program_wire_queue.next_retry_seconds(lineage_id) if held_wire_ids else 0
     delays = [
-        lineage_program_wire_queue.next_retry_seconds(lineage_id) if held_wire_ids else 0,
+        stored_retry,
         lineage_program_wire_queue.retry_delay_seconds(waiting_attempt_count) if waiting_attempt_count else 0,
+        lineage_program_wire_queue.retry_delay_seconds(1)
+        if busy_targets or (held_wire_ids and not stored_retry) or not complete else 0,
     ]
     retry_after_seconds = min((delay for delay in delays if delay > 0), default=0)
     # Leaving re-reads the Lineage under its admission lock; skip it when no
