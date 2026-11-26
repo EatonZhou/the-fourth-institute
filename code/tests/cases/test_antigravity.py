@@ -875,3 +875,26 @@ def test_multi_step_turn_separates_turn_sum_from_context_window_usage(agent):
     assert contract["context_usage"]["input_tokens"] == 152766
     assert contract["context_usage"]["total_tokens"] == 155724
     assert contract["model_context_window"] == 1000
+
+
+def test_cli_rollout_follows_binding_and_permission_profile(tmp_path, monkeypatch):
+    root = tmp_path / runtime.CLI_CANARY
+    root.mkdir()
+    binary = root / "antigravity"
+    binary.write_bytes(b"verified-build")
+    monkeypatch.setattr(runtime, "CLI_DIGEST", hashlib.sha256(binary.read_bytes()).hexdigest())
+    env = {"HOME": "/home/user", "GEMINI_HOME": "/home/user/accounts/one"}
+    (root / "enabled").touch()
+    args = runtime.canary_command(root, "", True, env)
+    assert args == [str(binary), "acp", "--gemini-dir", "accounts/one", "--app-data-dir", "antigravity-acp"]
+    assert runtime.canary_command(root, "", False, env) is None
+    assert runtime.canary_command(root, "existing-session", True, env) is None
+    runtime.pin_cli_session(root, "cli-session")
+    (root / "enabled").unlink()
+    assert runtime.canary_command(root, "", True, env) is None
+    assert runtime.canary_command(root, "cli-session", True, env) == args
+    with pytest.raises(runtime.NativeAgentUnavailable, match="restricted"):
+        runtime.canary_command(root, "cli-session", False, env)
+    binary.write_bytes(b"changed")
+    with pytest.raises(runtime.NativeAgentUnavailable, match="verified"):
+        runtime.canary_command(root, "cli-session", True, env)

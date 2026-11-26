@@ -9,7 +9,7 @@ import threading
 from management_common.provider_turn_artifacts import ToolEditArtifacts
 from management_portal import antigravity_accounts as accounts
 from management_portal.antigravity_client import AcpClient, AcpTransportError, ToolServer
-from management_portal.antigravity_runtime import command
+from management_portal.antigravity_runtime import CLI_CANARY, canary_command, command, pin_cli_session
 from management_portal.antigravity_input_media import prompt_content
 from management_portal.resident_shell_environment import resident_process_environment
 from .antigravity_workspace import additional_directories
@@ -240,8 +240,8 @@ class AntigravityBackend:
     def __init__(self, client_factory=AcpClient):
         self.client_factory = client_factory
 
-    def open_client(self, request, account_id, env, **callbacks):
-        return self.client_factory(command(), env=env, cwd=request.cwd, **callbacks)
+    def open_client(self, request, account_id, env, *, cli_command=None, **callbacks):
+        return self.client_factory(cli_command or command(), env=env, cwd=request.cwd, **callbacks)
 
     def prepare_context_seed(self, invocation):
         return realize_portable_seed(invocation)
@@ -275,6 +275,8 @@ class AntigravityBackend:
         offered_tools = {tool["name"] for tool in catalog}
         require_offered_tools(invocation, {tool["name"] for tool in catalog})
         sid = session.backend_session_id
+        cli_root = accounts.account_runtime("antigravity", row["account_id"]) / CLI_CANARY
+        cli = canary_command(cli_root, sid, native, env)
         active_turn = False
         accepted = False
         segment = 0
@@ -388,12 +390,12 @@ class AntigravityBackend:
         with ExitStack() as stack:
             server = stack.enter_context(ToolServer(catalog, dispatch)) if catalog else None
             client = stack.enter_context(self.open_client(request, row["account_id"], env,
-                                                         on_update=update, on_request=client_request))
+                                                         cli_command=cli, on_update=update, on_request=client_request))
             handshake = client.initialize()
             capabilities = handshake.get("agentCapabilities") or {}
             if request.input_media and not capabilities.get("promptCapabilities", {}).get("image"):
                 raise ValueError("Antigravity ACP runtime does not support image input")
-            if not capabilities.get("loadSession") or (server and not capabilities.get("mcpCapabilities", {}).get("http")):
+            if not capabilities.get("loadSession") or (server and not cli and not capabilities.get("mcpCapabilities", {}).get("http")):
                 raise RuntimeError("Antigravity ACP runtime lacks required session/MCP capabilities")
             authenticated = client.call("authenticate", {"methodId": "oauth-personal"})
             meta = {"systemPrompt": {"append": full_system_context(invocation)},
@@ -411,6 +413,8 @@ class AntigravityBackend:
             sid = sid or created.get("sessionId", "")
             if not sid:
                 raise RuntimeError("Antigravity returned no session ID")
+            if cli and not session.backend_session_id:
+                pin_cli_session(cli_root, sid)
             context.set_interrupt_target(sid, turn_id, route)
             discovered = accounts.save_catalog(row["account_id"], created, capabilities, authenticated=authenticated)
             model = str(options.get("model") or discovered["default_model"])

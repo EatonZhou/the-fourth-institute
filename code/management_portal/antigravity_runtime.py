@@ -15,6 +15,7 @@ from packaging.version import Version
 
 from management_portal.execution import provider_updates as updates
 from management_common.antigravity_platform import platform_key
+from management_common.file_permissions import atomic_write_private_bytes
 from management_portal.native_agent_transport import NativeAgentUnavailable
 
 REGISTRY = "https://raw.githubusercontent.com/agentclientprotocol/registry/main/antigravity-acp/agent.json"
@@ -138,3 +139,33 @@ def command(root: Path | None = None):
     value = json.loads(path.read_text())
     _require_credential_storage(value["version"])
     return [str(root / value["cmd"]), *value.get("args", []), "--logtostderr"]
+
+# Linux x64 build verified with Portal's authenticated HTTP ToolServer.
+CLI_CANARY = "cli-1.5.17"
+CLI_DIGEST = "f3f384bd2c15a74a036ebc3b0a2f48695cc6e56523ba0f9524fb6e4c4adb3baa"
+
+
+def cli_session_marker(root: Path, session_id: str) -> Path:
+    return root / "sessions" / hashlib.sha256(session_id.encode()).hexdigest()
+
+
+def canary_command(root: Path, session_id: str, native: bool, env: dict):
+    """The rollout flag applies to new bindings. Each resumed CLI binding stays pinned."""
+    marker = cli_session_marker(root, session_id) if session_id else root / "enabled"
+    if not marker.is_file():
+        return None
+    if not native:
+        if session_id:
+            raise NativeAgentUnavailable("This Full Access session requires a new restricted session")
+        return None
+    binary = root / "antigravity"
+    with binary.open("rb") as stream:
+        if hashlib.file_digest(stream, "sha256").hexdigest() != CLI_DIGEST:
+            raise NativeAgentUnavailable("Antigravity CLI differs from the verified HTTP MCP build")
+    home = Path(env["HOME"])
+    gemini = Path(env["GEMINI_HOME"]).relative_to(home)
+    return [str(binary), "acp", "--gemini-dir", str(gemini), "--app-data-dir", "antigravity-acp"]
+
+
+def pin_cli_session(root: Path, session_id: str):
+    atomic_write_private_bytes(cli_session_marker(root, session_id), CLI_CANARY.encode())
