@@ -14,6 +14,19 @@ def test_resize_interruption_releases_pointer_and_selection():
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+def test_nested_splits_fill_available_space():
+    """折叠侧栏后的嵌套分栏填满可用空间，并保持拖动、展开和恢复比例。
+
+    :risk: no-external-side-effects
+    :profiles: local.fixture
+    """
+    source = Path(__file__).with_name("javascript") / "workbench_split_fill.browser.cjs"
+    result = subprocess.run(
+        ["node", str(source)], capture_output=True, text=True, timeout=90,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_fixed_collapsed_sibling_selection():
     """固定折叠面板组拒绝同组内容切换
 

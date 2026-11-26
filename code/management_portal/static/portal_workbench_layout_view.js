@@ -177,6 +177,19 @@
       return true;
     }
 
+    // Model weights are ratios, whereas CSS leaves free space unused when
+    // flex-grow sums to less than one. Normalize the visible siblings only;
+    // keep stored weights intact so collapsed panels restore their proportion.
+    function splitGrowFactors(split) {
+      const axis = split.orientation === "vertical" ? "y" : "x";
+      const weights = split.children.map((child, index) => (
+        compactExtentForNode(child, axis, shellState.collapsed, descriptors) === null
+          ? Number(split.weights?.[index]) || 1 : 0
+      ));
+      const largest = Math.max(...weights) || 1;
+      return weights.map(weight => weight / largest);
+    }
+
     function bindSplitHandle(handle, split, index) {
       const axis = split.orientation === "vertical" ? "y" : "x";
       const pair = () => splitResizePairs(split, descriptors, shellState.collapsed).find(item => item.before === index);
@@ -221,7 +234,10 @@
         const total = expanded.reduce((sum, childIndex) => sum + sizes[childIndex], 0);
         expanded.forEach(childIndex => {
           split.weights[childIndex] = weight * sizes[childIndex] / total;
-          start.children[childIndex].style.flexGrow = String(split.weights[childIndex]);
+        });
+        const growFactors = splitGrowFactors(split);
+        expanded.forEach(childIndex => {
+          start.children[childIndex].style.flexGrow = String(growFactors[childIndex]);
         });
       };
       bindPointerResize({
@@ -274,13 +290,14 @@
       element.className = "portalWorkbenchSplit";
       element.dataset.orientation = split.orientation;
       element.dataset.portalWorkbenchSplit = split.id;
+      const growFactors = splitGrowFactors(split);
       const children = split.children.map((child, index) => {
         const childElement = renderNode(child, split.orientation);
         childElement.classList.add("portalWorkbenchSplitChild");
         const axis = split.orientation === "vertical" ? "y" : "x";
         const compactExtent = compactExtentForNode(child, axis, shellState.collapsed, descriptors);
         const childCompact = compactExtent !== null;
-        childElement.style.flexGrow = childCompact ? "0" : String(Number(split.weights?.[index]) || 1);
+        childElement.style.flexGrow = String(growFactors[index]);
         childElement.style.flexShrink = childCompact ? "0" : "1";
         childElement.style.flexBasis = childCompact
           ? `${compactExtent}px`
@@ -312,13 +329,14 @@
       const children = [...element.querySelectorAll(":scope > .portalWorkbenchSplitChild")];
       const handles = [...element.querySelectorAll(":scope > .portalWorkbenchSplitHandle")];
       if (children.length !== split.children.length || handles.length !== Math.max(0, children.length - 1)) return false;
+      const growFactors = splitGrowFactors(split);
       for (let index = 0; index < split.children.length; index += 1) {
         const child = split.children[index];
         const childElement = children[index];
         const axis = split.orientation === "vertical" ? "y" : "x";
         const compactExtent = compactExtentForNode(child, axis, shellState.collapsed, descriptors);
         const childCompact = compactExtent !== null;
-        childElement.style.flexGrow = childCompact ? "0" : String(Number(split.weights?.[index]) || 1);
+        childElement.style.flexGrow = String(growFactors[index]);
         childElement.style.flexShrink = childCompact ? "0" : "1";
         childElement.style.flexBasis = childCompact
           ? `${compactExtent}px`
