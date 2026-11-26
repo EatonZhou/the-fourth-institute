@@ -74,7 +74,7 @@
     // it must never replay a config assembled from an older definition.
     async function mutate(lineageId, name, args, payload = {}, prefix = "lineage", { definition = true, reload = true } = {}) {
       const scopedInstructions = new Set([
-        "ForkResident", "UpdateResident", "DeleteResident", "MoveLineageObjects",
+        "ForkResident", "UpdateResident", "MoveLineageObjects",
         "CreateWorkspaceHandoff", "UpdateWorkspaceHandoff", "DeleteWorkspaceHandoff", "RunWorkspaceHandoff",
       ]);
       if (scopedInstructions.has(name)) args = { ...args, lineage_id: requiredLineageId(lineageId) };
@@ -104,10 +104,13 @@
         instructionControls.expectedVersion = expectedVersion;
       }
       let result;
+      const residentDeletes = name === "ApplyLineageChanges" && !args.dry_run
+        ? (args.operations || []).filter(op => op.op === "delete" && op.kind === "resident").map(op => op.id)
+        : [];
       try {
         const operation = () => execute(name, args, instructionControls);
-        result = name === "DeleteResident" && window.PortalResidentService?.withResidentDeletion
-          ? await window.PortalResidentService.withResidentDeletion(args.resident_id, operation)
+        result = residentDeletes.length === 1 && args.operations.length === 1 && window.PortalResidentService?.withResidentDeletion
+          ? await window.PortalResidentService.withResidentDeletion(residentDeletes[0], operation)
           : await operation();
       } catch (error) {
         if (definition && ["instruction.conflict", "instruction.version_conflict"].includes(error.code)) {
@@ -127,9 +130,8 @@
         }
         throw error;
       }
-      const deletedResidents = result?.deleted_resident_ids || (name === "DeleteResident" ? [args.resident_id]
-        : name === "ApplyLineageChanges" ? (args.operations || []).filter(op => op.op === "delete" && op.kind === "resident").map(op => op.id)
-        : name.startsWith("Delete") ? (result?.resident_ids || []) : []);
+      const deletedResidents = result?.deleted_resident_ids || (name === "ApplyLineageChanges"
+        ? residentDeletes : name.startsWith("Delete") ? (result?.resident_ids || []) : []);
       const previousRead = reads.get(lineageId);
       const refresh = Promise.resolve().then(async () => {
         try {
@@ -162,17 +164,36 @@
       return payload.defer_refresh ? { ...(result || {}), refresh } : refresh;
     }
 
+    function editProgram(payload, operation, prefix, placement = {}, additionalOperations = []) {
+      const lineageId = requiredLineageId(payload.lineage_id);
+      return mutate(lineageId, "ApplyLineageChanges", {
+        lineage_id: lineageId, operations: [operation, ...additionalOperations], ...placement,
+      }, payload, prefix);
+    }
+
     return Object.freeze({
       listLineages() {
         return get("/lineage/api/lineages");
       },
       loadLineage,
       mutate,
-      createLineage(payload = {}) {
-        return execute("CreateLineage", pick(payload, [
+      async createLineage(payload = {}) {
+        const creation = controls(payload, "lineage-create");
+        const result = await execute("CreateLineage", pick(payload, [
           "title", "description", "project_id", "leader_resident_id",
-          "definition", "familize",
-        ]), { idempotencyKey: String(payload.idempotency_key || "").trim() || newKey("lineage-create") });
+          "definition",
+        ]), creation);
+        if (!payload.familize) return result;
+        try {
+          const family = await execute("Familize", {
+            lineage_id: result.lineage_id, scope: "lineage", ...pick({ goal: payload.description }, ["goal"]),
+          }, { idempotencyKey: `${creation.idempotencyKey}:family` });
+          return { ...result, family_id: family.family_id };
+        } catch (error) {
+          error.details = { ...error.details, lineage_id: result.lineage_id };
+          error.message = `${window.PortalI18n.t("Lineage 已创建，但 Familize 未完成。")} ${error.message || error}`;
+          throw error;
+        }
       },
       updateMetadata(payload = {}) {
         const lineageId = requiredLineageId(payload.lineage_id);
@@ -192,7 +213,7 @@
       moveObjects(payload = {}) {
         const ids = [payload.lineage_id, payload.target_lineage_id].filter(Boolean);
         const expected = Object.fromEntries(ids.filter(id => revisionOf(id) !== undefined).map(id => [id, revisionOf(id)]));
-        return mutate(payload.lineage_id, "MoveLineageObjects", pick(payload, ["object_ids", "target_lineage_id"]),
+        return mutate(payload.lineage_id, "MoveLineageObjects", pick(payload, ["object_ids", "target_lineage_id", "allow_empty_source"]),
           { ...payload, expected_version: payload.expected_version ?? expected }, "lineage-move", { reload: false });
       },
       getMoveOperation(operationId) {
@@ -241,8 +262,11 @@
       },
       branchNode(payload = {}) {
         const lineageId = requiredLineageId(payload.lineage_id);
-        return mutate(lineageId, "ForkResident", pick(payload, [
-          "source_resident_id", "fork_mode", "context_source_resident_id", "message",
+        // Quick actions still present fixed round counts in the view.
+        const recent = /^recent-(\d+)$/.exec(payload.fork_mode);
+        const fork = recent ? { ...payload, fork_mode: "recent", recent_rounds: Number(recent[1]) } : payload;
+        return mutate(lineageId, "ForkResident", pick(fork, [
+          "source_resident_id", "fork_mode", "recent_rounds", "context_source_resident_id", "message",
           "title", "provider", "account_id", "family_id", ...PLACEMENT,
         ]), payload, "resident-fork");
       },
@@ -250,7 +274,7 @@
         return mutate(String(payload.lineage_id || ""), "UpdateResident", pick(payload, ["resident_id", "title"]), payload, "resident-update");
       },
       deleteNode(payload = {}) {
-        return mutate(String(payload.lineage_id || ""), "DeleteResident", pick(payload, ["resident_id"]), payload, "resident-delete");
+        return editProgram(payload, { op: "delete", kind: "resident", id: payload.resident_id }, "resident-delete");
       },
       deleteObjects(payload = {}) {
         const lineageId = requiredLineageId(payload.lineage_id);
@@ -269,35 +293,47 @@
           idempotencyKey: String(payload.idempotency_key || "").trim() || newKey("workspace-file"),
         });
       },
-      createProgramComponent(payload = {}) {
-        const lineageId = requiredLineageId(payload.lineage_id);
-        return mutate(lineageId, "CreateComponent", {
-          lineage_id: lineageId,
-          ...pick(payload, ["kind", "title", "client_key", "config", "watch_subject", ...PLACEMENT]),
-        }, payload, "component-create");
+      async createProgramComponent(payload = {}) {
+        const result = await editProgram(payload, {
+          op: "create", kind: "component",
+          value: pick(payload, ["kind", "title", "client_key", "config"]),
+        }, "component-create", pick(payload, PLACEMENT));
+        return { ...result, component_id: result.created_ids?.[0] };
       },
-      saveProgramComponent(payload = {}) {
-        const lineageId = requiredLineageId(payload.lineage_id);
-        const changes = pick(payload.component || payload.changes || {}, ["title", "config", "watch_subject"]);
-        return mutate(lineageId, "UpdateComponent", { lineage_id: lineageId, component_id: payload.component_id, changes }, payload, "component-update");
+      async saveProgramComponent(payload = {}) {
+        const id = payload.component_id;
+        const changes = pick(payload.component || payload.changes || {}, ["title", "config"]);
+        const result = await editProgram(payload, { op: "update", kind: "component", id, changes },
+          "component-update", {}, payload.wire_operations);
+        const withComponent = receipt => ({
+          ...receipt,
+          component: receipt.lineage?.program?.components?.find(item => item.id === id) || { id, ...changes },
+          created_wire_ids: receipt.created_ids?.filter(value => value.startsWith("wire_")) || [],
+          updated_wire_ids: receipt.updated_ids?.filter(value => value.startsWith("wire_")) || [],
+          removed_wire_ids: receipt.deleted_ids?.filter(value => value.startsWith("wire_")) || [],
+        });
+        const response = withComponent(result);
+        if (result.refresh) {
+          response.refresh = result.refresh.then(withComponent);
+          response.refresh.catch(() => {});
+        }
+        return response;
       },
       deleteProgramComponent(payload = {}) {
-        const lineageId = requiredLineageId(payload.lineage_id);
-        return mutate(lineageId, "DeleteComponent", { lineage_id: lineageId, component_id: payload.component_id }, payload, "component-delete");
+        return editProgram(payload, { op: "delete", kind: "component", id: payload.component_id }, "component-delete");
       },
       saveProgramWire(payload = {}) {
-        const lineageId = requiredLineageId(payload.lineage_id);
-        const wire = pick(payload.wire || payload, [
-          "client_key", "source", "source_port", "target", "target_port", "kind", "label", "config",
+        const source = payload.wire || payload;
+        const wire = pick(source, [
+          "client_key", "source", "source_port", "target", "target_port", "label", "config",
         ]);
         if (payload.wire_id) {
-          return mutate(lineageId, "UpdateWire", { lineage_id: lineageId, wire_id: payload.wire_id, changes: wire }, payload, "wire-update");
+          return editProgram(payload, { op: "update", kind: "wire", id: payload.wire_id, changes: wire }, "wire-update");
         }
-        return mutate(lineageId, "CreateWire", { lineage_id: lineageId, ...wire }, payload, "wire-create");
+        return editProgram(payload, { op: "create", kind: "wire", value: { ...wire, kind: source.kind } }, "wire-create");
       },
       deleteProgramWire(payload = {}) {
-        const lineageId = requiredLineageId(payload.lineage_id);
-        return mutate(lineageId, "DeleteWire", { lineage_id: lineageId, wire_id: payload.wire_id }, payload, "wire-delete");
+        return editProgram(payload, { op: "delete", kind: "wire", id: payload.wire_id }, "wire-delete");
       },
       listTriggerPaths(payload = {}) {
         return execute("ListTriggerPaths", pick(payload, ["lineage_id", "resident_id", "cursor", "limit"]));
@@ -352,7 +388,7 @@
       },
       executeHandoff(payload = {}) {
         return mutate(String(payload.lineage_id || ""), "RunWorkspaceHandoff",
-          pick(payload, ["handoff_id", "source_resident_id", "target_resident_id"]), payload, "handoff-prepare", { definition: false });
+          { handoff_id: payload.handoff_id }, payload, "handoff-prepare", { definition: false });
       },
       executeInstruction(name, args = {}, instructionControls = {}) {
         return execute(name, args, instructionControls);

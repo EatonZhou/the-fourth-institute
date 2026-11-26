@@ -45,92 +45,38 @@ def update_family(inv):
         raise invalid(str(exc)) from exc
 
 
-def dispatch_family_task(inv):
-    from ..family_task_dispatches import dispatch
-    return _dispatch_family_task(inv, dispatch)
+def update_facade_members(inv):
+    from ..relay_domain import update_facade_members as update
+    return update(inv.argument("resident_id"), inv.argument("member_ids"), inv.caller)
 
 
-def get_family_routing_context(inv):
+def check_relay_target(inv):
+    from ..relay_domain import check_target
+    return check_target(inv.argument("resident_id"), inv.argument("member_id"), inv.caller)
+
+
+def get_relay_context(inv):
     from ..family_routing_context import read
-    try:
-        return read(inv.argument("resident_id"), inv.argument("message_id"), inv.caller,
-                    section=inv.argument("section") or "members")
-    except ValueError as exc:
-        raise invalid(str(exc)) from exc
+    return read(inv.argument("resident_id"), inv.argument("message_id"), inv.caller,
+                section=inv.argument("section") or "members")
 
 
-def recover_family_task(inv):
-    from ..family_task_dispatches import recover_dispatch
-    return _dispatch_family_task(inv, recover_dispatch)
+def resolve_relayed_request(inv):
+    from ..relay_domain import resolve_request
+    return resolve_request(inv.argument("resident_id"), inv.argument("message_id"),
+                           inv.argument("review_message_id"), inv.caller, reason=inv.argument("reason"))
 
 
-def _dispatch_family_task(inv, operation):
-    try:
-        return operation(inv.argument("resident_id"), inv.argument("trigger"), inv.caller,
-                        facts=inv.argument("facts"), message_id=inv.argument("message_id") or "",
-                        source_message_id=inv.argument("source_message_id") or "",
-                        event=inv.argument("event"))
-    except ValueError as exc:
-        raise invalid(str(exc)) from exc
-
-
-def archive_family_result(inv):
-    from ..family_recovery import archive_result
-    try:
-        return archive_result(inv.argument("resident_id"), inv.argument("message_id"),
-                              inv.argument("steward_message_id"), inv.caller, reason=inv.argument("reason"))
-    except ValueError as exc:
-        raise invalid(str(exc)) from exc
-
-
-def check_family_recovery(inv):
-    from ..family_supervision import check
-    try:
-        return check(inv.argument("lineage_id"), inv.argument("family_id"), inv.caller,
-                     event=inv.argument("event"), escalate_reason=inv.argument("escalate_reason") or "")
-    except ValueError as exc:
-        raise invalid(str(exc)) from exc
-
-
-def check_family_role_availability(inv):
-    from ..family_quota import check_role_availability
-    try:
-        return check_role_availability(inv.argument("lineage_id"), inv.argument("family_id"), inv.caller)
-    except ValueError as exc:
-        raise invalid(str(exc)) from exc
-
-
-def check_family_progress(inv):
-    from ..family_progress import check, DEFAULT_INTERVAL
-    try:
-        return check(inv.argument("lineage_id"), inv.argument("family_id"), inv.caller,
-                     event=inv.argument("event"), every_turns=inv.argument("every_turns", DEFAULT_INTERVAL))
-    except ValueError as exc:
-        raise invalid(str(exc)) from exc
-
-
-def check_family_review(inv):
-    from ..family_review import check
-    return check(inv.argument("lineage_id"), inv.argument("family_id"), inv.caller,
-                 event=inv.argument("event"))
-
-
-def publish_family_progress(inv):
-    from ..family_progress import publish
-    try:
-        return publish(inv.argument("lineage_id"), inv.argument("family_id"), inv.caller,
-                       **{key: inv.argument(key) for key in ("batch_id", "report", "summary", "source_versions")})
-    except ValueError as exc:
-        raise invalid(str(exc)) from exc
-
-
-HANDLERS = {"Familize": familize, "Unfamilize": unfamilize, "DeleteFamily": delete_family, "UpdateFamily": update_family,
-            "GetFamilyRoutingContext": get_family_routing_context,
-            "ResolveFamilyRequest": archive_family_result,
-            "MaintainFamilyReview": check_family_review,
-            "MaintainFamilyRecovery": check_family_recovery, "MaintainFamilyProgress": check_family_progress,
-            "MaintainFamilyRoleAvailability": check_family_role_availability,
-            "PublishFamilyProgress": publish_family_progress, "DispatchFamilyTask": dispatch_family_task}
+HANDLERS = {
+    "Familize": familize,
+    "Unfamilize": unfamilize,
+    "DeleteFamily": delete_family,
+    "UpdateFamily": update_family,
+    "UpdateFacadeMembers": update_facade_members,
+    "CheckRelayTarget": check_relay_target,
+    "GetRelayContext": get_relay_context,
+    "ResolveRelayedRequest": resolve_relayed_request,
+}
 
 
 def get_family_chat_preferences(inv):

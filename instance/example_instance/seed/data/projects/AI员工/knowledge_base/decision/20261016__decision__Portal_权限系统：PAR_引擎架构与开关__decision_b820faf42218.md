@@ -111,18 +111,18 @@ Portal 业务层（ISA 内核、领域服务、页面入口、ResourceService）
 
 对象变化时也只通知端口：`sync_resource`（创建或修改，携带记录；删除记录也走这里）、`unregister_resources`、`sync_user`、`rename_element`（Project 改名时改写全部方案实例中的树路径）。权限指令通过 `manage` 进入。
 
-能通过 UpdateExecutionSettings 的主体在“执行设置”的“权限”分组切换开关，对应该指令的 `permission_system_enabled`，保存在 `execution_runtime.service_settings`。每个进程最多 3 秒后读到新值，读取失败时沿用上次的值，从未读到时按开启处理。
+能通过 `SetPermissionSystemEnabled` 的主体在“执行设置”的“权限”分组切换开关，保存在 `execution_runtime.service_settings`。每个进程最多 3 秒后读到新值，读取失败时沿用上次的值，从未读到时按开启处理。
 
 **Portal 管理员保底**（weihao 2026-10-19，da10d535）。权限方案可以把任何主体挡在外面，包括写方案的人自己。开关因此可以直接打开：不做打开前的调用回放、不做推算，也不做打开后的观察机制（第 5.10 节仍是预留），保底是一条独立于方案的 Portal 管理员规则，也是权限系统中方案之外唯一的判定（“个人 AMA 归所有者”是 Society 的规定，不在权限系统中，见第 5.5 节）。它在开关开或关、启用哪套方案时都一样，由端口在方案之前判定，方案无法收回：
 
-- Portal 管理员永远可以开关权限系统（UpdateExecutionSettings 只改 `permission_system_enabled`），永远可以读取方案列表（ListPermissionSchemes）和启用方案（ActivatePermissionScheme）。这是一条放行：管理员做这三件事时入口检查、`allows`、编辑器按钮、CheckPermission 和设置处理代码都不问引擎（CheckPermission 返回 `portal_admin: true`、`requests` 为空）。读取方案列表在保底内（9c94 按 weihao“无论方案怎么设置，管理员永远能切换方案”定，2026-10-19）：执行设置的方案下拉框靠它列出可选方案，读不到时启用的保底在页面上不成立；它只读，没有风险。只加这一条读指令，读取单个方案（GetPermissionScheme）等其余权限指令仍按方案判定。需要所有人都不受限时，出口仍是关闭开关。同一次调用里还有其他设置项时，整次调用按方案判定。非管理员照常按方案判定，开关关闭时照常放行。
+- Portal 管理员永远可以开关权限系统（`SetPermissionSystemEnabled`），永远可以读取方案列表（ListPermissionSchemes）和启用方案（ActivatePermissionScheme）。这是一条放行：管理员做这三件事时入口检查、`allows`、编辑器按钮、CheckInstructionPermission 和设置处理代码都不问引擎（CheckInstructionPermission 返回 `portal_admin: true`、`requests` 为空）。读取方案列表在保底内（9c94 按 weihao“无论方案怎么设置，管理员永远能切换方案”定，2026-10-19）：执行设置的方案下拉框靠它列出可选方案，读不到时启用的保底在页面上不成立；它只读，没有风险。只加这一条读指令，读取单个方案（GetPermissionScheme）等其余权限指令仍按方案判定。需要所有人都不受限时，出口仍是关闭开关。同一次调用里还有其他设置项时，整次调用按方案判定。非管理员照常按方案判定，开关关闭时照常放行。
 - 管理员名单只有 Portal 管理员能改：把其他 User 设为或取消 Portal 管理员，停用、启用或删除管理员账号（删除或停用管理员等同于取消其管理员身份）；不能对自己做。开关关闭时同样只有管理员能改，这推翻了 10-18“关闭时谁都能改分类、本人能改自己的分类”中涉及管理员的部分。管理员做这类只改名单的调用（UpdateUser 的 `changes` 只含 `category`、`status`，或删除管理员）时也不问方案；非管理员一律以 `instruction.forbidden` 拒绝。一般用户与实习用户之间的调整不在名单之内，按方案判定，关闭时放行。管理员不能取消自己，但两位管理员可能同时互相停用；所以名单变更的检查和写入在同一个账号事务里进行，持有 identity 锁（`administrators.list_change`），并发的变更依次判定，后一个看到前一个的写入。取消管理员的写入完成后，如果已经没有启用中的 Portal 管理员，整次回滚。删除管理员时先在这个事务里停用账号，其余删除步骤（包括调用 SocietyService）在事务之后进行。管理员只能是 User，Resident 没有分类，永远不在名单上。
 - 管理员的个人 AMA 中的 Resident 按主人判定（weihao 2026-10-26，第 5.5 节）：保底的三条放行和名单变更都把它当作主人，所以它也能开关权限系统、读取和启用方案、改管理员名单；“不能对自己做”同样把它当作主人，它不能取消、停用或删除自己的主人。名单里仍只有 User。
 - 新部署时第一个创建的账号在同一事务中成为 Portal 管理员，不论它来自设置链接、普通邀请还是 CreateUser；已删除账号留下的记录也算账号。首个管理员设置链接只在 Portal 还没有任何账号时可用，自己不授予任何东西，管理员身份来自这条规则。
 - 名单仍保存在账号记录的 `category = portal_admin`，方案的 `@portal_admins` 节点照旧从它收人；保底只决定谁能设、清 `portal_admin`，以及上面两条无条件放行。
 - 已知边界：保底只管管理员名单、开关和启用方案。开关关闭时，管理员账号的密码、访问令牌和找回邮箱与其他账号一样，任何已登录主体都能修改（ResetUserPassword、CreateUserAccessToken、UpdateUser 改 `recovery_email`、RevokeUserSessions）。weihao 2026-10-19 确认不收紧，这些账号凭据和找回方式不并入保底。
 
-规则集中在 `permission_system/administrators.py`，不加载引擎。GetInstructionSchema 的 `permission.portal_admin` 对 UpdateExecutionSettings、ListPermissionSchemes、ActivatePermissionScheme、UpdateUser、DeleteUser 写出这条保底，开关关闭时也写。
+规则集中在 `permission_system/administrators.py`，不加载引擎。GetInstructionSchema 的 `permission.portal_admin` 对 SetPermissionSystemEnabled、ListPermissionSchemes、ActivatePermissionScheme、UpdateUserCategory、UpdateUserStatus、DeleteUser 写出这条保底，开关关闭时也写。
 
 **关闭就是没有权限系统**（weihao 2026-10-18）。端口不导入引擎，只检查已登录（有效的 User、Resident 或 Portal 自身）和上面的管理员名单规则。其余一律放行，包括 CreateTerminal；指令声明中没有按 User 分类的例外，GetInstructionSchema 的 `permission` 报告不需要权限（Portal 管理员保底照样写出）。一般用户与实习用户之间的分类调整同样放行（weihao 2026-10-18），开启时由方案对 UpdateUser 的要求判定。`allows` 对已登录主体都为真，`permitted` 对已登录主体的每个资源都通过。
 
@@ -282,7 +282,7 @@ weihao 2026-10-18 定稿。5.1 至 5.3、5.5 与 5.6 已实现，第 3 节按实
 - **个人 AMA**（weihao 2026-10-26 修订）。分四件事：
   - *AMA 等同于主人。* 个人 AMA 中登记了 `personal_owner_id` 的 Resident（包括多层分支）在一切权限判定中与主人 User 相同。引擎判定这样的 Resident 时，在它自己的 P 路径之外加上主人的 P 路径（`Engine.represents`，`par.represents` 读 `personal_ama.owner_of`），主人的全部表项、分类节点上的表项和收到的临时凭证都对它生效；它自己位置上的表项照常生效，只增不减。这不依赖方案怎样放置 AMA，换任何方案都成立。GetEffectivePermissions 对它报告 `represents` 并在 `path` 中列出两条路径。Portal 管理员保底同样按主人判定（第 3.1 节）。
   - *“个人 AMA 归所有者”是 Society 的规定，不是权限。* 规定写在 `permission_system/personal_ama.py`：个人 AMA 的 Lineage、Resident、Family 和其文件夹中的 Workspace 只对所有者、所有者的 AMA Resident 和 Portal 自身存在，其余主体读、改、搜索、列出时得到 not found（`personal_ama.NotFound`，是 `KeyError`），不出现“无权”“需要 @xxx”之类的权限说法。开关开或关它都独立生效；登记所有者及其 AMA 的原规则不读方案，额外临时委托按精确资源和动作核验活跃临时行与 deny；开关开启时，规定放过的再按方案判定。权限端口中原来的 `acts_for`、`private_reaches`、`hidden_private` 和 `permitted` 的 `owners` 参数已删除。
-  - *投递对所有人开放。* 任何已登录的 User 和 Resident 都可以 DeliverMessage（以及 ForwardMessages）到任何人的个人 AMA，这是规定唯一的例外；读对话、搜索、查看状态、管理一律不开放。不能读该 AMA 的发送方只得到自己那条消息的回执（`resident_id`、`message_id`、`message`、`input_state`、是否接收、注入与排期情况），不带 AMA 的状态、队列、游标或对话控制，也不回显主人的消息；引用回复仍要求能读被引用的对话。开关开启时 DeliverMessage 还要过方案：默认方案“全员可给 Resident 发消息”的 r 从“共享”改为 Portal 根，覆盖个人空间中的 AMA（decision_600ae27b0538）。
+  - *投递对所有人开放。* 任何已登录的 User 和 Resident 都可以 DeliverMessage（以及 ForwardMessagesToResident）到任何人的个人 AMA，这是规定唯一的例外；读对话、搜索、查看状态、管理一律不开放。不能读该 AMA 的发送方只得到自己那条消息的回执（`resident_id`、`message_id`、`message`、`input_state`、是否接收、注入与排期情况），不带 AMA 的状态、队列、游标或对话控制，也不回显主人的消息；引用回复仍要求能读被引用的对话。开关开启时 DeliverMessage 还要过方案：默认方案“全员可给 Resident 发消息”的 r 从“共享”改为 Portal 根，覆盖个人空间中的 AMA（decision_600ae27b0538）。
   - *方案中 AMA 的放置。* R 树“个人空间 → 个人 AMA”仍有用：所有者在个人空间上的 admin 表项让主人能管理自己的 AMA，管理员表项写在“共享”上覆盖不到这里，方案读判定也随之私有。它不再承担私有规定。P 树原有的“User → 个人 AMA（在所有者名下）”在引擎按主人判定之后已经多余，2026-10-27 删去（weihao 定，df5391c）：个人 Lineage 改按没有 Project 的 Lineage 放在“Resident”下。删除前核对线上实例：没有表项指向这个节点；矿智 上对两个 AMA Lineage 元素的 deny 指向的是元素本身，随元素移动原样保留；“User”和“Resident”节点上都没有表项。删除后 `@residents` 下 16 个个人 Lineage 的 62 个 Resident 全部按主人判定，各自的有效权限都覆盖主人的全部 permit 与 deny，实际判定没有变化。授权差同样按主人计算（第 5.12 节）。
 - **Workspace**：按绝对路径访问时，先按已登记 Workspace 的路径做最长前缀匹配，得到所属的 Workspace 资源 ID，再由引擎按这个 Workspace 判定；不属于任何已登记 Workspace 的路径按 R 树默认节点判定。删除独立的路径授权。按绝对路径只做读取（链接文件预览）；写入只有 UpdateWorkspaceFile 一条路，它只接受 `<workspace_id>/file/<相对路径>`，预览结果里的 `file_address` 给出这个地址（weihao 2026-10-18）。
 - **免检指令**：处理器中凡属“操作别人的对象”的检查改为指令声明的要求（第 4 节列出的几类）；属于领域角色的检查保留在领域代码中。
@@ -297,7 +297,8 @@ weihao 2026-10-18 定稿。5.1 至 5.3、5.5 与 5.6 已实现，第 3 节按实
 
 **临时凭证就是表里一行带过期时间的 permit。**
 
-- A 签发给 B 时，只检查一件事：A 此刻在该资源上持有所交出的 A 节点（第 4 节）。检查通过后，在实例表中写入一行 (B, A 节点, 资源, permit)，带上 `expires_at` 和签发者，立即生效，不需要重建。
+- A 向 B 签发按时长的凭证时，核验 A 此刻持有所交出的 A 节点，写入带 `expires_at` 与签发者的 permit，立即生效。
+- 任务型签发按已认证发起人、接收方和消息 ID 核验尚未受理的准备输入，暂存禁用 permit 及签发回执，复用同一消息锁完成受理激活、取消与终态回收。结构化审批在受理事务内从持久问题取得批准集合并重新鉴权，全部匹配才整批启用（decision_1e2eb869bc10）。
 - 不复制 A 的 deny，有效期也不受 A 自己那条表项的约束。A 之后失去权限不影响已签发的凭证。重新生成实例时临时凭证按第 3.3 节保留；规则合并后节点消失的处理见第 5.11 节。
 - 判定时，过期的行视为不存在；日常维护删除这些行。只有签发者和接收者可以撤销；接收者做完事后可以主动交还。
 - **个人 AMA Resident 与主人算同一方**（weihao 2026-10-26 授权确定）。两者之间不签发凭证，任一方向都拒绝（“同一身份，主人的权限它已经拥有”）。凭证行如实记录实际调用者：AMA Resident 签发时签发者是它自己，交给它的凭证接收者是它自己。交给主人的凭证经引擎的主人路径同样对主人的 AMA Resident 生效，所以 Resident 回传到 AMA 后，用户在对话中交出的权限 AMA 也能用。续期、撤销按同一方判定：主人或其 AMA Resident 可以续期、收回对方签发的凭证，也可以交还对方收到的凭证。AMA Resident 的临时凭证列表包括主人签发和收到的凭证。
@@ -306,14 +307,14 @@ weihao 2026-10-18 定稿。5.1 至 5.3、5.5 与 5.6 已实现，第 3 节按实
 
 | 方式 | 做法 | 结束条件 |
 |---|---|---|
-| 随任务 | A 在发给 B 的消息上附带凭证（DeliverMessage 的凭证参数，或签发时给出 `message_id`）；凭证行记录这条消息 | B 对这条消息的输入进入完成、失败或取消状态时，在同一事务中删除这一行（`inline.end_with_input`） |
+| 随任务 | 同一实际发起人准备固定的输入、逐项签发待生效凭证并原样投递。受理和启用同事务 | 准备取消或绑定输入完成、失败、取消时，在同一事务回收 |
 | 按时长 | 按 `expires_in_seconds` 签发，默认一天 | 到期；到期前签发者可以用 UpdateTemporaryCredential 续期 |
 
 - 两种方式都有 7 天的兜底上限：随任务的凭证在消息长时间未处理完时，最迟 7 天后失效；续期后的总时长也不超过从签发起 7 天。
 - 凭证回执区分生命周期和时间上限：`lifetime=task` 绑定 `message_id`，输入完成、失败或取消即失效；任务结束时刻未知，所以 `expires_at` 为 null。`lifetime=duration` 的 `expires_at` 是计划到期时间。两种回执的 `deadline_at` 都是最迟截止时间，不承诺此前持续有效。表项中的 `expires_at` 仍存储截止上限，供引擎判定，不能当作任务结束时间。
 - 回执不是后台工作持续获权的保证。签发者撤回、接收者交还或权限状态变化后仍须按当前权限判定。任务结束自动删除或已撤回的凭证再次撤销返回 not_found；按时长到期后已被清理的凭证同样如此。调用者不得据此重签或延长授权。
 - 随任务的凭证可能在事情真正做完前失效，例如 B 把后续工作安排到以后的轮次。这时 B 被拒绝，再向 A 申请或请 A 按时长签发；提前失效不会多给出权限。
-- **用户在对话中交出权限。** Resident 缺少用户持有的权限时，在提问卡片的问题中列出所需的 `{a, resource_id}`（decision_1e2eb869bc10）；用户点“同意交出这些权限”，浏览器以用户本人身份调用 DeliverMessage，把这些凭证随回答消息签发，凭证在 Resident 处理完这条回答时结束。Resident 不能凭消息文字替用户签发。回答带的凭证必须正好是所同意问题列出的权限，多给、少给或在别人的问题组上同意都被拒绝。2026-10-24 weihao 确定：用户的操作都应能在对话中完成，不再要求用户另行签发。
+- **用户在对话中交出权限。** Resident 在提问卡片中列出所需的 `{a, resource_id}`（decision_1e2eb869bc10）。用户同意后，浏览器按该 User 的真实身份准备、签发并投递。服务端核实原提问成员和精确批准集合。门面回答将凭证直接绑定到实际承接成员输入的生命周期。用户在同一张作答卡片完成批准。
 
 ### 5.7 事实的归属与写入时机（weihao 2026-10-18）
 
@@ -364,10 +365,10 @@ weihao 2026-10-18 定稿。5.1 至 5.3、5.5 与 5.6 已实现，第 3 节按实
 
 现在只保留它需要的接口，不建回放、记录或汇报功能：
 
-- CheckPermission 按 (主体, 指令, 参数) 试判定，返回结果、原因和命中的表项；开关关闭时也按启用方案的实例判定，不受关闭模式影响。
+- CheckInstructionPermission 按 (主体, 指令, 参数) 试判定，返回结果、原因和命中的表项；开关关闭时也按启用方案的实例判定，不受关闭模式影响。
 - 指令执行记录保留调用者、指令名和参数，回放可以直接读取。
 
-实现状态（2026-10-18）：CheckPermission 一直按启用方案的实例判定，与开关无关，返回 `allowed`、每个请求的 `reason` 和命中的 `permit`/`deny` 表项；开关关闭时的这一行为已有测试固定。
+实现状态（2026-10-18）：指令与 A 节点试判定均按启用方案的实例判定，与开关无关，返回 `allowed`、每个请求的 `reason` 和命中的 `permit`/`deny` 表项；开关关闭时的这一行为已有测试固定。
 
 ### 5.11 内置方案规则只读、可直接启用（weihao 2026-10-18，2026-10-19 修订）
 

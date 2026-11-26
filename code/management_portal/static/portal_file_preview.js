@@ -115,8 +115,9 @@
           const identity = window.PortalIdentity?.peek?.() || {};
           const principal = identity.principal?.id || identity.username || window.PortalIdentity?.username?.();
           if (!principal) throw new Error("当前身份尚未就绪");
-          const permission = await window.PortalInstructionClient.execute("CheckPermission", {
-            principal_id: principal, a: "UpdateWorkspaceFile", resource_id: reference.workspace_id,
+          const permission = await window.PortalInstructionClient.execute("CheckInstructionPermission", {
+            principal_id: principal, instruction: "UpdateWorkspaceFile",
+            arguments: { address: target.address },
           }, { signal });
           allowed = permission?.allowed === true;
         } catch (error) {

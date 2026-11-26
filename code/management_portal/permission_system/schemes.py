@@ -39,7 +39,8 @@ from typing import Any
 
 from . import authdiff
 from .engine.model import DENY, PERMIT, Entry
-from .engine.store import Content, EntryConflict, Store, new_entry_id
+from .engine.store import Content, EntryConflict, ReadOnlyStore, Store, new_entry_id
+from .personal_ama import readonly_owners_of
 from .scheme import vocabulary
 from .scheme.compiler import SchemeError
 from .scheme.repository import SchemeConflict, SchemeNotFound, Schemes
@@ -205,7 +206,7 @@ def _checked(context: Context, document: Any) -> dict[str, Any]:
     return {"valid": True, "errors": [], "unmapped": unmapped(document)}
 
 
-def create_scheme(context: Context, actor: str, arguments: Mapping[str, Any]) -> dict[str, Any]:
+def create_scheme(context: Context, actor: str, arguments: Mapping[str, Any], *, preview: bool = False) -> dict[str, Any]:
     """A new scheme: a copy of another scheme's rules and instance, or new rules with an instance generated from the objects."""
     from .facts import Instance
 
@@ -226,7 +227,7 @@ def create_scheme(context: Context, actor: str, arguments: Mapping[str, Any]) ->
     for name in ("title", "description"):
         if text(arguments, name):
             document[name] = text(arguments, name)
-    if arguments.get("dry_run"):
+    if preview:
         return _checked(context, document)
     facts = None if source else context.facts()
     store = context.store
@@ -274,7 +275,8 @@ def regeneration_diff(context: Context, scheme_id: str, rules: Any, facts: list,
         nodes = instance.store.nodes(connection)
     target = instance.generated(active.values(), creators)
     auth = authdiff.compare(authdiff.View(old, nodes, present),
-                            authdiff.View(new, instance.targets(active), dict.fromkeys(target, False)), limit=limit)
+                            authdiff.View(new, instance.targets(active), dict.fromkeys(target, False)), limit=limit,
+                            represents=readonly_owners_of if isinstance(context.store, ReadOnlyStore) else None)
     baseline = Instance(old, store).generated(active.values(), creators)
     added = sorted(target - present.keys())
     removed = sorted(present.keys() - target)
@@ -286,7 +288,7 @@ def regeneration_diff(context: Context, scheme_id: str, rules: Any, facts: list,
             "lost_edits": _listed(lost, limit)}, auth
 
 
-def update_scheme(context: Context, actor: str, arguments: Mapping[str, Any]) -> dict[str, Any]:
+def update_scheme(context: Context, actor: str, arguments: Mapping[str, Any], *, preview: bool = False) -> dict[str, Any]:
     """Replace a custom scheme's rules; when what the instance is generated from changes, generate it again."""
     from .facts import Instance
 
@@ -307,17 +309,17 @@ def update_scheme(context: Context, actor: str, arguments: Mapping[str, Any]) ->
                                  f"不是 {merged}；请重新读取来源后再合并")
     if not isinstance(rules, Mapping) or rules.get("scheme_id") != scheme_id:
         error = SchemeError([{"path": "scheme_id", "message": "方案 ID 不能修改"}])
-        if arguments.get("dry_run"):
+        if preview:
             return {"valid": False, "errors": error.errors, "unmapped": unmapped(rules)}
         raise error
     rules = dict(rules)
     checked = _checked(context, rules)
-    if arguments.get("dry_run") and not checked["valid"]:
+    if preview and not checked["valid"]:
         return checked
     new = context.schemes.compile(rules)
     saved = context.store.scoped(scheme_id).instance()
     regenerate = saved is None or saved["rules_digest"] != new.rules_digest
-    if arguments.get("dry_run") and _flag(arguments, "diff") is False:
+    if preview and _flag(arguments, "diff") is False:
         # Checking while editing: compiling is enough; the diff reads every object.
         return {**checked, "regenerates": regenerate}
     empty = {"total": 0, "items": []}
@@ -329,14 +331,16 @@ def update_scheme(context: Context, actor: str, arguments: Mapping[str, Any]) ->
     kept: dict[str, Any] = {"unrestored": [], "deleted_again": []}
     previous = context.schemes.compiled(scheme_id)
     if keeping:
-        if arguments.get("dry_run"):
+        if preview:
             report = Instance(new, store).regenerate_keeping_edits(facts, previous, changes=True, auth_limit=limit, dry_run=True)
             return {**checked, "diff": _merge_diff(report, limit), "auth_diff": report["auth_diff"], "regenerates": True,
                     **{name: report[name] for name in kept}}
     else:
         diff, auth = (regeneration_diff(context, scheme_id, rules, facts, limit=limit) if regenerate
-                      else ({"added": empty, "removed": empty, "lost_edits": empty}, authdiff.kept(previous, new, context.store.scoped(scheme_id), limit=limit)))
-        if arguments.get("dry_run"):
+                      else ({"added": empty, "removed": empty, "lost_edits": empty}, authdiff.kept(
+                          previous, new, context.store.scoped(scheme_id), limit=limit,
+                          represents=readonly_owners_of if preview else None)))
+        if preview:
             return {**checked, "diff": diff, "auth_diff": auth, "regenerates": regenerate}
     with store.transaction() as connection:
         version = context.schemes.update(scheme_id, rules, expected_version=context.expected(), actor=actor,
@@ -447,9 +451,10 @@ def prepare(context: Context, scheme_id: str, facts: list, *, dry_run: bool, vie
     startup merge ran, or after it failed, loses nothing.  ``view`` adds the
     instance it leaves (or, dry, would leave) as ``view``, an ``authdiff.View``.
     """
-    from .facts import Instance, _RolledBack
+    from .facts import Instance
 
-    outer = connection is not None
+    if dry_run:
+        return preview_prepare(context, scheme_id, facts, view=view, connection=connection)
     compiled = context.schemes.compiled(scheme_id, connection)
     instance = Instance(compiled, context.store)
     with instance.store.transaction(connection) as connection:
@@ -459,26 +464,40 @@ def prepare(context: Context, scheme_id: str, facts: list, *, dry_run: bool, vie
         before = {"removed_nodes": len(instance.store.nodes(connection)),
                   "removed_entries": instance.store.count(connection, where="expires_at IS NULL")}
         keeping = saved is not None and context.schemes.builtin(scheme_id) and instance.store.basis(connection) is not None
-        if keeping and not dry_run:
+        if keeping:
             return _written_back(context, scheme_id, facts, before, dry_run=False, view=view, connection=connection)
-        if not keeping and dry_run:
-            generated_view = authdiff.View.generated(compiled, context.store, facts)
-            generated = {"nodes": len(generated_view.nodes), "entries": len(generated_view.entries)}
-        elif not keeping:
-            generated = instance.generate(facts, connection=connection)
-            generated_view = authdiff.View.stored(compiled, instance.store, connection) if view else None
-    if keeping:
-        # A dry run writes back in a transaction of its own and rolls it back, so the report says what activating would do.
-        if outer:
-            raise ValueError("dry_run 在自己的事务中执行并回滚")
-        try:
-            with context.store.transaction() as own:
-                raise _RolledBack(_written_back(context, scheme_id, facts, before, dry_run=True, view=view, connection=own))
-        except _RolledBack as rolled:
-            return rolled.report
+        generated = instance.generate(facts, connection=connection)
+        generated_view = authdiff.View.stored(compiled, instance.store, connection) if view else None
     report = {"regenerate": True, "added_nodes": generated["nodes"], "moved_nodes": 0, "added_entries": generated["entries"], **before}
     if view:
         report["view"] = generated_view
+    return report
+
+
+def preview_prepare(context: Context, scheme_id: str, facts: list, *, view=False, connection=None):
+    from .facts import Instance
+
+    compiled = context.schemes.compiled(scheme_id, connection)
+    instance = Instance(compiled, context.store)
+    with instance.store.read(connection) as connection:
+        saved = instance.store.instance(connection)
+        if saved is not None and saved["rules_digest"] == compiled.rules_digest:
+            return _completed(instance, facts, dry_run=True, view=view, connection=connection)
+        before = {"removed_nodes": len(instance.store.nodes(connection)),
+                  "removed_entries": instance.store.count(connection, where="expires_at IS NULL")}
+        basis = instance.store.basis(connection) if saved and context.schemes.builtin(scheme_id) else None
+        if basis is not None:
+            previous = context.schemes.compile(basis, saved=True, before=True)
+            generated = instance.preview_regeneration(facts, previous, connection=connection)
+            target = generated.pop("preview")
+        else:
+            target = authdiff.View.generated(compiled, context.store, facts)
+            generated = {"nodes": len(target.nodes), "entries": len(target.entries)}
+    report = {"regenerate": True, "added_nodes": generated["nodes"], "moved_nodes": 0,
+              "added_entries": generated["entries"], **before}
+    report.update({name: generated[name] for name in ("restored_entries", "unrestored", "deleted_again") if name in generated})
+    if view:
+        report["view"] = target
     return report
 
 
@@ -511,12 +530,12 @@ def _written_back(context: Context, scheme_id: str, facts: list, before: Mapping
     return report
 
 
-def activate_scheme(context: Context, actor: str, arguments: Mapping[str, Any]) -> dict[str, Any]:
+def activate_scheme(context: Context, actor: str, arguments: Mapping[str, Any], *, preview: bool = False) -> dict[str, Any]:
     """Make the permission system use a scheme, built-in or custom (§5.11); on, its instance is brought up to date first,
     in the same transaction."""
     scheme_id = text(arguments, "scheme_id", required=True)
     compiled = context.schemes.compiled(scheme_id)
-    dry_run = bool(arguments.get("dry_run"))
+    dry_run = preview
     limit = _integer(arguments, "diff_limit", DIFF_LIMIT, minimum=1, maximum=DIFF_MAX)
     facts = context.facts()
     # The instance the permission system uses now, against the one it will use (§5.12).
@@ -533,7 +552,8 @@ def activate_scheme(context: Context, actor: str, arguments: Mapping[str, Any]) 
             result.update(prepare(context, scheme_id, facts, dry_run=False, view=True, connection=connection))
             context.schemes.activate(scheme_id, actor=actor, connection=connection)
         context.changed()
-    result["auth_diff"] = authdiff.compare(was, result.pop("view"), limit=limit)
+    result["auth_diff"] = authdiff.compare(was, result.pop("view"), limit=limit,
+                                         represents=readonly_owners_of if preview else None)
     return {**result, "activated": not dry_run}
 
 
@@ -756,10 +776,10 @@ def update_entry(context: Context, actor: str, arguments: Mapping[str, Any]) -> 
 def delete_entries(context: Context, actor: str, arguments: Mapping[str, Any]) -> dict[str, Any]:
     scheme, store = _scheme(context, arguments)
     ids = arguments.get("entry_ids")
-    if isinstance(arguments.get("entry_id"), str):
-        ids = [arguments["entry_id"]]
+    if "entry_id" in arguments:
+        raise ValueError("只接受 entry_ids")
     if not isinstance(ids, list) or not 1 <= len(ids) <= 1000 or any(not isinstance(item, str) for item in ids):
-        raise ValueError("需要 entry_id 或 1 至 1000 个 entry_ids")
+        raise ValueError("需要 1 至 1000 个 entry_ids")
     with store.transaction() as connection:
         found = {entry.entry_id: entry for entry in store.entries(connection, where="entry_id = ANY(%s)", parameters=(ids,))}
         for entry_id in ids:
@@ -777,9 +797,12 @@ ACTIONS: dict[str, Callable[[Context, str, Mapping[str, Any]], dict[str, Any]]] 
     "ListPermissionSchemes": list_schemes,
     "GetPermissionScheme": get_scheme,
     "CreatePermissionScheme": create_scheme,
+    "GetPermissionSchemeCreatePreview": lambda c, a, v: create_scheme(c, a, v, preview=True),
     "UpdatePermissionScheme": update_scheme,
+    "GetPermissionSchemeUpdatePreview": lambda c, a, v: update_scheme(c, a, v, preview=True),
     "DeletePermissionScheme": delete_scheme,
     "ActivatePermissionScheme": activate_scheme,
+    "GetPermissionSchemeActivationPreview": lambda c, a, v: activate_scheme(c, a, v, preview=True),
     "GetPermissionNode": node,
     "SearchPermissionNodes": search_nodes,
     "ListPermissionEntries": list_entries,
@@ -790,6 +813,8 @@ ACTIONS: dict[str, Callable[[Context, str, Mapping[str, Any]], dict[str, Any]]] 
 
 
 def manage(context: Context, instruction: str, arguments: Mapping[str, Any], *, actor: str) -> dict[str, Any]:
+    if "dry_run" in arguments:
+        raise ValueError("预览使用独立 GetPermissionScheme…Preview 指令")
     with instruction_errors():
         return ACTIONS[instruction](context, actor, arguments)
 

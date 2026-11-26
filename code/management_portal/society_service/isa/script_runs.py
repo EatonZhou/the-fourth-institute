@@ -12,5 +12,6 @@ HANDLERS = {
     'GetScriptRun': lambda inv: service.get(inv.argument('script_run_id'), inv.caller, lineage_id=inv.argument('lineage_id')),
     'ListScriptRuns': lambda inv: service.list_runs(inv.arguments, inv.caller),
     'ReadScriptRunOutput': lambda inv: service.read_output(inv.arguments, inv.caller),
+    'ReadScriptRunArtifact': lambda inv: service.read_output({**inv.arguments, 'stream': 'artifact'}, inv.caller),
     'CancelScriptRun': lambda inv: service.cancel(inv.argument('script_run_id'), inv.caller, lineage_id=inv.argument('lineage_id')),
 }

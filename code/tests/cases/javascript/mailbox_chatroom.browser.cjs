@@ -32,8 +32,8 @@ window.messages=Array.from({length:25},(_,i)=>({message_id:'msg_'+i,ordinal:i+1,
 window.fixtureRoom=()=>({chatroom_id:roomId,title:'产品讨论',members:['alice','bob'],permissions:{can_post:true},unread_mentions:[],unread_count:25,read_revision:1});
 window.PortalInstructionClient={execute:async(name,args)=>{
  calls.push({name,args});
- if(name==='ListMailboxTodos')return {items:[]};
- if(name==='ListInputHistory')return {messages:[]};
+ if(name==='SearchResources')return {items:[]};
+ if(name==='ListChatroomInputHistory')return {messages:[]};
  if(name==='GetChatroom'){if(denied)throw Error('没有访问这个聊天室的权限');return {chatroom:fixtureRoom()};}
  if(name==='ListChatroomMessages'){if(blocked)await new Promise(r=>window.releaseRoom=r);if(denied)throw Error('forbidden');return {messages:structuredClone(messages),next_cursor:''};}
  if(name==='UpdateChatroomReadPosition'){reads.push(args);return {chatroom:{...fixtureRoom(),unread_count:0}};}

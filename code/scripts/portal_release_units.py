@@ -53,6 +53,10 @@ LINEAGE_WORKBENCH_RELEASE_UNIT = (
     'management_portal/static/lineage_workbench_dialog_controls.js',
     'management_portal/static/portal_lineage_catalogs.js',
     'management_portal/static/portal_hatg_loader.js',
+    # The shared navigation lazy-loads Resident Menu parts on every page.
+    # Keep its module list with the menu factories, including indirect publishes
+    # through the Lineage unit, so a new part cannot ship without its loader.
+    'management_portal/static/portal_nav.js',
     'management_portal/static/portal_resident_menu_tabs.js',
     'management_portal/static/portal_resident_menu_resident.js',
     'management_portal/static/portal_resident_menu_transfer.js',

@@ -100,15 +100,14 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     await page.click('[data-session-restart-submit]');
     await page.waitForFunction(() => requests.length === 1);
     assert.equal(await page.evaluate(() => requests[0].model), 'm', 'switch submits the model displayed by the default option');
-    assert.equal(await page.evaluate(() => requests[0].context_strategy), 'preserve');
     // A same-Provider switch only saves the account configuration.
     await page.evaluate(() => openSettings());
     await page.selectOption('[data-session-target]', JSON.stringify(['codex', 'two']));
     assert.equal(await page.locator('[data-session-credits-consent]').isVisible(), false);
     await page.click('[data-session-restart-submit]');
     await page.waitForFunction(() => requests.length === 2);
-    assert.equal(await page.evaluate(() => requests[1].context_strategy), 'preserve');
-    assert.equal(await page.evaluate(() => Object.hasOwn(requests[1], 'credits_consent')), false);
+    assert.deepEqual(await page.evaluate(() => requests.map(request =>
+      ['operation', 'context_strategy', 'active_execution_policy', 'credits_consent'].filter(key => Object.hasOwn(request, key)))), [[], []]);
     // A failed or running initialization continues from the same panel.
     await page.evaluate(() => openSettings({initialization: {initialization_id: 'original-init', status: 'running'}}));
     assert.equal(await page.locator('[data-session-restart-submit]').innerText(), await page.evaluate(() => PortalI18n.t('继续当前初始化')));

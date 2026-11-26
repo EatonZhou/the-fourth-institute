@@ -11,8 +11,7 @@ DECLARATIONS = (
       parameters=(P("category", description="只列出这一对象类别；单独指定时跨发现分组查询"),
                   P("group", description="发现分组；与 category 同填时取交集；均省略时为 general",
                     enum=(*DISCOVERY_GROUPS, "all"))),
-      result=(R("instructions", "array", "指令名、类别、拥有服务、说明、是否改变状态和是否流式；"
-                "RunResourceAction 下列出各资源类型的动作"),
+      result=(R("instructions", "array", "指令名、类别、拥有服务、说明、是否改变状态和是否流式"),
               R("groups", "array", "各发现分组的名称、标题、指令数量与可查询类别；仅含已安装能力，不代表权限"),
               R("guide", "string", "Agent 指引的地址（Portal 内路径），按任务说明身份、调用方式和常用指令"))),
     D(name="GetInstructionSchema", category="isa", owner="entry", decides=FIXED,

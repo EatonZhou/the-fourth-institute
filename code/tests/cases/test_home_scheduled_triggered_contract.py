@@ -12,7 +12,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 NODE_PROBE = Path(__file__).with_name("javascript") / "scheduled_triggered.cjs"
 INJECTION_TEXT = '<img src=x onerror="window.__monitorInjected=1">'
 # Each monitor button asks for the instruction it runs (row.allows).
-MONITOR_INSTRUCTIONS = ("UpdateComponent", "SetComponentPaused", "TriggerEvent",
+MONITOR_INSTRUCTIONS = ("ApplyLineageChanges", "SetComponentPaused", "TriggerEvent",
                         "CancelScriptRun", "UpdateResidentSettings", "CancelInput")
 
 

@@ -20,8 +20,26 @@ if TYPE_CHECKING:
 
 
 def query(service: "ResourceService", **kwargs: Any) -> dict[str, Any]:
+    user_id = kwargs.get("user_id")
     query = ResourceQuery.from_kwargs(kwargs)
     enabled_types = service.resource_types.enabled_types()
+    if "mailbox_todo" in query.resource_types:
+        if query.resource_types != frozenset({"mailbox_todo"}) or not isinstance(user_id, str) or not user_id:
+            raise ValueError("Todo search requires only resource_type=mailbox_todo and user_id")
+        supported = {"actor", "resource_types", "user_id", "q", "limit", "offset", "include_attributes"}
+        if any(value not in (None, "", (), [], {}, False) for key, value in kwargs.items() if key not in supported):
+            raise ValueError("Todo search does not support these filters")
+        if "mailbox_todo" not in enabled_types:
+            return {"resources": [], "total": 0, "pending_count": 0, "next_cursor": None}
+        service._ensure_resolvers("mailbox_todo")
+        provider = service._resolvers.resolver_for("mailbox_todo")
+        if not callable(provider.query):
+            raise ResourceServiceUnavailable("Todo resolver does not provide scoped queries")
+        return provider.query(actor=query.actor, user_id=user_id, q=query.q, limit=query.limit,
+                              offset=query.offset,
+                              readable_ids=lambda ids: service._access.readable_ids(ids, actor=query.actor))
+    if user_id is not None:
+        raise ValueError("user_id is only supported for Mailbox Todo search")
     if query.resource_types and not enabled_types.intersection(query.resource_types):
         return query_records((), query)
     if query.q:
@@ -30,6 +48,8 @@ def query(service: "ResourceService", **kwargs: Any) -> dict[str, Any]:
         except ValueError:
             parsed = None
         if parsed is not None and parsed.value == query.q.strip("/"):
+            if parsed.resource_type == "mailbox_todo":
+                return query_records((), query, exact_address=True)
             if parsed.resource_type not in enabled_types:
                 return query_records((), query, exact_address=True)
             try:
@@ -50,6 +70,12 @@ def query(service: "ResourceService", **kwargs: Any) -> dict[str, Any]:
                 exact_address=True,
 
             )
+    # Private Todos are discovered only with an explicit owner scope, even in
+    # open permission mode; broad catalog queries never expose their snippets.
+    if not query.resource_types:
+        kwargs["resource_types"] = sorted(enabled_types - {"mailbox_todo"})
+        if not kwargs["resource_types"]:
+            return query_records((), query)
     return service._index().query(
         records_projector=service._collaboration_descriptors,
         records_projector_types=COLLABORATION_RESOURCE_TYPES,
@@ -62,6 +88,10 @@ def get(service: "ResourceService", resource_id: str, *, actor: str = "") -> dic
         resource_types = (service._identity.parse(resource_id).resource_type,)
     except ValueError:
         resource_types = service._identity.id_exception_types
+    if resource_types == ("mailbox_todo",):
+        # The registered resolver owns fresh records and domain privacy;
+        # resolve also applies enabled-type and generic read authorization.
+        return service.resolve(resource_id, actor=actor)["record"]
     from management_portal import portal_features
     authorities = {}
     for _feature, providers in portal_features.contributions('resource.authoritative_records'):

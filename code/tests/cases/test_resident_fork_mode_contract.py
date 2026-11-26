@@ -75,9 +75,9 @@ def test_structure_templates_use_the_current_full_mode(mode):
 
 
 
-@pytest.mark.parametrize("provider", [None, "claude", "kimi", "provider_api"])
-def test_isa_fork_default_emits_full_to_the_lineage_owner(monkeypatch, provider):
-    """ForkResident 默认以 full 模式提交，并带上指定的 Provider 与账号
+@pytest.mark.parametrize(("provider", "rounds"), [(None, None), ("claude", 3), ("kimi", None), ("provider_api", None)])
+def test_isa_fork_sends_the_selected_window_to_the_lineage_owner(monkeypatch, provider, rounds):
+    """ForkResident 传递所选轮数、Provider 和账号，缺省时使用完整窗口
 
     :design: decision_5bf5bfbd52cb, decision_d19b9909a674
     :design-point:
@@ -106,6 +106,7 @@ def test_isa_fork_default_emits_full_to_the_lineage_owner(monkeypatch, provider)
         call=InstructionCall.from_payload({
             "instruction": "ForkResident",
             "arguments": {"lineage_id": "lineage_aaaaaaaaaaaa", "source_resident_id": "resident_aaaaaaaaaaaa",
+                          **({"fork_mode": "recent", "recent_rounds": rounds} if rounds else {}),
                           **({"provider": provider, "account_id": "selected-account"} if provider else {})},
         }),
         context=InstructionContext(caller="CASE-A", entry="web"),
@@ -113,23 +114,44 @@ def test_isa_fork_default_emits_full_to_the_lineage_owner(monkeypatch, provider)
     )
     residents.fork_resident(inv)
     assert joins == [("lineage_aaaaaaaaaaaa", "resident_bbbbbbbbbbbb", "fbi_cccccccccccc", inv)]
-    assert payloads[0]["fork_mode"] == "full"
+    assert payloads[0]["fork_mode"] == ("recent" if rounds else "full")
+    assert payloads[0].get("recent_rounds") == rounds
     if provider:
         assert payloads[0]["provider"] == provider
         assert payloads[0]["backend_route_id"] == "selected-account"
 
 
-@pytest.mark.parametrize("mode", ["full", "compacted", "recent-5", "recent-10", "message"])
+@pytest.mark.parametrize("mode", ["full", "compacted", "recent", "message"])
 def test_every_fork_mode_forwards_provider_and_account(mode):
     """每种 fork 模式都把指定的 Provider 和 backend_route_id 传给创建"""
     authority = mock.Mock()
+    payload = {"mode": mode, "provider": "claude", "backend_route_id": "chosen-route"}
+    if mode == "recent":
+        payload["recent_rounds"] = 3
     lineage_branch_transitions.create_derived_resident(
-        "resident_aaaaaaaaaaaa", {"mode": mode, "provider": "claude", "backend_route_id": "chosen-route"},
+        "resident_aaaaaaaaaaaa", payload,
         "CASE-A", "test", resident_authority=authority,
     )
     call, = authority.mock_calls
     assert call.kwargs["provider"] == "claude"
     assert call.kwargs["backend_route_id"] == "chosen-route"
+    if mode == "recent":
+        assert call.args[2] == 3
+
+
+@pytest.mark.parametrize("fields", [
+    {"mode": "recent-5"}, {"mode": "recent-10"}, {"mode": "recent"},
+    {"mode": "recent", "recent_rounds": 0}, {"mode": "recent", "recent_rounds": True},
+    {"mode": "recent", "recent_rounds": "3"}, {"mode": "recent", "recent_rounds": 3.0},
+    {"mode": "full", "recent_rounds": 3}, {"mode": "compacted", "recent_rounds": None},
+])
+def test_recent_fork_requires_an_explicit_positive_integer_only_in_recent_mode(fields):
+    authority = mock.Mock()
+    with pytest.raises(ValueError):
+        lineage_branch_transitions.create_derived_resident(
+            "resident_aaaaaaaaaaaa", fields, "CASE-A", "test", resident_authority=authority,
+        )
+    assert authority.mock_calls == []
 
 
 def test_restart_provider_native_strategy_keeps_its_distinct_protocol():

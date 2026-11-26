@@ -178,12 +178,12 @@ Contacts 区域位于 Telepus 的 Watchboard 中：
 
 ## 管理员代绑与代解绑
 
-`BindTelepusContactForUser` 与 `UnbindTelepusContactForUser` 由应用服务执行，不属于 ISA，引用分别为 application:telepus.telegram_bind、application:telepus.telegram_unbind。默认模板要求两者的调用者是管理员（对“共享”节点有 admin，decision_600ae27b0538），只对某个 User 账号有 admin 不满足此要求。处理器只校验参数、账号状态与当前绑定，不自行判断管理员或 owner；指令直接调用联系人领域，不经过 Watchboard 的应用操作权限。
+`BindTelepusContact` 与 `UnbindTelepusContact` 由应用服务执行，不属于 ISA，引用分别为 application:telepus.telegram_bind、application:telepus.telegram_unbind。默认模板要求两者的调用者是管理员（对“共享”节点有 admin，decision_600ae27b0538），只对某个 User 账号有 admin 不满足此要求。处理器只校验参数、账号状态与当前绑定，不自行判断管理员或 owner；指令直接调用联系人领域，不经过 Watchboard 的应用操作权限。
 
 | 指令 | 参数 | 结果 |
 | --- | --- | --- |
-| BindTelepusContactForUser | `user_id`、`id_token`；替换该用户已有 ID 时提供 `previous_id_token` | `contact`：`telegram_user_id`、`name`、`portal_actor` |
-| UnbindTelepusContactForUser | `user_id`、`id_token` | `user_id`、`telegram_user_id`、`removed`；不存在的 ID 返回 `removed: false` |
+| BindTelepusContact | `user_id`、`id_token`；替换该用户已有 ID 时提供 `previous_id_token` | `contact`：`telegram_user_id`、`name`、`portal_actor` |
+| UnbindTelepusContact | `user_id`、`id_token` | `user_id`、`telegram_user_id`、`removed`；不存在的 ID 返回 `removed: false` |
 
 两种入口共用联系人锁、账号查询和唯一性校验。替换的旧 ID 必须仍属于目标用户，不能借 `previous_id_token` 覆盖别人的联系人；要重新分配一个 ID，应先按旧用户显式解绑，再给新用户绑定。任何冲突都保留原联系人。指令执行遵循公共幂等协议，重放只返回对象引用；最新名称与归属以 Contacts 数据为准。
 

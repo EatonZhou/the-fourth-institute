@@ -117,9 +117,9 @@
         state.pendingSave = null;
         render();
       } else if (action === "activate") {
-        // The dry_run's effect and 授权差 are confirmed in the editor; the report never blocks the button.
+        // The editor confirms the preview's impact and authorization changes.
         await busy(async () => {
-          const preview = await run("ActivatePermissionScheme", {scheme_id: current.scheme_id, dry_run: true, diff_limit: DIFF_LIMIT});
+          const preview = await run("GetPermissionSchemeActivationPreview", {scheme_id: current.scheme_id, diff_limit: DIFF_LIMIT});
           if (state.destroyed) return;
           state.pendingActivate = {scheme_id: current.scheme_id, preview, on: enabled()};
         });

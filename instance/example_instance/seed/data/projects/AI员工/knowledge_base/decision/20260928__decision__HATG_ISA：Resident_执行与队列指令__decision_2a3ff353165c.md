@@ -53,7 +53,7 @@ Resident 执行指令控制 Resident 当前在做什么：查看它是否在工�
 | --- | --- | --- | --- |
 | `ListResidentStates` | 否 | 读取一个或多个 Resident 的状态与可用操作 | 对 `resident_ids` 有 @viewer |
 | `GetInputState` | 否 | 读取一条消息的处理状态 | 对 `resident_id` 有 @viewer |
-| `SetIntakeOpen` | 是 | 打开或关闭接单：打开后等待中的消息开始推进，关闭后新消息只排队不执行 | 对 `resident_id` 有 @contributor；对 `resident_ids` 有 @contributor |
+| `SetIntakeOpen` | 是 | 打开或关闭 Resident 的接单开关。打开后等待中的消息按顺序开始执行；关闭后新消息只排队不执行，当前工作继续完成。 | 对 `resident_id` 有 @contributor；对 `resident_ids` 有 @contributor |
 | `CancelInput` | 是 | 停止一条消息：执行中的停止，等待中的撤回，已结束的保留结果 | 对 `resident_id` 有 @contributor |
 | `CancelSubagent` | 是 | 停止当前执行中的一个子 agent，父轮次继续 | 对 `resident_id` 有 @contributor |
 
@@ -76,7 +76,8 @@ Resident 执行指令控制 Resident 当前在做什么：查看它是否在工�
 
 **读取一条用户消息的处理状态。**
 
-- 参数：`resident_id`、`message_id`、`include_progress`（可选）、`include_context`（可选）。
+- 参数：`resident_id`、`message_id`、`include_progress`（可选）、`include_context`（可选）、`include_execution_diagnostics`（可选）、`include_input_facts`（可选）。
+- `include_input_facts` 为真时，在有可读输入事实的情况下附带 `input_state.input_facts`，包含 `role`、`is_info`、`business_ref` 和首次完成游标 `completed_cursor`。此选项不返回输入正文。
 - 结果：输入状态、回复消息 ID 列表、更新时间和错误。`include_progress` 为真且消息尚未完成时，另给出 `progress`：排队时为前面还有几条（`ahead`，Resident 正在处理的另一条也算在内）；运行时为 Resident 的 `work_state`、`work_phase` 和这条消息的实时活动 `activities`。这与 Family facade 在转交请求下显示的进度相同（decision_44cf587c1721），聊天室用它显示被召唤 Resident 的进度（decision_a6bebf4ac283）。
 - `include_context` 为真时另给出 `in_context`：这条消息是否会进入或仍在 Resident 当前的上下文中。等待和执行中的消息为真，它们会进入 Resident 执行时持有的上下文。已处理的消息只有在 Provider 接收了它、接收它的会话仍是 Resident 最新的会话、上下文清空时间在那之前、并且那个会话最近一次压缩在它之前时才为真；Mailbox 群体成员按所在群体判断。Family Router 用它判断给 Router Resident 的完整说明是否还在（decision_44cf587c1721）。
 
@@ -101,14 +102,14 @@ Family 门面的 input_state.work 已沿正式 relay holder 投影实际承接�
 
 ## 接单开关
 
-`SetIntakeOpen` 可以作用于一个 Resident，也可以批量作用于多个 Resident：`resident_id` 和 `resident_ids` 二者提供一个。批量执行时逐个处理每个 Resident，每个 Resident 按权限方案对它的 `resident_id` 单独判定，某个 Resident 失败不影响其他 Resident；结果分别列出发生变化、未变化（本来就处于目标状态）和失败的 Resident。Home 账号面板一次开关一个账号上的 Resident 时，从账号详情取 `open_resident_ids` 或 `closed_resident_ids` 作为 `resident_ids`（decision_4dea0db1f45a）。
+`SetIntakeOpen` 通过 `resident_ids` 指定一个或多个 Resident。只改一名时传单元素列表。批量执行时逐个处理每个 Resident，每个 Resident 按权限方案对它的 `resident_id` 单独判定，某个 Resident 失败不影响其他 Resident；结果分别列出发生变化、未变化（本来就处于目标状态）和失败的 Resident。Home 账号面板一次开关一个账号上的 Resident 时，从账号详情取 `open_resident_ids` 或 `closed_resident_ids` 作为 `resident_ids`（decision_4dea0db1f45a）。
 
 ### `SetIntakeOpen`
 
 **打开或关闭 Resident 的接单开关。**
 
-- 参数：`resident_id` 或 `resident_ids`（二选一）、`open`（必填；`true` 打开，`false` 关闭）。
-- 结果：单个 Resident 时返回变化前的状态、当前状态和本次是否发生变化；批量时返回发生变化、未变化和失败的数量与列表。
+- 参数：`resident_ids`、`open`（必填；`true` 打开，`false` 关闭）。
+- 结果：返回发生变化、未变化和失败的数量与列表。
 - 打开：等待中的消息按顺序开始执行。人工打开同时为该 Resident 当前绑定的账号记录人工放行；以 Scheduler 对当前 binding 已确认的豁免为准，未确认时不能只凭 Resident 设置宣称恢复。额度保护由独立的 `execution_gate` 表达，不回写人工接单开关；满足实际执行条件后等待中的消息恢复调度，不需要重新发送。
 - 关闭：之后到达的消息仍被接收并排队，但不会开始执行；当前正在执行的工作继续完成。人工关闭写入持久接单开关，并在 `execution_gate` 中优先表现为 `manual`；额度恢复后仍保持关闭，直到有人重新打开。
 
@@ -144,8 +145,8 @@ CancelInput 在默认方案中要求对目标 Resident 有 contributor（decisio
 | 指令名 | arguments 参数名 |
 | --- | --- |
 | `ListResidentStates` | `resident_ids`、`include_viewer_state` |
-| `GetInputState` | `resident_id`、`message_id`、`include_progress`、`include_context`、`include_execution_diagnostics` |
-| `SetIntakeOpen` | `resident_id`、`resident_ids`、`open` |
+| `GetInputState` | `resident_id`、`message_id`、`include_progress`、`include_context`、`include_execution_diagnostics`、`include_input_facts` |
+| `SetIntakeOpen` | `resident_ids`、`open` |
 | `CancelInput` | `resident_id`、`message_id` |
 | `CancelSubagent` | `resident_id`、`execution_id`、`tool_use_id` |
 

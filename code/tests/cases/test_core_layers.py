@@ -53,7 +53,7 @@ COMMON = "management_common"
 TIERS = (
     ("common", "management_common.*"),
     ("contracts", """
-    hatg hatg.catalog hatg.catalog.* hatg.contracts hatg.declarations hatg.lineage_versions hatg.resource_actions hatg.instruction_renames
+    hatg hatg.catalog hatg.catalog.* hatg.contracts hatg.declarations hatg.lineage_versions hatg.instruction_renames
     portal_features application_tool_contracts business_context service_invocation_contract execution.config execution.account_migration_types execution.account_selection_contract
     resources.config society_service.config
     """),
@@ -81,7 +81,7 @@ TIERS = (
     ("features", """
     * resources.providers.article resources.providers.chatroom resources.providers.direction resources.providers.notice
     resources.providers.paper resources.providers.repo resources.providers.review resources.providers.search
-    resources.providers.test resources.providers.workbench resources.providers.report resources.repo_recovery
+    resources.providers.test resources.providers.workbench resources.providers.report resources.providers.mailbox_todo resources.repo_recovery
     """),
 )
 FEATURES = len(TIERS) - 1

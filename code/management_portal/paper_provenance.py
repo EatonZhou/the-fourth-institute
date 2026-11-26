@@ -100,7 +100,7 @@ def resolve_usage(usage, body, actor):
                 args = {"resident_ids": [resident], "query": query, "limit": 200}
                 if cursor:
                     args["cursor"] = cursor
-                page = isa_client.call(actor, "SearchMessages", args)
+                page = isa_client.call(actor, "SearchResidentMessages", args)
                 for row in page.get("results", []):
                     m = row.get("message") or {}
                     text = "\n".join(p.get("text", "") for p in m.get("content_parts", []) if p.get("type") == "text").strip()

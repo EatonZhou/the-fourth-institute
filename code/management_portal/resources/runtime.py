@@ -5,7 +5,6 @@ import threading
 
 from .config import resource_service_mode
 from .providers import (
-    install_action_providers,
     install_mutation_providers,
     install_resolvers,
 )
@@ -24,7 +23,6 @@ def create_local_resource_service() -> ResourceService:
         index_provider=_portal_index,
         resolver_loader=install_resolvers,
         mutation_provider_loader=install_mutation_providers,
-        action_provider_loader=install_action_providers,
         registration_store=ResourceRegistrationStore(),
     )
 
@@ -52,3 +50,10 @@ def _portal_index():
     from management_portal import resource_index_backend
 
     return resource_index_backend.get_service()
+
+
+def readonly_index_snapshot():
+    """Read the installed index through its owner without starting a service."""
+    from management_portal import resource_index_backend
+
+    return resource_index_backend.readonly_authorization_snapshot()

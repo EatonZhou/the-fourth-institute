@@ -29,7 +29,7 @@ SCHEMAS = ("lineage", "agent", "resident_context", "resource_registry", "workspa
 STRUCTURE = {
     "lineages", "project_lineage_entries", "lineage_layout_positions", "lineage_nodes", "lineage_node_references",
     "lineage_components", "lineage_resident_nodes", "lineage_edges", "lineage_observation_targets", "function_blocks",
-    "function_block_elements", "lineage_fragments", "lineage_fragment_attachments", "families", "family_residents",
+    "function_block_elements", "function_block_duties", "lineage_fragments", "lineage_fragment_attachments", "families", "family_residents", "facade_members",
     "residents", "resident_execution_configuration", "resident_derivations", "resident_workspace_bindings",
 }
 NEVER_ROWS = {"resident_resource_projection_outbox", "instruction_executions", "instruction_retry_guards",
@@ -137,7 +137,26 @@ class DatabaseSnapshot:
         from .native_switches import minimal_site_config
         return minimal_site_config(read_site_config())
 
-    def definition_rows(self, lineage_ids):
+    def current_definitions(self, lineage_ids):
+        """Read complete graphs on this exported snapshot, without initializing owners."""
+        from management_portal.society_service.lineage_data_definitions import definition_from_connection
+
+        previous = self.connection.execute("SHOW search_path").fetchone()["search_path"]
+        # A savepoint restores the original path even when a graph read fails.
+        # The enclosing snapshot keeps its READ ONLY isolation and transaction.
+        with self.connection.transaction():
+            self.connection.execute(sql.SQL("SET LOCAL search_path TO {}").format(
+                sql.Identifier(self.schemas["lineage"])))
+            result = {lid: definition_from_connection(self.connection, lid) for lid in sorted(lineage_ids)}
+            # The domain reader hydrates every block before its public
+            # projection omits empty optional collections. Restore that known
+            # empty shape here, never for caller-supplied graph fragments.
+            for definition in result.values():
+                definition.setdefault('function_blocks', [])
+            self.connection.execute("SELECT set_config('search_path', %s, true)", (previous,))
+        return result
+
+    def definition_rows(self, lineage_ids, *, script_path=None):
         output = {}
         known = set(lineage_ids)
         pending = set(STRUCTURE)
@@ -148,7 +167,9 @@ class DatabaseSnapshot:
                 if not table:
                     pending.remove(name)
                     continue
-                predicates = {key: known for key in ("lineage_id", "resident_id", "node_id", "function_block_id", "family_id", "edge_id", "fragment_id") if key in table.columns}
+                keys = ("facade_id",) if name == "facade_members" else (
+                    "lineage_id", "resident_id", "node_id", "function_block_id", "family_id", "edge_id", "fragment_id")
+                predicates = {key: known for key in keys if key in table.columns}
                 rows = self.rows("lineage", name, predicates=predicates)
                 rows = [row for row in rows if not row.get("deleted_at") and (not row.get("lineage_id") or row["lineage_id"] in lineage_ids)]
                 if "resident_id" in table.columns:
@@ -163,6 +184,9 @@ class DatabaseSnapshot:
             if not changed:
                 break
         active = {row['resident_id'] for row in output.get(('lineage', 'residents'), [])}
+        if ('lineage', 'facade_members') in output:
+            output['lineage', 'facade_members'] = [
+                row for row in output['lineage', 'facade_members'] if row['facade_id'] in active]
         stale = {row['node_id'] for row in output.get(('lineage', 'lineage_nodes'), [])
                  if row.get('node_type') == 'resident' and row['node_id'] not in active}
         for key, rows in output.items():
@@ -177,17 +201,34 @@ class DatabaseSnapshot:
                 output[key] = [row for row in output[key] if row['node_id'] in owned_nodes]
         # Portable definitions use the installed ISA vocabulary; historical
         # rows are exported separately and retain their original evidence.
-        from management_portal.society_service.instruction_name_migration import (
-            normalize_component_config, normalize_wire_config,
-        )
-        for name, normalize in (('lineage_components', normalize_component_config),
-                                ('lineage_edges', normalize_wire_config)):
+        from management_portal.society_service.instruction_name_migration import normalize_definition
+        configs = {'lineage_components': {}, 'lineage_edges': {}}
+        duty_prompts = {}
+        has_config = any('config_json' in row for name in configs for row in output.get(('lineage', name), []))
+        definitions = self.current_definitions(lineage_ids) if has_config or output.get(('lineage', 'function_block_duties')) else {}
+        for definition in definitions.values():
+            normalized = normalize_definition(definition, script_path=script_path)
+            for table, collection in (('lineage_components', 'components'), ('lineage_edges', 'wires')):
+                for item in normalized['program'][collection]:
+                    config = item.get('config')
+                    if item['id'] in configs[table] and configs[table][item['id']] != config:
+                        raise ValueError('Conflicting normalized definition for shared graph object: ' + item['id'])
+                    configs[table][item['id']] = config
+            for block in normalized.get('function_blocks', ()):
+                if block.get('duty'):
+                    duty_prompts[block['id']] = (block['duty'].get('memory') or {}).get('prompt', '')
+        for name, identity in (('lineage_components', 'node_id'), ('lineage_edges', 'edge_id')):
             for row in output.get(('lineage', name), []):
                 if 'config_json' in row:
+                    # Non-wire relations are not executable configurations.
+                    if name == 'lineage_edges' and row.get('edge_type') not in (None, 'route', 'target', 'watch'):
+                        continue
                     config = row['config_json']
                     was_text = isinstance(config, str)
-                    value = normalize(json.loads(config) if was_text else config)
+                    value = configs[name][row[identity]]
                     row['config_json'] = json.dumps(value, ensure_ascii=False) if was_text else value
+        for row in output.get(('lineage', 'function_block_duties'), []):
+            row['memory_prompt'] = duty_prompts[row['function_block_id']]
         return output
 
     def historical_rows(self, resident_ids, lineage_ids):

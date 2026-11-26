@@ -64,13 +64,13 @@ function mailbox({ connected = false, targetRead, cachedSnapshot, clearResult, e
     return response instanceof Error ? Promise.reject(response) : Promise.resolve(response);
   } };
   window.PortalInstructionClient = { execute: async (instruction, args) => {
-    if (instruction === 'SetMailboxItemMuted' && execute) return execute(instruction, args);
+    if (instruction === 'UpdateMailboxItem' && execute) return execute(instruction, args);
     if (instruction === 'ClearMailbox' && clearResult) {
       assert.deepEqual({ ...args }, { user_id: 'playwright', mode: 'unread' });
       return clearResult;
     }
-    assert.equal(instruction, 'ListMailboxTodos');
-    assert.deepEqual({ ...args }, { user_id: 'playwright' });
+    assert.equal(instruction, 'SearchResources');
+    assert.deepEqual({ ...args }, { resource_type: 'mailbox_todo', user_id: 'playwright', limit: 500 });
     return { items: [], pending_count: 0 };
   } };
   if (cachedSnapshot) window.localStorage.setItem('tfi.portal.conversations.v7:playwright', JSON.stringify(cachedSnapshot));
@@ -263,7 +263,7 @@ const checks = {
       const toggle = () => app.window.document.querySelector('[data-agent-inbox-mute]');
       assert.equal(toggle().textContent.trim(), '消息免打扰');
       toggle().click(); await app.advance(20);
-      assert.deepEqual(calls, [{ name: 'SetMailboxItemMuted', key: original.key, muted: true }]);
+      assert.deepEqual(calls, [{ name: 'UpdateMailboxItem', key: original.key, muted: true }]);
       assert.equal(app.store.snapshot().unreadCount, 0);
       assert.equal(app.store.entry(original.key).unread, true);
       assert.ok(app.rows()[0].querySelector('[aria-label="消息免打扰"]'));

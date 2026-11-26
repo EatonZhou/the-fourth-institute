@@ -83,7 +83,7 @@ test('Mailbox Todo provenance records its own visible/timer reads without extra 
   todos.setView({visible: true, active: false}); await tick();
   timer.callback(); await tick();
   assert.equal(f.calls.length, 2);
-  assert.deepEqual(f.receipts.map(r => r.instruction), ['ListMailboxTodos', 'ListMailboxTodos']);
+  assert.deepEqual(f.receipts.map(r => r.instruction), ['SearchResources', 'SearchResources']);
   assert.deepEqual(f.receipts.map(r => r.reasons), [['panel_visible'], ['refresh_timer']]);
   for (let i = 0; i < 2; i++) {
     assert.equal(f.receipts[i].reader_id, 'mailbox-todos-1');

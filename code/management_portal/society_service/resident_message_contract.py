@@ -151,6 +151,14 @@ def activation_policy(value: object = None) -> str:
     return policy
 
 
+def delivery_activation_policy(value: object = None) -> str:
+    """Public message delivery admits new work or info."""
+    policy = activation_policy(value)
+    if policy == "inject_active_turn":
+        raise ValueError("请用 InjectMailboxItem 将消息插入当前轮次")
+    return policy
+
+
 def message_identity(value: object = "") -> str:
     identity = stripped_text(value)
     if identity and not MESSAGE_IDENTITY_PATTERN.fullmatch(identity):

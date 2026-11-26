@@ -642,11 +642,18 @@ def test_invocation_preserves_media_and_context_without_changing_prompt_contract
 def test_reverse_references_only_prior_receipts():
     """反向计划仅可引用先前步骤的回执"""
     plan = {'summary': 'Add flow', 'steps': [
-        {'id': 'event', 'instruction': 'CreateComponent', 'arguments': {'kind': 'event_source', 'title': 'Request', 'config': {'event_type': 'manual.triggered'}}},
-        {'id': 'wire', 'instruction': 'CreateWire', 'arguments': {'kind': 'route', 'source': {'$ref': 'event.component_id'}, 'target': 'existing'}},
+        {'id': 'event', 'instruction': 'ApplyLineageChanges', 'arguments': {'operations': [
+            {'op': 'create', 'kind': 'component', 'value': {'kind': 'event_source', 'title': 'Request',
+                                                           'config': {'event_type': 'manual.triggered'}}},
+        ]}},
+        {'id': 'wire', 'instruction': 'ApplyLineageChanges', 'arguments': {'operations': [
+            {'op': 'create', 'kind': 'wire', 'value': {'kind': 'route', 'source': {'$ref': 'event.component_id'},
+                                                      'target': 'existing'}},
+        ]}},
     ]}
     assert studio.validate_plan(plan) == plan
-    assert studio.resolve_references(plan['steps'][1]['arguments'], {'event': {'component_id': 'actual'}})['source'] == 'actual'
+    resolved = studio.resolve_references(plan['steps'][1]['arguments'], {'event': {'component_id': 'actual'}})
+    assert resolved['operations'][0]['value']['source'] == 'actual'
     plan['steps'].reverse()
     with pytest.raises(ValueError):
         studio.validate_plan(plan)
@@ -779,20 +786,23 @@ def reverse_service(tmp_path, monkeypatch):
             return {"lineage": copy.deepcopy(graph)}
         if key in applied:
             return copy.deepcopy(applied[key])
-        assert version is None  # Lineage instructions take no version precondition
-        calls.append(name)
-        if name == "CreateComponent":
-            component = {"id": f"{arguments['kind']}_created", **{field: arguments[field] for field in ("kind", "title", "config")}}
-            graph["program"]["components"].append(component)
-            result = {"component_id": component["id"], "component": component}
+        assert name == "ApplyLineageChanges"
+        assert version == graph["revision"]
+        assert set(arguments) == {"lineage_id", "operations"}
+        assert arguments["lineage_id"] == LINEAGE
+        operation, = arguments["operations"]
+        assert operation["op"] == "create"
+        value = copy.deepcopy(operation["value"])
+        calls.append((name, operation["kind"]))
+        if operation["kind"] == "component":
+            object_id = f"{value['kind']}_created"
+            graph["program"]["components"].append({"id": object_id, **value})
         else:
-            assert name == "CreateWire"
-            wire = {"id": f"wire_{len(calls)}", **{field: arguments[field] for field in ("kind", "source", "target")}}
-            if "config" in arguments:
-                wire["config"] = copy.deepcopy(arguments["config"])
-            graph["program"]["wires"].append(wire)
-            result = {"wire_id": wire["id"], "wire": wire}
+            assert operation["kind"] == "wire"
+            object_id = f"wire_{len(calls)}"
+            graph["program"]["wires"].append({"id": object_id, **value})
         graph["revision"] += 1
+        result = {"created_ids": [object_id], "updated_ids": [], "deleted_ids": [], "revision": graph["revision"]}
         applied[key] = copy.deepcopy(result)
         return result
 
@@ -822,11 +832,15 @@ def test_reverse_apply_preserves_team_and_only_saves_draft(reverse_service, acto
     payload = {"job_id": runtime.job["id"], "plan_hash": runtime.job["plan_hash"], "confirm": True}
     result = studio.apply_reverse(runtime.service, payload, actor)
     assert result["applied"]
+    assert result["plan"] == runtime.job["plan"]
+    assert result["plan_hash"] == runtime.job["plan_hash"]
     app = runtime.service.store.get(runtime.job["workbench_id"], "owner")
     assert app["bindings"]["main"]["events"] == {"validate": "event_source_created"}
     assert app["created_by"] == "owner"
     assert not app["published_revision"]
-    assert runtime.calls == ["CreateComponent", "CreateComponent", "CreateWire", "CreateWire"]
+    assert runtime.calls == [
+        ("ApplyLineageChanges", kind) for kind in ("component", "component", "wire", "wire")
+    ]
     assert studio.apply_reverse(runtime.service, payload, actor)["applied"]
     assert len(runtime.calls) == 4
 
@@ -949,9 +963,12 @@ def test_projection_and_workflow_commands_use_the_ordinary_isa_client(monkeypatc
         return {"lineage_version": 8}
 
     monkeypatch.setattr(routing, "execute_or_raise", execute)
-    assert service.isa("owner", "CreateComponent", {"lineage_id": LINEAGE, "kind": "effect"},
+    arguments = {"lineage_id": LINEAGE, "operations": [
+        {"op": "create", "kind": "component", "value": {"kind": "effect"}},
+    ]}
+    assert service.isa("owner", "ApplyLineageChanges", arguments,
                        key="same-request", version={LINEAGE: 7}) == {"lineage_version": 8}
-    assert calls == [({"instruction": "CreateComponent", "arguments": {"lineage_id": LINEAGE, "kind": "effect"},
+    assert calls == [({"instruction": "ApplyLineageChanges", "arguments": arguments,
                        "idempotency_key": "same-request", "expected_version": {LINEAGE: 7}}, "owner", "web")]
     with pytest.raises(PermissionError):
         service.isa("denied", "GetLineage", {"lineage_id": LINEAGE})

@@ -49,7 +49,7 @@ def cancel_reassignment_input(facade_id: str, request_id: str, holder_id: str, h
     previous = candidate == (old["resident_id"], old["message_id"])
     withdrawing = intent["status"] == "withdrawn"
     from management_portal import permission_system
-    if not permission_system.allows(actor, "CancelInput" if withdrawing else "RelayFamilyMessage",
+    if not permission_system.allows(actor, "CancelInput" if withdrawing else "RelayMessage",
                                    {"resident_id": facade_id, "message_id": request_id}):
         raise PermissionError("没有门面原请求的改派或取消权限")
     if (intent["author"] != original.get("author_id")

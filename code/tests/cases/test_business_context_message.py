@@ -101,7 +101,7 @@ def test_attempt_list_subject_acl_and_detail_reauthorize(owners, monkeypatch):
                 target_resident_id=arguments['target_resident_id'], reference=arguments['reference'])}
         return call(actor, instruction, arguments, **kwargs)
     monkeypatch.setattr(research.isa_client, 'call', owner)
-    result = owner(ACTOR, 'ListMessages', {'resident_id': slot['resident_id'], 'view': 'attempts', 'cursor': ''})
+    result = owner(ACTOR, 'ListMessageAttempts', {'resident_id': slot['resident_id']})
     assert [row['business_context'] for row in result['attempts']] == [contexts[1], contexts[0]]
     assert resolved == [ACTOR, ACTOR]
     first = history.page(slot['resident_id'], ACTOR, limit=1)
@@ -109,8 +109,8 @@ def test_attempt_list_subject_acl_and_detail_reauthorize(owners, monkeypatch):
     assert [first['attempts'][0]['input_message_id'], second['attempts'][0]['input_message_id']] == ['msg_'+'4'*32, 'msg_'+'3'*32]
     assert not second['next_page_token']
     assert 'total' not in first
-    detail = owner(ACTOR, 'ListMessages', {'resident_id': slot['resident_id'], 'view': 'attempts',
-        'cursor': '', 'input_message_id': 'msg_' + '3' * 32})
+    detail = owner(ACTOR, 'ListMessageAttempts', {'resident_id': slot['resident_id'],
+        'input_message_id': 'msg_' + '3' * 32})
     assert len(detail['conversation']['messages']) == 1
     assert 'queue' not in detail['conversation']
     def revoked(*args, **kwargs):

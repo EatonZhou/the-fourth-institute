@@ -11,20 +11,16 @@ from .. import component_runtime, system_workflow_switches
 def update_execution_settings(inv: Invocation) -> dict:
     from management_portal import permission_system
 
-    # A Portal 管理员 turning only the permission switch passes whatever the scheme says (decision_b820faf42218 §3.1).
     if not permission_system.allows(inv.caller, "UpdateExecutionSettings", inv.arguments):
         raise InstructionError("instruction.forbidden", "无权修改执行设置")
     changes = {field: inv.argument(field) for _option, field in system_workflow_switches.WORKFLOW_FIELDS.values()
                if field in inv.arguments}
     retention = {name: inv.argument(name) for name in RETENTION_DAYS if name in inv.arguments}
-    permissions = inv.argument("permission_system_enabled") if "permission_system_enabled" in inv.arguments else None
-    if not changes and not retention and permissions is None:
-        raise invalid("至少提供一项设置：model_request_timing_enabled、harness_recording_enabled、permission_system_enabled、"
+    if not changes and not retention:
+        raise invalid("至少提供一项设置：model_request_timing_enabled、harness_recording_enabled、"
                       + "、".join(RETENTION_DAYS))
     if any(type(value) is not bool for value in changes.values()):
         raise invalid("model_request_timing_enabled 和 harness_recording_enabled 必须是布尔值")
-    if permissions is not None and type(permissions) is not bool:
-        raise invalid("permission_system_enabled 必须是布尔值")
     for name, days in retention.items():
         minimum, maximum, _default = RETENTION_DAYS[name]
         if type(days) is not int or not minimum <= days <= maximum:
@@ -33,9 +29,18 @@ def update_execution_settings(inv: Invocation) -> dict:
     settings = component_runtime.update_settings(changes, inv.caller) if changes else None
     if retention:
         settings = ExecutionSettings().update_retention(retention)
-    reconciled = None
-    if permissions is not None:
-        settings, reconciled = _switch_permission_system(permissions, inv.caller)
+    return {"settings": settings}
+
+
+def set_permission_system_enabled(inv: Invocation) -> dict:
+    from management_portal import permission_system
+
+    if not permission_system.allows(inv.caller, "SetPermissionSystemEnabled", inv.arguments):
+        raise InstructionError("instruction.forbidden", "无权切换权限系统")
+    enabled = inv.argument("enabled")
+    if type(enabled) is not bool:
+        raise invalid("enabled 必须是布尔值")
+    settings, reconciled = _switch_permission_system(enabled, inv.caller)
     return {"settings": settings} if reconciled is None else {"settings": settings, "reconciled": reconciled}
 
 
@@ -66,4 +71,7 @@ def _switch_permission_system(enabled: bool, actor: str) -> tuple[dict, dict | N
     return result, report
 
 
-HANDLERS = {"UpdateExecutionSettings": update_execution_settings}
+HANDLERS = {
+    "UpdateExecutionSettings": update_execution_settings,
+    "SetPermissionSystemEnabled": set_permission_system_enabled,
+}

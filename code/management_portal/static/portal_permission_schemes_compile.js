@@ -27,16 +27,16 @@
       else renderStatus();
     }
 
-    // Two rules dry_runs: checkRules only compiles (errors, unmapped instructions, whether saving
+    // checkRules only compiles (errors, unmapped instructions, whether saving
     // regenerates the instance) and is quick; previewDiff also generates the instance from every
     // object to list the difference, which takes seconds, so it runs only when saving.
     const DIFF_LIMIT = 50;
-    // A merge's dry_runs carry its source digest: the server refuses a digest the source has moved past and
+    // Merge previews carry the source digest: the server refuses a digest the source has moved past and
     // reports what the merge writes back to the instance.
-    const dryRun = (rules, extra) => run("UpdatePermissionScheme", {
-      scheme_id: state.current.scheme_id, rules, dry_run: true, ...extra});
-    const checkRules = (rules, extra = {}) => dryRun(rules, {diff: false, ...extra});
-    const previewDiff = (rules, extra = {}) => dryRun(rules, {diff_limit: DIFF_LIMIT, ...extra});
+    const preview = (rules, extra) => run("GetPermissionSchemeUpdatePreview", {
+      scheme_id: state.current.scheme_id, rules, ...extra});
+    const checkRules = (rules, extra = {}) => preview(rules, {diff: false, ...extra});
+    const previewDiff = (rules, extra = {}) => preview(rules, {diff_limit: DIFF_LIMIT, ...extra});
 
     // The server's compiler is the only judge of a draft: its errors decide whether it can be saved.
     // The last check is kept with the rules it answered for, so saving them need not compile again.

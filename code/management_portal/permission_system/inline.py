@@ -52,9 +52,49 @@ def end_with_input(connection: Any, resident_id: str, message_id: str) -> int:
     lock(connection, message_id)
     rows = connection.execute(f"DELETE FROM {schema}.scheme_entries WHERE message_id = %s AND p_node = %s"
                               " AND expires_at IS NOT NULL RETURNING entry_id", (message_id, resident_id)).fetchall()
+    if _exists(connection, f"{schema}.prepared_task_credentials"):
+        connection.execute(f"UPDATE {schema}.prepared_task_credentials SET state='ended' "
+                           "WHERE recipient=%s AND message_id=%s AND state<>'ended'", (resident_id, message_id))
     if rows:
         _bump(connection, schema)
     return len(rows)
+
+
+def activate_prepared(connection: Any, resident_id: str, message_id: str) -> int:
+    """Trusted Society admission hook, joining its input transaction without initialization.
+
+    Only the recorded pending entries are enabled. Revoked/expired grants
+    become terminal receipts; unrelated disabled rows are never enabled.
+    """
+    if connection is None or not resident_id or not message_id:
+        raise ValueError("受理启用需要真实输入事务、Resident 和消息 ID")
+    schema = _schema()
+    lock(connection, message_id)
+    if not _exists(connection, f"{schema}.prepared_task_credentials"):
+        return 0
+    rows = connection.execute(f"SELECT * FROM {schema}.prepared_task_credentials "
+                              "WHERE recipient=%s AND message_id=%s AND state='pending' FOR UPDATE",
+                              (resident_id, message_id)).fetchall()
+    count = 0
+    for receipt in rows:
+        identity = (receipt["scheme_id"], receipt["credential_id"])
+        loan = connection.execute(f"SELECT *, expires_at>clock_timestamp() AS live FROM {schema}.scheme_entries "
+                                  "WHERE scheme_id=%s AND entry_id=%s FOR UPDATE", identity).fetchone()
+        state = "ended"
+        if loan is not None and loan["live"]:
+            if (not loan["disabled"] or loan["effect"] != "permit" or
+                    (loan["p_node"], loan["message_id"], loan["a_node"], loan["r_node"], loan["issued_by"]) !=
+                    (resident_id, message_id, receipt["a_node"], receipt["r_node"], receipt["issuer"])):
+                raise ValueError("待启用凭证与原任务回执不匹配，拒绝受理")
+            connection.execute(f"UPDATE {schema}.scheme_entries SET disabled=FALSE,version=version+1 "
+                               "WHERE scheme_id=%s AND entry_id=%s", identity)
+            state = "active"
+            count += 1
+        connection.execute(f"UPDATE {schema}.prepared_task_credentials SET state=%s "
+                           "WHERE scheme_id=%s AND credential_id=%s", (state, *identity))
+    if count:
+        _bump(connection, schema)
+    return count
 
 
 def rename_paths(connection: Any, old_id: str, new_id: str, *, apply: bool) -> int:

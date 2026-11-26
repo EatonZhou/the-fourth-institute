@@ -198,9 +198,8 @@ def test_resident_updates_todo_only_with_target_user_permission(monkeypatch, iso
 
 @pytest.mark.parametrize("new_name,mutates,streaming", [
     ("GetMailbox", False, False),
-    ("SetMailboxItemRead", True, False),
+    ("UpdateMailboxItem", True, False),
     ("ClearMailbox", True, False),
-    ("SetMailboxItemPinned", True, False),
     ("WatchMailbox", False, True),
 ])
 def test_user_mailbox_command_contracts(new_name, mutates, streaming):
@@ -236,7 +235,7 @@ def test_user_and_resident_mailboxes_keep_distinct_instructions():
         execution.get_mailbox(SimpleNamespace(argument={"resident_id": "resident_aaaaaaaaaaaa",
                                                          "related_resident_id": "resident_bbbbbbbbbbbb"}.get))
     assert refused.value.code == "instruction.invalid_arguments"
-    assert "SetMailboxItemRead" in web_isa.binding().handlers
+    assert "UpdateMailboxItem" in web_isa.binding().handlers
 
 
 def test_sections_and_pins_share_read_authority_without_changing_unread(isolated_portal_case):
@@ -582,7 +581,7 @@ def test_mailbox_mute_instruction_validates_scope_and_notifies_other_browsers(mo
         from management_portal.hatg.store import ExecutionStore
         from management_common.portal_database import portal_database
         kernel = InstructionKernel(web_isa.binding(), store=ExecutionStore(portal_database(schema="mute_isa_test")), authorize=lambda *args: None)
-        call = InstructionCall.from_payload({"instruction": "SetMailboxItemMuted", "arguments": {"key": key, "muted": True}, "idempotency_key": "mute-test"})
+        call = InstructionCall.from_payload({"instruction": "UpdateMailboxItem", "arguments": {"key": key, "muted": True}, "idempotency_key": "mute-test"})
         context = InstructionContext(caller="CASE-A", entry="web")
         first, replay = kernel.execute(call, context), kernel.execute(call, context)
         assert first.status == replay.status == "committed", first.error

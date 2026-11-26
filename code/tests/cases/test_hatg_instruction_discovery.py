@@ -17,6 +17,37 @@ RETIRED_PLAN_INSTRUCTIONS = {
     "CheckArticleRestore", "RestoreArticle", "GetResearchMapDigest",
     "SetPostPinned", "SetPostFeatured", "GetKnowledgeTags", "UpdateKnowledgeTags",
 }
+D066_RETIRED_INSTRUCTIONS = {
+    "MaintainFamilyProgress", "MaintainFamilyReview", "MaintainFamilyRecovery",
+    "MaintainFamilyRoleAvailability", "MaintainResidentWorkSummary", "PublishFamilyProgress",
+    "DispatchFamilyTask", "RelayFamilyMessage", "ResolveFamilyRequest",
+    "GetFamilyRoutingContext", "GetFamilySummaryInputs", "RunResourceAction",
+    "ForwardMessages", "RunGoogleDriveBackup", "ReviewComponentScript", "ReviewTemplateScript",
+    "UpdateResourceType", "UpdateUserNavigation", "CreateComponent", "UpdateComponent",
+    "DeleteComponent", "CreateWire", "UpdateWire", "DeleteWire", "CreateDuty", "UpdateDuty",
+    "SetMailboxItemMuted", "SetMailboxItemPinned", "SetMailboxItemRead", "CreateMailboxTodo",
+    "UpdateMailboxTodo", "DeleteMailboxTodo", "ListMailboxTodos", "MoveMailboxTodo",
+    "SearchMessages", "ListInputHistory", "ListTemporaryCredentials", "MoveResident", "DeleteResident",
+}
+
+D066_NEW_INSTRUCTIONS = {
+    "UpdateFacadeMembers", "CheckRelayTarget", "RelayMessage", "ResolveRelayedRequest",
+    "GetRelayContext", "GetFacadeSummaryInputs", "CreateKnowledgeFile", "UpdateKnowledgeFileName",
+    "MoveKnowledgeItems", "UpdateDeviceSshCredential", "DeleteDeviceSshCredential",
+    "CheckDeviceSsh", "RunDeviceCommand", "UpdateWorkbenchPage", "UpdateWorkbenchReversePlan",
+    "UpdateInstalledTemplate", "InstallStoreTemplateAsNew", "ForwardMessagesToResident",
+    "ForwardMessagesToChatroom", "UpdateResidentSummaryConsolidation", "UpdateFacadeSummary",
+    "UpdateUserStatus", "UpdateUserCategory", "SetChatroomMuted", "SetPermissionSystemEnabled",
+    "CancelResidentRequest", "ListMessageAttempts", "SetPostUnread", "ConfirmComponentScript",
+    "CancelComponentScriptDraft", "ConfirmTemplateScript", "CancelTemplateScriptDraft",
+    "CheckInstructionPermission", "CreateUploadFromFile", "ReadScriptRunArtifact",
+    "SetResourceTypeEnabled", "SetUserNavigationFavorite", "GetTemplateStoreItem",
+    "UpdateMailboxItem", "SearchResidentMessages", "SearchChatroomMessages",
+    "ListResidentInputHistory", "ListChatroomInputHistory", "DeliverUserMessage",
+    "GetPermissionSchemeActivationPreview", "GetPermissionSchemeCreatePreview",
+    "GetPermissionSchemeUpdatePreview", "GetTemplateApplyPreview", "GetTemplateCreatePreview",
+    "GetTemplateUpdatePreview", "CreateContextReset", "GetLineageChangesPreview", "PrepareResidentInput",
+}
 
 
 def listing(**arguments):
@@ -47,7 +78,8 @@ def test_explicit_groups_partition_the_catalog_without_changing_categories():
     for group in DISCOVERY_GROUPS:
         result = listing(group=group)
         assert all(item["discovery_group"] == group for item in result["instructions"])
-    assert instruction_catalog()["MaintainFamilyProgress"].category == "family_internal"
+    assert instruction_catalog()["ApplyLineageChanges"].category == "lineage_definition"
+    assert instruction_catalog()["ListInstructions"].category == "isa"
 
 
 def test_category_alone_crosses_groups_and_combined_filter_intersects():
@@ -83,6 +115,24 @@ def test_retired_plan_instructions_are_unknown_and_absent_from_discovery():
     assert not RETIRED_PLAN_INSTRUCTIONS & discovered
     assert "UpdatePostMarks" in discovered
     for name in sorted(RETIRED_PLAN_INSTRUCTIONS):
+        for instruction, arguments in ((name, {}), ("GetInstructionSchema", {"instruction": name})):
+            result = routing.execute({"instruction": instruction, "arguments": arguments}, CONTEXT)
+            assert result.status == "failed" and result.error["code"] == "instruction.unknown", name
+
+
+def test_d066_catalog_discovery_and_retired_calls():
+    """新机制可发现，退役指令不能从目录、定向 schema 或调用入口找回。"""
+    listed = listing(group="all")
+    discovered = names(listed)
+    assert D066_NEW_INSTRUCTIONS <= discovered
+    assert not D066_RETIRED_INSTRUCTIONS & discovered
+    assert discovered.isdisjoint({
+        "BindTelepusContactForUser", "UnbindTelepusContactForUser",
+        "BindTelepusContact", "UnbindTelepusContact",
+    })
+    assert "resource_actions" not in listed
+    assert all("resource_actions" not in item for item in listed["instructions"])
+    for name in sorted(D066_RETIRED_INSTRUCTIONS):
         for instruction, arguments in ((name, {}), ("GetInstructionSchema", {"instruction": name})):
             result = routing.execute({"instruction": instruction, "arguments": arguments}, CONTEXT)
             assert result.status == "failed" and result.error["code"] == "instruction.unknown", name

@@ -89,6 +89,25 @@ def packet_update_config(
     )
 
 
+
+def reconcile_packet_operator_edit(previous, body, changed, removed):
+    """Preserve parked bindings and identify operators which need a new executor."""
+    release_removed_operator_executors(body, {item_id for kind, item_id in removed if kind == 'component'})
+    previous_components = {item['id']: item for item in previous['program']['components']}
+    missing = []
+    for component in body['program']['components']:
+        component_id = component['id']
+        if (('component', component_id) not in changed or
+                component['kind'] not in lineage_program_vocabulary.PACKET_OPERATOR_KINDS):
+            continue
+        if original := previous_components.get(component_id):
+            component['config'] = packet_update_config(original, component)
+        config = component['config']
+        if config['operator_implementation'] == 'resident' and not config.get('resident_executor_id'):
+            missing.append(component)
+    return missing
+
+
 def wire_request(
     payload: dict[str, Any], operation: str
 ) -> tuple[dict[str, Any], str, str]:
@@ -231,13 +250,16 @@ def remove_program_components(
         if executor_resident_id:
             executor_ids.add(executor_resident_id)
     removed = delete_program_objects_with_observer_dependents(program, component_ids=component_ids)
+    release_removed_operator_executors(body, component_ids)
+    return {**removed, "executor_ids": sorted(executor_ids)}
+
+
+def release_removed_operator_executors(body: dict[str, Any], component_ids: set[str]) -> None:
     for node in body.get("nodes") or []:
         marker = node.get("operator_executor") or {}
         if marker.get("component_id") in component_ids:
             node["operator_executor"] = {}
             release_operator_executor_leadership(body, str(node.get("id") or ""))
-    return {**removed, "executor_ids": sorted(executor_ids)}
-
 
 def create_component(
     body: dict[str, Any],

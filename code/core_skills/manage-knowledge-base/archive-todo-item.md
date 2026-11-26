@@ -4,7 +4,7 @@
 
 当前知识资源 `todo` 没有登记、更新或撤销接口（`GetResourceType` 返回相应能力为 false）。旧知识文件中的 `id`、`task_kind`、`task_status` 等仅用于识别既有数据，不能当作当前创建合同。不要手写旧 YAML、给 `RegisterResource` 塞不支持的字段，或把 Mailbox 待办伪装成知识 TODO。
 
-- 用户要在已确定的 Resident Mailbox 中记待办时，读取 `CreateMailboxTodo`、`UpdateMailboxTodo`、`ListMailboxTodos` 的 schema，用当前身份执行。Mailbox 待办的归属、ID 和状态遵循该接口，不套知识条目版本头，也不因记录待办而自动执行。
+- 用户要记 Mailbox 待办时，先确定接收用户。调用 `RegisterResource`，传 `resource_type: "mailbox_todo"`，并在 `fields` 提供 `user_id`、`text` 和可选的 `date`。用 `SearchResources` 按 `resource_type: "mailbox_todo"` 和 `user_id` 查清单。已有条目用 `ReadResource` 读正文与版本，再用 `UpdateResource` 修改，`changes.expected_version` 传读到的正整数版本。按当前身份和条目所属用户校验权限。待办独立于知识条目和对话输入，记录后不会开始执行。
 - 用户要保存尚未解决的问题时，按实际内容与用户目的使用 `question`；完整改进方案按 `plan`。这种语义选择不是批量把旧 TODO 改名或迁移。
 - 用户明确要求知识 TODO，而本站仍无写入能力时，如实说明该功能缺口，保留原内容；不另造登记入口。
 - 阅读或迁移历史 TODO 时保留原 ID 与来源，先明确迁移目标和授权范围；不自动删除旧文件。

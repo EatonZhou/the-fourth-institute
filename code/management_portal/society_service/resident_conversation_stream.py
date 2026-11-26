@@ -192,8 +192,8 @@ class ResidentConversationRepository:
     def publish_archived_input_state(self, resident_id: str, message_id: str) -> None:
         return self.inputs.publish_archived_input_state(resident_id, message_id)
 
-    def reopen_input(self, resident_id: object, message_id: object) -> dict[str, Any]:
-        return self.inputs.reopen_input(resident_id, message_id)
+    def reopen_input(self, resident_id: object, message_id: object, *, routing_retry: bool = False) -> dict[str, Any]:
+        return self.inputs.reopen_input(resident_id, message_id, routing_retry=routing_retry)
 
     def record_accepted_input(self, connection, resident_id: str, message_id: str) -> None:
         return self.inputs.record_accepted_input(connection, resident_id, message_id)

@@ -122,6 +122,7 @@ Resident 通过对话工作：别人给它发消息，它逐条处理并回复�
 
 - **不认识的分段类型不会被当作文本或媒体执行。** 它原样保存在运行上下文的 `content_parts` 中，留给理解这种类型的组件处理。
 - **附件在接收时校验。** 进入执行前，入口检查调用者对目标 Resident 的权限、附件类型和本地路径：上传的附件还要核对上传记录中的调用者、Resident 和文件身份；工作区文件要在允许的目录范围内；路径必须指向有效的本地文件，并满足大小和引用长度限制。附件分段不能替换调用者身份，本地路径也不能代替上传归属检查。
+- **Chat 直接按 `content_parts` 的顺序显示文字和附件。** 分段是显示顺序的唯一依据，不把附件先变成路径标记再解析，也不从另一个附件数组在末尾补回。text 中字面写出的文件标记保持文字；同一文件明确出现两次就显示两次。Markdown 可以跨节点连续排版。消息详细、历史刷新与从历史恢复草稿使用同一有序内容；旧的无结构消息只在兼容读取入口处理。
 - **校验通过的文件和图片以引用形式留在消息中。** 文件引用只说明接收时这个文件通过了校验，不保证之后文件内容不变；引用也不带来额外的读取权限。
 - **`context_reference.context` 中有三个保留字段：** `context_text`（多个值用空行连接成运行上下文文本）、`instruction_skills`（字符串列表，去重并保留首次出现的顺序）、`working_directory`（运行目录，多处给出时必须完全一致，否则拒绝）。其他键按对象合并进运行上下文。消息原文与运行时组装的上下文分开保存。
 
@@ -239,7 +240,7 @@ WatchConversationEvents 的首批立即返回；每批末尾提供检查点 `{cu
 - **回复不自动送回发送者。** 收到消息的一方是否回复、回复给谁，由它自己决定；发送者记在来源 `origin.sender`，代为发起者记在 `initiated_by`，需要回复时用 `DeliverMessage` 发给对方。普通 Resident 互发消息时，模型输入省略通用发送者与回信提示。回复 Family 门面代成员发来的消息时，平台把回复和那条消息关联起来，门面直接交给写它的成员：在处理那条消息的一轮里发给这个门面，自动引用门面的发件记录（那一轮处理的消息中恰有一条来自这个门面时）；以后的轮次用 `reply_to_message_id` 指明。这类消息的包装带一段 `<reply-hint>`，写明这两种回复方式和要填的消息 ID。
 - **回信的引用权限只覆盖对应发件记录。** 当前轮自动关联和跨轮 `reply_to_message_id` 使用同一条规则：调用者自己的对话中必须确实收到委托（也可通过正式 Family 转交链收到），门面发件记录的收件关系必须与之吻合。受托成员通过自己的 Family 门面署名回信时，仍按实际受托成员核验。平台在内部传递原收件消息 ID，并在接受引用时再次核对；调用者不能在 `message` 中自行提供这项凭证。该授权只允许引用被回复的那一条发件记录，保留服务端生成的作者、摘录及回复归属；它不授予读取整个私人门面对话的权限，也不授权普通 `quote` 引用其他私人消息。复制他人的委托消息、冒用消息 ID 或把回信凭证配到另一条发件记录，都不能获得该授权。
 - **重复投递返回原结果。** 相同 `message_id` 和相同内容的重复投递返回已有确认；相同 ID 但内容不同时返回冲突，第一次的消息保持不变。
-- **只接受上面三个 `activation_policy` 值。** `ForwardMessages` 和调用 `DeliverMessage` 的 Effect 使用相同的取值与默认值；其他值在投递、指令参数和 Lineage 组件配置中都直接拒绝。数据中残留的其他取值的未执行输入不会被恢复器自动启动，操作者可以取消后重新发送。
+- **只接受上面三个 `activation_policy` 值。** `ForwardMessagesToResident` 和调用 `DeliverMessage` 的 Effect 使用相同的取值与默认值；其他值在投递、指令参数和 Lineage 组件配置中都直接拒绝。数据中残留的其他取值的未执行输入不会被恢复器自动启动，操作者可以取消后重新发送。
 
 ### 查询数量限制
 
@@ -256,9 +257,9 @@ limit、分页标记、游标、消息 ID、产物 ID 或参数类型不合法�
 
 调用格式、执行规则和通用错误见 decision_898b8911a2ff。
 
-- **对话与上下文类**（decision_2fe6fd5367fb）：`DeliverMessage`、`ForwardMessages`、`GetConversation`、`ListMessages`、`GetMessage`、`ListRecentRounds`、`SearchMessages`、`GetMessageArtifact`、`WatchConversationEvents`、`GetSentPrompt`、`ClearContext`、`AbsorbContext`、`ListResidentRequests`、`GetResidentRequest`、`AnswerResidentRequest`、`GetSubagentRun`、`ListInputHistory`。
+- **对话与上下文类**（decision_2fe6fd5367fb）：`DeliverMessage`、`DeliverUserMessage`、`ForwardMessagesToResident`、`ForwardMessagesToChatroom`、`GetConversation`、`ListMessages`、`GetMessage`、`ListRecentRounds`、`SearchResidentMessages`、`GetMessageArtifact`、`WatchConversationEvents`、`GetSentPrompt`、`ClearContext`、`AbsorbContext`、`ListResidentRequests`、`GetResidentRequest`、`AnswerResidentRequest`、`GetSubagentRun`、`ListResidentInputHistory`。
 - **Resident 执行类**（decision_2a3ff353165c）：`ListResidentStates`、`GetInputState`、`SetIntakeOpen`（`open` 为 true 开启、false 关闭接单）、`CancelInput`、`CancelSubagent`。`CancelInput` 停止正在运行的一轮，或把等待中的请求、群体和 info 从 Mailbox 撤回；已结束的消息保留原结果，结果带 `already_terminal: true`。
-- **Mailbox 类**（decision_c54e68a82d7a，Mailbox 模型见 decision_15f7df737ed5）：`GetMailbox`、`WatchMailbox`、`SetMailboxItemPinned`、`SetMailboxItemRead`、`ClearMailbox`、`MoveMailboxItems`、`MergeMailboxItems`、`SplitMailboxItem`、`RequeueMessage`、`InjectMailboxItem`、5 条 Mailbox Todo 指令和 `CreateNotification`。`GetMailbox` 的 `resident_id` 与 `user_id` 恰好传一个，分别读该 Resident 或该 User 的 Mailbox；`ClearMailbox` 带 `resident_id` 时取消该 Resident 全部等待消息，带 `user_id` 时清理该 User 的 Mailbox。用户打开某个 Resident 的对话时，页面用 `SetMailboxItemRead` 把它当前已完成的回复标为已读。
+- **Mailbox 类**（decision_c54e68a82d7a，Mailbox 模型见 decision_15f7df737ed5）：`GetMailbox`、`WatchMailbox`、`UpdateMailboxItem`、`ClearMailbox`、`MoveMailboxItems`、`MergeMailboxItems`、`SplitMailboxItem`、`RequeueMessage`、`InjectMailboxItem`和 `CreateNotification`。`GetMailbox` 的 `resident_id` 与 `user_id` 恰好传一个，分别读该 Resident 或该 User 的 Mailbox；`ClearMailbox` 带 `resident_id` 时取消该 Resident 全部等待消息，带 `user_id` 时清理该 User 的 Mailbox。用户打开某个 Resident 的对话时，页面用 `SetMailboxItemRead` 把它当前已完成的回复标为已读。
 - **Resident 类**（decision_d19b9909a674）：运行设置 `GetResidentSettings`、`UpdateResidentSettings`，模型会话重启与 Provider、账号切换 `RestartSession`。
 
 Portal 的指令执行地址返回完整的指令结果，调用方从其中的 `result` 读取各指令的结果对象。网络断开、超时或回执丢失都不能说明操作没有被接收；调用方用原消息 ID 或原幂等键确认已有结果。

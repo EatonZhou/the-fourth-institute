@@ -11,10 +11,11 @@ from typing import Any, Callable, Iterable, Mapping
 
 from management_common.actor_identity import canonical_actor_id
 from management_common.principal import actor_principal
-from .. import family_facade, family_familize as facts, family_workflows, family_tasks, family_task_dispatches
+from .. import family_facade, family_familize as facts, family_recovery_effects, family_workflows, family_tasks
 from ..family_definition import (FAMILY_MEMBER_SIGNALS, FAMILY_ROUTER_SCRIPT,
                                 FAMILY_ROUTE_RELAY_SCRIPT, FAMILY_SUMMARY_CHECK_SCRIPT,
-                                FAMILY_SUMMARY_ROLLUP_SCRIPT, find_review_duty,
+                                FAMILY_SUMMARY_ROLLUP_SCRIPT, FAMILY_ROLE_AVAILABILITY_SCRIPT,
+                                FAMILY_QUEUE_NOTICE_SCRIPT, find_review_duty,
                                 has_independent_review)
 from .registry import ApplyContext, TemplateError, result
 from .. import lineage_aggregate
@@ -197,7 +198,7 @@ def reconcile_in_body(body: dict, block: dict, actor: str, *, installing=False) 
 def _reconcile_legacy_in_body(body: dict, block: dict, actor: str) -> None:
     """Reconcile generated components and wires by local key; preserve their IDs."""
     family = block["family"]
-    from .. import personal_assistant
+    from .. import family_review_effects, personal_assistant
     personal = bool(family.get("personal_ama_id"))
     members, facade, steward, router = (family[k] for k in ("members", "facade", "steward", "router"))
     elements = block.setdefault("elements", [])
@@ -239,13 +240,12 @@ def _reconcile_legacy_in_body(body: dict, block: dict, actor: str) -> None:
         return object_id
 
     def notify(key, source):
-        trigger = "queue" if key == "notify_member_queue" else "review"
         effect = put(key + "_task", "effect", title="派发 Family 工作", config={"script":
-            'DispatchFamilyTask resident_id="${arguments.facade}" trigger="${arguments.trigger}" event:=${event}',
+            FAMILY_QUEUE_NOTICE_SCRIPT,
             "endpoints": []})
         put(key, "route", source=source, target=effect, config={
             "invoke_profiles": {"effect": {"arguments": {"facade": {"value": facade},
-                "trigger": {"value": trigger}}}}, "unavailable_policy": "latest"})
+                "steward": {"value": steward}}}}, "unavailable_policy": "latest"})
 
     for key, title, config in FAMILY_MEMBER_SIGNALS:
         # An empty Family has no business-member subject. Reconciliation deletes
@@ -286,15 +286,15 @@ def _reconcile_legacy_in_body(body: dict, block: dict, actor: str) -> None:
                 put("invoke_" + key, "route", source=source, target=check, config={"invoke_profiles": {"effect": {
                     "arguments": {k: {"value": v} for k, v in review_args.items()}}}})
         else:
-            review_args = {"lineage_id": {"value": body["lineage_id"]}, "family_id": {"value": block["id"]}}
+            review_args = family_review_effects.bindings(body["lineage_id"], block["id"], family)
             gated = put("notify_periodic_review_task", "effect", title="按业务活动检查组织回顾", config={
-                "script": 'MaintainFamilyReview lineage_id="${arguments.lineage_id}" family_id="${arguments.family_id}"',
+                "script": family_review_effects.NOTICE,
                 "endpoints": []})
             put("notify_periodic_review", "route", source=review, target=gated, config={
                 "invoke_profiles": {"effect": {"arguments": review_args}}, "unavailable_policy": "latest"})
             if members:
                 activity = put("review_activity", "effect", title="记录已完成业务活动", config={
-                    "script": 'MaintainFamilyReview lineage_id="${arguments.lineage_id}" family_id="${arguments.family_id}" event:=${event}',
+                    "script": family_review_effects.RECORD_ACTIVITY,
                     "endpoints": []})
                 put("record_review_activity", "route", source=ids["member_done"], target=activity, config={
                     "invoke_profiles": {"effect": {"arguments": review_args}}})
@@ -315,12 +315,12 @@ def _reconcile_legacy_in_body(body: dict, block: dict, actor: str) -> None:
         "prompt": {"value": ""}, "members": {"value": members}, "steward": {"value": steward},
         "threshold": {"value": family["route_threshold"]}}}}})
     recovery = put("recovery_check", "effect", title="核验 Family 故障恢复", config={
-        "script": 'MaintainFamilyRecovery lineage_id="${arguments.lineage_id}" family_id="${arguments.family_id}" event="${event}"',
-        "endpoints": []})
+        "script": family_recovery_effects.RECOVERY, "endpoints": []})
 
     def recovery_route(key, source):
-        put(key, "route", source=source, target=recovery, config={"invoke_profiles": {"effect": {"arguments": {
-            "lineage_id": {"value": body.get("lineage_id") or body.get("id")}, "family_id": {"value": block["id"]}}}}})
+        arguments = family_recovery_effects.bindings(body.get("lineage_id") or body.get("id"), block["id"], family)
+        put(key, "route", source=source, target=recovery,
+            config={"invoke_profiles": {"effect": {"arguments": arguments}}})
 
     failed = put("member_failed", "event_source", title="成员或 steward 工作失败", config={"event_type": "resident.work_failed"})
     for member in [*members, router, steward]:
@@ -348,7 +348,7 @@ def _reconcile_legacy_in_body(body: dict, block: dict, actor: str) -> None:
         "interval_seconds": 300, "misfire_policy": "coalesce_latest", "overlap_policy": "drop"})
     recovery_route("recheck_recovery", timer)
     availability = put("role_availability", "effect", title="保障 Router／Steward 可接单", config={
-        "script": 'MaintainFamilyRoleAvailability lineage_id="${arguments.lineage_id}" family_id="${arguments.family_id}"',
+        "script": FAMILY_ROLE_AVAILABILITY_SCRIPT,
         "endpoints": []})
     intake = put("role_intake", "event_source", title="Router／Steward 接单状态变化", config={
         "event_type": "resident.state_changed", "state_domain": "intake"})
@@ -356,7 +356,7 @@ def _reconcile_legacy_in_body(body: dict, block: dict, actor: str) -> None:
         put(f"watch_role_intake:{member}", "watch", source=intake, target=member, config={})
     for key, source in (("check_role_intake", intake), ("recheck_role_availability", timer)):
         put(key, "route", source=source, target=availability, config={"invoke_profiles": {"effect": {"arguments": {
-            "lineage_id": {"value": body.get("lineage_id") or body.get("id")}, "family_id": {"value": block["id"]}}}}})
+            "facade": {"value": facade}, "roles": {"value": [router, steward]}}}}})
     # Roster reconciliation owns only generated structure. Ordinary workflows
     # retain their objects, contracts and occurrence identities.
     owned = {e["id"] for e in elements if facts.is_generated(e)}
@@ -685,7 +685,14 @@ def familize(lineage_id: str, resident_ids: Iterable[str], actor: str, *, title:
     view, outcome = _lineage_graph_edits().commit_lineage_edit(lineage_id, actor, edit, reason="Familize：创建 Family")
     block = facts.family_block(view, outcome["family_id"])
     if 'organization' in family_tasks.configured(view, block):
-        family_task_dispatches.dispatch(roles["facade"], "organization", actor, facts={"change": "Family 已创建，检查分工并等待工作触发。"})
+        from .. import resident_conversation_stream, resident_message_contract
+
+        message_id = resident_message_contract.derived_message_identity("family-created", lineage_id, block["id"])
+        if not resident_conversation_stream.get_repository().message(roles["steward"], message_id):
+            family_facade.tell_steward(
+                roles["facade"], roles["steward"], actor, "Family 已创建，检查分工并等待工作触发。",
+                message_id=message_id, business_ref="duty/family-organization",
+            )
     return result(f"已创建 Family「{title}」", **outcome, resource_id=block["family"]["resource_id"], function_block_ids=[block["id"]],
         facade_resident_id=roles["facade"], steward_resident_id=roles["steward"], router_resident_id=roles["router"],
         member_resident_ids=members, leader_resident_id=view.get("leader_resident_id", ""),

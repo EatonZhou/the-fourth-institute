@@ -69,7 +69,11 @@ def context(service, actor: str, record: dict, *, selected: str = "",
     if not selected or selected == "@none":
         return result
     project = records[selected]
-    summary = service.action(selected, "summary.read", actor=actor)
+    from .resources.providers.project import project_summary
+
+    # The Project was authorized above, as in GetProject. Use its existing
+    # summary reader; the retired generic action surface has no replacement.
+    summary = project_summary(selected)
     page = service.query(actor=actor, projects=[selected], limit=CONTEXT_LIMIT)
     resources = []
     for item in page.get("resources", []):

@@ -165,6 +165,19 @@ CREATE TABLE IF NOT EXISTS {s}.user_authorizations (
     accepted_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (resident_id, message_id, a_node, r_node)
 );
+CREATE TABLE IF NOT EXISTS {s}.prepared_task_credentials (
+    issuer TEXT NOT NULL,
+    recipient TEXT NOT NULL,
+    message_id TEXT NOT NULL,
+    a_node TEXT NOT NULL,
+    r_node TEXT NOT NULL,
+    scheme_id TEXT NOT NULL,
+    credential_id TEXT NOT NULL,
+    lifetime_seconds INTEGER,
+    state TEXT NOT NULL CHECK (state IN ('pending', 'active', 'ended')),
+    PRIMARY KEY (issuer, recipient, message_id, a_node, r_node),
+    UNIQUE (scheme_id, credential_id)
+);
 """
 
 
@@ -703,3 +716,35 @@ class Store:
 
 __all__ = ["Content", "DEFAULT_SCHEME", "DENY", "EntryConflict", "INSTANCE_TABLES", "PERMIT", "Relation", "SCHEMA", "Snapshot",
            "Store", "entry_from_row", "new_entry_id"]
+
+
+class ReadOnlyStore(Store):
+    """Read an installed permission store without schema initialization or migrations.
+
+    A separate PostgreSQL read-only transaction also rejects accidental writes
+    in nested preview code. Missing installation is reported, never repaired.
+    """
+
+    def scoped(self, scheme_id: str) -> "ReadOnlyStore":
+        return self if scheme_id == self.scheme_id else ReadOnlyStore(self.database, scheme_id=scheme_id)
+
+    def ensure(self) -> None:
+        pass
+
+    @contextmanager
+    def read(self, connection=None):
+        if connection is not None:
+            yield connection
+            return
+        import psycopg
+        from psycopg.rows import dict_row
+        from management_common.postgres_database import PostgresConnection
+
+        with psycopg.connect(self.database.dsn, row_factory=dict_row) as raw:
+            raw.execute("SET TRANSACTION READ ONLY")
+            yield PostgresConnection(raw)
+
+    @contextmanager
+    def transaction(self, connection=None):
+        raise RuntimeError("permission preview is read-only")
+        yield  # pragma: no cover

@@ -54,12 +54,12 @@ test('delete gates new reads without waiting for an unbounded existing projectio
   const queued = otherClient.projection({residentId: 'resident_one'}).catch(error => error);
   const history = f.service.inputHistory('resident_one').catch(error => error);
   await otherClient.projection({residentId: 'resident_two'});
-  assert.equal(f.calls.filter(c => c.name === 'DeleteResident').length, 1,
+  assert.equal(f.calls.filter(c => c.name === 'ApplyLineageChanges').length, 1,
     'deletion can commit while an earlier network request is still outstanding');
   read.resolve({resident_id: 'resident_one'});
   await first; await flush();
-  assert.equal(f.calls.filter(c => c.name === 'DeleteResident').length, 1);
-  assert.equal(f.calls.filter(c => c.name === 'ListInputHistory').length, 0);
+  assert.equal(f.calls.filter(c => c.name === 'ApplyLineageChanges').length, 1);
+  assert.equal(f.calls.filter(c => c.name === 'ListResidentInputHistory').length, 0);
   write.resolve({resident_id: 'resident_one'});
   await deletion;
   for (const error of await Promise.all([queued, history])) {
@@ -72,18 +72,18 @@ test('delete gates new reads without waiting for an unbounded existing projectio
 
 test('a rejected deletion restores waiting reads and preserves the write error', async () => {
   const f = fixture(), write = deferred();
-  f.execute = (name) => name === 'DeleteResident' ? write.promise : Promise.resolve({items: []});
+  f.execute = (name) => name === 'ApplyLineageChanges' ? write.promise : Promise.resolve({items: []});
   const failure = Object.assign(new Error('write forbidden'), {code: 'instruction.forbidden'});
   const deletion = f.service.remove({resident_id: 'resident_one', lineage_id: 'lineage_test'}).catch(error => error);
   const read = f.service.projection({residentId: 'resident_one'});
   const history = f.service.inputHistory('resident_one');
   await flush();
-  assert.deepEqual(f.calls.map(c => c.name), ['DeleteResident']);
+  assert.deepEqual(f.calls.map(c => c.name), ['ApplyLineageChanges']);
   write.reject(failure);
   assert.equal(await deletion, failure);
   await Promise.all([read, history]);
   assert.equal(f.calls.filter(c => c.name === 'GET').length, 1);
-  assert.equal(f.calls.filter(c => c.name === 'ListInputHistory').length, 1);
+  assert.equal(f.calls.filter(c => c.name === 'ListResidentInputHistory').length, 1);
 });
 
 test('graph deletion gates projection invalidation before the committed callback or refresh', async () => {
@@ -92,7 +92,7 @@ test('graph deletion gates projection invalidation before the committed callback
   const stop = f.context.PortalResidentProjection.subscribe('resident_one', value => updates.push(value));
   await flush();
   assert.equal(f.calls.filter(c => c.name === 'GET').length, 1);
-  f.execute = (name) => name === 'DeleteResident' ? write.promise : Promise.reject(new Error('refresh failed'));
+  f.execute = (name) => name === 'ApplyLineageChanges' ? write.promise : Promise.reject(new Error('refresh failed'));
   let deleted = false;
   const graph = f.context.PortalSocietyService.createClient({onResidentsDeleted: () => { deleted = true; stop(); }});
   const deletion = graph.deleteNode({lineage_id: 'lineage_test', resident_id: 'resident_one'}).catch(error => error);
@@ -102,7 +102,7 @@ test('graph deletion gates projection invalidation before the committed callback
   assert.equal(f.calls.filter(c => c.name === 'GET').length, 1, 'invalidation must not race the write');
   write.resolve({resident_id: 'resident_one'});
   const error = await deletion;
-  assert.equal(error.committedMutation.instruction, 'DeleteResident');
+  assert.equal(error.committedMutation.instruction, 'ApplyLineageChanges');
   assert.equal(deleted, true);
   await assert.rejects(f.service.inputHistory('resident_one'), {code: 'resident.deleted'});
   assert.equal(f.calls.filter(c => c.name === 'GET').length, 1);
@@ -136,4 +136,19 @@ test('HATG deletion distinguishes committed, uncommitted and unknown write outco
     }
     assert.equal(state.residents.length, 1, 'unknown projections are not optimistically rewritten');
   }
+});
+
+test('question decisions, answers and cancellations send separate validated payloads', async () => {
+  const f = fixture();
+  const target = { resident_id: 'resident_111111111111', message_id: 'msg_fixture' };
+  await f.service.respondUserInput({...target, action: 'accept', content: {decision: 'allow'}});
+  await f.service.respondUserInput({...target, action: 'decline'});
+  await f.service.respondUserInput({...target, action: 'answer', answers: {'1': ['yes']}});
+  await f.service.respondUserInput({...target, action: 'cancel'});
+  assert.deepEqual(JSON.parse(JSON.stringify(f.calls)), [
+    {name: 'AnswerResidentRequest', args: {...target, decision: 'accept', content: {decision: 'allow'}}},
+    {name: 'AnswerResidentRequest', args: {...target, decision: 'decline'}},
+    {name: 'AnswerResidentRequest', args: {...target, answers: {'1': ['yes']}}},
+    {name: 'CancelResidentRequest', args: target},
+  ]);
 });

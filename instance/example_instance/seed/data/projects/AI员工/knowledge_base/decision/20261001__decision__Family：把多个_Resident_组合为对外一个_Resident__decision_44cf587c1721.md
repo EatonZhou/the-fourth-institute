@@ -90,7 +90,7 @@ Router、Steward 使用自身 Provider 会话与设置。完整指南只在会�
 
 **局部选区与 Lineage 范围是两种显式范围。** Familize 局部选区至少包含一个有效业务成员；折叠 Family 卡片解析成内层门面，整个子块成为外层元素。普通组件和连线不能算成员，普通 Function Block 不能冒充 Family。
 
-CreateLineage 的界面默认勾选 Familize，可取消；API 未传 familize 保持普通创建。Settings 的 Familize Lineage 使用 scope=lineage，保存 lineage_scope。同一 Lineage 最多一个范围 Family，包含未归属其他 Family 的业务 Resident 和顶层子 Family 门面；已有普通分组保留，内部角色和内层成员不重复加入。重复创建返回现有范围 Family，该层不能再嵌入其他 Family。
+创建 Lineage 时可在界面选择组建 Family。先提交 `CreateLineage`，再对已创建的 Lineage 提交 `Familize`。Settings 的 Familize Lineage 使用 scope=lineage，保存 lineage_scope。同一 Lineage 最多一个范围 Family，包含未归属其他 Family 的业务 Resident 和顶层子 Family 门面；已有普通分组保留，内部角色和内层成员不重复加入。重复创建返回现有范围 Family，该层不能再嵌入其他 Family。
 
 空 Lineage 可以先建范围 Family，保留无成员时的原请求；创建 Lineage 已提交而 Familize 失败时，错误带已建 Lineage ID，界面进入其 Settings 修复，不重复创建 Lineage。
 
@@ -136,7 +136,7 @@ auto_migrate 与 auto_migrate_priority 只决定额度不足时是否自动更�
 
 ## 工作派发的权限范围
 
-`DispatchFamilyTask` 的授权对象是 `resident_id` 指定的门面。非本 Family 门面、Router、Steward 的调用者须同时通过该门面的私有访问边界和本指令权限；向个人门面持有所有者签发的精确 contributor 委托即可请求其既有内部角色工作，不要求附带整个私人 Lineage 的访问权限。派发仍由 Family 定义选择角色，原消息、任务事实和幂等记录保持，调用者不因此取得成员会话或父 Lineage 的读取、修改权。原生内部角色照常按本 Family 身份核验。
+任务投递的授权对象是 Effect 所属的门面：Effect 以门面身份用 `DeliverMessage` 向内部角色投递。其他调用者向个人门面发消息，按各自对该门面的权限处理，不因此取得成员会话或父 Lineage 的读取、修改权。原生内部角色照常按本 Family 身份核验。
 
 ## leader 与权限
 
@@ -148,9 +148,9 @@ Steward 的管理能力来自权限模板对当前 Family 所在 Lineage 的授�
 
 ## 退出、迁移与删除
 
-**成员删除保留历史身份。** DeleteResident 移除有效名册及监听，后续不再选择、恢复该成员；deleted_at/deleted_by 表达删除，对话、轨迹与历史引用按权限保留。删除不等于可复活的临时关闭。门面、Router、Steward 不能绕过 Family 约束单独删除。
+**成员删除保留历史身份。** 通过 `ApplyLineageChanges` 删除 Resident 时，同时移除其有效名册记录及监听，后续不再选择、恢复该成员；deleted_at/deleted_by 表达删除，对话、轨迹与历史引用按权限保留。删除不等于可复活的临时关闭。门面、Router、Steward 不能绕过 Family 约束单独删除。
 
-**MoveResident 迁出即离开原 Family。** 名册和结构在同一提交中更新，权限树随新 Lineage 移动。已经交给该成员的请求仍由它完成，回复沿 family_relays 回门面；以后引用其旧回复时因不在名册而重新路由。迁移结构信号通知 Steward，自己发起则不重复通知。内部三个角色不能单独迁出；可移动整个 Family 或先解除。私人默认 AMA 的迁移限制由个人助手专题定义。
+**用 MoveLineageObjects 迁出 Resident 即离开原 Family。** 名册和结构在同一提交中更新，权限树随新 Lineage 移动。已经交给该成员的请求仍由它完成，回复沿 family_relays 回门面；以后引用其旧回复时因不在名册而重新路由。迁移结构信号通知 Steward，自己发起则不重复通知。内部三个角色不能单独迁出；可移动整个 Family 或先解除。私人默认 AMA 的迁移限制由个人助手专题定义。
 
 **Unfamilize 先使内部角色安静，再拆结构。** 关闭三个角色接单、停止当前工作并撤回队列；等待期间不持有 Program 投递锁。停下后在 Lineage 执行权内重新核对已冻结的成员、角色、继任和结构范围；等待期间相关范围变化则返回可重试冲突，保留当前结构供重读后继续，不混用旧名册与新元素。范围一致后再次清理迟到输入，交还 leader、改接所有保留的门面入线，删除生成结构。超时返回可重试冲突，图、leader、连线不发生部分拆除；保留业务成员不被停止。
 
@@ -204,7 +204,7 @@ Family 的正式资源类型为 family，归属当前 Lineage 并投影 Project�
 
 普通 Family 可将“周期组织回顾”模板施加到自己的 Steward。首次施加接管原有回顾定时器、检查 Effect、活动记录 Effect 和两条路由，保留对象 ID，并封装为 Steward 持有的子职责（父块成员键 duty:review）。member_done 仍由 Family 维护，供摘要检查和回顾共同引用；独立化后空名册也保留共享源的身份，只更新成员监听。仅首次安装绑定活动路由，后续同步不补回用户删掉的职责内容。
 
-families.independent_duties 是独立管理范围的权威记录，目前支持 review；加列默认空数组，不自动迁移已有 Family。职责撤下后 review 标记保留，成员变化、结构同步及重启不会重建回顾结构；再次施加显式重新安装。MaintainFamilyReview 对已独立化但无任务配置的 Family 返回 disabled，新 DispatchFamilyTask(review) 不再回落到内置提示词；既有投递意图继续使用原消息与冻结内容，重新安装后的检查可消费已接受回执而不重复投递。
+families.independent_duties 是独立管理范围的权威记录，目前支持 review；加列默认空数组，不自动迁移已有 Family。职责撤下后 review 标记保留，成员变化、结构同步及重启不会重建回顾结构；再次施加显式重新安装。`notify_periodic_review_task` 脚本对已独立化但无任务配置的 Family 结束且不投递，review 任务不再回落到内置提示词；既有投递沿原消息 ID 继续，重新安装后的检查得到原受理回执而不重复投递。
 
 独立职责仍沿用业务活动水位、空闲门控及受限的门面执行身份。嵌套职责的 Effect 只在本 Family、对应触发及参数匹配时取得该身份。UpdateFamily 的周期更新定位现有职责定时器；已撤下时不恢复结构。Unfamilize 清理这条职责及其内部元素，保留普通工作流的既有展开语义。
 

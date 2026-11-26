@@ -119,7 +119,7 @@ def test_forward_contact_can_be_resolved_by_exact_resident_id_contracts(monkeypa
 
 
 def test_forward_messages_reads_each_message_with_the_callers_permission_then_delivers(monkeypatch) -> None:
-    """ForwardMessages 以调用者权限读取每条来源消息，再投递给目标 Resident"""
+    """ForwardMessagesToResident 以调用者权限读取每条来源消息，再投递给目标 Resident"""
     from types import SimpleNamespace
 
     from management_portal.society_service.isa import conversation
@@ -137,7 +137,7 @@ def test_forward_messages_reads_each_message_with_the_callers_permission_then_de
         (inv.caller, resident_id, body)) or {"resident_id": resident_id, "message_id": body["message_id"]})
     arguments = {"target_resident_id": "resident_111111111111", "note": "Please review.",
                  "messages": [{"resident_id": "resident_222222222222", "message_id": "message_222222222222"}]}
-    result = conversation.forward_messages(SimpleNamespace(argument=arguments.get, caller="sample_admin"))
+    result = conversation.forward_messages_to_resident(SimpleNamespace(argument=arguments.get, caller="sample_admin"))
     assert result == {"resident_id": "resident_111111111111", "message_id": "message_111111111111"}
     assert reads == [("resident_222222222222", "sample_admin", "message_222222222222")]
     assert prepared == [({"target_resident_id": "resident_111111111111", "message": "Please review.",
@@ -199,10 +199,10 @@ def test_forward_to_chatroom_reuses_posting_and_quotes_source_mentions(monkeypat
     arguments = {'target_chatroom_id': room, 'messages': [
         {'resident_id': 'resident_111111111111', 'message_id': 'source-one', 'content': 'forged client content'},
         {'chatroom_id': room, 'message_id': source['message_id']}], 'note': '请 @bob 看这两条'}
-    inv = Invocation(instruction_catalog()['ForwardMessages'], InstructionCall.from_payload({
-        'instruction': 'ForwardMessages', 'arguments': arguments, 'idempotency_key': 'forward-once'}), context, 'forward')
-    first = conversation.forward_messages(inv)
-    second = conversation.forward_messages(inv)
+    inv = Invocation(instruction_catalog()['ForwardMessagesToChatroom'], InstructionCall.from_payload({
+        'instruction': 'ForwardMessagesToChatroom', 'arguments': arguments, 'idempotency_key': 'forward-once'}), context, 'forward')
+    first = conversation.forward_messages_to_chatroom(inv)
+    second = conversation.forward_messages_to_chatroom(inv)
     assert first['message_id'] == second['message_id']
     assert first['chatroom_id'] == room and first['message']['author_id'] == 'alice'
     assert first['deliveries'] == [] and lineage.deliveries() == []
@@ -232,12 +232,16 @@ def test_forward_destination_contract_and_errors(monkeypatch):
     from management_portal.hatg.contracts import InstructionError
     from management_portal.society_service.isa import conversation
 
-    declaration = instruction_catalog()['ForwardMessages']
     items = [{'resident_id': 'resident_111111111111', 'message_id': 'source'}]
-    for targets in ({}, {'target_resident_id': 'r', 'target_chatroom_id': 'c'}):
+    for name, target, other in (
+        ('ForwardMessagesToResident', 'target_resident_id', 'target_chatroom_id'),
+        ('ForwardMessagesToChatroom', 'target_chatroom_id', 'target_resident_id'),
+    ):
+        declaration = instruction_catalog()[name]
         with pytest.raises(InstructionError):
-            declaration.validate_arguments({'messages': items, **targets})
-    for target in ('target_resident_id', 'target_chatroom_id'):
+            declaration.validate_arguments({'messages': items})
+        with pytest.raises(InstructionError):
+            declaration.validate_arguments({'messages': items, target: 'target', other: 'other'})
         declaration.validate_arguments({'messages': items, target: 'target'})
     args = {'messages': items, 'target_chatroom_id': 'chatroom_111111111111'}
     inv = SimpleNamespace(argument=args.get, caller='alice', context=object(), idempotency_key='k')
@@ -245,13 +249,12 @@ def test_forward_destination_contract_and_errors(monkeypatch):
         raise PermissionError('source not readable')
     monkeypatch.setattr(resident_protocol, 'get_resident_message', unreadable)
     with pytest.raises(PermissionError, match='source not readable'):
-        conversation.forward_messages(inv)
+        conversation.forward_messages_to_chatroom(inv)
     monkeypatch.setattr(resident_protocol, 'get_resident_message', lambda *a: {'content_parts': [{'type': 'text', 'text': 'source'}]})
     def denied(*a):
         raise InstructionError('instruction.forbidden', 'destination denied')
     monkeypatch.setattr(routing, 'execute_or_raise', denied)
     with pytest.raises(InstructionError, match='destination denied'):
-        conversation.forward_messages(inv)
-    args['activation_policy'] = 'attach_to_next'
+        conversation.forward_messages_to_chatroom(inv)
     with pytest.raises(InstructionError, match='activation_policy'):
-        conversation.forward_messages(inv)
+        instruction_catalog()['ForwardMessagesToChatroom'].validate_arguments({**args, 'activation_policy': 'attach_to_next'})

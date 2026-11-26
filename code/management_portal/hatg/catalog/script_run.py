@@ -8,6 +8,26 @@ def _d(name, decides, description, parameters, result=(), *, mutates=False):
              decides=decides)
 
 
+READ_RUN = (
+    R('lineage_id', description='脚本运行所属的 Lineage'),
+    R('script_run_id', description='RunScript 返回的运行 ID'),
+)
+READ_RANGE = (
+    P('offset', 'integer', '起始字节偏移，默认 0', minimum=0),
+    P('limit', 'integer', '最多读取的字节数，默认 65536', minimum=1, maximum=65536),
+)
+READ_RESULT = (
+    R('text', description='读到的字节按 UTF-8 解码的文本，无法解码处替换'),
+    R('base64', description='读到的原始字节，base64 编码'),
+    R('offset', 'integer', '本次读取的起始字节偏移'),
+    R('next_offset', 'integer', '下一次读取的起始偏移'),
+    R('size', 'integer', '日志或产物当前的总字节数'),
+    R('eof', 'boolean', '是否已读到当前末尾'),
+    R('mime_type', description='内容类型：日志为 text/plain，产物按文件名判断'),
+    R('truncated', 'boolean', '日志超过保存上限、后面的输出未保存'),
+)
+
+
 DECLARATIONS = (
     _d('RunScript', ON_LINEAGE, '以配置的服务账号在主机上异步运行 Python、JavaScript 或 Bash 脚本。', (
         R('path', description='脚本文件的绝对路径'),
@@ -30,17 +50,12 @@ DECLARATIONS = (
         P('limit', 'integer', '最多返回的条数，默认 50；按开始时间从新到旧', minimum=1, maximum=200),
     ), (R('runs', 'array', '运行记录，从新到旧：script_run_id、path、status、started_at、finished_at、exit_code、outputs、artifacts…'),
         R('total', 'integer', '符合条件的运行总数'))),
-    _d('ReadScriptRunOutput', ON_LINEAGE, '按字节偏移读取脚本日志或产物；同时返回文本与 base64 字节。', (
-        R('lineage_id', description='脚本运行所属的 Lineage'), R('script_run_id', description='RunScript 返回的运行 ID'),
-        R('stream', description='读取标准输出、标准错误或产物', enum=('stdout', 'stderr', 'artifact')),
-        P('name', description='stream 为 artifact 时要读取的产物名'),
-        P('offset', 'integer', '起始字节偏移，默认 0', minimum=0),
-        P('limit', 'integer', '最多读取的字节数，默认 65536', minimum=1, maximum=65536),
-    ), (R('text', description='读到的字节按 UTF-8 解码的文本，无法解码处替换'), R('base64', description='读到的原始字节，base64 编码'),
-        R('offset', 'integer', '本次读取的起始字节偏移'), R('next_offset', 'integer', '下一次读取的起始偏移'),
-        R('size', 'integer', '日志或产物当前的总字节数'), R('eof', 'boolean', '是否已读到当前末尾'),
-        R('mime_type', description='内容类型：日志为 text/plain，产物按文件名判断'),
-        R('truncated', 'boolean', '日志超过保存上限、后面的输出未保存'))),
+    _d('ReadScriptRunOutput', ON_LINEAGE, '按字节偏移读取脚本日志。', (
+        *READ_RUN, R('stream', description='标准输出或标准错误', enum=('stdout', 'stderr')), *READ_RANGE,
+    ), READ_RESULT),
+    _d('ReadScriptRunArtifact', ON_LINEAGE, '按字节偏移读取脚本运行的已登记产物。', (
+        *READ_RUN, R('name', description='GetScriptRun 返回的产物名'), *READ_RANGE,
+    ), READ_RESULT),
     _d('CancelScriptRun', ON_LINEAGE, '停止尚在运行的脚本；已结束的运行保持原状。', (
         R('lineage_id', description='脚本运行所属的 Lineage'), R('script_run_id', description='RunScript 返回的运行 ID'),
     ), mutates=True),

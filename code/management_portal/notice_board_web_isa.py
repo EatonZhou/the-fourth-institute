@@ -99,16 +99,21 @@ def update_post_marks(inv: Invocation) -> dict[str, Any]:
 def mark_post_read(inv: Invocation) -> dict[str, Any]:
     board = _board()
     post_id = inv.argument("post_id")
-    if inv.argument("unread"):
-        result = board.mark_post_unread(inv.caller, post_id)
-    else:
-        revision = inv.argument("notification_revision")
-        if revision is None:
-            revision = int((board.get_post(inv.caller, post_id).get("post") or {}).get("notification_revision") or 1)
-        result = board.mark_post_read(inv.caller, post_id, revision)
+    revision = inv.argument("notification_revision")
+    if revision is None:
+        revision = int((board.get_post(inv.caller, post_id).get("post") or {}).get("notification_revision") or 1)
+    return _read_receipt(board, inv.caller, board.mark_post_read(inv.caller, post_id, revision))
+
+
+def set_post_unread(inv: Invocation) -> dict[str, Any]:
+    board = _board()
+    return _read_receipt(board, inv.caller, board.mark_post_unread(inv.caller, inv.argument("post_id")))
+
+
+def _read_receipt(board, actor, result):
     return {
         "read_revision": int(result["read_revision"]),
-        "unread_count": int(board.list_posts(inv.caller)["unread_count"]),
+        "unread_count": int(board.list_posts(actor)["unread_count"]),
     }
 
 
@@ -122,6 +127,7 @@ HANDLERS = {
     "DeleteReply": delete_reply,
     "UpdatePostMarks": update_post_marks,
     "UpdatePostReadVersion": mark_post_read,
+    "SetPostUnread": set_post_unread,
 }
 
 

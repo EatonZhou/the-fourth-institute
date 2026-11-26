@@ -28,13 +28,13 @@ def set_telepus_enabled(inv: Invocation) -> dict[str, Any]:
     return {"status": TelepusRuntime().set_enabled(inv.argument("enabled"))}
 
 
-def bind_telepus_contact_for_user(inv: Invocation) -> dict[str, Any]:
+def bind_telepus_contact(inv: Invocation) -> dict[str, Any]:
     from management_portal.watchboards.telepus import bind_contact
 
     return bind_contact(inv.argument("user_id"), inv.argument("id_token"), inv.argument("previous_id_token", ""))
 
 
-def unbind_telepus_contact_for_user(inv: Invocation) -> dict[str, Any]:
+def unbind_telepus_contact(inv: Invocation) -> dict[str, Any]:
     from management_portal.watchboards.telepus import unbind_contact
 
     result = unbind_contact(inv.argument("user_id"), inv.argument("id_token"))
@@ -70,8 +70,8 @@ HANDLERS = {
                                        "SubmitTelepusWeixinPin", "UnbindTelepusWeixin")},
     "GetTelepusStatus": get_telepus_status,
     "SetTelepusEnabled": set_telepus_enabled,
-    "BindTelepusContactForUser": bind_telepus_contact_for_user,
-    "UnbindTelepusContactForUser": unbind_telepus_contact_for_user,
+    "BindTelepusContact": bind_telepus_contact,
+    "UnbindTelepusContact": unbind_telepus_contact,
 }
 
 

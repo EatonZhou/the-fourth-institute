@@ -14,6 +14,7 @@ Nothing here imports the PAR implementation.
 """
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 CATEGORIES = {"portal_admin": "Portal 管理员", "member": "一般用户", "intern": "实习用户"}
@@ -40,16 +41,22 @@ def accounts() -> Any:
     return _ACCOUNTS
 
 
+def categories_from_users(users: Mapping[str, Mapping[str, Any]]) -> dict[str, str]:
+    """Project categories from the same normalized account snapshot as user status."""
+    return {username: user["category"] for username, user in users.items()
+            if user["status"] != "deleted" and user["category"] != DEFAULT}
+
+
 class Categories:
     """Reads of the categories the account records hold."""
 
     def of(self, username: str) -> str:
         return accounts().user(username).get("category") or DEFAULT
 
-    def all(self) -> dict[str, str]:
+    def all(self, *, read_only: bool = False) -> dict[str, str]:
         """The category of every live User that is not a 一般用户."""
-        return {username: user["category"] for username, user in accounts().snapshot()["users"].items()
-                if user["status"] != "deleted" and user["category"] != DEFAULT}
+        snapshot = accounts().snapshot(read_only=True) if read_only else accounts().snapshot()
+        return categories_from_users(snapshot["users"])
 
 
 _CATEGORIES = Categories()

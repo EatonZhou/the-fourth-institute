@@ -154,6 +154,29 @@
     return residentStore(payload.resident_id).submit(payload, options);
   }
 
+  async function prepareInputCredentials(payload, credentials, expectedRecipient = payload.resident_id) {
+    const service = window.PortalResidentService;
+    const { resident_id, message } = payload;
+    const receipt = await currentActorResponse(service.prepareInput(payload));
+    const matchesInput = receipt?.resident_id === resident_id && receipt?.message_id === message.message_id;
+    const recipient = receipt?.credential_recipient_id;
+    const messageId = receipt?.credential_message_id;
+    if (!matchesInput || !["prepared", "released"].includes(receipt.status)
+      || !recipient || recipient !== expectedRecipient || messageId !== message.message_id) {
+      throw new Error(window.PortalI18n.t("无法确认这条授权回答的准备状态"));
+    }
+    if (receipt.status === "released") return;
+    for (const credential of credentials) {
+      const loan = await currentActorResponse(service.createInputCredential({
+        a: credential.a, resource_id: credential.resource_id, principal_id: recipient, message_id: messageId,
+      }));
+      if (loan?.state !== "pending" || loan.lifetime !== "task" || loan.principal_id !== recipient
+        || loan.message_id !== messageId || loan.a !== credential.a || loan.resource_id !== credential.resource_id) {
+        throw new Error(window.PortalI18n.t("无法确认这条回答的任务凭证"));
+      }
+    }
+  }
+
   function acceptControlAcknowledgement(acknowledgement) {
     stores.get(String(acknowledgement?.resident_id || "").trim())?.acceptAcknowledgement(acknowledgement);
     return acknowledgement;
@@ -1966,6 +1989,7 @@
     setMailboxItemHold,
     loadMailbox,
     requeueMessage,
+    prepareInputCredentials,
     loadMessage,
     loadSentPrompt,
     previewPromptInjection,

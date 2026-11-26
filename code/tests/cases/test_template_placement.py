@@ -21,7 +21,7 @@ def test_structure_drop_preserves_anchor_and_relative_layout(lineage, grouped):
         'layout': {'target': {'x': 40, 'y': 40}, 'loop': {'x': 65, 'y': 55}}}}})['template']
     arguments = {'lineage_id': lineage, 'template_id': template['template_id'],
                  'target': {'kind': 'resident', 'resident_ids': [target], 'x': node['x'], 'y': node['y']}}
-    ok('ApplyTemplate', {**arguments, 'dry_run': True})
+    ok('GetTemplateApplyPreview', arguments)
     assert graph(lineage) == before
     applied = ok('ApplyTemplate', arguments)
     after = graph(lineage)
@@ -39,7 +39,7 @@ def test_created_role_uses_the_layout_owner_and_keeps_the_existing_anchor(lineag
         'roles': [{'key': 'target', 'from': 'target'}, {'key': 'worker', 'from': 'new', 'title': 'New colleague'}],
         'components': [], 'wires': [], 'layout': {'target': {'x': 40, 'y': 40}, 'worker': {'x': 65, 'y': 70}}}}})['template']
     arguments = {'lineage_id': lineage, 'template_id': template['template_id'], 'target': {'kind': 'resident', 'resident_ids': [target]}}
-    ok('ApplyTemplate', {**arguments, 'dry_run': True})
+    ok('GetTemplateApplyPreview', arguments)
     assert graph(lineage) == before
     result = ok('ApplyTemplate', arguments)
     after = graph(lineage)

@@ -1,8 +1,7 @@
-"""ResourceService providers: registering resolvers and mutation and action providers,
+"""ResourceService providers: registering resolvers and mutation providers,
 loading them on first use, and the capabilities they give a resource type."""
 from __future__ import annotations
 
-from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any, Iterable
 
 from .address import ResourceResolver
@@ -23,7 +22,6 @@ def _load_provider(service: "ResourceService", capability: str, resource_type: s
     registry, loader, lock, flag = {
         "resolver": (service._resolvers, service._resolver_loader, service._resolver_lock, "_resolvers_loaded"),
         "mutation": (service._mutation_providers, service._mutation_provider_loader, service._mutation_provider_lock, "_mutation_providers_loaded"),
-        "action": (service._action_providers, service._action_provider_loader, service._action_provider_lock, "_action_providers_loaded"),
     }[capability]
     with lock:
         loaded = service._loaded_provider_types[capability]
@@ -51,6 +49,7 @@ def register_resolver(
     *,
     read_content: Any = None,
     read_content_range: Any = None,
+    query: Any = None,
     replace: bool = False,
 ) -> None:
     values = [resource_types] if isinstance(resource_types, str) else list(resource_types)
@@ -64,6 +63,7 @@ def register_resolver(
             resolve=resolve,
             read_content=read_content,
             read_content_range=read_content_range,
+            query=query,
         ),
         replace=replace,
     )
@@ -105,6 +105,8 @@ def register_mutation_provider(
     content_updatable: bool = False,
     service_managed_registration: bool = False,
     owner_managed_unregistration: bool = False,
+    update_workbench_page: Any = None,
+    update_workbench_reverse_plan: Any = None,
     replace: bool = False,
 ) -> None:
     values = (
@@ -125,30 +127,9 @@ def register_mutation_provider(
             content_updatable=bool(content_updatable),
             service_managed_registration=bool(service_managed_registration),
             owner_managed_unregistration=bool(owner_managed_unregistration),
+            update_workbench_page=update_workbench_page,
+            update_workbench_reverse_plan=update_workbench_reverse_plan,
         ),
-        replace=replace,
-    )
-
-
-def register_action_provider(
-    service: "ResourceService",
-    resource_types: str | Iterable[str],
-    actions: Mapping[str, Any],
-    *,
-    replace: bool = False,
-) -> None:
-    values = (
-        [resource_types]
-        if isinstance(resource_types, str)
-        else list(resource_types)
-    )
-    for resource_type in values:
-        clean_type = str(resource_type or "").strip()
-        if not service._identity.is_registered(clean_type):
-            raise ValueError(f"unregistered resource type: {clean_type}")
-    service._action_providers.register(
-        values,
-        actions,
         replace=replace,
     )
 
@@ -163,8 +144,7 @@ def capabilities_many(service: "ResourceService", resource_types: Iterable[str])
     for kind in kinds:
         if not service._identity.is_registered(kind):
             raise ValueError(f"unregistered resource type: {kind}")
-    # One fresh deployment-state read for this inspection, not three full
-    # state reads per type merely to install its three provider capabilities.
+    # One fresh deployment-state read for this inspection.
     service.resource_types.require_many(kinds)
     return {kind: _capabilities(service, kind) for kind in kinds}
 
@@ -172,7 +152,6 @@ def capabilities_many(service: "ResourceService", resource_types: Iterable[str])
 def _capabilities(service: "ResourceService", clean_type: str) -> dict[str, Any]:
     _load_provider(service, "resolver", clean_type)
     _load_provider(service, "mutation", clean_type)
-    _load_provider(service, "action", clean_type)
     resolver_types = service._resolvers.registered_types()
     mutation_types = service._mutation_providers.registered_types()
     provider = (
@@ -205,6 +184,5 @@ def _capabilities(service: "ResourceService", clean_type: str) -> dict[str, Any]
             and provider.content_updatable
         ),
         unregisterable=bool(provider and provider.unregister is not None),
-        actions=tuple(sorted(service._action_providers.actions_for(clean_type))),
     ).as_dict()
     return capabilities

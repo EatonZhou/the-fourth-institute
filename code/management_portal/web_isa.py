@@ -18,7 +18,7 @@ import time
 import uuid
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor, wait
-from contextlib import contextmanager, nullcontext
+from contextlib import contextmanager
 from contextvars import copy_context
 from pathlib import Path
 from typing import Any
@@ -135,21 +135,27 @@ def get_user_mailbox(inv: Invocation) -> dict[str, Any]:
     return {"items": entries, "pending_requests": pending, **summarize_entries(entries)}
 
 
+def _require_inbox_read_target(actor, key, source):
+    from management_portal import conversation_read_state
+
+    if key.startswith("resident:"):
+        web("web_clients").resident_api.resolve_resident_identity(key.removeprefix("resident:"), actor)
+    elif source is not None and source.contains is not None:
+        if not source.contains(key.removeprefix(source.prefix), actor):
+            raise not_found(f"Mailbox 条目不存在：{key}")
+    elif not conversation_read_state.read_rows(actor, [key]) and _inbox_entry(actor, key) is None:
+        # A notification or mention writes its recipients' rows when it is
+        # created; only an older one without a row is looked up in the Mailbox.
+        raise not_found(f"Mailbox 条目不存在：{key}")
+
+
 def mark_inbox_item_read(inv: Invocation) -> dict[str, Any]:
-    from management_portal import conversation_read_state, mailbox_sources
+    from management_portal import mailbox_sources
     from management_portal.conversation_read_state import VersionConflict
 
     key = str(inv.argument("key") or "")
     source = mailbox_sources.source_of(key)
-    if key.startswith("resident:"):
-        web("web_clients").resident_api.resolve_resident_identity(key.removeprefix("resident:"), inv.caller)
-    elif source is not None and source.contains is not None:
-        if not source.contains(key.removeprefix(source.prefix), inv.caller):
-            raise not_found(f"Mailbox 条目不存在：{key}")
-    elif not conversation_read_state.read_rows(inv.caller, [key]) and _inbox_entry(inv.caller, key) is None:
-        # A notification or mention writes its recipients' rows when it is
-        # created; only an older one without a row is looked up in the Mailbox.
-        raise not_found(f"Mailbox 条目不存在：{key}")
+    _require_inbox_read_target(inv.caller, key, source)
     expected = inv.expected_version_for(key)
     try:
         item = web("web_inbox")._set_agent_conversation_read_state(
@@ -164,20 +170,25 @@ def mark_inbox_item_read(inv: Invocation) -> dict[str, Any]:
     return {"item": item}
 
 
-def pin_inbox_item(inv: Invocation) -> dict[str, Any]:
-    from management_portal import conversation_read_state, agent_conversation_index_backend
-
-    key = inv.argument("key")
-    entry = _inbox_entry(inv.caller, key)
+def _pin_target(actor, key):
+    entry = _inbox_entry(actor, key)
     if entry is None:
         match = re.fullmatch(r"resident:(resident_[0-9a-f]{12})", str(key or ""))
         if match:
             from management_portal import conversation_index_projection
 
             try:
-                entry = conversation_index_projection.resident_pin_entry(inv.caller, match.group(1))
+                entry = conversation_index_projection.resident_pin_entry(actor, match.group(1))
             except (KeyError, PermissionError):
                 pass
+    return entry
+
+
+def pin_inbox_item(inv: Invocation) -> dict[str, Any]:
+    from management_portal import conversation_read_state, agent_conversation_index_backend
+
+    key = inv.argument("key")
+    entry = _pin_target(inv.caller, key)
     if entry is None:
         raise not_found(f"Mailbox 条目不存在：{key}")
     if agent_conversation_index_backend.section_of(entry) != "conversation":
@@ -211,6 +222,49 @@ def mute_inbox_item(inv: Invocation) -> dict[str, Any]:
     web("web_read_caches")._forget_cached_inbox(inv.caller)
     web("web_inbox")._publish_conversation_read_changes(inv.caller, {key}, bulk=True)
     return {"item": _inbox_entry(inv.caller, key) or {}}
+
+
+def update_inbox_item(inv: Invocation) -> dict[str, Any]:
+    from management_portal import agent_conversation_index_backend, conversation_read_state, mailbox_sources
+
+    key = str(inv.argument("key") or "")
+    marks = {name: inv.argument(name) for name in ("muted", "pinned", "unread")}
+    supplied = [name for name, value in marks.items() if value is not None]
+    if not supplied or any(not isinstance(marks[name], bool) for name in supplied):
+        raise invalid("至少提供一个布尔标记 muted、pinned 或 unread")
+    if len(supplied) == 1:
+        return {"muted": mute_inbox_item, "pinned": pin_inbox_item, "unread": mark_inbox_item_read}[supplied[0]](inv)
+
+    # Verify every target before writing. A visible, still-unlisted Resident
+    # can be pinned, but the mute operation requires an existing conversation.
+    actor = inv.caller
+    source = mailbox_sources.source_of(key)
+    entry = _pin_target(actor, key) if marks["muted"] is None else _inbox_entry(actor, key)
+    if entry is None:
+        raise not_found(f"Mailbox 条目不存在：{key}")
+    if agent_conversation_index_backend.section_of(entry) != "conversation":
+        raise invalid("只有对话可以置顶或设置免打扰")
+    if marks["unread"] is not None:
+        _require_inbox_read_target(actor, key, source)
+    expected = inv.expected_version_for(key)
+    try:
+        if source and source.update_marks:
+            state = source.update_marks(actor, key.removeprefix(source.prefix), **marks, expected_revision=expected)
+        else:
+            state = conversation_read_state.update_marks(actor, key, **marks, expected_revision=expected)
+            state = web("web_inbox")._conversation_item(key, state)
+    except conversation_read_state.VersionConflict as exc:
+        raise InstructionError(
+            "instruction.version_conflict", f"{key} 的版本已经变化",
+            details={"object_id": key, "expected_version": expected,
+                     "current_version": str(exc.current["read_revision"])},
+        ) from exc
+    except ValueError as exc:
+        raise invalid(str(exc)) from exc
+    web("web_read_caches")._forget_cached_inbox(actor)
+    web("web_read_caches")._invalidate_agent_conversation_cache()
+    web("web_inbox")._publish_conversation_read_changes(actor, {key}, bulk=True)
+    return {"item": _inbox_entry(actor, key) or state}
 
 
 def inbox_change_keys(payload: dict[str, Any]) -> tuple[list[str], bool]:
@@ -301,30 +355,6 @@ def clear_user_mailbox(inv: Invocation) -> dict[str, Any]:
 # -- users ---------------------------------------------------------------------------
 
 
-def mailbox_todo(inv: Invocation) -> dict[str, Any]:
-    from management_portal import mailbox_todos
-
-    name = inv.name
-    if name == "ListMailboxTodos":
-        return mailbox_todos.list_items(_named_user(inv))
-    if name == "CreateMailboxTodo":
-        recipient = mailbox_todos.owner(inv.caller, inv.argument("user_id"))
-        user = _access().user(recipient)
-        if not user.get("configured") and recipient not in web("web_accounts")._load_users():
-            raise not_found(f"用户不存在：{recipient}")
-        if user.get("status") == "disabled":
-            raise invalid("待办接收用户已停用")
-        return mailbox_todos.create(inv.caller, inv.argument("text"), user_id=recipient, date=inv.argument("date"))
-    if name == "UpdateMailboxTodo":
-        recipient = mailbox_todos.owner(inv.caller, inv.argument("user_id"))
-        _named_user(inv)
-        return mailbox_todos.update(inv.caller, inv.argument("todo_id"), inv.argument("changes"), user_id=recipient)
-    if name == "MoveMailboxTodo":
-        return mailbox_todos.move(inv.caller, inv.argument("todo_id"), inv.argument("direction"),
-                                  before_todo_id=inv.argument("before_todo_id"), after_todo_id=inv.argument("after_todo_id"))
-    return mailbox_todos.delete(inv.caller, inv.argument("todo_id"))
-
-
 def _access():
     return web("web_accounts")._PORTAL_ACCESS
 
@@ -342,7 +372,12 @@ def with_user_allows(actor: str, users: list[dict[str, Any]]) -> list[dict[str, 
 
     editable = permission_system.permitted_ids(actor, "UpdateUser", "user_id",
                                                [str(user.get("username") or "") for user in users])
-    return [{**user, "allows": {"UpdateUser": str(user.get("username") or "") in editable}} for user in users]
+    from management_portal.permission_system.administrators import is_administrator
+
+    account_admin = is_administrator(actor)
+    return [{**user, "allows": {"UpdateUser": str(user.get("username") or "") in editable,
+                               "UpdateUserStatus": account_admin,
+                               "UpdateUserCategory": account_admin}} for user in users]
 
 
 def list_users(inv: Invocation) -> dict[str, Any]:
@@ -389,9 +424,7 @@ def _administrator_change(caller: str, username: str, **change: Any) -> Iterator
 
 
 def _set_user_category(inv: Invocation, username: str, category: Any) -> bool:
-    """UpdateUser's category: Portal 管理员, 一般用户 or 实习用户.  Setting or clearing Portal 管理员 is
-    for another Portal 管理员 only; moves between the other two are UpdateUser's own check (everyone
-    signed in while the permission system is off)."""
+    """Change category through the account owner and its administrator-list transaction."""
     from management_portal import permission_system
     from management_portal.permission_system.categories import category_name
 
@@ -475,39 +508,59 @@ def create_user(inv: Invocation) -> dict[str, Any]:
 def update_user(inv: Invocation) -> dict[str, Any]:
     username = inv.argument("user_id")
     changes = dict(inv.argument("changes") or {})
-    unknown = sorted(set(changes) - {"display_name", "recovery_email", "avatar", "status", "category"})
+    unknown = sorted(set(changes) - {"display_name", "recovery_email", "avatar"})
     if unknown:
-        raise invalid("changes 只能包含 display_name、recovery_email、avatar、status 与 category")
+        raise invalid("changes 只能包含 display_name、recovery_email、avatar")
     web("web_accounts")._require_authenticated_actor(inv.caller)
-    # The account owner edits its profile; enabling or disabling an account is for whoever may delete it.
     from management_portal import permission_system
 
-    listed: Any = nullcontext()
-    if "status" in changes:
-        # An administrator's account is the administrator list's; any other is for whoever may delete it.
-        if permission_system.user_category(username) == "portal_admin":
-            listed = _administrator_change(inv.caller, username, status=str(changes["status"] or ""))
-        elif not permission_system.allows(inv.caller, "DeleteUser", {"user_id": username}):
-            raise InstructionError("instruction.forbidden", "修改账号状态需要能执行 DeleteUser")
     has_avatar = "avatar" in changes
     avatar_payload = changes.pop("avatar", None)
     user: dict[str, Any] = {}
-    with listed:
-        category_changed = "category" in changes and _set_user_category(inv, username, changes.pop("category"))
-        if changes:
-            result = web("web_accounts")._admin_access_action(inv.caller, {
-                "action": "update", "username": username,
-                "display_name": changes.get("display_name"),
-                "email": changes.get("recovery_email"),
-                "status": changes.get("status"),
-                "revoke_sessions": changes.get("status") == "disabled",
-            })
-            user = result.get("user") or {}
+    if changes:
+        result = web("web_accounts")._admin_access_action(inv.caller, {
+            "action": "update", "username": username,
+            "display_name": changes.get("display_name"),
+            "email": changes.get("recovery_email"),
+        })
+        user = result.get("user") or {}
     result = dict(user or {"username": username, **_access().user(username)})
     if has_avatar:
         result["avatar"] = _set_avatar(username, avatar_payload, inv.caller)
     return {"user": {**result, "category": permission_system.user_category(username)},
-            "category_changed": bool(category_changed)}
+            "category_changed": False}
+
+
+def _require_account_administrator(caller: str) -> None:
+    from management_portal.permission_system.administrators import is_administrator
+
+    web("web_accounts")._require_authenticated_actor(caller)
+    if not is_administrator(caller):
+        raise InstructionError("instruction.forbidden", "修改用户状态或分类需要 Portal 管理员")
+
+
+def update_user_status(inv: Invocation) -> dict[str, Any]:
+    _require_account_administrator(inv.caller)
+    username, status = inv.argument("user_id"), inv.argument("status")
+    if status not in {"active", "disabled"}:
+        raise invalid("status 须为 active 或 disabled")
+    with _administrator_change(inv.caller, username, status=status):
+        result = web("web_accounts")._admin_access_action(inv.caller, {
+            "action": "update", "username": username, "status": status,
+            "revoke_sessions": status == "disabled",
+        })
+    return {"user": result.get("user") or {}}
+
+
+def update_user_category(inv: Invocation) -> dict[str, Any]:
+    from management_portal import permission_system
+
+    _require_account_administrator(inv.caller)
+    username = inv.argument("user_id")
+    changed = _set_user_category(inv, username, inv.argument("category"))
+    return {"user": {"username": username, **_access().user(username),
+                     "category": permission_system.user_category(username)},
+            "category_changed": changed}
 
 
 def reset_user_password(inv: Invocation) -> dict[str, Any]:
@@ -585,7 +638,7 @@ def get_user_navigation(inv: Invocation) -> dict[str, Any]:
     return {"items": _navigation_items(_named_user(inv))}
 
 
-def update_user_navigation(inv: Invocation) -> dict[str, Any]:
+def set_user_navigation_favorite(inv: Invocation) -> dict[str, Any]:
     from management_portal import presentation_store
 
     user_id = _named_user(inv)
@@ -643,28 +696,6 @@ def restart_portal(inv: Invocation) -> dict[str, Any]:
     return paired.request_restart(root, deployment, components)["request"]
 
 
-def start_google_drive_backup(inv: Invocation) -> dict[str, Any]:
-    from management_common.transfer_network import resolve_route
-    from management_portal import backup_lineage
-    from management_portal.hatg import routing
-    from management_portal.hatg.contracts import InstructionContext
-
-    lineage_id = backup_lineage.lineage_id()
-    route = resolve_route(inv.argument("network_route"))
-    result = routing.execute_or_raise({
-        "instruction": "RunScript",
-        "arguments": {
-            "lineage_id": lineage_id, "path": backup_lineage.script_path(), "runtime": "python",
-            "argv": [f"drive-{inv.argument('profile')}", route], "exclusive_key": "resource-backup",
-        },
-        "idempotency_key": inv.instruction_id,
-    }, InstructionContext(caller=inv.caller, entry="web"))
-    return {
-        **result, "lineage_id": lineage_id,
-        **({"network_route": route} if result.get("status") != "already_running" else {}),
-    }
-
-
 def get_device_status(inv: Invocation) -> dict[str, Any]:
     from management_portal import agent_status_backend
 
@@ -688,11 +719,6 @@ def get_device_status(inv: Invocation) -> dict[str, Any]:
 
 
 HANDLERS = {
-    "ListMailboxTodos": mailbox_todo,
-    "CreateMailboxTodo": mailbox_todo,
-    "UpdateMailboxTodo": mailbox_todo,
-    "DeleteMailboxTodo": mailbox_todo,
-    "MoveMailboxTodo": mailbox_todo,
     "CreateUserInvitation": user_invitation,
     "ListUserInvitations": user_invitation,
     "RevokeUserInvitation": user_invitation,
@@ -700,30 +726,29 @@ HANDLERS = {
     "ListUserAccessTokens": user_access_token,
     "RevokeUserAccessToken": user_access_token,
     "GetMailbox": get_user_mailbox,
-    "SetMailboxItemPinned": pin_inbox_item,
-    "SetMailboxItemMuted": mute_inbox_item,
-    "SetMailboxItemRead": mark_inbox_item_read,
+    "UpdateMailboxItem": update_inbox_item,
     "ClearMailbox": clear_user_mailbox,
     "ListUsers": list_users,
     "GetUser": get_user,
     "CreateUser": create_user,
     "UpdateUser": update_user,
+    "UpdateUserStatus": update_user_status,
+    "UpdateUserCategory": update_user_category,
     "ResetUserPassword": reset_user_password,
     "RevokeUserSessions": revoke_user_sessions,
     "DeleteUser": delete_user,
     "GetUserNavigation": get_user_navigation,
-    "UpdateUserNavigation": update_user_navigation,
+    "SetUserNavigationFavorite": set_user_navigation_favorite,
     "GetPortalStatus": get_portal_status,
     "GetRuntimeCapacity": get_runtime_capacity,
     "RestartPortal": restart_portal,
     "GetDeviceStatus": get_device_status,
-    "RunGoogleDriveBackup": start_google_drive_backup,
     "CreateTerminal": open_terminal,
 }
 
 
 USER_RECORD_INSTRUCTIONS = frozenset({
-    "GetUser", "UpdateUser", "ResetUserPassword", "RevokeUserSessions", "DeleteUser",
+    "GetUser", "UpdateUser", "UpdateUserStatus", "UpdateUserCategory", "ResetUserPassword", "RevokeUserSessions", "DeleteUser",
 })
 
 
@@ -738,7 +763,7 @@ def version_of(inv: Invocation, object_id: str) -> Any:
     no version token.
     """
 
-    if inv.name == "SetMailboxItemRead" and object_id == inv.argument("key"):
+    if inv.name == "UpdateMailboxItem" and object_id == inv.argument("key"):
         # The handler checks the target completion with its single authoritative read.
         return None
     if inv.name in USER_RECORD_INSTRUCTIONS and object_id == inv.argument("user_id"):

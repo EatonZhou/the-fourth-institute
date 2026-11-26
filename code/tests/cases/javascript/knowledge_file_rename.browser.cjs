@@ -45,10 +45,9 @@ const html = fs.readFileSync(path.join(root, htmlPath), 'utf8')
       if (url.pathname !== '/api/instructions/execute') { unexpected.push(url.href); return route.abort(); }
       const body = route.request().postDataJSON();
       posts.push(body);
-      assert.equal(body.instruction, 'RunResourceAction');
-      assert.equal(body.arguments.action, 'knowledge.file.rename');
+      assert.equal(body.instruction, 'UpdateKnowledgeFileName');
       assert.equal(body.arguments.resource_id, id);
-      const args = body.arguments.arguments;
+      const args = body.arguments;
       assert.equal(Number.isSafeInteger(args.expected_version), true);
       assert.ok(args.operation_id);
       if (mode === 'held') { held = true; await new Promise(resolve => { releasePost = resolve; }); }
@@ -60,12 +59,12 @@ const html = fs.readFileSync(path.join(root, htmlPath), 'utf8')
       } });
       if (mode === 'network') return route.abort('failed');
       if (!['partial', 'aborted'].includes(mode)) { if (filename !== args.filename) version++; filename = args.filename; }
-      return route.fulfill({ json: { status: 'committed', result: { result: {
+      return route.fulfill({ json: { status: 'committed', result: {
         resource_id: id, address: id, filename, path: `/fixture/${filename}`, version: { number: version },
         operation_id: args.operation_id, status: ['partial', 'aborted'].includes(mode) ? 'partial' : 'completed',
         ...(mode === 'aborted' ? { retryable: false } : {}),
         ...(mode === 'partial' ? { error: 'Index update pending' } : {}),
-      } } } });
+      } } });
     });
     await page.goto('http://knowledge.test/');
     const mount = async () => {
@@ -139,15 +138,17 @@ const html = fs.readFileSync(path.join(root, htmlPath), 'utf8')
       const reload = async () => { await page.reload(); await mount(); };
       mode = 'partial';
       await rename('recovered.md'); await settle();
-      const original = posts.at(-1).arguments.arguments;
-      assert.deepEqual(JSON.parse(await persisted()), original);
+      const original = posts.at(-1).arguments;
+      const { resource_id, ...operation } = original;
+      assert.equal(resource_id, id);
+      assert.deepEqual(JSON.parse(await persisted()), operation);
       await reload();
       assert.match(await page.locator('#mRename').textContent(), /继续/);
       assert.equal(posts.length, 1, 'Reload never automatically replays a mutation');
       mode = 'network';
       await page.locator('#mRename').click(); await settle();
-      assert.deepEqual(posts.at(-1).arguments.arguments, original);
-      assert.deepEqual(JSON.parse(await persisted()), original);
+      assert.deepEqual(posts.at(-1).arguments, original);
+      assert.deepEqual(JSON.parse(await persisted()), operation);
       username = 'rename-fixture-bob';
       await reload();
       assert.equal(await page.locator('#mRename').textContent(), '重命名主文件');
@@ -156,7 +157,7 @@ const html = fs.readFileSync(path.join(root, htmlPath), 'utf8')
       await reload();
       mode = 'completed';
       await page.locator('#mRename').click(); await settle();
-      assert.deepEqual(posts.at(-1).arguments.arguments, original);
+      assert.deepEqual(posts.at(-1).arguments, original);
       assert.equal(await persisted(), null);
       await reload();
       assert.equal(await page.locator('#mRename').textContent(), '重命名主文件');
@@ -190,10 +191,10 @@ const html = fs.readFileSync(path.join(root, htmlPath), 'utf8')
       mode = 'partial';
       await rename('memory-only.md'); await settle();
       assert.equal(await page.evaluate(() => toasts.some(item => /请勿刷新或关闭/.test(item.message))), true);
-      const memoryOnly = posts.at(-1).arguments.arguments;
+      const memoryOnly = posts.at(-1).arguments;
       mode = 'completed';
       await page.locator('#mRename').click(); await settle();
-      assert.deepEqual(posts.at(-1).arguments.arguments, memoryOnly);
+      assert.deepEqual(posts.at(-1).arguments, memoryOnly);
       assert.deepEqual(unexpected, []); assert.deepEqual(errors, []);
       report('reload-recovery');
       return;
@@ -205,7 +206,7 @@ const html = fs.readFileSync(path.join(root, htmlPath), 'utf8')
     if (process.argv.includes('--validation-only')) {
       await rename('index.md'); await settle();
       assert.equal(posts.length, 1, 'index.md is a valid main filename');
-      assert.equal(posts[0].arguments.arguments.filename, 'index.md');
+      assert.equal(posts[0].arguments.filename, 'index.md');
       assert.equal(await page.locator('.knowledgeFileLeaf.active .knowledgeFileName').textContent(), 'index.md');
       assert.deepEqual(unexpected, []); assert.deepEqual(errors, []);
       report('filename-validation');

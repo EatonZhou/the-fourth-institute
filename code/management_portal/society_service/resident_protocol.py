@@ -170,7 +170,7 @@ def respond_resident_user_input(resident_id: str, actor: str, payload: dict[str,
         # A question set in a message is answered by an answer message; this
         # request only closes it unanswered, without telling the Resident.
         if payload.get("action") != "cancel":
-            raise ValueError("消息中的问题组用回答消息作答；这里只能关闭（action=cancel）")
+            raise ValueError("消息中的问题组用回答消息作答，可以用 CancelResidentRequest 关闭")
         repository.close_question_set(resident_id, message["message_id"], actor=actor)
         return {"status": "cancelled"}
     parts = (message or {}).get("content_parts") or []

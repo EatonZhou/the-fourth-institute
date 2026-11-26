@@ -34,7 +34,6 @@ links:
   - decision_898b8911a2ff
   - thinking_ca8f397a47de
 ---
-
 # HATG ISA：Function Block、画布选区与指令
 
 Function Block 是 Lineage 内的封装层次。它把一组选中的 Resident、组件、连线或内层 Function Block 组织在同一个边界中，供画布折叠展示和整体管理。封装后，各元素保留自己的 ID、配置、连接关系和执行行为；运行仍由普通 Resident、组件和连线完成。
@@ -108,7 +107,7 @@ Family 的门面、steward、Router Resident、业务成员、组件和连线都
 | `parameters` | 施加模板时的参数取值 |
 | `memory` | 可选，职责的提示词：`prompt` 为正文，最长 20000 字；`level` 为所在记忆层级 |
 
-撤下职责就是 `DeleteFunctionBlock` 删除它的块：块内元素一起删除，持有者和它的其他职责不变。`UpdateDuty` 修改描述、类别、提示词和记忆层级，`MoveDuties` 一次给出持有者全部职责的新顺序。持有者离开图后，块变回普通块，记录随之删除。Family 块不能同时是职责。
+撤下职责就是 `DeleteFunctionBlock` 删除它的块：块内元素一起删除，持有者和它的其他职责不变。`ApplyLineageChanges` 的 `duty_changes` 修改描述、类别、提示词和记忆层级，`MoveDuties` 一次给出持有者全部职责的新顺序。持有者离开图后，块变回普通块，记录随之删除。Family 块不能同时是职责。
 
 ### 职责的提示词
 
@@ -123,7 +122,7 @@ Family 的门面、steward、Router Resident、业务成员、组件和连线都
 
 职责清单由平台根据持有者在各 Lineage 的职责记录生成，按 `position` 列出每条职责的描述和提示词所在层级，与 `session` 级提示词一起作为注入部分 `duty_memory`，时机为会话开始和压缩后，位置与 `resident.md` 相同；`turn` 级提示词作为注入部分 `duty_memory_turn` 每轮放在消息之前。两部分都可以用 `GetPromptInjectionPreview` 查看。
 
-只含提示词的职责用 `CreateDuty` 添加：它的块没有元素，提示词必须保留，层级不能是 `trigger`。其他块在元素全部移除后自动删除，带提示词的职责块例外。
+只含提示词的职责通过 `ApplyTemplate` 施加 structure 模板创建：它的块没有元素，提示词必须保留，层级不能是 `trigger`。其他块在元素全部移除后自动删除，带提示词的职责块例外。
 
 ## Lineage 定义形状
 
@@ -185,8 +184,6 @@ Family 块还包含如下 `family` 字段。它是 Family 领域事实的读取�
 | `Unfunctionalize` | 是 | 解除普通 Function Block，保留内部元素 | 对 `lineage_id` 有 @contributor |
 | `UpdateFunctionBlock` | 是 | 修改块的名称、位置或直接元素归属 | 对 `lineage_id` 有 @contributor |
 | `DeleteFunctionBlock` | 是 | 删除普通块及其递归包含的元素 | 对 `lineage_id` 有 @contributor |
-| `CreateDuty` | 是 | 给一个 Resident 加一条只含提示词的职责 | 对 `lineage_id` 有 @contributor |
-| `UpdateDuty` | 是 | 修改一条职责的描述、类别、提示词或记忆层级 | 对 `lineage_id` 有 @contributor |
 | `MoveDuties` | 是 | 调整一个持有者全部职责的先后顺序 | 对 `lineage_id` 有 @contributor |
 
 ## 参数名契约
@@ -199,8 +196,6 @@ Family 块还包含如下 `family` 字段。它是 Family 领域事实的读取�
 | `Unfunctionalize` | `lineage_id`、`function_block_id` |
 | `UpdateFunctionBlock` | `lineage_id`、`function_block_id`、`title`、`x`、`y`、`add_element_ids`、`remove_element_ids` |
 | `DeleteFunctionBlock` | `lineage_id`、`function_block_id` |
-| `CreateDuty` | `lineage_id`、`holder_id`、`description`、`prompt`、`memory_level`、`category` |
-| `UpdateDuty` | `lineage_id`、`function_block_id`、`description`、`category`、`prompt`、`task_prompt`、`memory_level` |
 | `MoveDuties` | `lineage_id`、`holder_id`、`function_block_ids` |
 
 ### Functionalize
@@ -233,17 +228,9 @@ Family 的成员、生成结构与普通工作流共用 `elements` 唯一直接�
 
 删除内部 Resident 使用标准 Resident 删除流程。删除组件和连线同时清理相连引用及依赖它们的观察器，释放相应算子执行器的归属。元素来源不影响删除语义。目标或其包含的子树存在 Family 时拒绝，须先通过 Family 接口处理其解除。
 
-### CreateDuty
+### 创建与修改职责
 
-参数：`lineage_id`、`holder_id`、`description`、`prompt` 必填；`memory_level` 可选，取 `turn`、`session` 或 `on_demand`，省略为 `session`；`category` 可选，省略为 `custom`。`holder_id` 必须是该 Lineage 中的 Resident，描述和提示词不能为空。新职责排在持有者已有职责之后。
-
-结果：`function_block`，为新建的完整块对象，`elements` 为空，含 `duty`。
-
-### UpdateDuty
-
-参数：`lineage_id`、`function_block_id` 必填；`description`、`category`、`prompt`、`memory_level` 可选，省略的项保持原值。目标块必须带有 `duty` 记录。`prompt` 为空字符串时移除提示词，只含提示词的职责不能移除；`memory_level` 为 `trigger` 时，块内须有触发持有者的连线。
-
-结果：`function_block`，为修改后的完整块对象，含 `duty`。
+用 `ApplyTemplate` 把 structure 模板施加到目标 Resident，建立职责记录和模板定义的元素。已有职责通过 `ApplyLineageChanges` 编辑，元数据用 `duty_changes` 描述，可与该职责的图改动一起提交。职责的 `memory_level` 为 `trigger`、`turn`、`session` 或 `on_demand`，并遵守该职责类型的层级约束。
 
 ### MoveDuties
 
@@ -282,4 +269,4 @@ Function Block 与 Family 实例菜单提供“内部对象”和“问题”页
 
 格式名与版本须精确匹配当前规范值，校验规则见 decision_86aed2f0e8c7；本篇同时校验各字段和结构版本，不接受历史前缀或其他版本。
 
-Family 角色职责的指南复用按需职责记忆，触发任务模板只在职责参数保存。UpdateDuty 的 task_prompt 以及职责范围 ApplyLineageChanges 的同名变更须保留 ${facts}，仅允许 facts、guide_path、guide_version。非此类职责不能设置 task_prompt，修改不产生消息或撤销已受理投递。
+Family 角色职责的指南复用按需职责记忆，触发任务模板只在职责参数保存。职责范围 `ApplyLineageChanges` 的 `task_prompt` 变更须保留 ${facts}，仅允许 facts、guide_path、guide_version。非此类职责不能设置 task_prompt，修改不产生消息或撤销已受理投递。

@@ -204,12 +204,6 @@ def release_recovery(recovery_key: str, instruction_ids: list[str], context: Ins
 # -- self-description (decision_aa4fdbac8364) ------------------------------------
 
 
-def _resource_actions() -> list[dict[str, Any]]:
-    from .resource_actions import resource_action_catalog
-
-    return [action.schema() for action in resource_action_catalog().values()]
-
-
 def discovery_groups() -> list[dict[str, Any]]:
     from .declarations import DISCOVERY_GROUPS
 
@@ -232,8 +226,6 @@ def list_instructions(category: str = "", group: str = "") -> list[dict[str, Any
         if selected != "all" and declaration.discovery_group != selected:
             continue
         summary = declaration.summary()
-        if name == "RunResourceAction":
-            summary["resource_actions"] = _resource_actions()
         items.append(summary)
     return items
 
@@ -244,8 +236,6 @@ def instruction_schema(name: str) -> dict[str, Any]:
     schema = declaration_for(name).schema()
     # What a call needs under the active permission scheme (decision_b820faf42218).
     schema["permission"] = permission_system.instruction_requirement(name)
-    if name == "RunResourceAction":
-        schema["resource_actions"] = _resource_actions()
     return schema
 
 

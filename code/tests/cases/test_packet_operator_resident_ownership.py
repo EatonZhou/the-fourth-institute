@@ -18,47 +18,154 @@ from tests.cases.test_lineage_generic_primitives import (  # noqa: F401
 )
 
 
+def _operator(implementation='rules', *, executor=None):
+    config = {'operator_implementation': implementation, 'prompt': 'Keep all'}
+    if executor:
+        config['resident_executor_id'] = executor
+    return config
+
+
+def _create_operator(lineage, title, implementation='rules'):
+    result = ok('ApplyLineageChanges', {'lineage_id': lineage, 'operations': [{
+        'op': 'create', 'kind': 'component', 'ref': 'operator', 'value': {
+            'kind': 'filter', 'title': title, 'config': _operator(implementation),
+        },
+    }]})
+    return result['refs']['operator']
+
+
+def _switch(lineage, operator, *, executor=None):
+    return {'lineage_id': lineage, 'operations': [{
+        'op': 'update', 'kind': 'component', 'id': operator,
+        'changes': {'config': _operator('resident', executor=executor)},
+    }]}
+
+
+def _delete_operator(lineage, operator):
+    return ok('ApplyLineageChanges', {'lineage_id': lineage, 'operations': [
+        {'op': 'delete', 'kind': 'component', 'id': operator},
+    ]})
+
+
+def _component(lineage_view, operator):
+    return next(c for c in lineage_view['program']['components'] if c['id'] == operator)
+
+
 def test_existing_member_can_execute_two_operators_without_losing_leadership(lineage):
     """既有成员绑定多个算子保持普通身份，删除其中一个不改变另一个或 Leader。"""
     leader = resident(lineage, 'Leader')
     resident(lineage, 'Other')
-    ids = []
-    for title in ['First', 'Second']:
-        cid = ok('CreateComponent', {'lineage_id': lineage, 'kind': 'filter', 'title': title,
-                                    'config': {'operator_implementation': 'rules'}})['component_id']
-        ok('UpdateComponent', {'lineage_id': lineage, 'component_id': cid,
-            'changes': {'config': {'operator_implementation': 'resident',
-                                   'resident_executor_id': leader, 'prompt': 'Keep all'}}})
-        ids.append(cid)
+    ids = [_create_operator(lineage, title) for title in ('First', 'Second')]
+    for cid in ids:
+        ok('ApplyLineageChanges', _switch(lineage, cid, executor=leader))
     saved = graph(lineage)
     assert saved['leader_resident_id'] == leader
     assert not next(n for n in saved['nodes'] if n['id'] == leader).get('operator_executor')
-    ok('DeleteComponent', {'lineage_id': lineage, 'component_id': ids[0]})
+    _delete_operator(lineage, ids[0])
     saved = graph(lineage)
     assert saved['leader_resident_id'] == leader
-    remaining = next(c for c in saved['program']['components'] if c['id'] == ids[1])
-    assert remaining['config']['resident_executor_id'] == leader
+    assert _component(saved, ids[1])['config']['resident_executor_id'] == leader
 
 
 @pytest.mark.parametrize('initial', ['resident', 'rules'])
 def test_new_dedicated_executor_stays_exclusive_and_is_released_on_delete(lineage, initial):
     """新建及从规则切换产生的专用执行者仍拒绝共用，删除算子只解除身份。"""
-    resident(lineage, 'Leader')
-    cid = ok('CreateComponent', {'lineage_id': lineage, 'kind': 'filter',
-        'config': {'operator_implementation': initial, 'prompt': 'Keep'}})['component_id']
+    leader = resident(lineage, 'Leader')
+    cid = _create_operator(lineage, 'First', initial)
     if initial == 'rules':
-        ok('UpdateComponent', {'lineage_id': lineage, 'component_id': cid,
-                              'changes': {'config': {'operator_implementation': 'resident', 'prompt': 'Keep'}}})
+        before = graph(lineage)
+        receipt = ok('ApplyLineageChanges', _switch(lineage, cid), key='switch-executor')
+        replay = run('ApplyLineageChanges', _switch(lineage, cid), key='switch-executor')
+        assert replay.status == 'committed' and replay.replayed
+        assert replay.result['created_ids'] == receipt['created_ids']
+        assert replay.result['revision'] == receipt['revision']
+        assert receipt['revision'] == before['revision'] + 1
     saved = graph(lineage)
-    worker = next(c for c in saved['program']['components'] if c['id'] == cid)['config']['resident_executor_id']
+    worker = _component(saved, cid)['config']['resident_executor_id']
+    assert saved['leader_resident_id'] == leader
     assert next(n for n in saved['nodes'] if n['id'] == worker)['operator_executor']['component_id'] == cid
-    other = ok('CreateComponent', {'lineage_id': lineage, 'kind': 'filter',
-                                  'config': {'operator_implementation': 'rules'}})['component_id']
-    denied = run('UpdateComponent', {'lineage_id': lineage, 'component_id': other,
-        'changes': {'config': {'operator_implementation': 'resident', 'resident_executor_id': worker, 'prompt': 'Keep'}}})
+    assert {n['id'] for n in saved['nodes']} == {leader, worker}
+    if initial == 'rules':
+        assert receipt['created_ids'] == [worker]
+        ok('ApplyLineageChanges', _switch(lineage, cid), key='switch-executor-again')
+        assert _component(graph(lineage), cid)['config']['resident_executor_id'] == worker
+    other = _create_operator(lineage, 'Other')
+    denied = run('ApplyLineageChanges', _switch(lineage, other, executor=worker))
     assert denied.status == 'failed'
-    ok('DeleteComponent', {'lineage_id': lineage, 'component_id': cid})
+    _delete_operator(lineage, cid)
     assert not next(n for n in graph(lineage)['nodes'] if n['id'] == worker).get('operator_executor')
+
+
+def test_executor_preview_and_denial_do_not_stage_identity(lineage, monkeypatch):
+    from management_portal import permission_system
+    from management_portal.society_service import resident_registration_domain
+
+    cid = _create_operator(lineage, 'Awaiting')
+    before = graph(lineage)
+    monkeypatch.setattr(resident_registration_domain, 'prepare_lineage_registration',
+                        lambda *_a, **_k: pytest.fail('registration staged'))
+    preview = ok('GetLineageChangesPreview', _switch(lineage, cid))
+    assert preview['created_ids'] == []
+    assert preview['updated_ids'] == [cid]
+    assert graph(lineage) == before
+
+    def deny(_actor, items):
+        assert items == [('ApplyLineageChanges:update_component', lineage)]
+        return False
+
+    monkeypatch.setattr(permission_system, 'allows_elements', deny)
+    result = run('ApplyLineageChanges', _switch(lineage, cid))
+    assert result.status == 'failed' and result.error['code'] == 'instruction.forbidden'
+    assert graph(lineage) == before
+
+
+def test_executor_registration_and_graph_roll_back_together(lineage, monkeypatch):
+    from management_portal.society_service import lineage_state, resident_catalog, resident_record_domain
+
+    cid = _create_operator(lineage, 'Awaiting')
+    before = graph(lineage)
+    catalog = resident_catalog.get_catalog()
+    old_ids = {r['resident_id'] for r in catalog.for_lineage(lineage)}
+    persist = lineage_state._persist_lineage_state
+    staged_folders = []
+
+    def fail_after_persist(previous, updated, reason, **options):
+        persist(previous, updated, reason, **options)
+        assert reason == 'ApplyLineageChanges'
+        worker = _component(updated, cid)['config']['resident_executor_id']
+        record = catalog.get(worker)
+        assert record['lineage_id'] == lineage
+        folder = resident_record_domain.resident_folder_path(record)
+        assert folder.is_dir()
+        staged_folders.append(folder)
+        raise ValueError('abort graph and executor')
+
+    with monkeypatch.context() as m:
+        m.setattr(lineage_state, '_persist_lineage_state', fail_after_persist)
+        result = run('ApplyLineageChanges', _switch(lineage, cid), key='aborted-switch')
+    assert result.status == 'failed' and 'abort graph and executor' in result.error['message']
+    assert graph(lineage) == before
+    assert {r['resident_id'] for r in catalog.for_lineage(lineage)} == old_ids
+    assert staged_folders and not staged_folders[0].exists()
+    ok('ApplyLineageChanges', _switch(lineage, cid), key='retried-switch')
+    worker = _component(graph(lineage), cid)['config']['resident_executor_id']
+    assert {r['resident_id'] for r in catalog.for_lineage(lineage)} == old_ids | {worker}
+
+
+def test_executor_batch_commits_distinct_identities_in_one_revision(lineage):
+    ids = [_create_operator(lineage, title) for title in ('First', 'Second')]
+    before = graph(lineage)
+    receipt = ok('ApplyLineageChanges', {
+        'lineage_id': lineage,
+        'operations': [_switch(lineage, cid)['operations'][0] for cid in ids],
+    }, version=before['revision'])
+    saved = graph(lineage)
+    assert saved['revision'] == receipt['revision'] == before['revision'] + 1
+    workers = {_component(saved, cid)['config']['resident_executor_id']: cid for cid in ids}
+    assert len(workers) == 2
+    assert set(receipt['created_ids']) == set(workers)
+    assert {n['id']: n['operator_executor']['component_id'] for n in saved['nodes']} == workers
+    assert not saved['leader_resident_id']
 
 
 @pytest.mark.parametrize('parallel_rule_branch', [False, True])

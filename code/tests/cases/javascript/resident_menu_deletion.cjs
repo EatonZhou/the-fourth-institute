@@ -109,7 +109,7 @@ test('a committed deletion followed by graph refresh failure reports the committ
     familyForFacade: () => null, nodeResidentId: node => node.id,
     toast: (...args) => messages.push(args),
     societyService: {deleteNode: async () => { throw Object.assign(new Error('refresh unavailable'), {
-      committedMutation: {instruction: 'DeleteResident', result: {resident_id: 'resident_deleted'}},
+      committedMutation: {instruction: 'ApplyLineageChanges', result: {deleted_ids: ['resident_deleted']}},
     }); }},
   });
   assert.equal(await dialogs.removeSelectedNode({nodeId: 'resident_deleted', skipConfirm: true}), true);

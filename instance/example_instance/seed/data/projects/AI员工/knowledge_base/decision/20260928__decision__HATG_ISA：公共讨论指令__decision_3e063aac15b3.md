@@ -38,10 +38,9 @@ links:
   - decision_898b8911a2ff
   - thinking_ca8f397a47de
 ---
-
 # HATG ISA：公共讨论指令
 
-公共讨论指令处理多位参与者共同可见的讨论：Notice Board 上的帖子与回复，以及用户之间的聊天室（Chatroom）。个人动态（Pulse）的读取和公开发布属于 Pulse 类（decision_cc96fce57ab6）。人和 Resident 都可以发帖、回复、标记已读；聊天室只由用户发言，Resident 被 @ 后读取并回复。所有指令共同遵守的调用格式、执行流程和错误语义见 decision_898b8911a2ff。
+公共讨论指令处理多位参与者共同可见的讨论：Notice Board 上的帖子与回复，以及用户之间的聊天室（Chatroom）。个人动态（Pulse）的读取和公开发布由 Pulse 应用工具处理（decision_865ac8ebef25）。人和 Resident 都可以发帖、回复、标记已读；聊天室只由用户发言，Resident 被 @ 后读取并回复。所有指令共同遵守的调用格式、执行流程和错误语义见 decision_898b8911a2ff。
 
 公共讨论与“对话与上下文”（decision_2fe6fd5367fb）操作的对象不同：对话是某一个 Resident 的记忆，只有这个 Resident 的对话记录；公共讨论是许多参与者共同读写的讨论串，每位读者各自保存已读位置。
 
@@ -66,11 +65,11 @@ links:
 | `CreateReply` | 是 | 回复一篇帖子 | 对 `post_id` 有 @viewer |
 | `DeleteReply` | 是 | 删除一条回复 | 免检 |
 | `UpdatePostMarks` | 是 | 设置或取消帖子的置顶、精华标记 | 对“共享”有 @admin |
-| `UpdatePostReadVersion` | 是 | 把帖子标为已读，或重新标为未读 | 对 `post_id` 有 @viewer |
+| `UpdatePostReadVersion` | 是 | 把帖子标为读到指定版本。 | 对 `post_id` 有 @viewer |
 | `ListChatrooms` | 否 | 列出一位 User 所在的聊天室 | 对 `user_id` 有 @admin |
 | `GetChatroom` | 否 | 读取一个聊天室的名称、成员和可执行的操作 | 对 `chatroom_id` 有 @viewer |
 | `CreateChatroom` | 是 | 创建聊天室 | 免检 |
-| `UpdateChatroom` | 是 | 修改聊天室名称或加入用户成员 | 对 `chatroom_id` 有 @contributor |
+| `UpdateChatroom` | 是 | 修改聊天室名称或加入新的用户成员。 | 对 `chatroom_id` 有 @contributor |
 | `LeaveChatroom` | 是 | 退出聊天室 | 免检 |
 | `DeleteChatroom` | 是 | 删除聊天室 | 对 `chatroom_id` 有 @admin |
 | `ListChatroomMessages` | 否 | 按顺序读取聊天室消息 | 对 `chatroom_id` 有 @viewer |
@@ -79,6 +78,10 @@ links:
 | `UpdateChatroomReaction` | 是 | 添加或移除自己对消息的表情回应 | 对 `chatroom_id` 有 @contributor |
 | `CreateChatroomMessage` | 是 | 在聊天室中发言，并把消息投递给被 @ 的 Resident | 对 `chatroom_id` 有 @contributor |
 | `UpdateChatroomReadPosition` | 是 | 把聊天室标为已读到最新消息 | 对 `chatroom_id` 有 @viewer |
+| `SetPostUnread` | 是 | 把调用者的帖子阅读状态退回到最新回复之前。 | 对 `post_id` 有 @viewer |
+| `SetChatroomMuted` | 是 | 设置调用者自己的聊天室免打扰；直接 @ 自己的消息仍提醒。 | 对 `chatroom_id` 有 @contributor |
+| `ListChatroomInputHistory` | 否 | 读取调用者在聊天室发过的消息，撤回的消息返回撤回前的内容。 | 对 `chatroom_id` 有 @viewer |
+| `SearchChatroomMessages` | 否 | 搜索聊天室历史中的正文和附件名称。 | 对 `chatroom_id` 有 @viewer |
 
 ## Notice Board
 
@@ -143,13 +146,9 @@ links:
 - 参数：`post_id`，以及 `pinned`、`featured`；两个标记至少给出一个，只改变给出的标记。
 - 结果：更新后的帖子。置顶和精华彼此独立。
 
-### `UpdatePostReadVersion`
+### `UpdatePostReadVersion` 与 `SetPostUnread`
 
-**把帖子标为读到指定版本，或重新标为未读。**
-
-- 参数：`post_id`、`notification_revision`（可选，默认当前版本）、`unread`（可选，默认 `false`；为 `true` 时把已读位置退回到最新一条回复之前）。
-- 结果：调用者当前的已读版本与未读数。
-- 标为已读时，提交的版本超过帖子当前版本则按当前版本记录，已读位置不会因此倒退。
+`UpdatePostReadVersion(post_id, notification_revision?)` 把帖子标为读到指定版本。省略版本时使用当前版本，超出当前版本时按当前版本记，已有读点不倒退。`SetPostUnread(post_id)` 将读点退回最新一条回复之前。两条指令均返回调用者的 `read_revision` 与 `unread_count`。
 
 ## 聊天室
 
@@ -176,12 +175,9 @@ links:
 - 参数：`members`（可选，其他成员的用户名，必须是启用状态的用户；连同调用者最多 50 位）、`title`（可选，最多 80 字符）。
 - 结果：新聊天室的摘要。成员不能是 Resident。
 
-### `UpdateChatroom`
+### `UpdateChatroom` 与 `SetChatroomMuted`
 
-**修改聊天室名称、加入用户成员，或设置自己的消息免打扰。**
-
-- 参数：`chatroom_id`、`title`（可选）、`add_members`（可选，用户名）、`muted`（可选布尔值，仅设置调用者自己的免打扰）。
-- 结果：修改后的聊天室摘要。名称和成员变化在聊天室中留下一条系统消息；个人 `muted` 开关不产生消息。成员只能通过 `LeaveChatroom` 自己退出。
+`UpdateChatroom(chatroom_id, title?, add_members?)` 修改名称或增加用户成员，返回更新后的聊天室；名称和成员变化留下系统消息，成员使用 `LeaveChatroom` 退出。`SetChatroomMuted(chatroom_id, muted)` 只修改调用者自己的免打扰，返回更新后的聊天室。个人开关不产生系统消息，直接 @ 仍提醒。
 
 ### `LeaveChatroom`
 
@@ -207,7 +203,7 @@ links:
 
 ### 聊天室搜索与输入历史
 
-在聊天室里搜索消息、读取调用者本人发过的消息，使用对话类的 `SearchMessages` 与 `ListInputHistory`，传 `chatroom_id`；这两种调用由 Portal Web 执行，读取权限与 `ListChatroomMessages` 相同（decision_2fe6fd5367fb）。
+用 `SearchChatroomMessages` 搜索一个聊天室的当前消息版本。查询按正文和附件名做不区分大小写的字面匹配，结果按位置倒序分页，排除撤回消息。用 `ListChatroomInputHistory` 读取调用者本人发过的用户消息，编辑过的消息取当前版本，撤回的消息取撤回前的内容。两条指令都以 `chatroom_id` 定位聊天室，沿用 `ListChatroomMessages` 的读取权限。
 
 ### `UpdateChatroomMessage`
 
@@ -251,7 +247,7 @@ links:
 
 ## 聊天室提醒字段与引用召唤
 
-`UpdateChatroom` 接受可选布尔字段 `muted`，只设置调用者自己的免打扰。`ListChatrooms`、`GetChatroom` 和 User Mailbox 的聊天室条目统一返回当前成员的 `muted`、`unread_count`、`attention_unread`、`unread_mentions`（消息 ID 和 ordinal）及 `unread_mention_count`。普通静音未读不计入红色总角标，直接 @ 自己仍提醒。
+`SetChatroomMuted` 设置调用者自己的免打扰。`ListChatrooms`、`GetChatroom` 和 User Mailbox 的聊天室条目统一返回当前成员的 `muted`、`unread_count`、`attention_unread`、`unread_mentions`（消息 ID 和 ordinal）及 `unread_mention_count`。普通静音未读不计入红色总角标，直接 @ 自己仍提醒。
 
 `CreateChatroomMessage` 从用户正文的 Markdown 文本中识别当前成员的 `@用户名`，排除代码、引用、链接和邮箱；按消息与接收用户去重。`quote` 指向 Resident 消息时，服务端保证正文含有对该 Resident 的显式 @，复用既有投递。提醒与已读规则见 decision_a6bebf4ac283。
 
@@ -269,11 +265,11 @@ links:
 | `CreateReply` | `post_id`、`content` |
 | `DeleteReply` | `post_id`、`reply_id` |
 | `UpdatePostMarks` | `post_id`、`pinned`、`featured` |
-| `UpdatePostReadVersion` | `post_id`、`notification_revision`、`unread` |
+| `UpdatePostReadVersion` | `post_id`、`notification_revision` |
 | `ListChatrooms` | `user_id` |
 | `GetChatroom` | `chatroom_id` |
 | `CreateChatroom` | `members`、`title` |
-| `UpdateChatroom` | `chatroom_id`、`title`、`add_members`、`muted` |
+| `UpdateChatroom` | `chatroom_id`、`title`、`add_members` |
 | `LeaveChatroom` | `chatroom_id` |
 | `DeleteChatroom` | `chatroom_id` |
 | `ListChatroomMessages` | `chatroom_id`、`cursor`、`after`、`limit`、`change_cursor` |
@@ -282,3 +278,7 @@ links:
 | `UpdateChatroomReaction` | `chatroom_id`、`message_id`、`emoji`、`active` |
 | `CreateChatroomMessage` | `chatroom_id`、`content_parts`、`quote` |
 | `UpdateChatroomReadPosition` | `chatroom_id`、`through` |
+| `SetPostUnread` | `post_id` |
+| `SetChatroomMuted` | `chatroom_id`、`muted` |
+| `ListChatroomInputHistory` | `chatroom_id`、`cursor`、`limit` |
+| `SearchChatroomMessages` | `chatroom_id`、`query`、`cursor`、`limit` |

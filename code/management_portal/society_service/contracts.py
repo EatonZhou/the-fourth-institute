@@ -56,7 +56,7 @@ DOMAIN_OPERATIONS = {
             prepare_provider_runtime_update
         """),
         (Operation('read', 'resident', implementation='management_portal.society_service.resident_policy_facts', in_process=True), """
-            is_resident_input_open
+            is_resident_input_open is_resident_input_open_for_issuer
         """),
         # GetInputState may wait for Execution from a Society read worker.
         # Its authorization and association lookups cannot wait for another worker.
@@ -138,6 +138,9 @@ DOMAIN_OPERATIONS = {
         """),
     ),
     "lineage": _catalog(
+        (Operation('read', 'lineage', in_process=True, implementation='management_portal.society_service.isa.definition'), """
+            describe_lineage_change_permissions
+        """),
         (Operation('read', 'lineage', implementation='management_portal.society_service.lineage_reads'), """
             get_family_resource_projection
         """),
@@ -170,6 +173,9 @@ DOMAIN_OPERATIONS = {
         """),
     ),
     "projection": _catalog(
+        (Operation('read', 'projection', in_process=True, implementation='management_portal.society_service.permission_facts_projection'), """
+            list_permission_resident_workspaces
+        """),
         (Operation('read', 'projection', implementation='management_portal.society_service.status_projection'), """
             collect_active_agents collect_resident_usage read_context
         """),

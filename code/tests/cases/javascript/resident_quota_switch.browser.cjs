@@ -99,8 +99,10 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     await page.locator('.portalSessionRestartOverlay [data-session-restart-submit]').click();
     await page.waitForFunction(() => switches.length === 1);
     const payload = await page.evaluate(() => switches[0]);
-    assert.equal(payload.target_account, 'outside-default'); assert.equal(payload.context_strategy, 'preserve');
-    assert.equal(Object.hasOwn(payload, 'resume_failed_input'), false);
+    assert.equal(payload.target_account, 'outside-default');
+    for (const key of ['operation', 'context_strategy', 'active_execution_policy', 'resume_failed_input']) {
+      assert.equal(Object.hasOwn(payload, key), false, key);
+    }
     await page.evaluate(() => {
       quota({state: 'unavailable', reason: 'quota_unknown'}); residentWorkspace.quotaSubmitted('message3');
       state.contract.request_progress = {input_states: [{message_id: 'message3', state: 'failed'}]};

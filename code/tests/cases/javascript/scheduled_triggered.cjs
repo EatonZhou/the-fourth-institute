@@ -168,9 +168,10 @@ async function main() {
       daily.querySelector('[data-scheduled-triggered-schedule-field="jitter_seconds"]').value = '9';
       await act('[data-scheduled-triggered-source="event_source_daily"] [data-scheduled-triggered-action="update_schedule"]');
       const update = record.instructions[0];
-      assert.equal(update.schema, 'tfi.hatg-instruction.v2'); assert.equal(update.instruction, 'UpdateComponent');
-      assert.equal(update.arguments.lineage_id, 'lineage_100000000009'); assert.equal(update.arguments.component_id, 'event_source_daily');
-      assert.equal(update.arguments.changes.config.interval_seconds, 120); assert.equal(update.arguments.changes.config.jitter_seconds, 9);
+      assert.equal(update.schema, 'tfi.hatg-instruction.v2'); assert.equal(update.instruction, 'ApplyLineageChanges');
+      assert.equal(update.arguments.lineage_id, 'lineage_100000000009'); assert.deepEqual(update.arguments.operations.map(({op,kind,id})=>({op,kind,id})),
+        [{op:'update',kind:'component',id:'event_source_daily'}]);
+      assert.equal(update.arguments.operations[0].changes.config.interval_seconds, 120); assert.equal(update.arguments.operations[0].changes.config.jitter_seconds, 9);
       assert.ok(update.idempotency_key); assert.ok(record.monitor_reads > 1);
       assert.equal(record.last_monitor_fresh, true);
       await act('[data-scheduled-triggered-action="resume_schedule"]');

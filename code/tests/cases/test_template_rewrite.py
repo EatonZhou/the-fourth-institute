@@ -16,16 +16,22 @@ from tests.cases.test_isa_lineage_lifecycle import (
 
 
 def event_source(lineage_id, title, **config):
-    return ok("CreateComponent", {
-        "lineage_id": lineage_id, "kind": "event_source", "title": title,
-        "config": {"event_type": "manual.triggered", **config},
-    }, key=f"c-{title}")["component_id"]
+    return ok("ApplyLineageChanges", {
+        "lineage_id": lineage_id,
+        "operations": [{"op": "create", "kind": "component", "value": {
+            "kind": "event_source", "title": title,
+            "config": {"event_type": "manual.triggered", **config},
+        }}],
+    }, key=f"c-{title}")["created_ids"][0]
 
 
 def wire(lineage_id, kind, source, target, name, **extra):
-    return ok("CreateWire", {
-        "lineage_id": lineage_id, "kind": kind, "source": source, "target": target, **extra,
-    }, key=f"w-{name}")["wire_id"]
+    return ok("ApplyLineageChanges", {
+        "lineage_id": lineage_id,
+        "operations": [{"op": "create", "kind": "wire", "value": {
+            "kind": kind, "source": source, "target": target, **extra,
+        }}],
+    }, key=f"w-{name}")["created_ids"][0]
 
 
 def save(body, title="Rewrite", targets=("resident", "selection")):
@@ -91,10 +97,7 @@ def test_budget_watchers_are_deleted_and_the_watched_limit_is_cleared(lineage):
     target = resident(lineage, "Target")
     source = event_source(lineage, "Rounds", max_fires=3)
     feed = wire(lineage, "route", source, target, "feed")
-    watcher = ok("CreateComponent", {
-        "lineage_id": lineage, "kind": "event_source", "title": "Exhausted",
-        "config": {"event_type": "budget.exhausted"},
-    }, key="c-exhausted")["component_id"]
+    watcher = event_source(lineage, "Exhausted", event_type="budget.exhausted")
     watch = wire(lineage, "watch", watcher, source, "watch")
     notice = wire(lineage, "route", watcher, target, "notice")
     template = save({
@@ -142,6 +145,7 @@ def test_function_block_elements_are_never_found(lineage):
 
 def test_one_wire_with_several_candidates_is_chosen_before_applying(lineage):
     """连线有多个候选时预览列出候选，未选择时应用报错，选定后只删除所选连线"""
+    from management_portal.society_service import templates
     from management_portal.society_service.templates.registry import TemplateError
 
     target = resident(lineage, "Target")
@@ -153,7 +157,9 @@ def test_one_wire_with_several_candidates_is_chosen_before_applying(lineage):
         {'key': 'in', 'kind': 'route', 'source': 'src', 'target': 'target'},
     ]})
 
-    preview = apply(lineage, template, target, dry_run=True)["preview"][0]
+    preview = templates.apply_preview(
+        lineage, template, {"kind": "resident", "resident_ids": [target]}, ACTOR,
+    )["preview"][0]
     assert preview["ambiguous"][0]["key"] == "in"
     # Unlabeled candidates are named by their ends so the user can tell them apart.
     assert sorted(item["title"] for item in preview["ambiguous"][0]["candidates"]) == ["Left → Target", "Right → Target"]
@@ -182,9 +188,9 @@ def test_preview_lists_found_removed_and_created_elements_without_changes(lineag
     })
     before = graph(lineage)
 
-    preview = ok("ApplyTemplate", {
+    preview = ok("GetTemplateApplyPreview", {
         "lineage_id": lineage, "template_id": template,
-        "target": {"kind": "resident", "resident_ids": [target]}, "dry_run": True,
+        "target": {"kind": "resident", "resident_ids": [target]},
     })["preview"][0]
 
     assert {item["id"]: item["op"] for item in preview["found"]} == {source: "keep", feed: "delete"}
@@ -274,4 +280,4 @@ def test_existing_elements_are_validated_when_saved(lineage, body, message):
     from management_portal.society_service.templates.registry import TemplateError
 
     with pytest.raises(TemplateError, match=message):
-        templates.create({"kind": "structure", "title": "Bad", "body": body}, ACTOR, dry_run=True)
+        templates.create_preview({"kind": "structure", "title": "Bad", "body": body}, ACTOR)

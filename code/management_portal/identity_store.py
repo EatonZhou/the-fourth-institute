@@ -197,6 +197,19 @@ class IdentityState:
         with database().read() as connection:
             return decode(self.kind, {table:read_rows(connection,table,(*TABLES[table][0],*TABLES[table][1])) for table in KINDS[self.kind]})
 
+    def readonly(self, default=None) -> dict:
+        """Decode installed Identity rows without running DDL or migrations.
+
+        As with read(), empty installed tables decode to this kind's empty
+        document. Missing schemas, tables or required columns are errors,
+        never a reason to substitute the caller's default.
+        """
+        with database().database.readonly_snapshot() as connection:
+            return decode(self.kind, {
+                table: read_rows(connection, table, (*TABLES[table][0], *TABLES[table][1]))
+                for table in KINDS[self.kind]
+            })
+
     def replace(self, value):
         with self.transaction() as connection:
             write(connection,self.kind,value)

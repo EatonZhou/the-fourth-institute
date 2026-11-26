@@ -60,10 +60,20 @@ def search_resources(inv: Invocation) -> dict[str, Any]:
                              "offset": offset, "include_attributes": True}
     if inv.argument("q"):
         query["q"] = inv.argument("q")
+    todo = inv.argument("resource_type") == "mailbox_todo"
+    if inv.argument("user_id") is not None:
+        if not todo:
+            raise invalid("user_id 仅用于 mailbox_todo 搜索")
+        query["user_id"] = inv.argument("user_id")
+    if todo and not inv.argument("user_id"):
+        raise invalid("mailbox_todo 搜索必须指定 user_id")
     for name, field in (("resource_type", "resource_types"), ("project_id", "projects"), ("status", "statuses")):
         if inv.argument(name):
             query[field] = [inv.argument(name)]
     result = _service().query(**query)
+    if todo:
+        return {"items": result.get("resources") or [], "total": int(result.get("total") or 0),
+                "pending_count": int(result.get("pending_count") or 0), "next_cursor": result.get("next_cursor")}
     items = []
     for item in result.get("resources") or []:
         summary = {
@@ -248,20 +258,12 @@ def get_resource_type(inv: Invocation) -> dict[str, Any]:
 
 
 def _resource_type_details(resource_type: str, *, row=None, counts=None, capabilities=None) -> dict[str, Any]:
-    from management_portal.hatg.resource_actions import actions_for_type
-
     service = _service()
     row = row if row is not None else service.resource_types.get(resource_type)
     if capabilities is None:
         capabilities = service.capabilities(resource_type) if row['installed'] else {}
     if counts is None:
         counts = service._index().type_counts()
-    declared = {action.action: action for action in actions_for_type(resource_type)}
-    actions = [
-        declared[name].schema()
-        for name in capabilities.get("actions") or []
-        if name in declared
-    ]
     return {
         **row,
         "declaration": service.resource_types.identity.declaration(resource_type),
@@ -269,7 +271,6 @@ def _resource_type_details(resource_type: str, *, row=None, counts=None, capabil
         "registerable": bool(capabilities.get("registerable")),
         "updatable": bool(capabilities.get("updatable")),
         "unregisterable": bool(capabilities.get("unregisterable")),
-        "actions": actions,
     }
 
 
@@ -283,7 +284,7 @@ def list_resource_types(inv: Invocation) -> dict[str, Any]:
             "registry": service.resource_types.identity.metadata}
 
 
-def update_resource_type(inv: Invocation) -> dict[str, Any]:
+def set_resource_type_enabled(inv: Invocation) -> dict[str, Any]:
     service = _service()
     kind = inv.argument('resource_type')
     expected = inv.expected_version_for(kind)
@@ -359,7 +360,7 @@ def update_resource(inv: Invocation) -> dict[str, Any]:
             resource_type = get_resource_type_registry().parse(inv.argument("resource_id")).resource_type
         except ValueError as exc:
             raise invalid(str(exc)) from exc
-        if resource_type not in MUTABLE_RESOURCE_TYPES and resource_type not in {"workspace", "knowledge_tags"}:
+        if resource_type not in MUTABLE_RESOURCE_TYPES and resource_type not in {"workspace", "knowledge_tags", "mailbox_todo"}:
             raise invalid(f"{resource_type} 的 UpdateResource 不支持 expected_version")
         changes["expected_version"] = token
     with _registry_errors():
@@ -373,46 +374,50 @@ def unregister_resource(inv: Invocation) -> dict[str, Any]:
     return {**record, "resource_id": inv.argument("resource_id")}
 
 
-def _action_target(resource_id: str, actor: str) -> dict[str, Any]:
-    """The resource an action runs on.
-
-    A resource registered moments ago, such as a workbench created from its
-    page, may not be in the search index yet; its own provider already
-    resolves it, the same way ReadResource reads it.
-    """
-
-    try:
-        return _service().get(resource_id, actor=actor)
-    except KeyError:
-        try:
-            resolved = _service().resolve(resource_id, actor=actor)
-        except Exception:  # noqa: BLE001 - unknown to its provider as well
-            raise KeyError(resource_id) from None
-        return {**dict(resolved.get("record") or {}), "resource_type": str(resolved.get("resource_type") or "")}
+def create_knowledge_file(inv: Invocation) -> dict[str, Any]:
+    with _registry_errors():
+        return _service().create_knowledge_file(inv.argument("resource_id"), inv.argument("filename"),
+            inv.argument("text"), inv.argument("expected_version"), actor=inv.caller)
 
 
-def run_resource_action(inv: Invocation) -> dict[str, Any]:
-    from management_portal.hatg.resource_actions import resource_action
-
-    resource_id = inv.argument("resource_id")
-    record = _action_target(resource_id, inv.caller)
-    declaration = resource_action(str(record.get("resource_type") or ""), inv.argument("action"))
-    arguments = dict(inv.argument("arguments") or {})
-    declaration.validate_arguments(arguments)
-    result = _service().action(resource_id, inv.argument("action"), arguments, actor=inv.caller)
-    return {"result": result}
+def update_knowledge_file_name(inv: Invocation) -> dict[str, Any]:
+    with _registry_errors():
+        return _service().update_knowledge_file_name(inv.argument("resource_id"), inv.argument("filename"),
+            inv.argument("expected_version"), actor=inv.caller, operation_id=inv.argument("operation_id") or "")
 
 
-def reads_only(inv: Invocation) -> bool:
-    """RunResourceAction records an execution only when the declared action changes state."""
+def move_knowledge_items(inv: Invocation) -> dict[str, Any]:
+    with _registry_errors():
+        return _service().move_knowledge_items(inv.argument("project_id"), inv.argument("items"),
+            actor=inv.caller, operation_id=inv.argument("operation_id") or "")
 
-    from management_portal.hatg.resource_actions import resource_action
 
-    try:
-        record = _action_target(inv.argument("resource_id"), inv.caller)
-        return not resource_action(str(record.get("resource_type") or ""), inv.argument("action")).mutates
-    except Exception:  # noqa: BLE001 - unknown actions are recorded and then rejected
-        return False
+def check_device_ssh(inv: Invocation) -> dict[str, Any]:
+    return _service().check_device_ssh(inv.argument("resource_id"), actor=inv.caller,
+                                     timeout_seconds=inv.argument("timeout_seconds") or 15)
+
+
+def update_device_ssh_credential(inv: Invocation) -> dict[str, Any]:
+    return _service().update_device_ssh_credential(inv.argument("resource_id"), inv.argument("password"), actor=inv.caller)
+
+
+def delete_device_ssh_credential(inv: Invocation) -> dict[str, Any]:
+    return _service().delete_device_ssh_credential(inv.argument("resource_id"), actor=inv.caller)
+
+
+def run_device_command(inv: Invocation) -> dict[str, Any]:
+    return _service().run_device_command(inv.argument("resource_id"), inv.argument("command"), actor=inv.caller)
+
+
+def update_workbench_page(inv: Invocation) -> dict[str, Any]:
+    return _service().update_workbench_page(inv.argument("resource_id"), inv.argument("job_id"),
+        inv.argument("base_revision"), inv.argument("html"), actor=inv.caller,
+        title=inv.argument("title"), description=inv.argument("description"))
+
+
+def update_workbench_reverse_plan(inv: Invocation) -> dict[str, Any]:
+    return _service().update_workbench_reverse_plan(inv.argument("resource_id"), inv.argument("job_id"),
+        inv.argument("plan"), actor=inv.caller)
 
 
 # -- uploads -----------------------------------------------------------------------
@@ -569,33 +574,54 @@ def _write_upload_payload(directory: Path, meta: dict, data: bytes) -> None:
                 raise
 
 
-IMAGE_PURPOSES = frozenset({"post_image", "avatar"})
+def _purpose_policy(purpose: str) -> dict[str, Any]:
+    from management_portal import portal_features
+    from management_portal.avatar_store import MAX_IMAGE_BYTES
+
+    policies = {
+        "conversation_attachment": {"max_bytes": MAX_UPLOAD_BYTES},
+        "avatar": {"max_bytes": MAX_IMAGE_BYTES,
+                   "image_formats": ("image/png", "image/jpeg", "image/webp"),
+                   "format_error": "头像格式必须是 PNG、JPEG 或 WebP"},
+    }
+    for _feature, declared in portal_features.contributions("upload.purposes"):
+        for name, policy in declared.items():
+            if name in policies:
+                raise ValueError(f"multiple upload purpose owners: {name}")
+            maximum = policy.get("max_bytes")
+            if type(maximum) is not int or not 0 < maximum <= MAX_UPLOAD_BYTES:
+                raise ValueError(f"invalid upload purpose limit: {name}")
+            validator = policy.get("validate")
+            if validator is not None and not callable(validator):
+                raise ValueError(f"invalid upload purpose validator: {name}")
+            policies[name] = policy
+    if purpose not in policies:
+        raise invalid(f"未登记的上传用途：{purpose}")
+    return policies[purpose]
 
 
 def _purpose_limit(purpose: str) -> int:
-    if purpose == "avatar":
-        from management_portal.avatar_store import MAX_IMAGE_BYTES
-
-        return MAX_IMAGE_BYTES
-    return POST_IMAGE_MAX_BYTES if purpose in IMAGE_PURPOSES else MAX_UPLOAD_BYTES
+    return _purpose_policy(purpose)["max_bytes"]
 
 
 def _checked_media_type(purpose: str, data: bytes, media_type: str) -> str:
     """Size and type rules of an upload's purpose (decision_61e50306cc79), applied to its bytes."""
 
-    if len(data) > _purpose_limit(purpose):
-        raise invalid(f"文件不能超过 {_purpose_limit(purpose)} 字节")
+    policy = _purpose_policy(purpose)
+    if len(data) > policy["max_bytes"]:
+        raise invalid(f"文件不能超过 {policy['max_bytes']} 字节")
     if not data and media_type.strip().lower().startswith("image/"):
         raise invalid("图片内容为空（0 字节），请重新复制图片或选择原始图片文件。")
-    if purpose in IMAGE_PURPOSES:
+    if policy.get("image_formats"):
         actual_type = _post_image_type(data)
-        if purpose == "avatar" and actual_type == "image/gif":
-            raise invalid("头像格式必须是 PNG、JPEG 或 WebP")
+        if actual_type not in policy["image_formats"]:
+            raise invalid(policy.get("format_error") or "上传图片格式不符合用途要求")
         return actual_type
-    if purpose == "paper_pdf":
-        if not data.startswith(b"%PDF-"):
-            raise invalid("Paper PDF 必须是 PDF 文件")
-        return "application/pdf"
+    if policy.get("validate") is not None:
+        try:
+            return policy["validate"](data, media_type)
+        except ValueError as exc:
+            raise invalid(str(exc)) from exc
     return media_type or "application/octet-stream"
 
 
@@ -626,35 +652,45 @@ def _check_target(target: str, caller: str) -> None:
         raise InstructionError("instruction.not_found", f"上传目标不存在：{target}")
 
 
-def create_upload(inv: Invocation) -> dict[str, Any]:
-    from management_common.upload_retention import created
+def _upload_metadata(inv: Invocation) -> dict[str, Any]:
     upload_id = f"upload_{secrets.token_hex(12)}"
     purpose = inv.argument("purpose")
+    _purpose_policy(purpose)
     target = inv.argument("target") or ""
     if target:
         _check_target(target, inv.caller)
-    meta: dict[str, Any] = {
+    return {
         "upload_id": upload_id,
         "purpose": purpose,
         "target": target,
         "created_by": inv.caller,
         "created_at": _iso(_now()),
     }
+
+
+def create_upload_from_file(inv: Invocation) -> dict[str, Any]:
+    from management_common.upload_retention import created
+
+    meta = _upload_metadata(inv)
+    upload_id, purpose = meta["upload_id"], meta["purpose"]
     source = inv.argument("source_address")
-    if source:
-        data, content_type, resolved = _service().read_content(source, actor=inv.caller, max_bytes=MAX_UPLOAD_BYTES)
-        media_type = _checked_media_type(purpose, bytes(data), str(content_type or ""))
-        meta.update(_new_upload_file(str(resolved.get("filename") or source.rsplit("/", 1)[-1])))
-        directory = _upload_dir(upload_id)
-        created(directory, upload_id=upload_id, created_at=meta['created_at'])
-        _prepare_upload_payload(directory, meta)
-        _write_upload_payload(directory, meta, data)
-        meta.update({
-            "media_type": media_type,
-            "size": len(data), "ready": True, "source_address": source,
-        })
-        _write_meta(meta)
-        return {"upload_id": upload_id, "ready": True}
+    data, content_type, resolved = _service().read_content(source, actor=inv.caller, max_bytes=MAX_UPLOAD_BYTES)
+    media_type = _checked_media_type(purpose, bytes(data), str(content_type or ""))
+    meta.update(_new_upload_file(str(resolved.get("filename") or source.rsplit("/", 1)[-1])))
+    directory = _upload_dir(upload_id)
+    created(directory, upload_id=upload_id, created_at=meta['created_at'])
+    _prepare_upload_payload(directory, meta)
+    _write_upload_payload(directory, meta, data)
+    meta.update({"media_type": media_type, "size": len(data), "ready": True, "source_address": source})
+    _write_meta(meta)
+    return {"upload_id": upload_id, "ready": True}
+
+
+def create_upload(inv: Invocation) -> dict[str, Any]:
+    from management_common.upload_retention import created
+
+    meta = _upload_metadata(inv)
+    upload_id, purpose = meta["upload_id"], meta["purpose"]
     size = int(inv.argument("size") or 0)
     if size > _purpose_limit(purpose):
         raise invalid(f"文件不能超过 {_purpose_limit(purpose)} 字节")
@@ -1070,6 +1106,17 @@ def rename_project(inv: Invocation) -> dict[str, Any]:
 # -- permissions -------------------------------------------------------------------
 
 
+def _permission_check_arguments(instruction, arguments, *, actor, principal_id):
+    if instruction in {"ApplyLineageChanges", "GetLineageChangesPreview"}:
+        from management_portal.society_service import get_society_service
+
+        # The subject is judged by PAR; it never becomes the caller of this
+        # owner port. Society validates the request and derives exact targets.
+        return get_society_service().lineage.describe_lineage_change_permissions(
+            arguments, actor=actor)
+    return arguments
+
+
 def permission_instruction(inv: Invocation) -> dict[str, Any]:
     """A permission instruction, answered by the permission system that is on (decision_22227d0ad075).
 
@@ -1081,16 +1128,31 @@ def permission_instruction(inv: Invocation) -> dict[str, Any]:
 
     # The envelope's expected_version for the object the call targets (a scheme or an entry), compared by its handler.
     expected = inv.expected_version_for(target_value(inv.declaration, inv.call.arguments))
+    if inv.name in {"GetPermissionSchemeCreatePreview", "GetPermissionSchemeUpdatePreview",
+                    "GetPermissionSchemeActivationPreview"}:
+        from management_portal.permission_system.facts import collect_portal_facts
+        from management_portal.society_service import get_society_service
+        from .runtime import readonly_index_snapshot
+
+        collect_facts = lambda: collect_portal_facts(
+            read_only=True,
+            index_snapshot=readonly_index_snapshot,
+            resident_workspaces=lambda: get_society_service().projection.list_permission_resident_workspaces())
+    else:
+        collect_facts = lambda: _service().permission_facts()
+    options = {"derive_arguments": _permission_check_arguments} if inv.name == "CheckInstructionPermission" else {}
     return permission_system.manage(inv.name, dict(inv.arguments), actor=inv.caller,
-                                    collect_facts=_service().permission_facts, expected_version=expected)
+                                    collect_facts=collect_facts, expected_version=expected,
+                                    **options)
 
 
 PERMISSION_INSTRUCTIONS = (
     "GetPermissionSystem", "ListPermissionSchemes", "GetPermissionScheme", "CreatePermissionScheme",
     "UpdatePermissionScheme", "DeletePermissionScheme", "ActivatePermissionScheme", "GetPermissionNode",
+    "GetPermissionSchemeCreatePreview", "GetPermissionSchemeUpdatePreview", "GetPermissionSchemeActivationPreview",
     "SearchPermissionNodes", "ListPermissionEntries", "CreatePermissionEntry", "UpdatePermissionEntry",
-    "DeletePermissionEntry", "GetEffectivePermissions", "CheckPermission",
-    "CreateTemporaryCredential", "UpdateTemporaryCredential", "RevokeTemporaryCredential", "ListTemporaryCredentials",
+    "DeletePermissionEntry", "GetEffectivePermissions", "CheckPermission", "CheckInstructionPermission",
+    "CreateTemporaryCredential", "UpdateTemporaryCredential", "RevokeTemporaryCredential",
 )
 
 
@@ -1113,12 +1175,21 @@ HANDLERS = {
     "ReadResource": read_resource,
     "GetResourceType": get_resource_type,
     "ListResourceTypes": list_resource_types,
-    "UpdateResourceType": update_resource_type,
+    "SetResourceTypeEnabled": set_resource_type_enabled,
     "RegisterResource": register_resource,
     "UpdateResource": update_resource,
     "UnregisterResource": unregister_resource,
-    "RunResourceAction": run_resource_action,
+    "CreateKnowledgeFile": create_knowledge_file,
+    "UpdateKnowledgeFileName": update_knowledge_file_name,
+    "MoveKnowledgeItems": move_knowledge_items,
+    "CheckDeviceSsh": check_device_ssh,
+    "UpdateDeviceSshCredential": update_device_ssh_credential,
+    "DeleteDeviceSshCredential": delete_device_ssh_credential,
+    "RunDeviceCommand": run_device_command,
+    "UpdateWorkbenchPage": update_workbench_page,
+    "UpdateWorkbenchReversePlan": update_workbench_reverse_plan,
     "CreateUpload": create_upload,
+    "CreateUploadFromFile": create_upload_from_file,
     "UpdateWorkspaceFile": update_workspace_file,
     "CreateProject": create_project,
     "ListProjects": list_projects,
@@ -1131,7 +1202,7 @@ HANDLERS = {
 
 
 def binding() -> OwnerBinding:
-    return OwnerBinding(owner="resource", handlers=HANDLERS, streams={}, reads_only=_reads_only, version_of=version_of, recover_projections=recover_projections,
+    return OwnerBinding(owner="resource", handlers=HANDLERS, streams={}, version_of=version_of, recover_projections=recover_projections,
                         authorization_arguments=_authorization_arguments)
 
 
@@ -1145,10 +1216,6 @@ def _authorization_arguments(declaration, arguments, context):
     return arguments
 
 
-def _reads_only(inv: Invocation) -> bool:
-    return inv.name == "RunResourceAction" and reads_only(inv)
-
-
 def version_of(inv: Invocation, object_id: str) -> Any:
     """Version token of the target resource; other envelope keys are not looked up."""
 
@@ -1156,7 +1223,11 @@ def version_of(inv: Invocation, object_id: str) -> Any:
     # objects the call does not touch. UpdateWorkspaceFile compares under the
     # file's directory lock, UpdateResource passes the token on to the resource's
     # provider, and an upload is immutable once written and has no token.
-    if inv.name not in {"UnregisterResource", "RunResourceAction"} or object_id != inv.argument("resource_id"):
+    versioned = {"UnregisterResource", "CreateKnowledgeFile", "UpdateKnowledgeFileName",
+                 "UpdateDeviceSshCredential", "DeleteDeviceSshCredential", "RunDeviceCommand",
+                 "UpdateWorkbenchPage", "UpdateWorkbenchReversePlan", "CheckDeviceSsh", "MoveKnowledgeItems"}
+    target = "project_id" if inv.name == "MoveKnowledgeItems" else "resource_id"
+    if inv.name not in versioned or object_id != inv.argument(target):
         return None
     # The same token GetResource reports.
     return _resource_version(_service().get(object_id, actor=inv.caller))

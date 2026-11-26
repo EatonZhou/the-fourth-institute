@@ -1,12 +1,11 @@
 """Lineage definition preconditions shared by declarations and their owner."""
 
 DEFINITION_MUTATIONS = frozenset({
-    "UpdateLineage", "DeleteLineage", "CreateComponent", "UpdateComponent", "DeleteComponent",
-    "CreateWire", "UpdateWire", "DeleteWire", "ApplyLineageChanges",
+    "UpdateLineage", "DeleteLineage", "ApplyLineageChanges",
     "CreateCandidateFork", "DeleteCandidateFork", "CreateWorkspaceHandoff", "UpdateWorkspaceHandoff",
     "DeleteWorkspaceHandoff", "CreateResident", "UpdateResident",
-    "DeleteResident", "ForkResident", "PromoteSeed", "MoveResident", "MoveLineageObjects",
-    "Functionalize", "Unfunctionalize", "UpdateFunctionBlock", "DeleteFunctionBlock", "CreateDuty", "UpdateDuty", "MoveDuties",
+    "ForkResident", "PromoteSeed", "MoveLineageObjects",
+    "Functionalize", "Unfunctionalize", "UpdateFunctionBlock", "DeleteFunctionBlock", "MoveDuties",
     "ApplyTemplate", "Familize", "Unfamilize", "DeleteFamily", "UpdateFamily",
 })
 

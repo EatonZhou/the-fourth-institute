@@ -16,6 +16,7 @@ from . import lineage_primitives, resident_message_contract
 from .lineage_values import _text
 
 DELIVER_MESSAGE = "DeliverMessage"
+DELIVERY_INTENT_INSTRUCTIONS = frozenset({DELIVER_MESSAGE, "PrepareResidentInput"})
 DEFAULT_CONTINUE_PROMPT = "请继续推进当前职责，并给出可复核结果。"
 MAX_ROUTE_DEPTH = 24
 
@@ -153,10 +154,10 @@ def prepare_call_arguments(
     arguments: dict[str, Any],
     invocation: lineage_primitives.EffectInvocation,
 ) -> dict[str, Any]:
-    """Arguments handed to the instruction; ``DeliverMessage`` gets the composed message."""
+    """Prepare and release use the same authored and activation-supplied message."""
 
     prepared = dict(arguments)
-    if instruction == DELIVER_MESSAGE:
+    if instruction in DELIVERY_INTENT_INSTRUCTIONS:
         message = prepared.get("message")
         validate_effect_message(message)
         input_text = str(invocation.arguments.get("prompt") or "").strip()

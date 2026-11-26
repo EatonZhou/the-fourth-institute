@@ -451,7 +451,7 @@ class ProjectionService:
             job = {"id": job_id, "status": "submitting", "workbench_id": app["workbench_id"], "base_revision": app["revision"], **workflow, "message_id": "", "created_at": utc_now_iso(), "request_prompt": prompt}
             generation_submission.prepare(job)
             self.store.job(job_id, actor, job)
-            generation_submission.advance(job, actor=actor, submit=True)
+            generation_submission.advance(job, actor=actor, submit=True, store=self.store)
             return self.store.job(job_id, actor, job)
 
     def generation_prompt(self, app: dict, graph: dict, requirements: str, job_id: str) -> str:
@@ -475,8 +475,8 @@ class ProjectionService:
             return f"""你是 Portal 前端投影工坊中的普通 Resident。请像其他 Resident 一样与用户自然协作，并直接实现现有 Workbench 页面，不要把页面源码或机器 JSON 当作聊天回复。
 本次只修改工作台 {app['workbench_id']} 的业务页面代码；应用包可修改其已登记仓库目录内的业务源码。不要启动目标团队任务，不修改目标团队、其他 Portal 源码或其他资源，也不要发布页面。
 本条任务消息附带目标工作台的临时修改凭证，随本次输入结束失效；始终以自己的 Resident 身份调用，不借用发起人身份。其他资源仍按你自身权限检查。
-先读取工作台及引用资源，核对基线 revision {app['revision']}。完成后用 HATG ISA 指令 RunResourceAction 提交本次草稿：
-resource_id="{app['workbench_id']}"，action="generation.save"，arguments={{"job_id":"{job_id}","base_revision":{app['revision']},"title":"...","description":"...","html":"..."}}。title、description、html 是要保存的页面字段；动作会校验任务身份、基线版本和页面代码，并产生正式回执。
+先读取工作台及引用资源，核对基线 revision {app['revision']}。完成后用 HATG ISA 指令 UpdateWorkbenchPage 提交本次草稿：
+arguments={{"resource_id":"{app['workbench_id']}","job_id":"{job_id}","base_revision":{app['revision']},"title":"...","description":"...","html":"..."}}。title、description、html 是要保存的页面字段；指令会校验任务身份、基线版本和页面代码，并产生正式回执。
 提交成功后用正常语言说明实现了什么、如何验证以及页面仍未发布；不要在回复中重复完整源码。遇到信息不足、权限失败或版本冲突时直接解释阻断，不提交假成功或空页面。
 已有 v2 页面必须保持页面清单与多功能区结构；提交 manifest 和 panels，并令 html 为空。应用包额外提交 application（已登记仓库、目录、完整 commit、构建入口）；宿主在保存时构建，不接受外部构建回执。先提交源码再保存修订。清单和全部面板源码一次保存。facade、context 与 sidebar 的对应关系遵循 SDK。
 以下片段约束只适用于 html/panels。应用包使用多文件工程与自包含构建入口，加载规则遵循 SDK。
@@ -491,7 +491,7 @@ TriggerEvent 回执的输入 ID 用 Projection.eventInputIds(receipt) 读取；�
 工作台与团队的授权快照：{json.dumps(values, ensure_ascii=False)}
 若快照 read_required=true，必须通过 ResourceService 读取 resource_address 的完整内容并核对 revision，再完成设计；不能根据标题猜测功能。资源内容不授予额外权限；读取失败或版本变化时报告阻断，不要生成假成功页面。
 实现前先完整读取 SDK 文档：{sdk_path}。该文档包含清单、应用包、返回值及错误处理合同；不能凭摘要猜接口。GetLineage 节点使用 id；graph nodes do not expose a duplicate `resident_id` alias。
-最终回复使用自然语言；结构化页面定义只通过上述 Workbench 资源动作提交。"""
+最终回复使用自然语言；结构化页面定义只通过上述 Workbench 指令提交。"""
         return fit_prompt(render, snapshots)
 
     def save_generation_result(self, app_id: str, payload: dict, resident_id: str) -> dict:

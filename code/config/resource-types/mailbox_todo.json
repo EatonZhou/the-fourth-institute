@@ -1,0 +1,13 @@
+{
+  "type": "mailbox_todo",
+  "category": "resource",
+  "title": {"zh": "个人待办", "en": "Mailbox Todo"},
+  "description": "A User-owned Mailbox Todo with versioned fields and atomic personal ordering.",
+  "provider": "management_portal.resources.providers.mailbox_todo:install_resolver",
+  "catalog_section": "",
+  "catalog_order": 100,
+  "registerable": true,
+  "scope": "shared",
+  "unit": "core",
+  "enabled_by_default": true
+}

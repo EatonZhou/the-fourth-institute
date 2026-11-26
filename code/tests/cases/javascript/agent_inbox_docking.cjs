@@ -33,31 +33,39 @@ window.fixtureTodos=[
   {todo_id:'todo_done',text:'已核对本周资料',date:'2026-11-12',completed:true,position:1,indent:0},
   {todo_id:'todo_yesterday',text:'昨日任务已完成',date:'2026-11-11',completed:true,position:0,indent:0},
 ];
-window.PortalInstructionClient={execute:async(name,args)=>{
-  window.fixtureCalls.push({name,args});
-  if(name==='ListMailboxTodos'){
+const todoResource = item => ({resource_id:item.todo_id, attributes:{...item,version:item.version || 1}});
+window.PortalInstructionClient={execute:async(name,args,options)=>{
+  window.fixtureCalls.push({name,args,options:{expectedVersion:options?.expectedVersion}});
+  if(name==='SearchResources'){
     if(window.fixtureTodoFailure)throw Error('隔离测试：待办读取失败');
-    return {items:window.fixtureTodos.map(item=>({...item}))};
+    if(args.resource_type!=='mailbox_todo' || args.user_id!=='docking-fixture')throw Error('Invalid todo search scope');
+    const [first,...remaining]=window.fixtureTodos;
+    return args.cursor ? {items:remaining.map(todoResource)}
+      : {items:first ? [todoResource(first)] : [], next_cursor:remaining.length ? '1' : null};
   }
-  if(name==='CreateMailboxTodo'){
-    const item={...args,todo_id:'todo_created',completed:false,position:1,indent:0};
-    window.fixtureTodos.push(item);return {item:{...item}};
+  if(name==='RegisterResource'){
+    const item={...args.fields,todo_id:'todo_created',completed:false,position:1,indent:0,version:1};
+    window.fixtureTodos.push(item);return {resource:todoResource(item)};
   }
-  if(name==='UpdateMailboxTodo'){
+  if(name==='UnregisterResource'){
+    window.fixtureTodos=window.fixtureTodos.filter(item=>item.todo_id!==args.resource_id);return {};
+  }
+  if(name==='UpdateResource'){
     if(window.fixtureCompletionFailure && Object.hasOwn(args.changes,'completed'))throw Error('隔离测试：完成状态保存失败');
-    const item=window.fixtureTodos.find(item=>item.todo_id===args.todo_id);
-    Object.assign(item,args.changes);return {item:{...item}};
-  }
-  if(name==='DeleteMailboxTodo'){
-    window.fixtureTodos=window.fixtureTodos.filter(item=>item.todo_id!==args.todo_id);return {};
-  }
-  if(name==='MoveMailboxTodo'){
-    const item=window.fixtureTodos.find(item=>item.todo_id===args.todo_id);
-    const reference=window.fixtureTodos.find(item=>item.todo_id===(args.before_todo_id||args.after_todo_id));
-    item.date=reference.date;
-    const siblings=window.fixtureTodos.filter(value=>value.date===item.date&&value!==item).sort((a,b)=>a.position-b.position);
-    siblings.splice(siblings.indexOf(reference)+(args.after_todo_id?1:0),0,item);
-    siblings.forEach((value,index)=>{value.position=index});return {item:{...item}};
+    const item=window.fixtureTodos.find(item=>item.todo_id===args.resource_id);
+    if(options.expectedVersion!==(item.version || 1))throw Error('Stale todo version');
+    const order=args.changes.order;
+    if(order){
+      const reference=window.fixtureTodos.find(value=>value.todo_id===(order.before_id||order.after_id));
+      item.date=reference.date;
+      const siblings=window.fixtureTodos.filter(value=>value.date===item.date&&value!==item).sort((a,b)=>a.position-b.position);
+      siblings.splice(siblings.indexOf(reference)+(order.after_id?1:0),0,item);
+      siblings.forEach((value,index)=>{value.position=index;value.version=(value.version || 1)+1});
+    } else {
+      Object.assign(item,args.changes);
+      item.version=(item.version || 1)+1;
+    }
+    return {resource:todoResource(item)};
   }
   throw Error('Unexpected ISA '+name);
 }};
@@ -277,8 +285,8 @@ async function glassHover(page) {
     await completedGroup.locator('summary').click();
     const folded = await completedGroup.locator('summary').boundingBox();
     await moveRow({ x: folded.x + 40, y: folded.y + folded.height / 2 });
-    await page.waitForFunction(() => fixtureCalls.filter(call => call.name === 'MoveMailboxTodo').length === 2);
-    assert.equal(await page.evaluate(() => fixtureCalls.filter(call => call.name === 'MoveMailboxTodo').at(-1).args.after_todo_id), 'todo_fixture', 'drop near a folded section uses visible pending row');
+    await page.waitForFunction(() => fixtureCalls.filter(call => call.name === 'UpdateResource' && call.args.changes.order).length === 2);
+    assert.equal(await page.evaluate(() => fixtureCalls.filter(call => call.name === 'UpdateResource' && call.args.changes.order).at(-1).args.changes.order.after_id), 'todo_fixture', 'drop near a folded section uses visible pending row');
     await created.locator('[data-mailbox-todo-action="delete"]').click();
     await created.waitFor({ state: 'detached' });
     await page.evaluate(() => { fixtureTodoFailure = true; });
@@ -292,8 +300,10 @@ async function glassHover(page) {
     await visiblePanel(page, '[data-inbox-panel="todo"]');
     await page.locator('[data-agent-todo-refresh]').click();
     await page.waitForSelector('[data-mailbox-todo-error]', { state: 'hidden' });
-    assert.ok((await page.evaluate(() => fixtureCalls.filter(call => ['CreateMailboxTodo', 'UpdateMailboxTodo'].includes(call.name))))
-      .every(call => call.args.user_id === 'docking-fixture'));
+    const requests = await page.evaluate(() => fixtureCalls);
+    assert.ok(requests.some(call => call.name === 'SearchResources' && call.args.cursor === '1'));
+    assert.ok(requests.filter(call => call.name === 'RegisterResource').every(call => call.args.fields.user_id === 'docking-fixture'));
+    assert.ok(requests.filter(call => call.name === 'UpdateResource').every(call => Number.isInteger(call.options.expectedVersion)));
     const padding = await page.locator(".wallWorkspaceView").evaluate(el => [getComputedStyle(el).paddingLeft, getComputedStyle(el).paddingRight]);
     assert.deepEqual(padding, ["50px", "0px"]);
     await page.locator(assistant).hover();

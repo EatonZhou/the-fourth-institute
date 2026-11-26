@@ -136,12 +136,14 @@ def ensure_builtins():
 
 def migrate_instruction_names():
     from ..instruction_name_migration import normalize_template
+    from . import marketplace
+    from .structure import migrate_fork_modes
 
     with database().transaction("templates") as connection:
         rows = {row["template_id"]: row for row in read_rows(connection, "templates")}
         changed = False
         for template_id, previous in rows.items():
-            current = normalize_template(previous)
+            current = migrate_fork_modes(normalize_template(previous))
             if current == previous:
                 continue
             previous_hash = content_hash(previous)
@@ -154,6 +156,7 @@ def migrate_instruction_names():
             changed = True
         if changed:
             _write(connection, rows.values())
+        marketplace.migrate_fork_modes(connection)
 
 
 def all_templates():
@@ -167,6 +170,11 @@ def all_templates():
 
 def get(template_id):
     ensure_builtins()
+    return get_persisted(template_id)
+
+
+def get_persisted(template_id):
+    """Read the installed recipe without refreshing or installing builtins."""
     with database().read() as connection:
         template_id = resolve_id(connection, template_id)
         row = connection.execute(

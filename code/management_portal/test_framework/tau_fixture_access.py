@@ -48,7 +48,7 @@ def prepare_workspace_access(root: Path, workspace_id: str, *, check, issue=None
         permission = {'principal_id': principal, 'instruction': action, 'arguments': call_arguments}
         grant = next((g for g in state['grants'] if g['arguments'] == arguments
                       and not g.get('rejected') and not g.get('released')), None)
-        result = check('CheckPermission', permission)
+        result = check('CheckInstructionPermission', permission)
         if result.get('principal_id') != principal or not isinstance(result.get('allowed'), bool):
             raise ValueError('Workspace permission check returned another principal or no decision')
         if issue is not None and (not result['allowed'] or (grant is not None and not grant.get('receipt'))):
@@ -70,7 +70,7 @@ def prepare_workspace_access(root: Path, workspace_id: str, *, check, issue=None
                     raise ValueError('Temporary permission receipt does not match this fixture')
                 grant['receipt'] = receipt
                 atomic_replace_json(path, state)
-            result = check('CheckPermission', permission)
+            result = check('CheckInstructionPermission', permission)
             if result.get('principal_id') != principal or not isinstance(result.get('allowed'), bool):
                 raise ValueError('Workspace permission check returned another principal or no decision')
         checks.append({'instruction': action, 'allowed': result.get('allowed') is True,
@@ -86,6 +86,8 @@ def prepare_workspace_access(root: Path, workspace_id: str, *, check, issue=None
 def release_workspace_access(root: Path, *, instruction):
     """Return only this case's receipts; permission failures remain pending."""
     path, state = _journal(root)
+    principal = test_actor()
+    identity_fields = ('principal_id', 'issued_by', 'a', 'resource_id')
     released = []
     active = None
     for grant in state['grants']:
@@ -94,16 +96,27 @@ def release_workspace_access(root: Path, *, instruction):
         receipt = grant.get('receipt')
         if not receipt:
             raise RuntimeError('Workspace permission request has no receipt; resume its original issuer/key before cleanup')
-        if receipt.get('principal_id') != test_actor():
+        if receipt.get('principal_id') != principal:
             raise ValueError('Fixture credential belongs to another recipient')
-        cid = receipt['credential_id']
+        cid = receipt.get('credential_id')
+        if not all(isinstance(receipt.get(field), str) and receipt[field]
+                   for field in ('credential_id', *identity_fields)):
+            raise ValueError('Fixture credential receipt is incomplete')
         if active is None:
-            active = instruction('ListTemporaryCredentials', {'principal_id': test_actor()})['credentials']
-            if not isinstance(active, list):
+            permissions = instruction('GetEffectivePermissions', {'principal_id': principal})
+            temporary = permissions.get('temporary')
+            if (permissions.get('principal_id') != principal or not isinstance(temporary, list)
+                    or any(not isinstance(item, dict) or not isinstance(item.get('credential_id'), str)
+                           or not item['credential_id'] for item in temporary)):
                 raise ValueError('Temporary credential listing is incomplete')
+            active = {item['credential_id']: item for item in temporary}
+            if len(active) != len(temporary):
+                raise ValueError('Temporary credential listing contains duplicate IDs')
         # A completed Workspace deletion or expiry may already remove this
         # recorded credential. Only its recipient's formal listing proves that.
-        if any(item.get('credential_id') == cid for item in active):
+        if cid in active:
+            if any(active[cid].get(field) != receipt[field] for field in identity_fields):
+                raise ValueError('Listed temporary credential does not match this fixture')
             result = instruction('RevokeTemporaryCredential', {'credential_id': cid}, key=grant['key'] + ':revoke')
             if result.get('revoked') != cid:
                 raise RuntimeError('Temporary permission revocation was not confirmed')

@@ -25,7 +25,6 @@
 - [HATG ISA：Resident 执行与队列指令](/r/decision_2a3ff353165c)
 - [HATG ISA：Lineage 定义指令](/r/decision_4637ca4a69e2)，含逐项授权的 `ApplyLineageChanges` 与只读 `GetLineageChangesPreview`。
 - [HATG ISA：Lineage 共享状态指令](/r/decision_71ba0494b93e)
-- [黑板（Blackboard）：Lineage 内 Agent 共用的读写消息板](/r/decision_ed2c1ed5c245)
 - [HATG ISA：Lineage 运行指令](/r/decision_68215b3a825b)
 - [HATG ISA：脚本运行（RunScript）](/r/decision_8b510cbd9c58)
 - [HATG ISA：Function Block、画布选区与指令](/r/decision_5b5653c3eaa5)

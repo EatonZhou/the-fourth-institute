@@ -123,6 +123,17 @@ def test_lineage_and_server_publications_stay_apart_from_the_chat():
     assert expand('scripts/tfi_dev.py') == {'scripts/tfi_dev.py'}
 
 
+def test_resident_menu_parts_publish_with_the_lazy_loader():
+    """Menu 部件、入口和加载清单一起发布，包括由 Lineage 修改间接带入的部件。"""
+    loader = 'management_portal/static/portal_nav.js'
+    menu = {path.relative_to(ROOT).as_posix()
+            for path in (ROOT / 'management_portal/static').glob('portal_resident_menu*')
+            if path.suffix in {'.js', '.css'}}
+    assert 'management_portal/static/portal_resident_menu_memory.js' in menu
+    for selected in (*menu, loader, 'management_portal/static/lineage_templates_resident_settings.js'):
+        assert menu | {loader} <= expand(selected), selected
+
+
 def test_home_display_publishes_with_native_surface_contracts(tmp_path):
     """Home 适配器、宿主与原生地图生命周期接口一起发布，服务端和 Chat 保持独立。"""
     paths = set(units.HOME_DISPLAY_RELEASE_UNIT)

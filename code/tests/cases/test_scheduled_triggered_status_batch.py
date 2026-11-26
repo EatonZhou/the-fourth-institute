@@ -60,7 +60,7 @@ def test_denied_and_missing_definitions_do_not_hide_authorized_neighbor(monkeypa
     result = monitor.get_scheduled_triggered_status('caller', read=Reads())
     assert calls == [([LINEAGE, BROKEN], 'caller')]
     assert [row['resident_id'] for row in result['items']] == [lineage()['nodes'][0]['id']]
-    assert set(result['items'][0]['allows']) >= {'UpdateComponent', 'UpdateResidentSettings'}
+    assert set(result['items'][0]['allows']) >= {'ApplyLineageChanges', 'UpdateResidentSettings'}
     assert {row['lineage_id']: row['error'] for row in result['lineage_errors']} == {
         denied: 'not readable', BROKEN: 'deleted during discovery'}
 

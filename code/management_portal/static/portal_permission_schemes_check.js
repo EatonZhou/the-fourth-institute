@@ -83,7 +83,7 @@
       try {
         // principal_id is required; an empty field means the signed-in user.
         const principal = input.principal || (await window.PortalIdentity.load()).username;
-        state.checkResult = await run("CheckPermission", {
+        state.checkResult = await run("CheckInstructionPermission", {
           principal_id: principal, instruction: input.instruction, arguments: args,
         });
       } catch (error) {

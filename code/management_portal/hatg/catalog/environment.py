@@ -29,25 +29,14 @@ LOGIN_SESSION = ("登录会话：account_id、state（pending、awaiting_user、
 REGISTRATION = "账号登记：account_id、provider、kind、route_id、config、max_concurrency、enabled、version、login_state…"
 
 DECLARATIONS = (
-    _d("RunGoogleDriveBackup", FIXED, "异步复制最新 Portal 加密快照到已配置的 Google Drive，或执行合成文件的上传和恢复校验。", (
-        R("profile", description="critical 或 content 选择本地快照，probe 检查上传与恢复", enum=("critical", "content", "probe")),
-        P("network_route", description="部署批准的传输通道。省略时使用站点的备份默认通道", enum=("direct", "vps", "inherited")),
-    ), (R("lineage_id", description="承载备份脚本运行的 Lineage ID"),
-        R("script_run_id", description="本次备份或探测的异步脚本运行 ID"),
-        R("status", description="调用返回时的脚本运行状态"),
-        P("network_route", description="本次采用的网络通道")), mutates=True),
     _d("GetExecutionSettings", FIXED, "管理员读取全系统执行设置。", (),
        (R("settings", "object", SETTINGS),), owner="execution"),
-    _d("UpdateExecutionSettings", FIXED, "管理员修改全系统执行设置：请求时间记录和 Harness 记录通过系统 Event 开关，另有权限系统开关和 Harness 保留天数；至少提供一项。", (
+    _d("UpdateExecutionSettings", FIXED, "管理员修改全系统执行设置：请求时间记录和 Harness 记录通过系统 Event 开关，另有 Harness 保留天数；至少提供一项。", (
         P("model_request_timing_enabled", "boolean", "打开或关闭模型请求时间记录"),
         P("harness_recording_enabled", "boolean", "打开或关闭 Harness 调用记录"),
-        P("permission_system_enabled", "boolean",
-          "关闭后不再调用权限系统：已登录的 User 与 Resident 可以查看、使用、修改和删除所有对象，个人 AMA 仍只属于所有者；"
-          "重新开启前先把启用中权限方案的实例按 Portal 现有对象补齐，几秒内对所有 Portal 服务生效；"
-          "Portal 管理员只改这一项时永远通过，不问方案"),
         P("harness_retention_days", "integer", "Harness 证据、调用记录和未被引用的产物保留天数",
           minimum=RETENTION_DAYS["harness_retention_days"][0], maximum=RETENTION_DAYS["harness_retention_days"][1]),
-    ), (R("settings", "object", "修改后的" + SETTINGS), P("reconciled", "object", "开启权限系统时的补齐结果：scheme_id、regenerate、added_nodes、moved_nodes、removed_nodes、added_entries、removed_entries")),
+    ), (R("settings", "object", "修改后的" + SETTINGS),),
        mutates=True, owner="lineage"),
     _d("GetPortalStatus", FIXED, "读取 Portal 各部署与各组件的运行状态。", (
         P("deployment", description="只读取这个部署；省略时读取 dev 和 release", enum=("dev", "release")),

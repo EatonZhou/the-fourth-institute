@@ -27,6 +27,7 @@ from management_portal.execution.provider_catalog import AGENT_PROVIDERS
 from pathlib import Path
 from typing import Any
 import copy
+from contextlib import contextmanager
 
 
 def _confirm_registered_resident_resources(
@@ -96,6 +97,35 @@ def _register_resident_and_lineage(
     personal Lineage outside any Project, created by the User alone.
     """
     actor_id = canonical_actor_id(actor)
+    record, payload, workspace_path, runtime_settings = _prepare_registration_record(
+        payload, actor_id, lineage_node, project_principal, personal_owner, intent,
+    )
+    try:
+        with _stage_registration(record, payload, workspace_path, runtime_settings, actor_id, intent) as stage:
+            creation, operations, preparation_id = stage
+            registered_lineage = _commit_registration(
+                record, actor_id, operations, preparation_id,
+                joins_canonical_lineage=not bool(str(payload.get("lineage_folder_path") or "").strip()),
+                lineage_node=lineage_node, personal_owner=personal_owner, creation_key=creation_key,
+                creation=creation, intent=intent,
+            )
+    except Exception as error:
+        _cleanup_failed_registration(intent, actor_id, error)
+        raise
+    # Resource acknowledgement is outside state locks. A failed publication
+    # retains the committed identity and outbox for exact-identity recovery.
+    _confirm_registered_resident_resources(
+        record, committed_revision=int(registered_lineage["revision"]),
+    )
+    with resident_record_domain.state_lock(record["resident_id"]):
+        current = resident_lineage.find(record["resident_id"])
+        if current is None:
+            raise KeyError("Resident deleted after registration")
+    return current, registered_lineage
+
+
+
+def _prepare_registration_record(payload, actor_id, lineage_node, project_principal, personal_owner, intent):
     title = str(payload.get("title") or "").strip()
     if not title:
         raise ValueError("title 为必填")
@@ -129,40 +159,62 @@ def _register_resident_and_lineage(
             )
         intent.snapshot.update(record=record, runtime_settings=runtime_settings)
         intent.save()
+    return record, payload, workspace_path, runtime_settings
+
+
+def _cleanup_failed_registration(intent, actor, error):
     from management_common.operation_errors import OperationError, failure_payload
     from .resident_creation_recovery import cancel_failed_registration, terminal_failure
+
+    failure = failure_payload(error)
+    if not terminal_failure(failure):
+        return
     try:
-        registered_lineage = _publish_registration(
-            record, payload, workspace_path, runtime_settings, actor_id,
-            lineage_node=lineage_node, personal_owner=personal_owner, creation_key=creation_key, intent=intent,
+        cleanup = cancel_failed_registration(intent, actor, failure)
+    except Exception as cleanup_error:
+        # The saved compensation outbox can resolve a durable failure later.
+        cleanup = {
+            'resource_id': intent.snapshot['record']['resident_id'], 'cleanup_complete': False,
+            'errors': [str(cleanup_error)],
+        }
+    if isinstance(error, OperationError):
+        error.details['creation_cleanup'] = cleanup
+    else:
+        error.add_note('Creation cleanup: ' + str(cleanup))
+
+
+@contextmanager
+def prepare_lineage_registration(payload, actor, *, operation_id):
+    """Stage a new member whose node will be stored by its caller's graph commit."""
+    from .creation_intents import CreationIntent
+
+    actor = canonical_actor_id(actor)
+    intent = CreationIntent('resident', actor, {'payload': payload, 'graph_registration': True}, operation_id)
+    with intent.open(lambda: {}):
+        record, payload, workspace_path, runtime_settings = _prepare_registration_record(
+            payload, actor, {}, False, '', intent,
         )
-    except Exception as error:
-        failure = failure_payload(error)
-        if terminal_failure(failure):
-            try:
-                cleanup = cancel_failed_registration(intent, actor_id, failure)
-            except Exception as cleanup_error:
-                # The compensation outbox was saved before initialization and
-                # will resolve this instruction once its failure is durable.
-                cleanup = {
-                    'resource_id': record['resident_id'], 'cleanup_complete': False,
-                    'errors': [str(cleanup_error)],
-                }
-            if isinstance(error, OperationError):
-                error.details['creation_cleanup'] = cleanup
-            else:
-                error.add_note('Creation cleanup: ' + str(cleanup))
-        raise
-    # Resource acknowledgement is outside state locks. A failed publication
-    # retains the committed identity and outbox for exact-identity recovery.
-    _confirm_registered_resident_resources(
-        record, committed_revision=int(registered_lineage["revision"]),
-    )
-    with resident_record_domain.state_lock(record["resident_id"]):
-        current = resident_lineage.find(record["resident_id"])
-        if current is None:
-            raise KeyError("Resident deleted after registration")
-    return current, registered_lineage
+        try:
+            with _stage_registration(record, payload, workspace_path, runtime_settings, actor, intent) as stage:
+                creation, operations, preparation_id = stage
+
+                def publish(connection):
+                    if not connection.in_transaction:
+                        raise RuntimeError("Graph member registration requires a write transaction")
+                    _commit_registration(
+                        record, actor, operations, preparation_id,
+                        joins_canonical_lineage=False, lineage_node=None, personal_owner='', creation_key='',
+                        creation=creation, intent=intent,
+                    )
+
+                yield record, publish
+        except Exception as error:
+            # complete() may have changed the in-memory snapshot in a rolled-back outer transaction.
+            intent.refresh()
+            if not intent.snapshot.get('completed'):
+                _cleanup_failed_registration(intent, actor, error)
+            raise
+    _confirm_registered_resident_resources(record)
 
 
 def _check_registration_authority(
@@ -347,7 +399,7 @@ def _new_resident_record(
 def require_synchronous_resident_creation(request, snapshot):
     """Contract for legacy normal-unwind cancellation of plain allocations.
 
-    _publish_registration's initializer calls ensure_resident_workspace with a
+    _stage_registration's initializer calls ensure_resident_workspace with a
     private folder: only synchronous mkdir/open/write. Runtime settings stage in
     memory before commit. No source initialization or pending fork is admissible.
     Keep this contract aligned with that path if registration gains new effects.
@@ -367,25 +419,9 @@ def require_synchronous_resident_creation(request, snapshot):
     _refuse_supplied_session_ids(record)
 
 
-def _publish_registration(
-    record: dict[str, Any],
-    payload: dict[str, Any],
-    workspace_path: Path,
-    runtime_settings: dict[str, Any],
-    actor_id: str,
-    *,
-    lineage_node: dict[str, Any] | None,
-    personal_owner: str,
-    creation_key: str,
-    intent,
-) -> dict[str, Any] | None:
-    """Prepare the Resident's folders and context, then commit its identity and Lineage membership.
-
-    Interrupted attempts retain evidence for recovery. Definitive business
-    failures are cancelled by the caller after this writer stack has unwound.
-    Returns the Lineage the Resident joined.
-    """
-
+@contextmanager
+def _stage_registration(record, payload, workspace_path, runtime_settings, actor_id, intent):
+    """Prepare recoverable folder, settings and Provider effects before locking the Lineage."""
     resident_id = record["resident_id"]
     resident_folder = resident_record_domain.resident_folder_path(record)
     from management_portal.resources.creation import Creation
@@ -436,11 +472,7 @@ def _publish_registration(
             intent.snapshot.update(record=copy.deepcopy(record), context_prepared=True)
             intent.save()
         resident_session_backend_domain.materialize_pending_agent_data_fork(record, actor_id)
-        return _commit_registration(
-            record, actor_id, operations, preparation_id,
-            joins_canonical_lineage=not folder_supplied, lineage_node=lineage_node,
-            personal_owner=personal_owner, creation_key=creation_key, creation=creation, intent=intent,
-        )
+        yield creation, operations, preparation_id
 
 
 def _commit_registration(

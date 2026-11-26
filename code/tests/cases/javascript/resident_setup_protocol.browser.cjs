@@ -57,8 +57,9 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     if (process.env.PORTAL_UI_EVIDENCE) await page.screenshot({path: process.env.PORTAL_UI_EVIDENCE, fullPage: true});
     await page.locator('[data-session-restart-submit]').click();
     const payload = await page.evaluate(() => calls[0]);
-    assert.equal(payload.operation, 'switch_account'); assert.equal(payload.context_strategy, 'preserve');
-    assert.equal(Object.hasOwn(payload, 'resume_failed_input'), false);
+    for (const key of ['operation', 'context_strategy', 'active_execution_policy', 'resume_failed_input']) {
+      assert.equal(Object.hasOwn(payload, key), false, key);
+    }
     assert.equal(await page.locator('.portalSessionRestartOverlay').isVisible(), false);
     assert.deepEqual(errors, []);
     console.log('PASS browser: one-page runtime panel; cancel/save/switch; 1280/390px; one Chromium page');

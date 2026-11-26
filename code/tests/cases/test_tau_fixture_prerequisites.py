@@ -22,6 +22,7 @@ R = 'resident_0123456789ab'
 def test_workspace_readiness_checks_instruction_mapping_not_action_alias(tmp_path):
     calls = []
     def check(name, arguments):
+        assert name == 'CheckInstructionPermission'
         calls.append(arguments)
         # A leaf-node grant alone can be unrelated to an instruction's
         # current mapping. The actual unregister operation remains denied.
@@ -94,6 +95,7 @@ def test_workspace_binding_does_not_grant_mutation_and_fixture_loans_are_exact(p
     permissions.users('controller', 'test-actor')
     permissions.place(Fact('workspace', W), Fact('workspace', OTHER))
     permissions.grant('controller', W, '@admin')
+    permissions.grant('controller', OTHER, '@admin')
     recipient = lambda name, args, **kw: attempt(name, 'test-actor', args)
     issuer = lambda name, args, **kw: attempt(name, 'controller', args)
     assert not access.prepare_workspace_access(tmp_path, W, check=recipient)['ready']
@@ -102,8 +104,13 @@ def test_workspace_binding_does_not_grant_mutation_and_fixture_loans_are_exact(p
     assert not permissions.holds('test-actor', 'UpdateWorkspaceFile', OTHER)
     assert permissions.holds('test-actor', 'UpdateWorkspaceFile', W)
     assert permissions.holds('test-actor', 'UnregisterResource', W)
+    unrelated = issuer('CreateTemporaryCredential', {'principal_id': 'test-actor',
+        'a': 'UpdateWorkspaceFile', 'resource_id': OTHER})['credential_id']
     assert len(access.release_workspace_access(tmp_path, instruction=recipient)) == 2
     assert not permissions.holds('test-actor', 'UpdateWorkspaceFile', W)
+    assert not permissions.holds('test-actor', 'UnregisterResource', W)
+    assert [loan['credential_id'] for loan in recipient(
+        'GetEffectivePermissions', {'principal_id': 'test-actor'})['temporary']] == [unrelated]
     assert access.release_workspace_access(tmp_path, instruction=recipient) == []
 
 
@@ -201,19 +208,42 @@ def test_workspace_fixture_uses_real_bind_workspace_receipt(lineage, tmp_path):
 def test_cleanup_keeps_files_when_permission_revocation_is_denied(tmp_path, monkeypatch):
     from management_portal.test_framework import tau_fixtures
     from management_portal import isa_client, portal_features
-    receipt = {'credential_id': 'permission_loan', 'principal_id': 'test-actor'}
+    receipt = {'credential_id': 'permission_loan', 'principal_id': 'test-actor',
+               'issued_by': 'controller', 'a': 'UpdateWorkspaceFile', 'resource_id': W}
     (tmp_path / 'fixture-access.json').write_text(json.dumps({
         'evidence_dir': str(tmp_path.resolve()), 'grants': [{'key': 'original', 'receipt': receipt}]}))
     sample = tmp_path / 'fixtures'; sample.mkdir()
     monkeypatch.setattr(portal_features, 'contributions', lambda _: [])
     def call(actor, name, args, **kw):
-        if name == 'ListTemporaryCredentials':
-            return {'credentials': [receipt]}
+        assert actor == 'test-actor'
+        if name == 'GetEffectivePermissions':
+            assert args == {'principal_id': 'test-actor'}
+            return {'principal_id': actor, 'temporary': [{**receipt, 'direction': 'received'}]}
+        assert name == 'RevokeTemporaryCredential'
+        assert args == {'credential_id': 'permission_loan'} and kw['key'] == 'original:revoke'
         raise PermissionError('still held')
     monkeypatch.setattr(isa_client, 'call', call)
     with pytest.raises(PermissionError, match='still held'):
         tau_fixtures.cleanup(tmp_path)
     assert sample.exists()
+
+
+@pytest.mark.parametrize('override', [{'issued_by': 'another-issuer'}, {'principal_id': R},
+                                      {'a': 'UnregisterResource'}, {'resource_id': OTHER}])
+def test_workspace_cleanup_keeps_conflicting_credential_pending(tmp_path, override):
+    receipt = {'credential_id': 'permission_loan', 'principal_id': 'test-actor',
+               'issued_by': 'controller', 'a': 'UpdateWorkspaceFile', 'resource_id': W}
+    journal = tmp_path / 'fixture-access.json'
+    state = {'evidence_dir': str(tmp_path.resolve()), 'grants': [{'key': 'original', 'receipt': receipt}]}
+    journal.write_text(json.dumps(state))
+
+    def instruction(name, arguments, **kw):
+        assert name == 'GetEffectivePermissions' and arguments == {'principal_id': 'test-actor'}
+        return {'principal_id': 'test-actor', 'temporary': [{**receipt, **override}]}
+
+    with pytest.raises(ValueError, match='does not match this fixture'):
+        access.release_workspace_access(tmp_path, instruction=instruction)
+    assert json.loads(journal.read_text()) == state
 
 
 @pytest.fixture

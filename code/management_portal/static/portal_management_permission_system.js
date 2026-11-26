@@ -69,7 +69,7 @@
       panelState.pending++;
       schemeSelect.disabled = true;
       try {
-        const impact = await window.PortalInstructionClient.execute("ActivatePermissionScheme", {scheme_id: schemeId, dry_run: true, diff_limit: 8});
+        const impact = await window.PortalInstructionClient.execute("GetPermissionSchemeActivationPreview", {scheme_id: schemeId, diff_limit: 8});
         if (panelState.destroyed) return;
         const authRows = await authDiffRows(schemeId, impact.auth_diff);
         if (panelState.destroyed) return;
@@ -134,8 +134,8 @@
           : {title: window.PortalI18n.t("关闭权限系统？"), message: window.PortalI18n.t("所有已登录的 User 与 Resident 将可以查看、使用、修改和删除所有对象。权限方案的实例和临时凭证保留，重新开启时补齐后继续生效。"), confirmLabel: window.PortalI18n.t("关闭"), tone: "danger"});
         if (!approved || panelState.destroyed) return;
         showPermissionMessage(window.PortalI18n.t(value ? "正在重建权限实例…" : "正在关闭权限系统…"));
-        const result = await window.PortalInstructionClient.execute("UpdateExecutionSettings", {permission_system_enabled: value},
-          {idempotencyKey: `execution-settings:${globalThis.PortalUIPrimitives.randomUUID()}`});
+        const result = await window.PortalInstructionClient.execute("SetPermissionSystemEnabled", {enabled: value},
+          {idempotencyKey: `permission-system:${globalThis.PortalUIPrimitives.randomUUID()}`});
         if (panelState.destroyed) return;
         acceptExecution(result.settings, permissionSwitches);
         showPermissionMessage(switchMessages.permission_system_enabled(panelState.savedExecution.permission_system_enabled));

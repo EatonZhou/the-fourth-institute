@@ -7,7 +7,7 @@ from management_portal import article_registry, permission_system, repo_workspac
 
 
 def require_git_write(article_id: str, actor: str) -> None:
-    if article_id not in permission_system.permitted_ids(actor, "RunResourceAction", "resource_id", [article_id]):
+    if not permission_system.allows_roles(actor, [("@contributor", article_id)]):
         raise PermissionError("需要当前 Article 的协作权限才能修改源代码仓库。")
 
 

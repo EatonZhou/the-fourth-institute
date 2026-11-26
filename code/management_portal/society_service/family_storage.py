@@ -3,12 +3,13 @@ from __future__ import annotations
 
 from typing import Any
 from management_common.json_columns import json_text, json_value
-from . import family_chat_storage
+from . import facade_members, family_chat_storage
 ROLES = ("member", "facade", "router", "steward")
 COLUMNS = {
     **family_chat_storage.COLUMNS,
     "families": ("family_id", "lineage_id", "title", "goal", "previous_leader_id", "deleted_at", "human_familizer_id", "route_threshold", "review_interval_seconds", "lineage_scope", "resource_id", "created_at", "updated_at", "personal_ama_id", "history_before", "history_before_ordinal", "auto_migrate", "auto_migrate_priority", "independent_duties", "role_bindings"),
     "family_residents": ("family_id", "resident_id", "role"),
+    "facade_members": ("facade_id", "member_id"),
 }
 RECOVERY_INDEXES = {"family_steward_recovery_idx": "ON family_residents(resident_id,family_id) WHERE role='steward'"}
 
@@ -77,12 +78,24 @@ def create_schema(connection: Any) -> None:
     connection.execute("CREATE UNIQUE INDEX family_single_roles ON family_residents(family_id,role) WHERE role<>'member'")
     for name, definition in RECOVERY_INDEXES.items():
         connection.execute(f"CREATE INDEX {name} {definition}")
+    facade_members.ensure_schema(connection)
 
 
 def store_program(connection: Any, lineage_id: str, definition: dict, now: str) -> None:
     """Persist Family facts alongside the enclosing graph transaction."""
     blocks = [item for item in definition.get("function_blocks", []) if item.get("family")]
     ids = [item["id"] for item in blocks]
+    old_targets: dict[str, list[str]] = {}
+    for row in connection.execute("""
+        SELECT facade.resident_id AS facade_id,
+               ARRAY(SELECT target.resident_id FROM family_residents target
+                     WHERE target.family_id=f.family_id AND target.role IN ('member','steward')
+                     ORDER BY target.resident_id) AS member_ids
+        FROM families f JOIN family_residents facade USING(family_id)
+        WHERE f.lineage_id=%s AND f.deleted_at IS NULL AND facade.role='facade'
+    """, (lineage_id,)).fetchall():
+        old_targets[row["facade_id"]] = row["member_ids"]
+    new_targets: dict[str, list[str]] = {}
     connection.execute("DELETE FROM family_residents WHERE family_id IN (SELECT family_id FROM families WHERE lineage_id=%s AND NOT(family_id=ANY(%s)))", (lineage_id, ids))
     connection.execute("UPDATE families SET deleted_at=%s,updated_at=%s WHERE lineage_id=%s AND deleted_at IS NULL AND NOT(family_id=ANY(%s))", (now, now, lineage_id, ids))
     changed_rosters = []
@@ -113,6 +126,8 @@ def store_program(connection: Any, lineage_id: str, definition: dict, now: str) 
                                      family.get("history_before_ordinal", 0), family.get("auto_migrate", True), family.get("auto_migrate_priority", []), family.get("independent_duties", []), json_text(family.get('role_bindings', {})), family_id))
         roster = [(rid, "member") for rid in family.get("members", [])]
         roster.extend((family[role], role) for role in ROLES[1:] if family.get(role))
+        if family.get("facade"):
+            new_targets[family["facade"]] = sorted(rid for rid, role in roster if role in {"member", "steward"})
         resident_ids = [rid for rid, _ in roster]
         if len(set(resident_ids)) != len(resident_ids):
             raise ValueError("A Resident may hold only one Family role")
@@ -125,6 +140,13 @@ def store_program(connection: Any, lineage_id: str, definition: dict, now: str) 
     for family_id, roster in changed_rosters:
         for rid, role in roster:
             connection.execute("INSERT INTO family_residents VALUES (%s,%s,%s)", (family_id,rid,role))
+    changed = sorted(rid for rid in old_targets.keys() | new_targets.keys()
+                     if old_targets.get(rid) != new_targets.get(rid))
+    for rid in changed:
+        facade_members.replace(connection, rid, [])
+    for rid in changed:
+        if new_targets.get(rid):
+            facade_members.replace(connection, rid, new_targets[rid])
 
 
 def hydrate_programs(connection: Any, definitions: dict[str, dict]) -> None:
@@ -286,6 +308,7 @@ def families_around(connection: Any, resident_id: str, *, max_hops: int = 4) -> 
             FROM family_residents fr JOIN families f USING(family_id)
             JOIN family_residents facade ON facade.family_id=f.family_id AND facade.role='facade'
             WHERE fr.resident_id=%s AND fr.role<>'facade' AND f.deleted_at IS NULL
+              AND EXISTS (SELECT 1 FROM facade_members fm WHERE fm.facade_id=facade.resident_id)
             ORDER BY f.family_id LIMIT 1
         ''', (current,)).fetchone()
         if row is None or row['family_id'] in seen:

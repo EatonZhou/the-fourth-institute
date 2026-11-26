@@ -27,7 +27,7 @@ def test_concurrent_consolidations_keep_recent_and_unseen_input(setup_work, monk
     request = {"phase": {"recent_results": ["登录权限隔离已完成"], "active_threads": ["权限分工"]},
                "consolidated_message_ids": first["pending_message_ids"]}
     with ThreadPoolExecutor(max_workers=2) as pool:
-        concurrent = [pool.submit(work.update_resident_work_summary, steward, A, consolidation=request) for _ in range(2)]
+        concurrent = [pool.submit(work.update_resident_summary_consolidation, steward, A, request) for _ in range(2)]
         for result in concurrent:
             result.result(timeout=10)
     saved = context.store.work_summary(A)
@@ -37,8 +37,8 @@ def test_concurrent_consolidations_keep_recent_and_unseen_input(setup_work, monk
     assert saved["pending_message_ids"] == ["one", "two"]
     assert saved["revision"] == current["revision"] + 1
     assert context.store.resident(A)["summary"] == saved["summary"]
-    assert work.update_resident_work_summary(steward, A, consolidation=request) == saved
-    settled = work.update_resident_work_summary(steward, A,
+    assert work.update_resident_summary_consolidation(steward, A, request) == saved
+    settled = work.update_resident_summary_consolidation(steward, A,
         consolidation={"phase": request["phase"], "long_term": SUMMARY, "consolidated_message_ids": saved["pending_message_ids"]})
     assert settled["pending_message_ids"] == []
     assert settled["layers"]["recent"] == current["layers"]["recent"]
@@ -49,9 +49,9 @@ def test_only_own_steward_can_consolidate_and_facades_keep_their_owner(setup_wor
     work.update_resident_work_summary(A, A, summary=SUMMARY, message_ids=["one"])
     for actor in (A, B, C):
         with pytest.raises(PermissionError):
-            work.update_resident_work_summary(actor, A, consolidation={"phase": SUMMARY})
+            work.update_resident_summary_consolidation(actor, A, consolidation={"phase": SUMMARY})
     with pytest.raises(ValueError, match="门面"):
-        work.update_resident_work_summary(roles["steward"][0], C, consolidation={"phase": SUMMARY})
+        work.update_resident_summary_consolidation(roles["steward"][0], C, consolidation={"phase": SUMMARY})
 
 
 def test_summary_total_limit_counts_all_fields_and_layers_atomically(setup_work, monkeypatch):
@@ -62,7 +62,7 @@ def test_summary_total_limit_counts_all_fields_and_layers_atomically(setup_work,
     with pytest.raises(ValueError, match="5000"):
         validate_summary({**large, "branch_delta": "超"})
     work.update_resident_work_summary(A, A, summary={"current_focus": "字" * 1000}, message_ids=["one"])
-    higher = work.update_resident_work_summary(roles["steward"][0], A,
+    higher = work.update_resident_summary_consolidation(roles["steward"][0], A,
         consolidation={"phase": {"current_focus": "字" * 4000}, "consolidated_message_ids": ["one"]})
     before = context.store.work_summary(A)
     with pytest.raises(ValueError, match="5000"):
@@ -76,10 +76,10 @@ def test_summary_total_limit_counts_all_fields_and_layers_atomically(setup_work,
     assert saved["consolidation"]["due"]
     before = context.store.work_summary(A)
     with pytest.raises(ValueError, match="5000"):
-        work.update_resident_work_summary(roles["steward"][0], A,
+        work.update_resident_summary_consolidation(roles["steward"][0], A,
             consolidation={"phase": large, "long_term": {"durable_expertise": ["超"]}, "consolidated_message_ids": ["two"]})
     assert context.store.work_summary(A) == before
-    merged = work.update_resident_work_summary(roles["steward"][0], A,
+    merged = work.update_resident_summary_consolidation(roles["steward"][0], A,
         consolidation={"phase": {"recent_results": ["字" * 4000]}, "long_term": {}, "consolidated_message_ids": ["two"]})
     assert merged["layers"]["phase"]["recent_results"] == ["字" * 4000]
     assert character_count(merged["layers"]) == 5000
@@ -90,10 +90,10 @@ def test_unresolved_items_survive_even_when_agent_omits_them_and_close_explicitl
     _, roles, *_ = setup_work
     work.update_resident_work_summary(A, A, summary=SUMMARY, message_ids=["one"])
     steward = roles["steward"][0]
-    first = work.update_resident_work_summary(steward, A,
+    first = work.update_resident_summary_consolidation(steward, A,
         consolidation={"phase": {}, "long_term": {"active_threads": ["权限分工"], "primary_ownership": ["登录"]},
                        "consolidated_message_ids": ["one"]})
-    second = work.update_resident_work_summary(steward, A,
+    second = work.update_resident_summary_consolidation(steward, A,
         consolidation={"phase": {"recent_results": ["阶段完成"]}, "resolved_threads": {"权限分工": "已完成职责交接，记录见项目文档"},
                        "consolidated_message_ids": []})
     assert not second["summary"]["active_threads"]
@@ -127,8 +127,11 @@ def test_quantity_watermarks_and_maintenance_do_not_self_trigger(setup_work, mon
     work.update_resident_work_summary(A, A, message_ids=["running"])
     assert context.store.work_summary(A)["maintenance"]["phase_rounds"] == 1
     work.update_resident_work_summary(A, A, message_ids=["two"])
-    assert work.check_resident_work_summary(C, A, "two")["consolidation_due"]
-    merged = work.update_resident_work_summary(roles["steward"][0], A,
+    work.record_completed_work_round(A, "two")
+    view = work.maintenance_view(C, A)
+    assert view["consolidation"]["due"]
+    assert not view["missing_message_ids"]
+    merged = work.update_resident_summary_consolidation(roles["steward"][0], A,
         consolidation={"phase": SUMMARY, "consolidated_message_ids": ["one", "two"]})
     assert merged["maintenance"]["phase_rounds"] == 0
     assert merged["maintenance"]["long_term_rounds"] == 2
@@ -152,11 +155,11 @@ def test_legacy_oversized_is_readable_then_condensed_without_replaying_history(s
     work.update_resident_work_summary(A, A, message_ids=["two"])
     assert context.store.work_summary(A)["layers"] == old["layers"]
     with pytest.raises(ValueError, match="5000"):
-        work.update_resident_work_summary(roles["steward"][0], A,
+        work.update_resident_summary_consolidation(roles["steward"][0], A,
             consolidation={"phase": SUMMARY, "consolidated_message_ids": ["two"]})
     assert context.store.work_summary(A)["layers"]["recent"] == legacy
     work.update_resident_work_summary(A, A, summary=SUMMARY, message_ids=["two"])
-    merged = work.update_resident_work_summary(roles["steward"][0], A,
+    merged = work.update_resident_summary_consolidation(roles["steward"][0], A,
         consolidation={"phase": SUMMARY, "consolidated_message_ids": ["two"]})
     assert character_count(merged["layers"]) <= 5000
     assert merged["missing_message_ids"] == []
@@ -173,44 +176,51 @@ def test_legacy_aggregate_rounds_adopt_covered_inputs_once(setup_work):
     work.update_resident_work_summary(A, A, message_ids=["two"])
     request = {"phase": SUMMARY, "consolidated_message_ids": before["pending_message_ids"]}
     steward = roles["steward"][0]
-    saved = work.update_resident_work_summary(steward, A, consolidation=request)
+    saved = work.update_resident_summary_consolidation(steward, A, request)
     assert saved["pending_message_ids"] == ["two"]
     assert saved["layers"]["recent"] == before["layers"]["recent"]
-    assert work.update_resident_work_summary(steward, A, consolidation=request) == saved
+    assert work.update_resident_summary_consolidation(steward, A, request) == saved
 
 
 def test_overview_contains_only_actionable_ids_and_deduplicated_notification(setup_work, monkeypatch):
     monkeypatch.setenv("PORTAL_SUMMARY_PHASE_ROUNDS", "1")
     _, roles, *_ = setup_work
     work.update_resident_work_summary(A, A, summary=SUMMARY, message_ids=["one"])
-    first = work.get_family_summary_inputs(C, C, overview_only=True)
+    first = work.get_facade_summary_inputs(C, C, overview_only=True)
     # Same material keeps one task ID across hours, so a stopped or finished
     # summary task is not re-sent every hour.
     import time
     later = time.time() + 7200
     monkeypatch.setattr(time, "time", lambda: later)
-    second = work.get_family_summary_inputs(C, C, overview_only=True)
+    second = work.get_facade_summary_inputs(C, C, overview_only=True)
     assert "members" not in first and "previous_summary" not in first
     assert first["consolidation_due"][0]["resident_id"] == A
     assert first["notification"] == second["notification"]
+    assert "UpdateResidentSummaryConsolidation" in first["notification"]["content_parts"][0]["text"]
+
+
+def test_family_summary_effect_delivers_the_same_overview_notice(setup_work, monkeypatch):
+    monkeypatch.setenv("PORTAL_SUMMARY_PHASE_ROUNDS", "1")
+    work.update_resident_work_summary(A, A, summary=SUMMARY, message_ids=["one"])
+    first = work.get_facade_summary_inputs(C, C, overview_only=True)
     from tests.cases.test_family_router_script import _run
     from management_portal.society_service.family_definition import FAMILY_SUMMARY_ROLLUP_SCRIPT, FAMILY_SUMMARY_CHECK_SCRIPT
     for script in (FAMILY_SUMMARY_ROLLUP_SCRIPT, FAMILY_SUMMARY_CHECK_SCRIPT):
         result, calls = _run(script, {"arguments": {"facade": C, "steward": B},
             "event": {"subject_resident_id": A, "payload": {"message_id": "one"}}}, {
-            "MaintainResidentWorkSummary": {"status": "covered", "consolidation_due": True},
+            "GetResidentSummaries": {"summaries": [{"missing_message_ids": [], "consolidation": {"due": True}}]},
             "ListResidentStates": {"states": [{"state": {"work_state": "idle", "queued_count": 0}}]},
-            "GetFamilySummaryInputs": first, "DispatchFamilyTask": {"message_id": "sent"}})
+            "GetFacadeSummaryInputs": first, "DeliverMessage": {"message_id": first["notification"]["message_id"]}})
         assert result.status == "succeeded", result
-        sent = next(args for name, args in calls if name == "DispatchFamilyTask")
-        assert sent == {"resident_id": C, "trigger": "summary", "message_id": first["notification"]["message_id"]}
+        sent = next(args for name, args in calls if name == "DeliverMessage")
+        assert sent == {"resident_id": B, "business_ref": "duty/family-work-summary", "message": first["notification"]}
 
 
 def test_personal_family_due_without_enabling_hourly_facade_summary(setup_work, monkeypatch):
     _, roles, *_ = setup_work
     monkeypatch.setattr(work, "_family", lambda record: ({"title": "个人", "goal": "", "personal_ama_id": "ama"}, roles))
-    assert not work.get_family_summary_inputs(C, C, overview_only=True)["needs_update"]
+    assert not work.get_facade_summary_inputs(C, C, overview_only=True)["needs_update"]
     monkeypatch.setenv("PORTAL_SUMMARY_PHASE_ROUNDS", "1")
     work.update_resident_work_summary(A, A, summary=SUMMARY, message_ids=["one"])
-    view = work.get_family_summary_inputs(C, C, overview_only=True)
+    view = work.get_facade_summary_inputs(C, C, overview_only=True)
     assert view["needs_update"] and not view["facade_needs_update"]

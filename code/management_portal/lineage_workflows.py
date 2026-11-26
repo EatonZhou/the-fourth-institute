@@ -12,7 +12,10 @@ from __future__ import annotations
 import hashlib
 import json
 import secrets
+from collections.abc import Callable, Mapping
+from copy import deepcopy
 from pathlib import Path
+from typing import Any
 
 from . import isa_client
 from .hatg.contracts import InstructionError
@@ -108,10 +111,9 @@ def lineage_graph(actor: str, lineage_id: str) -> dict:
     return dict(isa_client.call(actor, "GetLineage", {"lineage_id": lineage_id}).get("lineage") or {})
 
 
-def _deliver_effect_config(prompt: str, *, lend_temporary_credentials: bool = False, execution_constraints=None) -> dict:
+def _deliver_effect_config(prompt: str, *, execution_constraints=None) -> dict:
     constants = {} if execution_constraints is None else {'execution_constraints': execution_constraints, 'context_policy': 'fresh'}
-    return {"script": deliver_message_script(prompt, lend_temporary_credentials=lend_temporary_credentials, **constants),
-            "endpoints": ["target"]}
+    return {"script": deliver_message_script(prompt, **constants), "endpoints": ["target"]}
 
 
 class WorkflowBindings:
@@ -133,6 +135,12 @@ class WorkflowBindings:
         # failure can be retried after its cause is fixed, even if the graph
         # revision did not advance. Transport retries retain these attempt keys.
         attempt = secrets.token_hex(8)
+
+        def finalize(target_lineage):
+            return isa_client.call(actor, "ApplyLineageChanges", {
+                "lineage_id": target_lineage, "operations": [{"op": "delete", "kind": "resident", "id": resident_id}],
+            }, key=f"release:{resident_id}:finalize:{attempt}")
+
         try:
             record = isa_client.call(actor, 'GetResident', {'resident_id': resident_id})['resident']
         except InstructionError as exc:
@@ -145,8 +153,7 @@ class WorkflowBindings:
             # replayed forever by the old key. The owner reconciles the same
             # immutable deletion; projection retries inside this call retain
             # this attempt's key.
-            return isa_client.call(actor, 'DeleteResident', {'lineage_id': lineage_id, 'resident_id': resident_id},
-                                   key=f'release:{resident_id}:finalize:{attempt}')
+            return finalize(lineage_id)
         lineage_id = record['lineage_id']
         keep = {Path(path).resolve(strict=False) for path in preserve_paths}
         bindings = record.get('workspaces', [])
@@ -189,11 +196,22 @@ class WorkflowBindings:
                 }, version=graph['revision'], key=f'release:{resident_id}:{graph["revision"]}:{digest}:{attempt}')
             # This also resumes lifecycle finalization after a committed graph
             # edit whose response was lost. Do not drop associations on failure.
-            isa_client.call(actor, 'DeleteResident', {'lineage_id': lineage_id, 'resident_id': resident_id},
-                            key=f'release:{resident_id}:finalize:{attempt}')
+            finalize(lineage_id)
 
-    def install(self, *, actor, lineage_id, resident_id, name, title, prompt, lend_temporary_credentials=False,
-                context_policy=None, execution_constraints=None):
+    def install(self, *, actor, lineage_id, resident_id, name, title, prompt,
+                context_policy=None, execution_constraints=None, effect_config: Mapping[str, Any] | None = None,
+                is_owned_effect: Callable[[str], bool] | None = None, include_envelope: bool | None = None):
+        """Install the default delivery Effect or a domain's strictly owned template."""
+        if (effect_config is None) != (is_owned_effect is None):
+            raise ValueError("领域 Effect 需要同时提供配置和原配脚本校验")
+        if effect_config is not None:
+            if execution_constraints is not None:
+                raise ValueError("领域 Effect 直接声明其凭证和执行限制")
+            desired_effect = deepcopy(dict(effect_config))
+            if not is_owned_effect(str(desired_effect.get("script") or "")):
+                raise ValueError("目标 Effect 配置不属于此业务模板")
+        else:
+            desired_effect = _deliver_effect_config(prompt, execution_constraints=execution_constraints)
         if execution_constraints is not None and (context_policy != 'fresh' or execution_constraints != {'version': 1, 'text_only': True, 'context': 'fresh'}):
             raise ValueError('Constrained workflow requires v1 text_only and fresh')
         if context_policy not in (None, "session", "fresh"):
@@ -207,12 +225,23 @@ class WorkflowBindings:
             current = lineage_graph(actor, lineage_id)
             binding = self._validated_binding(state, current)
             effect = next(item for item in current["program"]["components"] if item["id"] == binding["effect_id"])
-            parts = deliver_script_parts(str((effect.get("config") or {}).get("script") or ""))
+            current_effect = effect.get("config") or {}
+            source = str(current_effect.get("script") or "")
             invoke = next(wire for wire in current["program"]["wires"] if wire["id"] == state["steps"]["invoke"])
-            policy_current = context_policy is None or (invoke.get("config") or {}).get("context_policy") == context_policy
-            constraint_current = execution_constraints is None or (parts and parts[2].get('execution_constraints') == execution_constraints)
-            if policy_current and constraint_current and (not lend_temporary_credentials or (parts and parts[2].get("lend_temporary_credentials")
-                                                  and (invoke.get("config") or {}).get("include_envelope", True))):
+            wire_config = invoke.get("config") or {}
+            policy_current = (context_policy is None or wire_config.get("context_policy") == context_policy) and (
+                include_envelope is None or wire_config.get("include_envelope", True) is include_envelope
+            )
+            if is_owned_effect is not None:
+                if not is_owned_effect(source):
+                    raise ValueError("工作流 Effect 已自定义，拒绝由业务模板覆盖")
+                effect_current = all(current_effect.get(key) == value for key, value in desired_effect.items())
+            else:
+                parts = deliver_script_parts(source)
+                effect_current = execution_constraints is None or (
+                    parts and parts[2].get("execution_constraints") == execution_constraints
+                )
+            if policy_current and effect_current:
                 return binding
         with self.lineage_lock(lineage_id):
             graph = lineage_graph(actor, lineage_id)
@@ -223,63 +252,89 @@ class WorkflowBindings:
                 "lineage_id": lineage_id, "resident_id": resident_id, "name": name, "steps": {},
             }
 
-            def step(label, instruction, arguments, result_field):
+            def step(label, kind, value):
                 if label in state["steps"]:
                     return state["steps"][label]
+                arguments = {"lineage_id": lineage_id, "operations": [
+                    {"op": "create", "kind": kind, "ref": label, "value": value},
+                ]}
+                if kind == "component":
+                    arguments["near_resident_id"] = resident_id
                 result = isa_client.call(
-                    actor, instruction, {"lineage_id": lineage_id, **arguments},
-                    key=f"workflow:{identity}:{label}",
+                    actor, "ApplyLineageChanges", arguments, key=f"workflow:{identity}:{label}",
                 )
-                object_id = result.get(result_field)
+                object_id = (result.get("refs") or {}).get(label)
                 if not isinstance(object_id, str) or not object_id:
                     raise RuntimeError("工作流创建指令未返回对象 ID")
                 state["steps"][label] = object_id
                 self.store.save(state)
                 return object_id
 
-            event = step("event", "CreateComponent", {
+            event = step("event", "component", {
                 "kind": "event_source", "title": title, "config": {"event_type": "manual.triggered"},
-                "near_resident_id": resident_id,
-            }, "component_id")
-            effect = step("effect", "CreateComponent", {
+            })
+            effect = step("effect", "component", {
                 "kind": "effect", "title": title + " · 执行",
-                "config": _deliver_effect_config(prompt, lend_temporary_credentials=lend_temporary_credentials, execution_constraints=execution_constraints),
-                "near_resident_id": resident_id,
-            }, "component_id")
-            step("target", "CreateWire", {
+                "config": desired_effect,
+            })
+            step("target", "wire", {
                 "kind": "target", "source": effect, "source_port": "target", "target": resident_id,
-            }, "wire_id")
-            step("invoke", "CreateWire", {
+            })
+            step("invoke", "wire", {
                 "kind": "route", "source": event, "target": effect,
-                "config": {"include_envelope": bool(lend_temporary_credentials), "unavailable_policy": "queue", "queue_limit": 100,
+                "config": {"include_envelope": bool(include_envelope), "unavailable_policy": "queue", "queue_limit": 100,
                            **({"context_policy": context_policy} if context_policy is not None else {})},
-            }, "wire_id")
+            })
             current = lineage_graph(actor, lineage_id)
             binding = self._validated_binding(state, current)
             components = {item["id"]: item for item in current.get("program", {}).get("components", [])}
-            if execution_constraints is not None:
-                fixed = deliver_script_parts(str((components[effect].get('config') or {}).get('script') or ''))
-                if not fixed or fixed[2].get('execution_constraints') != execution_constraints:
-                    raise ValueError('Existing Effect must explicitly declare execution_constraints before use')
-            self._keep_prompt_current(actor, lineage_id, identity, state, components[effect], prompt,
-                                      lend_temporary_credentials=lend_temporary_credentials)
-            if lend_temporary_credentials or context_policy is not None:
-                # Reconcile only the workflow's declared policy; preserve queue
-                # controls and keep the envelope hidden unless credentials need it.
+            if is_owned_effect is not None:
+                prompt_sha256 = hashlib.sha256(prompt.encode()).hexdigest()
+                self._keep_owned_effect_current(
+                    actor, lineage_id, identity, current["revision"], components[effect], desired_effect, is_owned_effect,
+                )
+                if state.get("prompt_sha256") != prompt_sha256:
+                    state["prompt_sha256"] = prompt_sha256
+                    self.store.save(state)
+            else:
+                if execution_constraints is not None:
+                    fixed = deliver_script_parts(str((components[effect].get("config") or {}).get("script") or ""))
+                    if not fixed or fixed[2].get("execution_constraints") != execution_constraints:
+                        raise ValueError("Existing Effect must explicitly declare execution_constraints before use")
+                self._keep_prompt_current(actor, lineage_id, identity, state, components[effect], prompt)
+            if include_envelope is not None or context_policy is not None:
+                # Preserve the other wire controls.
                 current = lineage_graph(actor, lineage_id)
                 invoke = next(wire for wire in current["program"]["wires"] if wire["id"] == state["steps"]["invoke"])
                 config = dict(invoke.get("config") or {})
                 original = dict(config)
-                if lend_temporary_credentials:
-                    config["include_envelope"] = True
+                if include_envelope is not None:
+                    config["include_envelope"] = include_envelope
                 if context_policy is not None:
                     config["context_policy"] = context_policy
                 if config != original:
                     digest = hashlib.sha256(json.dumps(config, sort_keys=True).encode()).hexdigest()
-                    isa_client.call(actor, "UpdateWire", {
-                        "lineage_id": lineage_id, "wire_id": invoke["id"], "changes": {"config": config},
+                    isa_client.call(actor, "ApplyLineageChanges", {
+                        "lineage_id": lineage_id, "operations": [
+                            {"op": "update", "kind": "wire", "id": invoke["id"], "changes": {"config": config}},
+                        ],
                     }, version=current["revision"], key=f"workflow:{identity}:config:{current['revision']}:{digest[:32]}")
         return binding
+
+    @staticmethod
+    def _keep_owned_effect_current(actor, lineage_id, identity, revision, effect, desired, is_owned_effect):
+        current = effect.get("config") or {}
+        if not is_owned_effect(str(current.get("script") or "")):
+            raise ValueError("工作流 Effect 已自定义，拒绝由业务模板覆盖")
+        config = {**current, **desired}
+        if config == current:
+            return
+        digest = hashlib.sha256(json.dumps(config, sort_keys=True).encode()).hexdigest()
+        isa_client.call(actor, "ApplyLineageChanges", {
+            "lineage_id": lineage_id, "operations": [
+                {"op": "update", "kind": "component", "id": effect["id"], "changes": {"config": config}},
+            ],
+        }, version=revision, key=f"workflow:{identity}:owned-effect:{revision}:{digest[:32]}")
 
     @staticmethod
     def _validated_binding(state, graph):
@@ -297,34 +352,27 @@ class WorkflowBindings:
         return {"lineage_id": state["lineage_id"], "resident_id": resident_id,
                 "event_source_id": event, "effect_id": effect}
 
-    def _keep_prompt_current(self, actor, lineage_id, identity, state, effect, prompt, *, lend_temporary_credentials=False):
+    def _keep_prompt_current(self, actor, lineage_id, identity, state, effect, prompt):
         """The Effect keeps the business's current fixed prompt while it still holds the text this workflow wrote.
 
         A message someone changed in the Lineage after installation stays as it is.
         """
         parts = deliver_script_parts(str((effect.get("config") or {}).get("script") or ""))
         if parts is None:
-            if lend_temporary_credentials:
-                raise ValueError("工作流 Effect 已自定义；请显式配置随任务转交临时凭证后再提交")
             return
         endpoint, message, constants = parts
+        if constants.get("lend_temporary_credentials") or "temporary_credentials" in constants:
+            return
         wanted = hashlib.sha256(prompt.encode()).hexdigest()
-        needs_credentials = lend_temporary_credentials and not constants.get("lend_temporary_credentials")
         if message != prompt:
             if not state.get("prompt_sha256") or hashlib.sha256(message.encode()).hexdigest() != state["prompt_sha256"]:
-                if needs_credentials:
-                    raise ValueError("工作流 Effect 已自定义；请显式配置随任务转交临时凭证后再提交")
                 return
-        if needs_credentials:
-            if "temporary_credentials" in constants:
-                raise ValueError("工作流已有自定义临时凭证；请显式改为随本次任务转交")
-            constants["lend_temporary_credentials"] = True
-        if message != prompt or needs_credentials:
             script = deliver_message_script(prompt, endpoint=endpoint, **constants)
             digest = hashlib.sha256(script.encode()).hexdigest()
-            isa_client.call(actor, "UpdateComponent", {
-                "lineage_id": lineage_id, "component_id": effect["id"],
-                "changes": {"script": script},
+            isa_client.call(actor, "ApplyLineageChanges", {
+                "lineage_id": lineage_id, "operations": [
+                    {"op": "update", "kind": "component", "id": effect["id"], "changes": {"config.script": script}},
+                ],
             }, key=f"workflow:{identity}:script:{digest[:32]}")
         if state.get("prompt_sha256") != wanted:
             state["prompt_sha256"] = wanted
@@ -349,19 +397,25 @@ class WorkflowBindings:
             raise WorkflowFailed(handle, {})
         return {**handle, "status": "running"}
 
-    def trigger(self, binding, *, actor, prompt, request_id, content_parts=None, temporary_credentials=None, message_metadata=None, entry="web"):
+    def trigger(self, binding, *, actor, prompt, request_id, content_parts=None,
+                payload: Mapping[str, Any] | None = None, message_metadata=None, entry="web"):
         handle = self.prepare(binding, request_id=request_id)
         arguments = {"lineage_id": handle["lineage_id"], "event_source_id": handle["event_source_id"],
                      "prompt": prompt}
         if content_parts:
             arguments["content_parts"] = list(content_parts)
+        if payload is not None and not isinstance(payload, Mapping):
+            raise ValueError("工作流领域 payload 必须是对象")
+        data = deepcopy(dict(payload or {}))
+        reserved = set(data) & {"actor", "caller", "initiated_by", "principal", "issuer",
+                               "temporary_credentials", "message_metadata"}
+        if reserved:
+            raise ValueError("工作流领域 payload 包含保留字段：" + "、".join(sorted(reserved)))
         if message_metadata:
             from .business_context import message_metadata as validate_metadata
-            arguments['payload'] = {'message_metadata': validate_metadata(message_metadata)}
-        if temporary_credentials is not None:
-            # DeliverMessage checks the actual Event initiator's authority and
-            # issues grants tied to its resulting input. This is not an actor override.
-            arguments.setdefault("payload", {})["temporary_credentials"] = list(temporary_credentials)
+            data["message_metadata"] = validate_metadata(message_metadata)
+        if data:
+            arguments["payload"] = data
         try:
             # A lost receipt is recovered by reads, never another TriggerEvent.
             receipt = isa_client.call(actor, "TriggerEvent", arguments,

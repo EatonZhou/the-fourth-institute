@@ -73,7 +73,7 @@ def test_clear_unread_updates_read_boundary_without_listing_inbox(monkeypatch):
 
 
 def test_resident_favorites_sit_beside_lineage_and_project_favorites(monkeypatch, isolated_portal_case):
-    """UpdateUserNavigation 收藏的 Resident 与 Lineage 收藏并列，非法 ID 被拒绝
+    """SetUserNavigationFavorite 收藏的 Resident 与 Lineage 收藏并列，非法 ID 被拒绝
 
     :module: platform.core"""
     from management_portal import presentation_store
@@ -92,7 +92,7 @@ def test_resident_favorites_sit_beside_lineage_and_project_favorites(monkeypatch
 
         def update(object_id, favorite):
             arguments = {"user_id": "sample_admin", "object_id": object_id, "favorite": favorite}
-            return web_isa.update_user_navigation(invocation(arguments))["items"]
+            return web_isa.set_user_navigation_favorite(invocation(arguments))["items"]
 
         assert update("resident_bbbbbbbbbbbb", True) == ["lineage_aaaaaaaaaaaa", "resident_bbbbbbbbbbbb"]
         assert presentation_store.favorite_ids("sample_admin", "resident") == ["resident_bbbbbbbbbbbb"]
@@ -112,11 +112,11 @@ def test_web_objects_report_their_version_tokens(monkeypatch):
         get_post=lambda caller, post_id: {"post": {"post_id": post_id, "notification_revision": 3}}))
     assert web_isa.version_of(invocation({"user_id": "alice"}, "UpdateUser"), "alice") == 7
     # Telepus bindings are application tools and have no Web ISA version token.
-    bind_contact = "BindTelepusContactForUser"
+    bind_contact = "BindTelepusContact"
     assert bind_contact not in instruction_catalog()
     assert web_isa.version_of(invocation({"user_id": "alice"}, bind_contact), "alice") is None
     # Personal navigation, also named by user_id, has no version token.
-    assert web_isa.version_of(invocation({"user_id": "alice"}, "UpdateUserNavigation"), "alice") is None
+    assert web_isa.version_of(invocation({"user_id": "alice"}, "SetUserNavigationFavorite"), "alice") is None
     # A post instruction asks the Notice Board for the post's version.
     assert web_isa.version_of(invocation({"post_id": "post_0123456789ab"}, "UpdatePost"), "post_0123456789ab") == 3
     # The inbox handler checks the displayed completion during its target read.

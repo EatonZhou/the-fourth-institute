@@ -43,7 +43,7 @@ links:
 ---
 # HATG ISA：对话与上下文指令
 
-对话与上下文指令处理 Resident 的“记忆”：给 Resident 发消息、转发消息、读取和搜索对话、订阅对话变化、回答 Resident 提出的问题、查看实际发送给模型的内容、清空上下文，以及吸收其他 Resident 的上下文。User 与 Resident 的 Mailbox、个人 Todo 和给人类参与者的通知属于 Mailbox 类（decision_c54e68a82d7a）；Family Router 转交门面请求属于 Family 内部机制类（decision_b77fde81e7a0）。多位参与者共同读写的帖子和资源讨论属于“公共讨论”类（decision_3e063aac15b3）。所有指令共同遵守的调用格式、执行流程和错误语义见 decision_898b8911a2ff。
+对话与上下文指令处理 Resident 的“记忆”：给 Resident 发消息、转发消息、读取和搜索对话、订阅对话变化、回答 Resident 提出的问题、查看实际发送给模型的内容、清空上下文，以及吸收其他 Resident 的上下文。User 与 Resident 的 Mailbox、个人 Todo 和给人类参与者的通知属于 Mailbox 类（decision_c54e68a82d7a）；转交门面请求属于门面与转交类（decision_b77fde81e7a0）。多位参与者共同读写的帖子和资源讨论属于“公共讨论”类（decision_3e063aac15b3）。所有指令共同遵守的调用格式、执行流程和错误语义见 decision_898b8911a2ff。
 
 ## 操作的对象
 
@@ -58,25 +58,31 @@ links:
 
 | 指令 | 改变状态 | 作用 | 默认方案要求 |
 | --- | --- | --- | --- |
-| `DeliverMessage` | 是 | 向 Resident 投递一条用户消息，或由 Resident 给用户发消息 | 对 `resident_id` 有 @message；对 `user_id` 有 @message |
-| `ForwardMessages` | 是 | 把选中的消息整理成一条新消息发给 Resident 或聊天室 | 对 `target_resident_id` 有 @message；对 `target_chatroom_id` 有 @contributor |
+| `DeliverMessage` | 是 | 向 Resident 投递新请求或下一轮告知。 | 对 `resident_id` 有 @message |
+| `PrepareResidentInput` | 是 | 按固定 ID 准备一条可随后随任务授权的独立请求，无投递或唤醒。 | 对 `resident_id` 有 @message，并复核普通 `DeliverMessage` 及原领域投递限制 |
+| `ForwardMessagesToResident` | 是 | 把选中的消息整理成一条新消息发给 Resident | 对 `target_resident_id` 有 @message |
+| `ForwardMessagesToChatroom` | 是 | 把选中的消息整理成一条新消息发到聊天室 | 对 `target_chatroom_id` 有 @contributor |
 | `GetConversation` | 否 | 读取对话快照 | 对 `resident_id` 有 @viewer |
 | `GetDeletedResidentHistory` | 否 | 有界读取已删除 Resident 的保留历史及精确工具证据 | 对精确 `resident_id` 有 @admin；仍核验个人空间边界 |
-| `ListMessages` | 否 | 分页读取更早的消息 | 对 `resident_id` 有 @viewer |
+| `ListMessages` | 否 | 从 GetConversation 的游标读取更早的消息。 | 对 `resident_id` 有 @viewer |
 | `ResolveMessageContextReferences` | 否 | 受理前读取已鉴权材料快照，保留来源身份与范围 | 对 `target_resident_id` 有 @viewer |
-| `ListInputHistory` | 否 | 从新到旧分页读取调用者本人在一个 Resident 会话或聊天室里发过的输入，供输入框的输入历史使用 | 对 `resident_id` 有 @viewer；对 `chatroom_id` 有 @viewer |
 | `GetMessage` | 否 | 读取一条消息 | 对 `resident_id` 有 @viewer |
 | `ListRecentRounds` | 否 | 读取最近几轮往来：请求、由谁答复、结果和回复开头；也列出主动发给这位发送者的消息 | 对 `resident_id` 有 @viewer |
-| `SearchMessages` | 否 | 在多个 Resident 的对话或一个聊天室中搜索 | 对 `resident_ids` 有 @viewer；对 `chatroom_id` 有 @viewer |
 | `GetMessageArtifact` | 否 | 读取消息引用的产物 | 对 `resident_id` 有 @viewer |
 | `WatchConversationEvents` | 否（流式） | 从游标之后订阅对话事件 | 对 `resident_id` 有 @viewer |
 | `GetSentPrompt` | 否 | 读取某条消息实际发送给模型的内容 | 对 `resident_id` 有 @admin |
 | `GetSubagentRun` | 否 | 按分页读取一个子 agent 的任务、工具步骤、消息与时间 | 对 `resident_id` 有 @viewer |
-| `ClearContext` | 是 | 归档当前对话并清空模型上下文 | 对 `resident_id` 有 @admin |
+| `ClearContext` | 是 | 提交上下文重置并归档当前对话；后续输入待清理完成后从新的模型上下文开始，Resident 身份保持不变。此操作不保证删除 Provider 端保留的会话历史。 | 对 `resident_id` 有 @admin |
 | `AbsorbContext` | 是 | 让一个 Resident 吸收另一个 Resident 的上下文 | 对 `source_resident_id` 有 @viewer；对 `target_resident_id` 有 @contributor |
 | `ListResidentRequests` | 否 | 列出 Resident 等待回答的提问和批准请求 | 对 `resident_ids` 有 @viewer |
 | `GetResidentRequest` | 否 | 读取一个请求及其回答状态 | 对 `resident_id` 有 @viewer |
-| `AnswerResidentRequest` | 是 | 回答一个请求，让 Resident 继续工作 | 对 `resident_id` 有 @message |
+| `AnswerResidentRequest` | 是 | 回答问题或作出审批决定，送回等待中的轮次。 | 对 `resident_id` 有 @message |
+| `DeliverUserMessage` | 是 | Resident 向用户投递消息，写入发送方对话及收件人 Mailbox。 | 对 `user_id` 有 @message |
+| `ListMessageAttempts` | 否 | 读取按业务对象权限过滤的尝试记录。 | 对 `resident_id` 有 @viewer |
+| `ListResidentInputHistory` | 否 | 读取调用者本人在该 Resident 会话发过的输入，包括其可读的继承输入。 | 对 `resident_id` 有 @viewer |
+| `SearchResidentMessages` | 否 | 在指定 Resident 的对话中按内容搜索。 | 对 `resident_ids` 有 @viewer |
+| `CreateContextReset` | 是 | 安排当前轮结束后、下一条输入提交前清空上下文，保留排队消息及原账号。 | 对 `resident_id` 有 @admin |
+| `CancelResidentRequest` | 是 | 关闭等待中的请求或消息问题组。 | 对 `resident_id` 有 @message |
 
 ## 投递消息
 
@@ -84,29 +90,48 @@ links:
 
 **向 Resident 投递一条用户消息；Resident 空闲时立即开始处理，忙碌时按接收顺序排队。**
 
-- 参数：`resident_id` 或 `user_id`（二选一）、`message`（包含 `message_id`、`role`、`content_parts` 和可选 `quote`）、`activation_policy`（可选）、`business_ref`（可选）、`reply_to_message_id`（可选）、`temporary_credentials`（可选）。
-- `temporary_credentials` 随消息把调用者的权限临时交给收件 Resident，每项 `{a, resource_id}`：调用者此刻在该资源上持有的 A 树节点。投递与签发在同一事务中完成，凭证行记录这条消息；收件 Resident 对这条消息的输入进入完成、失败或取消时删除，最迟 7 天后失效（decision_b820faf42218 §5.6、decision_22227d0ad075）。结果的 `temporary_credentials` 列出签发的凭证。只用于发给 Resident。
-- 消息中的资源引用不做权限检查：发送方可以引用任何地址，收件方读取时按自己的权限判定（weihao 2026-10-18）。需要让收件方读到它原本读不到的资源时，用 `temporary_credentials` 随任务交出。
-- `user_id` 把消息发给用户，只有 Resident 可以使用。消息不进入队列、不开始工作：它写在发送方自己的对话中（Family 成员或 steward 发出时写在门面的对话中，以门面署名），`recipients` 记录这位用户；收件用户必须能查看这段对话。`activation_policy` 只能省略或为默认值，`content_parts` 只包含文字和资源引用。规则见 decision_c524c775e0be。
+- 参数：`resident_id`、`message`、`activation_policy`、`context_policy`、`execution_constraints`、`business_ref`。消息由 `message_id`、`role`、`content_parts`、可选 `metadata` 和 `quote` 组成。
+- 授权需随接收方任务生效时，按下一节准备、签发和投递。普通消息直接投递。按时长临时凭证沿权限指令原规则独立签发（decision_22227d0ad075）。
+- 消息中的资源引用不做权限检查：发送方可以引用任何地址，收件方读取时按自己的权限判定（weihao 2026-10-18）。需要让收件方读到它原本读不到的资源时，用 `CreateTemporaryCredential` 授权。
 - Family 的成员或 steward 发给 Family 外的 Resident 时，以包含它、但不包含收件方的最外层门面投递，门面对话另记一条写明收件人的记录；Family 内部互发和外部直接找成员开始的对话保留本人身份（decision_44cf587c1721）。
 - `business_ref` 是调用方业务记录的统一 ID 或地址（例如一次论文评审任务），随输入保存。调用方据此把回复、产物和输入状态对应到自己的业务记录。
 - `message.message_id` 可省略：调用带幂等键时，Runtime 根据幂等键生成；不带时生成新 ID。`role` 可省略，显式提供时必须是 `user`；`content_parts` 至少要产生非空文本。
-- `activation_policy` 取值：`enqueue_and_trigger`（默认，空闲即执行、忙碌时排队）、`inject_active_turn`（注入当前正在进行的工作，要求目标 Provider 支持且确实有正在进行的工作）或 `attach_to_next`（info 消息，concept_43c793b4f3ab）。
+- `activation_policy` 取值：`enqueue_and_trigger`（默认，空闲即执行、忙碌时排队）或 `attach_to_next`（info 消息，concept_43c793b4f3ab）。
 - `attach_to_next` 的消息只告知变化，不开始工作：它进入对话、状态为等待，并记入该 Resident 的待附带列表；之后第一条开始执行的请求在生成执行请求时，把所有待附带的 info 按到达顺序、连同作者和时间放在请求正文之前，随后把这些 info 记入对话并标记为完成。info 消息只接受消息内容，不接受 Context 引用、附件、运行说明或 Skill；同一 `message_id` 重复投递只记一次。
-- 结果：消息 ID、该消息的输入状态（发给用户时为空对象）和实际署名 `sender_id`；`resident_id` 是消息所在的对话，发给用户时是发出消息的 Resident 或门面，并带 `recipients`。
+- 结果包含消息 ID、该消息的输入状态、实际署名 `sender_id` 与消息所在对话的 `resident_id`。
 - 相同消息 ID 和相同内容的重复投递返回原结果；相同 ID 但内容不同时返回冲突，第一次的消息保持不变。
 - Resident 关闭接单时，消息仍被接收并等待，重新打开接单后才开始执行。
-- `message.quote` 引用当前对话中的消息。`reply_to_message_id` 指定回复收到的哪条 Family 消息，由平台换算成门面发件记录；它不与 quote 同用，发给用户及 info 消息不带它。
+- `message.quote` 引用当前对话中的消息。按收到的门面消息追溯原写作者时，使用 `RelayMessage` 的 `reply_to_message_id`。要注入正在执行的工作时，用 `InjectMailboxItem`。
 
-### `ForwardMessages`
+### `PrepareResidentInput`
 
-**把选中的若干条消息整理成一条新消息，发给 Resident 或聊天室。**
+按固定 `message.message_id` 准备一条独立排队的新请求。认证 User 或 Resident 使用本人身份提供接收 `resident_id`、完整消息及原投递参数，`activation_policy` 省略或为 `enqueue_and_trigger`。准备绑定发起人、目标、ID、消息、`context_policy`、`execution_constraints` 和 `business_ref`，检查原投递权限与领域限制，且不产生接收输入或唤醒。立即执行的斜杠命令和 info 沿普通投递处理。
 
-- 参数：`target_resident_id` 或 `target_chatroom_id`（二选一）、`messages`（每项包含来源 `resident_id` 与 `message_id`；聊天室中的消息改为给出 `chatroom_id` 与 `message_id`）、`note`（可选的附加说明）、`activation_policy`（可选）。
-- 结果：新消息的 `message_id`；Resident 目标带 `input_state`，聊天室目标带 `chatroom_id`、`message` 与 `deliveries`。
+准备返回 `resident_id`、`message_id` 和 `status`。同一意图重试复用准备记录。需要授权的结构化问题回答还返回 `credential_recipient_id`、`credential_message_id`，按 decision_1e2eb869bc10 使用；Family 门面仍是投递目标，实际获权方是原提问成员。
+
+同一发起人为每项权限调用 `CreateTemporaryCredential` 并等待成功，任务型签发省略 `expires_in_seconds`。普通任务的凭证目标是所准备的接收 Resident 和消息 ID，结构化审批采用准备回执的准确绑定。待生效凭证不参与权限判定。然后原样调用 `DeliverMessage`；服务在一个事务中复核原意图、受理输入并启用凭证，提交成功才唤醒。受理失败回滚本次受理与激活；同参原 ID 重试，已释放不补签。准备发起人可以在原会话调用 `CancelInput` 取消未投递的准备。取消准备或输入完成、失败、取消时按绑定输入回收凭证。
+
+### `DeliverUserMessage`
+
+接受 `user_id` 和 `message`。只有 Resident 可以使用。消息不进入队列、不开始工作：它写在发送方自己的对话中（Family 成员或 steward 发出时写在门面的对话中，以门面署名），`recipients` 记录这位用户；收件用户必须能查看这段对话。`content_parts` 只包含文字和资源引用。规则见 decision_c524c775e0be。
+
+### `ForwardMessagesToResident`
+
+**把选中的若干条消息整理成一条新消息，发给 Resident。**
+
+- 参数：`target_resident_id`、`messages`（每项包含来源 `resident_id` 与 `message_id`；聊天室中的消息改为给出 `chatroom_id` 与 `message_id`）、`note`（可选的附加说明）、`activation_policy`（可选，取值与默认值同 `DeliverMessage`）。
+- 结果：新消息的 `message_id` 与 `input_state`。
 - 每条消息都以调用者自己的权限重新读取：Resident 对话中的消息需要调用者能读这个 Resident 的对话；聊天室中的消息对已认证调用者开放，不以成员或召唤关系限制（decision_a6bebf4ac283），转发内容的标题注明来自哪个聊天室。读不到的消息返回 `instruction.not_found`。
-- Resident 目标遵守 `DeliverMessage` 的全部规则。聊天室目标由同一调用者通过 `CreateChatroomMessage` 发送，沿用它的权限、字数上限、未读、发布事件与幂等语义；`activation_policy` 仅用于 Resident 目标，聊天室目标传入时拒绝。
-- 聊天室中的转发正文保留每条来源的作者与文字，以 Markdown 引用呈现；原文中的 @ 用户、@全员与 @Resident 不重新触发。附加说明写在引用外，其中显式写出的 @ 按普通聊天室发言处理。超出聊天室消息上限时返回原发送接口的长度错误，失败时不生成新消息。
+- 投递遵守 `DeliverMessage` 的全部规则。
+
+### `ForwardMessagesToChatroom`
+
+**把选中的若干条消息整理成一条新消息，发到聊天室。**
+
+- 参数：`target_chatroom_id`、`messages`（含义同上）、`note`（可选的附加说明）。没有 `activation_policy`。
+- 结果：新消息所在的 `chatroom_id`、`message` 与 `deliveries`（新消息中 @ 到的 Resident 的投递，同 `CreateChatroomMessage`），以及转发生成的新消息 `message_id`。
+- 来源消息的读取规则同上。新消息由同一调用者通过 `CreateChatroomMessage` 发送，沿用它的权限、字数上限、未读、发布事件与幂等语义。
+- 转发正文保留每条来源的作者与文字，以 Markdown 引用呈现；原文中的 @ 用户、@全员与 @Resident 不重新触发。附加说明写在引用外，其中显式写出的 @ 按普通聊天室发言处理。超出聊天室消息上限时返回原发送接口的长度错误，失败时不生成新消息。
 
 ## 读取对话
 
@@ -174,14 +199,16 @@ Family 门面的 input_state.work 已沿正式 relay holder 投影实际承接�
 - 参数：`resident_id`、`cursor`（必填，`GetConversation` 或上一页返回的 `next_cursor`，原样交回）、`limit`（可选）。
 - 结果：`messages`，一页消息；`next_cursor`，还有更早的消息时返回。
 
-### `ListInputHistory`
+### `ListResidentInputHistory`
 
-**读取调用者本人在一个 Resident 会话或一个聊天室里发过的输入。** 输入框按上箭头翻输入历史时，由服务端直接给出这份列表，浏览器不再从已加载的消息里推导（weihao 2026-10-16）。
+**读取调用者本人在指定 Resident 会话中发过的输入。** 输入框按上箭头翻输入历史时，由服务端直接给出这份列表，浏览器不再从已加载的消息里推导（weihao 2026-10-16）。
 
-- 参数：`resident_id` 或 `chatroom_id`（二选一）；`cursor`（可选，上一页返回的 `next_cursor`，不填时从最新的输入读起）；`limit`（可选，默认 50，最多 200）。
+- 参数：`resident_id`；`cursor`（可选，上一页返回的 `next_cursor`，不填时从最新的输入读起）；`limit`（可选，默认 50，最多 200）。
 - 结果：`messages`，一页从新到旧；`next_cursor`，还有更早的输入时返回。
-- 带 `resident_id`：消息形式与 `ListMessages` 相同。范围是整条 trace，包括 Fork 继承的输入和清除上下文之前的输入。只取发送者等于调用者、并且消息来源是用户（或早期消息没有来源记录）的输入；Resident 投递、Mailbox 合并的请求和系统消息不在其中，其他成员的输入也不在其中。发送者用消息的 `actor_ref` 比较，不区分大小写。可见性与 `ListMessages` 相同；Family 门面同样投影。
-- 带 `chatroom_id`：由 Portal Web 执行，消息形式与 `ListChatroomMessages` 的基本字段相同。只含作者是调用者的用户消息；编辑过的消息取当前版本，撤回的消息返回撤回前的内容，所以撤回后仍能翻出来重发（weihao 2026-10-16）。读取权限与 `ListChatroomMessages` 相同（decision_3e063aac15b3）。
+- 消息形式与 `ListMessages` 相同。范围是整条 trace，包括 Fork 继承的输入和清除上下文之前的输入。只取发送者等于调用者、并且消息来源是用户（或早期消息没有来源记录）的输入；Resident 投递、Mailbox 合并的请求和系统消息不在其中，其他成员的输入也不在其中。发送者用消息的 `actor_ref` 比较，不区分大小写。可见性与 `ListMessages` 相同；Family 门面同样投影。
+聊天室输入历史使用 `ListChatroomInputHistory`（decision_3e063aac15b3）。
+
+用 `ListMessageAttempts` 读按业务对象权限过滤的执行尝试。省略 `input_message_id` 时按尝试记录分页；提供它时，按当前权限读取对应正式输入及回复。
 
 ### `GetMessage`
 
@@ -200,13 +227,13 @@ Family 门面的 input_state.work 已沿正式 relay holder 投影实际承接�
 - Family 门面上给出 `sender_id` 时，结果另有 `direct`：这位发送者在门面之外直接和成员的最近对话，从新到旧，最多 3 个成员。每项包含成员 `resident_id` 与 `title`、时间 `created_at`、`kind`（`request` 是发送者最后发给这个成员的消息；成员后来又直接发给发送者时为 `sent`，取成员那条）、`message_id` 和开头 `text`。门面转交给成员的副本不算。用户常在成员自己的 Chat 里继续讨论，再到门面说“按我们的讨论”，Router 由此知道指的是哪个成员（ET 10-12）。其他 Resident 或不给 `sender_id` 时没有这一项。
 - 请求和回复各取前 400 个字符，超出时以“…”结尾；只在最近 200 条消息中查找。调用者需要能读取这段对话。
 
-### `SearchMessages`
+### `SearchResidentMessages`
 
-**在一个或多个 Resident 的对话中，或在一个聊天室中，按内容搜索消息。**
+**在一个或多个 Resident 的对话中按内容搜索消息。**
 
-- 参数：`resident_ids` 或 `chatroom_id`（二选一）、`query`（必填，最多 200 字符）、`cursor`（可选，上一页返回的 `next_cursor`）、`limit`（可选，默认 50，最多 200；聊天室每页最多 100）。
-- 带 `resident_ids`：结果为命中列表 `results` 和下一页的 `next_cursor`。每个命中包含来源 `resident_id`、消息 `message` 和用于定位上下文的 `previous_message_id`、`next_message_id`。每个 Resident 分别检查调用者能否读取。
-- 带 `chatroom_id`：由 Portal Web 执行，搜索这个聊天室全部历史中的当前消息版本。结果为 `messages` 与 `next_cursor`。对正文及附件名做大小写不敏感的字面匹配，按位置倒序分页；不受浏览器已加载范围限制，排除已撤回消息，不搜索旧版本正文。搜索结果使用与 `ListChatroomMessages` 相同的消息投影、作者标识和权限规则；定位结果复用历史加载与消息定位（decision_3e063aac15b3）。
+- 参数：`resident_ids`、`query`（必填，最多 200 字符）、`cursor`（可选，上一页返回的 `next_cursor`）、`limit`（可选，默认 50，最多 200）。
+- 结果为命中列表 `results` 和下一页的 `next_cursor`。每个命中包含来源 `resident_id`、消息 `message` 和用于定位上下文的 `previous_message_id`、`next_message_id`。每个 Resident 分别检查调用者能否读取。
+聊天室全文搜索使用 `SearchChatroomMessages`（decision_3e063aac15b3）。
 
 ### `GetMessageArtifact`
 
@@ -249,6 +276,10 @@ Family 门面的 input_state.work 已沿正式 relay holder 投影实际承接�
 - 结果：`cleanup_pending`（清理是否仍在进行）与 `operation_id`。
 - 清理进行期间新到的消息继续排队，清理完成后按顺序执行。只归档本次操作开始时已有的消息。
 
+### `CreateContextReset`
+
+用 `resident_id` 安排当前工作完成后、下一条输入提交前清空上下文。保留排队输入及原账号。返回清理是否待处理、操作 ID、重启记录 ID 与状态，后续用 `GetSessionRestart` 或 `CancelSessionRestart` 查询或取消。
+
 ### `AbsorbContext`
 
 **让目标 Resident 按需读取来源 Resident 的讨论与工作理解，并纳入当前工作。**
@@ -283,9 +314,11 @@ Resident 使用 Provider 原生的提问或批准工具时，这一轮工作会�
 
 **回答一个请求，并把回答送回 Resident 正在等待的那一轮工作。**
 
-- 参数：`resident_id`、`message_id`、`answers`（按问题序号给出的回答；批准请求给出批准或拒绝）。
+- 参数：`resident_id`、`message_id`，以及 `answers` 或 `decision` 二选一。提问的 `answers` 按问题序号给出；审批的 `decision` 为 `accept` 或 `decline`。接受 MCP 请求时可带 `content`。
 - 结果：与 `GetResidentRequest` 相同的请求状态：`pending` 等待送达确认，`answered` 回答或批准决定已送回，`cancelled` 取消已送回，`expired` 请求已失效。`pending` 时通过 `GetResidentRequest` 继续查询。
 - 请求已经回答、取消或失效时返回冲突。回答按问题的定义校验；所在的一轮工作已经换代时拒绝，不会送到另一轮。
+
+关闭一个不再需要的请求用 `CancelResidentRequest`，以所属 Resident 与请求消息定位，按当前请求状态核验。
 
 ## 参数名契约
 
@@ -293,15 +326,15 @@ Resident 使用 Provider 原生的提问或批准工具时，这一轮工作会�
 
 | 指令名 | arguments 参数名 |
 | --- | --- |
-| `DeliverMessage` | `resident_id`、`user_id`、`message`、`activation_policy`、`context_policy`、`execution_constraints`、`business_ref`、`reply_to_message_id`、`temporary_credentials` |
-| `ForwardMessages` | `target_resident_id`、`target_chatroom_id`、`messages`、`note`、`activation_policy` |
+| `DeliverMessage` | `resident_id`、`message`、`activation_policy`、`context_policy`、`execution_constraints`、`business_ref` |
+| `PrepareResidentInput` | `resident_id`、`message`、`activation_policy`、`context_policy`、`execution_constraints`、`business_ref` |
+| `ForwardMessagesToResident` | `target_resident_id`、`messages`、`note`、`activation_policy` |
+| `ForwardMessagesToChatroom` | `target_chatroom_id`、`messages`、`note` |
 | `GetConversation` | `resident_id`、`history_limit`、`input_message_id`、`include_context_evidence`、`include_inherited_context` |
-| `ListMessages` | `resident_id`、`view`、`input_message_id`、`cursor`、`limit` |
+| `ListMessages` | `resident_id`、`cursor`、`limit` |
 | `ResolveMessageContextReferences` | `target_resident_id`、`reference` |
-| `ListInputHistory` | `resident_id`、`chatroom_id`、`cursor`、`limit` |
 | `GetMessage` | `resident_id`、`message_id` |
 | `ListRecentRounds` | `resident_id`、`sender_id`、`before_message_id`、`limit` |
-| `SearchMessages` | `resident_ids`、`chatroom_id`、`query`、`cursor`、`limit` |
 | `GetDeletedResidentHistory` | `resident_id`、`section`、`ordinal`、`tool_index`、`expected_hash`、`tool_item_id`、`cursor`、`limit` |
 | `GetMessageArtifact` | `resident_id`、`artifact_id` |
 | `WatchConversationEvents` | `resident_id`、`after_cursor`、`limit`、`input_message_id` |
@@ -311,7 +344,13 @@ Resident 使用 Provider 原生的提问或批准工具时，这一轮工作会�
 | `AbsorbContext` | `source_resident_id`、`target_resident_id` |
 | `ListResidentRequests` | `resident_ids` |
 | `GetResidentRequest` | `resident_id`、`message_id` |
-| `AnswerResidentRequest` | `resident_id`、`message_id`、`answers` |
+| `AnswerResidentRequest` | `resident_id`、`message_id`、`answers`、`decision`、`content` |
+| `DeliverUserMessage` | `user_id`、`message`、`business_ref` |
+| `ListMessageAttempts` | `resident_id`、`input_message_id`、`cursor`、`limit` |
+| `ListResidentInputHistory` | `resident_id`、`cursor`、`limit` |
+| `SearchResidentMessages` | `resident_ids`、`query`、`cursor`、`limit` |
+| `CreateContextReset` | `resident_id` |
+| `CancelResidentRequest` | `resident_id`、`message_id` |
 
 
 格式名与版本须精确匹配当前规范值，校验规则见 decision_86aed2f0e8c7；本篇同时校验各字段和结构版本，不接受历史前缀或其他版本。

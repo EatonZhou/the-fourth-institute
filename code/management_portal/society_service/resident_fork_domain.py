@@ -629,9 +629,9 @@ def create_resident_context_fork(
     actor_id = canonical_actor_id(actor)
     if not actor_id:
         raise ValueError("需要登录后执行 Fork")
-    turn_count = int(turns or 0)
-    if turn_count not in {5, 10}:
-        raise ValueError("turns must be 5 or 10")
+    if type(turns) is not int or turns < 1:
+        raise ValueError("recent_rounds 必须是正整数")
+    turn_count = turns
     with resident_lineage.access_snapshot_scope():
         source = resident_record_domain.resolve_resident_runtime_target(
             source_resident_id,
@@ -646,7 +646,9 @@ def create_resident_context_fork(
         context_snapshot = _fork_provider_context_snapshot(record)
         if not context_snapshot:
             raise ValueError("Fork 来源缺少有效模型上下文")
-        segments = resident_fork_context.select_segments(context_snapshot, recent_turns=turn_count)
+        segments = resident_fork_context.select_segments(
+            context_snapshot, recent_turns=turn_count, require_round_count=True,
+        )
         derived_residents = resident_runtime_domain.managed_derived_residents(
             record,
             registry,

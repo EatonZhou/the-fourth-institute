@@ -487,6 +487,7 @@ class ResidentContextStore:
         return revision
 
     def missing_work_round(self, resident_id: str, message_id: str) -> bool:
+        """Register a gap without reverting coverage already written by the Resident."""
         with self.transaction() as connection:
             connection.execute("INSERT INTO work_summary_rounds VALUES (%s,%s,FALSE) ON CONFLICT DO NOTHING", (resident_id,message_id))
             row = connection.execute("SELECT covered FROM work_summary_rounds WHERE resident_id=%s AND message_id=%s", (resident_id,message_id)).fetchone()

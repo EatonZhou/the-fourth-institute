@@ -247,48 +247,53 @@ def relay_completed(facade, request_id):
 
 def reconcile_failed_route_tasks() -> None:
     """Repair lost failure notifications from durable task and input receipts."""
+    from .family_task_receipts import RECEIPTS
+
     with get_lineage_data_store().database.read() as connection:
-        rows = connection.execute("""SELECT child.resident_id, child.message_id
-            FROM family_task_dispatches task
+        rows = connection.execute(f"""SELECT DISTINCT child.resident_id, child.message_id
+            FROM ({RECEIPTS}) task
             JOIN conversation_input_states child
-              ON child.resident_id=task.intent_json->'request'->>'target'
+              ON child.resident_id=task.target_id
              AND child.message_id=task.message_id AND child.state='failed'
             JOIN conversation_input_states parent
-              ON parent.resident_id=task.intent_json->'request'->>'facade'
-             AND parent.message_id=task.intent_json->'request'->'facts'->>'message_id'
+              ON parent.resident_id=task.facade_id
+             AND parent.message_id=task.source_message_id
              AND parent.state='queued'
-            WHERE task.intent_json->'request'->>'trigger'='route'""").fetchall()
+            WHERE task.trigger='route'""").fetchall()
     for row in rows:
         route_task_failed(row["resident_id"], row["message_id"])
 
 
 def route_task_failed(resident_id: str, message_id: str) -> None:
-    """Project an admitted Router input's failure without requiring a Trigger Path.
-
-    The frozen dispatch intent owns the link to the original request. Never
-    infer that link from model text, a caller-supplied reference or role alone.
-    """
-    from management_common.json_columns import json_value
-    from . import resident_record_domain
+    """Project an admitted Router input's failure without requiring a Trigger Path."""
+    from . import family_task_receipts, resident_record_domain, trigger_paths
 
     router = resident_record_domain.find_resident(resident_id)
     if not router:
-        return
-    store = get_lineage_data_store()
-    with store.database.read() as connection:
-        row = connection.execute("SELECT intent_json FROM family_task_dispatches "
-                                 "WHERE lineage_id=%s AND message_id=%s",
-                                 (router["lineage_id"], message_id)).fetchone()
-    request = (json_value(row["intent_json"]) if row else {}).get("request") or {}
-    if request.get("trigger") != "route" or request.get("target") != resident_id:
         return
     repository = resident_conversation_stream.get_repository()
     state = _state(repository, resident_id, message_id)
     if state["state"] != "failed":
         return
     original = repository.message(resident_id, message_id) or {}
+    ref = repository.message_business_ref(resident_id, message_id)
+    source = family_facade.parse_relay_mark(ref.removeprefix("family-route/")) if ref.startswith("family-route/") else None
+    family = router.get("family") or {}
+    if not source or family.get("role") != "router" or original.get("author_id") != source[0]:
+        return
+    facade = resident_record_domain.find_resident(source[0])
+    if not facade or (facade.get("family") or {}).get("family_id") != family.get("family_id"):
+        return
+    lineage_id = router["lineage_id"]
+    handoff = trigger_paths.resident_input(lineage_id, resident_id, message_id) or {}
+    event = handoff.get("event") or {}
+    payload = event.get("payload") or {}
+    witnessed = (event.get("type") == "resident.message_received"
+                 and (payload.get("resident_id"), payload.get("message_id")) == source)
+    if not witnessed and family_task_receipts.route_source(lineage_id, resident_id, message_id) != source:
+        return
     routing_failed({"occurred_at": original.get("created_at"), "payload": {
-        "resident_id": request["facade"], "message_id": request["facts"]["message_id"],
+        "resident_id": source[0], "message_id": source[1],
     }}, str((state.get("error") or {}).get("message") or "Family Router 执行失败"))
 
 

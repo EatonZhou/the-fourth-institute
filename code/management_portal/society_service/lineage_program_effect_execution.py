@@ -32,6 +32,7 @@ from . import (
 from .lineage_program_contracts import _program_event_source_contract_fingerprint
 from .lineage_program_effect_rules import (
     DELIVER_MESSAGE,
+    DELIVERY_INTENT_INSTRUCTIONS,
     effect_call_key,
     effect_definition,
     effect_failure_outputs,
@@ -55,77 +56,141 @@ class ProgramEffectAuthority(Protocol):
 # What a Family's Router Effect does to its own Router Resident besides asking
 # it: look whether the brief it sent is still in the Router's context.
 FAMILY_ROUTER_CALLS = frozenset({"GetInputState"})
-# What it does to the Family's own State Cells (family_familize.FAMILY_STATE_PREFIXES).
 FAMILY_STATE_CALLS = frozenset({"GetSharedState", "UpdateSharedState"})
+FAMILY_POLICY_CELLS = {
+    "review_activity": "review", "notify_periodic_review_task": "review",
+    "recovery_check": "recovery", "role_availability": "availability",
+    "route_relay": "routing",
+}
 
 
 def _family_note_context(
     lineage: dict[str, Any], effect_id: str, instruction: str, arguments: object, context: Any, *, lineage_id: str,
     event: lineage_primitives.LineageEvent | None = None,
 ) -> Any:
-    """A Family component's calls to its own steward, Router Resident or State Cells are made as the facade (decision_44cf587c1721)."""
+    """Bind generated Family calls to the particular role, event and request they serve."""
+    from management_common.actor_identity import same_actor
 
-    if not isinstance(arguments, dict):
+    from . import family_definition, family_facade, family_familize, family_recovery_effects, resident_conversation_stream
+
+    if context.entry != "lineage" or not isinstance(arguments, dict):
         return context
-    from dataclasses import replace
-    from .family_familize import facade_for_family_state, facade_for_internal_note
-
-    if instruction == "MaintainFamilyReview" and context.entry == "lineage":
-        from .family_familize import component_family, role_of, member_ids
-        from .family_tasks import task_elements
-        block = component_family(lineage, effect_id)
-        key = next((e.get("key") for e in (task_elements(lineage, block) if block else []) if e["id"] == effect_id), "")
-        observed = arguments.get("event") if isinstance(arguments.get("event"), dict) else {}
-        observed_payload = observed.get("payload")
-        valid_record = (key == "review_activity" and event is not None
-                        and event.type == "resident.work_finished" and event.subject_resident_id in member_ids(block)
-                        and observed.get("type") == event.type and isinstance(observed_payload, dict)
-                        and isinstance(event.payload, dict) and bool(event.payload.get("message_id"))
-                        and observed.get("subject_resident_id") == event.subject_resident_id
-                        and observed_payload.get("message_id") == event.payload.get("message_id")
-                        and set(arguments) == {"lineage_id", "family_id", "event"})
-        valid_tick = (key == "notify_periodic_review_task" and event is not None and event.type == "time.reached"
-                      and set(arguments) == {"lineage_id", "family_id"})
-        if (block and arguments.get("lineage_id") == lineage_id and arguments.get("family_id") == block["id"]
-                and (valid_record or valid_tick)):
-            return replace(context, caller=role_of(block, "facade"))
+    block = family_familize.component_family(lineage, effect_id)
+    if not block:
         return context
+    roles = {role: family_familize.role_of(block, role) for role in ("facade", "steward", "router")}
+    facade = roles["facade"]
+    if not facade:
+        return context
+    key = next((element.get("key") for element in family_definition.family_elements(lineage, block)
+                if element["id"] == effect_id), "")
+    resident_id = arguments.get("resident_id")
+    members = set(family_familize.member_ids(block))
+    event_type = event.type if event is not None else ""
+    event_payload = event.payload if event is not None else {}
+    subject = event.subject_resident_id if event is not None else ""
+    message_id = event_payload.get("message_id") or ""
 
-    if instruction in {"RelayFamilyMessage", "DispatchFamilyTask"}:
-        from .family_facade import facade_for_arrival_call
-        from .family_familize import facade_for_summary_call
-        facade = facade_for_arrival_call(lineage, effect_id, instruction, arguments, event, context.caller,
-                                         lineage_id=lineage_id) if context.entry == "lineage" else ""
-        if not facade and instruction == "DispatchFamilyTask" and context.entry == "lineage":
-            facade = facade_for_summary_call(lineage, effect_id, arguments, event, lineage_id=lineage_id)
-        return replace(context, caller=facade) if facade else context
-    if instruction in FAMILY_STATE_CALLS:
-        if str(arguments.get("lineage_id") or "") != lineage_id:
+    if instruction in FAMILY_STATE_CALLS and arguments.get("lineage_id") == lineage_id:
+        cell = str(arguments.get("key") or "")
+        domain = FAMILY_POLICY_CELLS.get(key)
+        prefix = f"family.{block['id']}.{domain}" if domain else ""
+        if prefix and (cell == prefix or cell.startswith(prefix + ".")):
+            return replace(context, caller=facade)
+        old_scope = family_familize.facade_for_family_state(lineage, effect_id, cell)
+        return replace(context, caller=old_scope) if old_scope else context
+
+    if key in {"role_availability", "recovery_check"}:
+        role_ids = {roles["steward"], roles["router"]} - {""}
+        recovery = key == "recovery_check" and any(
+            item.get("id") == effect_id and (item.get("config") or {}).get("script") == family_recovery_effects.RECOVERY
+            for item in (lineage.get("program") or {}).get("components", [])
+        )
+        if instruction == "ListResidentStates":
+            targets = arguments.get("resident_ids")
+            permitted = role_ids | {facade} | (members if recovery else set())
+            if isinstance(targets, list) and targets and set(targets) <= permitted:
+                return replace(context, caller=facade)
+        if key == "role_availability" and instruction == "SetIntakeOpen" and arguments.get("open") is True:
+            targets = arguments.get("resident_ids")
+            if isinstance(targets, list) and targets and set(targets) <= role_ids:
+                return replace(context, caller=facade)
+        if key == "recovery_check" and instruction == "GetInputState" and resident_id in role_ids | {facade}:
+            return replace(context, caller=facade)
+        if recovery and instruction == "GetInputState" and resident_id in members:
+            return replace(context, caller=facade)
+        if (recovery and instruction == "GetTriggerPath" and arguments.get("lineage_id") == lineage_id
+                and event_payload.get("trigger_path_id") == arguments.get("trigger_path_id")):
+            return replace(context, caller=facade)
+        creator = (block.get("family") or {}).get("human_familizer_id")
+        if (recovery and creator and instruction == "CreateNotification" and arguments.get("lineage_id") == lineage_id
+                and arguments.get("recipients") == [creator]
+                and str(arguments.get("notification_id") or "").startswith("family-recovery:")):
+            return replace(context, caller=facade)
+
+    if key == "review_activity" and event_type == "resident.work_finished" and subject in members:
+        if instruction == "GetInputState" and resident_id == subject and arguments.get("message_id") == message_id:
+            return replace(context, caller=facade)
+    if key in {"notify_periodic_review_task", "review_personal_activity"} and event_type == "time.reached":
+        if instruction == "ListResidentStates" and arguments.get("resident_ids") in ([facade], [roles["steward"]]):
+            return replace(context, caller=facade)
+        if instruction == "GetInputState" and resident_id == roles["steward"]:
+            return replace(context, caller=facade)
+
+    if instruction == "RelayMessage" and key == "router":
+        direct = family_facade.facade_for_arrival_call(
+            lineage, effect_id, instruction, arguments, event, context.caller, lineage_id=lineage_id,
+        )
+        return replace(context, caller=direct) if direct else context
+
+    if (key == "route_relay" and event_type == "resident.work_finished"
+            and subject == roles["router"] and resident_id == facade
+            and instruction in {"RelayMessage", "CheckRelayTarget"}):
+        ref = str(event_payload.get("input_business_ref") or "")
+        source = family_facade.parse_relay_mark(ref.removeprefix("family-route/"))
+        if not ref.startswith("family-route/") or not source or source[0] != facade:
             return context
-        facade = facade_for_family_state(lineage, effect_id, str(arguments.get("key") or ""))
-        return replace(context, caller=facade) if facade else context
-    if instruction in {"MaintainFamilyRecovery", "MaintainFamilyProgress", "MaintainFamilyRoleAvailability"}:
-        from .family_familize import component_family, role_of
-        block = component_family(lineage, effect_id)
-        if (block and arguments.get("lineage_id") == lineage_id
-                and arguments.get("family_id") == block["id"]):
-            return replace(context, caller=role_of(block, "facade"))
-        return context
-    if instruction in {"MaintainResidentWorkSummary", "GetFamilySummaryInputs"}:
-        from .family_familize import component_family, role_of, member_ids
-        block = component_family(lineage, effect_id)
-        target = str(arguments.get("resident_id") or "")
-        allowed = (member_ids(block) + [role_of(block, r) for r in ("facade", "router", "steward")]) if block else []
-        facade = role_of(block, "facade") if block and target in allowed else ""
-        return replace(context, caller=facade) if facade else context
-    if instruction == DELIVER_MESSAGE:
-        roles: tuple[str, ...] = ("steward", "router")
-    elif instruction in FAMILY_ROUTER_CALLS:
-        roles = ("router",)
-    else:
-        return context
-    facade = facade_for_internal_note(lineage, effect_id, str(arguments.get("resident_id") or ""), roles=roles)
-    return replace(context, caller=facade) if facade else context
+        repository = resident_conversation_stream.get_repository()
+        input_message = repository.message(subject, message_id) if message_id else None
+        if (not input_message or not same_actor(input_message.get("author_id"), facade)
+                or repository.message_business_ref(subject, message_id) != ref):
+            return context
+        if (instruction == "RelayMessage"
+                and (arguments.get("message_id") != source[1] or arguments.get("reassign") is not None
+                     or arguments.get("reply_to_message_id") is not None)):
+            return context
+        return replace(context, caller=facade)
+
+    if (key == "router" and instruction == "GetRelayContext" and event_type == "resident.message_received"
+            and subject == facade == resident_id and message_id and arguments.get("message_id") == message_id
+            and event_payload.get("resident_id") == facade):
+        message = resident_conversation_stream.get_repository().message(facade, message_id)
+        if message and same_actor(message.get("author_id"), context.caller):
+            return replace(context, caller=facade)
+
+    summary_event = (
+        key == "summary_check" and event_type == "resident.work_finished" and subject in members and bool(message_id)
+        or key in {"summary_rollup", "memory_rollup"} and event_type == "time.reached"
+    )
+    if summary_event:
+        if instruction == "GetFacadeSummaryInputs" and resident_id == facade:
+            return replace(context, caller=facade)
+        if (instruction == "ListResidentStates" and arguments.get("resident_ids") == [roles["steward"]]
+                and roles["steward"]):
+            return replace(context, caller=facade)
+        if key == "summary_check":
+            if instruction == "GetResidentSummaries" and arguments.get("resident_ids") == [subject]:
+                return replace(context, caller=facade)
+            if (instruction == DELIVER_MESSAGE and resident_id == subject
+                    and arguments.get("business_ref") == "duty/work-summary-reminder"
+                    and arguments.get("activation_policy") == "attach_to_next"):
+                return replace(context, caller=facade)
+
+    if instruction == DELIVER_MESSAGE or instruction in FAMILY_ROUTER_CALLS:
+        internal_roles = ("steward", "router") if instruction == DELIVER_MESSAGE else ("router",)
+        if resident_id and resident_id in {roles[role] for role in internal_roles}:
+            return replace(context, caller=facade)
+    return context
 
 
 def effect_outputs(instruction: str, result: object, *, lineage_id: str = "", activation_key: str = "") -> dict[str, Any]:
@@ -539,7 +604,7 @@ class _EffectRun:
             arguments = prepare_call_arguments(request.instruction, request.arguments, self.invocation)
             # The activation freezes its policy before any call can be accepted.
             # Reclaiming it after a wire edit must not change an existing input.
-            if (request.instruction == "DeliverMessage" and arguments.get("resident_id")
+            if (request.instruction in DELIVERY_INTENT_INSTRUCTIONS and arguments.get("resident_id")
                     and (self.journal.get("delivery_profile") or {}).get("isolated")):
                 if arguments.get("context_policy") == "session":
                     raise ValueError("Effect 的 session 策略与连线的独立任务策略冲突")

@@ -40,6 +40,41 @@ def _group_member_ids(message: Mapping[str, Any]) -> list[str]:
     ]
 
 
+def read_stored_message(chat, mailbox_entry, resident_id, message_id):
+    """Read the Chat, Mailbox, then consumed group in the Conversation's order."""
+    stream_id = required_resident_id(resident_id)
+    target = str(message_id or "").strip()
+    if not target:
+        return None
+    shown = chat.chat_message(stream_id, target)
+    if shown is not None:
+        return shown
+    waiting = mailbox_entry(stream_id, target)
+    stored = (waiting or {}).get("message") or {}
+    if isinstance(stored.get("content_parts"), list):
+        return stored
+    return chat.group_source_message(stream_id, target)
+
+
+def validate_stored_message_identity(chat_ancestors, stored, public_input, *, metadata=None):
+    """Check immutable acceptance ancestry and return the current public view."""
+    public = message_from_storage(stored)
+    if metadata is not None and (stored.get('metadata') or {}) != metadata:
+        raise resident_message_contract.MessageIdentityConflict('Message business metadata is immutable')
+    expected = immutable_message_fields(public_input)
+    if immutable_message_fields(public) == expected:
+        return public
+    # Harness preparation may replace the displayed input. Compare against
+    # the original envelope using the same ancestry as ordinary acceptance.
+    if stored.get("segment_id") and public_input["role"] == "user":
+        for ancestor in chat_ancestors(str(stored["segment_id"]), str(public_input["message_id"])):
+            if immutable_message_fields(message_from_storage(ancestor)) == expected:
+                return public
+    raise resident_message_contract.MessageIdentityConflict(
+        f"Conversation message identity refers to different immutable content: {public_input['message_id']}"
+    )
+
+
 class PreparedInputChanged(ValueError):
     """The prepared immutable input no longer names the current occurrence."""
 
@@ -132,23 +167,8 @@ class ConversationMessages:
         self, stored: Mapping[str, Any], public_input: Mapping[str, Any], *, metadata=None,
     ) -> dict[str, Any]:
         """Check the accepted input's immutable ancestry, returning its current view."""
-        public = message_from_storage(stored)
-        if metadata is not None and (stored.get('metadata') or {}) != metadata:
-            raise resident_message_contract.MessageIdentityConflict('Message business metadata is immutable')
-        expected = immutable_message_fields(public_input)
-        if immutable_message_fields(public) == expected:
-            return public
-        # Harness preparation may replace the displayed input. Acceptance,
-        # read-only validation and delivery must all compare the original
-        # envelope against the same provenance chain, never only the wrapper.
-        if stored.get("segment_id") and public_input["role"] == "user":
-            for ancestor in self.agent_data.chat_message_ancestors(
-                str(stored["segment_id"]), str(public_input["message_id"]),
-            ):
-                if immutable_message_fields(message_from_storage(ancestor)) == expected:
-                    return public
-        raise resident_message_contract.MessageIdentityConflict(
-            f"Conversation message identity refers to different immutable content: {public_input['message_id']}"
+        return validate_stored_message_identity(
+            self.agent_data.chat_message_ancestors, stored, public_input, metadata=metadata,
         )
 
     def execution_content_parts(
@@ -383,18 +403,7 @@ class ConversationMessages:
     def stored_message(self, resident_id: object, message_id: object) -> dict[str, Any] | None:
         """A message of the Resident's Chat, or one waiting in its Mailbox."""
 
-        stream_id = required_resident_id(resident_id)
-        target = str(message_id or "").strip()
-        if not target:
-            return None
-        shown = self.agent_data.chat_message(stream_id, target)
-        if shown is not None:
-            return shown
-        waiting = self.state_store.mailbox_entry(stream_id, target)
-        stored = (waiting or {}).get("message") or {}
-        if isinstance(stored.get("content_parts"), list):
-            return stored
-        return self.agent_data.group_source_message(stream_id, target)
+        return read_stored_message(self.agent_data, self.state_store.mailbox_entry, resident_id, message_id)
 
     def waiting(self, resident_id: object, message_id: object) -> bool:
         """Whether the message waits in the Resident's Mailbox (accepted, not delivered)."""

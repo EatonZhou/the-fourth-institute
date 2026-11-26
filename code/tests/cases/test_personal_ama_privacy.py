@@ -265,7 +265,7 @@ def test_domain_access_of_a_personal_ama_follows_its_owner(monkeypatch):
 
     monkeypatch.setattr(resident_access, 'actor_can_manage_residents', lambda actor: True)
     monkeypatch.setattr(lineage_access_policy, 'actor_can_manage_lineages', lambda actor: True)
-    ama = {'resident_id': AMA, 'personal_owner_id': 'owner'}
+    ama = {'resident_id': AMA, 'lineage_id': AMA_LINEAGE, 'personal_owner_id': 'owner'}
     lineage = {'lineage_id': AMA_LINEAGE, 'lineage_membership': 'personal', 'created_by': 'owner'}
     for actor, allowed in (('owner', True), ('admin', False), ('portal', True)):
         assert resident_access.resident_visible_to_actor(ama, actor) is allowed

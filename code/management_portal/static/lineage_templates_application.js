@@ -132,7 +132,7 @@
       async function refresh() {
         const current = ++serial;
         try {
-          const result = await request('ApplyTemplate', { lineage_id: context.lineage_id, template_id: id, target, dry_run: true,
+          const result = await request('GetTemplateApplyPreview', { lineage_id: context.lineage_id, template_id: id, target,
             ...(parameters.length ? { parameters: values() } : {}), ...(Object.keys(choices).length ? { match_choices: choices } : {}) });
           if (current !== serial || !section.isConnected) return;
           const needsChoice = Object.keys(choices).length === 0 && (result.preview || []).some(entry => entry.ambiguous?.length);

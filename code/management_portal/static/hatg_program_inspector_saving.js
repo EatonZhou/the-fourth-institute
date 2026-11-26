@@ -56,6 +56,26 @@
       });
     }
 
+    function watchWireChanges(componentId, subject) {
+      const wires = (state.lineage?.program?.wires || []).filter(wire => wire.kind === "watch" && wire.source === componentId);
+      const targets = [...new Set(subject?.ids || (subject?.id ? [subject.id] : []))];
+      const retained = new Set();
+      const operations = [];
+      for (const wire of wires) {
+        const target = subject?.id && wire === wires[0] ? subject.id : wire.target;
+        if (!targets.includes(target) || retained.has(target)) {
+          operations.push({ op: "delete", kind: "wire", id: wire.id });
+        } else {
+          retained.add(target);
+          if (target !== wire.target) operations.push({ op: "update", kind: "wire", id: wire.id, changes: { target } });
+        }
+      }
+      for (const target of targets) {
+        if (!retained.has(target)) operations.push({ op: "create", kind: "wire", value: { kind: "watch", source: componentId, source_port: "watch", target } });
+      }
+      return operations;
+    }
+
     // Set, replace or remove a Seed's candidate fork (CreateCandidateFork / DeleteCandidateFork).
     async function setSeedCandidateFork(seedId, sourceResidentId) {
       if (!state.lineage) return;
@@ -129,6 +149,10 @@
         return response;
       }
       if (component.kind === "effect") {
+        const config = window.PortalLineageElementFields.effectConfigFromFields(form);
+        const wireOperations = (state.lineage?.program?.wires || [])
+          .filter(wire => wire.kind === "target" && wire.source === component.id && !(config.endpoints || []).includes(wire.source_port))
+          .map(wire => ({ op: "delete", kind: "wire", id: wire.id }));
         const response = await applyProgramMutation(
           mutation => societyService.saveProgramComponent({ ...mutation,
             lineage_id: state.lineage.lineage_id,
@@ -136,8 +160,9 @@
             component_id: component.id,
             component: {
               title: String(data.get("title") || "").trim(),
-              config: window.PortalLineageElementFields.effectConfigFromFields(form),
+              config,
             },
+            wire_operations: wireOperations,
           }),
           "Effect 已保存。",
           { draftForm: form },
@@ -219,7 +244,7 @@
       const deliverySubjectKind = String(
         data.get("delivery_subject_kind") || "event_source",
       );
-      // Watching the Lineage or all of Portal: the server drops the Watch wires.
+      // Watching the Lineage or all of Portal removes the Watch wires in the same edit.
       const watchScoped = component.kind === "event_source"
         && Boolean(programEventWatchContract(selectedEventType).required_when)
         && !["", "watched"].includes(String(config.resident_scope || ""));
@@ -306,8 +331,8 @@
         component: {
           title: savedTitle,
           config,
-          ...(watchSubject && Object.keys(watchSubject).length ? { watch_subject: watchSubject } : {}),
         },
+        wire_operations: component.kind === "event_source" ? watchWireChanges(component.id, watchSubject) : [],
       }), "", { draftForm: form });
       if (onSaved) {
         await selectAfterProjection(response, onSaved, selection);

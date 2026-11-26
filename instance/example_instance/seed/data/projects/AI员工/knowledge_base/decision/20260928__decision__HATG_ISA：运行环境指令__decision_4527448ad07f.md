@@ -46,7 +46,6 @@ links:
   - decision_898b8911a2ff
   - thinking_ca8f397a47de
 ---
-
 # HATG ISA：运行环境指令
 
 运行环境指令管理 AI 社会运行所依赖的环境：查看 Portal 各服务的状态、请求重启、把 Dev 代码发布到 Release，查看 GPU 与磁盘等设备的状态，查看执行账号的额度与用量并调整调度设置，以及登记和调用普通模型接口。所有指令共同遵守的调用格式、执行流程和错误语义见 decision_898b8911a2ff。
@@ -65,13 +64,12 @@ links:
 | 指令 | 改变状态 | 作用 | 默认方案要求 |
 | --- | --- | --- | --- |
 | `GetExecutionSettings` | 否 | 管理员读取全系统执行设置 | 对“共享”有 @admin |
-| `UpdateExecutionSettings` | 是 | 管理员通过系统 Event 修改请求计时与 Harness 记录开关，修改保留天数，开启或关闭权限系统 | 对“共享”有 @admin |
+| `UpdateExecutionSettings` | 是 | 管理员修改全系统执行设置：请求时间记录和 Harness 记录通过系统 Event 开关，另有 Harness 保留天数；至少提供一项。 | 对“共享”有 @admin |
 | `GetPortalStatus` | 否 | 读取 Portal 实例与组件的运行状态 | 对“共享”有 @viewer |
 | `GetRuntimeCapacity` | 否 | 读取数据库连接、主机磁盘和执行队列的容量快照 | 对“共享”有 @viewer |
 | `RestartPortal` | 是 | 重启 Portal 实例或其中的组件 | 对“Portal 运维”有 @admin |
 | `GetDeviceStatus` | 否 | 读取 GPU 或磁盘状态 | 对“共享”有 @viewer |
 | `CreateTerminal` | 是 | 为调用者打开 Portal 主机 shell 或 Device 的 SSH 终端 | 对“共享”有 @admin |
-| `RunGoogleDriveBackup` | 是 | 异步复制加密快照到 Google Drive，或校验上传与恢复 | 对“共享”有 @admin |
 | `ListModelApis` | 否 | 列出已登记的模型接口 | 对“共享”有 @viewer |
 | `CreateModelApi` | 是 | 登记一个模型接口 | 对“Portal 运维”有 @admin |
 | `UpdateModelApi` | 是 | 修改一个模型接口的登记 | 对“Portal 运维”有 @admin |
@@ -100,7 +98,7 @@ links:
 
 ## 全系统执行设置
 
-执行设置由 ExecutionService 保存本地投影并执行。`GetExecutionSettings` 属于 execution owner，`UpdateExecutionSettings` 属于 lineage owner，将修改路由到已安装的 Event 开关。两条指令按启用权限方案判定，默认方案要求“共享”上的 `@admin`；Portal 管理员仅修改 `permission_system_enabled` 时的特殊通道及权限系统关闭时的边界见 decision_b820faf42218。
+执行设置由 ExecutionService 保存本地投影并执行。`GetExecutionSettings` 属于 execution owner，`UpdateExecutionSettings` 属于 lineage owner，将修改路由到已安装的 Event 开关。两条指令按启用权限方案判定，默认方案要求“共享”上的 `@admin`；`SetPermissionSystemEnabled` 的权限与权限系统关闭时的边界见 decision_b820faf42218。
 
 ### `GetExecutionSettings`
 
@@ -113,7 +111,7 @@ links:
 
 **修改模型请求时间记录或 Harness 运行证据记录开关。**
 
-- 参数：`model_request_timing_enabled`、`harness_recording_enabled`，可选布尔值；`harness_retention_days`，可选整数（21–365，默认 30），Harness 证据、调用记录和未被引用的产物的保留天数；`permission_system_enabled`，可选布尔值，开启或关闭权限系统（默认开启）。至少提供一个。
+- 参数：`model_request_timing_enabled`、`harness_recording_enabled`，可选布尔值；`harness_retention_days`，可选整数（21–365，默认 30），Harness 证据、调用记录和未被引用的产物的保留天数。至少提供一个。
 - 结果：保存后的 `settings`。开启权限系统时另有 `reconciled`：本次重建权限实例的报告。
 - 权限系统开关不经过 Event：关闭后各服务在 3 秒内改用开放实现、不再加载权限代码；开启前，在开关仍关闭时由 ResourceService 按当前模板和全部现有对象重建权限实例（创建者、Family steward、聊天室成员等规则表项随之展开），再写入开关。规则见 decision_b820faf42218。
 - 已安装流程以 Event runtime.paused 为真值：请求计时绑定 Portal System 的 `system:request-timing:enabled`，Harness 记录绑定系统演化的 `system:harness-recording:enabled`。修改设置调用同一 SetComponentPaused 实现，并在返回前更新 Execution 本地投影。删除已绑定 Event 后投影关闭，再修改设置返回 conflict，要求恢复图；未安装过的功能兼容原设置写入。
@@ -154,10 +152,10 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个部署各有自
 
 ### 发布 Release（系统脚本）
 
-发布不是指令。系统脚本 `publish_release` 固定在站点 `deployment.portal_operations.lineage_id` 指定的 Portal 运维 Lineage，沿用真实调用身份，包装 `python3 code/scripts/tfi_dev.py publish`，由 `RunScript` 运行，权限为对该 Lineage 的 @admin（见 decision_850e6248d680、decision_ab9880dc4c9d 与 RunScript 的权限）。
+发布不是指令。系统脚本 `publish_release`（代码目录 `scripts/publish_release.py`）经站点配置绑定的固定 Portal 运维 Lineage 由 `RunScript` 运行，沿用真实调用身份，包装 `python3 code/scripts/tfi_dev.py publish`，权限为对该 Lineage 的 @admin（绑定与权限见 decision_5ff0cb51ed84 的“系统脚本”一节；发布流程见 decision_850e6248d680、decision_ab9880dc4c9d）。
 
 - 脚本参数：`message`（本次发布的提交说明）、`paths`（要发布的文件或目录列表，路径相对仓库的 `code/` 目录，删除也会同步）或 `all`（为 `true` 时发布全部受 Git 管理的源码），二者必须且只能提供一个。
-- 脚本输出报告：`commit`（发布提交 ID）、`paths`（Release 相对上次发布改变的文件，包含 Dev 上已有的其他提交）、`health`（`status: pending` 与激活 receipt 的路径 `receipt`）和 `push`（推送结果 `ok` 与远端名 `remote`）。
+- 脚本输出报告：`status`（`published` 或 `failed`）、`commit`（发布提交 ID）、`paths`（Release 相对上次发布改变的文件，包含 Dev 上已有的其他提交）、`health`（`status: pending` 与激活 receipt 的路径 `receipt`）和 `push`（推送结果 `ok` 与远端名 `remote`）；失败时可有 `stage`、`error`、`release_advanced`。`paths` 过大时输出只给 `paths_count` 与产物 `publication.json`。发布器没有返回可读回执时 `status` 为 `failed`。
 - 本站须配置 Dev 部署，脚本在同一实例中定位该 Dev 代码根并执行发布器。
 - 脚本只提交发布动作；选择范围、撰写提交说明与验证功能由调用者完成。提交、Release 快进、推送和激活的顺序与失败语义统一见 decision_08bb2d9141f9。脚本在激活排队后结束，服务是否已加载新代码以 `health.receipt` 指向的 receipt 为准；脚本输出还提供 `status`，失败时可有 `stage` 与 `error`；`push` 单独反映推送结果，不能仅凭脚本结束或部分步骤完成推断全部发布成功。
 
@@ -198,7 +196,7 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个部署各有自
 
 **修改一个执行账号的调度设置。**
 
-- 参数：`account_id`、`max_concurrency`（1–256）、`dispatch_interval_min_seconds` 与 `dispatch_interval_max_seconds`（0–3600 秒，最大值不小于最小值）、`close_threshold_percent`（可选，额度进入该阈值时自动关闭该账号上 Resident 的接单）。余额型账号使用 `close_threshold_amount`（可选，余额低于这个原币金额时关闭接单）。另接受 `allow_credits`（可选 bool，默认 false，省略保留；仅 Codex 订阅账号可开启），原阈值/并发/间隔必填条件以声明为准。
+- 参数：`account_id`、`max_concurrency`（可选，整数 2–256，省略时保留当前并发）、`dispatch_interval_min_seconds` 与 `dispatch_interval_max_seconds`（0–3600 秒，最大值不小于最小值）、`close_threshold_percent`（可选，额度进入该阈值时自动关闭该账号上 Resident 的接单）。余额型账号使用 `close_threshold_amount`（可选，余额低于这个原币金额时关闭接单）。另接受 `allow_credits`（可选 bool，默认 false，省略保留；仅 Codex 订阅账号可开启），派发间隔仍须同时提交最小值和最大值。既有并发 1 可继续使用，显式提交 1 会被拒绝。
 - 结果：`settings` 为保存后的调度设置，包含 `allow_credits`、`credits_supported`、操作者与更新时间。ListProviderAccounts 的设置及 Home 摘要同步这两个字段。账号级允许只在阈值 0 且已认证新鲜正 credits/unlimited 时解除原生耗尽自动暂停；原 used_up 事实、人工 Closed、正阈值及旧 Session scoped 授权保留。详见 decision_d40f59f5508f。
 - 设置从下一次派发开始生效，不中断正在执行的工作。
 
@@ -207,8 +205,8 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个部署各有自
 执行账号的登记、页面内登录和 Backend 角色由 ExecutionService 执行，设计见 decision_7956d7cb4bde。调度设置仍由 `UpdateProviderAccount` 修改。
 
 - `ListProviders`：参数 `refresh`（可选，检查可用版本并保存观察，不安装或激活运行时）。结果 `providers`：声明的 Provider、账号种类、能力摘要、运行时安装状态与可用版本。
-- `RegisterProviderAccount`：参数 `account_id`、`provider`、`kind`（`subscription_login`、`api_profile` 或 `service`）、`route_id`（可选）、`config`（可选；`api_profile` 用 `config.api_id` 引用已有模型接口）、`max_concurrency`（可选，初始并发）、`enabled`（可选）、`secret`（可选，`api_profile` 的一次性密钥，只写入密钥文件，不回显）。结果 `registration`。
-- `UpdateProviderAccountRegistration`：参数 `account_id`、`changes`（配置、`enabled` 与初始并发）。结果 `registration`。调用信封的 `expected_version` 给出登记版本（`ListProviderAccounts` 每个账号的 `registration_version`）时按它比较，版本不符以 `instruction.version_conflict` 失败；省略时直接更新。
+- `RegisterProviderAccount`：参数 `account_id`、`provider`、`kind`（`subscription_login`、`api_profile` 或 `service`）、`route_id`（可选）、`config`（可选；`api_profile` 用 `config.api_id` 引用已有模型接口）、`max_concurrency`（可选，整数 2–256，省略时初始并发为 10）、`enabled`（可选）、`secret`（可选，`api_profile` 的一次性密钥，只写入密钥文件，不回显）。结果 `registration`。
+- `UpdateProviderAccountRegistration`：参数 `account_id`、`changes`（配置、`enabled` 与初始并发 `max_concurrency`，显式提供并发时须为 2–256 的整数，省略保留）。结果 `registration`。调用信封的 `expected_version` 给出登记版本（`ListProviderAccounts` 每个账号的 `registration_version`）时按它比较，版本不符以 `instruction.version_conflict` 失败；省略时直接更新。
 - `DeleteProviderAccount`：参数 `account_id`。账号仍有绑定会话或排队、运行中的执行时以 `instruction.conflict` 失败，`details` 给出 `reason: account.busy`、会话数 `session_count` 和执行数 `execution_count`；仍被 Backend 角色引用时以 `instruction.conflict`（`reason: account.role_in_use`）失败。结果为被删除的 `account_id`。
 - `CreateProviderAccountLogin`、`UpdateProviderAccountLogin`、`GetProviderAccountLogin`、`CancelProviderAccountLogin`：参数都以 `account_id` 指定订阅账号；`UpdateProviderAccountLogin` 另有 `authorization_code`（登录流程回填的授权材料，授权码或完整回调地址，所需形式由 Provider 声明；只送到当前登录进程，不保存或回显）；`CreateProviderAccountLogin` 另有可选 `options`（对象，键与取值由 Provider 声明的登录选项决定，`GetProviderAccountLogin` 的 `login_options.schema` 给出允许的键和值，`login_options.values` 给出当前选项；例如 Kimi 声明 `region`：`mainland-cn` 为中国区、`global` 为国际区，切换区域会替换未完成的授权流程，省略时沿用原生选择）。Open、Update、Cancel 返回 `session`；Get 返回 `session`（尚未开始时为 null）与 `login_state`。每个账号同一时间只有一个登录会话。
 - 账号相关的失败使用通用错误码，`details.reason` 给出具体原因，页面按 `reason` 选择提示：
@@ -227,7 +225,7 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个部署各有自
 - `UpdateBackendRole`：参数 `backend_role`（角色名，与 `CreateResident` 的 `backend_role` 同名）、`account_id`、`model`（可选）、`reasoning_effort`（可选）。结果 `role`。调用信封的 `expected_version` 给出角色版本时按它比较，新建角色时为 0；省略时直接写入。
 
 
-接入流程先调用 `GetProviderAccountSetup(account_id)`，分别展示运行环境、授权状态、模型目录与声明的工具能力。运行时的安装与准备由系统脚本 `install_provider_runtime`（参数 `provider`，由真实调用者经固定 Portal 运维 Lineage 的 `RunScript` 运行并返回 `preparation`）完成：复用已安装程序，缺失时通过运行时 owner 异步准备；进度从 `ListProviders` 或 `GetProviderAccountSetup` 观察。`CheckProviderAccount(account_id, model?)` 创建普通持久 Execution，返回 execution_id；`GetProviderAccountCheck(account_id, execution_id)` 只读取调用者可访问的执行，核对账号、登记与模型 API 版本、完成状态和预期回复。测试不调用工具，不能据此宣称工具已实测。UpdateBackendRole 可带 `verification_execution_id`；接入页面必须带此回执，只有匹配当前账号与模型的成功测试才能完成默认设置。已有高级角色编辑保持可用。
+接入流程先调用 `GetProviderAccountSetup(account_id)`，分别展示运行环境、授权状态、模型目录与声明的工具能力。运行时的安装与准备由系统脚本 `install_provider_runtime`（参数 `provider`，由真实调用者经固定 Portal 运维 Lineage 的 `RunScript` 运行并返回 `preparation`，见 decision_5ff0cb51ed84）完成：复用已安装程序，缺失时通过运行时 owner 准备，脚本在本次运行内等待结果，状态不是 `ready`、`pending` 或 `busy` 时以失败结束；状态也可从 `ListProviders` 或 `GetProviderAccountSetup` 观察。`CheckProviderAccount(account_id, model?)` 创建普通持久 Execution，返回 execution_id；`GetProviderAccountCheck(account_id, execution_id)` 只读取调用者可访问的执行，核对账号、登记与模型 API 版本、完成状态和预期回复。测试不调用工具，不能据此宣称工具已实测。UpdateBackendRole 可带 `verification_execution_id`；接入页面必须带此回执，只有匹配当前账号与模型的成功测试才能完成默认设置。已有高级角色编辑保持可用。
 
 ### `GetUsage`
 
@@ -331,13 +329,12 @@ Telepus 绑定、提醒及服务控制改用应用工具，见 decision_692a484e
 | 指令名 | arguments 参数名 |
 | --- | --- |
 | `GetExecutionSettings` | 无 |
-| `UpdateExecutionSettings` | `model_request_timing_enabled`、`harness_recording_enabled`、`permission_system_enabled`、`harness_retention_days` |
+| `UpdateExecutionSettings` | `model_request_timing_enabled`、`harness_recording_enabled`、`harness_retention_days` |
 | `GetPortalStatus` | `deployment` |
 | `GetRuntimeCapacity` | 无 |
 | `RestartPortal` | `deployment`、`components` |
 | `GetDeviceStatus` | `kind`、`device_id`、`refresh` |
 | `CreateTerminal` | `device_id`、`cwd`、`cols`、`rows` |
-| `RunGoogleDriveBackup` | `profile`、`network_route` |
 | `ListModelApis` | 无 |
 | `CreateModelApi` | `api_id`、`base_url`、`kind`、`default_model`、`secret_file`、`secret`、`provider`、`routes`、`models`、`protocols`、`default_parameters`、`timeout_seconds`、`retries`、`headers`、`enabled` |
 | `UpdateModelApi` | `api_id`、`changes`、`secret` |

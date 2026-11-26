@@ -11,16 +11,7 @@ def _d(name, decides, description, parameters=(), result=(), *, mutates=False, t
              target=target, one_of=one_of, decides=decides)
 
 
-INTAKE_TARGETS = (
-    P("resident_id", description="要开关接单的单个 Resident"),
-    P("resident_ids", "array", "批量开关的 Resident；按账号批量时取账号详情中的 open_resident_ids 或 closed_resident_ids",
-      items={"type": "string"}),
-)
 INTAKE_RESULT = (
-    P("previous", "string", "单个 Resident 时：变化前的接单状态", enum=("open", "closed")),
-    P("current", "string", "单个 Resident 时：当前接单状态", enum=("open", "closed")),
-    P("changed", "boolean", "单个 Resident 时：本次是否发生变化"),
-    P("state", "object", "单个 Resident 实际执行切换时的提交回执；intake_state 是接单状态，不代表执行额度已恢复"),
     P("changed_resident_ids", "array", "批量时：发生变化的 Resident"),
     P("unchanged_resident_ids", "array", "批量时：本来就处于目标状态、未改变的 Resident"),
     P("failed", "array", "批量时：失败的 Resident 与原因"),
@@ -45,19 +36,20 @@ DECLARATIONS = (
         P("include_context", "boolean", "同时返回 in_context：这条消息是否会进入或仍在 Resident 当前的上下文中。等待和执行中的消息会进入；"
           "已处理的消息在清空上下文、换新会话或压缩之后不再在其中，Provider 没有接收的消息也不在其中"),
         P("include_execution_diagnostics", "boolean", "按当前调用者的输入读取权限，返回该输入关联执行的脱敏生命周期、租约和恢复标记；不含正文或凭据，不触发恢复。缺少运行事实不代表执行未开始"),
+        P("include_input_facts", "boolean", "附带原始输入的类型、是否为 info、业务引用与首次完成游标，不返回正文"),
     ), (
-        R("input_state", "object", "状态、回复消息 ID 列表、更新时间和错误；work 独立给出可信执行关联、工作状态及 updated_at，送达 completed 不代表 work completed；include_progress 时另有 progress，include_context 时另有 in_context，include_execution_diagnostics 时另有 execution_diagnostics"),
+        R("input_state", "object", "状态、回复消息 ID 列表、更新时间和错误；work 给出实际执行关联和状态。按所选选项附带 progress、in_context、execution_diagnostics 或 input_facts"),
     ), target="resident_id"),
-    _d("SetIntakeOpen", (On("resident_id", "resident", optional=True), On("resident_ids", "resident", optional=True)), "打开或关闭 Resident 的接单开关。打开后等待中的消息按顺序开始执行；"
+    _d("SetIntakeOpen", (On("resident_ids", "resident"),), "打开或关闭 Resident 的接单开关。打开后等待中的消息按顺序开始执行；"
        "关闭后新消息只排队不执行，当前工作继续完成。", (
-        *INTAKE_TARGETS,
+        R("resident_ids", "array", "要切换接单状态的 Resident 列表", items={"type": "string"}),
         R("open", "boolean", "true 打开，false 关闭"),
-    ), INTAKE_RESULT, mutates=True, target="resident_id",
-       one_of=(("resident_id",), ("resident_ids",))),
+    ), INTAKE_RESULT, mutates=True, target="resident_ids"),
     _d("CancelInput", ON_RESIDENT, "停止一条消息：正在执行的一轮请求停止，等待中的请求、群体或 info 从 Mailbox 撤回并标为 cancelled"
         "；回执停在 queued 或 running、却不在队列里、不是当前工作、也没有未结束 Execution 的消息"
         "（例如队列丢下的请求）同样标为 cancelled，错误码 lost_input。已经结束的消息保留原结果、不报错。"
         "目标是 Family 门面的消息时，作用于 Router 转交给成员的那条消息；还没转交时从门面撤回。"
+        "准备输入尚未投递时，发起者可撤回准备并结束相关随任务凭证。"
         "停止受理不代表后台终态，通过输入状态与对话事件观察完成。", QUEUE_ITEM, (
         R("resident_id", description="状态所属的 Resident；门面转交后为实际工作的成员"),
         R("message_id", description="实际停止的消息；门面转交后为成员上对应的消息"),

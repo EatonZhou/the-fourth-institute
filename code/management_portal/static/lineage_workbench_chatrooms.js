@@ -570,7 +570,7 @@
       const chatroom = chatroomRecord(chatroomId);
       if (!chatroom) return;
       if (action === "mute" || action === "unmute") {
-        await window.PortalInstructionClient.execute("UpdateChatroom", { chatroom_id: chatroomId, muted: action === "mute" });
+        await window.PortalInstructionClient.execute("SetChatroomMuted", { chatroom_id: chatroomId, muted: action === "mute" });
         await window.PortalConversationStore.readChatrooms(chatroomId);
         await afterChatroomChange(chatroomId);
         return;

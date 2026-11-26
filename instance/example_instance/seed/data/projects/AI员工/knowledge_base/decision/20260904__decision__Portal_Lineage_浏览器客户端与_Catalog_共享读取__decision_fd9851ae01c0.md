@@ -85,7 +85,7 @@ Resident 的创建、上下文派生与成员迁移使用具名指令。画布�
 
 - **普通创建建立一个新的 Resident。** `PortalResidentService.attach` 在指定的已有 Lineage 中调用 `CreateResident` 并重读新身份。新建 Lineage 的图入口由 `PortalSocietyService.createLineage` 调用 `CreateLineage`；创建的服务端合同见 decision_d19b9909a674。普通创建只使用新身份的初始设置与工作区参数。
 - **Fork 明确指定来源 Resident 和上下文方式。** 画布通过共享图修改入口提交 `ForkResident`。上下文派生和跨 Lineage 归属的精确合同见 decision_5bf5bfbd52cb 与 decision_6591e7793116；页面按各步骤的指令结果处理，失败时保留已经完成的步骤。
-- **迁移保留 Resident 身份。** `update` 的归属修改调用 `MoveResident`，页面按返回的当前归属刷新导航。创建、Fork 和移动的服务规则见 decision_d19b9909a674、decision_5bf5bfbd52cb 与 decision_6591e7793116。
+- **迁移保留 Resident 身份。** `update` 的归属修改调用 `MoveLineageObjects`，页面按返回的当前归属刷新导航。创建、Fork 和移动的服务规则见 decision_d19b9909a674、decision_5bf5bfbd52cb 与 decision_6591e7793116。
 - **Resident 的当前归属由 `lineage_id` 表达。** 列表、菜单、导航和刷新签名使用当前 ID 与可用操作，不要求 Resident 提供恒定的 `lineage_membership` 字段。Lineage 自身的 `formal/personal` 分类仍用于团队目录，用户保存的显示偏好由页面状态管理。
 - **创建成功表示新 Resident 已有同 ID 的 Agent 和主 trace。** 主 trace 是 AgentData 保存消息与执行历史的有序记录，可以为空；由服务端创建流程保证就绪，浏览器依据成功结果刷新目录，不在读取时补建历史。此时尚不要求模型会话已经启动，规则见 decision_b1ab45c4b3ec。
 

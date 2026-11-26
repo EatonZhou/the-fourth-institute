@@ -9,7 +9,7 @@
  *
  * Right-click on a message quotes it into the next message or forwards it to a
  * Resident, through the same instructions a Resident Chat uses (CreateChatroomMessage
- * with quote, ForwardMessages with chatroom_id). Messages from anyone but the
+ * with quote, ForwardMessagesToChatroom). Messages from anyone but the
  * viewer sit on the left; only the viewer's own sit on the right.
  */
 (function () {
@@ -76,7 +76,7 @@
         onLoadInputHistory: async (scope, pageToken) => {
           const id = this.chatroomId;
           if (!id || scope !== `chatroom:${id}`) return null;
-          const result = await execute("ListInputHistory", { chatroom_id: id, ...(pageToken ? { cursor: pageToken } : {}), limit: 50 });
+          const result = await execute("ListChatroomInputHistory", { chatroom_id: id, ...(pageToken ? { cursor: pageToken } : {}), limit: 50 });
           if (id !== this.chatroomId) return null;
           return {
             messages: result.messages.map(message => window.PortalChatWorkspace.residentProtocolMessageToWorkspace(message)),
@@ -85,7 +85,7 @@
         },
         onError: error => this.reportError(error),
         onSearchMessages: async (query, paging) => {
-          const result = await execute("SearchMessages", {
+          const result = await execute("SearchChatroomMessages", {
             chatroom_id: this.chatroomId, query, ...(paging.pageToken ? { cursor: paging.pageToken } : {}), limit: paging.limit,
           });
           return { messages: result.messages.map(message => {

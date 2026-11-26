@@ -22,6 +22,10 @@ class ResourceServiceClient:
 
     _RPC_GRACE_SECONDS = 15.0
     _INDEX_READY_SECONDS = 90.0
+    # Transport budget for the command RPC. The device owner independently
+    # enforces its execution limit; clients need not load optional applications
+    # or inspect device state to wait for the signed server response.
+    _DEVICE_COMMAND_WAIT_SECONDS = 120.0
 
     def __init__(
         self,
@@ -257,39 +261,56 @@ class ResourceServiceClient:
         )
         return dict(result or {})
 
-    def action(
-        self,
-        resource_id: str,
-        action: str,
-        payload: Mapping[str, Any] | None = None,
-        **kwargs: Any,
-    ) -> dict[str, Any]:
-        try:
-            requested_timeout = float(
-                (payload or {}).get("timeout_seconds") or 0
-            )
-        except (TypeError, ValueError):
-            requested_timeout = 0.0
-        if action == "ssh.run" and resource_id.startswith("device_"):
-            from management_portal.google_cloud_devices import COLAB_SSH_COMMAND_TIMEOUT, colab_session
+    def create_knowledge_file(self, resource_id, filename, text, expected_version, *, actor):
+        return self._exchange("resource.create_knowledge_file", {
+            "resource_id": resource_id, "filename": filename, "text": text,
+            "expected_version": expected_version, "actor": actor,
+        }, timeout=max(self.timeout, 45 + self._RPC_GRACE_SECONDS))
 
-            if colab_session(resource_id):
-                requested_timeout = max(requested_timeout, COLAB_SSH_COMMAND_TIMEOUT)
-        action_timeout = max(
-            self.timeout,
-            requested_timeout + self._RPC_GRACE_SECONDS,
-        )
-        result = self._exchange(
-            "resource.action",
-            {
-                "resource_id": resource_id,
-                "action": action,
-                "payload": dict(payload or {}),
-                **kwargs,
-            },
-            timeout=action_timeout,
-        )
-        return dict(result or {})
+    def update_knowledge_file_name(self, resource_id, filename, expected_version, *, actor, operation_id=""):
+        return self._exchange("resource.update_knowledge_file_name", {
+            "resource_id": resource_id, "filename": filename, "expected_version": expected_version,
+            "operation_id": operation_id, "actor": actor,
+        })
+
+    def move_knowledge_items(self, project_id, items, *, actor, operation_id=""):
+        return self._exchange("resource.move_knowledge_items", {
+            "project_id": project_id, "items": items, "operation_id": operation_id, "actor": actor,
+        })
+
+    def check_device_ssh(self, resource_id, *, actor, timeout_seconds=15):
+        if type(timeout_seconds) is not int or not 1 <= timeout_seconds <= 45:
+            raise ValueError("SSH timeout_seconds must be an integer from 1 to 45")
+        return self._exchange("resource.check_device_ssh", {
+            "resource_id": resource_id, "timeout_seconds": timeout_seconds, "actor": actor,
+        }, timeout=max(self.timeout, timeout_seconds + self._RPC_GRACE_SECONDS))
+
+    def update_device_ssh_credential(self, resource_id, password, *, actor):
+        return self._exchange("resource.update_device_ssh_credential", {
+            "resource_id": resource_id, "password": password, "actor": actor,
+        })
+
+    def delete_device_ssh_credential(self, resource_id, *, actor):
+        return self._exchange("resource.delete_device_ssh_credential", {
+            "resource_id": resource_id, "actor": actor,
+        })
+
+    def run_device_command(self, resource_id, command, *, actor):
+        return self._exchange("resource.run_device_command", {
+            "resource_id": resource_id, "command": command, "actor": actor,
+        }, timeout=max(self.timeout, self._DEVICE_COMMAND_WAIT_SECONDS + self._RPC_GRACE_SECONDS))
+
+    def update_workbench_page(self, resource_id, job_id, base_revision, html, *, actor,
+                              title=None, description=None):
+        return self._exchange("resource.update_workbench_page", {
+            "resource_id": resource_id, "job_id": job_id, "base_revision": base_revision,
+            "html": html, "title": title, "description": description, "actor": actor,
+        })
+
+    def update_workbench_reverse_plan(self, resource_id, job_id, plan, *, actor):
+        return self._exchange("resource.update_workbench_reverse_plan", {
+            "resource_id": resource_id, "job_id": job_id, "plan": plan, "actor": actor,
+        })
 
     def resolve(self, address: str | Mapping[str, str], **kwargs: Any) -> dict[str, Any]:
         result = self._exchange(

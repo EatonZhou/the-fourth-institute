@@ -82,6 +82,23 @@ def owners_of(principals: Iterable[object]) -> dict[str, str]:
     return {item: owner for item, owner in known.items() if owner}
 
 
+def readonly_owners_of(principals: Iterable[object]) -> dict[str, str]:
+    """Read current AMA ownership through the descriptor owner's cold snapshot."""
+    wanted = {str(item or "").strip() for item in principals
+              if str(item or "").strip().startswith("resident_")}
+    if not wanted:
+        return {}
+    from management_portal.resources.collaboration_registry import CollaborationDescriptorStore
+
+    found = {}
+    for record in CollaborationDescriptorStore().readonly_lists("resident")["resident"]:
+        principal = record["resource_id"]
+        owner = str((record.get("attributes") or {}).get("personal_owner_id") or "").strip()
+        if principal in wanted and owner:
+            found[principal] = owner
+    return found
+
+
 def forget() -> None:
     """Drop the owners kept (tests that reuse Resident IDs)."""
     with _LOCK:

@@ -119,7 +119,7 @@
       });
       const manageActions = residentCardMenuActionsHtml({
         canEdit: lineageAllows(derivedResident?.lineage_id).UpdateResident === true,
-        canDelete: residentAllows(derivedResident).DeleteResident === true,
+        canDelete: canDeleteResident(derivedResident),
         actionName: action => action,
         attributes: action => `data-resident-member-action="${esc(action)}" data-resident-id="${esc(residentId)}" data-member-resident-id="${esc(derivedResidentId)}"`,
       });
@@ -128,7 +128,7 @@
 
     function canDeleteResident(item) {
       if (isPersonalAmaResident(item)) return false;
-      return residentAllows(item).DeleteResident === true;
+      return residentAllows(item).ApplyLineageChanges === true;
     }
 
     // Each menu button asks for the one instruction it runs: Lineage actions and editing a
@@ -718,7 +718,7 @@
       if (!id) return;
       try {
         const objectId = id.includes(":") ? id.slice(id.indexOf(":") + 1) : id;
-        const result = await window.PortalInstructionClient.execute("UpdateUserNavigation", {
+        const result = await window.PortalInstructionClient.execute("SetUserNavigationFavorite", {
           user_id: await window.PortalIdentity.userId(),
           object_id: objectId,
           favorite: !!favorite,

@@ -50,7 +50,7 @@
   // Observation never changes request arguments or the retry/error contract.
   const stateReadReasons = new Set("explicit_read subscription projection viewer-state stream_reset completion payload_omitted focus visibilitychange reconciliation_timer viewer_followup transient_retry panel_visible refresh_timer identity_changed mutation unknown".split(" "));
   function recordStateRead(instruction, observation, transportId) {
-    if (!["ListResidentStates", "ListMailboxTodos"].includes(instruction)) return;
+    if (instruction !== "ListResidentStates" && !(instruction === "SearchResources" && observation?.consumer === "mailbox_todos")) return;
     try {
       const detail = {
         transport_id: transportId,

@@ -11,15 +11,15 @@ from management_portal.http_routes import RouteDefinition
 # Instructions /api/me answers for the current User (access.allows), so pages
 # show account management, execution settings and scheduler forms only to
 # those the permission system lets through.  Changing the administrator list is for
-# Portal 管理员 (access.user_category).  UpdateExecutionSettings is asked for the
-# permission switch alone and, with ActivatePermissionScheme, is always true for a
+# Portal 管理员 (access.user_category).  SetPermissionSystemEnabled, together with
+# ActivatePermissionScheme, is always true for a
 # Portal 管理员 (decision_b820faf42218 §3.1).
-PAGE_INSTRUCTIONS = ("CreateUser", "GetExecutionSettings", "UpdateExecutionSettings", "ActivatePermissionScheme",
-                     "UpdateProviderAccount", "CreateTerminal", "ListResourceTypes", "UpdateResourceType",
+PAGE_INSTRUCTIONS = ("CreateUser", "GetExecutionSettings", "UpdateExecutionSettings", "SetPermissionSystemEnabled", "ActivatePermissionScheme",
+                     "UpdateProviderAccount", "CreateTerminal", "ListResourceTypes", "SetResourceTypeEnabled",
                      "ListProviders", "ListProviderAccounts", "RegisterProviderAccount",
                      "DeleteProviderAccount", "DeleteModelApi",
                      "GetProviderAccountConfiguration", "UpdateProviderAccountConfiguration")
-PAGE_ARGUMENTS = {"UpdateExecutionSettings": {"permission_system_enabled": True}}
+PAGE_ARGUMENTS = {"SetPermissionSystemEnabled": {"enabled": True}}
 
 
 class PortalSessionHttp:

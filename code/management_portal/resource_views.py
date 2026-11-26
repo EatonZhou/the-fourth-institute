@@ -300,7 +300,7 @@ def knowledge_detail(
     from management_portal import permission_system
     root_id = clean_address.partition("/")[0]
     can_edit = root_id.partition("_")[0] in MARKDOWN_REGISTERABLE_RESOURCE_TYPES and root_id in permission_system.permitted_ids(
-        stripped_text(actor), "RunResourceAction", "resource_id", [root_id],
+        stripped_text(actor), "UpdateKnowledgeFileName", "resource_id", [root_id],
     )
     return {
         **_json_value(detail),

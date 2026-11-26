@@ -451,8 +451,10 @@ class ReportStore:
         return {key: value for key, value in record.items() if key != "revisions"}
 
 
-def permission_records():
-    return [ReportStore.metadata(r) for r in get_registry_store().documents(COLLECTION).values() if not r.get("deleted_at")]
+def permission_records(*, read_only: bool = False):
+    store = get_registry_store()
+    documents = store.readonly_snapshot(COLLECTION)[1] if read_only else store.documents(COLLECTION)
+    return [ReportStore.metadata(r) for r in documents.values() if not r.get("deleted_at")]
 
 
 class RegistryProjection:

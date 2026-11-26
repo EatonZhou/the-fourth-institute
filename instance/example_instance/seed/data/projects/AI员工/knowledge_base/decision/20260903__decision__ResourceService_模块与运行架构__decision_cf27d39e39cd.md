@@ -73,8 +73,8 @@ ResourceService（资源统一服务）是承担这件事的 Portal 服务。它
 ### 所有调用方使用同一个 ResourceService
 
 - **Portal 页面、Resident 和 Portal 的其他服务都通过 ResourceService 访问资源。** 它们不自己扫描文件、解释 ID 或判断资源权限。
-- **页面读取通过 HTTP 接口，修改通过 HATG ISA 指令。** 浏览器用 `GET /api/resources/resolve`、`/api/resources/reference`、`/api/resources/content`、`/api/resource-index/query` 等接口解析、读取和查询；登记、修改、上传和资源动作都作为 ISA 指令（`decision_ad3e21094f14`）提交到 `/api/instructions/execute`。
-- **Resident 通过 ISA 资源指令使用 ResourceService。** `SearchResources`、`ReadResource`、`RegisterResource`、`RunResourceAction` 等指令由 ResourceService 自己执行（`decision_898b8911a2ff`），Resident 与页面得到相同的规则和结果。
+- **页面读取通过 HTTP 接口，修改通过 HATG ISA 指令。** 浏览器用 `GET /api/resources/resolve`、`/api/resources/reference`、`/api/resources/content`、`/api/resource-index/query` 等接口解析、读取和查询；登记、修改、上传和资源专用操作都作为 ISA 指令（`decision_ad3e21094f14`）提交到 `/api/instructions/execute`。
+- **Resident 通过 ISA 资源指令使用 ResourceService。** `SearchResources`、`ReadResource`、`RegisterResource`、`CreateKnowledgeFile` 等指令由 ResourceService 自己执行（`decision_898b8911a2ff`），Resident 与页面得到相同的规则和结果。
 - **其他 Portal 进程使用同名方法。** SocietyService、ExecutionService 和 Portal Web 通过 Unix socket 客户端调用 `query`、`resolve`、`register`、`action` 等方法，参数、返回结构和错误含义与进程内调用相同。
 
 ### 业务状态留在领域，资源索引只是可重建的查询副本
@@ -160,6 +160,14 @@ ResourceService 按环境变量 `PORTAL_RESOURCE_SERVICE_MODE` 选择运行模�
 - **加载失败时整体撤回。** 一次加载中任一绑定失败，本次新增的全部绑定都撤回，这个类型保持未加载，下一次请求重新尝试。
 - **同一类型、同一能力只能有一个提供器。** 重复绑定默认报错，显式声明替换时才覆盖。提供器声明的资源类型必须已在共享类型注册表中登记。
 - **没有专门解析器的类型由通用解析器处理。** 只要资源索引收录了这个类型，就由基于索引的通用解析器解析。
+
+### Article 恢复的应用装配边界
+
+ResourceService 拥有 Article 恢复的证据核验、审批判定、权限重核与事务提交；Article 通过既有 `resource.article_registration` 贡献的 `prepare_restored_document` 生成文稿表示，不自行登记、提交或扩展权限。登记、索引、恢复 journal、retention 与公告仍由原资源事务协调。
+
+历史读取由唯一 `resource.article_restore_reads` 应用贡献提供两个精确能力：按 Resident、ordinal、tool index、item ID 与摘要读取一个工具证据；按 Resident 和 message ID 读取一条消息。应用适配器在当前进程同步委托 Society 原读取 owner，每次传递原 actor 并执行原授权；工具证据限定一项。资源核心不直接导入 Society 或 Article 的实现。贡献缺失、重复或能力缺失时明确拒绝，不回退至直导入或远程调用。
+
+最终提交仍在原资源与权限锁内重新读取、核验；两个 Society owner 保持各自原有的只读快照，不复用外层事务连接，也不缓存内容或授权。不得把锁内复核改为 Society 读取池上的 RPC，以免形成持锁等待环。此边界调整不改变系统脚本 `article_restore` 的 `check`、`apply` 步骤的输入、结果或明确审批要求。
 
 ## 三种主要工作流
 

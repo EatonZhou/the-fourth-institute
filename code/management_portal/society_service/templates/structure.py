@@ -31,6 +31,27 @@ def lineage_branches():
     return lineage_branches
 
 
+def migrate_fork_modes(template):
+    """Convert saved structure role recipes before runtime validation."""
+    if template["kind"] != "structure":
+        return template
+    body = template["body"]
+    roles = body.get("roles", [])
+    legacy = {"recent-5": 5, "recent-10": 10}
+    converted = []
+    for role in roles:
+        rounds = legacy.get(role.get("fork_mode"))
+        if rounds is None:
+            converted.append(role)
+        else:
+            if "recent_rounds" in role and role["recent_rounds"] != rounds:
+                raise TemplateError("旧模板的 fork_mode 与 recent_rounds 冲突，需手动迁移")
+            converted.append({**role, "fork_mode": "recent", "recent_rounds": rounds})
+    if converted == roles:
+        return template
+    return {**template, "body": {**body, "roles": converted}}
+
+
 def _info(lineage):
     return {
         item["id"]: {"id": item["id"], "title": item.get("title") or item["id"]}
@@ -255,6 +276,8 @@ def create_role(ctx, role, roles, near=""):
             "fork_mode": role.get("fork_mode", "full"),
             "child_title": title,
         }
+        if payload["fork_mode"] == "recent":
+            payload["recent_rounds"] = role["recent_rounds"]
         if account:
             payload["backend_route_id"] = account
         created = lineage_branches().fork_lineage_resident(ctx.lineage_id, payload, ctx.actor)
@@ -312,13 +335,14 @@ class StructureKind:
                         raise TemplateError("未知角色来源")
                     if item["from"] == "fork" and item.get("fork_of") not in role_keys:
                         raise TemplateError("Fork 来源必须是前面已定义的角色")
-                    if item.get("fork_mode", "full") not in {
-                        "full",
-                        "compacted",
-                        "recent-5",
-                        "recent-10",
-                    }:
-                        raise TemplateError("未知 Fork 模式")
+                    if item.get("fork_mode", "full") not in {"full", "compacted", "recent"}:
+                        raise TemplateError("模板 Fork 模式须为 full、compacted 或 recent")
+                    if item.get("fork_mode") == "recent":
+                        rounds = item.get("recent_rounds")
+                        if type(rounds) is not int or rounds < 1:
+                            raise TemplateError("fork_mode=recent 需要正整数 recent_rounds")
+                    elif "recent_rounds" in item:
+                        raise TemplateError("recent_rounds 只用于 fork_mode=recent")
                     if not isinstance(item.get("settings", {}), dict):
                         raise TemplateError("角色 settings 必须是对象")
                     role_keys.add(item["key"])

@@ -1,6 +1,12 @@
 // Authored interpretation, separate from the authoritative ISA declaration.
 // Values in experiments are fictional; this module has no I/O capability.
 const variant = (id, label, before, after, result, explanation) => ({id, label, before, after, result, explanation});
+// Requests are shown as data; opening a lesson never invokes an instruction.
+// Replace fictional IDs with read-back identities before using an example.
+const request = (instruction, args, id, label, before, after, result, explanation) => ({
+  ...variant(id, label, [JSON.stringify({instruction, arguments: args}), ...before], after, result, explanation),
+  request: {instruction, arguments: args},
+});
 const lesson = (question, meaning, visual, parameters, variants, source) => ({question, meaning, visual, parameters, variants, source});
 export const lessons = {
   ReadResource: lesson('读到的究竟是正文，还是一个下载入口？', '统一资源地址定位资源或内部文件。ResourceService 用真实调用者读取，并在回执中标明内容类型、大小与版本。', 'receipt',
@@ -8,37 +14,50 @@ export const lessons = {
       variant('text', '小文本', ['address → 示例说明文件', 'max_bytes = 4 MiB'], ['text：欢迎阅读', 'content_type：text/plain', 'size：正文实际字节数', 'version：正文 SHA256'], {text:'欢迎阅读',content_type:'text/plain',size:12,version:'<正文 SHA256>'}, '内部文件按原始字节给出摘要；同样的标题不代表同一个正文版本。'),
       variant('large', '超过上限', ['address → 示例大文件', '正文超出 max_bytes'], ['download_url：短期下载入口', 'expires_at：到期时间', 'size：完整大小'], {download_url:'<仅本次调用者有效的临时地址>',expires_at:'<到期时间>',size:8388608}, '不把缺少 text 当空正文。下载地址只对本次调用者有效，支持 Range；这里不发起下载。'),
     ], 'management_portal/resources/isa.py#L95'),
-  UpdateUser: lesson('改资料和改用户分类，需要相同的权限吗？', 'username 选择既有用户。资料、账号状态和用户分类有各自的检查；category_changed 只说明分类是否改变。', 'compare',
-    {username:'稳定的账号身份。', changes:'display_name、recovery_email、avatar、status 或 category；分类为 portal_admin / member / intern。'}, [
-      variant('rename', '改显示名称', ['username：reader_demo', 'display_name：读者'], ['username：reader_demo', 'display_name：新显示名', '用户分类未变'], {user:{username:'reader_demo',display_name:'新显示名',category:'member'},category_changed:false}, '名称变化不会创建另一个账号；category_changed:false 不表示资料没有变化。'),
-      variant('category', '管理员调整分类', ['调用者：Portal 管理员', 'reader_demo：intern', 'changes.category = member'], ['reader_demo：member', 'username 保持'], {user:{username:'reader_demo',category:'member'},category_changed:true}, '无论权限系统是否启用，改变分类都要求调用者是 Portal 管理员。停用账号的 status 检查另需 DeleteUser 权限。'),
-      variant('category_same', '分类已经相同', ['reader_demo：member', 'changes.category = member'], ['分类保持 member'], {user:{username:'reader_demo',category:'member'},category_changed:false}, '同值分类返回未改变，不把它当作失败或一次新的身份迁移。'),
-      variant('category_forbidden', '一般用户试图升为管理员', ['调用者：一般用户', 'changes.category = portal_admin'], ['分类保持原值'], {error:'instruction.forbidden'}, '关闭权限系统也不会开放用户分类的修改资格。'),
-      variant('last_admin', '降级最后一位启用的管理员', ['目标：唯一启用的 Portal 管理员', 'changes.category = member'], ['保留管理员分类'], {error:'instruction.invalid_arguments'}, '至少保留一位启用中的 Portal 管理员；此例只提交 category，不夹带其他修改。'),
-      variant('invalid', '混入未知字段', ['changes：{ nickname: "新名" }'], ['原用户资料保持'], {error:'instruction.invalid_arguments'}, '服务拒绝不在允许字段中的 nickname；不能用任意字典偷偷扩展用户资料。'),
-    ], 'management_portal/web_isa.py#L615'),
+  UpdateUser: lesson('改显示名称，会改变账号分类吗？', 'user_id 选择既有账号；资料修改仅接受显示名称、恢复邮箱和头像。分类与启停使用各自的指令。', 'compare',
+    {user_id:'稳定的用户名。', changes:'display_name、recovery_email 或 avatar。'}, [
+      request('UpdateUser', {user_id:'reader_demo',changes:{display_name:'新显示名'}}, 'rename', '修改资料', ['原显示名：读者', '分类：member'], ['显示名：新显示名', '账号身份与分类保持'], {user:{username:'reader_demo',display_name:'新显示名',category:'member'}}, '显示名称可变化，user_id 仍定位同一个账号。'),
+      request('UpdateUser', {user_id:'reader_demo',changes:{category:'portal_admin'}}, 'invalid', '把分类混入资料', ['调用资料接口并夹带 category'], ['原资料和分类保持'], {error:'instruction.invalid_arguments'}, '分类不属于资料字段；应使用 UpdateUserCategory，并接受该操作的管理员资格检查。'),
+    ], 'management_portal/hatg/catalog/user.py'),
+  UpdateUserCategory: lesson('修改用户分类，如何保护管理员身份？', '分类由专用指令管理。管理员资格、本人保护和最后一位启用管理员保护都在账号领域检查。', 'compare',
+    {user_id:'要调整的用户名。', category:'portal_admin、member 或 intern。'}, [
+      request('UpdateUserCategory', {user_id:'reader_demo',category:'member'}, 'category', '管理员调整分类', ['调用者：有资格的其他管理员', 'reader_demo：intern'], ['reader_demo：member'], {user:{username:'reader_demo',category:'member'},category_changed:true}, '分类变更与管理员名单在同一个账号事务中完成。'),
+      request('UpdateUserCategory', {user_id:'reader_demo',category:'member'}, 'same', '分类已经相同', ['reader_demo：member'], ['分类保持'], {user:{username:'reader_demo',category:'member'},category_changed:false}, '同值请求正常返回；false 仅说明分类未变化。'),
+      request('UpdateUserCategory', {user_id:'reader_demo',category:'portal_admin'}, 'forbidden', '一般用户提升分类', ['调用者：一般用户'], ['分类保持'], {error:'instruction.forbidden'}, '管理员资格来自真实调用者，不能在参数里声明；关闭权限方案不取消这项领域资格检查。'),
+      request('UpdateUserCategory', {user_id:'admin_demo',category:'member'}, 'last_admin', '降级最后一位启用管理员', ['admin_demo：唯一启用的管理员'], ['保留管理员身份'], {error:'instruction.invalid_arguments'}, '本人管理员身份与最后一位启用管理员均受保护。'),
+    ], 'management_portal/hatg/catalog/user.py'),
+  UpdateUserStatus: lesson('停用账号和修改资料有什么区别？', '启停是管理员操作；停用时撤销账号会话，同时保留管理员安全约束。', 'compare',
+    {user_id:'要启停的用户名。', status:'active 启用，disabled 停用。'}, [
+      request('UpdateUserStatus', {user_id:'reader_demo',status:'disabled'}, 'disable', '停用普通账号', ['调用者：Portal 管理员', 'reader_demo：active'], ['reader_demo：disabled', '账号会话被撤销'], {user:{username:'reader_demo',status:'disabled'}}, '停用保留账号身份；后续启用使用同一指令的 active 值。'),
+    ], 'management_portal/hatg/catalog/user.py'),
   ForkResident: lesson('Fork 产生新成员，哪些上下文跟过去？', '从具体成员派生新 Resident。来源身份和新身份不同，继承方式决定新会话得到的上下文范围。', 'graph',
-    {lineage_id:'新成员所在 Lineage。', source_resident_id:'被派生的具体成员；Family 门面不能 Fork。', fork_mode:'full / compacted / recent-5 / recent-10 / message 选择上下文来源。', message:'message 模式必须提供的历史截止点 {message_id}。'}, [
+    {lineage_id:'新成员所在 Lineage。', source_resident_id:'被派生的具体成员；Family 门面不能 Fork。', fork_mode:'full / compacted / recent / message 选择上下文来源。', recent_rounds:'recent 时必填的正整数轮数；其他方式不填写。', message:'message 模式必须提供的历史截止点 {message_id}。'}, [
       variant('full', '完整上下文', ['来源成员 R₁', '已存在的模型上下文'], ['来源 R₁ → 派生 R₂', 'R₂ 获得所选上下文', '继承关系有独立 ID'], {resident_id:'resident_demo_child',inheritance_edge_id:'demo_edge'}, '派生关系记录来源，新成员仍是独立 Resident。此图不表示共用一个可写会话。'),
+      request('ForkResident', {lineage_id:'lineage_demo',source_resident_id:'resident_parent',fork_mode:'recent',recent_rounds:5}, 'recent', '最近五轮', ['来源成员已有历史轮次'], ['按最近五轮派生独立成员'], {resident_id:'resident_demo_child',inheritance_edge_id:'demo_edge'}, 'recent_rounds 明确表达轮数；派生后仍是独立身份和会话。'),
+      request('ForkResident', {lineage_id:'lineage_demo',source_resident_id:'resident_parent',fork_mode:'recent'}, 'recent_missing', '遗漏轮数', ['fork_mode = recent'], ['没有新成员'], {error:'instruction.invalid_arguments'}, '必须给出 recent_rounds，不能隐式猜测五轮或十轮。'),
       variant('message', '缺少历史截止点', ['fork_mode = message', '未提供 message: {message_id}'], ['没有新成员'], {error:'instruction.invalid_arguments'}, '按历史消息截取上下文必须指定截止消息；缺少截止点，在派生前即拒绝。'),
       variant('facade', '选了 Family 门面', ['source = Family 门面'], ['不创建派生成员'], {error:'instruction.conflict'}, '门面代表整个 Family；需要 Fork 其中的具体成员。'),
     ], 'management_portal/society_service/isa/residents.py#L109'),
-  DeliverMessage: lesson('投递成功，等于对方已经回答了吗？', '一条消息进入指定收件人的对话及输入状态。Resident 的排队、执行和回复是后续事实。', 'queue',
-    {resident_id:'收件 Resident；与 user_id 二选一。', user_id:'收件人为用户时写入 Mailbox，不启动 Resident 工作；不接受 quote 或 reply_to_message_id。', message:'保留原文和消息 ID；message.role 只能是 user。', activation_policy:'新工作、当前轮插入或下轮背景，各有不同投递语义。'}, [
-      variant('busy', 'Resident 正忙', ['当前轮正在执行', 'activation_policy = enqueue_and_trigger', '新消息 M 到达'], ['当前轮继续', 'M 进入等待队列'], {message_id:'msg_demo',input_state:{state:'queued'}}, 'queued 是收件回执，不是任务完成。之后按同一个消息 ID 查询 GetInputState。'),
-      variant('human', '发给用户', ['user_id = user_demo', '消息正文'], ['用户 Mailbox 未读', '没有 Resident 执行队列'], {input_state:{}}, '发给人类的消息不启动 Agent。不能把两类收件人都画成同一条执行流水线。'),
-    ], 'management_portal/society_service/isa/conversation.py#L88'),
+  DeliverMessage: lesson('投递成功，等于对方已经回答了吗？', '此指令向 Resident 发起新请求或附加下轮背景。排队、执行和业务完成是后续事实。', 'queue',
+    {resident_id:'收件 Resident。', message:'消息正文与 content_parts；role 只能是 user。', activation_policy:'enqueue_and_trigger 发起工作；attach_to_next 作为下轮背景。'}, [
+      request('DeliverMessage', {resident_id:'resident_demo',message:{content_parts:[{type:'text',text:'检查示例'}]},activation_policy:'enqueue_and_trigger'}, 'busy', 'Resident 正忙', ['另一轮正在执行'], ['另一轮继续', '新消息进入等待队列'], {resident_id:'resident_demo',message_id:'msg_demo',accepted:true}, 'accepted 只说明受理。用 GetInputState 观察同一消息，不能假定已排队回执就是已完成。'),
+      request('DeliverMessage', {resident_id:'resident_demo',message:{content_parts:[{type:'text',text:'补充示例背景'}]},activation_policy:'attach_to_next'}, 'info', '提供下轮背景', ['收件人当前没有新任务'], ['保存背景', '不单独启动执行'], {resident_id:'resident_demo',message_id:'msg_info'}, '当前轮插入由 InjectMailboxItem 表达；转交原消息和回复归属使用 RelayMessage；临时授权使用 CreateTemporaryCredential。不同操作不再混装为投递模式。'),
+    ], 'management_portal/hatg/catalog/conversation.py'),
+  DeliverUserMessage: lesson('发给用户，会启动一个 Resident 吗？', '给用户的消息写在发送方对话中，并在用户 Mailbox 形成未读；没有 Agent 输入队列。', 'queue',
+    {user_id:'收件用户名。', message:'文字与资源引用；不带对话 quote。'}, [
+      request('DeliverUserMessage', {user_id:'reader_demo',message:{content_parts:[{type:'text',text:'示例结果已备好'}]}}, 'human', '给用户结果', ['调用者：Resident', '收件人：reader_demo'], ['发送方对话留下消息', '用户 Mailbox 未读'], {message_id:'msg_user_demo'}, 'Mailbox 中的未读与 Resident 的输入状态不同。此演示不会实际发信。'),
+    ], 'management_portal/hatg/catalog/conversation.py'),
   WatchConversationEvents: lesson('断开后怎样只看新的对话事件？', '订阅从 after_cursor 之后继续。cursor 保留最后交付事件的位置，high_watermark 表示服务端水位；续读不能把两者混用。', 'stream',
     {resident_id:'订阅哪个 Resident 的事件。', after_cursor:'从已见游标之后继续，而不是重取整个会话。', input_message_id:'可限定某条输入的事件正文。', limit:'每批事件上限，默认 500。'}, [
       variant('resume', '从游标 12 恢复', ['已处理 11、12', 'after_cursor = 12'], ['事件 13', '事件 14', '批末检查点 14'], {cursor:14,high_watermark:14}, '按顺序处理事件，保存游标再继续；13、14 是示例编号。'),
       variant('empty', '本批没有正文', ['最后交付游标 14', '本批没有匹配事件', '服务端水位已到 16'], ['续读 cursor：仍为 14', 'high_watermark：16'], {cursor:14,high_watermark:16}, '空批不推进交付游标。下一次仍用 cursor=14，不能用水位 16 跳过尚未交付的事件。'),
       variant('limited', '每批只取一条', ['after_cursor = 12，limit = 1', '服务端已有事件 13、14'], ['本批交付事件 13', '续读 cursor：13', 'high_watermark：14'], {cursor:13,high_watermark:14}, '按返回的 cursor 续读才能收到 14；水位只说明服务器已到哪里。'),
     ], 'management_portal/society_service/isa/conversation.py#L241'),
-  CloseIntake: lesson('关闭接单，会终止当前工作吗？', '接单开关控制新工作的启动，不替代取消输入。当前轮继续完成，后来消息进入队列。', 'queue',
-    {resident_id:'单个 Resident。', resident_ids:'指定一组 Resident；与单个或 account_id 互斥。', account_id:'按执行账号选择批量对象。'}, [
-      variant('working', '正在工作时关闭', ['当前任务 A：运行中', '接单：开放'], ['当前任务 A：继续', '接单：关闭', '新消息 B：排队'], {previous:'open',current:'closed',changed:true}, '关闭接单没有取消 A；若要取消当前输入，需要另一条明确的取消指令。'),
-      variant('already', '已经关闭', ['接单：关闭', '再次手动 CloseIntake'], ['接单：仍关闭', '手动关闭后不会因额度恢复自动打开'], {previous:'closed',current:'closed',changed:false}, 'changed 只比较接单开关。手动调用仍可把额度守卫造成的关闭转为手动关闭，不能据 false 推断没有任何内部写入。'),
-    ], 'management_portal/society_service/isa/execution.py#L115'),
+  SetIntakeOpen: lesson('关闭接单，会终止当前工作吗？', '接单开关控制新工作的启动。当前工作继续，后来消息进入队列；取消某条输入使用 CancelInput。', 'queue',
+    {resident_ids:'明确列出的 Resident 身份数组，单个对象也用数组。', open:'false 关闭，true 打开。'}, [
+      request('SetIntakeOpen', {resident_ids:['resident_demo'],open:false}, 'working', '正在工作时关闭', ['任务 A 正在执行', '接单开放'], ['A 继续', '新消息 B 排队'], {changed_resident_ids:['resident_demo'],unchanged_resident_ids:[],failed:[],changed_count:1,unchanged_count:0,failed_count:0}, '开关结果按每个 Resident 返回；不能把批量受理等同全部成功。'),
+      request('SetIntakeOpen', {resident_ids:['resident_demo'],open:false}, 'already', '已经关闭', ['接单已关闭'], ['接单保持关闭'], {changed_resident_ids:[],unchanged_resident_ids:['resident_demo'],failed:[],changed_count:0,unchanged_count:1,failed_count:0}, '未改变的是接单状态，不据此推断领域内部完全没有写入。'),
+    ], 'management_portal/hatg/catalog/resident_execution.py'),
   CancelInput: lesson('取消一条输入，什么时候才算停止？', '按 Resident 和消息 ID 定位同一条输入。等待项撤回，运行中的任务请求停止，已经结束的消息保留原结果。', 'queue',
     {resident_id:'处理消息的 Resident；门面请求会沿已记录的转交关系找到实际成员。', message_id:'要停止的输入消息；不会取消这个 Resident 的其他输入。'}, [
       variant('queued', '撤回等待项', ['msg_demo：queued', '当前另一轮继续运行'], ['msg_demo 离开 Mailbox 等待项', 'msg_demo：cancelled', '另一轮不受影响'], {resident_id:'resident_demo',message_id:'msg_demo',input_state:{state:'cancelled'}}, '请求、群体或 info 都按原输入身份撤回；若撤回期间开始执行，会转为对同一输入请求停止。'),
@@ -55,12 +74,13 @@ export const lessons = {
       variant('both', '同时提供两种主体', ['resident_id = resident_demo', 'user_id = reader_demo'], ['互斥校验拒绝', '不合并两种 Mailbox'], {error:'instruction.invalid_arguments'}, '必须且只能选择一个主体，不能靠参数顺序决定路由。'),
       variant('resident_filter', '给 Resident 表单加 User 筛选', ['resident_id = resident_demo', 'related_resident_id = resident_other'], ['拒绝不适用的参数组合'], {error:'instruction.invalid_arguments'}, 'related_resident_id 只用于 User Mailbox。选择 Resident 分支后不能混用 User 分支的过滤含义。'),
     ], 'management_portal/hatg/catalog/mailbox.py#L25'),
-  CreateWire: lesson('同样一条箭头，激活、观察和绑定分别是什么？', 'source → target 始终从发起方到接收方或被引用对象。kind 决定这条边的语义，不由箭头外观决定。', 'graph',
-    {lineage_id:'连线所属 Lineage。', source:'激活输出节点、观察事件源或 Effect。', target:'接收节点或被引用对象。', kind:'route 激活；watch 观察；target 绑定。'}, [
-      variant('route', '激活连线 route', ['输出节点 source', '接收节点 target'], ['source ──激活──→ target'], {wire:{source:'source_demo',target:'target_demo',kind:'route'}}, '只有正式触发发生时才沿激活连线传递；创建边本身不是执行一次任务。'),
-      variant('watch', '观察绑定 watch', ['观察事件源 source', '被观察对象 target'], ['事件源 ──观察──→ 对象'], {wire:{source:'source_demo',target:'target_demo',kind:'watch'}}, '箭头指向被观察对象，不表示该对象向事件源推送一条激活。'),
-      variant('target', '目标绑定 target', ['Effect source', '引用对象 target'], ['Effect ──目标──→ 对象'], {wire:{source:'source_demo',target:'target_demo',kind:'target'}}, '目标绑定说明 Effect 操作哪个对象，与运行路径的传递关系不同。'),
-    ], 'management_portal/society_service/isa/definition.py#L180'),
+  ApplyLineageChanges: lesson('同样一条箭头，激活、观察和绑定分别是什么？', 'operations 描述一项或多项定义修改。每项分别核验权限，全部成功才提交一个新版本；连线内部的 kind 决定箭头语义。', 'graph',
+    {lineage_id:'定义所属 Lineage。', operations:'create / update / delete / clone；kind 选择 component、wire 或 resident。create 的 value 保存连线结构，Resident 仅支持 delete。', function_block_id:'编辑已有职责时指定；调用信封须携带读回的 expected_version。', duty_changes:'职责元数据；memory_level 使用 trigger、turn、session 或 on_demand。'}, [
+      request('ApplyLineageChanges', {lineage_id:'lineage_demo',operations:[{op:'create',kind:'wire',value:{kind:'route',source:'event_source_demo',source_port:'output',target:'effect_demo',target_port:'invoke'}}]}, 'route', '创建激活连线', ['已读取合法输出与 Invoke 端口'], ['事件源 ──激活──→ Effect', '定义版本推进一次'], {created_ids:['wire_demo'],updated_ids:[],deleted_ids:[],revision:8}, '创建边不会启动工作。只有事件发生时才沿 route 传递；正式调用用当前图中的真实端点。'),
+      request('ApplyLineageChanges', {lineage_id:'lineage_demo',operations:[{op:'create',kind:'wire',value:{kind:'watch',source:'event_source_demo',target:'resident_demo'}}]}, 'watch', '创建观察绑定', ['观察事件源与目标存在'], ['事件源 ──观察──→ Resident'], {created_ids:['wire_demo'],updated_ids:[],deleted_ids:[],revision:8}, 'watch 指向被观察对象；观察事件源须支持该目标种类。'),
+      request('ApplyLineageChanges', {lineage_id:'lineage_demo',operations:[{op:'create',kind:'wire',value:{kind:'target',source:'effect_demo',target:'resident_demo'}}]}, 'target', '创建目标绑定', ['Effect 引用目标存在'], ['Effect ──目标──→ Resident'], {created_ids:['wire_demo'],updated_ids:[],deleted_ids:[],revision:8}, 'target 表达 Effect 操作哪个对象，不承担 route 的激活传递。'),
+      request('ApplyLineageChanges', {lineage_id:'lineage_demo',operations:[{op:'update',kind:'component',id:'effect_demo',changes:{title:'新标题'}},{op:'delete',kind:'wire',id:'wire_demo'}]}, 'atomic', '第二项没有权限', ['第一项具备更新权限', '第二项缺少删除连线权限', '原定义版本：7'], ['标题未改', '连线未删', '版本仍为 7'], {error:'instruction.forbidden'}, '整个事务拒绝，不能留下第一项成功的半成品。通用变更入口不提供越过单项权限的捷径。'),
+    ], 'management_portal/society_service/isa/definition.py'),
   UpdateSharedState: lesson('两个调用者都想改同一个状态，谁会写入？', '附带 expected_value 时比较的是状态值，不是 Lineage 定义版本。只有读到的期望值仍等于当前值，才写 value。', 'compare',
     {lineage_id:'状态单元所属 Lineage。', key:'状态单元名。', expected_value:'调用者认为仍成立的旧值；省略时直接写入。', value:'匹配时写入的新值。'}, [
       variant('match', '值仍相等', ['当前值：3', '期望值：3', '拟写入：4'], ['当前值：4'], {matched:true,changed:true,value:4}, '比较和写入在同一个状态事务中完成。'),
@@ -88,33 +108,43 @@ export const lessons = {
     {lineage_id:'成员必须在同一 Lineage。', resident_ids:'选中的成员或已有 Family。', scope:'选择范围，由指令定义决定。'}, [
       variant('team', '把成员组成团队', ['成员 A', '成员 B'], ['门面：接待外部', 'Router：路由请求', 'steward：维护团队', '成员 A、B：完成工作'], {family_id:'fbi_demo',resource_id:'family_demo'}, 'Family 的正式资源 ID 与 Function Block 键是两种身份；回执分别给出，不应混用。'),
     ], 'management_portal/society_service/isa/families.py#L7'),
-  ApplyTemplate: lesson('预览模板和真正施加模板差在哪里？', '模板由其类型决定应用语义。结构模板可先显示拟找到、删除、修改与新建的元素。', 'compare',
-    {lineage_id:'模板施加到的 Lineage。', template_id:'要应用的已登记模板。', target:'模板作用的目标，由模板类型解释。', dry_run:'只预览结构模板的变更计划。'}, [
-      variant('preview', '结构模板 dry_run', ['现有元素 A', '模板拟增加组件 B'], ['原结构：仍只有 A', '预览计划：预计新建 1 个组件', 'created：尚无新对象身份'], {summary:'预览施加结果。',created:{resident_ids:[],component_ids:[],wire_ids:[]}}, '预览中的预计数量不是已创建的对象，回执的 created 身份集合仍为空。预览没有施加变更，也不代替提交时检查。'),
-      variant('apply', '结构模板实际应用的含义', ['现有元素 A', '同一模板拟增加组件 B'], ['示例结构 A、B', 'created.component_ids 返回 B 的新身份'], {created:{resident_ids:[],component_ids:['component_demo_b'],wire_ids:[]}}, '这里只解释真实应用后的身份回执；当前按钮仍只改变本地演示。不同模板的业务效果由类型实现决定。'),
-    ], 'management_portal/society_service/isa/templates.py#L52'),
+  GetTemplateApplyPreview: lesson('预览模板，会创建对象或投递工作吗？', '只读预览根据模板和目标计算应用计划，不创建对象、不发事件、不投递消息。', 'compare',
+    {lineage_id:'拟应用到的 Lineage。', template_id:'已登记的模板。', target:'resident、selection 或 canvas 目标，字段由目标种类决定。', parameters:'模板参数；仍须通过模板约束。'}, [
+      request('GetTemplateApplyPreview', {lineage_id:'lineage_demo',template_id:'template_demo',target:{kind:'canvas',x:0,y:0}}, 'preview', '只读预览结构', ['现有元素 A', '模板计划新建 B'], ['原结构仍只有 A', '返回预览计划', '没有真实新对象身份'], {summary:'预览施加结果。',created:{resident_ids:[],component_ids:[],wire_ids:[]},preview:[{target_resident_id:'',found:[],removed:[],updated:[],ambiguous:[],created:{roles:0,components:1,wires:0},error:''}]}, 'preview 中的 created 是预计数量，顶层 created 是真实新身份集合，此时仍为空。预览不会锁住定义；提交前仍需读取当前版本。'),
+    ], 'management_portal/hatg/catalog/template.py'),
+  ApplyTemplate: lesson('看过计划之后，怎样真正应用模板？', 'ApplyTemplate 执行模板的应用语义。先用 GetTemplateApplyPreview 阅读计划，再提交应用，服务重新校验当前目标、权限和版本。', 'compare',
+    {lineage_id:'应用到的 Lineage。', template_id:'要施加的模板。', target:'与拟应用范围一致的真实目标。', parameters:'实际应用使用的模板参数。'}, [
+      request('ApplyTemplate', {lineage_id:'lineage_demo',template_id:'template_demo',target:{kind:'canvas',x:0,y:0}}, 'apply', '实际应用结构', ['当前结构 A', '读回当前版本并放入调用信封 expected_version'], ['结构 A、B', 'created 中出现真实新身份'], {created:{resident_ids:[],component_ids:['component_demo_b'],wire_ids:[]}}, '此回执为本地示意。实际模板可能建立职责或投递工作，必须按真实模板类型理解效果；预览成功不等于应用已经发生。'),
+    ], 'management_portal/hatg/catalog/template.py'),
   CreateReply: lesson('回复帖子之后，谁知道它有了新内容？', '回复属于一个既有帖子；创建回复时同时推进该帖的通知修订。', 'thread',
     {post_id:'回复哪一篇帖子。', content:'回复正文，示例文本不发送。'}, [
       variant('reply', '追加回复', ['帖子 P', 'notification_revision：8'], ['帖子 P', '└ 示例回复', 'notification_revision：9'], {notification_revision:9}, '回复对象与通知水位一起返回。通知修订变化不是改写原帖正文。'),
     ], 'management_portal/web_isa.py#L102'),
-  RelayFamilyMessage: lesson('Router 选好成员，原请求就一定已送达吗？', '转交保留门面请求的原作者、内容和引用，并建立门面到成员的消息关联。额度不足时先交本 Family steward 复核。', 'queue',
-    {resident_id:'接到原请求的 Family 门面。', message_id:'门面上的原请求，不是改写后的任务正文。', member_id:'该 Family 中承接工作的成员。', quota_reviewed:'只能由本 Family steward 对已有额度复核放行。', reason:'放行复核必须给出判断理由。'}, [
-      variant('relay', '额度充足时转交', ['门面原请求 msg_facade', 'Router 选择 member_demo', '成员额度充足'], ['原作者、内容和引用保持', '成员收到关联消息 msg_member'], {status:'relayed',member_id:'member_demo',message_id:'msg_member'}, '成员副本有可追溯的消息关联；relayed 只表示转交，不表示业务任务已经完成。'),
-      variant('quota', '周额度低于 10%', ['原请求 msg_facade', '成员周额度剩余 8%'], ['原请求保留在门面', '尚未投给成员', '请本 Family steward 复核'], {status:'waiting_for_quota_review',message_id:'msg_facade',member_id:'member_demo',steward_message_id:'msg_review'}, '不能在等待复核时把页面画成成员已经执行；复核针对这条原请求。'),
-      variant('reviewed', 'Steward 放行原请求', ['已有这条请求的待复核记录', '调用者：本 Family steward', 'quota_reviewed = true；reason = 短任务额度足够'], ['投递原请求', '保留原作者而非替换成 steward'], {status:'relayed',member_id:'member_demo',message_id:'msg_member'}, '只有对应 steward 可以放行已有复核；传 true 不会让普通调用者获得资格。'),
-      variant('wrong_reviewer', '其他成员自称已复核', ['调用者不是本 Family steward', 'quota_reviewed = true，reason 已填写'], ['不向成员投递'], {error:'instruction.forbidden'}, '角色资格按当前调用者检查，不能靠参数声明自己已经获批。'),
-    ], 'management_portal/society_service/isa/conversation.py#L103'),
-  MoveResident: lesson('迁移成员，会换掉它的身份和会话吗？', '迁移改变所属 Lineage，保留 Resident 身份与会话；前提是它没有被流程引用。Family 成员随之离开 Family，继承等关系断开。', 'graph',
-    {lineage_id:'当前所属的源 Lineage。', resident_id:'要迁移的成员。', target_lineage_id:'目的 Lineage。', allow_empty_source:'迁走源 Lineage 唯一的 Resident 时须显式允许；默认 false。'}, [
-      variant('free', '没有流程引用', ['源 Lineage〔R、S〕', '目标 Lineage〔 〕'], ['源 Lineage〔S〕', '目标 Lineage〔R〕', 'R 的身份与会话保持'], {operation_id:'move_demo'}, 'operation_id 是迁移操作的身份，不能拿它充当新 Resident ID；源仍有 S，不涉及迁空源的许可。'),
-      variant('referenced', '仍被流程引用', ['源 Lineage〔Effect → R〕'], ['R 留在原归属', '先处理真实引用关系'], {error:'迁移领域拒绝；具体错误取决于真实引用关系'}, '不能把一个仍被流程引用的成员直接搬走；这不是靠改变画布坐标可以解决的关系。'),
-    ], 'management_portal/society_service/isa/organization.py#L12'),
+  CheckRelayTarget: lesson('成员暂时不可用，要由谁决定下一步？', '只读检查给出目标可用性与原因；等待、改派或升级由工作流策略决定。', 'compare',
+    {resident_id:'接待原请求的门面。', member_id:'拟承接工作的成员。'}, [
+      request('CheckRelayTarget', {resident_id:'resident_facade',member_id:'resident_member'}, 'quota', '额度不足', ['门面已登记成员', '目标额度低'], ['得到 quota_low', '没有转交或复核消息'], {status:'quota_low'}, '工作流可把判断写入共享状态、等待恢复或选择其他成员。这个检查不替调用者做策略决策，也不签发转交许可。'),
+    ], 'management_portal/hatg/catalog/family_internal.py'),
+  RelayMessage: lesson('转交原请求，怎样保留作者与回复归属？', '通用门面把已存在的原消息交给成员，保留内容、附件、原作者及关联。策略由工作流表达，转交回执不代表任务完成。', 'queue',
+    {resident_id:'接待原消息的门面。', message_id:'门面上已有的原消息 ID。', member_id:'门面登记的承接成员。', notice:'布尔值；由门面收下告知，不与指定成员、改派或延续同用。', continue_previous:'是否附带已核定的上一轮背景。', reassign:'明确要求改派，不与延续同用。', reason:'转交或改派的理由。', reply_to_message_id:'回复门面外发消息时指定原消息，保留回复归属。', message:'回复分支的正文或附件 content_parts；转交已有原请求时不重写原文。'}, [
+      request('RelayMessage', {resident_id:'resident_facade',message_id:'msg_original',member_id:'resident_member'}, 'relay', '转交原消息', ['原作者提交 msg_original', '门面已通过 UpdateFacadeMembers 登记承接成员'], ['成员收到关联消息', '原作者、附件和内容保持'], {status:'relayed',member_id:'resident_member',message_id:'msg_member'}, '不把原文复制成一个新作者任务。重复调用沿原请求关联处理，业务完成仍需读取成员实际结果。'),
+      request('RelayMessage', {resident_id:'resident_facade',message_id:'msg_original',member_id:'resident_other',reassign:true,reason:'原成员不可用，工作流选择另一成员'}, 'reassign', '工作流决定改派', ['已读取原请求与转交关系', '候选成员属于该门面'], ['按原请求关系改派', '来源和回复关联继续保留'], {status:'relayed',member_id:'resident_other',message_id:'msg_other'}, '可用性检查与共享状态共同支持工作流判断；ISA 不内置固定额度阈值或复核角色。'),
+    ], 'management_portal/hatg/catalog/family_internal.py'),
+  MoveLineageObjects: lesson('迁移成员，会换掉它的身份和会话吗？', '通过 object_ids 选择一个或多个对象迁入目标 Lineage。迁移保留身份、会话与运行游标，并核对选区和外部关系。', 'graph',
+    {lineage_id:'源 Lineage。', object_ids:'Resident、组件或 Function Block 的身份数组；只迁一个成员也用数组。', target_lineage_id:'目的 Lineage；省略时新建。', allow_empty_source:'显式允许迁空源；默认 false。'}, [
+      request('MoveLineageObjects', {lineage_id:'lineage_source',object_ids:['resident_demo'],target_lineage_id:'lineage_target'}, 'free', '迁移一个独立成员', ['源〔R、S〕', '目标〔 〕', 'R 没有选区外流程依赖'], ['源〔S〕', '目标〔R〕', 'R 身份与会话保持'], {operation_id:'move_demo',source_lineage_id:'lineage_source',target_lineage_id:'lineage_target',detached:[]}, 'operation_id 用于 GetMoveOperation 跟踪目录迁移，不能充当新的 Resident ID，也不表示文件迁移已全部结束。'),
+      request('MoveLineageObjects', {lineage_id:'lineage_source',object_ids:['resident_demo'],target_lineage_id:'lineage_target',allow_empty_source:true}, 'last', '迁出唯一成员', ['源仅有 R', '已确认允许迁空'], ['通过迁空前置检查', '继续核验引用、归属与工作区依赖'], {operation_id:'move_demo',source_lineage_id:'lineage_source',target_lineage_id:'lineage_target',detached:[]}, '允许迁空只改变这一项前置条件，不跳过目标权限或其他关系检查。涉及 Function Block 时按真实选区规则整体迁移。'),
+      variant('referenced', '存在选区外依赖', ['仅选择 R', '选区外 Effect 仍引用 R'], ['先按诊断补齐迁移集合或处理引用'], {error:'迁移领域拒绝；具体错误由真实关系决定'}, '不能把孤立成员的旧迁移假设套在通用集合上；边界关系必须由正式迁移入口核验。'),
+    ], 'management_portal/hatg/catalog/organization.py'),
   CheckPermission: lesson('没有授权和明确禁止，为什么是两种拒绝？', '本实验假设权限系统已启用。ResourceService 按当前方案检查主体、动作与资源，逐项返回原因；不执行被检查的业务指令，也不签发权限。', 'compare',
-    {principal_id:'被检查的主体；省略时为真实调用者。', instruction:'检查这条指令在当前方案中的各项要求，与 arguments 配合。', arguments:'被检查指令的业务参数，用于解析真实资源。', a:'直接检查时使用方案中已存在的 A 树节点，与 resource_id 配合；不要和指令形式混填。', resource_id:'直接检查的资源。'}, [
+    {principal_id:'明确指定被检查的主体。', a:'方案中已存在的 A 树节点，与 resource_id 配合；整条指令的检查使用 CheckInstructionPermission。', resource_id:'直接检查的资源。'}, [
       variant('permitted', '命中有效 permit', ['示例方案存在 @demo_read 节点', '主体 reader_demo 对 resource_demo 有有效 permit', '没有覆盖该请求的 deny'], ['allowed：true', 'reason：permitted', '不读取资源正文'], {principal_id:'reader_demo',scheme_id:'demo',allowed:true,requests:[{action:'@demo_read',resource:'resource_demo',allowed:true,reason:'permitted'}]}, '这是虚构方案的局部回执。真实返回还带命中的 permit 表项；检查通过不代替业务调用时再次检查。'),
       variant('no_permit', '没有有效 permit', ['同一主体、动作与资源', '没有覆盖请求的有效 permit'], ['allowed：false', 'reason：no_permit'], {principal_id:'reader_demo',scheme_id:'demo',allowed:false,requests:[{action:'@demo_read',resource:'resource_demo',allowed:false,reason:'no_permit'}]}, '没有许可不要求先存在一条 deny；过期表项也不能当作有效许可。'),
       variant('denied', 'permit 中有 deny 洞', ['有效 permit 覆盖该请求', '有效 deny 也覆盖同一主体、动作与资源'], ['allowed：false', 'reason：denied'], {principal_id:'reader_demo',scheme_id:'demo',allowed:false,requests:[{action:'@demo_read',resource:'resource_demo',allowed:false,reason:'denied'}]}, '真实回执带命中的 deny。更具体的许可不能简单抵消仍覆盖该请求的禁止；需要看方案中的真实表项和范围。'),
     ], 'management_portal/permission_system/management.py#L68'),
+  CheckInstructionPermission: lesson('检查一次指令调用，为什么需要完整参数？', '检查器根据指令与业务参数解析全部目标，并保留管理员保底判断。检查本身不执行业务，也不签发凭证。', 'compare',
+    {principal_id:'明确指定被检查的主体。', instruction:'要检查的具名指令。', arguments:'拟调用的真实参数，用来解析受影响对象。'}, [
+      request('CheckInstructionPermission', {principal_id:'resident_demo',instruction:'ReadResource',arguments:{address:'article_demo'}}, 'check', '检查读取权限', ['主体与资源均存在', '示例权限方案允许读取'], ['返回检查判断', '不读取 article_demo 正文'], {principal_id:'resident_demo',scheme_id:'demo',allowed:true,requests:[]}, '示例省略具体命中表项；允许结果不能替代 ReadResource 实际调用时的鉴权。对一个 A 节点与资源的直接判断使用 CheckPermission。'),
+    ], 'management_portal/hatg/catalog/permission.py'),
   GetGpuStatus: lesson('没有设备数据，能否解释为 GPU 空闲？', 'Portal Web 返回所选设备的状态。设备集合为空和设备利用率为零，是两个不同事实。', 'receipt',
     {device_id:'可指定一台设备；省略时读取设备组。', refresh:'是否强制刷新状态采集。'}, [
       variant('group', '读取设备组', ['未指定 device_id'], ['devices：设备状态集合'], {devices:[{example:'设备状态对象；本例不包含真实指标'}]}, '这是回执形状的示意，没有生成随机实时负载，也没有实际采集设备。'),
@@ -129,7 +159,7 @@ export const lessons = {
 };
 
 export const categoryNotes = {
-  resource:'用统一地址定位正文、文件和资源动作。', user:'维护人的账号、资料与个人导航。',
+  resource:'用统一地址读取正文与文件，按具名指令修改资源。', user:'维护人的账号、资料与个人导航。',
   resident:'管理持续成员的身份、上下文继承和运行设置。', conversation:'消息、回复和上下文构成协作的记忆。',
   resident_execution:'Resident 执行：观察输入、开关接单和停止执行；等待消息的整理归 Mailbox。',
   mailbox:'按主体读取 User 对话通知或 Resident 等待工作；argument_owners 区分 Web 与 SocietyService。',
@@ -137,35 +167,10 @@ export const categoryNotes = {
   lineage_state:'共享状态单元保存运行时值，比较交换避免覆盖已变值。', lineage_run:'事件与激活路径表达正在发生的协作。',
   script_run:'脚本启动、输出和停止有独立的异步运行身份。', function_block:'封装选区并保持内部对象身份与行为。',
   family:'把成员、接待、路由与团队维护组织在一起。',
-  family_internal:'Family 内部转交、额度与范围复核、恢复及摘要维护；由各自职责和真实调用者约束。',
+  family_internal:'门面成员、原消息转交、关联回复与汇总；策略由工作流和共享状态表达。',
   template:'按登记类型复用结构与生成规则。',
   discussion:'公开帖子、回复和聊天室。',
   organization:'组织归属与迁移保持对象身份连续。',
   permission:'权限方案、权限表项、临时凭证和有效权限由权限领域负责。', environment:'查询运行环境，或请求改变服务和模型配置。',
   isa:'查询指令本身，以及仍保留的修改执行记录。',
-};
-
-export const sourceCommit = "f25572ad4949a008259d0d5fc5b02f942d0bdfea";
-export const declarationHashes = {
-  "ReadResource": "944cb63fd8dfea494d60c5d8fcd1bfc12f5a1adabdf552a34c4f816862e1d0cc",
-  "UpdateUser": "1eb2490d8f99002490af41da90d5f5792660269c0c940ce4980eb4f60220e37f",
-  "ForkResident": "c0de3e9ca0c892da8f835bfa8bc997bcf7119d92002552661f356beff816bb92",
-  "DeliverMessage": "9e8231808f392578363cafc3aea6f5868922d52126c15bb890038cea7877e409",
-  "WatchConversationEvents": "d807e787b995fa6a06be3e2a2ce0c004e9e0ff025413b52eac0d95ba6686cb18",
-  "CloseIntake": "29c0001a32c85f5bc21f2ec1616784f532e283cbd1da8f1613d8bdac4bb87680",
-  "CancelInput": "385daf269649127d7fe05b449ebde20332e7547a3fe9a7b3b7f43d65e82f10f4",
-  "GetMailbox": "9eb6666390c9cbb6bf7617a90a759c7791a8aff3c993f838e1e41d2072f8d706",
-  "CreateWire": "9b4d39ddb16358a55dad62e8cf4a4c65383d8467cc3d2668f6cc7d7a9fd57e0e",
-  "UpdateSharedState": "e91b0147a500e468ff057171ba039bb6564f14f661745424eb8aee0c6f3a826c",
-  "TriggerEvent": "934b01a878e5a5474b5eafa3617d661ac2346ca6afb459da65bc9d5e762e5ac2",
-  "RunScript": "51e9c8c4f52767dc8cc502fa5ec74bae8a3cd1d5632d76e685f594fae6598e7b",
-  "Functionalize": "9fa6c98c2160e42cee31c9eb5f49a79699df2999290fef1ed29bab69e4720ba8",
-  "Familize": "6b4b2fddf16deb2521bf31d3bf784e06d04db85dcc6c7be9eaccacbed664affe",
-  "ApplyTemplate": "5b39c1bae89246949f32ccb5ef379698b0737acef57b403864ac597035aa19cd",
-  "CreateReply": "fe90d6d5dbee60436812f38829e4607a04206b6e0ce3acbaa82d0c2b064e43da",
-  "RelayFamilyMessage": "9b9681a6f4f2050e48924097eeb312ca129e1459b24772992adf6f419f0091e7",
-  "MoveResident": "dbd3c8e1d2e45147f3865c5b887e12104caa846dd9e7537c17a8728cdabf1164",
-  "CheckPermission": "2342ae88704aa954aed736ffaaccdc1cfe12c4393dd4fbfc225686ed80c53813",
-  "GetGpuStatus": "c5908c15bea9f53d48abad4285ab10a91736a85d342dcb9637f5b91c4e9eb11a",
-  "GetInstructionExecution": "e3f98c1ca8bf61944ca55a1f3ff84d6868ce5403254536a06572e94f2c47217c"
 };

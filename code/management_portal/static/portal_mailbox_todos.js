@@ -122,9 +122,7 @@
       const revision = state.revision;
       const request = window.PortalIdentity.userId().then(userId => {
         if (signal.aborted || revision !== state.revision || (automatic && (!state.visible || document.hidden))) return null;
-        return window.PortalInstructionClient.execute("ListMailboxTodos", {
-        user_id: userId,
-      }, { signal, readObservation: { consumer: "mailbox_todos", reader_id: readerId, reasons: [reason] } });
+        return readTodos(userId, {consumer: "mailbox_todos", reader_id: readerId, reasons: [reason]});
       }).then(payload => {
         if (!payload || signal.aborted || revision !== state.revision) return;
         state.items = payload.items || [];
@@ -139,19 +137,49 @@
       state.request = request;
       return request;
     }
-    async function mutate(instruction, args) {
+    const todoItem = resource => ({...resource.attributes, todo_id: resource.resource_id});
+    async function readTodos(userId, observation) {
+      const items = [];
+      let cursor = "";
+      const pages = new Set();
+      do {
+        if (pages.has(cursor)) throw new Error(t("待办分页未继续。"));
+        pages.add(cursor);
+        const result = await window.PortalInstructionClient.execute("SearchResources", {
+          resource_type: "mailbox_todo", user_id: userId, limit: 500, ...(cursor ? {cursor} : {}),
+        }, { signal, readObservation: observation });
+        items.push(...result.items.map(todoItem));
+        cursor = result.next_cursor;
+      } while (cursor && !signal.aborted);
+      return {items};
+    }
+    async function mutate(operation, args, expectedVersion) {
       if (state.busy) return false;
       state.busy = true;
       const revision = ++state.revision;
       error(); validate(); render();
       try {
-        if (instruction === "UpdateMailboxTodo") args = { ...args, user_id: await window.PortalIdentity.userId() };
-        const result = await window.PortalInstructionClient.execute(instruction, args, {
-          idempotencyKey: "mailbox-todo:" + window.PortalUIPrimitives.randomUUID(),
-        });
+        const {todo_id: resourceId, ...fields} = args;
+        const options = {idempotencyKey: "mailbox-todo:" + window.PortalUIPrimitives.randomUUID()};
+        const execute = window.PortalInstructionClient.execute;
+        let result;
+        if (operation === "create") {
+          const userId = await window.PortalIdentity.userId();
+          if (signal.aborted) return false;
+          result = await execute("RegisterResource", {resource_type: "mailbox_todo", fields: {...fields, user_id: userId}}, options);
+        } else if (operation === "delete") {
+          result = await execute("UnregisterResource", {resource_id: resourceId}, options);
+        } else {
+          const version = expectedVersion ?? state.items.find(item => item.todo_id === resourceId)?.version;
+          if (!Number.isInteger(version) || version < 1) throw new Error(t("请先重新读取待办。"));
+          result = await execute("UpdateResource", {resource_id: resourceId, changes: fields.changes}, {...options, expectedVersion: version});
+        }
         if (signal.aborted || revision !== state.revision) return false;
-        if (result.item?.text) state.items = state.items.filter(item => item.todo_id !== result.item.todo_id).concat(result.item);
-        else if (instruction === "DeleteMailboxTodo") state.items = state.items.filter(item => item.todo_id !== args.todo_id);
+        if (operation === "delete") state.items = state.items.filter(item => item.todo_id !== resourceId);
+        else if (result.resource) {
+          const item = todoItem(result.resource);
+          state.items = state.items.filter(value => value.todo_id !== item.todo_id).concat(item);
+        }
         state.request = null;
         state.busy = false;
         await refresh(true, "mutation");
@@ -172,7 +200,7 @@
       state.revision += 1;
       state.request = null;
       const original = { text: item.text, date: item.date, indent: item.indent || 0 };
-      state.editing = { id, row, original, ...original };
+      state.editing = { id, row, original, version: item.version, ...original };
       const body = row.querySelector("[data-mailbox-todo-body]");
       body.innerHTML = window.PortalI18n.markup('<textarea class="portalMailboxTodoEditor" data-mailbox-todo-editor aria-label="编辑待办" rows="1"></textarea>' +
         '<input type="date" data-mailbox-todo-edit-date aria-label="待办日期" required><small class="portalMailboxTodoEditHint">Tab / Shift+Tab 缩进 · 点击别处保存</small>');
@@ -194,7 +222,7 @@
       if (!Object.keys(changes).length) { state.editing = null; render(); return Promise.resolve(true); }
       draft.row.querySelector("textarea").readOnly = true;
       draft.row.querySelector("[data-mailbox-todo-edit-date]").readOnly = true;
-      const pending = mutate("UpdateMailboxTodo", { todo_id: draft.id, changes }).then(saved => {
+      const pending = mutate("update", { todo_id: draft.id, changes }, draft.version).then(saved => {
         if (state.editing !== draft) return false;
         if (saved) state.editing = null;
         else { draft.row.querySelector("textarea").readOnly = false; draft.row.querySelector("[data-mailbox-todo-edit-date]").readOnly = false; }
@@ -210,7 +238,7 @@
       // A User adds to their own list, named explicitly (user_id is required).
       const { username = "" } = await window.PortalIdentity.load().catch(() => ({}));
       const draft = { user_id: username, text: text.value.trim(), date: date.value };
-      if (await mutate("CreateMailboxTodo", draft) && text.value.trim() === draft.text && date.value === draft.date) resetForm();
+      if (await mutate("create", draft) && text.value.trim() === draft.text && date.value === draft.date) resetForm();
     }, { signal });
     groups.addEventListener("toggle", event => {
       const group = event.target;
@@ -241,7 +269,7 @@
       } else if (event.target.matches("[data-mailbox-todo-grip]") && event.altKey && ["ArrowUp", "ArrowDown"].includes(event.key)) {
         event.preventDefault();
         const id = event.target.closest("[data-mailbox-todo-id]").dataset.mailboxTodoId;
-        void finishEdit().then(saved => saved && mutate("MoveMailboxTodo", { todo_id: id, direction: event.key === "ArrowUp" ? "up" : "down" }));
+        void finishEdit().then(saved => saved && mutate("update", { todo_id: id, changes: {order: {direction: event.key === "ArrowUp" ? "up" : "down"}} }));
       }
     }, { signal });
     let pointerFocus = false;
@@ -271,7 +299,7 @@
       pending.set(todo_id, completed);
       event.target.disabled = true;
       try {
-        if (await finishEdit() && state.pendingCompletion === pending) await mutate("UpdateMailboxTodo", { todo_id, changes: { completed } });
+        if (await finishEdit() && state.pendingCompletion === pending) await mutate("update", { todo_id, changes: { completed } });
       } finally {
         pending.delete(todo_id);
         if (state.pendingCompletion === pending && !signal.aborted) {
@@ -287,7 +315,7 @@
       if (!row) return;
       const id = row.dataset.mailboxTodoId;
       if (event.target.closest("[data-mailbox-todo-content]")) return void beginEdit(id);
-      if (event.target.closest("[data-mailbox-todo-action=delete]") && await finishEdit()) await mutate("DeleteMailboxTodo", { todo_id: id });
+      if (event.target.closest("[data-mailbox-todo-action=delete]") && await finishEdit()) await mutate("delete", { todo_id: id });
     }, { signal });
     function clearDrop() { groups.querySelectorAll(".is-drop-before,.is-drop-after").forEach(row => row.classList.remove("is-drop-before", "is-drop-after")); }
     groups.addEventListener("pointerdown", event => {
@@ -317,7 +345,7 @@
         after = true;
       }
       if (!target || target.dataset.mailboxTodoId === drag.id) return;
-      drag.placement = { [after ? "after_todo_id" : "before_todo_id"]: target.dataset.mailboxTodoId };
+      drag.placement = { [after ? "after_id" : "before_id"]: target.dataset.mailboxTodoId };
       target.classList.add(after ? "is-drop-after" : "is-drop-before");
       const rect = groups.getBoundingClientRect();
       if (event.clientY < rect.top + 28) groups.scrollTop -= 14;
@@ -329,7 +357,7 @@
       state.drag = null; clearDrop();
       drag.grip.closest("[data-mailbox-todo-id]").classList.remove("is-dragging");
       if (drag.grip.hasPointerCapture(event.pointerId)) drag.grip.releasePointerCapture(event.pointerId);
-      if (event.type === "pointerup" && drag.active && drag.placement && await finishEdit()) await mutate("MoveMailboxTodo", { todo_id: drag.id, ...drag.placement });
+      if (event.type === "pointerup" && drag.active && drag.placement && await finishEdit()) await mutate("update", { todo_id: drag.id, changes: {order: drag.placement} });
       render();
     }
     groups.addEventListener("pointerup", endDrag, { signal });

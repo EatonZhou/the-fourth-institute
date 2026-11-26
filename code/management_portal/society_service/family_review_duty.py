@@ -1,7 +1,7 @@
 """Ownership and installation of the independently removable review workflow."""
 from copy import deepcopy
 import secrets
-from . import family_tasks, function_block_authoring
+from . import family_review_effects, family_tasks, function_block_authoring
 from .family_definition import (
     REVIEW_BLOCK_KEY, REVIEW_DUTY as KEY, REVIEW_ELEMENT_KEYS as ELEMENT_KEYS,
     bind_review_activity, find_review_duty as find, has_independent_review as independent,
@@ -56,13 +56,14 @@ def install(body, steward, actor, template, *, reconcile):
         'event_type':'time.reached', 'schedule_mode':'recurring', 'recurrence_kind':'interval',
         'interval_seconds':recipe['interval_seconds'], 'misfire_policy':'coalesce_latest', 'overlap_policy':'drop'})
     check = put('notify_periodic_review_task', 'effect', title='按业务活动检查组织回顾', config={
-        'script':'MaintainFamilyReview lineage_id="${arguments.lineage_id}" family_id="${arguments.family_id}"', 'endpoints':[]})
+        'script': family_review_effects.NOTICE, 'endpoints':[]})
     put('review_activity', 'effect', title='记录已完成业务活动', config={
-        'script':'MaintainFamilyReview lineage_id="${arguments.lineage_id}" family_id="${arguments.family_id}" event:=${event}', 'endpoints':[]})
+        'script': family_review_effects.RECORD_ACTIVITY, 'endpoints':[]})
     entry = {**family_tasks.defaults('notify_periodic_review')[KEY], 'guide':recipe['guide'], 'prompt':recipe['prompt']}
     put('notify_periodic_review', 'route', source=timer, target=check, config={'unavailable_policy':'latest',
-        'invoke_profiles':{'effect':{'arguments':{'lineage_id':{'value':body['lineage_id']},
-        'family_id':{'value':parent['id']}, 'family_tasks':{'value':{KEY:entry}}}}}})
+        'invoke_profiles':{'effect':{'arguments':{
+            **family_review_effects.bindings(body['lineage_id'], parent['id'], parent['family']),
+            'family_tasks':{'value':{KEY:entry}}}}}})
     reconcile(body, parent, actor)
     bind_review_activity(body, parent)
     return block

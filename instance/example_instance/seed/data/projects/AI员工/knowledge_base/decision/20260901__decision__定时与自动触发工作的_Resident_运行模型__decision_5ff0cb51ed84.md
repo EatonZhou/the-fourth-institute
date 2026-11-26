@@ -58,7 +58,7 @@ Portal 中有一类工作不需要人在对话里逐次发起：知识库巡检�
 
 - **Lineage**：一组 Resident 及其协作关系组成的对象。Lineage 中除了 Resident 节点，还有事件源、动作组件和连接它们的连线（decision_4adcc1ff2f2c）。承担这类工作的 Resident 可以是团队 Lineage 中的一名成员，也可以独自占一个 Lineage；与其他工作没有协作关系的独立工作适合单独成一个 Lineage，彼此互不影响。
 - **事件源（Event Source）**：Lineage 中产生 Event 的组件。Event 是一条被持久保存的事实，例如“到了每天 9 点”或“某个文件变了”。这类工作最常用两种事件源：
-  - `time.reached`：按时间触发，支持四种计划——指定时刻触发一次、从启用起倒计时触发一次、按固定间隔重复、按日历（每天、每周指定星期几、每月指定日期的某个时刻，使用指定时区）重复；
+  - `time.reached`：按时间触发，支持四种计划——指定时刻触发一次、从启用起倒计时触发一次、按固定间隔重复、按日历（每天、每周指定星期几、每月指定日期的某个时刻，使用系统本地时间或指定时区）重复；
   - `file.changed`：目标 Resident 工作区中的指定文件发生变化时触发。
   其他事件源（另一个 Resident 完成工作、共享状态满足条件等）也可以用来启动工作，完整目录见 decision_4adcc1ff2f2c。
 - **Invoke 连线**：从事件源连到 Resident 的 Invoke 端口的连线。连线上写明每次要做的工作（任务说明）；事件到来时，系统把任务说明作为一条消息投递给这个 Resident。任务说明也可以写在调用 `DeliverMessage` 的 Effect（动作组件）的固定提示词中。
@@ -70,9 +70,13 @@ Portal 中有一类工作不需要人在对话里逐次发起：知识库巡检�
 - **打开开关不表示计划已建立。** 自动源未暂停且未耗尽、但身份校验阻止激活时，运行态返回 `state=blocked` 与 `error`。暂停、耗尽仍保留各自状态，手动源不继承这个身份阻塞。页面展示受阻原因；可运行但下一时间尚未生成时显示等待计划建立，不能把周期文本当作具体下一次时间。身份变更后的诊断和运行态按当前事实重新读取，不把旧失败当作永久状态。
 
 - **定时启动由 `time.reached` 事件源和一条 Invoke 连线表达。** 用户或 Agent 创建事件源，把它连到目标 Resident 的 Invoke 端口并写明任务；到时间后，任务沿连线投递给该 Resident。这类 Resident 的计时全部由 Lineage 的事件机制完成，不使用操作系统定时器。
-- **内置 Function Block“定时工作”提供现成组合。** 它包含一个按固定间隔重复的 `time.reached` 事件源（默认 3600 秒）和一个手动事件源“运行一次”，两者都连到同一个 Resident，并写上同一段任务说明；参数是任务说明、间隔秒数和随机偏移秒数（decision_5b5653c3eaa5）。
+- **内置 Function Block“定时工作”提供现成组合。** 它包含一个按日历每天触发的 `time.reached` 事件源和一个手动事件源“运行一次”，两者都连到同一个 Resident，并写上同一段任务说明。施加时只填写任务说明和每天触发时间（24 小时制，默认 09:00），按系统本地时间解释，无需填写时区。事件源以 `timezone: local` 选择运行调度服务的操作系统本地时区，计算各日期时使用该日的真实偏移并处理夏令时；明确填写 IANA 时区的已有计划仍按该时区解释。事件源固定使用零随机偏移，错过执行与重叠执行分别沿用 `coalesce_latest` 和 `drop`。已有 Function Block 保留原计划，模板刷新不改写已经施加的结果（decision_5b5653c3eaa5）。
 - **重复计划可以设置随机偏移，让同时到期的工作错开启动。** 随机偏移 `jitter_seconds` 取 0–86400 秒，按固定间隔重复时还必须小于间隔。系统为每一次触发在 0 到偏移上限之间随机抽取实际开始时间，并在抽取后保存，重启后不会重新抽取。
 - **立即运行一次就是手动触发。** 调用者对连到同一 Resident 的手动事件源调用 `TriggerEvent`，或直接用 `DeliverMessage` 把任务投递给这个 Resident。手动触发到达时目标正在工作，这次触发排队等待，不会被丢弃（连线显式配置了其他不可用策略时按配置处理）。
+- **手动业务任务可以显式选择独立上下文。** Route 的 `context_policy="fresh"` 适用于手动事件、直接 Resident 投递及经 Effect 调用 `DeliverMessage` 的路径。Effect 开始时把投递策略保存在本次激活日志中，恢复时沿用该快照；已运行的激活不受后续连线修改影响。`DeliverMessage` 的可选 `context_policy="fresh"` 只与 `enqueue_and_trigger` 同用，不得注入当前任务或附到现有轮次。投递 owner 在接收输入前按真实 input ID 保存独立执行策略，不能更改已受理的会话输入。读取策略失败时停止，不能回退为共享会话。
+
+独立任务仍携带系统规则、固定职责、身份、权限和本次输入，但不复用 Provider session、不装配历史或 Fork seed、不带入或消费共享暂存消息。其结果保留正常回执与审计，不改写共享会话的绑定和上下文用量。重放和恢复使用原 input 与 Execution；普通连续对话及未声明该策略的手动入口保持原语义。
+
 - **定时与自动触发的工作默认在新的上下文中运行。** 由 `time.reached` 或 `file.changed` 启动的工作不进入 Resident 当前的模型会话：每次运行使用空白会话，不读取也不改变 Resident 自己的对话上下文。连线配置 `context_policy="session"` 时改为在 Resident 当前会话中运行。Lineage 在投递之前记录这次投递的执行方式，Resident 开始工作时按它执行。
 - **暂停调度就是暂停事件源。** `SetComponentPaused`（`paused: true`）暂停事件源后，到期的触发直接跳过；以 `paused: false` 恢复后从下一次计划时间继续，暂停期间的触发不补发。修改计划或随机偏移使用 `UpdateComponent`；永久停止时删除事件源或它到 Resident 的连线。
 - **停止正在进行的工作与暂停调度是两件事。** `CancelInput` 按消息 ID 停止 Resident 对应的工作；`SetIntakeOpen`（`open: false`）关闭 Resident 的接单开关，之后到达的任务排队等待、不执行，直到以 `open: true` 重新打开（decision_2a3ff353165c）。
@@ -104,6 +108,31 @@ Harness 的记录开关、采集、每日评估与评审、产物保留安装在
 Resident 恢复先在执行准入锁之外收集输入状态与回复证据，再逐个输入在原锁内比较接受记录、执行关联、状态和成员关系；记录删除、替换或已结算时跳过旧观察。观察派发和积压投递继续使用原准入锁，避免批量证据读取阻塞图编辑，同时保持投递幂等与契约校验。
 
 Codex 额度快照与周报告没有生产消费者，System 中不保留该自动流程；既有报告文件仍保留。Portal 的用量页面继续读取 Execution 账本和账号适配器提供的原生用量。额度百分比不转换为 token，某个 Provider 未提供外部用量能力时保持缺失，不推断成完整统计。
+
+## 系统脚本
+
+与特定流程或外部产品相关、不需要模型判断的系统操作，不登记为 HATG 指令，而是系统脚本（thinking_ca8f397a47de：指令集只放系统机制）。Portal 运维类系统脚本的源码放在代码目录的 `scripts/<操作>.py`，随代码审阅、测试、发布和分发；Lineage 目录的 `scripts/<工作名>/` 只放该实例自己的维护脚本（decision_8b510cbd9c58）。
+
+| 脚本 | 作用 | 参数 | 详细规范 |
+| --- | --- | --- | --- |
+| `publish_release` | 包装 `tfi_dev.py publish`，把指定的 Dev 代码发布到 Release | `message`、`paths` 或 `all` | decision_4527448ad07f |
+| `install_provider_runtime` | 在本次运行内复用或准备所选 Provider 的运行时 | `provider` | decision_4527448ad07f |
+| `colab_session` | 分配或释放设备的共享 Colab 会话 | `resource_id`、`running`、`hardware`（启动时必填） | decision_ad3e21094f14、decision_d397f2d99f89 |
+| `article_restore` | 已注销 Article 的原 ID 部分恢复 | `step`（`check` 或 `apply`）及恢复证据与目标参数 | decision_ad3e21094f14 |
+
+**绑定。** 站点配置 `deployment.portal_operations.lineage_id` 指向一条固定的 Portal 运维 Lineage。一个实例只绑定一条：安装或切换时由 `scripts/portal_operations.py --lineage-id <Lineage ID>` 写入，已绑定另一条时拒绝；未配置时页面入口返回 503，脚本拒绝启动。这条 Lineage 提供 `RunScript` 的权限判定对象和运行记录归属，不需要 Function Block 或 Event。
+
+**入口。** 页面先读取 `GET /api/portal-operations?operation=<操作>`：服务端按当前登录者对该 Lineage 检查 `RunScript`，通过后返回 `lineage_id`、脚本 `path` 与 `runtime`，未知操作返回 404。页面以原调用者身份提交 `RunScript`（`arguments` 为脚本参数），再用 `GetScriptRun` 约每 1.5 秒读取状态与输出；成功才展示结果，失败展示 `outputs.error`（或错误码）与 `script_run_id`。Resident 与命令行同样直接调用 `RunScript`，参数与权限相同。
+
+**脚本自检。** 脚本启动先核对自己的运行记录：所属 Lineage 是绑定的那一条、状态为 `running`、`path` 是该操作的脚本、`arguments` 是对象、`caller_id` 是真实 User 或 Resident；输入文件必须与运行 ID 对应。任何一项不符即拒绝。脚本使用运行记录里的 `caller_id` 作为调用者，不采用参数中自称的身份。
+
+**权限。** `RunScript` 要求调用者对绑定的 Lineage 有 `@admin`（decision_8b510cbd9c58）；系统脚本不增加第二套名单。领域约束由脚本以同一调用者身份保证：`colab_session` 以调用者身份读取并确认目标是已登记的设备，会话变更要求调用者对该设备有 `@contributor`；`article_restore` 把调用者交给恢复预检与提交逻辑，逐项核验 Article 或原 Resident 的 `@admin`、源 `@viewer` 和目标 Project 的 `@contributor`。“Portal 运维”权限节点只用于 `RestartPortal` 与模型接口管理，与系统脚本无关。
+
+**权限变化。** 启停 Colab 会话原先只要求对设备有 `@contributor`，发布原先要求对“Portal 运维”有 `@admin`；两者现在都要求对绑定 Lineage 有 `@admin`，Colab 另须满足设备 `@contributor`。绑定 Lineage 若属于某个 Project，该 Project 的 admin（包括其 Resident）也满足 `@admin`，这与 `RunScript` 对所有 Lineage 的既有边界相同。
+
+**Project 的策略脚本。** `research_map_digest` 是 Project 层 Lineage 每日整理的策略脚本，在该 Project 的 Lineage 中经 `RunScript` 运行，只调用现有的 ISA 读取、消息与共享状态指令，不经上述绑定（decision_9d15ae2053c4）。
+
+**Google Drive 异地副本。** `google_drive_backup` 按同一源码位置约定（`scripts/google_drive_backup.py`）作为备份 Function Block 的 `RunScript` 脚本，见 decision_b06ae321a668。
 
 ## 运行容量预警
 

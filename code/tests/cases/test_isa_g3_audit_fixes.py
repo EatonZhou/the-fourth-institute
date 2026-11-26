@@ -56,7 +56,7 @@ def test_reusing_a_message_id_with_different_content_reports_conflict(delivery_r
 
 
 def test_search_messages_declares_the_results_used_by_its_consumer(monkeypatch):
-    """SearchMessages 在结果 schema 中声明调用方使用的 results 字段"""
+    """SearchResidentMessages 在结果 schema 中声明调用方使用的 results 字段"""
     from management_portal.society_service.isa import conversation
 
     hit = {"resident_id": "resident_aaaaaaaaaaaa", "message": {"message_id": "msg_one"},
@@ -66,7 +66,7 @@ def test_search_messages_declares_the_results_used_by_its_consumer(monkeypatch):
             "query": "one", "results": [hit], "next_page_token": "",
         }))
     result = conversation.search_messages(call({"resident_ids": [hit["resident_id"]], "query": "one"}))
-    declaration = instruction_catalog()["SearchMessages"].schema()
+    declaration = instruction_catalog()["SearchResidentMessages"].schema()
     assert "results" in {field["name"] for field in declaration["result"]}
     assert result["results"][0]["message"]["message_id"] == "msg_one"
 
@@ -85,7 +85,7 @@ def test_list_inbox_exposes_the_read_revision_as_its_version(monkeypatch):
 
 
 def test_mark_inbox_read_accepts_the_scalar_version_and_rejects_a_changed_row(monkeypatch):
-    """SetMailboxItemRead 接受字符串版本，阅读状态的修订号已变化时返回版本冲突"""
+    """UpdateMailboxItem 接受字符串版本，阅读状态的修订号已变化时返回版本冲突"""
     from management_portal.conversation_read_state import VersionConflict
 
     key = "notice-board:post_aaaaaaaaaaaa"
@@ -105,7 +105,7 @@ def test_mark_inbox_read_accepts_the_scalar_version_and_rejects_a_changed_row(mo
     monkeypatch.setattr(web_isa, "web", lambda _module: SimpleNamespace(_set_agent_conversation_read_state=set_read))
     kernel = InstructionKernel(web_isa.binding(), store=None, authorize=lambda *args: None)
     instruction = InstructionCall.from_payload({
-        "instruction": "SetMailboxItemRead", "arguments": {"key": key}, "expected_version": "7",
+        "instruction": "UpdateMailboxItem", "arguments": {"key": key, "unread": False}, "expected_version": "7",
     })
     accepted = kernel.execute(instruction, InstructionContext(caller="bob", entry="web"))
     assert accepted.status == "committed", accepted.error
@@ -116,7 +116,7 @@ def test_mark_inbox_read_accepts_the_scalar_version_and_rejects_a_changed_row(mo
 
 
 def test_opening_a_chat_reads_through_the_latest_alert(monkeypatch):
-    """打开 Resident Chat 不带版本调用 SetMailboxItemRead，先核对身份再读到最新提醒"""
+    """打开 Resident Chat 不带版本调用 UpdateMailboxItem，先核对身份再读到最新提醒"""
     resident_id = "resident_aaaaaaaaaaaa"
     key = "resident:" + resident_id
     calls = []
@@ -133,7 +133,7 @@ def test_opening_a_chat_reads_through_the_latest_alert(monkeypatch):
     monkeypatch.setattr(web_isa, "web", lambda _module: web)
     kernel = InstructionKernel(web_isa.binding(), store=None, authorize=lambda *args: None)
     result = kernel.execute(
-        InstructionCall.from_payload({"instruction": "SetMailboxItemRead", "arguments": {"key": key}}),
+        InstructionCall.from_payload({"instruction": "UpdateMailboxItem", "arguments": {"key": key, "unread": False}}),
         InstructionContext(caller="bob", entry="web"),
     )
     assert result.status == "committed", result.error
@@ -163,7 +163,7 @@ def test_mark_post_unread_overrides_the_initial_read_baseline(monkeypatch):
     reads["baseline_revisions"][post_id] = 1
     backend._write_reads(reads)
     assert backend.list_posts("bob")["unread_count"] == 0
-    result = notice_board_web_isa.mark_post_read(call({"post_id": post_id, "unread": True}))
+    result = notice_board_web_isa.set_post_unread(call({"post_id": post_id}))
     assert backend.list_posts("bob")["posts"][0]["unread"] is True
     assert result == {"read_revision": 0, "unread_count": 1}
 

@@ -36,7 +36,7 @@ def resolve(refs):
         raise TemplateError('Family 仅接受 Router 和 Steward 角色引用')
     resolved = {}
     for key, identity in refs.items():
-        item = store.get(identity)
+        item = store.get_persisted(identity)
         if item['kind'] != 'role' or item['body']['role_key'] != key:
             raise TemplateError('Family 角色引用与角色类型不符')
         resolved[key] = {'template_id': identity, 'version': item['version'], 'body': deepcopy(item['body'])}

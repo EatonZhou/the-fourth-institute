@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from functools import partial
 
 from .common import canonical_record, explicit_project_ids, registration_project_ids
 from ..portal import portal_url_for_address
@@ -50,28 +51,27 @@ def install_mutation_provider(service):
         store.delete(resource_id, actor)
         return canonical_record(resource_id, {**app, "deleted": True})
 
-    service.register_mutation_provider("workbench", register=register, update=update, unregister=unregister, service_managed_registration=True)
-
-
-def install_action_provider(service):
-    from management_portal.workbench_projections.service import ProjectionService
-
-    def save_generation(resource_id, payload, *, actor="", **_context):
-        result = ProjectionService().save_generation_result(resource_id, payload, actor)
-        service.notify_source_changed(
-            resource_id=resource_id,
-            resource_type="workbench",
-            kind="updated",
-        )
-        return result
-
-    def save_reverse_plan(resource_id, payload, *, actor="", **_context):
-        return ProjectionService().save_reverse_plan(resource_id, payload, actor)
-
-    service.register_action_provider(
-        "workbench",
-        {
-            "generation.save": save_generation,
-            "reverse.plan.save": save_reverse_plan,
-        },
+    service.register_mutation_provider(
+        "workbench", register=register, update=update, unregister=unregister,
+        service_managed_registration=True,
+        update_workbench_page=partial(update_workbench_page, service),
+        update_workbench_reverse_plan=partial(update_workbench_reverse_plan, service),
     )
+
+
+def update_workbench_page(service, resource_id, job_id, base_revision, html, *, actor,
+                          title=None, description=None):
+    from management_portal.workbench_projections.service import ProjectionService
+    payload = {"job_id": job_id, "base_revision": base_revision, "html": html}
+    if title is not None:
+        payload["title"] = title
+    if description is not None:
+        payload["description"] = description
+    result = ProjectionService().save_generation_result(resource_id, payload, actor)
+    service.notify_source_changed(resource_id=resource_id, resource_type="workbench", kind="updated")
+    return result
+
+
+def update_workbench_reverse_plan(service, resource_id, job_id, plan, *, actor):
+    from management_portal.workbench_projections.service import ProjectionService
+    return ProjectionService().save_reverse_plan(resource_id, {"job_id": job_id, "plan": plan}, actor)

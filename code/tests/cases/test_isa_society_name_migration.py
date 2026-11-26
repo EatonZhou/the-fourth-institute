@@ -28,12 +28,8 @@ from tests.cases.test_lineage_generic_primitives import ACTOR, WORK_A, _worker, 
 EFFECT_CONFIG = {
     "endpoints": [],
     "script": (
-        'checked=$(CheckResidentWorkSummary resident_id="${event.subject_resident_id}" '
-        'message_id="${event.payload.message_id}")\n'
-        'if [ "${checked.consolidation_due}" != "true" ]; then\n'
-        '  output status="${checked.status}"\n'
-        '  exit\n'
-        'fi'
+        'checked=$(PreviewPromptInjection resident_id="${event.subject_resident_id}")\n'
+        'output result="${checked}"'
     ),
 }
 WIRE_CONFIG = {
@@ -81,7 +77,7 @@ def test_definition_cutover_rejects_inflight_then_resumes_without_rewriting_hist
     journal.begin(lineage_id, "open-activation", effect_id=EFFECT_ID, trigger_path_id="",
                   script_sha=script_sha, source={"source_wire_id": WIRE_ID})
     journal.record_call_started(lineage_id, "open-activation", "c1", {
-        "instruction": "CheckResidentWorkSummary", "caller": ACTOR,
+        "instruction": "PreviewPromptInjection", "caller": ACTOR,
         "instruction_id": "inst_lin_11111111111111111111",
     })
     open_journal = journal.load(lineage_id, "open-activation")
@@ -115,12 +111,12 @@ def test_definition_cutover_rejects_inflight_then_resumes_without_rewriting_hist
     assert journal.load(lineage_id, "open-activation") == open_journal
 
     journal.record_call(lineage_id, "open-activation", "c1", {
-        "instruction": "CheckResidentWorkSummary", "caller": ACTOR,
+        "instruction": "PreviewPromptInjection", "caller": ACTOR,
         "status": "committed", "ok": True, "result": {},
     })
     journal.finish(lineage_id, "open-activation", status="succeeded", outputs={})
     history = journal.load(lineage_id, "open-activation")
-    assert history["calls"]["c1"]["instruction"] == "CheckResidentWorkSummary"
+    assert history["calls"]["c1"]["instruction"] == "PreviewPromptInjection"
     assert migration.check()["blocked_count"] == 0
     monkeypatch.setattr(sys, "argv", ["society", "--check-isa-name-migration"])
     assert server.main() == 0
@@ -132,13 +128,13 @@ def test_definition_cutover_rejects_inflight_then_resumes_without_rewriting_hist
     assert next(item for item in after["program"]["wires"] if item["id"] == TARGET_WIRE_ID) == configless
     effect = next(item for item in after["program"]["components"] if item["id"] == EFFECT_ID)
     assert effect["config"]["script"] == EFFECT_CONFIG["script"].replace(
-        "CheckResidentWorkSummary", "MaintainResidentWorkSummary",
+        "PreviewPromptInjection", "GetPromptInjectionPreview",
     )
     wire = next(item for item in after["program"]["wires"] if item["id"] == WIRE_ID)
     tasks = wire["config"]["invoke_profiles"]["effect"]["arguments"]["family_tasks"]["value"]
     assert tasks["queue"]["guide"] == "必要时 MoveMailboxItems 调整顺序"
-    assert tasks["recovery"]["guide"] == "用MaintainFamilyRecovery查看原故障；用 SetIntakeOpen(open=true) 恢复接单。"
-    assert tasks["route_review"]["guide"] == "核对 MaintainFamilyRecovery。"
+    assert tasks["recovery"]["guide"] == "用Use the owning Family workflow and shared state查看原故障；用 SetIntakeOpen(open=true) 恢复接单。"
+    assert tasks["route_review"]["guide"] == "核对 Use the owning Family workflow and shared state。"
     assert journal.load(lineage_id, "open-activation") == history
     migration.migrate()
     assert catalog.get(lineage_id) == after
@@ -211,7 +207,7 @@ def test_pending_hold_diagnostics_exposes_status_and_ids_only():
 @pytest.mark.parametrize(("trigger", "historical", "current_name"), [
     ("queue", "_PRE_UNIFIED_QUEUE_GUIDE", "MoveMailboxItems"),
     ("recovery", "_PRE_DIRECT_RECOVERY_GUIDE", "SetIntakeOpen"),
-    ("route_review", "_PRE_DIRECT_RECOVERY_ROUTE_REVIEW_GUIDE", "MaintainFamilyRecovery"),
+    ("route_review", "_PRE_DIRECT_RECOVERY_ROUTE_REVIEW_GUIDE", "ResolveRelayedRequest"),
 ])
 def test_family_default_guides_upgrade_in_original_and_normalized_templates(trigger, historical, current_name):
     legacy_guide = getattr(family_tasks, historical)

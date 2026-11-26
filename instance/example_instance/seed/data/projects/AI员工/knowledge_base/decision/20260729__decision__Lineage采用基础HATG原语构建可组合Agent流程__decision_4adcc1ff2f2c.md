@@ -231,6 +231,7 @@ Effect 仍可用字符串简写固定提示词，也可省略它或留空；通�
 - 一个 Effect 可以在脚本中用 `for` 向多个目标逐个调用指令；这些调用共享一次认领和一个结果事件，中断后从未完成的调用继续。每个目标需要独立的认领、结果事件和重试时，用多个 Effect。
 - Event 连线可以设置目标 Resident 是否沿用长会话（decision_481dc4e6292c）：`config.context_policy: "session"` 让时间与文件事件触发的工作进入 Resident 的长会话。这个字段只接受这一个值，其他取值保存时被拒绝。每次投递都是 Resident 的一轮模型工作，连线没有选择执行方式的字段，带 `execution` 的配置保存时被拒绝。
 - **激活连线可显式设置 `include_envelope`。** 向 Resident 或由 Resident 执行的 Packet Operator 投递时，缺省只发送任务内容和显式映射的参数。设为 `true` 时再附上 Packet 信封。Effect 默认可以读取 `event` 和 `packet`，设为 `false` 时这两个脚本变量为空。
+- **Lineage Event 的 `identity` 使用精简编码。** `principal` 必填。不写内层 `schema`；当 `producer` 是 `service:portal` 时省略该项；当 `initiated_by` 与 `principal` 相同时也省略。读取端按这两个默认值还原完整操作身份，并兼容带显式版本和完整字段的旧记录。不同的发起人或生产方必须显式写出。触发路径的重复判定和恢复使用还原后的身份，继续核对原调用权限；整个 `identity` 缺失时不能以默认值补出授权主体。
 - 引用连线（target、watch）不产生激活。
 
 ### 自动 Event 的运行身份
@@ -482,9 +483,9 @@ done
 | 修改 Lineage | `ApplyLineageChanges` | 操作列表用 `${…}` 引用上游 Effect 输出，或本脚本中前面调用返回的对象 ID |
 | 写共享状态 | `UpdateSharedState`；带 `expected_value` 时只在当前值相等时写入 | 键为常量，值来自 Event、上游输出或前面的调用 |
 | 通知用户 | `CreateNotification` | 标题与正文为常量或带变量的文字 |
-| 准备工作区交接 | `RunWorkspaceHandoff` | 来源与目标 Resident 来自两个 target 端点 |
+| 准备工作区交接 | `CreateWorkspaceHandoff`、`RunWorkspaceHandoff` | 来源与目标 Resident 来自两个 target 端点；第二次调用的 `handoff_id` 来自第一次调用的结果（创建对同一对 Resident 幂等） |
 | 触发手动 Event | `TriggerEvent` | `event_source_id` 指向 `manual.triggered` 事件源；`prompt`、`payload` 来自本次输入。其他类型的 Event 只由真实事实产生 |
-| 停止接单、取消工作、清空队列或删除 Resident | `SetIntakeOpen`（`open:=false`）、`ListResidentStates`、`CancelInput`、`ClearMailbox`、`DeleteResident` | `resident_id` 来自 target 端点；`CancelInput` 使用 `ListResidentStates` 读到的当前消息 ID；需要多步时由调用者组合 |
+| 停止接单、取消工作、清空队列或删除 Resident | `SetIntakeOpen`（`open:=false`）、`ListResidentStates`、`CancelInput`、`ClearMailbox`、`ApplyLineageChanges`（删除 Resident） | `resident_id` 来自 target 端点；`CancelInput` 使用 `ListResidentStates` 读到的当前消息 ID；需要多步时由调用者组合 |
 
 `ForkResident` 只创建新 Resident，`DeliverMessage` 只投递消息。"先 Fork 再派活"写成同一个 Effect 中的两次调用；只有这组动作需要在图上分别可见时，才画成两个 Effect。
 
@@ -516,7 +517,7 @@ done
 - 准备命令默认超时 5400 秒（90 分钟）。环境变量 `PORTAL_HANDOFF_COMMAND_TIMEOUT_SECONDS` 只有在是有限正数时才生效。
 - 页面直接创建的交接只准备和绑定工作区，不自动启动接收方。后续工作要由 `workspace_handoff.ready` Event Source 接到激活连线或 Effect。
 
-**删除 Resident：** 画布和调用 `DeleteResident` 的 Effect 使用同一条完整删除路径，规则见 decision_6fc653d55c79。删除 Selector、Reducer 组件只解除它与执行者的绑定，不删除执行者 Resident。
+**删除 Resident：** 画布和通过 `ApplyLineageChanges` 删除 Resident 的 Effect 使用同一条完整删除路径，规则见 decision_6fc653d55c79。删除 Selector、Reducer 组件只解除它与执行者的绑定，不删除执行者 Resident。
 
 ### Leader 与 Leader Pulse
 
@@ -556,7 +557,7 @@ Workbench 是 Lineage 页面里编辑 HATG 的工作区。页面只是能力的�
 
 重新变宽后恢复单行排列。字号和按钮点击区域不随宽度缩小。
 
-**画布工具浮在画布上。** 画布占满导航下方的全部高度。缩放和适配是左上角的一组小浮条；搜索、关系筛选、整理、Leader 和邻域是右上角的另一组。两组之间的空隙属于画布，可以拖动和点击。搜索默认只显示放大镜按钮，点击、回车或触屏轻点后展开输入框并获得焦点；输入框为空时，失去焦点或按 Esc 会收回成按钮，焦点回到按钮上；输入了内容就保持展开，结果列表照常可用。Fit、聚焦和自动整理把浮条的实际范围当作顶部留白，摆放后的卡片位于浮条下方；用户平移画布时，卡片可以移到浮条下面。
+**画布工具合成一块，浮在画布上。** 画布占满导航下方的全部高度。缩放、适配、搜索、关系筛选、整理、Leader 和邻域共用一个导航工具栏外框、背景和阴影；内部控件垂直居中，按剩余空间排布。窄面板在同一个外框内换行，所有可见控件保持在画布边界内。工具栏外框内的空隙属于工具栏，外框之外的画布继续接受点击和拖动。搜索默认只显示放大镜按钮，点击、回车或触屏轻点后展开输入框并获得焦点；输入框为空时，失去焦点或按 Esc 会收回成按钮，焦点回到按钮上；输入了内容就保持展开，结果列表照常可用。Fit、聚焦和自动整理把浮条的实际范围当作顶部留白，摆放后的卡片位于浮条下方；用户平移画布时，卡片可以移到浮条下面。
 
 **多选时，选区操作单独占一行。** 画布进入多选状态后，封装、批量删除、迁移和取消多选成为主操作。它们占用独立的整行点击区域，可以随宽度换行，不与 Lineage 身份区、视图切换或覆盖层重叠。
 
@@ -585,7 +586,7 @@ Function Block 实例的单击、右键和悬停时显示的菜单按钮都打�
 
 **删除和迁移：**
 - 所有节点都可以删除。删除 Leader 时，确认框说明系统会从其余 Resident 中随机选出新 Leader。
-- 迁移按钮对 Leader 禁用，需要先指定新 Leader（与 `MoveResident` 的规则一致）。
+- 迁移按钮对 Leader 禁用，需要先指定新 Leader（与 `MoveLineageObjects` 的规则一致）。
 - 迁移选区后页面切换到目标 Lineage。迁移自动断开了跨边界关系时，提示条写明断开的条数，并保留到用户关闭；没有断开关系时提示 7 秒后消失。
 
 ### 节点搜索与候选浮层
@@ -616,7 +617,8 @@ Esc 或点击外部关闭候选时保留输入，取消待执行的检索与渲�
 
 **加载：**
 - 模板加载最多等待 360 秒。成功后 Workbench 才可操作；失败时显示错误界面和重试按钮。
-- 冷启动时 HATG 的脚本并行下载、按依赖顺序执行。读取 Lineage 目录不等待宿主页面的首轮加载（Resident 侧栏、对话列表等）；只有这次读取失败（例如 SocietyService 仍在启动或恢复）时，才等待服务就绪后再读一次。
+- 原生 HATG 插入模板前等待完整画布样式与模板样式就绪；页面中仅有 link 标签不算成功，失败下载可能留下不可读的样式表对象。恢复加载保留原级联位置，并合并同文件并发请求；失败后定向重试一次，持续失败显示可重试错误界面，不插入半样式画布。模板必须提供当前画布角落工具与默认收起的工具箱；旧底栏模板或登录/错误 HTML 不得作为图编辑区继续初始化。
+- 冷启动时 HATG 的脚本并行下载、按依赖顺序执行。 单个原生面板脚本下载失败时，在同一加载链中稍后重试一次；成功加载的依赖不重复执行，并发打开共享这条加载链。再次失败时明确展示错误，后续重新打开允许重新加载失败项。读取 Lineage 目录不等待宿主页面的首轮加载（Resident 侧栏、对话列表等）；只有这次读取失败（例如 SocietyService 仍在启动或恢复）时，才等待服务就绪后再读一次。
 - 宿主页面在运行时载入期间重复设置同一个打开目标时，共用正在进行的那次应用，同一个 Lineage 不读两遍。
 - 新建 Resident 时，动态模型目录尚未返回的账号可以暂时没有模型选项，表单其余字段照常渲染。目录返回后，按当前所选账号填充模型与推理档位，保留用户明确选择的账号；不借用其他账号的模型列表。
 - 可操作内容或错误界面出现后，加载才算完成。
@@ -650,6 +652,7 @@ Esc 或点击外部关闭候选时保留输入，取消待执行的检索与渲�
 **卡片状态：**
 - Program Event 创建 Resident 后，面板立即按新的成员集合重新绑定 Resident 状态。卡片的运行状态只取这个集合的规范投影，不在视图中推测或改写。
 - Family 在画布上默认折叠为一张门面卡片；展开、折叠和展开后显示的对象见 decision_44cf587c1721，展开状态与复合 Resident 的展开一样保存在查看者的 HATG 视图偏好中。
+- 项目概览中的跨 Lineage Resident 引用保留所属 Lineage 的 Family 门面身份：仅为可访问引用通过 `GetResident` 读取当前角色，验证 Resident 与所属 Lineage 后显示 Family 卡片。点击卡片或展开入口进入所属 Lineage；概览不复制子图 Function Block、成员或解除操作，也不推算成员数。无权限引用不发起身份读取。所属 Lineage 定义变化时刷新概览，即使父图 revision 未变化也更新门面标识。
 - 节点消息数：已确认为零时显示 `0 messages`，尚未取得统计时显示 `— messages`。消息统计的缓存标记包含每个 Resident 的会话进度位置，所以即使图的 revision 不变，追加消息后计数也会更新。
 
 **手动触发：**
@@ -687,7 +690,7 @@ HATG 画布不再提供碎片捕获、编辑、分层待办、保存或拖拽发
 
 **避让不重排整个图。**
 - 刷新、改名或改配置、建立连线、运行状态更新都不会移动已有节点。
-- 用户拖动和"整理"是独立的布局操作。
+- 用户拖动和"整理"是独立的布局操作。拖动期间只更新受影响的 Function Block 边框及其嵌套上级，保留无关边框、标题和按钮；结构和标题变化仍通过完整视图更新处理。连线标签在拖动结束后按当前卡片位置重新避让，选择距离默认位置最近的可用曲线采样点，距离相同时保持原采样顺序。
 - 普通读取不会自动修复历史上的重叠。
 
 **坐标与尺寸：**
@@ -956,7 +959,9 @@ flowchart LR
 
 ### Event 分派与终态消费
 
-Resident 终态通知表示当时已经结束的一次执行。异步消费时，按原消息、终态类型与通知发生时间解析已经结束的 Execution，不能改为跟随该消息最新的一次执行：原输入重新排队后，新执行仍在运行也不阻塞旧事实消费。同一个事件源对同一消息及终态类型的 occurrence 首次被接纳后，其原始因果、载荷和发生时间保持不变；重投复用这个已接纳事实，不因后续重试生成的新 Execution 改写来源或重复派发。
+**完成事实使用提交后的时间。** Resident 的流式最终回复可以早于 Agent Execution 的终态提交。实时完成通知使用已持久化的结果应用回执时间；完成观察与输入对账使用输入完成回执的更新时间，不使用回复生成时间。解析仍要求同一 Resident、输入、结果及观察时间所对应的真实终态 Execution，不能放宽为任意最近执行，也不能借较晚的重试证明较早的完成。
+
+**未完成的 Family 路由按原请求恢复。** SocietyService 启动时补回近期已完成但未开启独立 Output Trigger Path 的输入；持久派发意图所关联、仍在等待路由的 Family 原请求不受最近 30 分钟回看窗口限制。恢复复用原 Router 输入、回复、身份和幂等关系，不重新问 Router，不创建替代业务请求。只有 Resident 自身的 Output 路径证明回复已转交，其他完成观察路径不能代替它。已有较新执行尝试、已取消或已结束的原请求不通过旧答案恢复；仍由 Program 交接恢复负责的输入保持原恢复责任。终态消费错误日志须同时标明 Resident 与输入 ID，便于区分独立故障。
 
 
 **一条 Event 连线上的一次投递只有一个结算责任方。** 当场投递、积压重放与租约到期后的恢复共用 `lineage_event_delivery.deliver_and_settle`；屏障准备失败使用同一 `settle_delivery`。调用者负责选择与认领，唯一结算方解释投递事实、安排重试或等待处置。`lineage_program_wire_queue` 负责在 `lineage_program_runtime` 提供的短事务内按 dispatch token 比较并保存，不另定失败策略。队列拥有认领与结算的状态转换，通用运行存储拥有对象规范化、事务和持久化边界；拆分职责不产生第二份待投递状态。
@@ -1073,3 +1078,12 @@ Function Block 与 Family 实例菜单提供“内部对象”和“问题”页
 打开“问题”页即自动将本次显示的问题记录为当前用户已查看，存入 Workbench PageState 的 functionBlockFailureAcknowledgements，不再要求点击“已知悉”；不修改错误、运行事实或其他用户的提示。查看按 Lineage、对象及失败发生标识匹配，新的失败重新提示。只打开概览或内部对象页不消除提醒；问题页打开后的后台刷新不自动将新失败标为已查看，再次打开问题页才消除新提醒。成功执行、修正配置或 Resident 错误清除后，该问题移出当前清单；已查看但尚未修好的错误仍可在问题页查看。
 
 格式名与版本须精确匹配当前规范值，校验规则见 decision_86aed2f0e8c7；本篇同时校验各字段和结构版本，不接受历史前缀或其他版本。
+
+
+### Effect 描述与版本确认
+
+Effect 的运行版本保存在 config.script / endpoints；待编写、待确认版本保存在 config.script_draft：description、script、endpoints、requested_by、confirm_by、hash。发起者和内容 hash 由服务端写入，确认人默认是发起者，已有草稿只有发起者可换确认人。工坊的描述、确认人和候选脚本编辑保存到草稿；助手只交回候选内容，不替用户确认。保存候选不改变运行脚本，新建的候选 Effect 运行脚本为空，不能执行；已有 Effect 继续运行原脚本。
+
+实例变更用 `ConfirmComponentScript` 或 `CancelComponentScriptDraft`，传 `lineage_id`、`effect_id`、`draft_hash`。模板变更用 `ConfirmTemplateScript` 或 `CancelTemplateScriptDraft`，传 `template_id`、`effect_id`、`draft_hash`。确认和取消分别检查各自的权限。调用携带读取所属资源时的 `expected_version`（Lineage revision 或模板 version）。实例 effect_id 是组件 ID，模板中是组件 key。版本或 hash 不符时拒绝；确认只允许指定确认人，取消允许发起者或确认人，且均须具备对应资源写权限。确认先复用 Effect DSL 校验，空脚本、无效指令和参数不晋升；成功原子替换运行 script/endpoints 并清除草稿。取消只清除草稿，保留原运行版本。调用记录保留操作者和确认内容 hash。
+
+进入此流程后 script_review_required 为 true；同一 Effect 后续修改运行脚本必须再走候选与确认，不能删除标记或草稿绕过确认。既有未进入流程的直接脚本编辑保持兼容。候选字段不进入运行计划，不改变现行执行契约；失败通知收件人仍独立配置。含待确认草稿的模板不可发布商店；确认后可发布、安装并施加，模板和已施加实例仍各自独立。

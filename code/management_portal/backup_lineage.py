@@ -15,7 +15,7 @@ from typing import Any
 
 from management_portal.hatg import routing
 from management_portal.hatg.contracts import InstructionContext
-from management_portal.society_service.lineage_effect_script import quote
+from management_portal.society_service.lineage_effect_script import literal_argument, quote
 
 
 BACKUP_OPERATIONS = ("critical", "content")
@@ -52,6 +52,57 @@ def lineage_id(*, required: bool = True) -> str:
 
 def script_path() -> str:
     return str(PORTAL_ROOT / "scripts/resource_backup_lineage.py")
+
+
+def google_drive_script_path() -> str:
+    return str(PORTAL_ROOT / "scripts/google_drive_backup.py")
+
+
+def google_drive_arguments(arguments: dict) -> dict:
+    """The fixed Drive operation contract, shared by callers and the script."""
+    if not isinstance(arguments, dict) or set(arguments) - {"profile", "network_route"}:
+        raise ValueError("Google Drive backup accepts only profile and network_route")
+    if arguments.get("profile") not in ("critical", "content", "probe"):
+        raise ValueError("Google Drive backup profile must be critical, content or probe")
+    if "network_route" in arguments and arguments["network_route"] not in ("direct", "vps", "inherited"):
+        raise ValueError("Unknown Google Drive backup network route")
+    return dict(arguments)
+
+
+def google_drive_run_arguments(arguments: dict) -> dict:
+    return {"lineage_id": lineage_id(), "path": google_drive_script_path(), "runtime": "python",
+            "arguments": google_drive_arguments(arguments), "exclusive_key": "resource-backup"}
+
+
+def google_drive_operations(*, script: str | None = None) -> list[dict]:
+    """Fixed manual Drive entries for the existing backup Function Block.
+
+    The installer applies this draft once with a stable idempotency key and
+    joins created_ids to that block. Existing local schedules are untouched.
+    A seed exporter passes the final deployed absolute script path explicitly.
+    """
+    path = script or google_drive_script_path()
+    if not Path(path).is_absolute():
+        raise ValueError("Google Drive backup script path must be absolute")
+    operations = []
+    for profile, label in (("critical", "关键状态副本"), ("content", "完整内容副本"), ("probe", "传输恢复探针")):
+        ref = f"backup_drive_{profile}"
+        key = f"system:backup:drive-{profile}"
+        arguments = literal_argument("arguments", {"profile": profile})
+        operations.extend([
+            {"op": "create", "kind": "component", "ref": ref + "_effect", "value": {
+                "kind": "effect", "client_key": key + ":effect", "title": "Google Drive " + label,
+                "config": {"script": f'run=$(RunScript path={quote(path)} runtime=python '
+                    f'{arguments} exclusive_key="resource-backup")\n'
+                    'output script_run_id="${run.script_run_id}" status="${run.status}"', "endpoints": []}}},
+            {"op": "create", "kind": "component", "ref": ref + "_manual", "value": {
+                "kind": "event_source", "client_key": key + ":manual", "title": "立即 Google Drive " + label,
+                "config": {"event_type": "manual.triggered"}}},
+            {"op": "create", "kind": "wire", "value": {
+                "kind": "route", "client_key": key + ":manual:route", "source": "$ref:" + ref + "_manual",
+                "source_port": "output", "target": "$ref:" + ref + "_effect", "target_port": "invoke"}},
+        ])
+    return operations
 
 
 def restore_guide() -> dict[str, str]:

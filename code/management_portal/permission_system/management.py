@@ -28,8 +28,9 @@ class Management:
     with the permission system on or off.
     """
 
-    def __init__(self, permissions) -> None:
+    def __init__(self, permissions, *, derive_arguments=None) -> None:
         self.permissions = permissions
+        self.derive_arguments = derive_arguments
 
     def effective(self, actor: str, arguments: Mapping[str, Any]) -> dict[str, Any]:
         principal = _text(arguments, "principal_id", required=True)
@@ -54,14 +55,22 @@ class Management:
             result["represents"] = owner
         return result
 
-    def check(self, actor: str, arguments: Mapping[str, Any]) -> dict[str, Any]:
+    def _check(self, actor: str, arguments: Mapping[str, Any], *, instruction_mode: bool) -> dict[str, Any]:
         principal = _text(arguments, "principal_id", required=True)
         scheme, _engine, _instance = self.permissions.current()
-        instruction = _text(arguments, "instruction")
-        if instruction:
+        if instruction_mode:
+            instruction = _text(arguments, "instruction", required=True)
             call = arguments.get("arguments") or {}
             if not isinstance(call, Mapping):
                 raise ValueError("arguments 必须是对象")
+            from management_portal.application_tool_contracts import permission_declaration
+            # A public check takes the same public arguments as the operation.
+            # Internal owner-derived requirement vectors are never caller input.
+            permission_declaration(instruction).validate_arguments(call)
+            if self.derive_arguments is not None:
+                call = self.derive_arguments(instruction, dict(call), actor=actor, principal_id=principal)
+                if not isinstance(call, Mapping):
+                    raise ValueError("领域权限参数读取必须返回对象")
             from .administrators import passes
 
             if passes(principal, instruction, call):
@@ -92,10 +101,25 @@ class Management:
         return {"principal_id": principal, "scheme_id": scheme.scheme_id,
                 "allowed": all(item["allowed"] for item in results), "requests": results}
 
+    def check(self, actor: str, arguments: Mapping[str, Any]) -> dict[str, Any]:
+        if "instruction" in arguments or "arguments" in arguments:
+            raise ValueError("指令检查请用 CheckInstructionPermission")
+        return self._check(actor, arguments, instruction_mode=False)
+
+    def check_instruction(self, actor: str, arguments: Mapping[str, Any]) -> dict[str, Any]:
+        if "a" in arguments or "resource_id" in arguments:
+            raise ValueError("A/资源检查请用 CheckPermission")
+        return self._check(actor, arguments, instruction_mode=True)
+
     # -- temporary credentials --------------------------------------------------------------
 
     def issue_temporary(self, actor: str, arguments: Mapping[str, Any]) -> dict[str, Any]:
         scheme, engine, _instance = self.permissions.current()
+        if _text(arguments, "message_id"):
+            return temporary.issue_prepared(engine, scheme, issuer=actor,
+                recipient=_text(arguments, "principal_id", required=True), a=_text(arguments, "a", required=True),
+                resource=_text(arguments, "resource_id", required=True), seconds=arguments.get("expires_in_seconds"),
+                message_id=_text(arguments, "message_id"), input_prepared=input_prepared)
         return temporary.issue(engine, scheme, issuer=actor, recipient=_text(arguments, "principal_id", required=True),
                                a=_text(arguments, "a", required=True),
                                resource=_text(arguments, "resource_id", required=True),
@@ -110,11 +134,6 @@ class Management:
     def revoke_temporary(self, actor: str, arguments: Mapping[str, Any]) -> dict[str, Any]:
         _scheme, engine, _instance = self.permissions.current()
         return temporary.revoke(engine.store, _text(arguments, "credential_id", required=True), actor=actor)
-
-    def list_temporary(self, actor: str, arguments: Mapping[str, Any]) -> dict[str, Any]:
-        principal = _text(arguments, "principal_id", required=True)
-        _scheme, engine, _instance = self.permissions.current()
-        return {"credentials": temporary.listing(engine.store, principal)}
 
     # -- analysis (interface only) ----------------------------------------------------------
 
@@ -134,11 +153,19 @@ def input_open(resident_id: str, message_id: str) -> bool:
     return get_society_service().resident.is_resident_input_open(resident_id=resident_id, message_id=message_id) is True
 
 
+def input_prepared(resident_id: str, message_id: str, issuer: str) -> bool:
+    """Society proves the actual issuer and prepared-only state under our message lock."""
+    from management_portal.society_service import get_society_service
+
+    return get_society_service().resident.is_resident_input_open_for_issuer(
+        resident_id=resident_id, message_id=message_id, issuer=issuer) is True
+
+
 ACTIONS = {
     "GetEffectivePermissions": "effective",
     "CheckPermission": "check",
     "CreateTemporaryCredential": "issue_temporary",
     "UpdateTemporaryCredential": "renew_temporary",
     "RevokeTemporaryCredential": "revoke_temporary",
-    "ListTemporaryCredentials": "list_temporary",
+    "CheckInstructionPermission": "check_instruction",
 }

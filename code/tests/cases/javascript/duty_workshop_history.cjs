@@ -36,3 +36,59 @@ test('committed identities rebase every history frame, wire and layout across sa
   model.restore(history.undo().content);edits=copy(model.request().operations);
   assert.deepEqual(edits.map(row=>[row.op,row.id]),[['delete',second.id]]);assert.equal(model.draft.body.wires[0].source,component.id);
 });
+
+test('duty workshop previews through the read instruction and only applies on confirmation', async () => {
+  const {JSDOM} = require('jsdom');
+  const dom = new JSDOM('<main><form id="workshopEditor"></form><p id="workshopError"></p><aside id="workshopTools"></aside></main>', {
+    runScripts: 'outside-only',
+  });
+  const w = dom.window;
+  try {
+    const graph = {destroy() {}};
+    let confirmed = false;
+    Object.assign(w, {
+      PortalI18n: {t: value => value, message: value => value},
+      PortalUIPrimitives: {escapeHtml: value => value},
+      PortalUI: {confirm: async () => confirmed},
+      TemplateWorkshopSurface: {mount: () => ({destroy() {}})},
+      LineageTemplates: {mount: () => ({load: async () => {}, destroy() {}})},
+      LineageTemplatesEditorElements: {createEditorElements: () => ({})},
+      LineageTemplateGraph: {mount: () => graph, mountTools: () => graph, authoringItems: () => []},
+    });
+    for (const name of ['lineage_template_workshop_draft', 'lineage_duty_workshop_model', 'lineage_duty_workshop']) {
+      w.eval(fs.readFileSync(path.join(__dirname, '../../../management_portal/static', name + '.js'), 'utf8'));
+    }
+    const lineageId = 'lineage_0123456789ab', functionBlockId = 'function_block_0123456789ab';
+    const block = {id: functionBlockId, title: 'Duty', elements: [], duty: {category: 'custom', memory: {level: 'session'}}};
+    const lineage = {lineage_id: lineageId, revision: 7, nodes: [], program: {components: [], wires: []}, function_blocks: [block]};
+    const draft = {lineage_id: lineageId, function_block_id: functionBlockId, revision: 7, operations: [], duty_changes: {title: 'New duty'}};
+    const {revision, ...args} = draft;
+    const edited = {...block, title: 'New duty'};
+    const calls = [];
+    const execute = async (name, parameters, options) => {
+      if (name === 'GetLineage') return {lineage: copy(lineage)};
+      calls.push(copy({name, parameters, options}));
+      if (name === 'ApplyLineageChanges' && confirmed) {
+        lineage.function_blocks[0] = edited;
+        lineage.revision++;
+      }
+      return {preview: {elements: [], duty: {after: edited}}};
+    };
+    const workshop = w.LineageDutyWorkshop.mount({root: w.document.querySelector('main'), lineageId, functionBlockId, execute});
+    await workshop.load();
+    await workshop.acceptDraft(draft);
+    const read = {name: 'GetLineageChangesPreview', parameters: args, options: {expectedVersion: revision}};
+    assert.deepEqual(calls, [read]);
+    assert.match(workshop.assistantContext(), /GetLineageChangesPreview.*expected_version:7/);
+    assert.doesNotMatch(workshop.assistantContext(), /dry_run/);
+    await workshop.save();
+    assert.deepEqual(calls, [read, read], 'declining confirmation must keep the graph unchanged');
+    confirmed = true;
+    await workshop.save();
+    assert.deepEqual(calls, [read, read, read, {...read, name: 'ApplyLineageChanges'}]);
+    assert.equal(lineage.revision, 8);
+    workshop.destroy();
+  } finally {
+    w.close();
+  }
+});

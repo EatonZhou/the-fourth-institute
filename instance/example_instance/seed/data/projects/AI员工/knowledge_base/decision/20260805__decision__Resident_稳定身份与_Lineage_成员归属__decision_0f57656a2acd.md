@@ -99,7 +99,7 @@ Resident ──默认启动目录──> 自有工作区
 
 ### 每个 Resident 只属于一个 Lineage
 
-- **Resident 记录中的 `lineage_id` 是它唯一的成员关系。** 它决定 Resident 出现在哪个 Lineage 中。一个 Resident 不会同时属于两个 Lineage；迁到另一个 Lineage 使用 `MoveResident` 或 `MoveLineageObjects`（decision_6591e7793116）。
+- **Resident 记录中的 `lineage_id` 是它唯一的成员关系。** 它决定 Resident 出现在哪个 Lineage 中。一个 Resident 不会同时属于两个 Lineage；迁到另一个 Lineage 使用 `MoveLineageObjects`（decision_6591e7793116）。
 - **每个登记的 Resident 都是所在 Lineage 的正式成员。** 个人入口（decision_bd5217d08c09）、资源讨论和定时工作只是使用方式，都由同一种 Resident 承担。成员归属只由 `lineage_id` 表达。Lineage 定义自身保留 `lineage_membership` 的 `formal` / `personal` 分类，用于区分普通与个人 Lineage。
 
 ### 成员关系与来源关系分开
@@ -217,10 +217,12 @@ ResourceService 保存的协作描述按当前领域事实投影关系：Residen
 
 ### 删除
 
-- **删除 Resident 使用 `DeleteResident`；一次删除多个 Resident 和组件使用 `ApplyLineageChanges`。** 两者对 Resident 的删除语义相同：Resident 删除标记、活动成员节点、相关连线和引用在一个事务中提交，自有工作区的删除和模型会话的释放作为生命周期步骤登记在同一事务中，之后由后台完成，中断后可以继续。任一目标不能删除时，整批保持原样。
+删除类别与目录边界统一遵守 decision_4aa13bc21e8e「Resident 删除清单」。创建、登记和交接维护明确的归属及删除依赖；删除只按目标 ID 取得自身对象，不扫描全站 Workspace、资源登记或用路径包含关系推断所有权。独立 Article、Repo、Paper、知识条目和 Report 保留；借用 Workspace 只解绑，自有 Workspace 依 owner 随删，绑定人数不改变该判断。
+
+- **单项或批量删除 Resident 均通过 `ApplyLineageChanges` 提交。**Resident 删除标记、活动成员节点、相关连线和引用在一个事务中提交，自有工作区的删除和模型会话的释放作为生命周期步骤登记在同一事务中，之后由后台完成，中断后可以继续。任一目标不能删除时，整批保持原样。
 - **Resident 还有排队或执行中的消息、或还有未完成的 Fork 时不能删除。** 报错“Resident … 仍有消息任务或 Fork 创建任务正在排队/处理，完成或停止后再删除”。
 - **删除时 Mailbox 一起关闭。** 等待随下一条请求送达的 info，以及没有任何工作在处理、只留在 Mailbox 的请求（例如早期版本队列丢下的请求，decision_15f7df737ed5），不算排队中的工作，不阻止删除；删除后也没有人能再处理或撤回它们。所有删除路径都经过 `ResidentCatalog.remove`，它在写入删除标记的同一事务中、写入之前，把这个 Resident 仍为 `queued` 或 `running` 的输入结束为 `cancelled`（错误码 `resident_deleted`，说明“Resident 已删除，这条消息不会被处理”），并删除它在 `resident_mailbox` 中的全部行（decision_15f7df737ed5）。重复删除时 Mailbox 已经关闭。10-10 之前删除留下的 33 行已用一次性脚本按同样语义处理。
-- **删除 Leader 时自动选出新的 Leader。** 服务从该 Lineage 剩下的 Resident 中随机选一个（担任算子执行者的 Resident 除外）作为新 Leader；`DeleteResident` 结果中返回新的 Leader ID，`ApplyLineageChanges` 调用者通过 `GetLineage` 读取当前 Leader；没有剩下的 Resident 时，Lineage 暂时没有 Leader。需要指定继任者时，先用 `UpdateLineage` 更换 Leader，再删除原 Leader。
+- **删除 Leader 时自动选出新的 Leader。** 服务从该 Lineage 剩下的 Resident 中随机选一个（担任算子执行者的 Resident 除外）作为新 Leader；`ApplyLineageChanges` 调用者通过 `GetLineage` 读取当前 Leader；没有剩下的 Resident 时，Lineage 暂时没有 Leader。需要指定继任者时，先用 `UpdateLineage` 更换 Leader，再删除原 Leader。
 - **Family 门面、steward 与 Router 不能单独删除。** Resident 删除领域统一检查内置角色；完整实例一并删除时按实例规则处理（decision_44cf587c1721）。
 - **删除整个 Lineage 使用 `DeleteLineage`**（decision_4637ca4a69e2）。
 - **删除只改变同一份 Resident 身份的状态。** `residents` 永久保留原 ID、创建事实、名称、成员归属、Fork 来源及对应领域记录；第一次删除在该行填入 `deleted_at` 与 `deleted_by`。不再有另一张身份删除表或整份删除快照。重复删除保持首次删除事实，仍检查当前调用者权限。
@@ -231,7 +233,7 @@ ResourceService 保存的协作描述按当前领域事实投影关系：Residen
 
 生命周期为“正常 → 已删除”。系统不提供回收站或恢复已删除 Resident 的接口。删除确认仍用于防止误操作。
 
-生命周期清理步骤只携带目标身份、自有 Workspace 关系和释放后端所需的有限字段。Resident 状态修改、资源 tombstone 投影请求和清理意图在同一事务登记。ResourceService 确认已删除投影后才返回成功；确认暂时失败时返回 `instruction.projection_pending`，删除状态已经提交，按同一操作重试补完剩余同步。重复删除确认既有 tombstone，不覆盖首次删除审计，不再分配清理任务，也不创建新身份或删除 AgentData 历史。
+生命周期清理步骤只携带目标身份、按 owner 取得的 Workspace 关系、已冻结的清理与保留边界，以及释放后端所需的有限字段。身份及关系注销、凭证撤销意图与目录清理意图同事务提交；凭证失效与外部文件回收沿既有持久副作用完成，不把文件 I/O 放入注销事务；后台不得重新发现或扩大范围。AgentData 历史按本领域规则保留。Resident 状态修改、资源 tombstone 投影请求和清理意图在同一事务登记。ResourceService 确认已删除投影后才返回成功；确认暂时失败时返回 `instruction.projection_pending`，删除状态已经提交，按同一操作重试补完剩余同步。重复删除确认既有 tombstone，不覆盖首次删除审计，不再分配清理任务，也不创建新身份或删除 AgentData 历史。
 
 ## 权限
 

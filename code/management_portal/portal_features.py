@@ -114,7 +114,7 @@ Hooks:
     Registered targets governed by a feature's workflow declarations. Each
     record carries resident_id, lineage_id, name and application; each feature
     returns only its own application targets.
-``workflow.script_migration`` ``(source: str) -> str``
+``workflow.script_migration`` ``(source: str, *, script_path: str | None = None) -> str``
     Pure, idempotent migration of a complete feature-owned Effect script.
     Return the original source unchanged when it is not owned. Each provider
     receives the same original source; more than one replacement is an error.
@@ -122,6 +122,9 @@ Hooks:
     Missing features contribute nothing; invalid results and errors propagate.
     Society owns current-definition validation, in-flight guards and persistence;
     journals, review drafts and published history never enter this hook.
+    Exporters may supply an absolute target script_path. Owners declaring this
+    keyword receive it unchanged; existing source-only owners retain their
+    contract. Owner exceptions propagate without retrying with other arguments.
 ``test.fixtures`` ``(root, manifest, actor, *, timeout) -> (report, errors)``
     Release what a test run created under ``root``; the report joins the
     cleanup receipt, errors keep the run's files for another attempt.
@@ -165,6 +168,12 @@ Hooks:
     the Society owner's authorization. ResourceService owns recovery approval
     validation. Reverification under lock uses fresh reads without RPC or
     cached results or authorization.
+``upload.purposes``
+    A mapping from application purpose names to ``max_bytes``, optional
+    decoded ``image_formats``, and an optional
+    ``validate(data, media_type) -> media_type`` byte validator. Installed
+    owners declare purposes; the shared upload owner rejects unknown names,
+    duplicate owners and invalid content before storing completed bytes.
 ``resident.inputs``
     A module that delivers Resident inputs whose ``business_ref`` starts
     with its ``BUSINESS_REF_PREFIX``; SocietyService calls its
@@ -182,6 +191,7 @@ Hooks:
 from __future__ import annotations
 import importlib
 import importlib.util
+import inspect
 import logging
 from dataclasses import dataclass, field
 from functools import cache
@@ -230,10 +240,17 @@ FEATURES += (PortalFeature('project_resources', 'Project resources', {
 # Lifecycle contributions use the same installed-feature registry as HTTP and
 # ISA. Optional applications remain absent when their modules are not shipped.
 for _feature in FEATURES:
-    if _feature.key == 'telepus':
+    if _feature.key == 'paper':
+        _feature.contributions['upload.purposes'] = 'management_portal.paper_upload_purposes:PURPOSES'
+    elif _feature.key == 'article':
+        _feature.contributions['upload.purposes'] = 'management_portal.article_upload_purposes:PURPOSES'
+    elif _feature.key == 'notice_board':
+        _feature.contributions['upload.purposes'] = 'management_portal.notice_board_upload_purposes:PURPOSES'
+    elif _feature.key == 'telepus':
         _feature.contributions['instance.update'] = 'management_portal.telepus.instance_update:update'
     elif _feature.key == 'workbench':
         _feature.contributions['instance.update'] = 'management_portal.workbench_projections.instance_update:update'
+        _feature.contributions['workflow.script_migration'] = 'management_portal.workbench_projections.studio_credentials:migrate_studio_script'
     elif _feature.key == 'projects':
         _feature.contributions['workflow.script_migration'] = 'management_portal.research_map_automation:migrate_digest_script'
 
@@ -293,11 +310,19 @@ def contribution(hook: str) -> Any | None:
     return found[0][1] if found else None
 
 
-def migrate_workflow_script(source: str) -> str:
+def migrate_workflow_script(source: str, *, script_path: str | None = None) -> str:
     """Ask installed domain owners to migrate a script without chaining owners."""
     result = source
     for _feature, provider in contributions('workflow.script_migration'):
-        candidate = provider(source)
+        kwargs = {}
+        if script_path is not None:
+            parameters = inspect.signature(provider).parameters
+            parameter = parameters.get('script_path')
+            if (parameter is not None and parameter.kind in (
+                    inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.KEYWORD_ONLY)
+                    or any(p.kind == inspect.Parameter.VAR_KEYWORD for p in parameters.values())):
+                kwargs['script_path'] = script_path
+        candidate = provider(source, **kwargs)
         if not isinstance(candidate, str):
             raise TypeError('feature script migration must return a string')
         if candidate == source:

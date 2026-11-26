@@ -2,15 +2,18 @@
 
 A principal that holds an A node on a resource may lend it to another
 principal: the credential is one permit row ``(recipient, a, resource)`` of
-the active scheme's instance with an issuer and an expiry, and it takes
-effect at once.  Issuing checks one thing, that the issuer holds that A node
+the active scheme's instance with an issuer and an expiry. Duration grants
+and trusted accepted-input grants take effect at once. Public task grants
+are disabled until canonical input acceptance commits in the same transaction.
+Issuing checks that the issuer holds that A node
 on that resource now.  The issuer's deny rows are not copied and the
-credential's expiry does not depend on the issuer's own rows; losing the
-right later does not touch credentials already issued.
+credential's expiry does not depend on the issuer's own rows. Durable
+question approval rechecks the issuer when accepting its prepared input;
+losing the right later does not touch credentials already activated.
 
 A credential lasts for a task or for a time:
 
-- one that travels with a message to a Resident (``message_id``) is deleted
+- one bound to an exact prepared input (``message_id``) is deleted
   in the transaction that ends the Resident's input of that message
   (completed, failed or cancelled), see ``inline.py``;
 - one issued for a time lasts that long, and its issuer may renew it.
@@ -18,6 +21,7 @@ A credential lasts for a task or for a time:
 Either way it ends no later than seven days after it was issued.  Expired
 rows decide nothing and the daily maintenance deletes them.  The issuer takes
 one back and the recipient hands it back; nobody else revokes it.
+Prepared-task receipts survive deletion so replay never recreates a grant.
 
 A personal AMA's Resident and its owner User are one party (§5.5).  The row
 names whoever called: an AMA Resident issuing is the issuer, and a
@@ -30,12 +34,13 @@ from __future__ import annotations
 
 import time
 from collections.abc import Callable, Mapping
+from dataclasses import replace
 from typing import Any
 
 from . import inline
 from .engine import Engine, Grants
 from .engine.model import DENY, PERMIT, Entry
-from .engine.store import Store, new_entry_id
+from .engine.store import ReadOnlyStore, Store, new_entry_id
 from .scheme.compiler import CompiledScheme
 
 DEFAULT_SECONDS = 24 * 3600
@@ -95,15 +100,8 @@ def _seconds(value: Any) -> int:
     return value
 
 
-def issue(engine: Engine, scheme: CompiledScheme, *, issuer: str, recipient: str, a: str, resource: str,
-          seconds: Any = None, message_id: str = "",
-          input_open: Callable[[str, str], bool] | None = None, connection=None) -> dict[str, Any]:
-    """Lend ``a`` on ``resource`` to ``recipient``.
-
-    With ``message_id`` the credential lasts while ``recipient``'s input of that
-    message is open (``input_open`` answers), at most seven days; otherwise it
-    lasts ``seconds`` (a day when omitted).
-    """
+def _new_loan(engine, scheme, *, issuer, recipient, a, resource, seconds, message_id):
+    """Validate the same identity, capability and lifetime for both issuance paths."""
     if a not in scheme.trees["A"].nodes:
         raise ValueError(f"{a} 不是 A 树的节点")
     if recipient == issuer:
@@ -117,8 +115,16 @@ def issue(engine: Engine, scheme: CompiledScheme, *, issuer: str, recipient: str
     now = engine.clock()
     if not grants.decide(engine.a_path(a), paths[resource], now).allowed:
         raise LoanRefused(f"签发者对 {resource} 没有 {a}，不能签发")
-    loan = Entry(new_entry_id(), PERMIT, recipient, a, resource, issued_by=issuer, issued_at=now,
+    return Entry(new_entry_id(), PERMIT, recipient, a, resource, issued_by=issuer, issued_at=now,
                  expires_at=now + lasting, message_id=message_id)
+
+
+def issue(engine: Engine, scheme: CompiledScheme, *, issuer: str, recipient: str, a: str, resource: str,
+          seconds: Any = None, message_id: str = "",
+          input_open: Callable[[str, str], bool] | None = None, connection=None) -> dict[str, Any]:
+    """Issue an immediate duration grant or a trusted, already accepted input's grant."""
+    loan = _new_loan(engine, scheme, issuer=issuer, recipient=recipient, a=a, resource=resource,
+                     seconds=seconds, message_id=message_id)
     with engine.store.transaction(connection) as connection:
         if message_id:
             # Issuing for a message and ending that message's input take turns, so no credential outlives its task.
@@ -127,6 +133,140 @@ def issue(engine: Engine, scheme: CompiledScheme, *, issuer: str, recipient: str
                 raise LoanRefused(f"{recipient} 没有处理中的消息 {message_id}，不能随它签发")
         engine.store.add(connection, [loan])
         return credential(_loan(engine.store, connection, loan.entry_id))
+
+
+def issue_prepared(engine: Engine, scheme: CompiledScheme, *, issuer: str, recipient: str,
+                   a: str, resource: str, message_id: str, seconds=None,
+                   input_prepared: Callable[[str, str, str], bool]) -> dict[str, Any]:
+    """Stage a disabled grant; only canonical input admission may activate it.
+
+    The durable receipt survives revocation and cleanup. A release retry can
+    read its existing grant, but cannot mint another or extend its deadline.
+    """
+    if not message_id or not recipient.startswith("resident_"):
+        raise ValueError("任务凭证需要已准备的 Resident 输入")
+    if seconds is not None:
+        _seconds(seconds)
+    store = engine.store
+    with store.transaction() as connection:
+        inline.lock(connection, message_id)
+        row = store.execute(connection, "SELECT * FROM {s}.prepared_task_credentials "
+                            "WHERE issuer=%s AND recipient=%s AND message_id=%s AND a_node=%s AND r_node=%s",
+                            (issuer, recipient, message_id, a, resource)).fetchone()
+        if row is not None:
+            if row["scheme_id"] != store.scheme_id or row["lifetime_seconds"] != seconds or row["state"] == "ended":
+                raise LoanRefused("原任务凭证已结束或请求变化，不能重新签发")
+            try:
+                loan = _loan(store, connection, row["credential_id"])
+            except KeyError as exc:
+                raise LoanRefused("原任务凭证已被收回，不能重新签发") from exc
+            if (loan.expires_at is None or loan.expires_at <= engine.clock() or
+                    (loan.p, loan.a, loan.r, loan.issued_by, loan.message_id) !=
+                    (recipient, a, resource, issuer, message_id) or loan.disabled != (row["state"] == "pending")):
+                raise LoanRefused("原任务凭证已失效或不匹配，不能重新签发")
+            return {**credential(loan), "state": row["state"]}
+        if not input_prepared(recipient, message_id, issuer):
+            raise LoanRefused("只能向本人准备且尚未受理的准确 Resident 输入签发任务凭证")
+        store.lock_version(connection)
+        active = store.execute(connection, "SELECT scheme_id FROM {s}.active_scheme").fetchone()
+        if active is not None and active["scheme_id"] != store.scheme_id:
+            raise LoanRefused("启用方案已变化，请重新读取权限")
+        loan = replace(_new_loan(engine, scheme, issuer=issuer, recipient=recipient, a=a,
+                                resource=resource, seconds=seconds, message_id=message_id), disabled=True)
+        store.add(connection, [loan])
+        store.execute(connection, "INSERT INTO {s}.prepared_task_credentials "
+                      "(issuer,recipient,message_id,a_node,r_node,scheme_id,credential_id,lifetime_seconds,state) "
+                      "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'pending')",
+                      (issuer, recipient, message_id, a, resource, store.scheme_id, loan.entry_id, seconds))
+        return {**credential(_loan(store, connection, loan.entry_id)), "state": "pending"}
+
+
+def activate_approved(connection, *, issuer: str, resident_id: str, message_id: str,
+                      credentials: list[dict[str, str]]) -> int:
+    """Validate a durable question's entire approved scope, then activate it atomically.
+
+    Society supplies the stored issuer, final recipient, answer message and
+    approval after checking the immutable question and accepting that exact
+    input. It must call this inside that transaction, before wakeup. No public
+    caller may supply this proof. Locks and reads use the supplied connection;
+    this path never initializes or migrates a store or consults decision caches.
+    """
+    from .personal_ama import readonly_owners_of
+    from .scheme.repository import Schemes
+
+    if connection is None or any(not isinstance(value, str) or not value or value != value.strip()
+                                 for value in (issuer, resident_id, message_id)):
+        raise ValueError("批准受理需要真实事务、签发者、最终 Resident 和消息 ID")
+    if not isinstance(credentials, list) or any(
+            not isinstance(item, dict) or set(item) != {"a", "resource_id"} or
+            any(not isinstance(value, str) or not value or value != value.strip() for value in item.values())
+            for item in credentials):
+        raise ValueError("批准凭证必须为准确的 {a, resource_id} 列表")
+    expected = {(item["a"], item["resource_id"]) for item in credentials}
+    if len(expected) != len(credentials):
+        raise ValueError("批准凭证不能重复")
+    inline.lock(connection, message_id)
+    store = ReadOnlyStore()  # Read the installed owner tables on the admission connection; no ensure.
+    receipts = store.execute(connection, "SELECT * FROM {s}.prepared_task_credentials "
+                             "WHERE recipient=%s AND message_id=%s "
+                             "ORDER BY issuer,a_node,r_node FOR UPDATE", (resident_id, message_id)).fetchall()
+    entries = store.execute(connection, "SELECT * FROM {s}.scheme_entries "
+                            "WHERE p_node=%s AND message_id=%s ORDER BY scheme_id,entry_id FOR UPDATE",
+                            (resident_id, message_id)).fetchall()
+    # Entry locks precede the version fence, as in revoke/delete. Holding the
+    # fence before waiting for an entry deleted by a writer would invert locks.
+    if store.execute(connection, "SELECT version FROM {s}.state FOR UPDATE").fetchone() is None:
+        raise LoanRefused("权限实例尚未安装，不能受理批准凭证")
+    schemes = Schemes(store, migrate=False)
+    scheme_id = schemes.active(connection)
+    if (len(receipts) != len(expected) or
+            {(row["a_node"], row["r_node"]) for row in receipts} != expected or
+            any(row["issuer"] != issuer or row["scheme_id"] != scheme_id for row in receipts)):
+        raise LoanRefused("原任务凭证与持久问题批准的完整范围或签发者不符")
+    by_id = {(row["scheme_id"], row["entry_id"]): row for row in entries}
+    if set(by_id) != {(row["scheme_id"], row["credential_id"]) for row in receipts}:
+        raise LoanRefused("原任务凭证已撤销、缺失或含未批准的条目")
+    states = {row["state"] for row in receipts}
+    if receipts and states not in ({"pending"}, {"active"}):
+        raise LoanRefused("原任务凭证已结束或状态不一致")
+    for receipt in receipts:
+        loan = by_id[scheme_id, receipt["credential_id"]]
+        if (loan["effect"] != PERMIT or loan["disabled"] != (receipt["state"] == "pending") or
+                loan["expires_at"] is None or
+                (loan["p_node"], loan["a_node"], loan["r_node"], loan["issued_by"], loan["message_id"]) !=
+                (resident_id, receipt["a_node"], receipt["r_node"], issuer, message_id)):
+            raise LoanRefused("原任务凭证已过期或与批准内容不符")
+    if not expected:
+        return 0
+    scheme = schemes.compiled(scheme_id, connection)
+    store = store.scoped(scheme_id)
+    owner = readonly_owners_of([issuer]).get(issuer)
+    principals = [issuer, owner] if owner else [issuer]
+    stored_paths = store.paths("P", principals, connection)
+    path = set(node for principal in principals for node in
+               (stored_paths.get(principal) or scheme.trees["P"].element_path(principal)))
+    grants = Grants(store.entries(connection, where="p_node=ANY(%s) AND NOT disabled", parameters=(list(path),)),
+                    scheme.trees["A"].element_path)
+    resource_paths = store.paths("R", [r for _a, r in expected if r not in scheme.trees["R"].nodes], connection)
+    # Use decision time after all owner reads; a deadline can pass while an
+    # owner read waits even though these credential rows remain locked.
+    now = float(store.execute(connection, "SELECT extract(epoch FROM clock_timestamp()) AS now").fetchone()["now"])
+    if any(loan["expires_at"].timestamp() <= now for loan in entries):
+        raise LoanRefused("原任务凭证已过期，不能受理批准凭证")
+    for a, resource in expected:
+        if (a not in scheme.trees["A"].nodes or not grants.decide(
+                scheme.trees["A"].element_path(a), resource_paths.get(resource) or
+                scheme.trees["R"].element_path(resource), now).allowed):
+            raise LoanRefused(f"签发者对 {resource} 已无 {a}，不能受理批准凭证")
+    if states == {"active"}:
+        return 0  # Validate a release replay without reissuing or extending anything.
+    credential_ids = [row["credential_id"] for row in receipts]
+    store.execute(connection, "UPDATE {s}.scheme_entries SET disabled=FALSE,version=version+1 "
+                  "WHERE scheme_id=%s AND entry_id=ANY(%s)", (scheme_id, credential_ids))
+    store.execute(connection, "UPDATE {s}.prepared_task_credentials SET state='active' "
+                  "WHERE scheme_id=%s AND credential_id=ANY(%s)", (scheme_id, credential_ids))
+    store.bump(connection)
+    return len(credential_ids)
 
 
 def message_credentials(engine: Engine, *, issuer: str, recipient: str, message_id: str,
@@ -153,6 +293,7 @@ def credential(loan: Entry) -> dict[str, Any]:
     """
     value = {"credential_id": loan.entry_id, "principal_id": loan.p, "a": loan.a, "resource_id": loan.r,
              "issued_by": loan.issued_by, "issued_at": loan.issued_at,
+             "state": "inactive" if loan.disabled else "active",
              "lifetime": "task" if loan.message_id else "duration",
              "deadline_at": loan.expires_at, "expires_at": None if loan.message_id else loan.expires_at}
     if loan.message_id:
@@ -208,7 +349,11 @@ def listing(store: Store, principal: str) -> list[dict[str, Any]]:
         loans = store.entries(
             connection, where="expires_at IS NOT NULL AND (p_node = ANY(%s) OR issued_by = ANY(%s)) AND expires_at > now()",
             parameters=(names, names))
-    return [{**credential(loan), "direction": "received" if loan.p in names else "issued"} for loan in loans]
+        pending = {row["credential_id"] for row in store.execute(connection,
+            "SELECT credential_id FROM {s}.prepared_task_credentials WHERE scheme_id=%s AND state='pending'",
+            (store.scheme_id,)).fetchall()}
+    return [{**credential(loan), **({"state": "pending"} if loan.entry_id in pending else {}),
+             "direction": "received" if loan.p in names else "issued"} for loan in loans]
 
 
 def expire(store: Store) -> int:

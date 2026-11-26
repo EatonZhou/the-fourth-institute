@@ -82,30 +82,26 @@ Lineage 定义的合并提交、显式 `expected_version`、冲突详情和多 L
 
 | 指令 | 改变状态 | 作用 | 默认方案要求 |
 | --- | --- | --- | --- |
-| `CreateLineage` | 是 | 创建一个 Lineage | 对 `project_id` 有 @contributor |
+| `CreateLineage` | 是 | 创建一个新的 Lineage，并分配独立的 Lineage ID。 | 对 `project_id` 有 @contributor |
 | `GetLineage` | 否 | 读取完整的 Lineage 定义 | 对 `lineage_id` 有 @viewer |
 | `UpdateLineage` | 是 | 修改 Lineage 的元数据、头像或碎片 | 对 `lineage_id` 有 @contributor |
 | `UpdateLineageLayout` | 是 | 保存画布坐标 | 对 `lineage_id` 有 @contributor |
 | `DeleteLineage` | 是 | 删除一个 Lineage | 对 `lineage_id` 有 @admin |
 | `ListComponentTypes` | 否 | 读取可用的组件类型与事件类型 | 对“共享”有 @viewer |
-| `CreateComponent` | 是 | 创建一个组件 | 对 `lineage_id` 有 @contributor |
-| `ReviewComponentScript` | 是 | 确认或取消指定版本的 Effect 脚本草稿；另须匹配确认人和内容 hash。 | 对 `lineage_id` 有 @contributor |
-| `UpdateComponent` | 是 | 修改一个组件 | 对 `lineage_id` 有 @contributor |
-| `DeleteComponent` | 是 | 删除一个组件及其连线 | 对 `lineage_id` 有 @contributor |
-| `CreateWire` | 是 | 创建一条连线 | 对 `lineage_id` 有 @contributor |
-| `UpdateWire` | 是 | 修改一条连线 | 对 `lineage_id` 有 @contributor |
-| `DeleteWire` | 是 | 删除一条连线 | 对 `lineage_id` 有 @contributor |
 | `CreateCandidateFork` | 是 | 建立或替换 Seed 的候选 Fork | 对 `lineage_id` 有 @contributor |
 | `DeleteCandidateFork` | 是 | 删除 Seed 的候选 Fork | 对 `lineage_id` 有 @contributor |
 | `CreateWorkspaceHandoff` | 是 | 创建两个 Resident 之间的交接关系 | 对 `lineage_id` 有 @contributor |
 | `UpdateWorkspaceHandoff` | 是 | 修改交接内容或说明 | 对 `lineage_id` 有 @contributor |
 | `DeleteWorkspaceHandoff` | 是 | 删除交接关系 | 对 `lineage_id` 有 @contributor |
-| `RunWorkspaceHandoff` | 是 | 准备交接材料并为目标建立工作区绑定 | 对 `lineage_id` 有 @contributor |
+| `RunWorkspaceHandoff` | 是 | 准备交接材料，并为目标 Resident 建立工作区绑定。 | 对 `lineage_id` 有 @contributor |
 | `GetWorkspaceHandoff` | 否 | 读取交接定义和最近一次准备结果 | 对“共享”有 @viewer |
 | `GetLineageDiagnostics` | 否 | 读取当前定义的诊断，包括 Effect 脚本的字面量参数校验 | 对 `lineage_id` 有 @viewer |
-| `ApplyLineageChanges` | 是 | 一次原子提交多项修改 | 对 `lineage_id` 有 @contributor |
+| `ApplyLineageChanges` | 是 | 原子提交一组图和职责修改；成功时版本只推进一次。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。 | 组件、连线、职责和画布操作要求对 `lineage_id` 有 @contributor；删除 Resident 时还要求对该 Resident 有 @admin |
 | `WatchLineage` | 否（流式） | 订阅 Lineage 定义的变化 | 对 `lineage_id` 有 @viewer |
 | `MoveWorkspaceHandoff` | 是 | 将已有交接副本归位到所属 Lineage 的 handoff-workspaces，保留 Workspace ID、内容、绑定和尝试历史；活跃使用者阻止搬迁。 | 对 `lineage_id` 有 `@contributor`；对 `workspace_id` 有 `@contributor` |
+| `ConfirmComponentScript` | 是 | 由指定确认人采纳 Effect 候选脚本，须携带 Lineage expected_version。 | 对 `lineage_id` 有 @contributor |
+| `CancelComponentScriptDraft` | 是 | 由确认人或发起者撤销 Effect 候选脚本草稿，须携带 Lineage expected_version。 | 对 `lineage_id` 有 @contributor |
+| `GetLineageChangesPreview` | 否 | 预览一组图和职责修改；使用与提交相同的逐项权限和版本前提，不写入。 | 组件、连线、职责和画布操作要求对 `lineage_id` 有 @contributor；删除 Resident 时还要求对该 Resident 有 @admin |
 
 Lineage 不保存待确认的修改方案。需要先让人确认的团队结构，由 Resident 在回复里给出方案，确认后再用 `ApplyLineageChanges` 等指令提交（核心 Skill `tfi-agent-rule` 的 `portal-resident.md` 中的“创建团队”协议）。
 
@@ -162,9 +158,12 @@ Lineage 不保存待确认的修改方案。需要先让人确认的团队结构
 
 - 参数：`lineage_id`。
 - 结果：被删除的 Lineage ID 和一并删除的 Resident ID。
-- Lineage 中的全部 Resident 按 `DeleteResident` 的规则一并删除，Lineage 目录和其中的文件随之删除。Project 层 Lineage 仍在管理子 Lineage 时拒绝删除。
+- Lineage 中的全部 Resident 按 Resident 的生命周期规则一并删除，Lineage 目录和其中的文件随之删除。Project 层 Lineage 仍在管理子 Lineage 时拒绝删除。
 
 ## 组件与连线
+
+组件和连线的新增、修改、删除用 `ApplyLineageChanges`。单项修改也传入 `operations` 中的一项。服务在提交前逐项核对所属范围与操作原有权限，任一操作失败时整个修改不生效。
+
 
 ### `ListComponentTypes`
 
@@ -172,59 +171,6 @@ Lineage 不保存待确认的修改方案。需要先让人确认的团队结构
 
 - 参数：无。
 - 结果：每种组件类型的配置字段和端口，以及事件类型目录。Effect 不分类型，它可以调用的指令与参数定义来自指令目录（decision_aa4fdbac8364）。
-
-### `CreateComponent`
-
-**在 Lineage 中创建一个组件。**
-
-- 参数：`lineage_id`、`kind`（组件类型）、`title`（可选）、`config`（可选，按类型校验）、`client_key`（可选，调用者的审计标记，不代替组件 ID）、放置参数。
-- 结果：新组件 ID 与组件。
-- 创建或修改 Seed 时可以在 `config.source_resident_id` 写来源 Resident：提交时记录为这个 Seed 的候选 Fork（替换原有的一条），组件本身不保存这个字段。Function Block 定义中的 Seed 就这样声明来源。
-
-### `UpdateComponent`
-
-**修改一个组件的名称或配置。**
-
-- 参数：`lineage_id`、`component_id`、`changes`。
-- `changes` 可以包含 `title` 和 `config`；Effect 还可以包含 `script`（组合指令的脚本）、`endpoints`（具名目标端点）与 `failure_recipients`（失败通知 User 用户名数组，最多 20 位，空数组关闭通知；省略时保留已有清单），写法与执行规则见 decision_4adcc1ff2f2c。事件源还可以包含 `watch_subject`（观察对象，系统据此维护对应的 watch 连线）：`{kind, id}` 设定一个对象；观察 Resident 的事件类型可以用 `{kind: "resident", ids: [...]}` 一次设定多个 Resident，任一 Resident 发生该事实都会触发（decision_4adcc1ff2f2c）。
-- 放弃一个 Seed 时，把它的状态改为 `dismissed` 并填写原因；Seed 保留在 Lineage 中作为记录。
-- 结果：修改后的组件。
-- 修改已有连接的端口后，服务校验整张图；连接不兼容时拒绝本次修改，并保留提交前的定义。删除 Effect 的具名目标端点时，相应的 target 连线随端点一起移除。
-
-### `DeleteComponent`
-
-**删除一个组件、关联连线，以及观察这些被删除对象的事件源。**
-
-- 参数：`lineage_id`、`component_id`。
-- 结果：被删除的组件和连线 ID。
-- 删除算子只解除它与执行者 Resident 的关联，Resident 本身保留。
-- 观察被删除组件或连线的事件源会一起删除；该规则递归应用于依赖这些观察者的事件源。结果中的组件 ID 指本次指定的组件，连线 ID 列表包含清理的连线。
-
-### `CreateWire`
-
-**在两个兼容端口之间创建一条连线。**
-
-- 参数：`lineage_id`、`source`、`source_port`（可推断时可省略）、`target`、`kind`（`route`、`target` 或 `watch`）、`config`（可选）、`client_key`（可选）。`target_port` 仅用于激活边：`invoke` 或 Loop 的 `done`；`watch`/`target` 直接绑定对象，省略此字段。
-- `watch` 的 `source` 必须是观察事件源，`source_port` 为 `watch`；`target` 是被观察的 Resident、组件、投递连线或交接关系，由事件类型约束可选对象。`target` 的 `source` 必须是 Effect，`source_port` 指定它声明的具名端点。输入的旧方向或 Reference 端口会被拒绝。
-- `label`（可选）是连线在画布上显示的名称。上下文与资源读取由 HATG ISA 指令承担，图连接不提供自动读取配置。
-- `config` 保存触发目标时的参数映射（`invoke_profiles`，按目标类型各存一份参数）、是否附带事件信封（`include_envelope`，默认 `true`），以及目标暂时不能接收时的处理策略（`unavailable_policy`：`drop` 丢弃、`latest` 只保留最新、`queue` 排队，排队上限 `queue_limit`；`expires_after_seconds` 为待投递调用的过期时间）。指向 Resident Invoke 端口的连线在这里写明交给该 Resident 的具体任务。
-- `event` 连线还可以设置 `context_policy`（`session`），说明目标 Resident 怎样执行这次投递（decision_481dc4e6292c）；指向 Effect 的 `event` 连线可以设置 `parallel: true`，每个 Event 到达即并发执行，不按顺序排队（例如 Family Router）。指向 Resident 的连线不能并行，Resident 始终按顺序处理。
-- 结果：新连线 ID 与连线。
-- 起点和终点的端口方向、用途或数据种类不兼容时拒绝创建。
-
-### `UpdateWire`
-
-**修改一条连线的端点或配置。**
-
-- 参数：`lineage_id`、`wire_id`、`changes`。
-- 结果：修改后的连线。
-
-### `DeleteWire`
-
-**删除一条连线，并清理观察该连线的事件源及其关联连线。**
-
-- 参数：`lineage_id`、`wire_id`。
-- 结果：被删除的连线 ID。
 
 ## 候选 Fork
 
@@ -279,7 +225,7 @@ Lineage 不保存待确认的修改方案。需要先让人确认的团队结构
 
 **准备交接材料，并为目标 Resident 建立工作区绑定。**
 
-- 参数：`lineage_id`、`handoff_id`；或 `source_resident_id` 与 `target_resident_id`（这对端点还没有交接关系时先创建一条，交接来源 Resident 当前工作目录所在的 Workspace，直接共享）。
+- 参数：`lineage_id`、`handoff_id`，均必填。交接关系先用 `CreateWorkspaceHandoff` 创建（同一对 Resident 已有交接时返回已有的），再准备。
 - 结果：交接关系 ID、准备状态（`preparing`、`ready` 或 `failed`）以及逐项结果。
 - 全部交接项准备成功并完成绑定后，状态变为 `ready`；准备或绑定的任一步失败时，整次准备状态为 `failed`，交接关系和各项的本次尝试保存同一失败原因。逐项尝试状态表示这次整体准备的结果。
 - 准备完成不会投递消息，也不会启动目标 Resident。需要在准备完成后开始工作时，由 Lineage 中的 `workspace_handoff.ready` 事件源连接目标的 Invoke 端口表达。
@@ -309,12 +255,12 @@ Lineage 不保存待确认的修改方案。需要先让人确认的团队结构
 
 **把多项修改作为一次原子提交：全部成功时只提交一次，任一项失败时全部不生效。**
 
-- 参数：`lineage_id`、`operations`、`function_block_id`、`duty_changes`、`dry_run`、放置参数（后五类可选）。
-- `operations` 中每项是对组件或连线的 `create`、`update`、`delete` 或 `clone`，或对 Resident 的 `delete`。删除 Resident 采用 `DeleteResident` 的完整语义（decision_d19b9909a674）。后面的操作通过 `$ref:<名称>` 引用前面 create 或 clone 的 `ref`。clone 的 `value` 保存覆盖字段，省略新对象 ID 时由服务生成。批量删除组件或连线只清理指定对象和悬空连线，留下的观察者由诊断提示补充绑定。
+- 参数：`lineage_id`、`operations`、`function_block_id`、`duty_changes`、放置参数（后三类可选）。
+- `operations` 中每项是对组件或连线的 `create`、`update`、`delete` 或 `clone`，或对 Resident 的 `delete`。删除 Resident 保留历史身份并按原生命周期清理会话及工作区（decision_0f57656a2acd）。后面的操作通过 `$ref:<名称>` 引用前面 create 或 clone 的 `ref`。clone 的 `value` 保存覆盖字段，省略新对象 ID 时由服务生成。批量删除组件或连线只清理指定对象和悬空连线，留下的观察者由诊断提示补充绑定。
 - 结果：`created_ids`、`updated_ids`、`deleted_ids`、`revision`。删除 Leader 后，调用者通过 `GetLineage` 读取继任者。
 - 指定 `function_block_id` 时限定为一条职责实例，必须携带读取时的 Lineage `revision` 作为 `expected_version`。仅允许改这条职责直接拥有的组件、连线；新建元素自动归属，删除自动移除归属。拒绝 Resident 删除、外部元素修改以及会连带删除外部共享连线的操作。
 - `duty_changes` 仅在职责范围内接受 `title`、`description`、`category`、`prompt`、`memory_level`；Family 角色职责另支持 `task_prompt`（须保留 ${facts}，仅允许 facts、guide_path、guide_version）；元素变更、归属与职责记忆在同一事务提交。纯提示词职责允许空 `operations`。组织持有的职责仍不允许添加 Resident 提示词。
-- `dry_run:true` 重新核对权限、版本、图和职责边界，返回预览而不持久化；职责结果附 `function_block` 与 `preview:{elements:[{id,before,after}],duty:{before,after}}`。正式提交使用同一请求和版本，过时返回 `instruction.conflict`，失败不留下部分变更。
+- `GetLineageChangesPreview` 用相同的参数和版本前提重新核对权限、版本、图和职责边界，返回预览而不持久化；职责结果附 `function_block` 与 `preview:{elements:[{id,before,after}],duty:{before,after}}`。正式提交使用同一请求和版本，过时返回 `instruction.conflict`，失败不留下部分变更。
 - Lineage 中的 Effect 可以在脚本中调用这条指令，在 `operations` 中用 `${event.outputs.<字段名>}` 引用上游 Effect 输出的对象 ID，或用 `${变量.字段}` 引用本脚本中前面调用返回的对象 ID；引用在调用时解析。
 
 ### Route 端口与数据
@@ -331,35 +277,31 @@ Resident、Event Source、Filter、Reducer 的普通出端口为 output；Select
 
 | 指令名 | arguments 参数名 |
 | --- | --- |
-| `CreateLineage` | `title`、`description`、`project_id`、`leader_resident_id`、`definition`、`familize` |
+| `CreateLineage` | `title`、`description`、`project_id`、`leader_resident_id`、`definition` |
 | `GetLineage` | `lineage_id` |
 | `UpdateLineage` | `lineage_id`、`changes` |
 | `UpdateLineageLayout` | `lineage_id`、`positions` |
 | `DeleteLineage` | `lineage_id` |
 | `ListComponentTypes` | 无 |
-| `CreateComponent` | `lineage_id`、`kind`、`title`、`config`、`client_key`、`near_resident_id`、`placement`、`x`、`y` |
-| `ReviewComponentScript` | `lineage_id`、`effect_id`、`draft_hash`、`decision` |
-| `UpdateComponent` | `lineage_id`、`component_id`、`changes` |
-| `DeleteComponent` | `lineage_id`、`component_id` |
-| `CreateWire` | `lineage_id`、`source`、`source_port`、`target`、`target_port`、`kind`、`config`、`label`、`client_key` |
-| `UpdateWire` | `lineage_id`、`wire_id`、`changes` |
-| `DeleteWire` | `lineage_id`、`wire_id` |
 | `CreateCandidateFork` | `lineage_id`、`seed_id`、`source_resident_id` |
 | `DeleteCandidateFork` | `lineage_id`、`seed_id` |
 | `CreateWorkspaceHandoff` | `lineage_id`、`source_resident_id`、`target_resident_id`、`items`、`explanation`、`label` |
 | `UpdateWorkspaceHandoff` | `lineage_id`、`handoff_id`、`changes` |
 | `DeleteWorkspaceHandoff` | `lineage_id`、`handoff_id` |
-| `RunWorkspaceHandoff` | `lineage_id`、`handoff_id`、`source_resident_id`、`target_resident_id` |
+| `RunWorkspaceHandoff` | `lineage_id`、`handoff_id` |
 | `GetWorkspaceHandoff` | `handoff_id` |
 | `GetLineageDiagnostics` | `lineage_id` |
-| `ApplyLineageChanges` | `lineage_id`、`operations`、`function_block_id`、`duty_changes`、`dry_run`、`near_resident_id`、`placement`、`x`、`y` |
+| `ApplyLineageChanges` | `lineage_id`、`operations`、`function_block_id`、`duty_changes`、`near_resident_id`、`placement`、`x`、`y` |
 | `WatchLineage` | `lineage_id`、`after_cursor` |
 | `MoveWorkspaceHandoff` | `lineage_id`、`handoff_id`、`item_id`、`workspace_id`、`expected_workspace_version` |
+| `ConfirmComponentScript` | `lineage_id`、`effect_id`、`draft_hash` |
+| `CancelComponentScriptDraft` | `lineage_id`、`effect_id`、`draft_hash` |
+| `GetLineageChangesPreview` | `lineage_id`、`operations`、`function_block_id`、`duty_changes`、`near_resident_id`、`placement`、`x`、`y` |
 
 ### Effect 描述与版本确认
 
 Effect 的运行版本保存在 config.script / endpoints；待编写、待确认版本保存在 config.script_draft：description、script、endpoints、requested_by、confirm_by、hash。发起者和内容 hash 由服务端写入，确认人默认是发起者，已有草稿只有发起者可换确认人。工坊的描述、确认人和候选脚本编辑保存到草稿；助手只交回候选内容，不替用户确认。保存候选不改变运行脚本，新建的候选 Effect 运行脚本为空，不能执行；已有 Effect 继续运行原脚本。
 
-ReviewComponentScript(lineage_id, effect_id, draft_hash, decision) 和 ReviewTemplateScript(template_id, effect_id, draft_hash, decision) 分别处理实例和模板，decision 为 confirm 或 cancel。请求必须带所属资源读取时的 expected_version（Lineage revision 或模板 version）。实例 effect_id 是组件 ID，模板中是组件 key。版本或 hash 不符拒绝；confirm 只允许指定确认人，cancel 允许发起者或确认人，且仍须具备对应资源写权限。确认先复用 Effect DSL 校验，空脚本、无效指令和参数不晋升；成功原子替换运行 script/endpoints 并清除草稿。取消只清除草稿，保留原运行版本。调用记录保留操作者和确认内容 hash。
+实例变更用 `ConfirmComponentScript` 或 `CancelComponentScriptDraft`，传 `lineage_id`、`effect_id`、`draft_hash`。模板变更用 `ConfirmTemplateScript` 或 `CancelTemplateScriptDraft`，传 `template_id`、`effect_id`、`draft_hash`。确认和取消分别检查各自的权限。调用携带读取所属资源时的 `expected_version`（Lineage revision 或模板 version）。实例 effect_id 是组件 ID，模板中是组件 key。版本或 hash 不符时拒绝；确认只允许指定确认人，取消允许发起者或确认人，且均须具备对应资源写权限。确认先复用 Effect DSL 校验，空脚本、无效指令和参数不晋升；成功原子替换运行 script/endpoints 并清除草稿。取消只清除草稿，保留原运行版本。调用记录保留操作者和确认内容 hash。
 
 进入此流程后 script_review_required 为 true；同一 Effect 后续修改运行脚本必须再走候选与确认，不能删除标记或草稿绕过确认。既有未进入流程的直接脚本编辑保持兼容。候选字段不进入运行计划，不改变现行执行契约；失败通知收件人仍独立配置。含待确认草稿的模板不可发布商店；确认后可发布、安装并施加，模板和已施加实例仍各自独立。

@@ -75,7 +75,6 @@ class ResourceCapabilities:
     updatable: bool
     content_updatable: bool
     unregisterable: bool
-    actions: tuple[str, ...]
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -87,7 +86,6 @@ class ResourceCapabilities:
             "updatable": self.updatable,
             "content_updatable": self.content_updatable,
             "unregisterable": self.unregisterable,
-            "actions": list(self.actions),
         }
 
 

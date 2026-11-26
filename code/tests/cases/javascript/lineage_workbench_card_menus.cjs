@@ -57,3 +57,65 @@ test('Lineage card menus follow the server permissions and delete a Lineage afte
   assert.ok(menu(LB), 'the other Lineage stays');
   assert.deepEqual(page.errors, []);
 });
+
+test('Resident delete menus require the projected ApplyLineageChanges permission', async t => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const { JSDOM } = require('jsdom');
+  const dom = new JSDOM('<div id="agentFloatingMenu"></div>', {runScripts: 'outside-only'});
+  t.after(() => dom.window.close());
+  const w = dom.window;
+  const source = path.join(__dirname, '../../../management_portal/static/lineage_workbench_card_menus.js');
+  const template = (strings, ...values) => String.raw({raw: strings}, ...values);
+  const permissions = new Map();
+  const projectionReads = [];
+  w.PortalI18n = {t: value => value, html: template, text: template};
+  w.PortalEditorOpenCommands = {actionsHtml: () => ''};
+  w.PortalOverlay = {bindDynamicPopover: () => ({open() {}, close() {}})};
+  w.PortalResidentService = {projection: async ({residentId}) => {
+    projectionReads.push(residentId);
+    return {allows: permissions.get(residentId)};
+  }};
+  w.eval(fs.readFileSync(source, 'utf8'));
+  const {createCardMenus, dependencies} = w.PortalLineageWorkbenchCardMenus;
+  const state = {residents: [{resident_id: A}], personalAmaResidentId: 'resident_eeeeeeeeeeee'};
+  const doc = w.document;
+  const menu = doc.getElementById('agentFloatingMenu');
+  let resident;
+  const menus = createCardMenus({
+    ...Object.fromEntries(dependencies.map(name => [name, () => {}])),
+    $id: id => doc.getElementById(id),
+    esc: String,
+    state,
+    residentExactId: item => item.resident_id,
+    isPersonalAmaResident: item => item.resident_id === state.personalAmaResidentId,
+    menuTargetById: () => ({type: 'resident', item: resident}),
+    derivedResidentForSidebar: () => resident,
+  });
+
+  const cases = [
+    [B, {DeleteResident: true}, false, 'legacy key alone'],
+    ['resident_cccccccccccc', {ApplyLineageChanges: true}, true, 'projected delete permission'],
+    ['resident_dddddddddddd', {ApplyLineageChanges: false, DeleteResident: true}, false, 'denial with old key'],
+    [state.personalAmaResidentId, {ApplyLineageChanges: true}, false, 'personal AMA'],
+  ];
+  for (const [id, allows, visible, label] of cases) {
+    resident = {resident_id: id, lineage_id: LA};
+    permissions.set(id, allows);
+    const trigger = doc.createElement('button');
+    doc.body.append(trigger);
+    state.agentMenuId = trigger.dataset.agentMenu = 'resident:' + id;
+    menus.renderAgentFloatingMenu();
+    assert.equal(menu.querySelector('[data-agent-floating-action="delete-resident"]'), null, 'hidden before permission arrives');
+    await new Promise(setImmediate);
+    assert.equal(Boolean(menu.querySelector('[data-agent-floating-action="delete-resident"]')), visible, 'Resident card: ' + label);
+
+    state.agentMenuId = '';
+    state.residentMemberMenuId = trigger.dataset.residentMemberMenu = A + ':' + id;
+    menus.renderAgentFloatingMenu();
+    assert.equal(Boolean(menu.querySelector('[data-resident-member-action="delete"]')), visible, 'member card: ' + label);
+    state.residentMemberMenuId = '';
+    trigger.remove();
+  }
+  assert.ok(!projectionReads.includes(state.personalAmaResidentId), 'personal AMA stays protected before the permission lookup');
+});

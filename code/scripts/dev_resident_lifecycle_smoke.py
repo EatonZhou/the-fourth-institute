@@ -622,7 +622,8 @@ def main(argv: list[str] | None = None) -> int:
             {
                 "lineage_id": lineage_id,
                 "source_resident_id": resident_id,
-                "fork_mode": "recent-5",
+                "fork_mode": "recent",
+                "recent_rounds": 5,
                 "title": created_resident_title,
             },
             idempotency_key=f"smoke:{marker}:fork-resident",
@@ -681,9 +682,11 @@ def main(argv: list[str] | None = None) -> int:
         started = time.perf_counter()
         _execute_hatg(
             client,
-            "DeleteResident",
-            {"lineage_id": lineage_id, "resident_id": created_resident_id},
+            "ApplyLineageChanges",
+            {"lineage_id": lineage_id,
+             "operations": [{"op": "delete", "kind": "resident", "id": created_resident_id}]},
             idempotency_key=f"smoke:{marker}:delete-resident",
+            expected_version={lineage_id: _revision(lineage)},
         )
         timings["delete_resident_seconds"] = time.perf_counter() - started
         lineage = _lineage(client, lineage_id)

@@ -990,9 +990,9 @@ def test_received_context_is_specific_to_agent_and_current_session(future_creati
     assert not sessions.has_context(binding, agent_id=rid)
 
 
-@pytest.mark.parametrize('count', [5, 10])
+@pytest.mark.parametrize('count', [1, 3, 10])
 def test_recent_fork_uses_effective_provider_turns_with_tools(future_creation_store, monkeypatch, count):
-    """最近 5 或 10 轮 fork 按实际 Provider 轮次保留回复和工具结果"""
+    """最近指定轮数的 Fork 按实际 Provider 轮次保留回复和工具结果"""
     monkeypatch.setattr(project_folders, 'project_root_for_id', lambda _: future_creation_store)
     source = resident_domain.register_resident(_new_session_payload('Recent source'), 'sample_admin')
     source = _activate_created_resident(source['resident_id'])
@@ -1005,6 +1005,10 @@ def test_recent_fork_uses_effective_provider_turns_with_tools(future_creation_st
         store.append_agent_segments(source['resident_id'], [tool_id], actor_ref='sample_admin')
     child_id = resident_domain.create_resident_context_fork(source['resident_id'], 'sample_admin', count)['resident_id']
     child = resident_record_domain.find_resident(child_id)
+    from management_portal.society_service.resident_fork_inheritance import inheritance_view
+    view = inheritance_view(child_id, child, "sample_admin")
+    assert view["fork_mode"] == "recent"
+    assert view["recent_rounds"] == count
     workspace_snapshot = resident_conversation_stream.get_repository().snapshot(child_id)
     workspace_text = '\n'.join(
         resident_domain_common.protocol_message_text(item)
@@ -1015,6 +1019,16 @@ def test_recent_fork_uses_effective_provider_turns_with_tools(future_creation_st
     for index in range(12):
         assert (f'unique-download-{index}.pdf' in prompt) == (index >= 12 - count)
         assert (f'tool-evidence-{index}"' in prompt) == (index >= 12 - count)
+
+
+def test_recent_fork_rejects_a_count_beyond_the_available_window(future_creation_store, monkeypatch):
+    monkeypatch.setattr(project_folders, 'project_root_for_id', lambda _: future_creation_store)
+    source = resident_domain.register_resident(_new_session_payload('Bounded source'), 'sample_admin')
+    source = _activate_created_resident(source['resident_id'])
+    _append_conversation_turn(source['resident_id'], 0)
+    _record_provider_turn(get_agent_data_store(), source, 0, answer='first answer')
+    with pytest.raises(ValueError, match=r'recent_rounds.*（1）'):
+        resident_domain.create_resident_context_fork(source['resident_id'], 'sample_admin', 2)
 
 
 def _trace_refs(child):

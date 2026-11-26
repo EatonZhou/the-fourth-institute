@@ -123,7 +123,7 @@ Resource placement determines access; authorship generally does not add rights. 
 Each instruction maps to required action and resource nodes. Unmapped instructions remain restricted; a scheme's `unmapped` diagnostics identify them. Page and backend checks use instruction permissions. `GetInstructionSchema.permission` describes the active requirements.
 
 - `CreatePermissionScheme` copies a scheme and its instances or generates instances from rules.
-- `UpdatePermissionScheme` regenerates instances when rules change, losing manual instance edits. Inspect `dry_run` first. Title, description, and mapping-only updates do not regenerate instances.
+- `UpdatePermissionScheme` regenerates instances when rules change, losing manual instance edits. Inspect `GetPermissionSchemeUpdatePreview` first. Title, description, and mapping-only updates do not regenerate instances.
 - `ActivatePermissionScheme` reconciles missing current objects while retaining existing instance edits, then selects the scheme. With checks disabled it records the selection for later activation.
 
 Confirmation views show `auth_diff`: which principals gain or lose which action level on which resources. Mapping changes also count, even when entries remain the same. The view shows affected counts, changed classifications, fixed-resource changes, and incomplete calculations as lower bounds. Startup rule merges retain a report in the last automatic merge panel. Review these changes before saving.
@@ -132,11 +132,13 @@ Confirmation views show `auth_diff`: which principals gain or lose which action 
 
 Use Permission entries or `CreatePermissionEntry`, `UpdatePermissionEntry`, `DeletePermissionEntry`, and `ListPermissionEntries`. Filter by principal or resource, with exact, ancestor, or subtree scope. To inspect the complete instance, use resource `@portal` and subtree scope. Writing requires the relevant entry-management permission on its resource; moving an entry requires permission on both old and new resources. `expected_version` protects against concurrent edits. Use `GetEffectivePermissions` or `CheckPermission` to inspect effective access.
 
-Temporary credentials delegate permitted work. Attach them to `DeliverMessage`, or issue one with `CreateTemporaryCredential` tied to a message or duration, up to seven days. `UpdateTemporaryCredential` extends time-based grants; `RevokeTemporaryCredential` returns them early. Message-bound credentials expire when that message finishes. A Resident acts with its own permissions and explicitly delegated credentials; it does not automatically inherit a sender's rights.
+For a task-bound grant, use the same authenticated User or Resident to call `PrepareResidentInput` with a fixed message ID, the complete message, and its delivery arguments. Create each grant with `CreateTemporaryCredential`. After all grants are pending, call `DeliverMessage` with the original arguments. Acceptance activates the grants in the same transaction. They are reclaimed when the input completes, fails, or is cancelled. Before delivery, the issuer can cancel the preparation with `CancelInput` in the original conversation. For a Family approval, the question card acts as the real User and the grants go to the verified member who asked the question.
+
+Time-based grants take effect on issue and can be extended with `UpdateTemporaryCredential`. Both grant types last at most seven days. The recipient can return a grant early with `RevokeTemporaryCredential`. Check the current instance's instruction catalog before calling.
 
 ### User categories and administrators
 
-User categories are `portal_admin`, `member`, and `intern`. New Users are members. Change category in Users or through `UpdateUser(changes.category)`. Only Portal administrators can grant or remove administrator status or enable, disable, or delete administrator accounts, regardless of the permission switch. An administrator cannot remove or disable themselves. Keep at least two active administrators where practical.
+User categories are `portal_admin`, `member`, and `intern`. New Users are members. Change category in Users or through `UpdateUserCategory(user_id, category)`. Only Portal administrators can grant or remove administrator status or enable, disable, or delete administrator accounts, regardless of the permission switch. An administrator cannot remove or disable themselves. Keep at least two active administrators where practical.
 
 Member/intern changes follow ordinary instruction permissions when enabled. Resident identities do not become Portal administrators; grant appropriate resource access or temporary credentials instead.
 
@@ -146,7 +148,7 @@ Administrators retain the ability to toggle the permission system, list schemes,
 
 ### Resource types
 
-Resource types shows state, counts, package ownership, registration capability, read-only declarations, and actions. Registration requires both declaration support and a provider implementation. Uninstalled types cannot be enabled. Disabling a type hides it from catalogs and prevents new registration; existing objects remain addressable by ID and can be unregistered. Changes use versions to detect conflicts. Backup is a separate maintenance entry rather than a toggleable resource type.
+Resource types shows state, counts, package ownership, registration capability, and read-only declarations. Registration requires both declaration support and a provider implementation. Use `SetResourceTypeEnabled` to enable or disable an installed type. Disabling a type hides it from catalogs and prevents new registration. Existing objects remain addressable by ID and can be unregistered. Changes use versions to detect conflicts. Backups have a separate maintenance page.
 
 Use `ReadResource(address="knowledge_tags_7d4e9a2c6f10")` to fetch the site-wide tag list as JSON in `text`, along with its `version`. To replace the list, use `UpdateResource` on the same `resource_id`, pass the full array as a JSON string in `changes.content`, and set the call envelope’s `expected_version`. The resource requires Shared `@viewer` for reads and Shared `@admin` for writes. On a version conflict, read it again and reconcile your edits. Project setup uses the same list’s `folder` values for knowledge directories.
 
@@ -154,13 +156,15 @@ Use `ReadResource(address="knowledge_tags_7d4e9a2c6f10")` to fetch the site-wide
 
 Manage execution accounts under AI Backend. Disabling stops new dispatches and preserves session bindings; reenabling resumes them. Deletion requires clearing session and queued/running work references. An active login must be cancelled and allowed to exit first. Registration, observed login state, and Home scheduler settings retain separate responsibilities. For a missing runtime, use `RunScript` in the designated Portal operations Lineage with the registered `install_provider_runtime` script and its `provider` argument. Confirm readiness with `ListProviders` or `GetProviderAccountSetup`. The adapter declares native configuration and usage-event support. Read the current configuration and version with `GetProviderAccountConfiguration`, then send supported fields as `UpdateProviderAccountConfiguration.changes` with the envelope’s `expected_version`. Use `GetProviderUsageEvents` for accounts that declare that capability.
 
+`RestartSession` waits for the Resident’s current work to finish and preserves queued inputs. If the user explicitly asks to stop the current work, call `CancelInput` for that input, confirm that execution has ended through `GetInputState` or conversation events, then call `RestartSession`. Use `GetSessionRestart` to check the operation and the active binding.
+
 Manage User accounts under Users:
 
 | Situation | Action |
 | --- | --- |
 | Forgotten password without recovery email | `ResetUserPassword`; deliver the new password privately. Other sessions must sign in again. |
 | Lost device or suspected session theft | `RevokeUserSessions`; invalidates browser sessions and personal tokens. |
-| Temporarily suspend access | Disable with `UpdateUser`; data remains. Reenable later, but revoked tokens stay revoked. |
+| Temporarily suspend access | Disable with `UpdateUserStatus`; data remains. Reenable later, but revoked tokens stay revoked. |
 | Permanently remove an account | `DeleteUser` with full username confirmation. Personal data and AMA are removed; shared Projects, other Lineages, and history remain. The username cannot be reused. |
 
 Administrators change their own password in Account security and cannot delete themselves.
@@ -172,6 +176,8 @@ Users revoke individual personal tokens with `RevokeUserAccessToken`. To invalid
 ### Backups
 
 Back up PostgreSQL plus the instance's areas (projects, lineages, skills, papers, uploads, features, provider-state; their locations are listed under Portal Management → Data directories), `secrets/`, the manifest `instance.json` and the site settings `site.json`. `cache/` and `runtime/` need no backup. Export the database first, then copy the areas. Configure the deployment's backup service, for example Restic with database exports. Resource → Backup reports recovery points and schedules and provides authorized backup and verification controls. Protect backup keys separately and verify that recovery works. See the Portal Resource Backup design and installation procedures for the deployed configuration.
+
+Google Drive off-site backup uses the `google_drive_backup` script registered in the site's backup Lineage. `RunScript` requires permission on that Lineage. The script takes a `profile` of `critical`, `content`, or `probe`, accepts an optional `network_route`, and uses the `resource-backup` exclusion key. Use the returned `script_run_id` to look up the result.
 
 ### Code updates and releases
 

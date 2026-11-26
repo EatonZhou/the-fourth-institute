@@ -56,7 +56,7 @@
         },
         toast,
         // Previews change nothing, so they do not wait for or block graph edits.
-        request: (instruction, args) => instruction === "ApplyTemplate" && !args?.dry_run
+        request: (instruction, args) => instruction === "ApplyTemplate"
           ? applyProgramMutation(() => executeHatgInstruction(instruction, args))
           : window.PortalInstructionClient.execute(instruction, args),
       });

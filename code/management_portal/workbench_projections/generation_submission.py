@@ -4,6 +4,7 @@ Generation progress owns its top-level fields. Submission identity and evidence
 belong to WorkflowBindings; keep that contract intact instead of flattening it.
 """
 from management_portal.lineage_workflows import WorkflowBindings, WorkflowFailed, WorkflowPending
+from .studio_credentials import submission_payload
 
 
 def prepare(job):
@@ -11,7 +12,7 @@ def prepare(job):
     job['receipt'] = WorkflowBindings.prepare(job, request_id=job['id'])
 
 
-def advance(job, *, actor, submit=False):
+def advance(job, *, actor, submit=False, store=None):
     """Only the initial caller submits; all recovery observes the original key."""
     if not job.get('receipt'):
         # Pre-handle submitting jobs used this same stable request identity.
@@ -21,8 +22,10 @@ def advance(job, *, actor, submit=False):
     try:
         workflow = WorkflowBindings()
         if submit:
+            if store is None:
+                raise ValueError('投影提交必须使用保存任务的 Store')
             handle = workflow.trigger(handle, actor=actor, prompt=job['request_prompt'], request_id=job['id'],
-                                      temporary_credentials=[{"a": "@contributor", "resource_id": job['workbench_id']}])
+                                      payload=submission_payload(job, actor=actor, store=store))
         else:
             handle = workflow.observe(handle, actor=actor)
     except WorkflowPending as error:

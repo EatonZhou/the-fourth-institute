@@ -7,7 +7,7 @@ const title = row => row.title?.[window.PortalI18n.locale() === "en" ? "en" : "z
 
 export async function mount(root, {me} = {}) {
   me ||= await window.PortalIdentity.load();
-  let canWrite = me.access?.permission_system === "open" || me.access?.allows?.UpdateResourceType === true;
+  let canWrite = me.access?.permission_system === "open" || me.access?.allows?.SetResourceTypeEnabled === true;
   let rows = [], selected = "", busy = false, destroyed = false, detailRequest = 0;
   const execute = (name, args, options) => window.PortalInstructionClient.execute(name, args, options);
   root.innerHTML = window.PortalI18n.html`
@@ -21,7 +21,7 @@ export async function mount(root, {me} = {}) {
       <div class="managementResourceTypeTable"><table><thead><tr>
         <th>类型</th><th>分类</th><th>标题</th><th>状态</th><th>实例数</th><th>提供者与发行单元</th><th>目录位置</th><th>可登记</th><th>操作</th>
       </tr></thead><tbody data-types-rows></tbody></table></div>
-      <section data-types-detail hidden><h3 data-types-detail-title></h3><h4>类型声明</h4><pre data-types-declaration></pre><h4>动作目录</h4><pre data-types-actions></pre></section>
+      <section data-types-detail hidden><h3 data-types-detail-title></h3><h4>类型声明</h4><pre data-types-declaration></pre></section>
     </section>
     <details class="settingsSection" data-tags>
       <summary>知识标签</summary>
@@ -54,7 +54,6 @@ export async function mount(root, {me} = {}) {
     $("[data-types-detail]").hidden = false;
     $("[data-types-detail-title]").textContent = `${row.type} · ${title(row)}`;
     $("[data-types-declaration]").textContent = JSON.stringify(row.declaration, null, 2);
-    $("[data-types-actions]").textContent = row.actions?.length ? JSON.stringify(row.actions, null, 2) : t("此类型没有专用动作。");
   }
   async function detail(type) {
     selected = type;
@@ -98,7 +97,7 @@ export async function mount(root, {me} = {}) {
         });
         if (!approved || destroyed) return;
       }
-      const updated = await execute("UpdateResourceType", {resource_type: type, enabled: !row.enabled}, {expectedVersion: row.version});
+      const updated = await execute("SetResourceTypeEnabled", {resource_type: type, enabled: !row.enabled}, {expectedVersion: row.version});
       if (destroyed) return;
       Object.assign(row, updated);
       if (selected === type) showDetail(row);

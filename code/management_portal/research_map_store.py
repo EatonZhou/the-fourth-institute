@@ -442,9 +442,10 @@ def direction(direction_id: str) -> dict[str, Any] | None:
     return dict(row) if row else None
 
 
-def permission_records() -> list[dict[str, Any]]:
+def permission_records(*, read_only: bool = False) -> list[dict[str, Any]]:
     """Every direction on a map, placed under its Project (``permission.records``)."""
-    with database().read() as connection:
+    owner = database()
+    with (owner.database.readonly_snapshot() if read_only else owner.read()) as connection:
         rows = connection.execute("SELECT direction_id, project_id, created_by FROM directions WHERE NOT removed").fetchall()
     return [{"resource_id": row["direction_id"], "resource_type": "direction", "project_id": row["project_id"],
              "created_by": row["created_by"]} for row in rows]

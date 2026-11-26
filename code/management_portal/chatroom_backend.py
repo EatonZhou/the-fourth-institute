@@ -19,7 +19,7 @@ import logging
 import re
 import secrets
 from collections.abc import Callable, Iterable, Mapping
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from copy import deepcopy
 from datetime import datetime, timezone
 from typing import Any
@@ -259,9 +259,14 @@ def resource_summary(chatroom_id: object) -> dict[str, Any]:
     return _resource_summary(room)
 
 
-def resource_records():
+def resource_records(*, read_only: bool = False):
     """Every Chatroom as the permission system places it (``permission.records`` hook)."""
-    return [_permission_record(room) for room in _store().list() if room.get("chatroom_id")]
+    if read_only:
+        from .chatroom_store import permission_rooms_readonly
+        rooms = permission_rooms_readonly()
+    else:
+        rooms = _store().list()
+    return [_permission_record(room) for room in rooms if room.get("chatroom_id")]
 
 
 def _permission_record(room):
@@ -398,23 +403,62 @@ def set_unread(actor: object, chatroom_id: object, unread: bool, *, expected_rev
     clean_id = _chatroom_id(chatroom_id)
     with _Transaction(clean_id, viewer=viewer, delivery_ids=()) as rooms:
         room = _require_member(rooms.get(clean_id), viewer)
-        current = _viewer_state(room, viewer)
-        if expected_revision is not None and str(expected_revision) != str(current["read_revision"]):
-            raise VersionConflict(current)
-        last = int(room.get("last_ordinal") or 0)
-        if unread:
-            positions = room.setdefault("read_through", {})
-            positions[viewer.casefold()] = min(int(positions.get(viewer.casefold()) or 0), max(0, last - 1))
-            latest = room.get("last_message") or {}
-            if latest and any(same_actor(viewer, user) for user in latest.get("mentioned_users", [])):
-                pending = room.setdefault("user_mentions", {}).setdefault(viewer.casefold(), [])
-                if not any(item["ordinal"] == last for item in pending):
-                    pending.append({"message_id": latest["message_id"], "ordinal": last})
-        else:
-            _mark_read(room, viewer, last)
+        _apply_unread(room, viewer, unread, expected_revision)
         rooms[clean_id] = room
     _publish_inbox([viewer])
     return {"chatroom_id": clean_id, **_viewer_state(room, viewer)}
+
+
+def _apply_unread(room, viewer, unread, expected_revision):
+    current = _viewer_state(room, viewer)
+    if expected_revision is not None and str(expected_revision) != str(current["read_revision"]):
+        raise VersionConflict(current)
+    last = int(room.get("last_ordinal") or 0)
+    if unread:
+        positions = room.setdefault("read_through", {})
+        positions[viewer.casefold()] = min(int(positions.get(viewer.casefold()) or 0), max(0, last - 1))
+        latest = room.get("last_message") or {}
+        if latest and any(same_actor(viewer, user) for user in latest.get("mentioned_users", [])):
+            pending = room.setdefault("user_mentions", {}).setdefault(viewer.casefold(), [])
+            if not any(item["ordinal"] == last for item in pending):
+                pending.append({"message_id": latest["message_id"], "ordinal": last})
+    else:
+        _mark_read(room, viewer, last)
+
+
+def _mailbox_update_marks(actor, chatroom_id, *, muted, pinned, unread, expected_revision):
+    from management_portal import conversation_read_state, conversation_receipt_store
+
+    viewer = _actor(actor)
+    clean_id = _chatroom_id(chatroom_id)
+    key = INBOX_KEY_PREFIX + clean_id
+    receipts = conversation_receipt_store.database()
+    if pinned is not None:
+        receipts.ensure()
+        # Enter the room transaction first, then take the actor's pin lock.
+        room_domain = chatroom_store.database()
+        room_domain.ensure()
+        agent_data = _agent_data()
+        scope = atomic_transaction(room_domain.database, agent_data.database, receipts.database)
+    else:
+        scope = nullcontext()
+    with scope:
+        # The outer scope, when needed, already enlisted the room domains.
+        with _Transaction(clean_id, viewer=viewer, delivery_ids=(), enlisted=pinned is not None) as rooms:
+            room = _require_member(rooms.get(clean_id), viewer)
+            if unread is not None:
+                _apply_unread(room, viewer, unread, expected_revision)
+            if muted is not None:
+                room.setdefault("muted_by", {})[viewer.casefold()] = muted
+            if pinned is not None:
+                conversation_read_state.set_pinned(viewer, key, pinned)
+            rooms[clean_id] = room
+    if muted is not None:
+        _publish({**room, "members": [viewer]}, fields=["preferences"])
+    elif unread is not None:
+        _publish_inbox([viewer])
+    state = _viewer_state(room, viewer)
+    return {"key": key, "unread": state["unread_count"] > 0, "read_revision": state["read_revision"]}
 
 
 def _mailbox_set_unread(actor: object, chatroom_id: object, unread: bool, *, expected_revision: object = None) -> dict[str, Any]:
@@ -430,14 +474,14 @@ def _mailbox_set_muted(actor: str, chatroom_id: str, muted: bool):
 # positions itself, in their member rows.
 MAILBOX_SOURCE = MailboxSource(INBOX_KEY_PREFIX, inbox_entries, conversation=True,
                                set_unread=_mailbox_set_unread, contains=in_mailbox,
-                               set_muted=_mailbox_set_muted)
+                               set_muted=_mailbox_set_muted, update_marks=_mailbox_update_marks)
 
 
 # -- record transactions -----------------------------------------------------------
 
 
 @contextmanager
-def _Transaction(chatroom_id, *, viewer=None, delivery_ids=None, permissions=False):
+def _Transaction(chatroom_id, *, viewer=None, delivery_ids=None, permissions=False, enlisted=False):
     """Commit the stream, room metadata and change feed together under one lock.
 
     With ``permissions`` the room's place and its members' entries in the
@@ -447,7 +491,7 @@ def _Transaction(chatroom_id, *, viewer=None, delivery_ids=None, permissions=Fal
     domain.ensure()
     agent_data = _agent_data()
     store = _store()
-    with atomic_transaction(domain.database, agent_data.database):
+    with (nullcontext() if enlisted else atomic_transaction(domain.database, agent_data.database)):
         with store.transaction(chatroom_id) as connection:
             previous = store.get(chatroom_id, viewer=viewer, delivery_ids=delivery_ids)
             rooms = {chatroom_id: deepcopy(previous)} if previous else {}

@@ -353,8 +353,8 @@
       try {
         const published = payload?.published === true;
         const result = await window.PortalApplicationToolClient.execute(
-          "application:pulse.publish",
-          { source_period: payload.source_period, source_key: payload.source_key, item_id: payload.item_id, published },
+          published ? "application:pulse.publish" : "application:pulse.unpublish",
+          { source_period: payload.source_period, source_key: payload.source_key, item_id: payload.item_id },
           { idempotencyKey: `pulse:${globalThis.PortalUIPrimitives.randomUUID()}` },
         );
         portalPulseData = result.pulse;

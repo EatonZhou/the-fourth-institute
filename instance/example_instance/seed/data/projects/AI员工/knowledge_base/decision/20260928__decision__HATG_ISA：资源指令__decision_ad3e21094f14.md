@@ -37,7 +37,6 @@ links:
   - decision_898b8911a2ff
   - thinking_ca8f397a47de
 ---
-
 # HATG ISA：资源指令
 
 资源指令让人和 Agent 查找、读取和保存 TFI Portal 中的持久内容。Resident 查资料、读取某份 Design、保存报告，页面打开资源详情，都使用这一类指令。本类指令都由 ResourceService 执行。所有指令共同遵守的调用格式、执行流程和错误语义见 decision_898b8911a2ff。
@@ -54,24 +53,33 @@ links:
 
 | 指令 | 改变状态 | 作用 | 默认方案要求 |
 | --- | --- | --- | --- |
-| `SearchResources` | 否 | 按条件查找资源 | 对“共享”有 @viewer |
+| `SearchResources` | 否 | 按关键词、类型、项目和状态查找调用者可以看到的资源。 | 对“共享”有 @viewer |
 | `ResolveResource` | 否 | 把地址解析为资源记录 | 对 `address` 有 @viewer |
 | `ReadResource` | 否 | 读取资源正文或资源内部文件 | 对 `address` 有 @viewer |
-| `ListResourceTypes` | 否 | 列出全部资源类型的声明、状态与有效能力 | 对“共享”有 @viewer |
-| `GetResourceType` | 否 | 读取某个资源类型的声明、状态与有效能力 | 对“共享”有 @viewer |
-| `UpdateResourceType` | 是 | 启用或停用一个资源类型，可选信封版本前提 | 对“共享”有 @admin |
+| `ListResourceTypes` | 否 | 列出全部资源类型声明、状态、实例数和提供者能力。 | 对“共享”有 @viewer |
+| `GetResourceType` | 否 | 读取一个资源类型是否可以登记、修改和撤销登记。 | 对“共享”有 @viewer |
+| `SetResourceTypeEnabled` | 是 | 启用或停用一个资源类型，可选信封版本前提 | 对“共享”有 @admin |
 | `RegisterResource` | 是 | 登记一个新资源 | 对新对象的所属位置有 @contributor |
 | `CreateWorkspace` | 是 | 在空位置创建 Workspace | 固定槽免检；给出 `owner_id` 时对该所属对象有 @contributor |
 | `RegisterWorkspace` | 是 | 将现成目录接入为新的 Workspace | 固定槽免检；给出 `owner_id` 时对该所属对象有 @contributor |
 | `GetDirectoryCleanup` | 否 | 读取对象的目录文件清理进度 | 固定槽免检；领域只向原操作调用者或有对象读取权限的调用者返回清理记录 |
 | `UpdateResource` | 是 | 修改资源的正文或元数据 | 对 `resource_id` 有 @contributor |
 | `UnregisterResource` | 是 | 撤销资源登记 | 对 `resource_id` 有 @admin |
-| `RunResourceAction` | 按动作声明 | 执行资源类型声明的专用动作 | 对 `resource_id` 有 @contributor |
-| `CreateUpload` | 是 | 开始一次文件上传，取得上传地址 | 免检 |
+| `CreateKnowledgeFile` | 是 | 在知识条目的附件目录内新增文本文件 | 对 `resource_id` 有 @contributor |
+| `UpdateKnowledgeFileName` | 是 | 重命名知识条目的 Markdown 主文件 | 对 `resource_id` 有 @contributor |
+| `MoveKnowledgeItems` | 是 | 把一批知识条目和 Skill 迁入目标 Project | 对 `project_id` 有 @contributor；源条目另核 |
+| `UpdateDeviceSshCredential` | 是 | 保存设备的 SSH 密码凭据，不回显内容 | 对 `resource_id` 有 @admin |
+| `DeleteDeviceSshCredential` | 是 | 删除设备的 SSH 密码凭据 | 对 `resource_id` 有 @admin |
+| `CheckDeviceSsh` | 否 | 测试到设备的 SSH 连接 | 对 `resource_id` 有 @viewer |
+| `RunDeviceCommand` | 是 | 用设备绑定的 SSH 身份在远端执行一条命令 | 对 `resource_id` 有 @admin |
+| `UpdateWorkbenchPage` | 是 | 保存一次页面生成结果 | 对 `resource_id` 有 @contributor |
+| `UpdateWorkbenchReversePlan` | 是 | 保存一份反向整理计划 | 对 `resource_id` 有 @contributor |
+| `CreateUpload` | 是 | 开始一次文件上传，返回上传句柄和写入字节的数据通道地址。 | 免检 |
 | `UpdateWorkspaceFile` | 是 | 写入工作区中的文本文件 | 对 `address` 有 @contributor |
 | `CorrectResourceLifecycleAssociation` | 是 | 原生命周期调用者凭owner核验的持久Project根依赖证据解除错误夹具关联；仅关闭准入后可用，保留审计，不注销或删除Workspace，不完成scope。 | 免检；对 `resource_id` 有 `@viewer` |
 | `GetResourceCreation` | 否 | 读取父 Lineage 中的资源创建状态与 writer 证据状态。 | 对 `lineage_id` 有 `@viewer` |
 | `CancelResourceCreation` | 是 | 持久撤销未登记的资源创建并阻止继续或重试；文件清理须证明 writer 已停止，证据不足保持 pending。 | 对 `lineage_id` 有 `@contributor` |
+| `CreateUploadFromFile` | 是 | 按调用者当前权限读取已有资源文件，复制为已完成的上传；不创建字节上传通道。 | 免检 |
 
 ## 查找与读取
 
@@ -127,19 +135,19 @@ links:
 **列出全部资源类型的声明、安装与启停状态，以及有效能力。**
 
 - 无业务参数。
-- 结果：`types` 列表和 `registry` 元数据。每项包含类型元数据、`state`、`installed`、`enabled`、`version`、`instance_count`、原始 `declaration` 与提供者动作目录。注册表元数据包含 ID 语法与 `id_exceptions`。
+- 结果：`types` 列表和 `registry` 元数据。每项包含类型元数据、`state`、`installed`、`enabled`、`version`、`instance_count`、原始 `declaration`。注册表元数据包含 ID 语法与 `id_exceptions`。
 
 ### `GetResourceType`
 
-**读取一个资源类型的声明、状态，以及是否可以登记、修改、撤销登记和专用动作。**
+**读取一个资源类型的声明、状态，以及是否可以登记、修改、撤销登记。**
 
 - 参数：`resource_type`，与 `RegisterResource`、`SearchResources` 同名。
-- 结果：类型元数据、`state`、`installed`、`enabled`、`version`、`instance_count`、独立原始 `declaration`，以及 `registerable`、`updatable`、`unregisterable` 和动作目录。动作包含名称、说明、参数定义、结果定义与是否改变状态。
+- 结果：类型元数据、`state`、`installed`、`enabled`、`version`、`instance_count`、独立原始 `declaration`，以及 `registerable`、`updatable`、`unregisterable`。
 - 顶层 `registerable` 是声明政策与按需装载的 mutation 提供者登记机制的合取；未安装类型为 false。`declaration` 保留全部原始字段，不受有效能力覆盖。类型声明与状态规则见 decision_355ed742bca5。
 
 ## 登记与修改
 
-### `UpdateResourceType`
+### `SetResourceTypeEnabled`
 
 **启用或停用一个资源类型，保留已有实例。**
 
@@ -194,22 +202,18 @@ CreateWorkspace 要求目标位置不存在；RegisterWorkspace 要求目标是�
 
 ### Article 恢复（系统脚本）
 
-已注销 Article 的原 ID 恢复是针对历史事故的一次性补救流程，依赖登记账本、墓碑和清理记录，不属于通用资源机制，不登记为指令。它由系统脚本 `article_restore` 完成，有两个子步骤：`check`（有界只读证据预检）和 `apply`（原 ID 部分恢复）。脚本固定在“Portal 运维”职责的 Lineage 中，经 `RunScript` 运行，权限为对所属 Lineage 的 @admin（decision_8b510cbd9c58）；脚本以宿主权限读取墓碑、登记账本、保留回执与清理记录，`arguments.step` 选择 `check` 或 `apply`。两者还须提供：`article_id`、`resident_id`、`ordinal`、`tool_index`、`tool_item_id`、`expected_hash`、`source_address`、`source_version`、`primary_file`、`primary_version`、`project_id`、`target_relative_path`；`apply` 另有 `inheritance_digest`、`decision_resident_id`、`proposal_message_id`、`decision_message_id`。
+已注销 Article 的原 ID 恢复是针对历史事故的一次性补救流程，依赖登记账本、墓碑和清理记录，不属于通用资源机制，不登记为指令。它由系统脚本 `article_restore` 完成，有两个子步骤：`check`（有界只读证据预检）和 `apply`（原 ID 部分恢复）。脚本源码在 `scripts/article_restore.py`，经站点配置绑定的固定 Portal 运维 Lineage 由 `RunScript` 运行，调用者须对该 Lineage 有 @admin（decision_5ff0cb51ed84、decision_8b510cbd9c58）；脚本取运行记录里的真实调用者（User 或 Resident）交给恢复预检与提交逻辑，原领域核验（Article 或原 Resident 的 @admin、源的 @viewer、目标 Project 的 @contributor）由该逻辑逐项执行；脚本以宿主权限只读观察墓碑、登记账本、保留回执与清理记录，这种观察不是新的指令执行或授权，`arguments.step` 选择 `check` 或 `apply`。两者还须提供：`article_id`、`resident_id`、`ordinal`、`tool_index`、`tool_item_id`、`expected_hash`、`source_address`、`source_version`、`primary_file`、`primary_version`、`project_id`、`target_relative_path`；`apply` 另有 `inheritance_digest`、`decision_resident_id`、`proposal_message_id`、`decision_message_id`。
 
 脚本的行为与证据核验规则不变：`check` 只读，结果固定 `mode=dry_run`、`can_apply=false`，分别报告原工具可证事实、独立登记账本与 HATG 回执，不核定用户是否批准；`apply` 只部分恢复到同一 Article ID，主文件固定 `main.md`，说明“部分恢复”和“最终版本未找齐”，不复活 Resident，不伪造原作者或 ACL，共享范围须有真实用户对具体方案的明确决定，最终提交重核源完整递归版本、当前共享范围、权限和路径；返回 `mode=partial_restore`、`final_version_recovered=false`。脚本以该次运行的真实 User 或 Resident 身份逐项核验原 Article 与原 Resident 的 `@admin`、源 `@viewer`、目标 Project `@contributor`；拒绝访问不转换成证据缺失。`apply` 使用运行本身的 `script_run_id` 标识恢复操作。证据规则、目录事务与文件回收见 decision_956154cd02f6、decision_4aa13bc21e8e。
-
-Colab 会话通过固定 Portal 运维 Lineage 的系统脚本 `colab_session` 管理。脚本要求真实调用者对该 Lineage 有 `@admin`，并核对目标 Device 的解析和原会话操作权限。参数为 `resource_id` 和 `running`；启动另须 `hardware`，释放时省略它。
 
 ### `UpdateResource`
 
 **按资源类型修改正文或元数据。**
 
-知识标签配置使用固定单例 `knowledge_tags_7d4e9a2c6f10`，`changes.content` 为整张 JSON 列表的字符串；信封的 `expected_version` 须取自 `ReadResource`（decision_6591e7793116）。
-
 - 参数：`resource_id`、`changes`（要修改的字段）。
 - 结果：修改后的资源记录与 `version`。知识条目使用新版本号的字符串；其他类型返回其版本或修改时间，类型没有提供时返回空字符串。
 - 修改 Knowledge Provider 管理的知识条目主正文时，可以在调用中附带 `expected_version`（当前版本号）；版本不一致返回 `instruction.version_conflict`。Knowledge 的 `changes.text`（完整文本）与 `changes.body`（仅 Markdown 主文件正文）必须且只能提供一个。`body` 保留服务端锁内读取的元数据，仅由系统推进版本；允许空字符串清空正文，不接受 null，不用于伴随文件、Skill、Article 或版本恢复。版本恢复规则见 decision_3ece26686464。Skill 的文本保存仍沿 Skill 自身生命周期，不能把知识主文件的数字版本与恢复链规则套到 Skill。
-- Workspace 只允许非空 `title` 与必填 `expected_version`；版本原样取自 `ResolveResource.result.resource.version`，在同一行锁内鉴权、比较和写入（decision_8838269736d3）。Workbench 使用 `changes.expected_revision`。其他类型按自己的字段契约处理；ISA 对不支持信封 `expected_version` 的类型返回 `instruction.invalid_arguments`。
+- Workspace 只允许非空 `title` 与必填 `expected_version`；版本原样取自 `ResolveResource.result.resource.version`，在同一行锁内鉴权、比较和写入（decision_8838269736d3）。Workbench 使用 `changes.expected_revision`。知识标签配置通过 `UpdateResource` 更新固定单例 `knowledge_tags_7d4e9a2c6f10`，`changes.content` 为完整 JSON 列表字符串，信封中的 `expected_version` 必须来自 `ReadResource`（decision_6591e7793116）。其他类型按自己的字段契约处理；ISA 对不支持信封 `expected_version` 的类型返回 `instruction.invalid_arguments`。
 
 ### `UnregisterResource`
 
@@ -225,23 +229,39 @@ Workspace 支持 `UnregisterResource(resource_id=workspace_id)`，要求目标 W
 
 注销对象、关联登记和绑定与记录待清理目录在同一次数据库写入中完成，随后返回注销结果。后台清理失败记录原因并持久重试，不回滚登记；未清理完的位置继续占位，创建和接入拒绝，扫描跳过。调用者用 `GetDirectoryCleanup(resource_id=workspace_id)` 单独读取文件清理进度。注销前在事务中重新鉴权，目录登记以权威存储为准；提交后的索引确认继续遵循 decision_b6e74d78f7b6。
 
-### `RunResourceAction`
+### 知识条目文件与迁移
 
-**执行资源类型在动作目录中声明的一个专用动作。**
+**`CreateKnowledgeFile(resource_id, filename, text, expected_version)`** 在知识条目已登记的附件目录内新增一个文本文件；已有文件用 `UpdateResource`。结果为 `resource_id`、`address`、`version`。
 
-- 参数：`resource_id`、`action`、`arguments`。
-- 结果：由该动作的声明定义。
-- 未声明的动作被拒绝。动作是否改变状态由声明决定：改变状态的动作保存执行记录，只读动作直接返回。
+**`UpdateKnowledgeFileName(resource_id, filename, expected_version, operation_id?)`** 在同一目录内重命名主 Markdown 文件，保留资源 ID、标题、正文和附件位置。结果为 `resource_id`、`address`、`filename`、`version`、`operation_id`、`status`、`retryable`、`error`。
 
-## 资源动作目录
+**`MoveKnowledgeItems(project_id, items, operation_id?)`** 把一至一百条知识条目和 Skill 迁入目标 Project：`items` 是 `{resource_id, expected_version}` 的列表。迁移保留原 ID、正文、附件和包内相对路径，统一更新归属、版本、目录登记、权限和在线索引。规则见下文“Project 知识迁移”。
 
-已经接入 ISA 的领域操作通过 `RunResourceAction` 执行：资源类型在指令目录中声明动作，并由领域 Provider 提供执行函数。顶层指令保持稳定，领域可以独立增加动作。调用者通过 `GetResourceType` 查询当前可执行的动作；只在领域服务登记、尚未在 ISA 声明的操作由对应页面或领域接口执行。
+三条指令的版本、幂等与恢复语义见 decision_3ece26686464。
 
-- **每个动作都有完整声明。** 声明包含动作名、所属资源类型、一句话说明、参数定义、结果定义和是否改变状态。动作名写作“对象.动词”，例如 `summary.save`、`git.commit`。`GetResourceType` 与 `ListInstructions`（decision_aa4fdbac8364）都能读到这些声明。
-- **通用登记受类型政策约束。** 类型允许统一登记且提供者有登记机制时使用 `RegisterResource`；chatroom、paper、search 等政策关闭的类型由各自专用指令创建。统一登记拒绝的域原因是 `resource_type.not_registerable`，ISA 以 `instruction.invalid_arguments` 返回，并在 `details.reason` 保留该原因。修改和撤销登记继续按类型能力使用通用指令，动作目录只放通用指令无法表达的领域操作。
-- **动作只做确定性操作。** 需要模型完成的工作，例如深读论文、解释图表或评审，由承担该职责的 Resident 完成，发起方从应用配置取得目标 Resident，用 `DeliverMessage` 按 `resident_id` 投递（decision_2fe6fd5367fb），不设为资源动作。
+### 设备
 
-动作名称和有效能力通过 `GetResourceType` 查询，不在此维护第二份静态动作清单。Device 凭据与连接、Workbench 保存等动作的输入和领域约束由相应 Design 说明；Paper、Article、Repo、Test、Project 的页面或领域接口是否进入 ISA，同样以正式动作声明为准。Search 已无“修改 owner 列表”的资源动作，不能凭历史目录调用。
+设备是资源，设备专用操作由下列指令执行，权限由权限系统按指令判定，设备组件不另设检查（decision_d397f2d99f89）：
+
+- Colab 会话的分配与释放不是指令：它是 Google Colab 这一外部产品的操作，由系统脚本 `colab_session`（参数 `resource_id`、`running`、`hardware`，源码 `scripts/colab_session.py`）经固定 Portal 运维 Lineage 的 `RunScript` 运行。`running=true` 分配共享 Colab 会话（消耗 CU）或复用已有同规格会话，`hardware` 必填，取值为 `CPU`、`T4`、`L4`、`G4`、`A100`、`H100`；`running=false` 释放，省略 `hardware`。设备页面先读取运维入口绑定，再以原调用者身份提交 `RunScript`；调用者须对该 Lineage 有 @admin，脚本再以调用者身份确认目标是已登记的设备，会话变更要求对设备有 @contributor（decision_5ff0cb51ed84）。
+- `UpdateDeviceSshCredential(resource_id, password)`：保存设备的 SSH 密码凭据，结果只含 `resource_id`、`via_resource_id`、`credential_saved`。
+- `DeleteDeviceSshCredential(resource_id)`：删除凭据，结果含 `deleted`。
+- `CheckDeviceSsh(resource_id, timeout_seconds?)`：测试连接，结果为 `ok`、`error`。
+- `RunDeviceCommand(resource_id, command)`：用设备绑定的 SSH 身份在远端执行命令（30 秒），结果为 `exit_code`、`output`、`truncated`。
+
+### 工作台保存
+
+- `UpdateWorkbenchPage(resource_id, job_id, base_revision, title?, description?, html)`：保存一次页面生成结果，结果为 `revision`。
+- `UpdateWorkbenchReversePlan(resource_id, job_id, plan)`：保存一份反向整理计划，结果为 `revision`。
+
+两条的任务与修订核对见 decision_4bc03b20c30f。
+
+## 资源类型的专用操作
+
+领域操作由各自具名指令声明参数、结果和所需权限。资源类型登记公开资源能力，新增领域指令遵循 decision_898b8911a2ff 的“新增指令的条件”。
+
+- **通用登记受类型政策约束。** 类型允许统一登记且提供者有登记机制时使用 `RegisterResource`；chatroom、paper、search 等政策关闭的类型由各自专用指令创建。统一登记拒绝的域原因是 `resource_type.not_registerable`，ISA 以 `instruction.invalid_arguments` 返回，并在 `details.reason` 保留该原因。修改和撤销登记继续按类型能力使用通用指令。
+- **指令只做确定性操作。** 需要模型完成的工作，例如深读论文、解释图表或评审，由承担该职责的 Resident 完成，发起方从应用配置取得目标 Resident，用 `DeliverMessage` 按 `resident_id` 投递（decision_2fe6fd5367fb）。
 
 ## 上传
 
@@ -257,10 +277,11 @@ Workspace 支持 `UnregisterResource(resource_id=workspace_id)`，要求目标 W
 
 **开始一次文件上传，返回上传句柄和写入字节的数据通道地址。**
 
-- 参数：`purpose`（用途：对话附件、帖子图片、Paper PDF、Article 文件或图表输入）、`target`（可选，目标工作区或资源地址），以及文件来源二者之一：`source_address`（已有的工作区文件地址），或 `file_name`、`media_type` 与 `size`（稍后通过数据通道写入字节）。
-- 结果：上传 ID。使用 `source_address` 时，服务直接从该文件复制内容，上传 ID 立即可用；否则同时返回数据通道地址和到期时间，字节写入完成后上传 ID 才可使用。
-- Resident 通过 Harness 工具调用时使用 `source_address`，不需要自己传输字节。
-- `purpose` 还包括头像（`avatar`，PNG、JPEG 或 WebP，最大 2 MiB，不接受动画），供 `UpdateUser`、`UpdateResident`、`UpdateProject` 和 `UpdateLineage` 设置头像；权限系统让上传只归上传者时（PAR），只有上传者本人能用它设置头像（decision_5bc3fdfc7eec）。帖子图片完成后所有登录用户都可以读取，内容校验为 PNG、JPEG、GIF 或 WebP，最大 12 MiB。上传完成后的字节由所有活跃且已认证的 User/Resident 按上述上传文件引用读取。
+- 参数：`purpose`、`file_name`、`media_type`、`size`，以及可选 `target`（目标工作区或资源地址）。
+- 结果：`upload_id`、`ready`，以及数据通道 `upload_url` 和 `expires_at`。文件字节写入完成后上传 ID 才可使用。
+- Resident 复制已有资源文件时使用 `CreateUploadFromFile`，传 `source_address`、`purpose` 和可选 `target`。服务按调用者当前权限读取文件，返回已完成的 `upload_id` 和 `ready: true`，无需写入数据通道。
+- 两个上传入口都接收已登记的用途标识 `purpose`。应用用途由已安装领域声明，上传 owner 根据当前声明拒绝未知用途，并核验目标权限、字节数和类型。
+- 站点用途包括头像（`avatar`，PNG、JPEG 或 WebP，最大 2 MiB，不接受动画），供 `UpdateUser`、`UpdateResident`、`UpdateProject` 和 `UpdateLineage` 设置头像；权限系统让上传只归上传者时（PAR），只有上传者本人能用它设置头像（decision_5bc3fdfc7eec）。帖子图片完成后所有登录用户都可以读取，内容校验为 PNG、JPEG、GIF 或 WebP，最大 12 MiB。上传完成后的字节由所有活跃且已认证的 User/Resident 按上述上传文件引用读取。
 - 大小和类型限制由用途决定，以 decision_61e50306cc79 的上传用途契约为准；本篇不另列一份附件容量默认值。服务在写入目标工作区前校验调用者、目标、大小和类型。见 decision_61e50306cc79。`target` 为 Resident ID 时（对话附件），调用者需要能看到该 Resident；其他 `target` 必须是调用者可以修改的工作区或资源地址，否则以 `instruction.not_found` 或 `instruction.forbidden` 失败。图片按文件内容识别类型，Paper PDF 要求内容以 `%PDF-` 开头；使用 `source_address` 复制时同样检查。
 
 上传后的文件是普通文件；Resident 可按实际文件路径使用系统工具删除，无独立的上传删除指令。浏览器移除附件通过上传文件 HTTP 接口完成，文件及保留登记的生命周期见 decision_61e50306cc79。
@@ -291,27 +312,36 @@ Workspace 支持 `UnregisterResource(resource_id=workspace_id)`，要求目标 W
 
 | 指令名 | arguments 参数名 |
 | --- | --- |
-| `SearchResources` | `q`、`resource_type`、`project_id`、`status`、`limit`、`cursor` |
+| `SearchResources` | `q`、`resource_type`、`user_id`、`project_id`、`status`、`limit`、`cursor` |
 | `ResolveResource` | `address` |
 | `ReadResource` | `address`、`max_bytes`、`meta_only`、`preview` |
 | `ListResourceTypes` | 无 |
 | `GetResourceType` | `resource_type` |
-| `UpdateResourceType` | `resource_type`、`enabled` |
+| `SetResourceTypeEnabled` | `resource_type`、`enabled` |
 | `RegisterResource` | `resource_type`、`fields` |
 | `CreateWorkspace` | `path`、`operation_id`、`owner_id`、`title` |
 | `RegisterWorkspace` | `path`、`operation_id`、`owner_id`、`title` |
 | `GetDirectoryCleanup` | `resource_id` |
 | `UpdateResource` | `resource_id`、`changes` |
 | `UnregisterResource` | `resource_id` |
-| `RunResourceAction` | `resource_id`、`action`、`arguments` |
-| `CreateUpload` | `purpose`、`target`、`source_address`、`file_name`、`media_type`、`size` |
+| `CreateKnowledgeFile` | `resource_id`、`filename`、`text`、`expected_version` |
+| `UpdateKnowledgeFileName` | `resource_id`、`filename`、`expected_version`、`operation_id` |
+| `MoveKnowledgeItems` | `project_id`、`items`、`operation_id` |
+| `UpdateDeviceSshCredential` | `resource_id`、`password` |
+| `DeleteDeviceSshCredential` | `resource_id` |
+| `CheckDeviceSsh` | `resource_id`、`timeout_seconds` |
+| `RunDeviceCommand` | `resource_id`、`command` |
+| `UpdateWorkbenchPage` | `resource_id`、`job_id`、`base_revision`、`title`、`description`、`html` |
+| `UpdateWorkbenchReversePlan` | `resource_id`、`job_id`、`plan` |
+| `CreateUpload` | `purpose`、`target`、`file_name`、`media_type`、`size` |
 | `UpdateWorkspaceFile` | `address`、`content` |
 | `CorrectResourceLifecycleAssociation` | `scope_id`、`resource_id`、`reason` |
 | `GetResourceCreation` | `lineage_id`、`resource_id` |
 | `CancelResourceCreation` | `lineage_id`、`resource_id`、`originating_instruction_id` |
+| `CreateUploadFromFile` | `purpose`、`source_address`、`target` |
 
-### Project 知识迁移动作
+### Project 知识迁移
 
-`RunResourceAction(resource_id=<目标Project>, action="knowledge.move", arguments={items:[{resource_id, expected_version}], operation_id?})` 统一完成普通 Markdown Knowledge 的项目归属、主文件和伴随目录、版本审计、目录登记、权限事实与在线索引迁移。一次接受一至一百条不同 ID，必须携带各条目当前版本；限 created 登记、Project 类型目录内的平面主 Markdown 与 `<ID>/` 伴随目录，同一文件系统；adopted、Skill、Experiment、跨文件系统和含独立资源或保留登记的伴随目录不适用。默认权限要求源、目标 Project 与源知识条目的 contributor 权限。
+`MoveKnowledgeItems(project_id=<目标Project>, items=[{resource_id, expected_version}], operation_id?)` 统一完成普通 Markdown Knowledge 的项目归属、主文件和伴随目录、版本审计、目录登记、权限事实与在线索引迁移。一次接受一至一百条不同 ID，必须携带各条目当前版本；限 created 登记、Project 类型目录内的平面主 Markdown 与 `<ID>/` 伴随目录，同一文件系统；adopted、Skill、Experiment、跨文件系统和含独立资源或保留登记的伴随目录不适用。默认权限要求源、目标 Project 与源知识条目的 contributor 权限。
 
 `operation_id` 可省略，省略时从调用者、目标和条目版本列表稳定生成；重试保留相同参数。结果给出 `operation_id`、`status`（`completed` 或 `partial`）、已提交的 `committed`、未提交 ID 列表 `pending`、索引确认 `projected` 与可选 `error`。部分完成时沿同一操作继续，已提交版本不重复增加；指令幂等键只重放旧回执，继续处理应使用新的指令调用键。预检、恢复与并发语义见 decision_3ece26686464。

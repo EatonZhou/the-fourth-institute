@@ -120,7 +120,7 @@ Workspace Handoff（工作区交接）让同一个 Lineage 中的一个 Resident
 - **`scope` 选择复制的范围。** 省略或为 `.` 时复制整个来源工作区；指定时必须是来源工作区内的相对路径，可以是目录或单个文件。绝对路径（包括 Windows 盘符路径）、空路径段、`.` 和 `..` 路径段一律拒绝，报错“工作区内容范围必须是安全的相对路径”。
 - **一些内容不复制。** 目录或文件名为 `.git`、`.venv`、`node_modules`、`__pycache__`、`.pytest_cache`、`.mypy_cache`、`.ruff_cache`、`test-results`、`credentials`、`secrets`、`private_keys`、`.env`、`.env.local`、`.env.production` 的内容和所有符号链接不复制；交接项的 `parameters.exclude` 可以再列出最多 80 个名称。所选范围本身属于排除项时报错。
 - **复制有上限。** 最多 60,000 个文件、总计 2 GiB；每个文件复制前按同一排除规则检查累计文件数和字节数，超出时立即中止并删除本次已复制的部分。
-- **副本放在所属 Lineage 的交接目录下。** 目标路径默认为 `<Lineage Folder>/handoff-workspaces/<交接 ID>/<交接项 ID>`；自行指定时也必须位于该 Lineage 的 `handoff-workspaces/` 内，并且事先不存在。副本登记为 Portal 创建的独立 Workspace，目录归属该 Workspace 自己；其删除与所在 Lineage 的整树删除均按《目录与路径协议》（decision_4aa13bc21e8e）执行。
+- **副本放在所属 Lineage 的交接目录下。** 目标路径默认为 `<Lineage Folder>/handoff-workspaces/<交接 ID>/<交接项 ID>`；自行指定时也必须位于该 Lineage 的 `handoff-workspaces/` 内，并且事先不存在。副本登记为具有独立 ID 的 Workspace，生命周期归属该 Lineage；其删除与所属 Lineage 的身份删除均按《目录与路径协议》（decision_4aa13bc21e8e）执行。
 - **结果记录复制了什么。** 包括文件数、总字节数、按每个文件的 SHA-256 计算出的内容哈希、完成时间，以及来源在准备时的 Git 状态（是否为仓库、提交、分支、是否有未提交修改）。
 
 ### Git worktree
@@ -141,6 +141,8 @@ Git worktree 是与原仓库共享历史、但位于另一个目录的工作副�
 
 ## 准备的过程
 
+**副本的生命周期归属在创建时确定。** 普通复制和 Git worktree 的新 Workspace 属于该 Handoff 的 Lineage，创建 owner 将这个明确归属与内容规格一起保存到原持久创建意图；同操作重试必须保持归属一致。删除 Lineage 时按已登记归属清理这些副本，保留其中独立登记对象的保护边界。直接共享只解除绑定，默认独立创建的 Workspace 仍归自身。历史副本的错误归属只由正式离线升级依据原 Handoff 关系修正，不在删除时遍历路径猜测归属，也不改写旧创建意图来接受原本不匹配的重试。
+
 1. 检查操作者对该 Lineage 有 `@contributor` 权限，交接不是正在准备或已经 ready。
 2. 把交接状态设为 `preparing`，在每个交接项下新增一次尝试。
 3. 逐项准备目录：直接共享只检查来源；复制和 Git worktree 生成新目录。
@@ -151,7 +153,7 @@ Git worktree 是与原仓库共享历史、但位于另一个目录的工作副�
 
 `MoveWorkspaceHandoff` 将交接项已登记的副本搬到该 Lineage 的标准交接目录。调用者须同时对 Lineage 和副本 Workspace 有 `@contributor` 权限，并提供从 `ResolveResource` 取得的 Workspace 版本。目录 owner 从当前登记推导源位置、从交接身份推导目标位置，不接受任意目标路径，也不把接入目录转换为创建目录。
 
-归位保留 Workspace ID、所有文件和已有绑定，目录归属修正为该 Workspace 自己。嵌套目录登记、交接当前引用、Git 双向指针和 Provider 工作目录一起随移动更新；准备尝试历史不变，不重新准备交接或投递任务。正在准备的交接或仍在使用该目录的执行阻止归位，不为搬迁终止其工作。
+归位保留 Workspace ID、所有文件和已有绑定，生命周期归属修正为该 Handoff 所属 Lineage。嵌套目录登记、交接当前引用、Git 双向指针和 Provider 工作目录一起随移动更新；准备尝试历史不变，不重新准备交接或投递任务。正在准备的交接或仍在使用该目录的执行阻止归位，不为搬迁终止其工作。
 
 版本过期时不改文件，返回 `instruction.version_conflict`。登记已提交而依赖修复尚未完成时，指令返回 committed、结果 `status=pending` 和持久 `operation_id`，后台按同一移动回执重试；不能把这个状态报告为没有提交。调用重试沿用 HATG 幂等键，当前目录和版本通过资源读取接口取得。
 
@@ -176,12 +178,12 @@ Context 图显示 Resident 之间的交接关系；Workspace 图按交接项将�
 | `CreateWorkspaceHandoff` | 创建交接；这对 Resident 已有交接时返回已有的 | `source_resident_id`、`target_resident_id`、`items`、`explanation`、`label` | `handoff_id`、`created` |
 | `UpdateWorkspaceHandoff` | 修改交接项、说明或标签 | `handoff_id`、`changes`（只能含 `items`、`explanation`、`label`；`explanation` 为空字符串时清除） | 修改后的交接 |
 | `DeleteWorkspaceHandoff` | 删除交接关系 | `handoff_id` | `handoff_id` |
-| `RunWorkspaceHandoff` | 准备目录并建立绑定 | `handoff_id`，或这对 Resident 的 `source_resident_id` 与 `target_resident_id` | `status`（`preparing`、`ready`、`failed`）、各交接项、错误 |
+| `RunWorkspaceHandoff` | 准备目录并建立绑定 | `handoff_id` | `status`（`preparing`、`ready`、`failed`）、各交接项、错误 |
 | `MoveWorkspaceHandoff` | 将已有副本归位，保留身份和内容 | `lineage_id`、`handoff_id`、`item_id`、`workspace_id`、`expected_workspace_version` | 移动 `operation_id`、`status`、Workspace 登记；未完成依赖的错误 |
 | `GetWorkspaceHandoff` | 读取交接定义和最近一次准备的结果 | `handoff_id` | 交接、`status`、各交接项、错误 |
 
 - **修改交接项时提交完整列表。** `changes.items` 替换全部交接项，每项都要写明来源和准备方式；省略 `transfer` 的项按直接共享处理。
-- **没有交接项的交接共享来源的当前工作区。** 创建时不给 `items`（包括 `RunWorkspaceHandoff` 按 Resident 对新建的交接），交接只有一项：直接共享来源 Resident 当前工作目录所在的 Workspace。
+- **没有交接项的交接共享来源的当前工作区。** `CreateWorkspaceHandoff` 不给 `items` 时，交接只有一项：直接共享来源 Resident 当前工作目录所在的 Workspace。
 - **准备失败作为结果返回。** 准备失败已经记录在交接上时，`RunWorkspaceHandoff` 返回 `status=failed` 和错误，不作为指令错误。
 - **版本前提按变更对象比较。** 定义修改按 HATG 的可选 Lineage `expected_version` 比较；准备不使用 Lineage revision 前提。副本归位必须携带 `expected_workspace_version`，按 Workspace 当前登记版本比较，避免覆盖并发修改。
 

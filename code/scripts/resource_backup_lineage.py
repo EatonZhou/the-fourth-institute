@@ -12,9 +12,6 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from scripts import resource_backup_drive
-
-
 OPERATIONS = {
     "critical": ("run-once", "--profile", "critical", "--apply"),
     "content": ("run-once", "--profile", "content", "--apply"),
@@ -25,8 +22,8 @@ OPERATIONS = {
 }
 
 
-def run_operation(operation: str, *, service_root: Path | None = None, network_route: str | None = None) -> dict[str, Any]:
-    if operation not in OPERATIONS and operation not in resource_backup_drive.OPERATIONS:
+def run_operation(operation: str, *, service_root: Path | None = None) -> dict[str, Any]:
+    if operation not in OPERATIONS:
         raise ValueError("Unsupported backup operation")
     if service_root is None:
         from management_common.instance_manifest import load
@@ -37,12 +34,6 @@ def run_operation(operation: str, *, service_root: Path | None = None, network_r
         service_root = program.parent.parent
     else:
         program = service_root / 'src/main.py'
-    if operation in resource_backup_drive.OPERATIONS:
-        try:
-            return resource_backup_drive.run(operation, service_root, network_route)
-        except (KeyError, RuntimeError, OSError, ValueError):
-            return {"operation": operation, "status": "failed", "succeeded": False,
-                    "error": "Check the selected network route, scoped Drive connection and local backup repository."}
     completed = subprocess.run(
         ["/usr/bin/nice", "-n", "10", "/usr/bin/ionice", "-c", "2", "-n", "7",
          "/usr/bin/python3", str(program), *OPERATIONS[operation]],
@@ -71,10 +62,9 @@ def run_operation(operation: str, *, service_root: Path | None = None, network_r
 def main() -> int:
     from portal_script import set_output
 
-    operation, *routes = sys.argv[1:]
-    if len(routes) > 1 or (routes and operation not in resource_backup_drive.OPERATIONS):
-        raise ValueError("Only Google Drive backup accepts a transfer route")
-    result = run_operation(operation, network_route=routes[0] if routes else None)
+    if len(sys.argv) != 2:
+        raise ValueError("A local backup accepts exactly one fixed operation")
+    result = run_operation(sys.argv[1])
     set_output(result)
     print(json.dumps(result, ensure_ascii=False))
     return 0 if result["succeeded"] else 1

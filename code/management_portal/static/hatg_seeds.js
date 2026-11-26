@@ -262,15 +262,14 @@
       try {
         // A dismissed Seed stays in the Lineage with status "dismissed".
         const component = programComponentById(seed.id) || {};
-        const result = await executeHatgInstruction("UpdateComponent", {
-          component_id: seed.id,
-          changes: { config: {
+        const result = await executeHatgInstruction("ApplyLineageChanges", {
+          operations: [{ op: "update", kind: "component", id: seed.id, changes: { config: {
             ...(component.config || {}),
             status: "dismissed",
             dismissed_at: new Date().toISOString(),
             dismissal_source: "owner",
             ...(reason ? { dismissal_reason: reason } : {}),
-          } },
+          } } }],
         });
         if (!result?.lineage) throw new Error("抛弃响应缺少 Lineage 状态");
         state.selectedSeedId = "";

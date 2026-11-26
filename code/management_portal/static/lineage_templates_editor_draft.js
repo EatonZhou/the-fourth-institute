@@ -5,7 +5,7 @@
 
   // The draft of the template editor: the code editor for JSON and script
   // bodies, reading the dialog's fields back into the draft, and checking
-  // the draft with a dry run shortly after each change.
+  // the draft with a preview shortly after each change.
 
   const DEPENDENCIES = Object.freeze([
     'behaviorHtml', 'bodyPage', 'clone', 'draft', 'editorState', 'parametersPage', 'readField', 'request', 'status',
@@ -71,9 +71,12 @@
         if (!initialRowFields.has(item)) initialRowFields.set(item, new Set(Object.keys(item)));
         // Inspecting an omitted optional field, or undoing its edit, keeps it
         // omitted rather than adding an empty value to the authored content.
-        if (value === '' && !initialRowFields.get(item).has(input.dataset.rowField)) delete item[input.dataset.rowField];
+        if (value === undefined || (value === '' && !initialRowFields.get(item).has(input.dataset.rowField))) delete item[input.dataset.rowField];
         else item[input.dataset.rowField] = value;
       });
+      if (draft.kind === 'structure') for (const role of draft.body.roles || []) {
+        if (role.from !== 'fork' || role.fork_mode !== 'recent') delete role.recent_rounds;
+      }
       parametersPage.querySelectorAll('[data-parameter-row]').forEach(row => {
         const parameter = draft.parameters[Number(row.dataset.parameterRow)];
         row.querySelectorAll('[data-parameter-field]').forEach(input => {
@@ -106,7 +109,8 @@
       const serial = ++editorState.revision;
       try {
         const payload = readDraft();
-        const result = await request(draft.template_id ? 'UpdateTemplate' : 'CreateTemplate', draft.template_id ? { template_id: draft.template_id, ...payload, dry_run: true } : { template: payload, dry_run: true });
+        const result = await request(draft.template_id ? 'GetTemplateUpdatePreview' : 'GetTemplateCreatePreview',
+          { ...(draft.template_id ? { template_id: draft.template_id } : {}), template: payload });
         if (serial !== editorState.revision || !view.root.isConnected) return;
         editorState.refreshRecipeGraph?.(result.template.editor?.graph);
         view.root.querySelector('[data-template-behavior]').innerHTML = behaviorHtml(result.template.behavior, {}, result.template.kind);

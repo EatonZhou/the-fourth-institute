@@ -472,49 +472,10 @@ def install_mutation_provider(service: "ResourceService") -> None:
 
 
 
-def install_action_provider(service: "ResourceService") -> None:
+def move_knowledge_items(service, project_id, items, *, actor, operation_id=""):
+    from management_portal.resources.knowledge_move import move_knowledge
 
-    def move_knowledge(
-        resource_id: str,
-        payload: dict[str, Any],
-        *,
-        actor: str = "",
-    ) -> dict[str, Any]:
-        from management_portal import permission_system
-        from management_portal.resources.knowledge_move import move_knowledge as move
-
-        if resource_id not in permission_system.permitted_ids(
-            actor, "RunResourceAction", "resource_id", [resource_id],
-        ):
-            raise PermissionError("Knowledge relocation requires target Project contributor permission")
-        return move(resource_id, payload, actor=actor, project_batch=service._index().project_relocated)
-
-    def read_summary(
-        resource_id: str,
-        _payload: dict[str, Any],
-        *,
-        actor: str = "",
-    ) -> dict[str, Any]:
-        del actor
-        return project_summary(resource_id)
-
-    def save_summary(
-        resource_id: str,
-        payload: dict[str, Any],
-        *,
-        actor: str = "",
-    ) -> dict[str, Any]:
-        del actor
-        return save_project_summary(
-            resource_id,
-            str(payload.get("text") or ""),
-        )
-
-    service.register_action_provider(
-        "project",
-        {
-            "summary.read": read_summary,
-            "summary.save": save_summary,
-            "knowledge.move": move_knowledge,
-        },
-    )
+    project_id = service._named_operation_target(project_id, {"project"}, actor=actor,
+                                                  instruction="MoveKnowledgeItems", argument="project_id")
+    return move_knowledge(project_id, {"items": items, "operation_id": operation_id}, actor=actor,
+                          project_batch=service._index().project_relocated)

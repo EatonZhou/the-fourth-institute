@@ -9,6 +9,7 @@ from __future__ import annotations
 import copy
 import json
 import re
+from contextlib import contextmanager
 from string import Template
 
 from . import family_familize, family_tasks, lineage_aggregate
@@ -16,6 +17,77 @@ from . import family_familize, family_tasks, lineage_aggregate
 
 class FamilyTaskTargetChanged(ValueError):
     """The role changed after the caller captured its task intent."""
+
+
+class _DispatchProjectionBehind(Exception):
+    """A read-only preflight cannot establish the latest Chat projection."""
+
+
+class _DispatchSnapshot:
+    def __init__(self, connection, *, schema=None):
+        self.connection = connection
+        self.schema = schema
+
+    @contextmanager
+    def read(self):
+        if self.schema is None:
+            yield self.connection
+            return
+
+        from psycopg import sql
+        # A savepoint restores the path even when a projection query fails.
+        with self.connection.raw.transaction(force_rollback=True):
+            self.connection.execute(sql.SQL("SET LOCAL search_path TO {}").format(sql.Identifier(self.schema)))
+            yield self.connection
+
+
+def snapshot_dispatch_readers(connection):
+    """Bind the Conversation's readers to this existing PostgreSQL snapshot."""
+    from management_common.portal_database import _database_schema
+    from management_portal.execution.agent_data_chat import ChatReads
+    from .lineage_data_executions import ResidentExecutions
+    from .lineage_data_mailbox import ResidentMailboxes
+    from .resident_conversation_messages import read_stored_message, validate_stored_message_identity
+    from .resident_conversation_records import protocol_message
+
+    class SnapshotChat(ChatReads):
+        def _bring_current(self, sequence_ids):
+            if sequence_ids:
+                raise _DispatchProjectionBehind
+
+    database = _DispatchSnapshot(connection)
+    mailboxes = ResidentMailboxes(database)
+    executions = ResidentExecutions(database)
+    chat = SnapshotChat(_DispatchSnapshot(connection, schema=_database_schema("agent")))
+
+    def mailbox_entry(resident_id, message_id):
+        rows = mailboxes.mailbox_entries([resident_id], message_ids=[message_id])
+        return rows[0] if rows else None
+
+    def validate_original(target_id, facade_id, message_id, text, business_ref, *, allow_missing_business_ref=False):
+        def validate(stored, candidate):
+            validate_stored_message_identity(chat.chat_message_ancestors, stored, protocol_message(candidate),
+                                             metadata=candidate.get("metadata", {}))
+
+        stored = read_stored_message(chat, mailbox_entry, target_id, message_id)
+        return _match_original(stored, validate, facade_id, message_id, text, business_ref,
+                               allow_missing_business_ref=allow_missing_business_ref)
+
+    def input_status(resident_id, message_id):
+        row = connection.execute(
+            "SELECT state FROM conversation_input_states WHERE resident_id=%s AND message_id=%s",
+            (resident_id, message_id),
+        ).fetchone()
+        if row is None:
+            return None
+        if row["state"] in {"queued", "running"}:
+            key = (resident_id, message_id)
+            receipt = executions.terminal_input_receipts([key]).get(key)
+            if receipt:
+                return receipt["outcome"]
+        return row["state"]
+
+    return validate_original, input_status
 
 
 def _context(record: dict) -> tuple[dict, dict]:
@@ -37,6 +109,70 @@ def request_tasks(facade, message_ids):
         ).fetchall()
     return [{"message_id": row["message_id"], **json_value(row["intent_json"])["request"]}
             for row in rows]
+
+
+def plan_legacy_dispatches(connection, lineage_id, validate_original, input_status):
+    """Classify old frozen intents before the cutover removes their table."""
+    from management_common.json_columns import json_value
+    from .resident_message_contract import MESSAGE_IDENTITY_PATTERN
+
+    rows = connection.execute(
+        "SELECT message_id,intent_json FROM family_task_dispatches WHERE lineage_id=%s ORDER BY message_id",
+        (lineage_id,),
+    ).fetchall()
+    result = []
+    for row in rows:
+        message_id = row["message_id"]
+        try:
+            intent = json_value(row["intent_json"])
+            request = intent["request"]
+            target, facade = request["target"], request["facade"]
+            trigger, business_ref = request["trigger"], request["business_ref"]
+            root = request["facts"].get("message_id", "")
+            if (not all(isinstance(value, str) and value for value in (target, facade, business_ref, intent["text"]))
+                    or trigger not in family_tasks.TASKS
+                    or not MESSAGE_IDENTITY_PATTERN.fullmatch(message_id)
+                    or not isinstance(root, str)
+                    or (root and not MESSAGE_IDENTITY_PATTERN.fullmatch(root))):
+                raise ValueError("Invalid Family dispatch identity")
+            target_status = input_status(target, message_id)
+            # The original queue reminders omitted the Chat business reference.
+            # Only a completed reminder with the frozen canonical reference can
+            # use the same immutable-envelope check without the stored ref.
+            historical_queue = (
+                trigger == "queue" and not root and business_ref == "duty/family-queue"
+                and target_status == "completed"
+            )
+            resident_input, _candidate = validate_original(
+                target, facade, message_id, intent["text"], business_ref,
+                allow_missing_business_ref=historical_queue,
+            )
+        except _DispatchProjectionBehind:
+            result.append({"message_id": message_id, "state": "blocked", "reason": "chat_projection_behind"})
+            continue
+        except (KeyError, TypeError, AttributeError, ValueError):
+            result.append({"message_id": message_id, "state": "blocked", "reason": "invalid_frozen_intent"})
+            continue
+        item = {"message_id": message_id, "facade_id": facade, "target_id": target, "trigger": trigger,
+                "source_message_id": root, "business_ref": business_ref}
+        if resident_input is not None and target_status:
+            item.update(state="accepted", input_status=target_status)
+        elif resident_input is None and target_status == "cancelled" and (
+            (trigger == "review" and not root and business_ref == "duty/family-review")
+            or (trigger == "route" and root and business_ref == f"family-route/{facade}/message/{root}"
+                and input_status(facade, root) == "cancelled")
+        ):
+            # A cancelled input can have left the Mailbox before reaching Chat.
+            # Keep its existing terminal receipt and create no routing receipt.
+            item.update(state="expired")
+        elif resident_input is not None or target_status:
+            item.update(state="blocked", reason="incomplete_acceptance_receipt")
+        elif root and input_status(facade, root) in {"completed", "cancelled"}:
+            item.update(state="expired")
+        else:
+            item.update(state="blocked", reason="unaccepted_frozen_intent")
+        result.append(item)
+    return result
 
 
 def accepted_receipt(facade_id, target_id, trigger, message_id, *, family_id, facts):
@@ -69,16 +205,35 @@ def accepted_receipt(facade_id, target_id, trigger, message_id, *, family_id, fa
     return {"resident_id": target_id, "message_id": message_id, "accepted": True}
 
 
-def _validate_original(repository, target_id, facade_id, mid, text, business_ref):
+def _validate_original(repository, target_id, facade_id, mid, text, business_ref, *, allow_missing_business_ref=False):
+    return _match_original(repository.stored_message(target_id, mid),
+                           lambda _stored, candidate: repository.validate_message_identity(target_id, candidate),
+                           facade_id, mid, text, business_ref, allow_missing_business_ref=allow_missing_business_ref)
+
+
+def live_dispatch_readers(repository):
+    from functools import partial
+
+    def input_status(resident_id, message_id):
+        try:
+            return repository.input_state(resident_id, message_id).get("state")
+        except KeyError:
+            return None
+
+    return partial(_validate_original, repository), input_status
+
+
+def _match_original(stored, validate, facade_id, mid, text, business_ref, *, allow_missing_business_ref=False):
     from . import resident_input_queue_domain, resident_message_contract
     from .resident_conversation_records import message_from_storage
 
-    stored = repository.stored_message(target_id, mid)
     if stored is None:
         return None, None
     original = message_from_storage(stored)
-    if (original.get("author_id") != facade_id
-            or str(stored.get("business_ref") or "").strip() != business_ref):
+    stored_ref = stored.get("business_ref")
+    ref_matches = str(stored_ref or "").strip() == business_ref
+    missing_historical_ref = allow_missing_business_ref and stored_ref in (None, "")
+    if original.get("author_id") != facade_id or not (ref_matches or missing_historical_ref):
         raise resident_message_contract.MessageIdentityConflict("Family task message_id belongs to another task")
     candidate = resident_input_queue_domain.build_message(
         "user", text, facade_id, message_id=mid, created_at=original["created_at"],
@@ -87,7 +242,7 @@ def _validate_original(repository, target_id, facade_id, mid, text, business_ref
         candidate["origin"] = copy.deepcopy(original["origin"])
     else:
         candidate.pop("origin", None)
-    repository.validate_message_identity(target_id, candidate)
+    validate(stored, candidate)
     return original, candidate
 
 

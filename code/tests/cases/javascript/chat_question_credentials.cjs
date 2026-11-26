@@ -1,6 +1,6 @@
 'use strict';
 // One Chromium, the production Resident panel and question cards, local snapshots.
-// DeliverMessage is captured, never sent; no live conversation or credential is issued.
+// All instructions are intercepted. No live conversation or credential is issued.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -19,7 +19,7 @@ const routes = execFileSync('python3', ['-c',
   'from management_portal.resources.portal import portal_route_script; print(portal_route_script().decode())'],
 { cwd: repo, encoding: 'utf8' });
 const evidence = { checks: [], errors: [],
-  boundary: 'real ResidentChatPanel question cards and Resident delivery client; synthetic snapshots; DeliverMessage captured' };
+  boundary: 'production panel and Resident client; synthetic snapshots and captured instructions' };
 function check(name, actual, expected) {
   evidence.checks.push({ name, actual, expected });
   assert.deepEqual(actual, expected, name);
@@ -33,7 +33,10 @@ function check(name, actual, expected) {
       body = '<!doctype html><meta charset="utf-8"><main id="chat"></main>' +
         '<script src="/routes.js"></script>' + modules.map(n => `<script src="/${n}"></script>`).join('');
     } else if (name === 'routes.js') body = routes;
-    else if (modules.includes(name)) body = fs.readFileSync(path.join(repo, 'management_portal/static', name));
+    else if (modules.includes(name)) {
+      const baseline = process.env.PORTAL_QUESTION_FIXTURE_STATIC && path.join(process.env.PORTAL_QUESTION_FIXTURE_STATIC, name);
+      body = fs.readFileSync(baseline && fs.existsSync(baseline) ? baseline : path.join(repo, 'management_portal/static', name));
+    }
     res.writeHead(body === undefined ? 404 : 200, { 'Content-Type': type }); res.end(body ?? 'unexpected request');
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -51,23 +54,62 @@ function check(name, actual, expected) {
     await page.evaluate(() => {
       window.PortalIdentity = { username: () => 'credential-fixture' };
       window.delivered = [];
+      window.calls = [];
+      window.prepared = new Map();
+      window.prepareOverrides = new Map();
+      window.failResource = '';
+      window.lostRelease = false;
       window.closedRequests = [];
       window.failClose = false;
       window.PortalAPI = { get: async url => {
         if (!url.includes('session-restart')) throw new Error('Unexpected API: ' + url);
         return { config: {}, restart: null };
       } };
-      window.PortalInstructionClient = { execute: async (instruction, args) => {
-        if (instruction === 'ListInputHistory') return { entries: [] };
-        if (instruction === 'AnswerResidentRequest') {
+      window.PortalInstructionClient = { execute: async (instruction, args, options = {}) => {
+        if (['ListInputHistory', 'ListResidentInputHistory'].includes(instruction)) return { entries: [] };
+        calls.push(JSON.parse(JSON.stringify({instruction, args, options})));
+        if (instruction === 'CancelResidentRequest') {
           if (failClose) throw new Error('Close fixture failed');
           closedRequests.push(JSON.parse(JSON.stringify(args)));
           return { status: 'cancelled' };
         }
+        if (instruction === 'RelayMessage') return {status: 'relayed'};
+        if (instruction === 'PrepareResidentInput') {
+          const id = args.message.message_id;
+          if (!prepared.has(id)) prepared.set(id, {args: JSON.stringify(args), status: 'prepared'});
+          const row = prepared.get(id);
+          assertSame(row.args, JSON.stringify(args));
+          const projectedMember = snap.messages.find(message => message.content_parts.some(part => part.answer_message_id === id))
+            ?.family_reply?.resident_id;
+          row.credentialRecipient = projectedMember || args.resident_id;
+          return {resident_id: args.resident_id, message_id: id, status: row.status,
+            credential_recipient_id: row.credentialRecipient, credential_message_id: id,
+            ...prepareOverrides.get(id)};
+        }
+        if (instruction === 'CreateTemporaryCredential') {
+          const row = prepared.get(args.message_id);
+          assertSame(row?.status, 'prepared');
+          assertSame(args.principal_id, row.credentialRecipient);
+          if (args.resource_id === failResource) throw new Error('Grant fixture denied');
+          return {...args, state: 'pending', lifetime: 'task'};
+        }
+        if (instruction === 'CancelInput') {
+          prepared.get(args.message_id).status = 'cancelled';
+          return {resident_id: args.resident_id, message_id: args.message_id, input_state: {state: 'cancelled', message_id: args.message_id}};
+        }
         if (instruction !== 'DeliverMessage') throw new Error('Unexpected instruction: ' + instruction);
+        const row = prepared.get(args.message.message_id);
+        if (row) {
+          assertSame(row.args, JSON.stringify(args));
+          row.status = 'released';
+        }
+        if (lostRelease) throw Object.assign(new Error('Lost release receipt'), {status: 409});
         delivered.push(JSON.parse(JSON.stringify(args)));
         return { resident_id: args.resident_id, message_id: args.message.message_id, input_state: { state: 'queued' } };
       } };
+      function assertSame(actual, expected) {
+        if (actual !== expected) throw new Error('Fixture contract mismatch: ' + actual + ' != ' + expected);
+      }
       window.LEND = { a: '@contributor', resource_id: 'workbench_0123456789ab' };
       window.asking = (id, familyReply = false) => ({ message_id: 'msg_' + id, role: 'agent',
         family_reply: familyReply ? {resident_id: 'resident_222222222222', title: '资源与权限开发'} : null,
@@ -96,8 +138,13 @@ function check(name, actual, expected) {
     await card().locator('[data-question-option="0"]').click();
     await page.waitForFunction(() => delivered.length === 1);
     const approved = await page.evaluate(() => delivered[0]);
-    check('approval lends exactly the requested permission with the answer', approved.temporary_credentials, [
-      { a: '@contributor', resource_id: 'workbench_0123456789ab' }]);
+    check('approval stages the exact grants and releases the exact prepared input', await page.evaluate(() => calls.slice(0, 3).map(call => ({instruction: call.instruction, args: call.args}))), [
+      {instruction: 'PrepareResidentInput', args: approved},
+      {instruction: 'CreateTemporaryCredential', args: {principal_id: 'resident_111111111111', message_id: 'answer_a',
+        a: '@contributor', resource_id: 'workbench_0123456789ab'}},
+      {instruction: 'DeliverMessage', args: approved},
+    ]);
+    check('public delivery contains no credentials field', Object.hasOwn(approved, 'temporary_credentials'), false);
     check('approval answer keeps the fixed option text', approved.message.content_parts[1].answers, [
       { question_index: 0, answer: '同意交出这些权限' }, { question_index: 1, answer: '定向' }]);
     check('answer goes to its own Resident', approved.resident_id, 'resident_111111111111');
@@ -106,7 +153,7 @@ function check(name, actual, expected) {
     await card().locator('[data-question-option="1"]').click();
     await card().locator('[data-question-option="1"]').click();
     await page.waitForFunction(() => delivered.length === 2);
-    check('declining lends nothing', await page.evaluate(() => 'temporary_credentials' in delivered[1]), false);
+    check('declining sends only the answer', await page.evaluate(() => calls.slice(3).map(call => call.instruction)), ['DeliverMessage']);
 
     await page.evaluate(() => { snap.messages = [asking('answer_c', true)]; render(); });
     check('a member request on a facade can be approved', await card().locator('[data-question-option="0"]').isEnabled(), true);
@@ -122,18 +169,96 @@ function check(name, actual, expected) {
     }
     await card().locator('[data-question-option="0"]').click();
     await card().locator('[data-question-option="0"]').click();
-    await page.waitForFunction(() => delivered.length === 3);
-    check('facade approval retains its original question and exact credentials', await page.evaluate(() => ({
-      resident: delivered[2].resident_id, source: delivered[2].message.content_parts[1].source_message_id,
-      credentials: delivered[2].temporary_credentials,
-    })), {resident: 'resident_111111111111', source: 'msg_answer_c',
-      credentials: [{a: '@contributor', resource_id: 'workbench_0123456789ab'}]});
+    await page.waitForFunction(() => delivered.length === 3 || document.querySelector('.residentQuestionStepper.has-error'));
+    const facadeApproval = await page.evaluate(() => delivered[2]);
+    check('facade approval keeps the original input and grants only to the reported member',
+      await page.evaluate(() => calls.slice(4).map(({instruction, args}) => ({instruction, args}))), [
+        {instruction: 'PrepareResidentInput', args: facadeApproval},
+        {instruction: 'CreateTemporaryCredential', args: {principal_id: 'resident_222222222222',
+          message_id: 'answer_c', a: '@contributor', resource_id: 'workbench_0123456789ab'}},
+        {instruction: 'DeliverMessage', args: facadeApproval},
+      ]);
+    check('facade and question identity survive preparation and release', {
+      recipient: facadeApproval.resident_id, answer: facadeApproval.message.message_id,
+      source: facadeApproval.message.content_parts[1].source_message_id,
+      hasCredentials: Object.hasOwn(facadeApproval, 'temporary_credentials'),
+    }, {recipient: 'resident_111111111111', answer: 'answer_c', source: 'msg_answer_c', hasCredentials: false});
+
+    for (const [id, override] of [
+      ['answer_missing', {credential_recipient_id: undefined, credential_message_id: undefined}],
+      ['answer_wrong_target', {credential_recipient_id: 'resident_111111111111'}],
+      ['answer_wrong_message', {credential_message_id: 'another_answer'}],
+    ]) {
+      await page.evaluate(({id, override}) => {
+        prepareOverrides.set(id, override);
+        snap.messages = [asking(id, true)]; render();
+      }, {id, override});
+      const start = await page.evaluate(() => calls.length);
+      await card().locator('[data-question-option="0"]').click();
+      await card().locator('[data-question-option="0"]').click();
+      await card().getByRole('status').filter({hasText: '无法确认这条授权回答的准备状态'}).waitFor();
+      check(id + ' stops before any grant or delivery',
+        await page.evaluate(start => calls.slice(start).map(call => call.instruction), start), ['PrepareResidentInput']);
+    }
+    const retryStart = await page.evaluate(() => calls.length);
+
+    await page.evaluate(() => {
+      window.SECOND = {a: '@viewer', resource_id: 'workbench_333333333333'};
+      const request = asking('answer_retry', true);
+      request.content_parts[1].questions[0].credentials.push(SECOND);
+      failResource = SECOND.resource_id;
+      snap.messages = [request]; render();
+    });
+    await card().locator('[data-question-option="0"]').click();
+    await card().locator('[data-question-option="0"]').click();
+    await card().getByRole('status').filter({hasText: 'Grant fixture denied'}).waitFor();
+    check('partial grant failure leaves the answer unsubmitted', await page.evaluate(start => calls.slice(start).map(call => call.instruction), retryStart),
+      ['PrepareResidentInput', 'CreateTemporaryCredential', 'CreateTemporaryCredential']);
+    check('the attempted answer is fixed until retry or cancellation', await card().locator('[data-question-option="1"]').isDisabled(), true);
+    await page.evaluate(() => { failResource = ''; lostRelease = true; });
+    await card().locator('[data-question-retry]').click();
+    await card().getByRole('status').filter({hasText: 'Lost release receipt'}).waitFor();
+    const failedRelease = await page.evaluate(() => calls.at(-1));
+    check('retry after a partial grant preserves the fixed message', failedRelease.args.message.message_id, 'answer_retry');
+    await page.evaluate(() => { lostRelease = false; });
+    await card().locator('[data-question-retry]').click();
+    await page.waitForFunction(() => delivered.length === 4);
+    check('released retry reads preparation and replays only delivery', await page.evaluate(() => calls.slice(-2).map(call => call.instruction)),
+      ['PrepareResidentInput', 'DeliverMessage']);
+    check('released retry preserves wire body and delivery idempotency key', await page.evaluate(() => calls.at(-1)), failedRelease);
+
+    await page.evaluate(() => {
+      const request = asking('answer_cancel_staged', true);
+      request.content_parts[1].questions[0].credentials.push(SECOND);
+      failResource = SECOND.resource_id;
+      snap.messages = [request]; render();
+    });
+    await card().locator('[data-question-option="0"]').click();
+    await card().locator('[data-question-option="0"]').click();
+    await card().getByRole('status').filter({hasText: 'Grant fixture denied'}).waitFor();
+    await card().locator('[data-question-close]').click();
+    await page.waitForFunction(() => closedRequests.length === 1);
+    check('closing cancels preparation at the facade using the fixed input',
+      await page.evaluate(() => calls.slice(-2).map(call => [call.instruction, call.args.resident_id, call.args.message_id])),
+      [['CancelInput', 'resident_111111111111', 'answer_cancel_staged'],
+       ['CancelResidentRequest', 'resident_111111111111', 'msg_answer_cancel_staged']]);
+
+    await page.evaluate(() => PortalResidentService.reassignFamilyRequest({
+      resident_id: 'resident_111111111111', member_id: 'resident_222222222222', message_id: 'msg_original_request',
+      reason: ' fix route ', idempotency_key: 'stable-reassignment-key',
+    }));
+    check('reassign uses RelayMessage with the old request and idempotency key', await page.evaluate(() => calls.at(-1)), {
+      instruction: 'RelayMessage', options: {idempotencyKey: 'stable-reassignment-key'}, args: {
+        resident_id: 'resident_111111111111', member_id: 'resident_222222222222', message_id: 'msg_original_request',
+        reassign: true, reason: 'fix route',
+      },
+    });
     await page.evaluate(() => { snap.messages = [asking('answer_close', true)]; render(); });
     check('a member permission question can still be closed without lending', await card().locator('[data-question-close]').count(), 1);
     await card().locator('[data-question-close]').click();
-    await page.waitForFunction(() => closedRequests.length === 1);
-    check('close uses the facade and original source message', await page.evaluate(() => closedRequests[0]), {
-      resident_id: 'resident_111111111111', message_id: 'msg_answer_close', answers: {action: 'cancel'},
+    await page.waitForFunction(() => closedRequests.length === 2);
+    check('close uses the facade and original source message', await page.evaluate(() => closedRequests.at(-1)), {
+      resident_id: 'resident_111111111111', message_id: 'msg_answer_close',
     });
     check('closed member question shows its outcome', await page.locator('[data-resident-question="answer_close"] .residentQuestionStatus').innerText(), '已关闭，不再回答');
 
@@ -166,7 +291,7 @@ function check(name, actual, expected) {
     await page.evaluate(() => { failClose = false; });
     await card().locator('[data-question-close]').click();
     check('active facade question is closed', await page.locator('[data-resident-question="close_active"] .residentQuestionStatus').innerText(), '已关闭，不再回答');
-    check('close never sends an answer or credentials', await page.evaluate(() => delivered.length), 3);
+    check('close never sends an answer or credentials', await page.evaluate(() => delivered.length), 4);
     await page.evaluate(() => {
       const message = plain('closed_on_server'); message.content_parts[1].state = 'closed';
       snap.messages = [message]; render();
@@ -175,7 +300,7 @@ function check(name, actual, expected) {
     await page.evaluate(() => { snap.messages = [plain('read_only')]; snap.controls.can_send = false; render(); });
     check('read-only viewers cannot close questions', await page.locator('[data-question-close]').count(), 0);
     check('browser errors', evidence.errors, []);
-    console.log('PASS permission requests through facade and closure without lending');
+    console.log('PASS prepared facade approvals, exact member grants, retry/cancel and RelayMessage');
   } finally {
     if (browser) await browser.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve));
     if (process.env.EVIDENCE_PATH) fs.writeFileSync(process.env.EVIDENCE_PATH, JSON.stringify(evidence, null, 2) + '\n');

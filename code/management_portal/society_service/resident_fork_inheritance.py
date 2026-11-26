@@ -83,10 +83,13 @@ def inheritance_view(
         )
     }
     facts = execution_port.fork_inheritance(resident_id, include_compaction=include_context)
+    mode = str(record.get("fork_mode") or "")
+    stored_rounds = mode.removeprefix("recent-")
+    recent = stored_rounds != mode and stored_rounds.isascii() and stored_rounds.isdecimal()
     view: dict[str, Any] = {
         **_source_view("source", source_id, visible),
         **_source_view("context_source", context_source_id, visible),
-        "fork_mode": str(record.get("fork_mode") or ""),
+        "fork_mode": "recent" if recent else mode,
         "forked_from_at": str(record.get("forked_from_at") or ""),
         "source_message_id": str(record.get("source_message_id") or ""),
         "segment_count": int(facts.get("segment_count") or 0),
@@ -96,6 +99,8 @@ def inheritance_view(
         "recorded": bool(facts),
         "opening_compaction": None,
     }
+    if recent:
+        view["recent_rounds"] = int(stored_rounds)
     compaction = facts.get("opening_compaction")
     if isinstance(compaction, Mapping):
         view["opening_compaction"] = {"created_at": str(compaction.get("created_at") or "")}

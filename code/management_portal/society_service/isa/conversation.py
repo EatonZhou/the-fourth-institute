@@ -43,7 +43,7 @@ def _message_id(inv: Invocation, message: dict[str, Any], resident_id: str) -> s
 
 def deliver(
     inv: Invocation, resident_id: str, message: dict[str, Any], *, business_ref: str = "", reply_to: str = "",
-    lending=None,
+    prepared: bool = False,
 ) -> dict[str, Any]:
     from management_portal.society_service import outward_messages, resident_protocol
 
@@ -66,7 +66,6 @@ def deliver(
 
         business_ref=business_ref,
         channel=inv.context.channel,
-        lending=lending,
         workflow_context=inv.context,
     )
     constraints = inv.argument('execution_constraints')
@@ -90,7 +89,10 @@ def deliver(
             context.lineage_id, body["message_id"], {"isolated": True, **({'execution_constraints': constraints} if constraints is not None else {})},
         )
     # A Family member sending outside its Family speaks as the facade (decision_44cf587c1721).
-    result = outward_messages.deliver_to_resident(payload, inv.caller, delivery_context=context, reply_to=reply_to)
+    reply_options = {"allow_implicit_reply": False} if prepared else {}
+    result = outward_messages.deliver_to_resident(
+        payload, inv.caller, delivery_context=context, reply_to=reply_to, **reply_options,
+    )
     return {
         **result,
         "resident_id": resident_id,
@@ -106,8 +108,6 @@ def deliver_to_user(inv: Invocation, user_id: str, message: dict[str, Any]) -> d
 
     if str(message.get("role") or "user") != "user":
         raise invalid("message.role 只能是 user")
-    if (inv.argument("activation_policy") or "enqueue_and_trigger") != "enqueue_and_trigger":
-        raise invalid("发给用户的消息不进入队列，activation_policy 只能省略或为 enqueue_and_trigger")
     supplied = str(message.get("message_id") or "").strip()
     if supplied:
         message_id = resident_message_contract.message_identity(supplied)
@@ -124,47 +124,50 @@ def deliver_to_user(inv: Invocation, user_id: str, message: dict[str, Any]) -> d
     return {**result, "input_state": {}}
 
 
-def _credential_requests(inv: Invocation) -> list[dict[str, str]]:
-    """The temporary credentials a delivery lends with its message: ``{a, resource_id}`` each."""
-    items = inv.argument("temporary_credentials")
-    if items is None:
-        return []
-    if not isinstance(items, list) or len(items) > 20:
-        raise invalid("temporary_credentials 是最多 20 项的数组")
-    found = []
-    for item in items:
-        if not isinstance(item, dict) or set(item) != {"a", "resource_id"} or not all(
-                isinstance(item[key], str) and item[key].strip() for key in ("a", "resource_id")):
-            raise invalid("temporary_credentials 的每一项只包含非空的 a 与 resource_id")
-        found.append({"a": item["a"].strip(), "resource_id": item["resource_id"].strip()})
-    return found
+def _delivery_message(inv: Invocation, *, user: bool = False) -> dict[str, Any]:
+    message = inv.argument("message") or {}
+    allowed = {"message_id", "role", "content_parts", "metadata"}
+    if not user:
+        allowed.add("quote")
+    unknown = sorted(set(message) - allowed)
+    if unknown:
+        raise invalid("message 包含不支持的字段", unknown_fields=unknown)
+    return message
+
+
+def deliver_user_message(inv: Invocation) -> dict[str, Any]:
+    return deliver_to_user(inv, inv.argument("user_id"), _delivery_message(inv, user=True))
+
+
+def prepare_resident_input(inv: Invocation) -> dict[str, Any]:
+    from management_portal import permission_system, workflow_delivery_policy
+    from .. import resident_prepared_inputs
+
+    resident_id = inv.argument("resident_id")
+    message = _delivery_message(inv)
+    delivery_arguments = {**inv.call.arguments, "activation_policy": "enqueue_and_trigger"}
+    if not permission_system.allows(inv.caller, "DeliverMessage", delivery_arguments):
+        raise InstructionError("instruction.forbidden", "缺少向该 Resident 投递的权限")
+    workflow_delivery_policy.require_delivery(resident_id, inv.caller, inv.context)
+    return resident_prepared_inputs.prepare(
+        resident_id, inv.caller, message, context_policy=inv.argument("context_policy"),
+        execution_constraints=inv.argument("execution_constraints"), business_ref=inv.argument("business_ref") or "",
+    )
 
 
 def deliver_message(inv: Invocation) -> dict[str, Any]:
-    message = inv.argument("message") or {}
-    unknown = sorted(set(message) - {"message_id", "role", "content_parts", "quote", "metadata"})
-    if unknown:
-        raise invalid("message 只包含 message_id、role、content_parts、quote 和 metadata", unknown_fields=unknown)
-    credentials = _credential_requests(inv)
-    if inv.argument("user_id"):
-        if inv.argument("context_policy"):
-            raise invalid("发给用户的消息不能设置模型上下文")
-        if "quote" in message or inv.argument("reply_to_message_id"):
-            # Only a user message quotes; a message to a user is the sender's own (decision_c524c775e0be).
-            raise invalid("发给用户的消息不带引用")
-        if credentials:
-            raise invalid("临时凭证只随发给 Resident 的消息签发")
-        return deliver_to_user(inv, inv.argument("user_id"), message)
+    from .. import resident_prepared_inputs
+
+    message = _delivery_message(inv)
     resident_id = inv.argument("resident_id")
-    recipient_id = _check_answer_credentials(resident_id, message, credentials)
-    if credentials:
-        _check_lendable(inv, credentials)
-    from ..resident_message_lending import MessageLending
-    lending = MessageLending(inv.caller, credentials, recipient_id=recipient_id) if credentials else None
-    result = deliver(inv, resident_id, message, business_ref=inv.argument("business_ref") or "",
-                     reply_to=inv.argument("reply_to_message_id") or "", lending=lending)
-    if lending is not None:
-        result["temporary_credentials"] = lending.issued
+    message = {**message, "message_id": _message_id(inv, message, resident_id)}
+    business_ref = inv.argument("business_ref") or ""
+    with resident_prepared_inputs.release(
+        resident_id, inv.caller, message, activation_policy=inv.argument("activation_policy") or "enqueue_and_trigger",
+        context_policy=inv.argument("context_policy"), execution_constraints=inv.argument("execution_constraints"),
+        business_ref=business_ref,
+    ) as prepared:
+        result = deliver(inv, resident_id, message, business_ref=business_ref, prepared=prepared)
     if any(isinstance(part, dict) and part.get("type") == "async_question_answer" for part in message.get("content_parts") or []):
         from management_portal.society_service import family_quota
         # A facade's own question about its Router/Steward account is answered here, not by any Resident.
@@ -172,87 +175,28 @@ def deliver_message(inv: Invocation) -> dict[str, Any]:
     return result
 
 
-def _check_answer_credentials(resident_id: object, message: dict[str, Any], credentials: list[dict[str, str]]) -> str:
-    """An answer lends exactly the permissions its approved questions asked for (decision_1e2eb869bc10)."""
-    from management_common.async_questions import ANSWER_PART, approved_credentials, question_set
-    from management_portal.society_service import resident_conversation_stream
+def relay_message(inv: Invocation) -> dict[str, Any]:
+    from ..relay_domain import relay_message as transfer
 
-    answer = next((part for part in message.get("content_parts") or []
-                   if isinstance(part, dict) and part.get("type") == ANSWER_PART), None)
-    if answer is None:
-        return str(resident_id)
-    recipient_id = str(resident_id)
-    try:
-        source = resident_conversation_stream.get_repository().message(
-            resident_id, str(answer.get("source_message_id") or "").strip())
-    except ValueError:
-        source = None  # Delivery reports the invalid Resident.
-    questions = question_set(source)
-    if questions is None:
-        # Resolve the actual author from the persisted Family projection,
-        # never from a recipient ID supplied by the browser.
-        from .. import family_facade, resident_record_domain
-        facade = resident_record_domain.find_resident_for_admission(resident_id)
-        projected = family_facade.relayed_reply(facade, str(answer.get("source_message_id") or "").strip()) if facade and family_facade.is_facade(facade) else None
-        questions = question_set(projected["reply"]) if projected else None
-        if questions:
-            recipient_id = str(projected["worker_id"])
-    if questions is None:
-        raise invalid("该 Resident 中的问题不存在或已不可用")
-    requested = {(item["a"], item["resource_id"])
-                 for item in approved_credentials(questions["questions"], answer.get("answers"))}
-    lent = [(item["a"], item["resource_id"]) for item in credentials]
-    if set(lent) != requested or len(set(lent)) != len(lent):
-        raise invalid("回答随消息交出的权限必须正好是所同意的问题请求的权限")
-    return recipient_id
-
-
-def _check_lendable(inv: Invocation, credentials: list[dict[str, str]]) -> None:
-    """Before delivering: the caller holds every A node it lends, under the active scheme."""
-    from management_portal import permission_system
-
-    for item in credentials:
-        check = permission_system.manage(
-            "CheckPermission", {"principal_id": inv.caller, "a": item["a"], "resource_id": item["resource_id"]},
-            actor=inv.caller)
-        if not check.get("allowed"):
-            raise InstructionError("instruction.forbidden", f"调用者对 {item['resource_id']} 没有 {item['a']}，不能随消息签发",
-                                   details={"a": item["a"], "resource_id": item["resource_id"]})
-
-
-def relay_family_message(inv: Invocation) -> dict[str, Any]:
-    from management_portal.society_service.family_quota import relay_message
-
-    continuation = inv.argument("continue_previous")
-    if continuation is not None and type(continuation) is not bool:
-        raise invalid("continue_previous 必须为布尔值")
-    if continuation is not None and (inv.argument("notice") is True or inv.argument("reassign") is True):
-        raise invalid("notice 或 reassign 不能同时指定 continue_previous")
-    if inv.argument("notice") is True:
-        from management_portal.society_service.family_facade import keep_notice
-
-        if inv.argument("member_id") or any(inv.argument(name) for name in
-                                            ("reassign", "recover", "quota_reviewed", "scope_gap", "scope_reviewed")):
-            raise invalid("notice=true 时由门面收下告知，不能同时指定成员、恢复、改派或复核参数")
-        return keep_notice(inv.argument("resident_id"), inv.argument("message_id"), inv.caller,
-                           reason=inv.argument("reason") or "")
-    if not inv.argument("member_id"):
-        raise invalid("转交门面请求需要 member_id；只是告知时设 notice=true")
-    if inv.argument("reassign") is True:
-        if inv.argument("recover") is True:
-            raise invalid("recover 与 reassign 不能同时使用")
-        from management_portal.society_service.family_reassign import reassign_request
-
-        return reassign_request(inv.argument("resident_id"), inv.argument("message_id"),
-                                inv.argument("member_id"), inv.caller, reason=inv.argument("reason") or "")
-    return relay_message(inv.argument("resident_id"), inv.argument("message_id"),
-                         inv.argument("member_id"), inv.caller,
-                         quota_reviewed=inv.argument("quota_reviewed") is True,
-                         reason=inv.argument("reason") or "",
-                         scope_gap=inv.argument("scope_gap") or "",
-                         scope_reviewed=inv.argument("scope_reviewed") is True,
-                         recover=inv.argument("recover") is True,
-                         continue_previous=inv.argument("continue_previous") is True)
+    resident_id = inv.argument("resident_id")
+    reply_to = inv.argument("reply_to_message_id")
+    if reply_to is not None:
+        if inv.argument("message") is None or any(inv.argument(key) is not None for key in (
+                "message_id", "member_id", "notice", "continue_previous", "reassign", "reason",
+        )):
+            raise invalid("回复必须提供 message，不能同时指定转交参数")
+        if not reply_to:
+            raise invalid("reply_to_message_id 不能为空")
+        result = deliver(inv, resident_id, _delivery_message(inv),
+                         business_ref=inv.argument("business_ref") or "", reply_to=reply_to)
+        return {**result, "status": "replied"}
+    if inv.argument("message") is not None or inv.argument("business_ref") is not None:
+        raise invalid("message 和 business_ref 只用于回复门面外发消息")
+    return transfer(
+        resident_id, inv.argument("message_id"), inv.argument("member_id"), inv.caller,
+        notice=inv.argument("notice") is True, continue_previous=inv.argument("continue_previous") is True,
+        reassign=inv.argument("reassign") is True, reason=inv.argument("reason") or "",
+    )
 
 
 def _forwarded_item(caller: str, item: Any) -> dict[str, Any]:
@@ -286,31 +230,33 @@ def _forwarded_item(caller: str, item: Any) -> dict[str, Any]:
     }
 
 
-def forward_messages(inv: Invocation) -> dict[str, Any]:
-    target = inv.argument("target_resident_id")
-    chatroom = inv.argument("target_chatroom_id")
-    if bool(target) == bool(chatroom):
-        raise invalid("target_resident_id 与 target_chatroom_id 需要且只能提供一个")
-    if chatroom and inv.argument("activation_policy"):
-        raise invalid("转发到聊天室不接受 activation_policy")
-    items = [_forwarded_item(inv.caller, item) for item in inv.argument("messages") or []]
-    if chatroom:
-        from management_portal.hatg.routing import execute_or_raise
+def _forwarded_items(inv: Invocation) -> list[dict[str, Any]]:
+    return [_forwarded_item(inv.caller, item) for item in inv.argument("messages")]
 
-        result = execute_or_raise({
-            "instruction": "CreateChatroomMessage",
-            "arguments": {
-                "chatroom_id": chatroom,
-                "content_parts": [{"type": "text", "text": protocol().forward_content(
-                    items, inv.argument("note") or "", quoted=True,
-                )}],
-            },
-            "idempotency_key": inv.idempotency_key,
-        }, inv.context)
-        return {**result, "chatroom_id": chatroom, "message_id": result["message"]["message_id"]}
+
+def forward_messages_to_chatroom(inv: Invocation) -> dict[str, Any]:
+    chatroom = inv.argument("target_chatroom_id")
+    items = _forwarded_items(inv)
+    from management_portal.hatg.routing import execute_or_raise
+
+    result = execute_or_raise({
+        "instruction": "CreateChatroomMessage",
+        "arguments": {
+            "chatroom_id": chatroom,
+            "content_parts": [{"type": "text", "text": protocol().forward_content(
+                items, inv.argument("note") or "", quoted=True,
+            )}],
+        },
+        "idempotency_key": inv.idempotency_key,
+    }, inv.context)
+    return {**result, "chatroom_id": chatroom, "message_id": result["message"]["message_id"]}
+
+
+def forward_messages_to_resident(inv: Invocation) -> dict[str, Any]:
+    items = _forwarded_items(inv)
     prepared = protocol().prepare_resident_forward(
         {
-            "target_resident_id": target,
+            "target_resident_id": inv.argument("target_resident_id"),
             "messages": items,
             "message": inv.argument("note") or "",
         },
@@ -343,12 +289,15 @@ def _paged(page: dict[str, Any]) -> dict[str, Any]:
     return page
 
 
+def list_message_attempts(inv: Invocation) -> dict[str, Any]:
+    from ..resident_business_history import page
+
+    return _paged(page(inv.argument("resident_id"), inv.caller,
+                       cursor=inv.argument("cursor") or "", limit=int(inv.argument("limit") or 50),
+                       input_message_id=inv.argument("input_message_id") or ""))
+
+
 def list_messages(inv: Invocation) -> dict[str, Any]:
-    if inv.argument('view') == 'attempts':
-        from ..resident_business_history import page
-        return _paged(page(inv.argument('resident_id'), inv.caller,
-            cursor=inv.argument('cursor') or '', limit=int(inv.argument('limit') or 50),
-            input_message_id=inv.argument('input_message_id') or ''))
     if not inv.argument('cursor'):
         raise invalid('cursor required for raw messages')
     return _paged(protocol().get_conversation_messages(
@@ -438,11 +387,19 @@ def get_subagent_run(inv: Invocation) -> dict[str, Any]:
 
 
 def clear_context(inv: Invocation) -> dict[str, Any]:
+    return _reset_context(inv, "reject")
+
+
+def create_context_reset(inv: Invocation) -> dict[str, Any]:
+    return _reset_context(inv, "wait")
+
+
+def _reset_context(inv: Invocation, active_execution_policy: str) -> dict[str, Any]:
     from management_portal.society_service import resident_management_domain
 
     result = resident_management_domain.reset_resident_context(
         inv.argument("resident_id"), inv.caller,
-        active_execution_policy=inv.argument("active_execution_policy") or "reject",
+        active_execution_policy=active_execution_policy,
         idempotency_key=inv.idempotency_key or "",
     )
     return {
@@ -485,20 +442,18 @@ def get_resident_request(inv: Invocation) -> dict[str, Any]:
 
 
 def answer_resident_request(inv: Invocation) -> dict[str, Any]:
-    resident_id = inv.argument("resident_id")
-    answers = inv.argument("answers") or {}
-    payload: dict[str, Any] = {"message_id": inv.argument("message_id")}
-    if set(answers) <= {"action", "content"} and answers.get("action") in {"accept", "decline", "cancel"}:
-        payload.update(answers)
-    else:
-        payload.update({"action": "answer", "answers": answers})
-    try:
-        receipt = protocol().respond_resident_user_input(resident_id, inv.caller, payload)
-    except ValueError as exc:
-        if "已回答" in str(exc) or "失效" in str(exc):
-            raise InstructionError("instruction.conflict", str(exc)) from exc
-        raise
-    return {**receipt, "status": str(receipt.get("status") or "")}
+    from .. import resident_requests
+
+    return resident_requests.answer(
+        inv.argument("resident_id"), inv.caller, inv.argument("message_id"),
+        answers=inv.argument("answers"), decision=inv.argument("decision"), content=inv.argument("content"),
+    )
+
+
+def cancel_resident_request(inv: Invocation) -> dict[str, Any]:
+    from .. import resident_requests
+
+    return resident_requests.cancel(inv.argument("resident_id"), inv.caller, inv.argument("message_id"))
 
 
 def create_notification(inv: Invocation) -> dict[str, Any]:
@@ -533,24 +488,30 @@ def accept_user_authorization(inv: Invocation) -> dict[str, Any]:
 
 HANDLERS = {
     "AcceptUserAuthorization": accept_user_authorization,
-    "RelayFamilyMessage": relay_family_message,
+    "RelayMessage": relay_message,
     "DeliverMessage": deliver_message,
-    "ForwardMessages": forward_messages,
+    "PrepareResidentInput": prepare_resident_input,
+    "DeliverUserMessage": deliver_user_message,
+    "ForwardMessagesToResident": forward_messages_to_resident,
+    "ForwardMessagesToChatroom": forward_messages_to_chatroom,
     "GetConversation": get_conversation,
     "ListMessages": list_messages,
-    "ListInputHistory": list_input_history,
+    "ListMessageAttempts": list_message_attempts,
+    "ListResidentInputHistory": list_input_history,
     "GetMessage": get_message,
     "ListRecentRounds": list_recent_rounds,
-    "SearchMessages": search_messages,
+    "SearchResidentMessages": search_messages,
     "GetMessageArtifact": get_message_artifact,
     "GetDeletedResidentHistory": get_deleted_resident_history,
     "GetSentPrompt": get_sent_prompt,
     "GetSubagentRun": get_subagent_run,
     "ClearContext": clear_context,
+    "CreateContextReset": create_context_reset,
     "AbsorbContext": absorb_context,
     "ListResidentRequests": list_resident_requests,
     "GetResidentRequest": get_resident_request,
     "AnswerResidentRequest": answer_resident_request,
+    "CancelResidentRequest": cancel_resident_request,
     "CreateNotification": create_notification,
 }
 STREAMS = {"WatchConversationEvents": watch_conversation_events}

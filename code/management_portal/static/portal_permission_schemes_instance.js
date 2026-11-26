@@ -221,7 +221,7 @@
       } else if (action === "delete" && entry) {
         void (async () => {
           const approved = await window.PortalUI.confirm({title: t("删除这条表项？"), message: entryText(entry), confirmLabel: t("删除"), tone: "danger"});
-          if (approved && !state.destroyed) await instanceWrite(() => run("DeletePermissionEntry", {scheme_id: scheme, entry_id: entry.entry_id}, "permission-entry-delete"));
+          if (approved && !state.destroyed) await instanceWrite(() => run("DeletePermissionEntry", {scheme_id: scheme, entry_ids: [entry.entry_id]}, "permission-entry-delete"));
         })();
       } else if (action === "delete-selected") {
         const ids = [...inst.selected];

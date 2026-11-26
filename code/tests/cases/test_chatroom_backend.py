@@ -632,7 +632,7 @@ def test_the_instructions_run_for_members_and_called_residents(lineage, monkeypa
                                          "content": f"大家好 @{HELPER}"}, actor=ALICE).raise_for_error()["message"]["version"] != edited["version"]
     assert run("UpdateChatroom", {"chatroom_id": chatroom_id, "add_members": [DAVE]}, actor=BOB).raise_for_error()["chatroom"]["members"] == [ALICE, BOB, DAVE]
     assert run("UpdateChatroomReadPosition", {"chatroom_id": chatroom_id}, actor=BOB).raise_for_error()["unread_count"] == 0
-    assert run("UpdateChatroom", {"chatroom_id": chatroom_id, "muted": True}, actor=BOB).raise_for_error()["chatroom"]["muted"]
+    assert run("SetChatroomMuted", {"chatroom_id": chatroom_id, "muted": True}, actor=BOB).raise_for_error()["chatroom"]["muted"]
     run("UpdateChatroomReadPosition", {"chatroom_id": chatroom_id, "through": posted["message"]["ordinal"]}, actor=BOB).raise_for_error()
     # A quote names one message of this Chatroom; a replay returns the same message.
     quoting = {"chatroom_id": chatroom_id, "content_parts": text("同意"), "quote": {"message_id": posted["message"]["message_id"]}}
@@ -1105,3 +1105,38 @@ def test_mailbox_mute_uses_chatroom_owner_and_preserves_mentions(lineage, monkey
     args["muted"] = False
     result = web_isa.mute_inbox_item(SimpleNamespace(caller=BOB, argument=args.get))["item"]
     assert not result["muted"] and result["unread_count"] == 3
+
+def test_combined_mailbox_marks_commit_together(lineage, monkeypatch):
+    """The room and personal pins roll back together on conflict or a full pin list."""
+    from management_portal import conversation_read_state, conversation_receipt_store, web_isa
+    from management_portal.hatg.contracts import InstructionError
+
+    room_id = chatroom_backend.create_chatroom(ALICE, [BOB])["chatroom_id"]
+    key = "chatroom:" + room_id
+    chatroom_backend.mark_read(BOB, room_id)
+    chatroom_backend.post_message(ALICE, room_id, text("latest"))
+    before = chatroom_backend.get_chatroom(BOB, room_id)
+    monkeypatch.setattr(web_isa, "_inbox_entry", lambda actor, target: next(
+        (value for value in chatroom_backend.inbox_entries(actor) if value["key"] == target), None))
+    args = {"key": key, "muted": True, "pinned": True, "unread": False}
+    revision = str(before["read_revision"])
+    def call(version):
+        return web_isa.update_inbox_item(SimpleNamespace(
+            caller=BOB, argument=args.get, expected_version_for=lambda _: version,
+        ))
+
+    with pytest.raises(InstructionError) as conflict:
+        call("-1")
+    assert conflict.value.code == "instruction.version_conflict"
+    with monkeypatch.context() as patch:
+        patch.setattr(conversation_receipt_store, "MAX_PINNED_ITEMS", 0)
+        with pytest.raises(InstructionError, match="最多置顶"):
+            call(revision)
+    assert chatroom_backend.get_chatroom(BOB, room_id)["unread_count"] == before["unread_count"]
+    assert not chatroom_backend.get_chatroom(BOB, room_id)["muted"]
+    assert key not in conversation_read_state.load(BOB)["pinned_keys"]
+    call(revision)
+    assert chatroom_backend.get_chatroom(BOB, room_id)["unread_count"] == 0
+    assert chatroom_backend.get_chatroom(BOB, room_id)["muted"]
+    assert key in conversation_read_state.load(BOB)["pinned_keys"]
+    assert not chatroom_backend.get_chatroom(ALICE, room_id)["muted"]

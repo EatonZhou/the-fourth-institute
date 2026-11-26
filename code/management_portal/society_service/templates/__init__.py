@@ -48,9 +48,7 @@ def get(template_id):
     return get_template(template_id)
 
 
-def create(template, actor, *, from_selection=None, dry_run=False):
-    from . import store
-
+def _prepare_creation(template, actor, from_selection):
     if from_selection is not None:
         from .structure import from_selection as capture
 
@@ -65,29 +63,47 @@ def create(template, actor, *, from_selection=None, dry_run=False):
         }
     template = deepcopy(template)
     reconcile(template_items(template), [], actor, key='key')
-    normalized = kinds.normalize(template)
-    if dry_run:
-        return describe(normalized)
+    return kinds.normalize(template)
+
+
+def create_preview(template, actor, *, from_selection=None):
+    return describe(_prepare_creation(template, actor, from_selection))
+
+
+def create(template, actor, *, from_selection=None):
+    from . import store
+
+    normalized = _prepare_creation(template, actor, from_selection)
     return get(store.save(normalized, actor)["template_id"])
 
 
-def update(template_id, changes, actor, *, dry_run=False):
+def _prepare_update(previous, changes, actor):
     from . import store
 
     unknown = set(changes) - set(store.CONTENT)
     if unknown:
         raise TemplateError(f"不支持修改字段：{sorted(unknown)}")
 
-    def transform(previous):
-        if changes.get("kind", previous["kind"]) != previous["kind"]:
-            raise TemplateError("模板 kind 不可修改；请另存为副本")
-        candidate = deepcopy({**previous, **changes})
-        reconcile(template_items(candidate), template_items(previous), actor, key='key')
-        return kinds.normalize(candidate)
+    if changes.get("kind", previous["kind"]) != previous["kind"]:
+        raise TemplateError("模板 kind 不可修改；请另存为副本")
+    candidate = deepcopy({**previous, **changes})
+    reconcile(template_items(candidate), template_items(previous), actor, key='key')
+    return kinds.normalize(candidate)
 
-    if dry_run:
-        return describe(transform(store.get(template_id)))
-    store.save({}, actor, template_id=template_id, transform=transform)
+
+def update_preview(template_id, changes, actor):
+    from . import store
+
+    return describe(_prepare_update(store.get_persisted(template_id), changes, actor))
+
+
+def update(template_id, changes, actor):
+    from . import store
+
+    store.save(
+        {}, actor, template_id=template_id,
+        transform=lambda previous: _prepare_update(previous, changes, actor),
+    )
     return get(template_id)
 
 
@@ -165,9 +181,9 @@ def normalize_target(lineage_id, raw, actor):
     return target
 
 
-def apply(
+def _application(
     lineage_id,
-    template_id,
+    template,
     target,
     actor,
     *,
@@ -175,11 +191,8 @@ def apply(
     title="",
     resident_settings=None,
     match_choices=None,
-    dry_run=False,
 ):
-    from . import store
-
-    template = kinds.normalize(store.get(template_id))
+    template = kinds.normalize(template)
     target = normalize_target(lineage_id, target, actor)
     if target["kind"] not in template["targets"]:
         raise TemplateError("此模板不支持当前目标类型")
@@ -204,8 +217,32 @@ def apply(
         resident_settings or {},
         {key: set(ids) for key, ids in choices.items()},
     )
-    if dry_run:
-        if not hasattr(kind, "preview"):
-            raise TemplateError("只有结构模板支持施加预览")
-        return kind.preview(ctx)
+    return kind, ctx
+
+
+def apply(
+    lineage_id, template_id, target, actor, *, parameters=None, title="",
+    resident_settings=None, match_choices=None,
+):
+    from . import store
+
+    kind, ctx = _application(
+        lineage_id, store.get(template_id), target, actor, parameters=parameters,
+        title=title, resident_settings=resident_settings, match_choices=match_choices,
+    )
     return kind.apply(ctx)
+
+
+def apply_preview(
+    lineage_id, template_id, target, actor, *, parameters=None, title="",
+    resident_settings=None, match_choices=None,
+):
+    from . import store
+
+    kind, ctx = _application(
+        lineage_id, store.get_persisted(template_id), target, actor, parameters=parameters,
+        title=title, resident_settings=resident_settings, match_choices=match_choices,
+    )
+    if not hasattr(kind, "preview"):
+        raise TemplateError("此模板不支持施加预览")
+    return kind.preview(ctx)

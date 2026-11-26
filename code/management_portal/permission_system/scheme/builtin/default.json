@@ -409,7 +409,9 @@
     }
   ],
   "instructions": {
-    "ResolveMessageContextReferences": {"a": "@viewer"},
+    "ResolveMessageContextReferences": {
+      "a": "@viewer"
+    },
     "AbsorbContext:source_resident_id": {
       "a": "@viewer"
     },
@@ -419,7 +421,10 @@
     "AnswerResidentRequest": {
       "a": "@message"
     },
-    "ApplyLineageChanges": {
+    "CancelResidentRequest": {
+      "a": "@message"
+    },
+    "ApplyLineageChanges:lineage_id": {
       "a": "@contributor"
     },
     "ApplyResearchMapChanges": {
@@ -428,7 +433,10 @@
     "ApplyTemplate": {
       "a": "@contributor"
     },
-    "BindTelepusContactForUser": {
+    "GetTemplateApplyPreview": {
+      "a": "@contributor"
+    },
+    "BindTelepusContact": {
       "a": "@admin",
       "r": "@shared"
     },
@@ -447,13 +455,20 @@
     "ClearContext": {
       "a": "@admin"
     },
+    "CreateContextReset": {
+      "a": "@admin"
+    },
     "CreateCandidateFork": {
       "a": "@contributor"
     },
-    "CreateComponent": {
+    "ApplyLineageChanges:create_component": {
       "a": "@contributor"
     },
     "CreatePermissionScheme": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "GetPermissionSchemeCreatePreview": {
       "a": "@admin",
       "r": "@shared"
     },
@@ -464,7 +479,14 @@
       "a": "@contributor",
       "r": "@public"
     },
+    "GetTemplateCreatePreview:@public": {
+      "a": "@contributor",
+      "r": "@public"
+    },
     "CreateTemplate:from_selection.lineage_id": {
+      "a": "@viewer"
+    },
+    "GetTemplateCreatePreview:from_selection.lineage_id": {
       "a": "@viewer"
     },
     "CreateUser": {
@@ -479,7 +501,7 @@
       "a": "@admin",
       "r": "@shared"
     },
-    "CreateWire": {
+    "ApplyLineageChanges:create_wire": {
       "a": "@contributor"
     },
     "CreateWorkspaceHandoff": {
@@ -491,7 +513,7 @@
     "DeleteChatroom": {
       "a": "@admin"
     },
-    "DeleteComponent": {
+    "ApplyLineageChanges:delete_component": {
       "a": "@contributor"
     },
     "DeleteFunctionBlock": {
@@ -513,10 +535,10 @@
     "DeleteProject": {
       "a": "@admin"
     },
-    "DeleteResident:lineage_id": {
+    "ApplyLineageChanges:delete_resident.lineage_id": {
       "a": "@contributor"
     },
-    "DeleteResident:resident_id": {
+    "ApplyLineageChanges:delete_resident.resident_id": {
       "a": "@admin"
     },
     "DeleteSharedState": {
@@ -526,16 +548,22 @@
       "a": "@admin",
       "r": "@shared"
     },
-    "DeleteWire": {
+    "ApplyLineageChanges:delete_wire": {
       "a": "@contributor"
     },
     "DeleteWorkspaceHandoff": {
       "a": "@contributor"
     },
-    "DeliverMessage:resident_id": {
+    "DeliverMessage": {
       "a": "@message"
     },
-    "DeliverMessage:user_id": {
+    "PrepareResidentInput": {
+      "a": "@message"
+    },
+    "RelayMessage:reply": {
+      "a": "@message"
+    },
+    "DeliverUserMessage": {
       "a": "@message"
     },
     "Familize": {
@@ -550,10 +578,10 @@
     "ForkResident:context_source_resident_id": {
       "a": "@viewer"
     },
-    "ForwardMessages:target_resident_id": {
+    "ForwardMessagesToResident": {
       "a": "@message"
     },
-    "ForwardMessages:target_chatroom_id": {
+    "ForwardMessagesToChatroom": {
       "a": "@contributor"
     },
     "Functionalize": {
@@ -637,12 +665,30 @@
       "a": "@admin",
       "r": "@shared"
     },
-    "StartTelepusWeixinBinding": {"a": "@free", "r": "@portal"},
-    "GetTelepusWeixinBinding": {"a": "@free", "r": "@portal"},
-    "GetTelepusWeixinNotifications": {"a": "@free", "r": "@portal"},
-    "UpdateTelepusWeixinNotifications": {"a": "@free", "r": "@portal"},
-    "SubmitTelepusWeixinPin": {"a": "@free", "r": "@portal"},
-    "UnbindTelepusWeixin": {"a": "@free", "r": "@portal"},
+    "StartTelepusWeixinBinding": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "GetTelepusWeixinBinding": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "GetTelepusWeixinNotifications": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "UpdateTelepusWeixinNotifications": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "SubmitTelepusWeixinPin": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "UnbindTelepusWeixin": {
+      "a": "@free",
+      "r": "@portal"
+    },
     "GetSharedState": {
       "a": "@viewer"
     },
@@ -664,13 +710,16 @@
     "InjectMailboxItem": {
       "a": "@contributor"
     },
-    "ListInputHistory:resident_id": {
+    "ListResidentInputHistory": {
       "a": "@viewer"
     },
-    "ListInputHistory:chatroom_id": {
+    "ListChatroomInputHistory": {
       "a": "@viewer"
     },
     "ListMessages": {
+      "a": "@viewer"
+    },
+    "ListMessageAttempts": {
       "a": "@viewer"
     },
     "ListPermissionEntries:p": {
@@ -710,19 +759,7 @@
     "MoveLineageObjects:target_lineage_id": {
       "a": "@admin"
     },
-    "MoveResident:lineage_id": {
-      "a": "@contributor"
-    },
-    "MoveResident:resident_id": {
-      "a": "@admin"
-    },
-    "MoveResident:target_lineage_id": {
-      "a": "@admin"
-    },
-    "SetIntakeOpen:resident_id": {
-      "a": "@contributor"
-    },
-    "SetIntakeOpen:resident_ids": {
+    "SetIntakeOpen": {
       "a": "@contributor"
     },
     "SetComponentPaused": {
@@ -757,10 +794,13 @@
     "ReadScriptRunOutput": {
       "a": "@viewer"
     },
+    "ReadScriptRunArtifact": {
+      "a": "@viewer"
+    },
     "RegisterResource": {
       "a": "@contributor"
     },
-    "RelayFamilyMessage": {
+    "RelayMessage:relay": {
       "a": "@contributor"
     },
     "RenameProject": {
@@ -808,16 +848,44 @@
       "a": "@admin",
       "r": "@shared"
     },
-    "RunResourceAction": {
+    "CreateKnowledgeFile": {
       "a": "@contributor"
     },
-    "SearchMessages:resident_ids": {
+    "UpdateKnowledgeFileName": {
+      "a": "@contributor"
+    },
+    "MoveKnowledgeItems": {
+      "a": "@contributor"
+    },
+    "UpdateDeviceSshCredential": {
+      "a": "@admin"
+    },
+    "DeleteDeviceSshCredential": {
+      "a": "@admin"
+    },
+    "CheckDeviceSsh": {
       "a": "@viewer"
     },
-    "SearchMessages:chatroom_id": {
+    "RunDeviceCommand": {
+      "a": "@admin"
+    },
+    "UpdateWorkbenchPage": {
+      "a": "@contributor"
+    },
+    "UpdateWorkbenchReversePlan": {
+      "a": "@contributor"
+    },
+    "SearchResidentMessages": {
+      "a": "@viewer"
+    },
+    "SearchChatroomMessages": {
       "a": "@viewer"
     },
     "ActivatePermissionScheme": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "GetPermissionSchemeActivationPreview": {
       "a": "@admin",
       "r": "@shared"
     },
@@ -830,7 +898,7 @@
     "TriggerEvent": {
       "a": "@contributor"
     },
-    "UnbindTelepusContactForUser": {
+    "UnbindTelepusContact": {
       "a": "@admin",
       "r": "@shared"
     },
@@ -849,15 +917,25 @@
     "UpdateChatroom": {
       "a": "@contributor"
     },
-    "UpdateComponent": {
+    "SetChatroomMuted": {
       "a": "@contributor"
     },
-    "ReviewComponentScript": {
+    "ApplyLineageChanges:update_component": {
+      "a": "@contributor"
+    },
+    "ConfirmComponentScript": {
+      "a": "@contributor"
+    },
+    "CancelComponentScriptDraft": {
       "a": "@contributor"
     },
     "UpdateExecutionSettings": {
       "a": "@admin",
       "r": "@shared"
+    },
+    "SetPermissionSystemEnabled": {
+      "a": "@admin",
+      "r": "@portal"
     },
     "UpdateFamily": {
       "a": "@contributor"
@@ -865,10 +943,7 @@
     "UpdateFunctionBlock": {
       "a": "@contributor"
     },
-    "CreateDuty": {
-      "a": "@contributor"
-    },
-    "UpdateDuty": {
+    "ApplyLineageChanges:update_duty": {
       "a": "@contributor"
     },
     "MoveDuties": {
@@ -884,6 +959,10 @@
       "a": "@contributor"
     },
     "UpdatePermissionScheme": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "GetPermissionSchemeUpdatePreview": {
       "a": "@admin",
       "r": "@shared"
     },
@@ -964,7 +1043,15 @@
     "UpdateUser": {
       "a": "@admin"
     },
-    "UpdateWire": {
+    "UpdateUserStatus": {
+      "a": "@admin",
+      "r": "@portal"
+    },
+    "UpdateUserCategory": {
+      "a": "@admin",
+      "r": "@portal"
+    },
+    "ApplyLineageChanges:update_wire": {
       "a": "@contributor"
     },
     "UpdateWorkspaceHandoff": {
@@ -979,30 +1066,14 @@
     "WatchTriggerPath": {
       "a": "@viewer"
     },
-    "MaintainFamilyProgress": {
-      "a": "@contributor"
-    },
-    "MaintainFamilyReview": {
-      "a": "@contributor"
-    },
-    "MaintainFamilyRecovery": {
-      "a": "@contributor"
-    },
-    "ResolveFamilyRequest": {
-      "a": "@contributor"
-    },
-    "MaintainFamilyRoleAvailability": {
-      "a": "@contributor"
-    },
-    "DispatchFamilyTask": {
+    "ResolveRelayedRequest": {
       "a": "@contributor"
     },
     "CheckPermission": {
       "a": "@admin"
     },
-    "MaintainResidentWorkSummary": {
-      "a": "@free",
-      "r": "@portal"
+    "CheckInstructionPermission": {
+      "a": "@admin"
     },
     "ClaimResidentSummaryJobs": {
       "a": "@free",
@@ -1024,10 +1095,6 @@
     },
     "CreateLineage": {
       "a": "@contributor"
-    },
-    "CreateMailboxTodo": {
-      "a": "@free",
-      "r": "@portal"
     },
     "CreateModelApi": {
       "a": "@admin",
@@ -1087,15 +1154,15 @@
       "a": "@free",
       "r": "@portal"
     },
+    "CreateUploadFromFile": {
+      "a": "@free",
+      "r": "@portal"
+    },
     "CreateUserAccessToken": {
       "a": "@admin"
     },
     "DeleteFamily": {
       "a": "@admin"
-    },
-    "DeleteMailboxTodo": {
-      "a": "@free",
-      "r": "@portal"
     },
     "DeleteModelApi": {
       "a": "@admin",
@@ -1113,15 +1180,31 @@
       "a": "@viewer",
       "r": "@public"
     },
+    "GetTemplateStoreItem": {
+      "a": "@viewer",
+      "r": "@public"
+    },
     "PublishTemplate": {
       "a": "@contributor",
       "r": "@public"
     },
-    "ReviewTemplateScript": {
+    "ConfirmTemplateScript": {
+      "a": "@contributor",
+      "r": "@public"
+    },
+    "CancelTemplateScriptDraft": {
       "a": "@contributor",
       "r": "@public"
     },
     "InstallStoreTemplate": {
+      "a": "@contributor",
+      "r": "@public"
+    },
+    "UpdateInstalledTemplate": {
+      "a": "@contributor",
+      "r": "@public"
+    },
+    "InstallStoreTemplateAsNew": {
       "a": "@contributor",
       "r": "@public"
     },
@@ -1140,14 +1223,10 @@
       "a": "@viewer",
       "r": "@shared"
     },
-    "RunGoogleDriveBackup": {
-      "a": "@admin",
-      "r": "@shared"
-    },
     "GetEffectivePermissions": {
       "a": "@admin"
     },
-    "GetFamilySummaryInputs": {
+    "GetFacadeSummaryInputs": {
       "a": "@free",
       "r": "@portal"
     },
@@ -1200,7 +1279,7 @@
       "a": "@viewer",
       "r": "@shared"
     },
-    "UpdateResourceType": {
+    "SetResourceTypeEnabled": {
       "a": "@admin",
       "r": "@shared"
     },
@@ -1252,9 +1331,6 @@
       "a": "@free",
       "r": "@portal"
     },
-    "ListMailboxTodos": {
-      "a": "@admin"
-    },
     "ListModelApis": {
       "a": "@viewer",
       "r": "@shared"
@@ -1290,9 +1366,6 @@
       "a": "@viewer",
       "r": "@shared"
     },
-    "ListTemporaryCredentials": {
-      "a": "@admin"
-    },
     "ListUserAccessTokens": {
       "a": "@admin"
     },
@@ -1303,30 +1376,21 @@
     "UpdateChatroomReadPosition": {
       "a": "@viewer"
     },
-    "SetMailboxItemRead": {
+    "UpdateMailboxItem": {
       "a": "@free",
       "r": "@portal"
     },
     "UpdatePostReadVersion": {
       "a": "@viewer"
     },
-    "MoveMailboxTodo": {
-      "a": "@free",
-      "r": "@portal"
-    },
-    "SetMailboxItemMuted": {
-      "a": "@free",
-      "r": "@portal"
-    },
-    "SetMailboxItemPinned": {
-      "a": "@free",
-      "r": "@portal"
-    },
-    "PublishFamilyProgress": {
-      "a": "@free",
-      "r": "@portal"
+    "SetPostUnread": {
+      "a": "@viewer"
     },
     "PublishPulseItem": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "UnpublishPulseItem": {
       "a": "@free",
       "r": "@portal"
     },
@@ -1352,10 +1416,7 @@
       "a": "@free",
       "r": "@portal"
     },
-    "DeletePermissionEntry:entry_id": {
-      "a": "@admin"
-    },
-    "DeletePermissionEntry:entry_ids": {
+    "DeletePermissionEntry": {
       "a": "@admin"
     },
     "SearchPermissionNodes": {
@@ -1396,9 +1457,6 @@
       "a": "@free",
       "r": "@portal"
     },
-    "UpdateMailboxTodo": {
-      "a": "@admin"
-    },
     "UpdateModelApi": {
       "a": "@admin",
       "r": "@operations"
@@ -1410,11 +1468,23 @@
       "a": "@free",
       "r": "@portal"
     },
+    "UpdateResidentSummaryConsolidation": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "UpdateFacadeSummary": {
+      "a": "@free",
+      "r": "@portal"
+    },
     "UpdateTemplate": {
       "a": "@contributor",
       "r": "@public"
     },
-    "UpdateUserNavigation": {
+    "GetTemplateUpdatePreview": {
+      "a": "@contributor",
+      "r": "@public"
+    },
+    "SetUserNavigationFavorite": {
       "a": "@admin"
     },
     "UpdateWorkspaceFile": {
@@ -1426,11 +1496,47 @@
     "GetFamilyChatPreferences": {
       "a": "@viewer"
     },
-    "GetFamilyRoutingContext": {
+    "GetRelayContext": {
       "a": "@viewer"
     },
     "UpdateFamilyChatPreferences": {
       "a": "@viewer"
+    },
+    "UpdateFacadeMembers": {
+      "a": "@admin"
+    },
+    "CheckRelayTarget": {
+      "a": "@viewer"
+    },
+    "GetLineageChangesPreview:lineage_id": {
+      "a": "@contributor"
+    },
+    "GetLineageChangesPreview:create_component": {
+      "a": "@contributor"
+    },
+    "GetLineageChangesPreview:create_wire": {
+      "a": "@contributor"
+    },
+    "GetLineageChangesPreview:delete_component": {
+      "a": "@contributor"
+    },
+    "GetLineageChangesPreview:delete_resident.lineage_id": {
+      "a": "@contributor"
+    },
+    "GetLineageChangesPreview:delete_resident.resident_id": {
+      "a": "@admin"
+    },
+    "GetLineageChangesPreview:delete_wire": {
+      "a": "@contributor"
+    },
+    "GetLineageChangesPreview:update_component": {
+      "a": "@contributor"
+    },
+    "GetLineageChangesPreview:update_duty": {
+      "a": "@contributor"
+    },
+    "GetLineageChangesPreview:update_wire": {
+      "a": "@contributor"
     }
   }
 }

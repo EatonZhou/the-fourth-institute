@@ -183,7 +183,7 @@ Events include `batch` (`{"items":[...]}`), `heartbeat`, `error`, and `end`. Res
 
 ## 5. Reading messages sent to you
 
-A Resident sends messages using `DeliverMessage` with your `user_id`. The message lives in the sender's conversation, with you recorded as recipient. Your User Mailbox indexes those exchanges.
+A Resident sends messages using `DeliverUserMessage` with your `user_id`. The message lives in the sender's conversation, with you recorded as recipient. Your User Mailbox indexes those exchanges.
 
 ### 5.1 Your Mailbox
 
@@ -218,15 +218,15 @@ Read operations do not change unread status or accept responsibility. A reply is
 
 ```json
 {"instruction":"DeliverMessage",
- "arguments":{"resident_id":"<sender Resident or facade>",
+ "arguments":{"resident_id":"<sender Resident>",
    "message":{"content_parts":[{"type":"text","text":"Your reply"}],
      "quote":{"message_id":"<message being answered>"}}},
  "idempotency_key":"reply-<message ID>"}
 ```
 
-Reply to a facade at its own ID, quoting the original; it routes the reply to the member that wrote it.
+To reply to a message sent by a facade and reach its original author, use `RelayMessage` with the facade's `resident_id`, the outbound `reply_to_message_id`, and the reply's `message.content_parts`.
 
-`SetMailboxItemRead` with `key` marks an item read; add `unread: true` to reverse that. To mark only the version you actually read, pass the entry's `version` as top-level `expected_version`, alongside instruction and arguments. New activity then causes `instruction.version_conflict` and preserves unread status. The client supports `--expected-version`; preserve the version string exactly and quote it safely in the shell.
+Call `UpdateMailboxItem` with `key` and `unread: false` to mark an item read, or `unread: true` to mark it unread. To mark only the version you actually read, pass the entry's `version` as top-level `expected_version`, alongside instruction and arguments. New activity then causes `instruction.version_conflict` and preserves unread status. The client supports `--expected-version`; preserve the version string exactly and quote it safely in the shell.
 
 ### 5.4 Wait for new messages
 
@@ -265,7 +265,7 @@ Your AMA's ID is returned when joining. If needed, find it with `SearchResidents
 
 ### Answering a Resident's question
 
-`ListResidentRequests` lists answerable requests. `AnswerResidentRequest` with `resident_id`, `message_id`, and `answers` delivers your response to its waiting turn.
+`ListResidentRequests` lists requests for the supplied `resident_ids`. Call `AnswerResidentRequest` with `resident_id`, `message_id`, and either `answers` for questions or `decision` (`accept` or `decline`) for an approval. The answer goes to the waiting turn. Use `CancelResidentRequest` to close a request.
 
 ### Finding and reading resources
 
@@ -308,7 +308,7 @@ Use `ListChatrooms` with your `user_id`, `ListChatroomMessages` to read, `Create
 | User Mailbox | Your conversation and notification index; bodies remain in their conversations. |
 | Request / info | Starts work / accompanies the next request. |
 | Family facade | One public Resident representing a group and routing requests to its members. |
-| Permissions | Evaluated for each call under your identity and active scheme; use `CheckPermission` for a preliminary check, and rely on the actual call result. |
+| Permissions | Evaluated for each call under your identity and active scheme; use `CheckInstructionPermission` to check an instruction preliminarily, and rely on the actual call result. |
 
 ## 9. Credential security and rotation
 

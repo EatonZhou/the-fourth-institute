@@ -62,9 +62,10 @@ Resident 是可以跨多次模型会话持续存在的 Agent 身份。系统中�
 | `GetResident` | 否 | 读取 Resident 的基本信息 | 对 `resident_id` 有 @viewer |
 | `SearchResidents` | 否 | 按关键词查找 Resident，并说明调用者能否给它发消息 | 对“共享”有 @viewer |
 | `UpdateResident` | 是 | 修改 Resident 名称或头像 | 对 `lineage_id` 有 @contributor |
-| `DeleteResident` | 是 | 删除 Resident | 对 `lineage_id` 有 @contributor；对 `resident_id` 有 @admin |
 | `GetResidentSummaries` | 否 | 批量读取与工作查看共用的累计摘要，供搜索、路由和摘要维护复用；可附带内容版本与漏写轮次 | 对 `resident_ids` 有 @viewer |
-| `UpdateResidentWorkSummary` | 是 | 本人维护工作摘要，Steward 汇总本 Family 门面 | 免检 |
+| `UpdateResidentWorkSummary` | 是 | 本人替换近期事实。各层各字段合计上限默认 5000 字符。省略 summary 表示仅登记覆盖轮次。 | 免检 |
+| `UpdateResidentSummaryConsolidation` | 是 | 本 Family Steward 归纳业务成员的阶段与长期层 | 免检；处理器核验调用者是该 Family 的 Steward |
+| `UpdateFacadeSummary` | 是 | 本 Family Steward 写入门面摘要并保存来源版本 | 免检；处理器核验调用者是该 Family 的 Steward |
 | `RequestResidentSummaryRebuild` | 是 | 请求完整重建独立 Resident 的累计摘要；Family 使用自身维护者 | 对 `resident_id` 有 @contributor |
 | `GetResidentSummaryQueue` | 否 | 读取摘要队列中各状态的份数 | 对“共享”有 @viewer |
 | `ClaimResidentSummaryJobs` | 是 | 认领待写的独立 Resident 摘要并取得写作说明与证据（仅限全局摘要职责承担者） | 免检 |
@@ -76,7 +77,7 @@ Resident 是可以跨多次模型会话持续存在的 Agent 身份。系统中�
 | `GetPromptInjectionPreview` | 否 | 预览一轮实际带上的注入内容 | 对 `resident_id` 有 @viewer |
 | `GetResidentInitialization` | 否 | 读取既有初始化状态与执行身份 | 对 `resident_id` 有 @viewer |
 | `RetryResidentInitialization` | 是 | 恢复初始化并保留原队列 | 对 `resident_id` 有 @contributor |
-| `RestartSession` | 是 | 切换账号或 Provider（默认完整保留上下文），或显式重新开始模型会话 | 对 `resident_id` 有 @contributor |
+| `RestartSession` | 是 | 等当前轮结束后重启或切换 Resident 后端或账号，保留上下文；保存配置不调用模型，首条新消息交付历史。 | 对 `resident_id` 有 @contributor |
 | `GetSessionRestart` | 否 | 读取会话重启进度 | 对 `resident_id` 有 @viewer |
 | `CancelSessionRestart` | 是 | 取消尚未完成的会话重启 | 对 `resident_id` 有 @contributor |
 | `BindWorkspace` | 是 | 为 Resident 绑定一个工作目录 | 对 `resident_id` 有 @contributor |
@@ -106,15 +107,13 @@ Resident 是可以跨多次模型会话持续存在的 Agent 身份。系统中�
 
 ### `ForkResident`
 
-**从来源 Resident Fork 出一个新 Resident，新 Resident 按选定方式继承来源的上下文。**
+从指定来源创建新 Resident、独立 trace 和记忆交接意图；不投递业务、不调用模型。
 
-- 参数：`lineage_id`、`source_resident_id`、`fork_mode`、`context_source_resident_id`（可选，上下文来源，默认与 `source_resident_id` 相同；两者不同时只适用于 `message` 方式）、`message`（`fork_mode=message` 时必填，历史截止点）、`title`（可选）、`provider`（可选，登记的 Agent Provider 或 `provider_api`）、`account_id`（可选，目标 Provider 账号）、放置参数。
-- `fork_mode` 取值：`full`（继承完整的 Portal 冻结上下文，默认方式）、`compacted`（新会话首次工作前压缩继承的上下文）、`recent-5` 与 `recent-10`（继承最近 5 或 10 轮对话）、`message`（继承到指定历史消息为止）。这些方式的操作对象和结果相同，都产生一个新 Resident，只在带入多少上下文上不同，因此使用同一条指令。
-- 结果：新 Resident 的 ID 和记录来源的派生关系 ID。
-- `fork_mode` 只接受上述取值，`native` 不是可用值或兼容别名。它与来源事实 `fork_method` 分开：历史记录中的 `fork_method=native_fork` 保留原有来源含义，不作为创建请求的参数。
-- 省略 `provider` 时继承上下文来源 Provider。同 Provider 且省略 `account_id` 时继承来源实际账号；跨 Provider 时使用目标默认账号或显式账号，Model API 要求显式 API 账号。通用设置继续继承，模型与后端专用设置按目标能力校准；`compacted` 检查目标 Provider 的 `seeded_compaction` 能力。规则见 decision_5bf5bfbd52cb。
-- 新 Resident 是普通 Resident，拥有自己的自有工作区，并默认继承来源的其他工作区绑定。来源证明、上下文选择和 Provider 会话的建立方式见 decision_5bf5bfbd52cb。
-- Family 门面不能 Fork（decision_44cf587c1721），需要 Fork 具体的成员。
+参数：`lineage_id`、`source_resident_id`；可选 `fork_mode`（`full`、`compacted`、`recent`、`message`，默认 `full`）、`recent_rounds`（整数，`fork_mode=recent` 时必填，最少 1）、`context_source_resident_id`（上下文来源，默认与来源 Resident 相同）、`message`（`fork_mode=message` 时的历史截止点 `{message_id}`）、`title`、`provider`、`account_id`、`family_id`、`near_resident_id`、`placement`、`x`、`y`。非法值拒绝；`recent_rounds` 只在 `fork_mode=recent` 时接受。
+
+新 Resident 的上下文取自来源的有效窗口：从来源最近一次压缩起，或按 `fork_mode` 选定的轮次、`message` 给出的历史截止点；上下文由 AgentData 提供，任何能用该上下文打开新会话的 Provider 都支持 Fork，不依赖厂商原生 fork，跨账号或 Provider 同样适用。模型、effort 与账号切换复用校验；Model API 要求登记账号，不使用原生 effort 字段。见 decision_5bf5bfbd52cb。
+
+返回新 Resident 和继承关系 ID。自身工作区、权限与工作区只读降权规则保持；Family 门面不能作为来源，需要具体成员。
 
 ### `PromoteSeed`
 
@@ -150,21 +149,9 @@ Resident 是可以跨多次模型会话持续存在的 Agent 身份。系统中�
 - 结果：修改后的 Resident 基本信息；修改了头像时带上保存后的 `avatar`。
 - Portal 页面节点设置中的名称修改也使用这条指令。
 
-### `DeleteResident`
+### 删除 Resident
 
-**把 Resident 标记为已删除，移除它的模型会话、成员关系、Lineage 中的引用和自有工作区。身份与历史保留，删除没有恢复入口。**
-
-- 参数：`lineage_id`、`resident_id`。
-- 结果：被删除的 Resident ID，以及删除 Leader 时新选出的 Leader ID。
-- 删除范围按创建、登记及交接时维护的 owner 与删除依赖取得：注销活动身份、成员关系、连线、绑定及该主体凭证；清理其明确拥有的 Workspace 和私有目录。借用 Workspace 只解绑；独立登记的 Article、Repo、Paper、知识条目、Report 及 AgentData 历史不级联删除。不能在请求中遍历全站目录或资源登记来推断归属。
-- 目标注销和准确清理清单在短事务中提交；后台消费同一清单并持久重试。返回注销成功不等于物理文件已经删完。旧实例关系未升级完整时明确报告缺口，不能降级为全站扫描。目录合同见 decision_4aa13bc21e8e，在途工作与批量原子性见 decision_0f57656a2acd。
-- 被删除的是 Lineage 的 Leader 时，系统从该 Lineage 其余的 Resident 中随机选一个担任新的 Leader；没有其他 Resident 时，普通 Lineage 暂时没有 Leader，Project 层 Lineage 则拒绝这次删除（decision_3e07c6d35cac）。需要指定继任者时，先用 `UpdateLineage`（decision_4637ca4a69e2）更换 Leader，再删除原 Leader。
-- Resident 身份永久保留在 `residents` 表中；`deleted_at` 为空表示正常，有值表示已删除，`deleted_by` 记录删除操作者。删除状态以这两个字段表达，不另设删除身份表（decision_0f57656a2acd）。同 ID 的 Agent、主 trace、已有片段和执行历史继续保留，空 trace 也保留。
-- 正常目录、发现列表、调度和消息投递排除已删除的 Resident。按 ID 查询历史时仍遵守原有读取权限，可查看历史消息、执行轨迹和 Fork 来源；历史读取不清除删除状态，也不启动工作。
-- 删除失败时，身份和节点保持原样。
-- Seed 不随 Resident 删除：Seed 不记录写出它的 Resident，它的 Markdown 在 Lineage 目录；以这个 Resident 为来源的候选 Fork 删除，Seed 保留（decision_4adcc1ff2f2c）。
-- 一次删除多个 Resident 和组件使用 `ApplyLineageChanges`（decision_4637ca4a69e2），它采用相同的删除语义。删除 Function Block 实例时，实例创建的 Resident 也按这条指令的语义删除。实例创建的 Resident 也可以直接用这条指令删除，实例下一次重新展开时按定义补建。
-- Family 的门面和 steward 不能直接删除，需要先 `Unfamilize`（decision_44cf587c1721）。
+通过 `ApplyLineageChanges` 提交删除 Resident 的操作。提交核对对象本身的删除权限及所属范围，活动身份的移除和历史保留规则见对应的 Lineage 定义。
 
 ### `GetResidentSummaries`
 
@@ -172,7 +159,8 @@ Resident 是可以跨多次模型会话持续存在的 Agent 身份。系统中�
 
 - 参数：`resident_ids`，一次最多 128 个；可用 `fields` 选择返回的摘要字段；`include_maintenance` 为真时附带维护所需的信息。
 - 结果：`summaries` 与 `unavailable_resident_ids`。每份摘要包含 Resident ID、名称、所属 Lineage、摘要内容（当前重点、进行中的线程、长期经验、近期成果、主要负责、辅助经验、负责的组件、分支差异、适合与不适合接收的任务）、尚未完成的请求、更新时间，以及摘要是否过期。
-- `include_maintenance` 时每项另有内容版本 `revision`、汇总来源 `source_versions`、漏写的输入 `missing_message_ids` 和维护者 `writer_id`；尚无摘要但调用者能看到的 Resident 也返回一项，`revision` 为 0，供首次 `UpdateResidentWorkSummary` 使用。
+- `include_maintenance` 时每项另有内容版本 `revision`、汇总来源 `source_versions`、漏写的输入 `missing_message_ids`、待归纳的覆盖输入 `pending_message_ids` 和维护者 `writer_id`；尚无摘要但调用者能看到的 Resident 也返回一项，`revision` 为 0。`revision` 只表示内容版本，不是写入指令的参数。
+- `include_maintenance=true` 时，`summaries[i].reminder` 可选，存在时包含 `message_id` 和 `content_parts`。负责摘要维护的 Effect 将 `reminder` 原样作为 `DeliverMessage.message` 交给该项对应的 Resident，指定 `business_ref=duty/work-summary-reminder` 和 `activation_policy=attach_to_next`。Society 先登记输入 `completed` 终态对应的漏写事实，再让 Effect 观察该终态。提醒由 Effect 投递，核心只提供事实和待投递内容。
 - Family 成员本人维护近期事实，本 Family Steward 归纳阶段与长期层；门面只由本 Family Steward 汇总；全局 resident-summary 职责仅维护独立 Resident。读取以调用者自己的身份进行：调用者看不到或尚无摘要的 Resident 列入 unavailable_resident_ids；摘要存储不可用时返回可重试错误。工作查看、搜索与路由复用三层的统一九字段投影。
 
 ### `RequestResidentSummaryRebuild`
@@ -185,19 +173,22 @@ Resident 是可以跨多次模型会话持续存在的 Agent 身份。系统中�
 
 ### 工作摘要与覆盖检查
 
-维护者用 GetResidentSummaries（`include_maintenance`）读取自己的摘要、revision 和 missing_message_ids，读取继续按当前调用者权限执行。
+`UpdateResidentWorkSummary` 用于本人提交近期工作事实和已覆盖的消息。Family Steward 用 `UpdateResidentSummaryConsolidation` 归纳业务成员，用 `UpdateFacadeSummary` 提交门面汇总与 `GetFacadeSummaryInputs` 返回的 `source_versions`。各入口按对应固定调用者身份核验。
 
-UpdateResidentWorkSummary 接收 resident_id、expected_revision、可选 summary、message_ids、source_versions、consolidation。本人用 summary 替换近期层（不是把三层投影抄回）；message_ids 最多 128 个，必须是本人正在运行或已经完成的输入。首次提供有效九字段摘要，已有摘要可省略 summary 只登记覆盖。内容无变化时 revision 与内容更新时间不变，输入覆盖照常推进。门面只允许本 Family Steward 写入，必须保存 GetFamilySummaryInputs 的 source_versions，不登记成员输入 ID。
+
+维护者用 GetResidentSummaries（`include_maintenance`）读取自己的摘要和 missing_message_ids，读取继续按当前调用者权限执行。
+
+摘要的每一层有固定的写入者，各由一条指令写入，不要求交回读到的版本：近期层和输入覆盖由本人用 `UpdateResidentWorkSummary(resident_id, summary?, message_ids?)` 写，阶段与长期层由 Steward 用 `UpdateResidentSummaryConsolidation(resident_id, consolidation)` 归纳，门面摘要由 Steward 用 `UpdateFacadeSummary(resident_id, summary, source_versions)` 汇总；后写的内容直接替换同一层的前一份内容。本人用 summary 替换近期层（不是把三层投影抄回）；message_ids 最多 128 个，必须是本人正在运行或已经完成的输入。首次提供有效九字段摘要，已有摘要可省略 summary 只登记覆盖。内容无变化时 revision 与内容更新时间不变，输入覆盖照常推进。`UpdateFacadeSummary` 只允许本 Family Steward 写入门面，必须保存 GetFacadeSummaryInputs 的 source_versions，不登记成员输入 ID。
 
 include_maintenance 另返回 layers（recent、phase、long_term）、maintenance（各层归纳时间和新覆盖轮次水位）、consolidation（due、level、reason、total_chars、policy）。旧摘要无损视作近期层，旧超限摘要仍可读取并进入归纳待办；不自动截断或回放原始对话。
 
-本 Family Steward 可用 consolidation 归纳本组业务成员。Router 和 Steward 免写自身摘要，不参加自身覆盖检查、漏写提醒与时间层归纳；门面由 Steward 汇总。必须给出替换后的 phase，可同时给出 long_term；达到长期阈值时必须包含 long_term。归纳不能同时传 summary、message_ids 或 source_versions。成功提交原子消费已读版本的 recent，替换指定高层并推进对应水位；即使统一投影未变，层内容改变也递增 revision。并发成员更新或重复旧提交引起版本冲突，不消费新事实。外层 Steward 不能归纳内层门面；解除 Family 后的全局写作以当前统一内容为来源，并接管整份摘要。
+`UpdateResidentSummaryConsolidation` 只允许本 Family Steward 归纳本组业务成员。Router 和 Steward 免写自身摘要，不参加自身覆盖检查、漏写提醒与时间层归纳；门面由 Steward 汇总。`consolidation` 必须给出替换后的 phase，可同时给出 long_term；达到长期阈值时必须包含 long_term；用 `consolidated_message_ids` 列出本次已纳入归纳的覆盖输入（取自 GetResidentSummaries 的 `pending_message_ids`），可选 `resolved_threads`。成功提交替换指定的高层，并只推进这些输入对应的水位；归纳不改写也不清空近期层，近期层仍由本人下一次提交替换。读取之后才新增覆盖的输入继续留在待归纳列表，由下一次归纳纳入；重复提交同一批输入不再推进水位。层内容改变时 `revision` 随之递增。外层 Steward 不能归纳内层门面；解除 Family 后的全局写作以当前统一内容为来源，并接管整份摘要。
 
 active_threads 承载未决承诺、阻塞与重要约束。归纳遗漏的旧事项自动补入 phase；关闭必须在 resolved_threads 中提供「原事项：解决、取消或交接说明」。重要项目历史另存工作记录，摘要保留有效结论与记录入口；不改变原始日志保留策略。
 
 摘要各时间层、各语义字段的文字值合计最多 5000 字符（默认），重复文字逐次计数；不另设阶段与长期层占比限制。提交内容超过总量上限时整次拒绝，版本、覆盖轮次和已有内容保持原状，不静默截断。归纳时先保留未关闭事项再检查总量；身份、维护职责、版本比较与未决事项保留仍按原规则校验。历史超长摘要继续可读，省略正文时仍可登记已覆盖轮次，后续归纳须满足总量上限。平台按新增工作量与容量判断归纳待办，不决定信息重要性：默认阶段 20 个新覆盖轮次，长期 100 轮，合计文字达到上限的 80% 提醒归纳。单纯经过时间不形成待办，没有新工作的成员摘要保持原状，闲置不会让它反复进入归纳。部署配置 PORTAL_SUMMARY_TOTAL_CHARS 定义合计字符上限（默认 5000，至少 400），PORTAL_SUMMARY_PHASE_ROUNDS、PORTAL_SUMMARY_LONG_TERM_ROUNDS 为正整数。维护轮次不计数量，重复覆盖不重计。独立 Resident 的认领结果也返回同一 summary_policy，单份摘要写入受相同总量上限约束。
 
-Family 内部检查成员摘要的 MaintainResidentWorkSummary 和读取门面汇总材料的 GetFamilySummaryInputs 属于 Family 内部机制类（decision_b77fde81e7a0）。
+读取门面汇总材料的 GetFacadeSummaryInputs 属于门面与转交类（decision_b77fde81e7a0）；成员摘要遗漏的检查由团队模板的 Effect 用 GetResidentSummaries 完成。
 
 全局摘要认领只允许当前职责承担者，任务仅覆盖独立 Resident；Family 成员和门面不进入队列。认领、提交及请求重建时重新核对当前归属；变为 Family 管理后旧认领失效。GetResidentSummaries 始终读取同一份累计内容，不保留内部成员首次自写前的另一条读取回退。具体 Family 工作流见 decision_44cf587c1721。
 
@@ -308,19 +299,16 @@ Family 内部检查成员摘要的 MaintainResidentWorkSummary 和读取门面�
 
 ### `RestartSession`
 
-`credits_consent`：仅已登录人类可提交：{account_id:目标稳定账号ID,confirmed:true}；明确授权本次新建/迁移目标Session使用credits，必须携带幂等键，不继承给后续Session。
+保存 Resident 的 Provider、账号、参数和记忆交接意图。操作不调用模型、不改变原 Segment 和 trace，不生成摘要或重投失败输入；首条真实输入才建立目标会话并交接。
 
-**切换 Resident 的账号或 Backend，或显式重新开始会话；原生目标建立新会话，Model API 目标直接保存调用配置，并按选定的上下文方案决定历史边界。**
-
-- 参数：`resident_id`；`operation`（可选，`switch_account` 切换账号并保留上下文，`restart` 显式重新开始会话，默认 `restart`）；`provider`（可选，登记的 Agent Provider 或 `provider_api`，省略时保持当前 Provider）、`account_id`（可选）；`model` 与 `reasoning_effort`（可选，必须在目标账号能力内；同 Provider 省略 `model` 时保持当前模型，跨 Provider 须明确选择）；`collaboration_mode`、`service_tier`、`permission_preset`（可选，目标会话的运行设置，切换成功后生效；`service_tier` 为空字符串时使用默认等级）；`context_strategy`、`active_execution_policy`（可选）；`resume_failed_input`（可选，默认 `false`）。
-- `context_strategy` 取值：`preserve`（默认，用可验证的原生完整 Fork 或严格的历史导入保留有效上下文，不执行模型轮次；无法完整保留时拒绝并保持原绑定，不降级为其他方案）、`native`（仅同 Provider、同账号的原生 Fork）、`compact` 与 `visible`（明确选择的有损模型交接）、`fresh`（清空有效上下文，下一条真实输入时才建会话，页面对话保留）；`smart` 只为旧调用保留，等同 `preserve`。`operation=switch_account` 只接受 `preserve`，目标与当前账号相同时不做任何操作。各方案的条件与上限见 decision_c47a13e8b962。
-- Model API 目标额外接受 `prompt_context` 与 `backend_options`，与账号、模型统一校验并保存；推理参数只在目标模型支持时放入 `backend_options.parameters`。跨入 Model API 须显式选择 API 登记账号。原生目标不接受这两个 API 专用参数。
-- 原生与 Model API 之间不能完整保留上下文：有上下文时 `preserve` 被拒绝，原绑定不变。目标为 Model API 时不接受 `native`、`compact` 与 `visible`；原生 → Model API 不发初始化请求，解除当前原生绑定但保留旧会话，配置提交失败恢复旧绑定。Model API → 原生先初始化新会话，成功后切换，失败保留原配置。迁移过程、恢复和接单规则见 decision_c47a13e8b962。
-- `resume_failed_input` 为 `true` 时，`restart` 换到其他账号或 Provider 后恢复最近一条失败输入；`switch_account` 不接受 `true`，失败输入由具体任务的恢复入口处理。省略或 `false` 时切换不重试失败输入。
-- `active_execution_policy` 取值：`wait`（默认，当前工作已进入执行时持久保存迁移安排，返回 accepted／waiting_current_turn；本轮继续，后续接单暂停，平台扫描在本轮结束后按原调用者重新鉴权并提交迁移）或 `cancel`（先请求停止当前工作，停止确认后重试）。关闭页面或平台重启不丢失等待安排；可通过 CancelSessionRestart 取消，只有原来开放且此后没有人工接单操作时才恢复接单。尚未执行的保留消息随新会话继续。准备新会话期间，在本次迁移仍持有的关闭接单版本下新收到的消息，只要尚未提交执行且未获接单准入，也随新会话继续，不视为新工作冲突；已提交、已准入或接单版本变化时仍拒绝替换。等待安排存在时相同请求幂等返回，修改目标须先取消原安排；已经提交的迁移继续沿用原有替换规则。尚无会话的同 Provider 排队执行可以直接调整账号，规则见 decision_c47a13e8b962。
-- 结果：`restart_id`、`status`，以及 `operation_id`（稳定操作 ID；账号未变的 `switch_account` 为空）、`operation`、`phase`（等待、准备、导入、提交或终态阶段）、`context_result`（`pending`、`preserved`、`fresh`、`summarized` 或 `unchanged`）和 `actual_binding`（当前实际使用的绑定，失败时为原绑定）。切换完成前继续保留原会话；完成后新会话成为当前会话，所选 Provider、账号及随请求给出的运行设置写入 Resident 的运行设置。
-- 这个 Resident 已有一次尚未完成的重启时，相同参数返回已有重启记录；不同参数先取消已有重启，等生命周期清理完成后按新参数开始。清理超过本次调用的等待期限时返回冲突，调用者稍后重试。其他生命周期操作尚未完成时也返回冲突。
-- Resident 还没有模型会话时，这条指令直接保存 Provider 与账号选择。Portal 运行设置卡片的“账号切换”与“重新开始会话”使用这条指令。
+- 参数：resident_id、provider、account_id、account_selection、model、reasoning_effort、collaboration_mode、service_tier、permission_preset、prompt_context、backend_options。
+- 上下文交付复用完整 Fork 的有效窗口，校验通过后保存目标配置。首条真实输入负责交付；清空使用 `ClearContext` 或 `CreateContextReset`。
+- 同 Provider、同稳定账号切换无参数变更时返回 unchanged；带模型、effort 等参数变更时明确提示使用 UpdateResidentSettings，避免误建记忆交接。运行设置界面直接保存原会话参数，不发 RestartSession。
+- 目标模型和 effort 必须符合该账号目录；跨 Provider 显式选择 model。Model API 要求登记账号，推理参数按模型能力置于 backend_options.parameters；原生目标拒绝 API 专属字段。与 Fork 使用相同目标校验。
+- 切换到同一实际账号且没有配置改动时 noop。其他配置提交以来源绑定和设置 revision 为栅栏。保存失败恢复原绑定，不能覆盖并发修改。
+- `RestartSession` 等待当前工作真正结束。服务持久保存原请求并暂时关闭接单，后到输入按原 ID 排队；完成、失败或取消时，仅恢复本操作关闭且未被外部改动的接单。已提交但未开始的输入沿用原安全改派与撤回合同。调用者明确选择停止当前工作时，先对该条输入调用 `CancelInput`，通过 `GetInputState` 或对话事件确认执行实际结束，再调用 `RestartSession`。队列中的其他输入保留。
+- 新请求不接受 resume_failed_input 或 credits_consent；内部入口对要求重投或使用 credits 的参数也拒绝。首条实际输入仍经正常额度准入；历史已受理操作的恢复不因此被重新解释。
+- 配置完成返回 completed/configuration_only=true/model_operation=false，context_result=pending_first_input。这不表示原生 Fork 已执行或模型已接收第一条输入。详情见 decision_4dea0db1f45a 的 session-account-switch.md。
 
 ### `GetSessionRestart`
 
@@ -367,14 +355,15 @@ Family 内部检查成员摘要的 MaintainResidentWorkSummary 和读取门面�
 
 | 指令名 | arguments 参数名 |
 | --- | --- |
-| `UpdateResidentWorkSummary` | `resident_id`、`expected_revision`、`summary`、`message_ids`、`source_versions`、`consolidation` |
+| `UpdateResidentWorkSummary` | `resident_id`、`summary`、`message_ids` |
+| `UpdateResidentSummaryConsolidation` | `resident_id`、`consolidation` |
+| `UpdateFacadeSummary` | `resident_id`、`summary`、`source_versions` |
 | `CreateResident` | `lineage_id`、`title`、`provider`、`account_id`、`backend_role`、`settings`、`workspace_paths`、`family_id`、`near_resident_id`、`placement`、`x`、`y` |
-| `ForkResident` | `lineage_id`、`source_resident_id`、`fork_mode`、`context_source_resident_id`、`message`、`title`、`provider`、`account_id`、`family_id`、`near_resident_id`、`placement`、`x`、`y` |
+| `ForkResident` | `lineage_id`、`source_resident_id`、`fork_mode`、`recent_rounds`、`context_source_resident_id`、`message`、`title`、`provider`、`account_id`、`family_id`、`near_resident_id`、`placement`、`x`、`y` |
 | `PromoteSeed` | `lineage_id`、`seed_id`、`title`、`purpose` |
 | `GetResident` | `resident_id` |
 | `SearchResidents` | `q`、`resident_ids`、`can_send`、`limit` |
 | `UpdateResident` | `lineage_id`、`resident_id`、`title`、`avatar` |
-| `DeleteResident` | `lineage_id`、`resident_id` |
 | `GetResidentSummaries` | `resident_ids`、`fields`、`include_maintenance` |
 | `RequestResidentSummaryRebuild` | `resident_id`、`reason` |
 | `GetResidentSummaryQueue` | 无 |
@@ -387,7 +376,7 @@ Family 内部检查成员摘要的 MaintainResidentWorkSummary 和读取门面�
 | `GetPromptInjectionPreview` | `resident_id`、`turn` |
 | `GetResidentInitialization` | `resident_id` |
 | `RetryResidentInitialization` | `resident_id`、`expected_initialization_id`、`credits_consent` |
-| `RestartSession` | `resident_id`、`operation`、`provider`、`account_id`、`account_selection`、`model`、`reasoning_effort`、`collaboration_mode`、`service_tier`、`permission_preset`、`prompt_context`、`backend_options`、`context_strategy`、`active_execution_policy`、`resume_failed_input`、`credits_consent` |
+| `RestartSession` | `resident_id`、`provider`、`account_id`、`account_selection`、`model`、`reasoning_effort`、`collaboration_mode`、`service_tier`、`permission_preset`、`prompt_context`、`backend_options` |
 | `GetSessionRestart` | `resident_id` |
 | `CancelSessionRestart` | `resident_id`、`restart_id` |
 | `BindWorkspace` | `resident_id`、`path`、`purpose` |

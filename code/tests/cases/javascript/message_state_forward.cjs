@@ -25,7 +25,7 @@ async function check(routeScript, options = {}) {
         { chatroom_id: 'chatroom_333333333333', title: '不可发送', permissions: { can_post: false } },
       ] };
     }
-    assert.equal(name, 'ForwardMessages');
+    assert.equal(name, args.target_chatroom_id ? 'ForwardMessagesToChatroom' : 'ForwardMessagesToResident');
     calls.push(plain({ name, args, controls }));
     return new Promise(resolve => { finishForward = () => resolve({ message_id: 'forwarded' }); });
   } };

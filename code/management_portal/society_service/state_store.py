@@ -11,9 +11,10 @@ from typing import Any
 from management_common import directory_dependencies
 from management_common.portal_database import portal_database
 from . import trigger_path_storage, family_storage, resident_storage, program_work_storage, domain_work_storage, relation_work_storage, resident_execution_storage
-from . import resident_delivery_storage
+from . import resident_delivery_storage, resident_prepared_inputs
+from . import facade_members
 from . import graph_storage, definition_collections, lineage_metadata_storage, duty_storage
-from . import wire_delivery_storage, family_task_dispatch_storage
+from . import wire_delivery_storage
 from . import (
     lineage_data_definitions, lineage_data_effect_cleanup, lineage_data_executions, lineage_data_mailbox,
     lineage_data_notifications, lineage_data_project_graphs, lineage_data_projection_outbox, lineage_data_residents,
@@ -68,7 +69,6 @@ LINEAGE_DATA_COLUMNS = {
     "lineage_meta": ("key", "value"),
     **program_work_storage.COLUMNS,
     **wire_delivery_storage.COLUMNS,
-    **family_task_dispatch_storage.COLUMNS,
     **domain_work_storage.COLUMNS,
     **relation_work_storage.COLUMNS,
     **lineage_metadata_storage.COLUMNS,
@@ -119,6 +119,8 @@ POSTGRES_LINEAGE_DATA_COLUMNS = {
     "input_scopes": (
         "resident_id", "message_id", "actor", "descriptor",
     ),
+    "facade_members": ("facade_id", "member_id"),
+    "resident_prepared_inputs": ("message_id", "resident_id", "issuer", "intent_json", "status", "created_at", "settled_at"),
 }
 
 LINEAGE_DATA_INDEXES = frozenset({
@@ -213,7 +215,6 @@ def create_lineage_data_schema(connection: Any) -> None:
     connection.executescript('\n        CREATE TABLE lineage_meta (\n            key TEXT PRIMARY KEY,\n            value TEXT NOT NULL\n        );\n\n        CREATE TABLE lineage_layout_positions (\n            lineage_id TEXT NOT NULL REFERENCES lineages(lineage_id),\n            object_id TEXT NOT NULL, x DOUBLE PRECISION NOT NULL, y DOUBLE PRECISION NOT NULL,\n            PRIMARY KEY(lineage_id,object_id)\n        );\n\n        ')
     program_work_storage.create_schema(connection)
     wire_delivery_storage.create_schema(connection)
-    family_task_dispatch_storage.create_schema(connection)
     domain_work_storage.create_schema(connection)
     relation_work_storage.create_schema(connection)
     resident_storage.create_schema(connection)
@@ -442,6 +443,8 @@ class LineageDataStore:
         # Duty records joined the store after installation; created when absent.
         duty_storage.create_schema(connection)
         family_storage.ensure_duty_schema(connection)
+        facade_members.ensure_schema(connection)
+        resident_prepared_inputs.ensure_schema(connection)
         # Existing data is used by its owners. A metadata tag or an unrelated
         # table/column difference must not disable every Resident. Operations
         # requiring absent structures report their actual database error.

@@ -12,7 +12,6 @@ from management_portal.society_service.resident_context.evidence import MAX_SUMM
 from .common import (
     caller_account,
     lineage_branches,
-    lineage_graph_edits,
     lineage_of_resident,
     lineage_resident_nodes,
     lineage_resident_workspaces,
@@ -127,7 +126,7 @@ def fork_resident(inv: Invocation) -> dict[str, Any]:
         "fork_mode": fork_mode,
         **placement(inv, lineage_id),
     }
-    for name in ("context_source_resident_id", "message"):
+    for name in ("context_source_resident_id", "message", "recent_rounds"):
         if inv.argument(name) is not None:
             payload[name] = inv.argument(name)
     if inv.argument("title"):
@@ -234,25 +233,6 @@ def update_resident(inv: Invocation) -> dict[str, Any]:
     return {"resident": {**resident, "avatar": saved} if saved else resident}
 
 
-def delete_resident(inv: Invocation) -> dict[str, Any]:
-    resident_id = inv.argument("resident_id")
-    from .. import resident_workspace_domain
-
-    if resident_workspace_domain.retry_deleted_resident(resident_id, inv.caller) is not None:
-        return {"resident_id": resident_id}
-    lineage_id = inv.argument("lineage_id")
-    result = lineage_graph_edits().delete_lineage_graph_objects(
-        lineage_id,
-        {"resident_ids": [resident_id]},
-        inv.caller,
-        # This ISA returns identity/Leader facts, not the full graph view.
-        include_lineage=False,
-    )
-    payload = {"resident_id": resident_id}
-    if result.get("leader_changed"):
-        payload["new_leader_resident_id"] = str(result.get("leader_resident_id") or "")
-    return payload
-
 
 def _discovery():
     from management_portal.society_service.resident_context.service import resident_context
@@ -330,7 +310,7 @@ def get_resident_summaries(inv: Invocation) -> dict[str, Any]:
             row.pop("pending_requests")
         if written:
             row.update({key: written[key] for key in ("revision", "source_versions", "missing_message_ids", "pending_message_ids", "writer_id")})
-            row.update({key: written[key] for key in ("layers", "maintenance", "consolidation") if key in written})
+            row.update({key: written[key] for key in ("layers", "maintenance", "consolidation", "reminder") if key in written})
         summaries.append(row)
     return {"summaries": summaries, "unavailable_resident_ids": unavailable}
 
@@ -530,12 +510,14 @@ def restart_session(inv: Invocation) -> dict[str, Any]:
         body["target_provider"] = inv.argument("provider")
     if inv.argument("account_id"):
         body["target_account"] = inv.argument("account_id")
-    for name in ("operation", "context_strategy", "active_execution_policy", "model", "reasoning_effort"):
+    for name in ("model", "reasoning_effort"):
         if inv.argument(name):
             body[name] = inv.argument(name)
     for name in ("prompt_context", "backend_options", "collaboration_mode", "service_tier", "permission_preset", "account_selection"):
         if inv.argument(name) is not None:
             body[name] = inv.argument(name)
+    if {"target_provider", "target_account", "account_selection"} & body.keys():
+        body["operation"] = "switch_account"
     if inv.idempotency_key:
         body["idempotency_key"] = inv.idempotency_key
     # A new restart supersedes an unfinished one inside restart_resident_session
@@ -617,27 +599,36 @@ def update_resident_work_summary(inv: Invocation) -> dict[str, Any]:
     return work_summary.update_resident_work_summary(
         inv.caller, str(inv.argument("resident_id")),
         summary=inv.argument("summary"), message_ids=inv.argument("message_ids"),
-        source_versions=inv.argument("source_versions"),
-        consolidation=inv.argument("consolidation"),
     )
 
 
-def check_resident_work_summary(inv: Invocation) -> dict[str, Any]:
+def update_resident_summary_consolidation(inv: Invocation) -> dict[str, Any]:
     from ..resident_context import work_summary
-    return work_summary.check_resident_work_summary(inv.caller, str(inv.argument("resident_id")), str(inv.argument("message_id")))
+    return work_summary.update_resident_summary_consolidation(
+        inv.caller, inv.argument("resident_id"), inv.argument("consolidation"),
+    )
 
 
-def get_family_summary_inputs(inv: Invocation) -> dict[str, Any]:
+def update_facade_summary(inv: Invocation) -> dict[str, Any]:
     from ..resident_context import work_summary
-    return work_summary.get_family_summary_inputs(inv.caller, str(inv.argument("resident_id")),
-                                                overview_only=bool(inv.argument("overview_only")))
+    return work_summary.update_facade_summary(
+        inv.caller, inv.argument("resident_id"), inv.argument("summary"), inv.argument("source_versions"),
+    )
+
+
+def get_facade_summary_inputs(inv: Invocation) -> dict[str, Any]:
+    from ..resident_context import work_summary
+    return work_summary.get_facade_summary_inputs(
+        inv.caller, inv.argument("resident_id"), overview_only=bool(inv.argument("overview_only")),
+    )
 
 
 HANDLERS = {
     'GetResidentTextInputSnapshot': get_resident_text_input_snapshot,
     "UpdateResidentWorkSummary": update_resident_work_summary,
-    "MaintainResidentWorkSummary": check_resident_work_summary,
-    "GetFamilySummaryInputs": get_family_summary_inputs,
+    "UpdateResidentSummaryConsolidation": update_resident_summary_consolidation,
+    "UpdateFacadeSummary": update_facade_summary,
+    "GetFacadeSummaryInputs": get_facade_summary_inputs,
     "CreateResident": create_resident,
     "ForkResident": fork_resident,
     "PromoteSeed": promote_seed,
@@ -646,7 +637,6 @@ HANDLERS = {
     "RetryResidentInitialization": retry_resident_initialization,
     "SearchResidents": search_residents,
     "UpdateResident": update_resident,
-    "DeleteResident": delete_resident,
     "GetResidentSummaries": get_resident_summaries,
     "RequestResidentSummaryRebuild": request_resident_summary_rebuild,
     "GetResidentSummaryQueue": get_resident_summary_queue,

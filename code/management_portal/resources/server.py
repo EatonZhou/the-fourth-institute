@@ -448,11 +448,24 @@ class ResourceServiceServer(LocalServiceSocketMixin, DrainingStreamServer):
             )
         if method == "resource.notify_source_changed":
             return self.service.notify_source_changed(**params)
+        named_operations = {
+            "resource.create_knowledge_file": self.service.create_knowledge_file,
+            "resource.update_knowledge_file_name": self.service.update_knowledge_file_name,
+            "resource.move_knowledge_items": self.service.move_knowledge_items,
+            "resource.check_device_ssh": self.service.check_device_ssh,
+            "resource.update_device_ssh_credential": self.service.update_device_ssh_credential,
+            "resource.delete_device_ssh_credential": self.service.delete_device_ssh_credential,
+            "resource.run_device_command": self.service.run_device_command,
+            "resource.update_workbench_page": self.service.update_workbench_page,
+            "resource.update_workbench_reverse_plan": self.service.update_workbench_reverse_plan,
+        }
+        if method in named_operations:
+            # actor is the verified transport caller, never an unverified payload override.
+            return named_operations[method](**{**params, "actor": actor})
         if method in {
             "resource.register",
             "resource.update",
             "resource.unregister",
-            "resource.action",
         }:
             return self._dispatch_mutation(method, params, actor=actor)
         raise ValueError(f"unsupported ResourceService method: {method}")
@@ -469,7 +482,7 @@ class ResourceServiceServer(LocalServiceSocketMixin, DrainingStreamServer):
             key: value
             for key, value in params.items()
             if key
-            not in {"resource_id", "resource_type", "payload", "action", "actor"}
+            not in {"resource_id", "resource_type", "payload", "actor"}
         }
         kwargs["actor"] = actor
         if method == "resource.register":
@@ -492,13 +505,7 @@ class ResourceServiceServer(LocalServiceSocketMixin, DrainingStreamServer):
                 **kwargs,
             )
         else:
-            result = self.service.action(
-                self._required(params, "resource_id"),
-                self._required(params, "action"),
-                dict(params.get("payload") or {}),
-                resource_type=resource_type,
-                **kwargs,
-            )
+            raise ValueError(f"unsupported ResourceService mutation: {method}")
         return dict(result or {})
 
 

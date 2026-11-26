@@ -154,7 +154,10 @@ class PairedRuntimeTest(unittest.TestCase):
         from management_common import loaded_modules
         for path in (
             'management_portal/permission_system/scheme/repository.py',
+            'management_portal/permission_system/scheme/d066_migration.py',
             'management_portal/society_service/instruction_name_migration.py',
+            'management_portal/society_service/isa_contract_migration.py',
+            'management_portal/society_service/facade_members.py',
         ):
             for prefix in ('', 'code/'):
                 with self.subTest(path=prefix + path), tempfile.TemporaryDirectory() as directory:

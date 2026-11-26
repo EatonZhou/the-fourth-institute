@@ -73,7 +73,7 @@ def artifact_reader(monkeypatch):
         calls.append((name, args))
         if name == "GetScriptRun":
             return {"artifacts": [{"name": "report.html", "size": len(data), "mime_type": "text/html"}]}
-        assert name == "ReadScriptRunOutput" and args["name"] == "report.html"
+        assert name == "ReadScriptRunArtifact" and args["name"] == "report.html"
         start = args["offset"]
         end = min(start + args["limit"], len(data))
         return {"base64": base64.b64encode(data[start:end]).decode(), "offset": start,
@@ -92,7 +92,7 @@ def test_artifact_route_reads_bounded_isa_pages_and_isolates_html(artifact_reade
                                      payload=lambda *args, **kwargs: (args, kwargs))
     response, policy = handler.artifact(None, urlsplit("/api/script-runs/artifact?lineage_id=lineage_aaaaaaaaaaaa&script_run_id=run&name=report.html"), "viewer")
     assert response[1:] == (200, data, "text/html; charset=utf-8")
-    assert [args["offset"] for name, args in calls if name == "ReadScriptRunOutput"] == [0, 65536]
+    assert [args["offset"] for name, args in calls if name == "ReadScriptRunArtifact"] == [0, 65536]
     assert policy["cache_control"] == "no-store"
     headers = policy["extra_headers"]
     assert "sandbox allow-scripts;" in headers["Content-Security-Policy"]

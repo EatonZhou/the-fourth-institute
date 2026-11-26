@@ -175,6 +175,15 @@
         "required": true
       },
       {
+        "name": "state",
+        "type": "string",
+        "required": true,
+        "enum": [
+          "pending",
+          "active"
+        ]
+      },
+      {
         "name": "lifetime",
         "type": "string",
         "required": true,
@@ -338,284 +347,6 @@
           "types": [
             "resident"
           ]
-        }
-      ]
-    }
-  },
-  "MaintainFamilyProgress": {
-    "category": "family_internal",
-    "discovery_group": "internal",
-    "owner": "lineage",
-    "mutates": true,
-    "streaming": false,
-    "parameters": [
-      {
-        "name": "lineage_id",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "family_id",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "event",
-        "type": "object",
-        "required": false
-      },
-      {
-        "name": "every_turns",
-        "type": "integer",
-        "required": false,
-        "minimum": 1
-      }
-    ],
-    "result": [
-      {
-        "name": "family_id",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "count",
-        "type": "integer",
-        "required": true
-      },
-      {
-        "name": "requested_batch_ids",
-        "type": "array",
-        "required": true
-      }
-    ],
-    "target": "lineage_id",
-    "permission": {
-      "required": true,
-      "requirements": [
-        {
-          "element": "MaintainFamilyProgress",
-          "argument": "lineage_id",
-          "a": "@contributor",
-          "types": [
-            "lineage"
-          ]
-        }
-      ]
-    }
-  },
-  "MaintainFamilyRecovery": {
-    "category": "family_internal",
-    "discovery_group": "internal",
-    "owner": "lineage",
-    "mutates": true,
-    "streaming": false,
-    "parameters": [
-      {
-        "name": "lineage_id",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "family_id",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "event",
-        "type": "object",
-        "required": false
-      },
-      {
-        "name": "escalate_reason",
-        "type": "string",
-        "required": false
-      }
-    ],
-    "result": [
-      {
-        "name": "family_id",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "incidents",
-        "type": "array",
-        "required": true
-      },
-      {
-        "name": "notice",
-        "type": "object",
-        "required": true
-      },
-      {
-        "name": "paused",
-        "type": "boolean",
-        "required": false
-      }
-    ],
-    "target": "lineage_id",
-    "permission": {
-      "required": true,
-      "requirements": [
-        {
-          "element": "MaintainFamilyRecovery",
-          "argument": "lineage_id",
-          "a": "@contributor",
-          "types": [
-            "lineage"
-          ]
-        }
-      ]
-    }
-  },
-  "MaintainFamilyReview": {
-    "category": "family_internal",
-    "discovery_group": "internal",
-    "owner": "lineage",
-    "mutates": true,
-    "streaming": false,
-    "parameters": [
-      {
-        "name": "lineage_id",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "family_id",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "event",
-        "type": "object",
-        "required": false
-      }
-    ],
-    "result": [
-      {
-        "name": "family_id",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "status",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "message_id",
-        "type": "string",
-        "required": false
-      }
-    ],
-    "target": "lineage_id",
-    "permission": {
-      "required": true,
-      "requirements": [
-        {
-          "element": "MaintainFamilyReview",
-          "argument": "lineage_id",
-          "a": "@contributor",
-          "types": [
-            "lineage"
-          ]
-        }
-      ]
-    }
-  },
-  "MaintainFamilyRoleAvailability": {
-    "category": "family_internal",
-    "discovery_group": "internal",
-    "owner": "lineage",
-    "mutates": true,
-    "streaming": false,
-    "parameters": [
-      {
-        "name": "lineage_id",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "family_id",
-        "type": "string",
-        "required": true
-      }
-    ],
-    "result": [
-      {
-        "name": "family_id",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "paused",
-        "type": "boolean",
-        "required": true
-      },
-      {
-        "name": "waiting_count",
-        "type": "integer",
-        "required": true
-      },
-      {
-        "name": "roles",
-        "type": "array",
-        "required": false
-      }
-    ],
-    "target": "lineage_id",
-    "permission": {
-      "required": true,
-      "requirements": [
-        {
-          "element": "MaintainFamilyRoleAvailability",
-          "argument": "lineage_id",
-          "a": "@contributor",
-          "types": [
-            "lineage"
-          ]
-        }
-      ]
-    }
-  },
-  "MaintainResidentWorkSummary": {
-    "category": "family_internal",
-    "discovery_group": "internal",
-    "owner": "lineage",
-    "mutates": true,
-    "streaming": false,
-    "parameters": [
-      {
-        "name": "resident_id",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "message_id",
-        "type": "string",
-        "required": true
-      }
-    ],
-    "result": [
-      {
-        "name": "status",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "consolidation_due",
-        "type": "boolean",
-        "required": false
-      }
-    ],
-    "target": "resident_id",
-    "permission": {
-      "required": true,
-      "requirements": [
-        {
-          "element": "MaintainResidentWorkSummary",
-          "a": "@free",
-          "resource": "@portal"
         }
       ]
     }
@@ -818,68 +549,6 @@
       ]
     }
   },
-  "RunGoogleDriveBackup": {
-    "category": "environment",
-    "discovery_group": "operations",
-    "owner": "web",
-    "mutates": true,
-    "streaming": false,
-    "parameters": [
-      {
-        "name": "profile",
-        "type": "string",
-        "required": true,
-        "enum": [
-          "critical",
-          "content",
-          "probe"
-        ]
-      },
-      {
-        "name": "network_route",
-        "type": "string",
-        "required": false,
-        "enum": [
-          "direct",
-          "vps",
-          "inherited"
-        ]
-      }
-    ],
-    "result": [
-      {
-        "name": "lineage_id",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "script_run_id",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "status",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "network_route",
-        "type": "string",
-        "required": false
-      }
-    ],
-    "target": "",
-    "permission": {
-      "required": true,
-      "requirements": [
-        {
-          "element": "RunGoogleDriveBackup",
-          "a": "@admin",
-          "resource": "@shared"
-        }
-      ]
-    }
-  },
   "RunWorkspaceHandoff": {
     "category": "lineage_definition",
     "discovery_group": "general",
@@ -895,17 +564,7 @@
       {
         "name": "handoff_id",
         "type": "string",
-        "required": false
-      },
-      {
-        "name": "source_resident_id",
-        "type": "string",
-        "required": false
-      },
-      {
-        "name": "target_resident_id",
-        "type": "string",
-        "required": false
+        "required": true
       }
     ],
     "result": [
@@ -931,15 +590,6 @@
       }
     ],
     "target": "handoff_id",
-    "one_of": [
-      [
-        "handoff_id"
-      ],
-      [
-        "source_resident_id",
-        "target_resident_id"
-      ]
-    ],
     "permission": {
       "required": true,
       "requirements": [
@@ -1007,14 +657,9 @@
     "streaming": false,
     "parameters": [
       {
-        "name": "resident_id",
-        "type": "string",
-        "required": false
-      },
-      {
         "name": "resident_ids",
         "type": "array",
-        "required": false,
+        "required": true,
         "items": {
           "type": "string"
         }
@@ -1026,34 +671,6 @@
       }
     ],
     "result": [
-      {
-        "name": "previous",
-        "type": "string",
-        "required": false,
-        "enum": [
-          "open",
-          "closed"
-        ]
-      },
-      {
-        "name": "current",
-        "type": "string",
-        "required": false,
-        "enum": [
-          "open",
-          "closed"
-        ]
-      },
-      {
-        "name": "changed",
-        "type": "boolean",
-        "required": false
-      },
-      {
-        "name": "state",
-        "type": "object",
-        "required": false
-      },
       {
         "name": "changed_resident_ids",
         "type": "array",
@@ -1090,35 +707,17 @@
         "required": false
       }
     ],
-    "target": "resident_id",
-    "one_of": [
-      [
-        "resident_id"
-      ],
-      [
-        "resident_ids"
-      ]
-    ],
+    "target": "resident_ids",
     "permission": {
       "required": true,
       "requirements": [
         {
-          "element": "SetIntakeOpen:resident_id",
-          "argument": "resident_id",
-          "a": "@contributor",
-          "types": [
-            "resident"
-          ],
-          "optional": true
-        },
-        {
-          "element": "SetIntakeOpen:resident_ids",
+          "element": "SetIntakeOpen",
           "argument": "resident_ids",
           "a": "@contributor",
           "types": [
             "resident"
-          ],
-          "optional": true
+          ]
         }
       ]
     }
@@ -1189,117 +788,6 @@
           "types": [
             "resident"
           ]
-        }
-      ]
-    }
-  },
-  "SetMailboxItemMuted": {
-    "category": "mailbox",
-    "discovery_group": "general",
-    "owner": "web",
-    "mutates": true,
-    "streaming": false,
-    "parameters": [
-      {
-        "name": "key",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "muted",
-        "type": "boolean",
-        "required": true
-      }
-    ],
-    "result": [
-      {
-        "name": "item",
-        "type": "object",
-        "required": true
-      }
-    ],
-    "target": "key",
-    "permission": {
-      "required": true,
-      "requirements": [
-        {
-          "element": "SetMailboxItemMuted",
-          "a": "@free",
-          "resource": "@portal"
-        }
-      ]
-    }
-  },
-  "SetMailboxItemPinned": {
-    "category": "mailbox",
-    "discovery_group": "general",
-    "owner": "web",
-    "mutates": true,
-    "streaming": false,
-    "parameters": [
-      {
-        "name": "key",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "pinned",
-        "type": "boolean",
-        "required": true
-      }
-    ],
-    "result": [
-      {
-        "name": "item",
-        "type": "object",
-        "required": true
-      }
-    ],
-    "target": "key",
-    "permission": {
-      "required": true,
-      "requirements": [
-        {
-          "element": "SetMailboxItemPinned",
-          "a": "@free",
-          "resource": "@portal"
-        }
-      ]
-    }
-  },
-  "SetMailboxItemRead": {
-    "category": "mailbox",
-    "discovery_group": "general",
-    "owner": "web",
-    "mutates": true,
-    "streaming": false,
-    "parameters": [
-      {
-        "name": "key",
-        "type": "string",
-        "required": true
-      },
-      {
-        "name": "unread",
-        "type": "boolean",
-        "required": false
-      }
-    ],
-    "result": [
-      {
-        "name": "item",
-        "type": "object",
-        "required": true
-      }
-    ],
-    "target": "key",
-    "permission": {
-      "required": true,
-      "requirements": [
-        {
-          "element": "SetMailboxItemRead",
-          "a": "@free",
-          "resource": "@portal"
         }
       ]
     }
@@ -1387,11 +875,6 @@
         "type": "integer",
         "required": false,
         "minimum": 0
-      },
-      {
-        "name": "unread",
-        "type": "boolean",
-        "required": false
       }
     ],
     "result": [

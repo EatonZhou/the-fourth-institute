@@ -53,6 +53,7 @@ RESERVED_VARIABLES = ("arguments", "event", "packet", "endpoint")
 KEYWORDS = frozenset({"if", "then", "elif", "else", "fi", "for", "in", "do", "done"})
 UNSUPPORTED_WORDS = frozenset({"while", "until", "case", "esac", "function", "select", "eval", "source"})
 BUILTINS = frozenset({"output", "exit", "fail"})
+JSON_BUILTINS = {"json_get": {"value", "path"}, "json_set": {"value", "path", "item"}}
 INSTRUCTION_RE = re.compile(r"[A-Z][A-Za-z0-9]{1,79}")
 VARIABLE_RE = re.compile(r"[a-z_][a-z0-9_]{0,63}")
 ARGUMENT_RE = re.compile(r"[a-z_][a-z0-9_]{0,79}")
@@ -376,9 +377,11 @@ class _Lexer:
     def make_call(self, words: list[Word | None], line: int) -> Call:
         head = words[0]
         name = head.text if head is not None else None
-        if not name or not INSTRUCTION_RE.fullmatch(name):
+        if not name or name not in JSON_BUILTINS and not INSTRUCTION_RE.fullmatch(name):
             raise ScriptSyntaxError(f"指令名无效：{name or '（含展开）'}", line)
         arguments = _arguments(words[1:], line, what=f"{name} 的参数")
+        if name in JSON_BUILTINS and {argument.name for argument in arguments} != JSON_BUILTINS[name]:
+            raise ScriptSyntaxError(f"{name} 需要参数：{', '.join(sorted(JSON_BUILTINS[name]))}", line)
         call = Call(head.offset if head is not None else 0, name, arguments, line)
         self.calls.append(call)
         return call
@@ -699,14 +702,15 @@ def parse(text: str) -> Script:
 def rewrite_call_source(
     source: str,
     calls: tuple[Call, ...],
-    names: Mapping[str, str],
+    names: Mapping[str, str] | Callable[[Call], str],
     prompt: Callable[[str], str],
     *,
     arguments: Callable[[Call, Argument], str | None] | None = None,
 ) -> str:
     """Edit parsed calls without rewriting comments, other literals or layout.
 
-    A definition migration may replace an argument using its parsed value.
+    A definition migration may choose a name per parsed call (for static
+    mode/target splits) and replace an argument using its parsed value.
     Returning None leaves the original source spelling unchanged.
     """
     replacements = []
@@ -718,8 +722,9 @@ def rewrite_call_source(
         replacements.append((offset, lexer.pos, value))
 
     for call in calls:
-        if call.instruction in names:
-            replace_word(call.offset, names[call.instruction])
+        name = names(call) if callable(names) else names.get(call.instruction, call.instruction)
+        if name != call.instruction:
+            replace_word(call.offset, name)
         if arguments is not None:
             for argument in call.arguments:
                 replacement = arguments(call, argument)
@@ -822,6 +827,30 @@ def expand(value: Word | JsonValue, variables: Mapping[str, Any]) -> Any:
     )
 
 
+def _json_builtin(name: str, arguments: dict[str, Any], line: int) -> dict[str, Any]:
+    path = arguments["path"]
+    if (not isinstance(path, list) or not 1 <= len(path) <= 16
+            or any(not isinstance(part, str) or not part or len(part) > 160 for part in path)):
+        raise ScriptFailure("effect.invalid_json_path", "JSON 路径需要 1–16 个非空字段名", line=line, retryable=False)
+    value = arguments["value"]
+    if name == "json_get":
+        for part in path:
+            value = value.get(part) if isinstance(value, dict) else None
+        return {"value": deepcopy(value)}
+    if value is None:
+        value = {}
+    if not isinstance(value, dict):
+        raise ScriptFailure("effect.invalid_json_path", "只能更新 JSON 对象的字段", line=line, retryable=False)
+    result = deepcopy(value)
+    target = result
+    for part in path[:-1]:
+        target = target.setdefault(part, {})
+        if not isinstance(target, dict):
+            raise ScriptFailure("effect.invalid_json_path", "JSON 路径经过非对象字段", line=line, retryable=False)
+    target[path[-1]] = deepcopy(arguments["item"])
+    return {"value": result}
+
+
 def render_template_value(text: str) -> str:
     """Escape a Function Block template value for a double-quoted script string."""
 
@@ -899,6 +928,10 @@ def analyze(
                     result.diagnostics.append(("effect.missing_target", f"端点 {name} 尚未连接对象", line))
 
     def check_call(call: Call) -> None:
+        if call.instruction in JSON_BUILTINS:
+            for argument in call.arguments:
+                check_refs(_refs_of(argument.value), argument.line)
+            return
         result.instructions.append(call.instruction)
         for argument in call.arguments:
             check_refs(_refs_of(argument.value), argument.line)
@@ -977,14 +1010,17 @@ def analyze(
     for statement in script.statements:
         visit(statement)
 
-    result.diagnostics.extend(target_diagnostics(script, declaration_for, endpoint_targets))
+    def routed_declaration(name: str):
+        return None if name in JSON_BUILTINS else declaration_for(name)
+
+    result.diagnostics.extend(target_diagnostics(script, routed_declaration, endpoint_targets))
     if has_output:
         result.output_fields = outputs
     else:
         last = script.statements[-1] if script.statements else None
         call = last if isinstance(last, Call) else last.value if isinstance(last, Assign) and isinstance(last.value, Call) else None
         if call is not None:
-            declaration = declaration_for(call.instruction)
+            declaration = routed_declaration(call.instruction)
             result.output_fields = {item.name for item in getattr(declaration, "result", ())} if declaration is not None else None
         else:
             result.output_fields = None
@@ -1108,6 +1144,8 @@ class Interpreter:
                 line=call.line,
             )
         arguments = {argument.name: expand(argument.value, self.variables) for argument in call.arguments}  # type: ignore[arg-type]
+        if call.instruction in JSON_BUILTINS:
+            return CallResult(True, _json_builtin(call.instruction, arguments, call.line))
         index = self.script.index_of(call)
         position = f"c{index}" + "".join(f".{item}" for item in self.loop_path)
         outcome = self.execute_call(CallRequest(position, index, call.line, call.instruction, arguments))

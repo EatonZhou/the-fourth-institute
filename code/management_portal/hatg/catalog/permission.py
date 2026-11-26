@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from ..declarations import CURSOR, FIXED, NEXT_CURSOR, InstructionDeclaration as D, On, P, R
 
-_DRY_RUN = "true 时只检查并报告结果，不写入"
 _TREE = "哪一棵树：P（主体）、A（动作）或 R（资源）"
 _EFFECT = "permit（允许，默认）或 deny（拒绝）"
 _DISABLED = "true 时这一行留在表中但不参与判定"
@@ -104,53 +103,61 @@ DECLARATIONS = (
           "发布只改指令分类时实例不动，有元素换了分类也记一条，regenerated 为 false。"
           "字段同 source.last_merge，source_scheme_id 是方案自己，from_digest、to_digest 是发布前后规则的摘要，conflicts 为空。"
           "没有过这样的发布时没有这一项"))),
-    _d("CreatePermissionScheme", FIXED, "新建自定义方案：复制另一个方案的规则和实例（source_scheme_id），或按给出的规则从 Portal 现有对象生成实例（rules）。"
-       "复制时同时记录来源方案和它此刻的规则（GetPermissionScheme 的 source），供来源改变后合并。"
-       "dry_run 只编译并报告错误与未归类的 A 元素。", (
+    _d("CreatePermissionScheme", FIXED, "创建方案并生成或复制实例，记录来源规则。", (
         R("scheme_id", description="新方案 ID：小写字母开头，只含小写字母、数字和下划线"),
         P("source_scheme_id", description="复制来源方案；与 rules 二选一"), P("rules", "object", _RULES + "；与 source_scheme_id 二选一"),
         P("title", description="方案标题；省略时用规则里的 title"), P("description", description="方案说明；省略时用规则里的 description"),
-        P("dry_run", "boolean", _DRY_RUN),
-    ), (P("scheme_id", description="新建的方案；dry_run 时没有"), P("version", "integer", "新方案的规则版本，为 1"),
+
+    ), (P("scheme_id", description="新建的方案；保存后返回"), P("version", "integer", "新方案的规则版本，为 1"),
         P("nodes", "integer", "新实例的节点数"), P("entries", "integer", "新实例的表项数"),
-        P("valid", "boolean", "dry_run 时：规则是否编译通过"),
-        P("errors", "array", _ERRORS), P("unmapped", "array", _UNMAPPED)), mutates=True, target="scheme_id"),
-    _d("UpdatePermissionScheme", FIXED, "以整份规则替换一个自定义方案。树或规则表项变化时按 Portal 现有对象重新生成该方案的实例，实例中的编辑随之丢弃；"
-       "只改标题、说明或指令分类时保留实例（改指令分类仍有授权差）。dry_run 只编译并报告重新生成的差异和授权差（auth_diff，保存的结果里也有）；"
-       "差异要读取全部现有对象（数秒），"
-       "编辑中的检查用 diff: false 只编译。内置方案的规则不可修改，要改先复制。调用信封的 expected_version 给 GetPermissionScheme.version 时按它比较。"
-       "合并来源方案的改动后保存时带 source_digest：它必须等于来源方案现在的摘要，保存时来源记录换成来源方案现在的规则；不带时来源记录不变。"
-       "带 source_digest 的保存和自动合并同一套写回：实例重新生成时实例中增加和停用的行带原 ID 写回，人删掉的行仍删掉，临时凭证保留，"
-       "节点已不存在的不写回；结果和 dry_run 都报告 unrestored 与 deleted_again（含义同 last_merge），diff.lost_edits 只列不写回的行；"
-       "保存后记为 last_merge。", (
+        P("valid", "boolean", "规则是否编译通过"),
+        P("errors", "array", _ERRORS), P("unmapped", "array", _UNMAPPED)), mutates=True, target="scheme_id", one_of=(("source_scheme_id",), ("rules",))),
+    _d("GetPermissionSchemeCreatePreview", FIXED, '只读编译拟创建的方案，返回 valid、errors 与 unmapped。可读取来源规则；不初始化存储、不执行迁移、不生成或复制实例。', (
+        R("scheme_id", description="新方案 ID：小写字母开头，只含小写字母、数字和下划线"),
+        P("source_scheme_id", description="复制来源方案；与 rules 二选一"), P("rules", "object", _RULES + "；与 source_scheme_id 二选一"),
+        P("title", description="方案标题；省略时用规则里的 title"), P("description", description="方案说明；省略时用规则里的 description"),
+
+    ), (P("scheme_id", description="新建的方案；预览时没有"), P("version", "integer", "新方案的规则版本，为 1"),
+        P("nodes", "integer", "新实例的节点数"), P("entries", "integer", "新实例的表项数"),
+        P("valid", "boolean", "预览时：规则是否编译通过"),
+        P("errors", "array", _ERRORS), P("unmapped", "array", _UNMAPPED)), target="scheme_id", one_of=(("source_scheme_id",), ("rules",))),
+    _d("UpdatePermissionScheme", FIXED, "保存自定义规则；信封 expected_version 比较版本。来源合并保留实例编辑与临时凭证。", (
         R("scheme_id", description="要修改的自定义方案"), R("rules", "object", _RULES),
-        P("dry_run", "boolean", _DRY_RUN),
-        P("diff", "boolean", "dry_run 时是否计算重新生成的差异，默认 true；false 时只编译并报告 regenerates，不返回 diff"),
+
         P("diff_limit", "integer", "差异每类最多列出的项数，也是授权差最多列出的组数，默认 50", minimum=1, maximum=500),
         P("source_digest", description="这次合并针对的来源规则摘要（GetPermissionScheme.source.current_digest）；"
           "与来源现在的摘要不同时冲突"),
-    ), (P("scheme_id", description="被修改的方案；dry_run 时没有"), P("version", "integer", "保存后的规则版本"),
+    ), (P("scheme_id", description="被修改的方案；保存后返回"), P("version", "integer", "保存后的规则版本"),
         P("diff", "object", _DIFF), P("auth_diff", "object", _AUTH_DIFF),
         P("source_digest", description="带 source_digest 保存时：这次合并针对的来源规则摘要"),
         P("regenerated", "object", "重新生成的实例：nodes、entries；未重新生成时为 null"),
-        P("regenerates", "boolean", "dry_run 时：保存是否会重新生成实例"),
+        P("regenerates", "boolean", "保存是否会重新生成实例"),
         P("unrestored", "array", "带 source_digest 时：不能写回的实例中的编辑与临时凭证，每项带 missing"),
         P("deleted_again", "array", "带 source_digest 时：人删掉、因此没有加回的规则行"),
-        P("valid", "boolean", "dry_run 时：规则是否编译通过"), P("errors", "array", _ERRORS), P("unmapped", "array", _UNMAPPED)),
+        P("valid", "boolean", "规则是否编译通过"), P("errors", "array", _ERRORS), P("unmapped", "array", _UNMAPPED)),
         mutates=True, target="scheme_id"),
+    _d("GetPermissionSchemeUpdatePreview", FIXED, '只读校验规则并计算拟保存的实例差异及授权差。diff=false 仅编译；source_digest 比较来源摘要。不会保存规则、更新来源、补齐实例或写入后回滚。', (
+        R("scheme_id", description="要修改的自定义方案"), R("rules", "object", _RULES),
+
+        P("diff", "boolean", "预览时是否计算重新生成的差异，默认 true；false 时只编译并报告 regenerates，不返回 diff"),
+        P("diff_limit", "integer", "差异每类最多列出的项数，也是授权差最多列出的组数，默认 50", minimum=1, maximum=500),
+        P("source_digest", description="这次合并针对的来源规则摘要（GetPermissionScheme.source.current_digest）；"
+          "与来源现在的摘要不同时冲突"),
+    ), (P("scheme_id", description="被修改的方案；预览时没有"), P("version", "integer", "保存后的规则版本"),
+        P("diff", "object", _DIFF), P("auth_diff", "object", _AUTH_DIFF),
+        P("source_digest", description="带 source_digest 保存时：这次合并针对的来源规则摘要"),
+        P("regenerated", "object", "重新生成的实例：nodes、entries；未重新生成时为 null"),
+        P("regenerates", "boolean", "预览时：保存是否会重新生成实例"),
+        P("unrestored", "array", "带 source_digest 时：不能写回的实例中的编辑与临时凭证，每项带 missing"),
+        P("deleted_again", "array", "带 source_digest 时：人删掉、因此没有加回的规则行"),
+        P("valid", "boolean", "预览时：规则是否编译通过"), P("errors", "array", _ERRORS), P("unmapped", "array", _UNMAPPED)),
+        target="scheme_id"),
     _d("DeletePermissionScheme", FIXED, "删除一个自定义方案及其实例；内置方案和启用中的方案（关闭时为开启时将使用的方案）不能删除。"
        "调用信封的 expected_version 给 GetPermissionScheme.version 时按它比较。", (
         R("scheme_id", description="要删除的自定义方案"),
     ), (R("deleted", description="被删除的方案 ID"),), mutates=True, target="scheme_id"),
-    _d("ActivatePermissionScheme", FIXED, "启用一个方案：把它保存的实例按 Portal 现有对象补齐（新对象放入树并按规则写入表项，已删除对象连同其表项移出，移动的对象只改位置，"
-       "已有表项保持不变；实例缺失或由其他规则生成时重新生成），然后切换。内置方案的实例由发布前的规则生成时，按新规则重新生成并写回实例中的编辑，"
-       "与启动时跟随发布相同：写回记为方案的 last_merge，结果带 restored_entries、写不回的 unrestored 和保持删除的 deleted_again。"
-       "权限系统关闭时只记录开启时使用这个方案，开启时补齐。dry_run 只报告影响。"
-       "结果和 dry_run 都带授权差（auth_diff）：启用中方案现在的实例对比这个方案补齐后的实例；"
-       "权限系统关闭时实际是全部放行，这份报告表示开启后相对旧方案的变化。"
-       "内置方案和自定义方案都可以启用。"
-       "Portal 管理员永远可以启用方案，不问启用中的方案；其他调用者按方案判定。", (
-        R("scheme_id", description="要启用的方案，内置或自定义"), P("dry_run", "boolean", _DRY_RUN),
+    _d("ActivatePermissionScheme", FIXED, "补齐并启用方案；权限关闭时只记录选择，管理员保底放行。", (
+        R("scheme_id", description="要启用的方案，内置或自定义"),
         P("diff_limit", "integer", "授权差最多列出的组数，默认 50", minimum=1, maximum=500),
     ), (R("scheme_id", description="要启用的方案"), R("title", description="方案标题"), R("unmapped", "array", _UNMAPPED),
         P("regenerate", "boolean", "实例是否重新生成；false 表示只补齐"),
@@ -160,8 +167,21 @@ DECLARATIONS = (
         P("restored_entries", "integer", "内置方案按新规则重新生成时写回的实例中的编辑数"),
         P("unrestored", "array", "写不回的实例中的编辑（节点已不在新实例中），格式同 last_merge.unrestored"),
         P("deleted_again", "array", "人删掉、新规则仍给出而保持删除的行"), R("auth_diff", "object", _AUTH_DIFF),
-        R("activated", "boolean", "是否已切换到这个方案；dry_run 时为 false")),
+        R("activated", "boolean", "是否已切换到这个方案；成功时为 true")),
         mutates=True, target="scheme_id"),
+    _d("GetPermissionSchemeActivationPreview", FIXED, '只读计算启用方案后的实例与授权变化。读取已存规则、实例及当前对象；不切换方案、不初始化或迁移存储、不补齐实例。', (
+        R("scheme_id", description="要启用的方案，内置或自定义"),
+        P("diff_limit", "integer", "授权差最多列出的组数，默认 50", minimum=1, maximum=500),
+    ), (R("scheme_id", description="要启用的方案"), R("title", description="方案标题"), R("unmapped", "array", _UNMAPPED),
+        P("regenerate", "boolean", "实例是否重新生成；false 表示只补齐"),
+        P("added_nodes", "integer", "放入树中的节点数"), P("moved_nodes", "integer", "移动位置的节点数"),
+        P("removed_nodes", "integer", "移出的节点数；重新生成时为原实例的全部节点"),
+        P("added_entries", "integer", "写入的表项数"), P("removed_entries", "integer", "移出的表项数"),
+        P("restored_entries", "integer", "内置方案按新规则重新生成时写回的实例中的编辑数"),
+        P("unrestored", "array", "写不回的实例中的编辑（节点已不在新实例中），格式同 last_merge.unrestored"),
+        P("deleted_again", "array", "人删掉、新规则仍给出而保持删除的行"), R("auth_diff", "object", _AUTH_DIFF),
+        R("activated", "boolean", "是否已切换到这个方案；预览时为 false")),
+        target="scheme_id"),
     _d("GetPermissionNode", FIXED, "读取一个方案实例中 P、A、R 树上的一个节点或元素：位置、祖先链和直接子节点（分页）。", (
         P("scheme_id", description=_SCHEME_ID),
         R("tree", enum=("P", "A", "R"), description=_TREE), R("node_id", description="分类节点（@ 开头）或元素 ID：主体、指令、资源"),
@@ -208,14 +228,10 @@ DECLARATIONS = (
         P("effect", enum=("permit", "deny"), description="新的效果；省略时不变"),
         P("disabled", "boolean", "true 停用这一行，false 恢复；省略时不变"),
     ), (R("scheme_id", description="表项所在的方案"), R("entry", "object", _ENTRY)), mutates=True, target="entry_id"),
-    _d("DeletePermissionEntry", (On("entry_id", via="permission_entry.r", optional=True),
-                                 On("entry_ids", via="permission_entry.r", optional=True)), "删除表项（同一事务）；临时凭证用 RevokeTemporaryCredential 撤销。"
-       "入口按每条表项已保存的 r 判定（声明经 permission_entry.r 取得，默认方案要求 @admin），任何一条不通过或不存在时整批不删除。", (
-        P("scheme_id", description=_SCHEME_ID),
-        P("entry_id", description="要删除的一条表项；与 entry_ids 二选一"),
-        P("entry_ids", "array", "1 至 1000 个表项 ID", items={"type": "string"}),
-    ), (R("scheme_id", description="表项所在的方案"), R("deleted", "array", "被删除的表项 ID"),),
-       mutates=True, one_of=(("entry_id",), ("entry_ids",))),
+    _d("DeletePermissionEntry", (On("entry_ids", via="permission_entry.r"),), "按各表项原资源授权，同事务批量删除；任何一条拒权或不存在时不删除。", (
+        P("scheme_id", description=_SCHEME_ID), R("entry_ids", "array", "1–1000 个表项 ID；临时凭证用 RevokeTemporaryCredential"),
+    ), (R("scheme_id", description="被删除表项所在的权限方案 ID"),
+        R("deleted", "array", "本次已删除的表项 ID 列表")), mutates=True),
     _d("GetEffectivePermissions", (On("principal_id"),), "读取一个主体在 A 树各分类节点上被授权的 R 节点及其中的洞、它的全部有效表项和有效的临时凭证；持久凭证展示读取这里。", (
         R("principal_id", description=_PRINCIPAL),
     ), (R("principal_id", description="查看的主体"), R("scheme_id", description="判定所用的启用中方案"),
@@ -223,28 +239,33 @@ DECLARATIONS = (
         R("coverage", "object", "A 树每个分类节点的 permit 与 deny 节点"),
         P("user_category", description="User 的分类：portal_admin、member 或 intern；Resident 没有"),
         R("entries", "array", "主体的全部有效表项：entry_id、effect、p、a、r、disabled、version…"),
-        R("temporary", "array", "主体签发的和收到的有效临时凭证，格式同 ListTemporaryCredentials 的 credentials")),
+        R("temporary", "array", "主体签发的和收到的未到截止上限的临时凭证，含 credential_id、principal_id、a、resource_id、issued_by、issued_at、state、lifetime、deadline_at、expires_at；pending 等待输入受理，inactive 不参与判定")),
        target="principal_id"),
-    _d("CheckPermission", (On("principal_id"),), "判定一个主体能否执行一条指令（instruction 与 arguments），或能否对一个资源执行 A 树节点（a 与 resource_id），返回结果、原因（permitted、no_permit、denied）和命中的表项。", (
-        R("principal_id", description=_PRINCIPAL),
-        P("instruction", description="要判定的指令名；与 arguments 一起给出，与 a、resource_id 二选一"),
-        P("arguments", "object", "这次调用的参数，与真实调用相同"),
-        P("a", description="A 树节点：@ 开头的分类节点或指令元素"),
-        P("resource_id", description="与 a 一起给出：要判定的资源或 R 树节点"),
-    ), (R("principal_id", description="被判定的主体"), R("scheme_id", description="判定所用的启用中方案"),
-        R("allowed", "boolean", "所有请求都通过时为 true"),
-        R("requests", "array", "每个判定请求：action、resource、allowed、reason，命中时带 permit、deny 表项"),
-        P("portal_admin", "boolean", "true 表示这次调用由 Portal 管理员保底放行，不问方案（此时 requests 为空）"))),
-    _d("CreateTemporaryCredential", FIXED, "把自己在一个资源上持有的 A 树节点临时交给另一个主体：签发时只核对签发者此刻确实持有，立即写入一行带签发者和过期时间的 permit。"
-       "给出 message_id 时凭证随这条消息：接收 Resident 对它的输入完成、失败或取消时删除；否则按 expires_in_seconds 到期。两种都最迟在签发 7 天后失效。"
-       "也可以在 DeliverMessage 中用 temporary_credentials 随消息签发。凭证写入启用中方案的实例。", (
+    _d("CheckPermission", (On("principal_id"),), "检查主体对资源的 A 节点权限。", (
+        R("principal_id", description=_PRINCIPAL), R("a", description="要检查的 A 树节点：分类节点或指令元素"),
+        R("resource_id", description="要检查的资源 ID 或 R 树节点"),
+    ), (R("principal_id", description="被检查的主体 ID"), R("scheme_id", description="本次判定使用的权限方案 ID"),
+        R("allowed", "boolean", "主体是否获准在该资源上执行指定 A 节点"),
+        R("requests", "array", "逐项权限判定，包含 action、resource、allowed、reason 及命中的 permit/deny 表项"))),
+    _d("CheckInstructionPermission", (On("principal_id"),), "检查主体的一次指令调用，保留全部目标与管理员保底判断。", (
+        R("principal_id", description=_PRINCIPAL), R("instruction", description="要检查权限的正式指令名称，不执行该指令"),
+        R("arguments", "object", "该指令的公开调用参数，须符合其 schema；不接受内部权限派生字段"),
+    ), (R("principal_id", description="被检查的主体 ID"), R("scheme_id", description="本次判定使用的权限方案 ID"),
+        R("allowed", "boolean", "是否通过该指令全部目标的权限判定或管理员保底；不表示业务执行一定成功"),
+        R("requests", "array", "逐项权限判定，包含 action、resource、allowed、reason 及命中的 permit/deny 表项；管理员保底时为空"),
+        P("portal_admin", "boolean", "true 表示本次由 Portal 管理员保底放行"))),
+    _d("CreateTemporaryCredential", FIXED, "把自己在一个资源上持有的 A 树节点临时交给另一个主体，签发者须此刻持有该权限。"
+       "任务授权依次 PrepareResidentInput、CreateTemporaryCredential、原样 DeliverMessage；message_id 必须是本人为接收 Resident 准备且尚未受理的输入。"
+       "pending 凭证不参与权限判定，受理输入时在同一事务启用；输入完成、失败或取消时回收，重试只返回原存活凭证而不重授。"
+       "不带 message_id 的按时长凭证立即启用。两种都最迟在签发 7 天后失效；任务结束时刻未知。", (
         R("principal_id", description="接收者"), R("a", description="A 树节点：@ 开头的分类节点或指令元素"),
         R("resource_id", description="签发者在其上持有 a 的资源或 R 树节点"),
-        P("message_id", description="接收 Resident 正在处理的、发给它的消息；凭证随这条消息的输入结束"),
+        P("message_id", description="本人 PrepareResidentInput 的准确消息 ID；正式受理前不可用，输入结束时失效"),
         P("expires_in_seconds", "integer", "有效期；未给 message_id 时默认 86400；最长 604800", minimum=60, maximum=604800),
     ), (R("credential_id", description="新凭证的 ID"), R("principal_id", description="接收者"),
         R("a", description="交出的 A 树节点"), R("resource_id", description="凭证作用的资源或 R 树节点"),
         R("issued_by", description="签发者"), R("issued_at", "number", "签发时间，Unix 秒"),
+        R("state", description="pending 等待受理，不授予权限；active 已启用", enum=("pending", "active")),
         R("lifetime", description="task：随绑定消息输入完成、失败或取消失效；duration：按时长到期", enum=("task", "duration")),
         R("deadline_at", "number", "最迟截止上限，Unix 秒；不保证此前一直有效，最迟为签发后7天"),
         R("expires_at", "any", "duration 为计划到期 Unix 秒；task 为 null，任务结束时刻未知，不得据截止上限推断后台调用仍获授权"),
@@ -262,7 +283,8 @@ DECLARATIONS = (
     _d("RevokeTemporaryCredential", FIXED, "撤销一张临时凭证：签发者撤回，或接收者交还。任务结束自动删除或已经撤回的凭证再次撤销返回 instruction.not_found；到期清理删除后同样如此，不代表原授权仍有效，也不重新签发。", (
         R("credential_id", description="要撤销的临时凭证"),
     ), (R("revoked", description="被撤销的凭证 ID"),), mutates=True, target="credential_id"),
-    _d("ListTemporaryCredentials", (On("principal_id"),), "列出一个主体签发的和收到的有效临时凭证。", (
-        R("principal_id", description=_PRINCIPAL),
-    ), (R("credentials", "array", _CREDENTIAL),), target="principal_id"),
+    _d("SetPermissionSystemEnabled", FIXED, "切换权限系统；Portal 管理员保底放行，开启前按原 owner 生命周期补齐实例。", (
+        R("enabled", "boolean", "true 开启权限系统，false 关闭权限系统"),
+    ), (R("settings", "object", "切换后的运行设置，包含权限系统开关状态"),
+        P("reconciled", "object", "开启过程中由权限 owner 补齐实例的结果；未进行补齐时省略")), mutates=True, owner="lineage"),
 )

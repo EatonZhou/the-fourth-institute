@@ -1,117 +1,73 @@
-"""Family internal steps (decision_44cf587c1721): the instructions a Family's Router,
-steward and supervising Effects run to relay requests, keep summaries and recover
-failures.  Callers outside a Family use the lifecycle instructions in ``family``."""
-from ..declarations import FIXED, ON_LINEAGE, ON_RESIDENT, InstructionDeclaration as D, P, R
+"""Facade membership, request relay and summary reads."""
+from ..declarations import FIXED, ON_RESIDENT, InstructionDeclaration as D, P, R
+from .conversation import MESSAGE
 
 
-def _d(name, decides, description, parameters, result, *, mutates=True, target="lineage_id"):
+def _d(name, decides, description, parameters, result, *, mutates=True, one_of=()):
     return D(name=name, category="family_internal", owner="lineage", description=description,
-             parameters=tuple(parameters), result=tuple(result), mutates=mutates, target=target,
-             decides=decides, discovery_group="internal")
+             parameters=tuple(parameters), result=tuple(result), mutates=mutates, target="resident_id",
+             decides=decides, discovery_group="internal", one_of=one_of)
 
 
 DECLARATIONS = (
-    _d("GetFamilyRoutingContext", ON_RESIDENT, "按需读取某条门面请求的可选成员或已冻结的唯一上一轮问答；不派发任务、不重算历史候选。", (
-        R("resident_id", description="Family 门面"),
-        R("message_id", description="门面的原请求 ID，来自路由任务 facts.message_id"),
-        P("section", description="members（默认）：当前可选直属成员/Steward 与 Solo/Mute；previous_round：受理时冻结的上一轮问答或 null",
-          enum=("members", "previous_round")),
-    ), (R("resident_id", description="Family 门面"), R("message_id", description="原请求 ID"),
-        P("members", "array", "候选 ID、角色、名称及读取可用性；摘要、状态和能力通过各自指令按需读取"),
-        P("chat_preferences", "object", "该请求原发送者的路由约束"),
-        P("previous_round", "object", "唯一上一轮问答；无冻结候选时为 null")), mutates=False, target="resident_id"),
-    _d("MaintainFamilyReview", ON_LINEAGE, "记录本 Family 业务成员已完成输入的活动水位，或在定时检查时合并派发有新材料的组织回顾；无新增、Steward 忙碌或门面暂停时不启动模型。", (
-        R("lineage_id", description="Family 所在 Lineage"),
-        R("family_id", description="Family 资源 ID 或 Function Block 键"),
-        P("event", "object", "业务成员 resident.work_finished 事件；传入时仅记录活动，不派发。省略时执行定时门控"),
-    ), (R("family_id", description="Family Function Block 键"),
-        R("status", description="recorded、skipped、unchanged、busy、paused、requested、target_changed 或 not_applicable"),
-        P("message_id", description="合并回顾的稳定任务 ID"))),
-    _d("ResolveFamilyRequest", ON_RESIDENT, "把本 Family Steward 已完成的路由复核成果归档到同一原失败请求；保留原失败回执，不重新执行或复制业务输入。限本 Steward 或门面管理者。", (
-        R("resident_id", description="Family 门面"),
-        R("message_id", description="门面内尚未转交的原失败请求；取消或正在执行的请求不能归档"),
-        R("steward_message_id", description="同一 Family Steward 已完成且有真实回复的 route_review 输入，必须绑定该原请求"),
-        R("reason", description="已完成组织成果满足原请求的依据，写入审计记录"),
-    ), (R("status", description="archived；重复归档相同来源不产生新工作"),
-        R("message_id", description="保持不变的门面原请求 ID"),
-        R("steward_message_id", description="实际完成组织工作的复核输入 ID"),
-        R("reply_message_ids", "array", "原请求可读取的真实 Steward 回复 ID")), target="resident_id"),
-    _d("MaintainFamilyRoleAvailability", ON_LINEAGE, "维护 Family Router 与 Steward 接单状态并返回已有迁移状态；不查询额度或发起迁移，无需模型轮次。门面关闭时暂停；额度检查由消息执行准入负责。", (
-        R("lineage_id", description="Family 所在的 Lineage"),
-        R("family_id", description="Family 资源 ID family_… 或 Function Block 键 fbi_…"),
-    ), (R("family_id", description="Family Function Block 键"), R("paused", "boolean", "门面是否暂停"),
-        R("waiting_count", "integer", "等待账号迁移的角色数"),
-        P("roles", "array", "两个角色的 resident_id、status、reason、intake"))),
-    _d("DispatchFamilyTask", ON_RESIDENT, "依照 Family 当前 Route 中的工作模板向 Router 或 Steward 派发精简任务；指南首轮注入，后续按路径读取。", (
-        R("resident_id", description="Family 门面"),
-        R("trigger", description="route、queue、review、summary、progress、recruit、route_review、recovery、quota 或 organization"),
-        P("facts", "object", "本次任务事实和资源引用"),
-        P("source_message_id", description="门面中的原消息；route 必须给出此参数或 facts.message_id"),
-        P("message_id", description="可选稳定派发消息 ID，用于幂等"),
-        P("event", "object", "触发 Event，只传身份及主题，不附全量历史"),
-    ), (R("message_id", description="发给内部角色的任务消息"),), target="resident_id"),
-    _d("RelayFamilyMessage", ON_RESIDENT, "按 Router 的选择转交门面原请求；成员周额度低于 5% 时先交 steward 复核；"
-       "带 scope_gap 时请求不在现有成员职责内，先交 steward 决定是否新建成员，steward 安排后以 scope_reviewed=true 转交给所选成员。"
-       "reassign=true 时把已交给其他成员的请求改派给所选成员，并记下这次纠正。"
-       "recover=true 时把尚未转交的失败请求恢复给核定成员，保存失败回执和恢复审计，仍执行正常准入。"
-       "notice=true 时门面直接收下不需要成员行动的结果报告或纯告知：不选成员、不转交、不做额度复核，门面摘要可读到它。", (
-        R("resident_id", description="Family 门面"), R("message_id", description="门面中的原请求"),
-        P("member_id", description="Router 选中的成员；带 scope_gap 时为最接近的成员；steward 安排时为它选定的成员（可以是刚新建的）；改派时为新成员；"
-          "组织请求或引用 Steward 消息的回复可选择本 Family Steward，不能选择其他 Family 的角色；notice=true 时不填，其余情况必填"),
-        P("notice", "boolean", "Router 判断原消息只是告知、无需成员行动时设 true，由门面收下"),
-        P("continue_previous", "boolean", "仅当前请求明确依赖同一发送者上一轮 previous_round 时设 true；默认 false，证据不足按独立任务。"
-          "不追溯更早历史，不因同一成员、相邻或相似话题判定延续；换成员执行仍可 true。平台保存正判并附可信上一轮背景，"
-          "后续恢复、职责安排与额度放行的缺省 false 不清除已冻结正判；不能与 notice 或 reassign 同用"),
-        P("quota_reviewed", "boolean", "仅本 Family steward 可设 true，表示已判断任务强度或完成迁移"),
-        P("scope_gap", description="Router 判断没有成员的职责覆盖这条请求时写明缺少的职责；请求留在门面等 steward 安排"),
-        P("scope_reviewed", "boolean", "本 Family steward 安排好成员（新建或最接近的成员）后设 true，转交等它安排的请求"),
-        P("reassign", "boolean", "改派：撤回原成员尚未开始的副本，交给所选成员重新处理；原成员正在处理时先停止本轮。"
-          "限原发送者、能管理门面的身份与本 Family steward"),
-        P("recover", "boolean", "恢复尚未转交的失败门面原请求；reason 必填。限原发送者、门面管理者或本 Family Steward；不能与 notice 或 reassign 同用；相同目标重试幂等，取消请求不恢复"),
-        P("reason", description="steward 放行、安排成员或恢复时必填，说明判断；改派时说明为什么原成员不合适；Router 转交时为它的理由"),
-    ), (R("status", description="relayed、waiting_for_quota_review、waiting_for_steward、arranged、reassigned、"
-          "kept（门面已作为告知收下），或 withdrawn（请求已撤回，不再转交）"),
-        P("message_id", description="已转交时为成员收到的消息；等待复核或安排时以及 kept 时为门面原请求；withdrawn 时没有"),
-        P("member_id", description="承接的成员；等待 steward 安排时为 Router 建议的成员；kept 时没有"),
-        P("steward_message_id", description="等待复核或安排时发给 steward 的消息"),
-        P("previous_member_id", description="改派前承接的成员"),
-        P("recovery", "object", "恢复审计：原失败回执、恢复操作者、理由、时间、目标和投递结果")),
-       target="resident_id"),
-    _d("MaintainFamilyProgress", ON_LINEAGE, "登记门面收到的工作轮次，达到间隔后请 Steward 撰写 Family 进展简报；同一输入只计一次。", (
-        R("lineage_id", description="Family 所在的 Lineage"),
-        R("family_id", description="Family 资源 ID family_… 或 Function Block 键 fbi_…"),
-        P("event", "object", "门面 resident.message_received 事件"),
-        P("every_turns", "integer", "每几轮简报一次，默认 20；由 Family 内部对象的简报设置保存", minimum=1),
-    ), (R("family_id", description="Family 的 Function Block 键 fbi_…"), R("count", "integer", "门面已登记的工作轮次总数"),
-        R("requested_batch_ids", "array", "本次请 Steward 撰写简报的批次号"))),
-    _d("PublishFamilyProgress", FIXED, "Steward 保存最多 500 字的 Family 简报并更新门面工作摘要，不向成员群发；Steward 按相关性另行定向通知，失败可用同批次同内容重试。", (
-        R("lineage_id", description="Family 所在的 Lineage"),
-        R("family_id", description="Family 资源 ID family_… 或 Function Block 键 fbi_…"),
-        R("batch_id", description="简报请求中给出的批次号；更早的批次须先发布"),
-        R("report", description="正文 1–500 字，标点、空格和换行均计数"),
-        R("summary", "object", "九字段门面工作摘要，所有字段文字合计不超过 500 字"),
-        R("source_versions", "object", "GetFamilySummaryInputs 的来源版本"),
-    ), (R("family_id", description="Family 的 Function Block 键 fbi_…"), R("batch_id", description="已发布的简报批次号"),
-        R("status", description="published"))),
-    _d("MaintainFamilyRecovery", ON_LINEAGE, "核验 Family 原失败任务及关闭成员的当前阻塞队列；交给 steward 恢复原输入，无法恢复时以门面身份通知实际真人创立者。关闭门面暂停自维护。", (
-        R("lineage_id", description="Family 所在的 Lineage"),
-        R("family_id", description="Family 资源 ID family_… 或 Function Block 键 fbi_…"),
-        P("event", "object", "Family 监督 Effect 的触发 Event；省略时复查待恢复任务及关闭成员当前队列，不扫描历史失败输入"),
-        P("escalate_reason", "string", "steward 确实无法继续修复时填写具体原因，升级现有未解决故障"),
-    ), (R("family_id", description="Family 的 Function Block 键 fbi_…"),
-        R("incidents", "array", "登记的故障：key、resident_id、message_id、request_message_id、status（open、waiting、"
-          "escalated、resolved、cancelled 等）、attempts、observed（含 intake_state 与 blocked_reason）"),
-        R("notice", "object", "最近交给 steward 的恢复消息：message_id、incident_keys、delivered；没有时为空对象"),
-        P("paused", "boolean", "门面关闭或删除时为 true，暂停自维护且保留记录"))),
-    _d("MaintainResidentWorkSummary", FIXED, "Family Effect 检查完成轮次；遗漏挂下一轮提醒，已覆盖时返回是否达到归纳条件。", (
-        R("resident_id", description="完成这一轮的 Family 成员"),
-        R("message_id", description="要检查的已完成输入；未完成的轮次跳过"),
-    ), (R("status", description="facade、skipped、covered、reminder_pending 或 reminder_attached"),
-        P("consolidation_due", "boolean", "已覆盖时返回归纳条件是否满足，Effect 据此尝试短通知 Steward")), target="resident_id"),
-    _d("GetFamilySummaryInputs", FIXED, "仅本 Family 门面和 Steward 读取成员摘要与来源版本，无变化时 needs_update=false。", (
-        R("resident_id", description="Family 门面"),
+    _d("UpdateFacadeMembers", ON_RESIDENT, "整体替换门面的转交对象。空集合取消门面身份。", (
+        R("resident_id", description="门面 Resident"),
+        R("member_ids", "array", "新的转交对象集合", items={"type": "string"}),
+    ), (
+        R("resident_id", description="门面 Resident"),
+        R("member_ids", "array", "保存后的转交对象集合"),
+    )),
+    _d("CheckRelayTarget", ON_RESIDENT, "读取门面可转交成员的接单状态和额度。", (
+        R("resident_id", description="门面 Resident"),
+        R("member_id", description="候选成员"),
+    ), (
+        R("status", description="候选状态", enum=("ready", "quota_low", "unavailable", "unknown")),
+        P("reason", description="状态原因"),
+        P("remaining_percent", "number", "已知的可用额度百分比"),
+    ), mutates=False),
+    _d("GetRelayContext", ON_RESIDENT, "按需读取门面请求、候选成员或受理时冻结的上一轮问答。", (
+        R("resident_id", description="门面 Resident"),
+        R("message_id", description="门面的原请求 ID"),
+        P("section", description="返回哪部分内容，默认 members", enum=("members", "previous_round", "request")),
+    ), (
+        R("resident_id", description="门面 Resident"),
+        R("message_id", description="原请求 ID"),
+        P("members", "array", "候选居民的 ID、角色、名称与读取可用性"),
+        P("chat_preferences", "object", "原发送者的路由约束"),
+        P("previous_round", "object", "冻结的上一轮问答"),
+        P("request", "object", "门面收到的原请求"),
+    ), mutates=False),
+    _d("ResolveRelayedRequest", ON_RESIDENT, "用已完成的复核结果归档同一原失败请求，保留原失败回执。", (
+        R("resident_id", description="门面 Resident"),
+        R("message_id", description="门面内尚未转交的原失败请求"),
+        R("review_message_id", description="已完成且有实际回复的复核输入，须绑定到原请求"),
+        R("reason", description="复核结果满足原请求的依据"),
+    ), (R("status", description="archived"), R("message_id", description="原请求 ID"),
+        R("review_message_id", description="已完成的复核输入 ID"),
+        R("reply_message_ids", "array", "原请求下可读取的实际回复 ID"))),
+    _d("RelayMessage", ON_RESIDENT, "转交门面请求、收下告知、改派或回复门面外发的消息。", (
+        R("resident_id", description="门面 Resident"),
+        P("message_id", description="门面中的原请求"),
+        P("member_id", description="转交或改派的成员"),
+        P("notice", "boolean", "由门面收下结果报告或告知"),
+        P("continue_previous", "boolean", "附带已核定的上一轮背景"),
+        P("reassign", "boolean", "把尚可改派的工作交给新成员"),
+        P("reason", description="转交、收下告知或改派的理由"),
+        P("reply_to_message_id", description="要回复的门面外发消息 ID"),
+        P("message", "object", "回复内容，含正文或附件 content_parts", properties=MESSAGE),
+        P("business_ref", description="回复的调用方业务记录"),
+    ), (
+        R("status", description="转交结果"),
+        P("message_id", description="承接或收到的消息 ID"),
+        P("member_id", description="实际承接的成员"),
+        P("previous_member_id", description="改派前的成员"),
+    ), one_of=(("message_id",), ("reply_to_message_id", "message"))),
+    _d("GetFacadeSummaryInputs", FIXED,
+       "门面本人、本 Family Steward 或拥有该门面 @admin 权限的调用者可以读取成员摘要与来源版本。"
+       "无变化时 needs_update=false。", (
+        R("resident_id", description="门面 Resident"),
         P("overview_only", "boolean", "只返回是否变化及待归纳 Resident/版本/层级，不返回摘要正文"),
-    ), (R("resident_id", description="Family 门面"), R("title", description="Family 名称"), R("goal", description="Family 共同目标"),
+    ), (R("resident_id", description="门面 Resident"), R("title", description="Family 名称"), R("goal", description="Family 共同目标"),
         R("members", "array", "每个成员 {resident_id, title, summary, summary_stale}"),
         P("notices", "array", "门面作为告知收下的最近结果报告 {message_id, author_id, kept_at, reason, text}；按需写入门面摘要，供成员查阅"),
         R("source_versions", "object", "来源版本：名册 roster、各成员摘要与门面收下的告知 notices 的指纹；提交时原样交回"),
@@ -120,5 +76,5 @@ DECLARATIONS = (
         R("facade_needs_update", "boolean", "门面来源是否变化"),
         P("notification", "object", "overview_only 时返回可直接交给 DeliverMessage 的短通知；同小时同材料使用相同消息 ID"),
         R("needs_update", "boolean", "来源版本与门面摘要上次保存的不同时为 true")),
-       mutates=False, target="resident_id"),
+       mutates=False),
 )

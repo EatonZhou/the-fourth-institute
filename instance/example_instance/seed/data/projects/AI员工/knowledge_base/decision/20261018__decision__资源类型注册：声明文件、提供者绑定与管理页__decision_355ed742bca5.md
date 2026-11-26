@@ -75,7 +75,7 @@ ID 语法、地址解析和打开地址仍由 decision_4a9ba5dfada6 规定；资
 
 ### 管理页
 
-- **Portal 管理新增“资源类型”分栏。** 表格列出类型、分类、标题、状态、实例数、提供者与所属功能、目录位置、是否可登记；可按分类和状态筛选。点开一行显示声明全文和提供者的动作目录。
+- **Portal 管理新增“资源类型”分栏。** 表格列出类型、分类、标题、状态、实例数、提供者与所属功能、目录位置、是否可登记；可按分类和状态筛选。点开一行显示类型声明全文。
 - **管理员在这里启用或停用类型。** 停用前显示该类型的实例数和它出现的页面，确认后生效；未安装的类型只能查看。
 - **启用与停用需要“Portal 运维”节点的 admin，查看需要对“共享”的 viewer。** 权限系统关闭时任何已登录 User 可用。
 - **只有查看权限的用户也能打开资源类型分栏。** 页面隐藏用户管理和类型启停入口，读取类型无需先请求用户管理数据；服务端拒绝一次启停请求后，当前分栏也隐藏写操作。
@@ -119,6 +119,10 @@ ID 语法、地址解析和打开地址仍由 decision_4a9ba5dfada6 规定；资
 
 ### 指令权威与职责边界
 
-本页通过 `ListResourceTypes`、`GetResourceType` 读取声明与状态，通过 `UpdateResourceType` 更新启停状态。三条指令由 ResourceService 执行；正式参数、返回结构、`expected_version` 信封与冲突回执统一由资源指令规范 decision_ad3e21094f14 定义，并由 `GetInstructionSchema` 提供当前机器契约。本文保留声明、安装/启停政策和管理页行为，不再维护第二份 ISA 参数表。
+本页通过 `ListResourceTypes`、`GetResourceType` 读取声明与状态，通过 `SetResourceTypeEnabled` 更新启停状态。三条指令由 ResourceService 执行；正式参数、返回结构、`expected_version` 信封与冲突回执统一由资源指令规范 decision_ad3e21094f14 定义，并由 `GetInstructionSchema` 提供当前机器契约。本文保留声明、安装/启停政策和管理页行为，不再维护第二份 ISA 参数表。
 
-`UpdateResourceType` 的授权规则由权限方案规范 decision_600ae27b0538 与资源指令规范 decision_ad3e21094f14 统一说明。当前正式 ISA 声明与内建方案实际要求 `@shared` 的 admin，与上文管理页要求“Portal 运维”admin 的规则存在偏差，需另行核对并修正；本次正文整理不改变该管理规则或授权行为。类型的不可登记、停用或未安装是资源域拒绝原因；它们如何映射为 ISA 错误及调用方怎样识别，见 decision_ad3e21094f14。
+`SetResourceTypeEnabled` 的授权规则由权限方案规范 decision_600ae27b0538 与资源指令规范 decision_ad3e21094f14 统一说明。当前正式 ISA 声明与内建方案实际要求 `@shared` 的 admin，与上文管理页要求“Portal 运维”admin 的规则存在偏差，需另行核对并修正；本次正文整理不改变该管理规则或授权行为。类型的不可登记、停用或未安装是资源域拒绝原因；它们如何映射为 ISA 错误及调用方怎样识别，见 decision_ad3e21094f14。
+
+### Workspace 的注销能力
+
+Workspace 的提供者注册 unregister 回调，`GetResourceType("workspace")` 与 ResourceService capabilities 同源返回 `unregisterable=true`，`registerable=false` 保持不变。能力表示入口存在，不代表调用者获授权；注销仍要求目标 Workspace 的 `@admin`，并执行未被使用及无嵌套登记检查。目录删除范围、拒绝原因与事务边界见 decision_8838269736d3；ISA 契约见 decision_ad3e21094f14。

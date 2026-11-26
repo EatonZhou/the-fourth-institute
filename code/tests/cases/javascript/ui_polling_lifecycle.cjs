@@ -55,7 +55,7 @@ async function todos() {
   w.PortalIdentity = {userId: async () => 'fixture_user'};
   w.PortalUIPrimitives = {randomUUID: () => 'uuid', mountIcons() {}};
   w.PortalInstructionClient = {execute: async name => {
-    assert.equal(name, 'ListMailboxTodos'); reads++;
+    assert.equal(name, 'SearchResources'); reads++;
     if (fail) throw Object.assign(new Error('denied'), {status: fail});
     return {items: []};
   }};

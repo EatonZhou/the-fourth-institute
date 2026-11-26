@@ -58,7 +58,7 @@ def reassign_request(facade_id: str, message_id: str, member_id: str, actor: str
 
     facade = resident_record_domain.find_resident(facade_id)
     if not family_facade.is_facade(facade):
-        raise ValueError("目标必须是 Family 门面")
+        raise ValueError("目标必须是门面")
     repository = resident_conversation_stream.get_repository()
     message = repository.message(facade_id, message_id)
     if not message or message.get("role") != "user":
@@ -120,7 +120,7 @@ def _reassign_owned(facade, message, member_id, actor, reason):
     if not replay:
         target = resident_record_domain.find_resident(member_id)
         if not family_facade.is_relay_target(facade, member_id) or not target or target.get("deleted_at"):
-            raise ValueError("所选 Resident 不是这个 Family 的成员")
+            raise ValueError("所选 Resident 不在门面转交成员中")
         if not link:
             raise ValueError("这条请求还没有交给成员，不能改派")
         if link["resident_id"] == member_id:
@@ -184,7 +184,7 @@ def _reassign_owned(facade, message, member_id, actor, reason):
                                 raise ValueError("原成员在撤回期间开始或完成处理，不能改派")
                             current = resident_record_domain.find_resident(intent["target"])
                             if not current or current.get("deleted_at") or not family_facade.is_relay_target(facade, intent["target"]):
-                                raise ValueError("改派目标已离开 Family")
+                                raise ValueError("改派目标已不在门面转交成员中")
                             yield
                     with resident_intake_admission.bind(intent["target"], intent["message_id"], guard,
                             lambda mid: _commit_accepted(facade, message_id, intent)):
@@ -339,7 +339,7 @@ def _finish(facade, message_id, intent):
         raise RuntimeError("改派受理事实尚未可核验")
     if intent["status"] == "relayed":
         return
-    if not intent.get("corrected"):
+    if family_facade.facade_configuration(facade) and not intent.get("corrected"):
         # The bounded correction cell and this handoff's receipt commit together;
         # pruning an old example must not cause a retry to insert it again.
         with _ledger(facade).database.transaction():

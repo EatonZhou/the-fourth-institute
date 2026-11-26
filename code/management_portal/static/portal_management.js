@@ -380,7 +380,8 @@
     const me = options.me || await window.PortalIdentity.load();
     const allows = me.access?.allows || {};
     const portalAdmin = me.access?.user_category === "portal_admin";
-    if (!portalAdmin && !["CreateUser", "GetExecutionSettings", "UpdateExecutionSettings", "ListResourceTypes", "ListProviders", "RegisterProviderAccount"].some(name => allows[name] === true)) {
+    const canOpenExecution = ["GetExecutionSettings", "UpdateExecutionSettings", "SetPermissionSystemEnabled"].some(name => allows[name] === true);
+    if (!portalAdmin && !canOpenExecution && !["CreateUser", "ListResourceTypes", "ListProviders", "RegisterProviderAccount"].some(name => allows[name] === true)) {
       throw new Error("Portal Management needs permission for CreateUser or GetExecutionSettings.");
     }
     root.innerHTML = panelMarkup();
@@ -460,7 +461,7 @@
     if (allows.CreateUser === true) await loadAccess(options.principalId || me.username || "");
     panelState.currentPrincipalId = state.selectedUsername;
     showView();
-    const initialView = allows.CreateUser === true ? "users" : allows.ListResourceTypes === true ? "resource-types" : (allows.ListProviders === true || allows.RegisterProviderAccount === true) ? "backend" : (allows.GetExecutionSettings === true || allows.UpdateExecutionSettings === true) ? "execution" : "network";
+    const initialView = allows.CreateUser === true ? "users" : allows.ListResourceTypes === true ? "resource-types" : (allows.ListProviders === true || allows.RegisterProviderAccount === true) ? "backend" : canOpenExecution ? "execution" : "network";
     await openInitialSection({view: options.view || initialView, principalId: options.principalId, accountId: options.accountId, createAccount: options.createAccount});
     return { username: String(me.username || ""), openSection, invalidate, isBusy, hasUnsavedChanges,
       destroy() {

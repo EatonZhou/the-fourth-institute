@@ -1094,6 +1094,39 @@ class IndexStore:
         item.pop("search_terms", None)
         return item
 
+    @staticmethod
+    def readonly_authorization_snapshot() -> dict[str, Any]:
+        """Read persisted authorization facts without constructing an index.
+
+        No adapters, worker, schema initialization or ownership upgrade runs.
+        The database owner supplies an independent read-only transaction.
+        """
+        database = portal_database(schema=resource_database_schema())
+        with database.readonly_snapshot() as connection:
+            format_row = connection.execute(
+                "SELECT value FROM resource_index_meta WHERE key='schema'").fetchone()
+            if format_row is None or format_row['value'] != RESOURCE_INDEX_STORE_SCHEMA:
+                raise RuntimeError('Unsupported resource index format for readonly facts')
+            updated = connection.execute(
+                "SELECT value FROM resource_index_meta WHERE key='index_updated_at'").fetchone()
+            records = []
+            for row in connection.execute(
+                'SELECT resource_id, adapter, record_json FROM resource_index_records ORDER BY resource_id'
+            ).fetchall():
+                record = _validate_record(json_value(row['record_json']), str(row['adapter']))
+                if record['resource_id'] != row['resource_id']:
+                    raise RuntimeError('Resource index row identity does not match its record')
+                records.append(record)
+        return IndexStore._authorization_projection(str(updated['value'] or '') if updated else '', records)
+
+    @staticmethod
+    def _authorization_projection(revision, records) -> dict[str, Any]:
+        return {"revision": revision, "records": [
+                {"resource_id": record["resource_id"], "resource_type": record["resource_type"],
+                 "title": record.get("title", ""), "attributes": _json_value(record.get("attributes") or {})}
+                for record in records
+            ]}
+
     def authorization_snapshot(self) -> dict[str, Any]:
         # Record values are replaced, never mutated in place. Capture their
         # references and the matching revision atomically; detach attributes
@@ -1101,11 +1134,7 @@ class IndexStore:
         with self._lock:
             revision = self._index_updated_at
             records = tuple(self._records.values())
-        return {"revision": revision, "records": [
-                {"resource_id": record["resource_id"], "resource_type": record["resource_type"],
-                 "title": record.get("title", ""), "attributes": _json_value(record.get("attributes") or {})}
-                for record in records
-            ]}
+        return self._authorization_projection(revision, records)
 
     @staticmethod
     def _set_current_urls(items: list[dict[str, Any]], records: Iterable[dict[str, Any]]) -> None:

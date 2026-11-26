@@ -420,37 +420,6 @@ class InstructionDeclaration:
         return payload
 
 
-@dataclass(frozen=True, slots=True)
-class ResourceActionDeclaration:
-    """A resource type's own action, run through ``RunResourceAction``."""
-
-    resource_type: str
-    action: str
-    description: str
-    parameters: tuple[Param, ...] = ()
-    result: tuple[Param, ...] = ()
-    mutates: bool = True
-
-    def validate_arguments(self, arguments: Mapping[str, Any]) -> None:
-        InstructionDeclaration(
-            name="RunResourceAction",
-            category="resource",
-            owner="resource",
-            description=self.description,
-            parameters=self.parameters,
-        ).validate_arguments(arguments)
-
-    def schema(self) -> dict[str, Any]:
-        return {
-            "resource_type": self.resource_type,
-            "action": self.action,
-            "description": self.description,
-            "parameters": [param.schema() for param in self.parameters],
-            "result": [param.schema() for param in self.result],
-            "mutates": self.mutates,
-        }
-
-
 def target_value(declaration: InstructionDeclaration, arguments: Mapping[str, Any]) -> str:
     """The ID of the object a call targets, anchored on the root of an address
     such as ``workspace_x/report.md``; "" when the call names none."""

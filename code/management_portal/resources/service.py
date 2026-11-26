@@ -11,7 +11,6 @@ from management_common.resource_identity import (
 )
 
 from .access import ResourceAccessPolicy
-from .action import ActionProviderRegistry
 from .address import AddressParser, ResourceAddress, ResolverRegistry
 from .changes import ResourceChange, ResourceChangeDispatcher
 from .collaboration_registry import RESOURCE_TYPES as COLLABORATION_RESOURCE_TYPES
@@ -26,7 +25,7 @@ from . import (
 
 
 class ResourceService:
-    """Public facade for resource identity, addressing, actions, and discovery."""
+    """Public facade for resource identity, addressing and discovery."""
 
     Unavailable = ResourceServiceUnavailable
 
@@ -36,11 +35,9 @@ class ResourceService:
         identity: ResourceTypeRegistry | None = None,
         resolvers: ResolverRegistry | None = None,
         mutation_providers: MutationProviderRegistry | None = None,
-        action_providers: ActionProviderRegistry | None = None,
         index_provider: ResourceIndex | Callable[[], ResourceIndex] | None = None,
         resolver_loader: Callable[["ResourceService"], None] | None = None,
         mutation_provider_loader: Callable[["ResourceService"], None] | None = None,
-        action_provider_loader: Callable[["ResourceService"], None] | None = None,
         access_policy: ResourceAccessPolicy | None = None,
         collaboration_store: Any = None,
         registration_store: ResourceRegistrationStore | None = None,
@@ -52,11 +49,9 @@ class ResourceService:
         self._addresses = AddressParser(self._identity)
         self._resolvers = resolvers or ResolverRegistry()
         self._mutation_providers = mutation_providers or MutationProviderRegistry()
-        self._action_providers = action_providers or ActionProviderRegistry()
         self._index_provider = index_provider
         self._resolver_loader = resolver_loader
         self._mutation_provider_loader = mutation_provider_loader
-        self._action_provider_loader = action_provider_loader
         self._access = access_policy or ResourceAccessPolicy()
         if collaboration_store is None:
             from .collaboration_registry import CollaborationDescriptorStore
@@ -64,13 +59,11 @@ class ResourceService:
             collaboration_store = CollaborationDescriptorStore()
         self._collaboration = collaboration_store
         self._registrations = registration_store or ResourceRegistrationStore()
-        self._loaded_provider_types: dict[str, set[str]] = {"resolver": set(), "mutation": set(), "action": set()}
+        self._loaded_provider_types: dict[str, set[str]] = {"resolver": set(), "mutation": set()}
         self._resolvers_loaded = False
         self._resolver_lock = threading.RLock()
         self._mutation_providers_loaded = False
         self._mutation_provider_lock = threading.RLock()
-        self._action_providers_loaded = False
-        self._action_provider_lock = threading.RLock()
         self._changes = ResourceChangeDispatcher(self._route_change, self._enqueue_change)
 
     def _index(self) -> ResourceIndex:
@@ -141,11 +134,12 @@ class ResourceService:
         *,
         read_content: Any = None,
         read_content_range: Any = None,
+        query: Any = None,
         replace: bool = False,
     ) -> None:
         service_providers.register_resolver(
             self, resource_types, resolve, read_content=read_content, read_content_range=read_content_range,
-            replace=replace,
+            query=query, replace=replace,
         )
 
     def register_index_backed_resolver(
@@ -170,26 +164,18 @@ class ResourceService:
         content_updatable: bool = False,
         service_managed_registration: bool = False,
         owner_managed_unregistration: bool = False,
+        update_workbench_page: Any = None,
+        update_workbench_reverse_plan: Any = None,
         replace: bool = False,
     ) -> None:
         service_providers.register_mutation_provider(
             self, resource_types, register=register, unregister=unregister, update=update,
             content_updatable=content_updatable, service_managed_registration=service_managed_registration,
             owner_managed_unregistration=owner_managed_unregistration,
+            update_workbench_page=update_workbench_page,
+            update_workbench_reverse_plan=update_workbench_reverse_plan,
             replace=replace,
         )
-
-    def _ensure_action_providers(self, resource_type: str | None = None) -> None:
-        self._ensure_provider("action", resource_type)
-
-    def register_action_provider(
-        self,
-        resource_types: str | Iterable[str],
-        actions: Mapping[str, Any],
-        *,
-        replace: bool = False,
-    ) -> None:
-        service_providers.register_action_provider(self, resource_types, actions, replace=replace)
 
     @staticmethod
     def _mutation_record(
@@ -297,18 +283,67 @@ class ResourceService:
             index_timeout=index_timeout,
         )
 
-    def action(
-        self,
-        resource_id: str,
-        action: str,
-        payload: Mapping[str, Any] | None = None,
-        *,
-        actor: str = "",
-        resource_type: str = "",
-    ) -> dict[str, Any]:
-        return service_mutations.action(
-            self, resource_id, action, payload, actor=actor, resource_type=resource_type,
-        )
+    def _named_operation_target(self, resource_id, resource_types, *, actor, instruction,
+                                argument="resource_id"):
+        from management_portal import permission_system
+
+        self._require_mutation_actor(actor)
+        identity = self._existing_identity(resource_id, actor=actor)
+        if identity.resource_type not in resource_types:
+            raise ValueError(f"{instruction} does not support {identity.resource_type}")
+        self.resource_types.require(identity.resource_type)
+        if not permission_system.allows(actor, instruction, {argument: identity.resource_id}):
+            raise PermissionError(f"{instruction} is not permitted on this resource")
+        return identity.resource_id
+
+    def create_knowledge_file(self, resource_id, filename, text, expected_version, *, actor):
+        from .providers.knowledge import create_knowledge_file
+        return create_knowledge_file(self, resource_id, filename, text, expected_version, actor=actor)
+
+    def update_knowledge_file_name(self, resource_id, filename, expected_version, *, actor, operation_id=""):
+        from .providers.knowledge import update_knowledge_file_name
+        return update_knowledge_file_name(self, resource_id, filename, expected_version,
+                                          actor=actor, operation_id=operation_id)
+
+    def move_knowledge_items(self, project_id, items, *, actor, operation_id=""):
+        from .providers.project import move_knowledge_items
+        return move_knowledge_items(self, project_id, items, actor=actor, operation_id=operation_id)
+
+    def check_device_ssh(self, resource_id, *, actor, timeout_seconds=15):
+        from .providers.device import check_device_ssh
+        return check_device_ssh(self, resource_id, actor=actor, timeout_seconds=timeout_seconds)
+
+    def update_device_ssh_credential(self, resource_id, password, *, actor):
+        from .providers.device import update_device_ssh_credential
+        return update_device_ssh_credential(self, resource_id, password, actor=actor)
+
+    def delete_device_ssh_credential(self, resource_id, *, actor):
+        from .providers.device import delete_device_ssh_credential
+        return delete_device_ssh_credential(self, resource_id, actor=actor)
+
+    def run_device_command(self, resource_id, command, *, actor):
+        from .providers.device import run_device_command
+        return run_device_command(self, resource_id, command, actor=actor)
+
+    def update_workbench_page(self, resource_id, job_id, base_revision, html, *, actor,
+                              title=None, description=None):
+        resource_id = self._named_operation_target(resource_id, {"workbench"}, actor=actor,
+                                                   instruction="UpdateWorkbenchPage")
+        self._ensure_mutation_providers("workbench")
+        callback = self._mutation_providers.provider_for("workbench").update_workbench_page
+        if callback is None:
+            raise ValueError("UpdateWorkbenchPage is not supported by the installed provider")
+        return callback(resource_id, job_id, base_revision, html, actor=actor,
+                        title=title, description=description)
+
+    def update_workbench_reverse_plan(self, resource_id, job_id, plan, *, actor):
+        resource_id = self._named_operation_target(resource_id, {"workbench"}, actor=actor,
+                                                   instruction="UpdateWorkbenchReversePlan")
+        self._ensure_mutation_providers("workbench")
+        callback = self._mutation_providers.provider_for("workbench").update_workbench_reverse_plan
+        if callback is None:
+            raise ValueError("UpdateWorkbenchReversePlan is not supported by the installed provider")
+        return callback(resource_id, job_id, plan, actor=actor)
 
     def resolve(
         self,

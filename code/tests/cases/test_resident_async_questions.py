@@ -245,7 +245,7 @@ def test_a_person_closes_a_set_unanswered_without_telling_the_resident(resident_
     )
     answer_id = question_answer_id(resident_id, source["message_id"])
     with mock.patch.object(resident_protocol.resident_access, "can_manage_resident", return_value=True):
-        with pytest.raises(ValueError, match="action=cancel"):
+        with pytest.raises(ValueError, match="CancelResidentRequest"):
             resident_protocol.respond_resident_user_input(resident_id, "CASE-A", {
                 "message_id": source["message_id"], "action": "answer", "answers": {"0": "定向"},
             })

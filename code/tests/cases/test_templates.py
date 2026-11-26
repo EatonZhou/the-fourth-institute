@@ -14,13 +14,15 @@ from tests.cases.test_isa_lineage_lifecycle import (
 )
 
 
-def test_builtin_shelf_and_dry_run(lineage):
-    """模板库列出内置模板，dry_run 创建的模板不保存"""
+def test_builtin_shelf_and_create_preview(lineage):
+    """模板库列出内置模板，预览模板不保存"""
     from management_portal.society_service import templates
 
     shelf = templates.list_templates()
     assert {item["builtin_key"] for item in shelf} == {
         "family",
+        "family_role_router",
+        "family_role_steward",
         "family_review",
         "agent_loop",
         "fixed_reminder",
@@ -33,10 +35,9 @@ def test_builtin_shelf_and_dry_run(lineage):
     }
     for template in shelf:
         assert template["behavior"]["steps"] and template["editor"]["fields"]
-    draft = templates.create(
+    draft = templates.create_preview(
         {"kind": "prompt", "title": "Draft", "body": {"message": "hello"}},
         ACTOR,
-        dry_run=True,
     )
     assert draft["behavior"]["persistent"] is False
     assert templates.list_templates() == shelf
@@ -216,8 +217,8 @@ def test_isa_crud_and_selection_roundtrip(lineage):
     )
     assert len(placed["function_block_ids"]) == 1
     updated = ok(
-        "UpdateTemplate",
-        {"template_id": copied["template_id"], "title": "Preview", "dry_run": True},
+        "GetTemplateUpdatePreview",
+        {"template_id": copied["template_id"], "title": "Preview"},
     )["template"]
     assert updated["title"] == "Preview"
     assert (
@@ -288,7 +289,10 @@ def test_explore_keeps_seeds_and_syncs_files(lineage, monkeypatch, key, seed_typ
     assert (
         explore._shelf(lineage, explorer) / "new.md"
     ).read_text() == "# New candidate\n"
-    ok("DeleteResident", {"lineage_id": lineage, "resident_id": explorer})
+    ok("ApplyLineageChanges", {
+        "lineage_id": lineage,
+        "operations": [{"op": "delete", "kind": "resident", "id": explorer}],
+    })
     assert set(applied["created"]["component_ids"]) <= {
         item["id"] for item in graph(lineage)["program"]["components"]
     }
@@ -478,8 +482,8 @@ def test_family_template_rejects_invalid_role_defaults(settings):
     from management_portal.society_service import templates
 
     with pytest.raises(templates.TemplateError):
-        templates.create({"kind": "familize", "title": "Invalid family",
-                          "body": {"resident_settings": settings}}, ACTOR, dry_run=True)
+        templates.create_preview({"kind": "familize", "title": "Invalid family",
+                                  "body": {"resident_settings": settings}}, ACTOR)
 
 
 def test_from_selection_copies_resident_settings_and_rewrites_references(lineage):
@@ -492,17 +496,19 @@ def test_from_selection_copies_resident_settings_and_rewrites_references(lineage
         'reporting': policy, 'collaboration_mode': 'plan',
     }})
     component = ok(
-        "CreateComponent",
+        "ApplyLineageChanges",
         {
             "lineage_id": lineage,
-            "kind": "effect",
-            "title": "Judge",
-            "config": {
-                "script": f'GetResident resident_id="{source}"',
-                "endpoints": [],
-            },
+            "operations": [{"op": "create", "kind": "component", "value": {
+                "kind": "effect",
+                "title": "Judge",
+                "config": {
+                    "script": f'GetResident resident_id="{source}"',
+                    "endpoints": [],
+                },
+            }}],
         },
-    )["component_id"]
+    )["created_ids"][0]
     template = ok(
         "CreateTemplate",
         {"from_selection": {"lineage_id": lineage, "element_ids": [source, component]}},
@@ -591,8 +597,8 @@ def test_structure_layout_keeps_only_drawn_keys_and_rejects_bad_points(lineage):
             "gone": {"x": 1, "y": 2},
         },
     }
-    draft = templates.create(
-        {"kind": "structure", "title": "Drawn", "body": body}, ACTOR, dry_run=True
+    draft = templates.create_preview(
+        {"kind": "structure", "title": "Drawn", "body": body}, ACTOR
     )
     assert draft["body"]["layout"] == {
         "worker": {"x": 40.12, "y": 50},
@@ -600,14 +606,13 @@ def test_structure_layout_keeps_only_drawn_keys_and_rejects_bad_points(lineage):
     }
     for point in ({"x": "1", "y": 2}, {"x": True, "y": 2}, {"x": float("nan"), "y": 2}):
         with pytest.raises(TemplateError, match="layout"):
-            templates.create(
+            templates.create_preview(
                 {
                     "kind": "structure",
                     "title": "Drawn",
                     "body": {**body, "layout": {"worker": point}},
                 },
                 ACTOR,
-                dry_run=True,
             )
 
 
@@ -839,7 +844,8 @@ def test_fork_same_provider_preserves_settings_and_account(
             "key": "copy",
             "from": "fork",
             "fork_of": "target",
-            "fork_mode": "recent-5",
+            "fork_mode": "recent",
+            "recent_rounds": 5,
             "settings": {"model": "default", "append_prompt": "Keep this"},
         },
         {"target": {"id": "resident_source", "title": "Source"}},
@@ -850,7 +856,8 @@ def test_fork_same_provider_preserves_settings_and_account(
             "fork",
             {
                 "source": "resident_source",
-                "fork_mode": "recent-5",
+                "fork_mode": "recent",
+                "recent_rounds": 5,
                 "child_title": "Copy",
                 "backend_route_id": "same_provider_account",
             },

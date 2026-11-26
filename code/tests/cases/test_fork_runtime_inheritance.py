@@ -162,7 +162,7 @@ def test_cross_provider_fork_keeps_trace_and_uses_target_account(resident_record
     if mode == "full":
         created = backend.create_resident_full_context_fork(resident_record["resident_id"], "CASE-A", **args)
     else:
-        created = backend.create_resident_context_fork(resident_record["resident_id"], "CASE-A", 5, **args)
+        created = backend.create_resident_context_fork(resident_record["resident_id"], "CASE-A", 1, **args)
     child = resident_catalog.get_catalog().get(created["resident_id"])
     assert child["backend"] == provider
     assert child["backend_route_id"] == account.route_id

@@ -17,12 +17,13 @@ test('catalog needs no commit or timestamp to be read', () => {
 });
 
 test('the published ISA has renamed instructions and no deleted entry points', () => {
-  for (const name of ['Functionalize', 'Unfunctionalize', 'UpdatePostMarks', 'UpdateProviderAccount'])
+  for (const name of ['Functionalize', 'Unfunctionalize', 'UpdatePostMarks', 'UpdateProviderAccount', 'UpdateUserCategory'])
     assert.ok(catalog.schemas[name], name);
   for (const name of ['Functionlize','Unfunctionlize','GetProjectTags','UpdateProjectTags','UpdateSchedulerSettings',
-    'ListFunctionBlocks','GetResidentState','CancelMailboxItem','ListMailbox','UpdateUserCategory','EmitEvent','GetTriggerPathStep','GetFunctionBlock',
+    'ListFunctionBlocks','GetResidentState','CancelMailboxItem','ListMailbox','EmitEvent','GetTriggerPathStep','GetFunctionBlock',
     'PublishRelease', 'SetColabSessionRunning', 'InstallProviderRuntime', 'CheckArticleRestore', 'RestoreArticle', 'GetResearchMapDigest',
-    'SetPostPinned', 'SetPostFeatured', 'GetKnowledgeTags', 'UpdateKnowledgeTags']) {
+    'SetPostPinned', 'SetPostFeatured', 'GetKnowledgeTags', 'UpdateKnowledgeTags',
+    'CreateWire', 'MoveResident', 'RelayFamilyMessage']) {
     assert.equal(catalog.schemas[name], undefined, name);
     assert.equal(catalog.instructions.some(item => item.instruction === name), false, name);
     assert.equal(lessonFor(name), null, name);
@@ -109,9 +110,17 @@ test('CAS distinguishes value mismatch, unchanged match and actual replacement',
   assert.equal(experiment('UpdateSharedState', 'match', false).result, null);
 });
 test('receipts preserve the distinction between delivery, running, observation and completion', () => {
-  assert.equal(experiment('DeliverMessage', 'busy', true).result.input_state.state, 'queued');
-  assert.deepEqual(experiment('DeliverMessage', 'human', true).result.input_state, {});
-  assert.ok(experiment('CloseIntake', 'working', true).after.some(t => t.includes('A：继续')));
+  const delivery = experiment('DeliverMessage', 'busy', true);
+  assert.equal(delivery.result.accepted, true);
+  assert.equal(delivery.result.input_state, undefined);
+  assert.ok(delivery.after.includes('新消息进入等待队列'));
+  const userDelivery = experiment('DeliverUserMessage', 'human', true);
+  assert.equal(userDelivery.result.message_id, 'msg_user_demo');
+  assert.equal(userDelivery.result.input_state, undefined);
+  assert.ok(userDelivery.after.includes('用户 Mailbox 未读'));
+  const intake = experiment('SetIntakeOpen', 'working', true);
+  assert.deepEqual(intake.result.changed_resident_ids, ['resident_demo']);
+  assert.ok(intake.after.includes('A 继续'));
   assert.equal(experiment('RunScript', 'start', true).result.status, 'running');
   assert.ok(experiment('ReadResource', 'large', true).result.download_url);
   assert.equal(experiment('ReadResource', 'large', true).result.text, undefined);
@@ -119,8 +128,10 @@ test('receipts preserve the distinction between delivery, running, observation a
   assert.deepEqual(experiment('GetGpuStatus', 'unknown', true).result.devices, []);
 });
 test('updated user, mailbox and cancellation lessons explain their actual state boundaries', () => {
-  assert.equal(experiment('UpdateUser','category',true).result.category_changed,true);
-  assert.equal(experiment('UpdateUser','category_same',true).result.category_changed,false);
+  assert.equal(experiment('UpdateUser','invalid',true).result.error,'instruction.invalid_arguments');
+  assert.equal(experiment('UpdateUserCategory','category',true).result.category_changed,true);
+  assert.equal(experiment('UpdateUserCategory','same',true).result.category_changed,false);
+  assert.equal(experiment('UpdateUserCategory','forbidden',true).result.error,'instruction.forbidden');
   const user = experiment('GetMailbox','user',true).result;
   const resident = experiment('GetMailbox','resident',true).result;
   assert.equal(user.unread_count,1); assert.equal(user.items[0].unread,true);
@@ -136,14 +147,24 @@ test('updated user, mailbox and cancellation lessons explain their actual state 
     assert.equal(receipt.already_terminal,true); assert.equal(receipt.input_state.state,state);
   }
 });
-test('manual triggers and Family relay retain their different meanings', () => {
+test('manual triggers, relay readiness and delivery have distinct observations', () => {
   assert.equal(experiment('TriggerEvent','system',true).result.error,'instruction.invalid_arguments');
   assert.equal(experiment('TriggerEvent','both',true).result.error,'instruction.invalid_arguments');
   assert.ok(experiment('TriggerEvent','named',true).after.some(v=>v.includes('manual.triggered')));
   assert.equal(lessonFor('PublishPulseItem'), null);
-  assert.equal(experiment('RelayFamilyMessage','quota',true).result.status,'waiting_for_quota_review');
-  assert.equal(experiment('RelayFamilyMessage','reviewed',true).result.status,'relayed');
-  assert.equal(experiment('RelayFamilyMessage','wrong_reviewer',true).result.error,'instruction.forbidden');
+  assert.deepEqual(experiment('CheckRelayTarget','quota',true).result, {status:'quota_low'});
+  assert.equal(experiment('RelayMessage','relay',true).result.status,'relayed');
+  assert.equal(experiment('RelayMessage','reassign',true).result.status,'relayed');
+});
+test('lineage change lessons use operation-specific permissions and preserve atomicity', () => {
+  const variants = lessonFor('ApplyLineageChanges').variants;
+  for (const kind of ['route', 'watch', 'target']) {
+    const operation = variants.find(item => item.id === kind).request.arguments.operations[0];
+    assert.deepEqual([operation.op, operation.kind, operation.value.kind], ['create', 'wire', kind]);
+  }
+  const denied = experiment('ApplyLineageChanges', 'atomic', true);
+  assert.equal(denied.result.error, 'instruction.forbidden');
+  assert.ok(denied.after.includes('标题未改'));
 });
 test('owner explanation respects execution-record routing and read-only self description', () => {
   assert.match(declarationExplanation(catalog.schemas.GetInstructionExecution).route, /原服务/);
@@ -159,13 +180,21 @@ test('restore filters removed instructions and invalid categories while preservi
   assert.equal(visibleInstructions(data, {query:'after_cursor'}).some(i => i.instruction==='WatchConversationEvents'),true);
 });
 
-test('example success receipt keys come from the real result declaration', () => {
+test('structured examples use declared parameters and success result keys', () => {
   for (const item of catalog.instructions) {
     const lesson = lessonFor(item.instruction); if (!lesson) continue;
+    const schema = catalog.schemas[item.instruction];
+    const parameters = new Set(schema.parameters.map(p => p.name));
+    const result = new Set(schema.result.map(p => p.name));
     for (const variant of lesson.variants) {
+      if (variant.request) {
+        assert.equal(variant.request.instruction, item.instruction, item.instruction + ':' + variant.id);
+        for (const key of Object.keys(variant.request.arguments)) {
+          assert.ok(parameters.has(key), item.instruction + ' argument: ' + key);
+        }
+      }
       if (variant.result.error) continue;
-      const declared = new Set(catalog.schemas[item.instruction].result.map(p => p.name));
-      for (const key of Object.keys(variant.result)) assert.ok(declared.has(key), item.instruction + ': ' + key);
+      for (const key of Object.keys(variant.result)) assert.ok(result.has(key), item.instruction + ' result: ' + key);
     }
   }
 });

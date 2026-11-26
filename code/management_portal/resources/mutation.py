@@ -22,6 +22,10 @@ class ResourceMutationProvider:
     # The domain serializes deletion and may synchronously publish its tombstone
     # back through another ResourceService request. Do not lock across that call.
     owner_managed_unregistration: bool = False
+    # Explicit submission ports, installed by the owning optional provider.
+    # They are not reachable through generic UpdateResource or action dispatch.
+    update_workbench_page: Callable[..., dict[str, Any]] | None = None
+    update_workbench_reverse_plan: Callable[..., dict[str, Any]] | None = None
 
 
 class MutationProviderRegistry:
@@ -48,7 +52,8 @@ class MutationProviderRegistry:
         )
         if not clean_types or any(not value for value in clean_types):
             raise ValueError("at least one resource type is required")
-        handlers = (provider.register, provider.unregister, provider.update)
+        handlers = (provider.register, provider.unregister, provider.update,
+                    provider.update_workbench_page, provider.update_workbench_reverse_plan)
         if not any(handler is not None for handler in handlers):
             raise TypeError("resource mutation provider requires a handler")
         if any(

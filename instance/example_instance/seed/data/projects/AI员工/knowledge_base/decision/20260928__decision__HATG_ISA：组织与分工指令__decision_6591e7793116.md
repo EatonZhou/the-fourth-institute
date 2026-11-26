@@ -37,7 +37,6 @@ links:
   - decision_898b8911a2ff
   - thinking_ca8f397a47de
 ---
-
 # HATG ISA：组织与分工指令
 
 组织与分工指令处理 Lineage 之间和 Portal 全局的组织关系：创建和管理 Project、在 Lineage 之间迁移 Resident 或一组对象。单个 Lineage 内部的增删改使用 Lineage 定义指令（decision_4637ca4a69e2）。所有指令共同遵守的调用格式、执行流程和错误语义见 decision_898b8911a2ff。
@@ -60,8 +59,7 @@ links:
 | `DeleteProject` | 是 | 删除一个 Project 及其全部内容 | 对 `project_id` 有 @admin |
 | `GetProjectDeletion` | 否 | 原删除者查询已注销项目的后续效果 | 入口免检；owner 仅允许原删除者且名称尚未重新登记 |
 | `RenameProject` | 是 | 修改 Project 的 ID 并移动项目目录，Portal 中的引用一起改 | 对 `project_id` 有 @admin |
-| `MoveResident` | 是 | 把一个 Resident 迁移到另一个 Lineage | 对 `lineage_id` 有 @contributor；对 `resident_id` 有 @admin；对 `target_lineage_id` 有 @admin |
-| `MoveLineageObjects` | 是 | 把一组对象迁移到另一个 Lineage | 对 `lineage_id` 有 @admin；对 `target_lineage_id` 有 @admin |
+| `MoveLineageObjects` | 是 | 把一组对象及其中的 Resident 原子迁移到目标 Lineage，保留身份、会话和运行游标。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。 | 对 `lineage_id` 有 @admin；对 `target_lineage_id` 有 @admin |
 | `GetMoveOperation` | 否 | 读取迁移操作的进度 | 对“共享”有 @viewer |
 
 ## Project
@@ -157,23 +155,11 @@ Project 的资源操作由 ResourceService 执行（decision_898b8911a2ff 的“
 
 ## 跨 Lineage 迁移
 
-### `MoveResident`
-
-**把一个没有被流程引用的 Resident 迁移到目标 Lineage，保留其身份和会话；Family 成员随之离开 Family，继承等关系断开。**
-
-- 参数：`lineage_id`、`resident_id`、`target_lineage_id`、`allow_empty_source`（可选，允许迁走源 Lineage 中唯一的 Resident；默认 `false`）。源有多个 Resident 时按普通迁移规则处理；迁走唯一成员时，源 Lineage 的流程与待处理 HATG 工作必须为空。
-- 结果：迁移操作 ID；`family_id` 是这个 Resident 离开的 Family，不是成员时为空；`detached` 列出被断开的节点关系（`id`、`source`、`target`、`type`）。
-- 拒绝时不做任何修改，错误用中文说明原因：Resident 仍被连线、组件或 Function Block 实例引用（列出这些对象）；是 Family 的门面、Router 或 steward；是个人助手的默认 AMA；是源 Lineage 的 Leader。Family 为成员生成的元素和监听连线不算引用，随成员离开一起移除。
-- 迁移不删除源 Lineage，也不替换源 Lineage 的 Leader。Resident 菜单 Identity 页的 Move 使用这条指令：迁移设置显示在身份信息右侧，Resident 是 Family 成员时先说明它会离开哪个 Family；Leader、Family 角色和默认 AMA 的 Move 按钮禁用，提示原因。
-- 从画布转移成功后，画布切换到目标 Lineage 并选中这个 Resident。它的 Chat 保持打开，会话不变，地址栏和 Chat 路由改到目标 Lineage；画布不改为打开源 Lineage 的 Leader。
-- 迁入时保留原坐标作为布局锚点；原位置被目标图的 Resident、原语或 Function Block 占用时，自动放到最近的空位，目标图已有节点不移动。
-- 不要求 Resident 先停下来：正在工作的 Resident 的自有工作区在本轮工作结束后再搬到新位置，排队中的工作等迁移完成后继续。迁移完成前，改名、安装 Watchboard 和移除 Watchboard 这些写入自有目录的操作返回错误，调用者在迁移完成后重试。
-
 ### `MoveLineageObjects`
 
 **把一组对象及其中的 Resident 原子迁移到目标 Lineage，保留身份、会话和运行游标。**
 
-- 参数：`lineage_id`、`object_ids`、`target_lineage_id`（省略时迁入一个新 Lineage）。
+- 参数：`lineage_id`、`object_ids`、可选的 `target_lineage_id`（省略时迁入一个新 Lineage）与 `allow_empty_source`（默认 `false`）。迁移单个 Resident 时，`object_ids` 只传该 Resident 的 ID。
 - 结果：迁移操作 ID、源与目标 Lineage ID 和被断开的关系。
 - 省略目标时，新 Lineage 的标题为“<源标题> · 迁出”，Project 和 `lineage_membership` 与源相同。个人 Lineage 可以保持空的 Project。
 - 迁移不要求调用者先整理选区，也不要求选中的对象先停下来。选区与外部之间的连线、继承关系和算子执行者绑定自动断开，结果中列出被断开的关系；正在进行的工作照常继续，Resident 的等待队列随它一起迁移，跨边界连线上等待投递的调用随连线删除。
@@ -225,8 +211,7 @@ Notice Board 分类与 Which Resident 推荐的功能开关由当前目标 Resid
 | `DeleteProject` | `project_id` |
 | `GetProjectDeletion` | `project_id` |
 | `RenameProject` | `project_id`、`new_project_id`、`dry_run` |
-| `MoveResident` | `lineage_id`、`resident_id`、`target_lineage_id`、`allow_empty_source` |
-| `MoveLineageObjects` | `lineage_id`、`object_ids`、`target_lineage_id` |
+| `MoveLineageObjects` | `lineage_id`、`object_ids`、`target_lineage_id`、`allow_empty_source` |
 | `GetMoveOperation` | `operation_id` |
 
 ## Project 改名的区域登记一致性

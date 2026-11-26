@@ -446,8 +446,6 @@
     const FORK_MODE_LABELS = Object.freeze({
       full: "完整上下文",
       compacted: "压缩继承",
-      "recent-5": "最近 5 轮",
-      "recent-10": "最近 10 轮",
       message: window.PortalI18n.t("从这里 Fork"),
     });
 
@@ -477,7 +475,11 @@
         const title = `${label === id ? "" : `${id} · `}${window.PortalI18n.t("在来源对话中查看 Fork 位置")}`;
         return `<a class="chatInheritanceSource" href="${escapeHtml(anchorHref)}" title="${escapeHtml(title)}">${escapeHtml(label)}</a>`;
       };
-      const mode = FORK_MODE_LABELS[inheritance.fork_mode] ? window.PortalI18n.t(FORK_MODE_LABELS[inheritance.fork_mode]) : "";
+      const recentRounds = inheritance.fork_mode === "recent"
+        ? Number(inheritance.recent_rounds)
+        : Number(/^recent-(\d+)$/.exec(inheritance.fork_mode || "")?.[1]);
+      const mode = recentRounds > 0 ? window.PortalI18n.text`最近 ${recentRounds} 轮`
+        : FORK_MODE_LABELS[inheritance.fork_mode] ? window.PortalI18n.t(FORK_MODE_LABELS[inheritance.fork_mode]) : "";
       const meta = [mode, formatTime(inheritance.forked_from_at)].filter(Boolean).join(" · ");
       const contextSourceHtml = inheritance.context_source_resident_id
         && inheritance.context_source_resident_id !== inheritance.source_resident_id

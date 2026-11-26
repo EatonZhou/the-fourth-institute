@@ -57,7 +57,9 @@ def recover_projections(failures: list[dict[str, Any]], inv: Invocation) -> None
 
 
 def authorization_arguments(declaration, arguments, context):
-    """RunScript is judged on the Lineage it runs in, also when the caller omits ``lineage_id``."""
+    """Derive targets from the domain, including targets nested in graph mutations."""
+    if declaration.name in {"ApplyLineageChanges", "GetLineageChangesPreview"}:
+        return definition.lineage_changes_permission_arguments(arguments)
     if declaration.name != "RunScript":
         return arguments
     from management_portal.society_service.script_runs.service import owning_lineage
@@ -73,12 +75,12 @@ def recover_relay(inv: Invocation):
     duplicate delivery uses the same message, origin and business reference.
     """
     if any(inv.argument(key) for key in (
-        "notice", "reassign", "recover", "quota_reviewed", "scope_reviewed", "scope_gap",
+        "notice", "reassign",
     )):
         return None
     if not inv.argument("member_id"):
         return None
-    return _handlers()["RelayFamilyMessage"](inv)
+    return _handlers()["RelayMessage"](inv)
 
 
 def binding() -> OwnerBinding:
@@ -88,8 +90,7 @@ def binding() -> OwnerBinding:
         streams=_streams(),
         record_scope=record_scope,
         recover_projections=recover_projections,
-        recover_interrupted={"RelayFamilyMessage": recover_relay,
-                             "DispatchFamilyTask": _scoped_handler("DispatchFamilyTask", families.recover_family_task)},
+        recover_interrupted={"RelayMessage": recover_relay},
         authorization_arguments=authorization_arguments,
     )
 

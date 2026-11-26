@@ -127,7 +127,7 @@ def _permissions(actor, ids, projects):
     allowed = permission_system.permitted_ids(actor, "UpdateResource", "resource_id", ids)
     if set(ids) - allowed:
         raise PermissionError("Knowledge move requires edit permission on every source resource")
-    allowed = permission_system.permitted_ids(actor, "RunResourceAction", "resource_id", sorted(projects))
+    allowed = permission_system.permitted_ids(actor, "MoveKnowledgeItems", "project_id", sorted(projects))
     if set(projects) - allowed:
         raise PermissionError("Knowledge move requires contributor permission on source and target Projects")
 
@@ -687,11 +687,11 @@ def rename_knowledge(resource_id, payload, *, actor, project_batch):
         raise ValueError("operation_id must be a string of at most 200 characters")
     operation_id = operation_id or "knowledge-rename:" + _digest(request)
     key = _digest(["rename", actor, operation_id])
-    if resource_id not in permission_system.permitted_ids(actor, "RunResourceAction", "resource_id", [resource_id]):
+    if resource_id not in permission_system.permitted_ids(actor, "UpdateKnowledgeFileName", "resource_id", [resource_id]):
         raise PermissionError("Knowledge rename requires contributor permission")
     lock_root = current_instance().root / "runtime" / "knowledge-moves"
     with mutation_projection_scope(resource_id), resource_mutation_lock(lock_root, "operation:" + key), knowledge_identity_lock(resource_id):
-        if resource_id not in permission_system.permitted_ids(actor, "RunResourceAction", "resource_id", [resource_id]):
+        if resource_id not in permission_system.permitted_ids(actor, "UpdateKnowledgeFileName", "resource_id", [resource_id]):
             raise PermissionError("Knowledge rename requires contributor permission")
         journal = get_registry_store().get(JOURNAL, key)
         if journal is not None and journal["request"] != request:

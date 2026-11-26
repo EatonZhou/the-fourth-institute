@@ -16,20 +16,28 @@ from .state_store import get_lineage_data_store
 REF = "family-activity-review"
 
 
-def _ledger(relay):
-    ledger = relay.setdefault("activity_review", {"activity": {}, "reviewed": {}, "pending": None,
-                                                "position_format": "conversation_cursor"})
+def migrate_activity_review(ledger, completed_cursor):
+    """Copy durable activity positions to the Shared State review shape."""
+    ledger = copy.deepcopy(ledger)
     if ledger.get("position_format") != "conversation_cursor":
         # Convert only already recorded references. No historical activity is
         # discovered, and a pending request keeps its immutable original facts.
-        repo = resident_conversation_stream.get_repository()
         for field in ("activity", "reviewed"):
             for rid, position in ledger[field].items():
-                cursor = repo.completed_input_cursor(rid, position[1])
+                cursor = completed_cursor(rid, position[1])
                 if cursor is None:
                     raise ValueError("Family review completion receipt is unavailable")
                 ledger[field][rid] = [cursor, position[1]]
         ledger["position_format"] = "conversation_cursor"
+    return ledger
+
+
+def _ledger(relay):
+    ledger = relay.setdefault("activity_review", {"activity": {}, "reviewed": {}, "pending": None,
+                                                "position_format": "conversation_cursor"})
+    if ledger.get("position_format") != "conversation_cursor":
+        repo = resident_conversation_stream.get_repository()
+        ledger = relay["activity_review"] = migrate_activity_review(ledger, repo.completed_input_cursor)
     return ledger
 
 

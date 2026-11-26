@@ -40,7 +40,7 @@ links:
 ---
 # Portal Resource Catalog 的统一分类导航、资源发现与详情入口
 
-Portal 顶部导航中的 Resource 区按资源类型分成几个页面：Knowledge、Skill、Repo、Article、Experiment、Device 和 Backup。它们共用同一个资源页头，页头中的类别导航用来在这些页面之间切换。其中 Skill（`/resource/skill`）、Experiment（`/resource/experiment`）和 Device（`/resource/device`）三个类别使用同一个 Resource Catalog（资源目录）页面：用户在这里搜索资源、按项目筛选卡片、打开单项资源的详情，并使用语义检索、设备注册和设备终端这些类别自带的入口。Knowledge、Repo、Article 和 Backup 有各自的页面，只共用页头。
+Portal 顶部导航中的 Resource 区按资源类型分成几个页面：Knowledge、Skill、Repo、Article、Experiment、Device、Report 和 Backup。它们共用同一个资源页头，页头中的类别导航用来在这些页面之间切换。其中 Skill（`/resource/skill`）、Experiment（`/resource/experiment`）、Device（`/resource/device`）和 Report（`/resource/report`）四个类别使用同一个 Resource Catalog（资源目录）页面：用户在这里搜索资源、按项目筛选卡片、打开单项资源的详情，并使用语义检索、设备注册和设备终端这些类别自带的入口。Knowledge、Repo、Article 和 Backup 有各自的页面，只共用页头。
 
 本篇说明共享的资源页头、资源目录页面的区域、地址与列表状态、打开详情的方式，以及各类别入口和故障恢复。资源的可查询摘要由资源索引提供（decision_8dc6b3d03ca7）；详情的浏览器历史和宿主见 decision_864d4fe41934。资源目录只把两者组织成一个可以浏览的页面，不保存资源正文。
 
@@ -48,7 +48,7 @@ Portal 顶部导航中的 Resource 区按资源类型分成几个页面：Knowle
 
 | 名称 | 含义 |
 | --- | --- |
-| 资源类别 | 当前浏览的资源类型：`skill`、`experiment` 或 `device`。页面一次只浏览一种类别，它同时决定页面标签、查询范围、卡片内容和详情的显示方式。 |
+| 资源类别 | 当前浏览的资源类型：`skill`、`experiment`、`device` 或 `report`。页面一次只浏览一种类别，它同时决定页面标签、查询范围、卡片内容和详情的显示方式。 |
 | 资源卡片 | 资源索引返回的一条摘要，显示标题、摘要、所属项目和几枚说明资源特点的小标签，不含资源正文。 |
 | 语义检索任务 | 在当前类别中保存的一次 AI 辅助搜索，结果仍是统一资源 ID。 |
 | 详情宿主 | 在当前页面打开单项资源详情的共享机制（decision_864d4fe41934）。 |
@@ -117,10 +117,17 @@ Portal 顶部导航中的 Resource 区按资源类型分成几个页面：Knowle
 
 设备详情的概览与登记信息按所在面板的实际宽度排版，窄面板自动换行，字段名称和值保持可读。资源类别切换后，搜索框占位文字与该类别保持一致，后续翻译刷新不能恢复成其他类别。
 
+### 汇报
+
+- **汇报目录由汇报功能注册。** `/resource/report` 和其尾斜线地址使用 Resource Catalog 页面，以 `report` 类型查询当前用户可见的资源索引，保留普通搜索、项目筛选、重新加载、空列表和查询失败状态。
+- **卡片进入已有汇报阅读页。** 点击卡片、按 Enter 或空格，以及目录地址中的 `item`，都按公开资源路由契约进入 `/home-report?id=report_…`。目录不创建汇报，也不生成新版本；汇报正文与来源权限由原阅读接口核验。汇报不使用设备详情面板，不显示设备登记或语义检索入口。
+
 ### 设备
 
-- **注册设备使用资源登记。** 用户填写注册表单后，页面调用 `RegisterResource`（资源类型 `device`）；表单中填写了 SSH 密码时，再调用资源动作 `ssh.credential.save` 保存。成功后页面关闭表单、打开新设备的详情并重新读取列表，提示“设备已注册。”；登记成功而密码保存失败时，设备保留，提示“设备已注册，但 SSH 密码保存失败：”加原因。
-- **设备详情中的 SSH 操作使用资源动作。** 测试连接为 `ssh.test`，保存和删除 SSH 密码为 `ssh.credential.save`、`ssh.credential.delete`，都通过 `RunResourceAction`（decision_ad3e21094f14）执行；保存或删除后详情标记为已修改。
+- **所有已注册设备统一显示在一组设备卡片中。** 当前查询结果中的每台设备都进入同一列表，包括无遥测、离线和观测过期的设备；不按是否有利用率或温度指标筛掉设备，也不再另设重复的注册清单。卡片显示类型、名称、状态、所属设备或位置以及观测时间；有遥测时显示指标，没有遥测时明确显示“暂无遥测数据”，缺失指标不显示为零。点击或键盘打开详情、搜索和项目筛选沿用资源目录的统一入口。
+
+- **注册设备使用资源登记。** 用户填写注册表单后，页面调用 `RegisterResource`（资源类型 `device`）；表单中填写了 SSH 密码时，再调用 `UpdateDeviceSshCredential` 保存。成功后页面关闭表单、打开新设备的详情并重新读取列表，提示“设备已注册。”；登记成功而密码保存失败时，设备保留，提示“设备已注册，但 SSH 密码保存失败：”加原因。
+- **设备详情中的 SSH 操作使用设备指令。** 测试连接调用 `CheckDeviceSsh`，保存和删除 SSH 密码调用 `UpdateDeviceSshCredential`、`DeleteDeviceSshCredential`（decision_d397f2d99f89）；保存或删除后详情标记为已修改。
 - **每台设备的终端相互独立。** 用户点击“打开 Terminal”后，页面为这台设备启动一个终端（`/api/terminal/start`，见 decision_f22e45dfd382）；切换到另一台设备时先重置原来的终端。中断和重新开始只影响这个终端，列表和详情照常可用。
 
 ## 组件职责与故障恢复

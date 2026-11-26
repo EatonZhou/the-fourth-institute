@@ -194,10 +194,6 @@
     idempotencyKey: `resource:${name}:${globalThis.PortalUIPrimitives.randomUUID()}`,
   }));
 
-  async function runResourceAction(resourceId, action, payload = {}) {
-    return (await resourceInstruction("RunResourceAction", { resource_id: resourceId, action, arguments: payload })).result;
-  }
-
   function showToast(message, kind = "") {
     return window.PortalUI.toast(message, kind || "success");
   }
@@ -1768,11 +1764,7 @@
       let credentialError = null;
       if (password) {
         try {
-          await runResourceAction(
-            deviceId,
-            "ssh.credential.save",
-            { password },
-          );
+          await resourceInstruction("UpdateDeviceSshCredential", { resource_id: deviceId, password });
         } catch (error) {
           credentialError = error;
         }
@@ -1841,17 +1833,13 @@
       action: "测试 SSH",
       notifyError: false,
       retry: false,
-      run: () => runResourceAction(
-        deviceId,
-        "ssh.test",
-        { timeout_seconds: 15 },
-      ),
+      run: () => resourceInstruction("CheckDeviceSsh", { resource_id: deviceId }),
       onSuccess: result => {
         if (resultNode) {
-          resultNode.className = `deviceSshTestResult ${result.reachable ? "success" : "error"}`;
-          resultNode.textContent = result.reachable
-            ? window.PortalI18n.text`连接成功 · ${result.latency_ms} ms`
-            : window.PortalI18n.text`连接失败 · ${result.message || window.PortalI18n.t("未知错误")}`;
+          resultNode.className = `deviceSshTestResult ${result.ok ? "success" : "error"}`;
+          resultNode.textContent = result.ok
+            ? window.PortalI18n.t("连接成功")
+            : window.PortalI18n.text`连接失败 · ${result.error || window.PortalI18n.t("未知错误")}`;
         }
       },
       onError: error => {
@@ -1879,11 +1867,7 @@
       action: "保存 SSH 密码",
       notifyError: false,
       retry: false,
-      run: () => runResourceAction(
-        deviceId,
-        "ssh.credential.save",
-        { password: String(input.value || "") },
-      ),
+      run: () => resourceInstruction("UpdateDeviceSshCredential", { resource_id: deviceId, password: String(input.value || "") }),
       onSuccess: async () => {
         input.value = "";
         await refreshSelectedDeviceDetail().catch(() => {});
@@ -1905,7 +1889,7 @@
       button,
       busyLabel: "删除中…",
       action: "删除 SSH 密码",
-      run: () => runResourceAction(deviceId, "ssh.credential.delete"),
+      run: () => resourceInstruction("DeleteDeviceSshCredential", { resource_id: deviceId }),
       onSuccess: async () => {
         await refreshSelectedDeviceDetail().catch(() => {});
         localDetailHost.markChanged({ operation: "ssh.credential.delete" });

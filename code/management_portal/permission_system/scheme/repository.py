@@ -355,14 +355,16 @@ def installed(document: dict[str, Any], *, before: bool = False) -> dict[str, An
 
 
 class Schemes:
-    def __init__(self, store: Store | None) -> None:
+    def __init__(self, store: Store | None, *, migrate: bool = True) -> None:
         self.store = store
         self._builtin = builtin_documents()
         # Offline built-in inspection has no persistent state to upgrade.
         # A real store must migrate successfully before any saved rules load.
-        if store is not None:
+        if store is not None and migrate:
             migrate_instruction_names(store)
             migrate_three_plan_permissions(store)
+            from .d066_migration import migrate
+            migrate(store)
         self._compiled: dict[tuple[str, str], CompiledScheme] = {}
         self._lock = threading.Lock()
 

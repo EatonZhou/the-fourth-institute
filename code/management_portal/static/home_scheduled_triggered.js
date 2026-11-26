@@ -71,7 +71,7 @@
       const runtime = source.runtime || {};
       const id = esc(source.component_id);
       const isTime = source.event_type === "time.reached";
-      const editable = scheduledTriggeredAllows(item, "UpdateComponent") && isTime && ["at", "countdown", "recurring"].includes(config.schedule_mode);
+      const editable = scheduledTriggeredAllows(item, "ApplyLineageChanges") && isTime && ["at", "countdown", "recurring"].includes(config.schedule_mode);
       const editField = config.schedule_mode === "at"
         ? window.PortalI18n.html`<label>触发时间（ISO 8601）<input type="text" data-scheduled-triggered-schedule-field="scheduled_at" value="${esc(config.scheduled_at || "")}"></label>`
         : config.schedule_mode === "countdown"
@@ -302,8 +302,9 @@
             config[field] = value;
           }
         }
-        instruction = "UpdateComponent";
-        argumentsPayload = {lineage_id: item.lineage_id, component_id: sourceId, changes: {config}};
+        instruction = "ApplyLineageChanges";
+        argumentsPayload = {lineage_id: item.lineage_id,
+          operations: [{op: "update", kind: "component", id: sourceId, changes: {config}}]};
       } else return;
       if (!scheduledTriggeredAllows(item, instruction)) return;
       const originalText = button.textContent;

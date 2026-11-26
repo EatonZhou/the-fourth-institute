@@ -99,5 +99,7 @@ class DeliverableStore:
             return dict(record=deepcopy(record), snapshot=content, revision=number,
                         latest_revision=record['revision'], can_edit=False)
 
-def permission_records():
-    return list(get_registry_store().documents(COLLECTION).values())
+def permission_records(*, read_only: bool = False):
+    store = get_registry_store()
+    documents = store.readonly_snapshot(COLLECTION)[1] if read_only else store.documents(COLLECTION)
+    return list(documents.values())

@@ -453,7 +453,7 @@
         return true;
       } catch (error) {
         const commitState = error.body?.error?.commit_state;
-        if (error.committedMutation?.instruction === "DeleteResident" || commitState === "committed") {
+        if (error.committedMutation?.instruction === "ApplyLineageChanges" || commitState === "committed") {
           toast(window.PortalI18n.text`Resident 已删除，图刷新失败，请刷新查看，勿重复删除：${error.message || error}`, "warning", 9000);
           return true;
         }

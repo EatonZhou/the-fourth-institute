@@ -12,11 +12,10 @@ def _d(name, decides, description, parameters=(), result=(), *, mutates=False, s
              decides=decides)
 
 
-ACTIVATION = ("enqueue_and_trigger", "inject_active_turn", "attach_to_next")
+ACTIVATION = ("enqueue_and_trigger", "attach_to_next")
 # concept_43c793b4f3ab: the kind of a message is the delivery, never words in its text.
 ACTIVATION_DESCRIPTION = (
     "enqueue_and_trigger（默认）：请求，收件人空闲时立即处理，忙碌时排队；"
-    "inject_active_turn：插入收件人正在进行的工作；"
     "attach_to_next：info 消息，只告知变化，不单独触发执行，随收件人的下一条请求作为背景送达。"
     "消息的性质由这个参数表达，收件人会被告知这是无需单独回复的背景更新；"
     "正文只写内容本身，不必再写“这是 info”“无需回复”。"
@@ -33,6 +32,28 @@ DELIVERED = (
     P("accepted", "boolean", "普通异步请求已持久接收；后续状态通过快照和事件获取"),
     P("input_state", "object", "已返回投影时的消息输入状态；异步受理回执可省略"),
 )
+DELIVERY_CONTEXT = (
+    P("context_policy", description="fresh 使用独立上下文，仅用于 enqueue_and_trigger", enum=("fresh", "session")),
+    P("execution_constraints", "object", "显式受限文本任务，仅支持 version=1,text_only=true,context=fresh"),
+    P("business_ref", description="调用方业务记录的统一 ID 或地址"),
+)
+
+FORWARD_INPUT = (
+    R("messages", "array", "来源 Resident 或聊天室 ID 及消息 ID",
+      items={"type": "object", "properties": {
+          "resident_id": {"type": "string"}, "chatroom_id": {"type": "string"}, "message_id": {"type": "string"},
+      }}),
+    P("note", description="附加说明"),
+)
+RESIDENT_REQUEST = (
+    R("resident_id", description="发出请求的 Resident"),
+    R("message_id", description="请求所在的消息"),
+)
+REQUEST_STATUS = (
+    R("status", enum=("pending", "answered", "declined", "cancelled", "expired"),
+      description="处理后的请求状态"),
+)
+
 
 DECLARATIONS = (
     _d("GetDeletedResidentHistory", ON_RESIDENT,
@@ -54,54 +75,38 @@ DECLARATIONS = (
         P("next_cursor", description="有后续页时提供；游标不授予权限"),
         P("availability", "object", "权威 Agent/trace 的保留情况；不证明原目录、原生会话或附件仍可用"),
     ), target="resident_id"),
-    _d("DeliverMessage", (On("resident_id", "resident", optional=True), On("user_id", "user", optional=True)), (
-        "向 Resident 投递一条用户消息；Resident 空闲时立即开始处理，忙碌时按接收顺序排队。"
-        "也可以由 Resident 发给用户：消息不进入队列，写在发送方自己的对话中并注明收件人，用户在自己的 Mailbox 中看到未读。"
-        "Family 的成员或 steward 发给 Family 以外的用户或 Resident 时，以门面身份发出。回复不会自动送回，收件方自己决定是否回复。"
-        "收件 Resident 回复门面发来的消息时，门面把回复直接交给写那条消息的成员：在处理那条消息的一轮里发给门面，"
-        "平台自动认作回复；之后的轮次用 reply_to_message_id 指明。"
-        "经收件关系核验的回信仅获准引用对应发件记录，无需读取整个门面对话的权限。"
-    ), (
-        P("resident_id", description="收件 Resident；与 user_id 二选一"),
-        P("user_id", description="把消息发给这位用户；只有 Resident 可以使用，消息只包含文字和资源引用"),
-        R("message", "object", "包含 message_id（可省略）、role（可省略，只能是 user）、content_parts，可选 metadata.business_context 导航关联，"
-          "以及可选的 quote：引用这段对话中的一条消息，只给出 {\"message_id\": ...}，作者和摘录由平台填写；"
-          "info 消息和发给用户的消息不带引用",
-          properties=MESSAGE),
+    _d("DeliverMessage", ON_RESIDENT, "向 Resident 投递新请求或下一轮告知。", (
+        R("resident_id", description="收件 Resident"),
+        R("message", "object", "消息正文、附件和可选引用。引用由平台读取。", properties=MESSAGE),
         P("activation_policy", description=ACTIVATION_DESCRIPTION, enum=ACTIVATION),
-        P("context_policy", description="发给 Resident 的新任务可设 fresh：使用独立模型上下文，保留系统规则与本次输入，不续用或改写共享会话。仅与 enqueue_and_trigger 同用；省略或 session 沿用会话。", enum=("fresh", "session")),
-        P("execution_constraints", "object", "显式受限文本任务：仅支持version=1,text_only=true,context=fresh，必须同时context_policy=fresh；不表示后端已禁用工具"),
+        *DELIVERY_CONTEXT,
+    ), (R("resident_id", description="收件 Resident"), *DELIVERED,
+        P("sender_id", description="实际发送身份")), mutates=True, target="resident_id"),
+    _d("PrepareResidentInput", ON_RESIDENT, "为随任务授权预备一条 Resident 请求。固定正文和消息 ID 后签发凭证，再用相同参数投递。", (
+        R("resident_id", description="收件 Resident"),
+        R("message", "object", "包含固定 message_id 的消息", properties=MESSAGE),
+        P("activation_policy", description="仅可预备独立排队的新请求", enum=("enqueue_and_trigger",)),
+        *DELIVERY_CONTEXT,
+    ), (R("resident_id", description="收件 Resident"), R("message_id", description="预备请求的固定 ID"),
+        R("status", description="请求的预备或终态"),
+        P("credential_recipient_id", description="审批输入返回的凭证接收 Resident，用作 CreateTemporaryCredential 的 principal_id"),
+        P("credential_message_id", description="审批输入绑定的消息 ID，用作 CreateTemporaryCredential 的 message_id")),
+       mutates=True, target="resident_id"),
+    _d("DeliverUserMessage", (On("user_id", "user"),), "Resident 向用户投递消息，写入发送方对话及收件人 Mailbox。", (
+        R("user_id", description="收件用户"),
+        R("message", "object", "消息正文与附件引用", properties={key: val for key, val in MESSAGE.items() if key != "quote"}),
         P("business_ref", description="调用方业务记录的统一 ID 或地址"),
-        P("reply_to_message_id", description="回复 Family 门面发来的哪条消息：填你对话中收到的那条消息的 ID，"
-          "平台引用门面对它的发件记录，门面把回复交给写它的成员；不和 quote 同用，发给用户和 info 消息不带它"),
-        P("temporary_credentials", "array",
-          "随这条消息交给收件 Resident 的临时凭证，每项 {a, resource_id}：调用者此刻在该资源上持有的 A 树节点；"
-          "收件 Resident 对这条消息的输入完成、失败或取消时失效，最迟 7 天。只用于发给 Resident；"
-          "回答问题组时正好是所同意的权限请求问题列出的权限",
-          items={"type": "object", "properties": {"a": {"type": "string"}, "resource_id": {"type": "string"}}}),
-    ), (
-        R("resident_id", description="消息所在的对话：发给 Resident 时是收件 Resident，发给用户时是发出消息的 Resident 或门面"),
-        *DELIVERED,
-        P("sender_id", description="消息实际以谁的身份发出：调用者自己，或它所在 Family 的门面"),
-        P("recipients", "array", "发给用户时的收件人", items={"type": "object"}),
-        P("temporary_credentials", "array", "随消息签发的临时凭证：credential_id、principal_id、a、resource_id、issued_by、"
-          "issued_at、lifetime=task、message_id、deadline_at（最迟截止Unix秒）、expires_at=null（任务结束时刻未知）；"
-          "输入完成、失败或取消即失效，不保证后台调用持续有权", items={"type": "object"}),
-    ), mutates=True, target="resident_id",
-       one_of=(("resident_id",), ("user_id",))),
-    _d("ForwardMessages", (On("target_resident_id", "resident", optional=True), On("target_chatroom_id", "chatroom", optional=True)), "把选中的若干条消息整理成一条新消息，投递给 Resident 或发到聊天室。", (
-        P("target_resident_id", description="接收转发的 Resident；与 target_chatroom_id 二选一"),
-        P("target_chatroom_id", description="接收转发的聊天室；与 target_resident_id 二选一"),
-        R("messages", "array", "每项包含来源 resident_id 与 message_id；聊天室中的消息给出 chatroom_id 与 message_id",
-          items={"type": "object", "properties": {
-              "resident_id": {"type": "string"}, "chatroom_id": {"type": "string"}, "message_id": {"type": "string"},
-          }}),
-        P("note", description="附加说明"),
-        P("activation_policy", description="仅用于 Resident 目标。" + ACTIVATION_DESCRIPTION, enum=ACTIVATION),
-    ), (R("message_id", description="转发生成的新消息 ID"), P("input_state", "object", "发给 Resident 时的输入状态"),
-        P("chatroom_id", description="发到聊天室时：接收转发的聊天室"), P("message", "object", "发到聊天室的新消息"),
-        P("deliveries", "array", "发到聊天室时：新消息中 @ 到的 Resident 的投递，同 CreateChatroomMessage")),
-       mutates=True, target="target_resident_id", one_of=(("target_resident_id",), ("target_chatroom_id",))),
+    ), (R("resident_id", description="发送方对话所属 Resident"), *DELIVERED,
+        P("sender_id", description="实际发送身份"), P("recipients", "array", "收件人")), mutates=True, target="user_id"),
+    _d("ForwardMessagesToResident", (On("target_resident_id", "resident"),), "把可读消息转发给指定 Resident。", (
+        R("target_resident_id", description="收件 Resident"), *FORWARD_INPUT,
+        P("activation_policy", description=ACTIVATION_DESCRIPTION, enum=ACTIVATION),
+    ), DELIVERED, mutates=True, target="target_resident_id"),
+    _d("ForwardMessagesToChatroom", (On("target_chatroom_id", "chatroom"),), "把可读消息转发到指定聊天室。", (
+        R("target_chatroom_id", description="接收转发的聊天室"), *FORWARD_INPUT,
+    ), (R("message_id", description="转发生成的新消息 ID"), R("chatroom_id", description="收到转发的聊天室"),
+        P("message", "object", "新消息"), P("deliveries", "array", "@ Resident 的投递结果")),
+       mutates=True, target="target_chatroom_id"),
     _d("GetConversation", ON_RESIDENT, "读取一个 Resident 的对话快照，用于首次加载或断线恢复。", (
         R("resident_id", description="要读取对话的 Resident"),
         P("history_limit", "integer", "快照中最近消息的条数，默认 200；更早的消息用 ListMessages 续读", minimum=1, maximum=1000),
@@ -121,28 +126,25 @@ DECLARATIONS = (
           "fork_mode、forked_from_at、source_message_id，创建时继承的片段数和其中的对话消息数、"
           "最后一条继承消息的 ID、之后是否清除过上下文，以及开头的压缩（时间；按需带可读消息）"),
     ), target="resident_id"),
-    _d("ListMessages", ON_RESIDENT, "从 GetConversation 快照往前分页读取更早的消息。", (
-        R("resident_id", description="要读取消息的 Resident"),
-        P("view", description="省略保留原始消息；attempts读取按业务对象权限过滤的新调用记录", enum=("messages", "attempts")),
-        P("input_message_id", description="attempts视图再次授权后读取这次输入及正式回复"),
-        CURSOR("消息视图需提供上一页next_cursor；attempts视图省略时从最新窗口读取"),
+    _d("ListMessages", ON_RESIDENT, "从 GetConversation 的游标读取更早的消息。", (
+        R("resident_id", description="对话所属 Resident"),
+        R("cursor", description="上一页 next_cursor"),
         P("limit", "integer", "默认 200", minimum=1, maximum=1000),
-    ), (R("messages", "array", "本页更早的消息，从旧到新，格式同 GetConversation 的 messages"),
-        P("attempts", "array", "已授权的按次记录，不提供未授权对象计数"),
+    ), (R("messages", "array", "从旧到新"), NEXT_CURSOR("还有更早的消息时返回")), target="resident_id"),
+    _d("ListMessageAttempts", ON_RESIDENT, "读取按业务对象权限过滤的尝试记录。", (
+        R("resident_id", description="对话所属 Resident"),
+        P("input_message_id", description="再次授权后读取这次输入及正式回复"),
+        CURSOR("上一页 next_cursor，省略时从最新窗口读取"),
+        P("limit", "integer", "默认 50", minimum=1, maximum=1000),
+    ), (P("attempts", "array", "已授权的尝试记录"),
         P("conversation", "object", "已授权的单次正式对话快照"),
-        P("default_view", description="按固定工作流fresh策略声明的默认视图"),
-        NEXT_CURSOR("还有更早的消息时返回")), target="resident_id"),
-    _d("ListInputHistory", (On("resident_id", "resident", optional=True), On("chatroom_id", "chatroom", optional=True)), "读取调用者本人发过的输入，供输入框的上下箭头历史使用；resident_id 与 chatroom_id 二选一。"
-       "带 resident_id：调用者作为用户在这个 Resident 会话里的输入，包括 Fork 继承的和清除上下文之前的输入，"
-       "完整或压缩继承的 Fork 可沿持久边界回溯可读来源中的更早本人输入，不扩展模型上下文；"
-       "不含 Resident 投递、Mailbox 合并和系统消息。带 chatroom_id：调用者在这个聊天室发过的消息，撤回的消息返回撤回前的内容。", (
-        P("resident_id", description="读取这个 Resident 会话里的输入"),
-        P("chatroom_id", description="读取这个聊天室里的输入"),
-        CURSOR("上一页返回的 next_cursor，原样交回；不填时从最新的输入读起"),
+        P("default_view", description="工作流 fresh 策略的默认视图"),
+        NEXT_CURSOR("还有更早的尝试记录时返回")), target="resident_id"),
+    _d("ListResidentInputHistory", ON_RESIDENT, "读取调用者本人在该 Resident 会话发过的输入，包括其可读的继承输入。", (
+        R("resident_id", description="对话所属 Resident"),
+        CURSOR("上一页 next_cursor，省略时从最新输入读起"),
         P("limit", "integer", "默认 50", minimum=1, maximum=200),
-    ), (R("messages", "array", "从新到旧"), NEXT_CURSOR("还有更早的输入时返回")),
-       target="resident_id", one_of=(("resident_id",), ("chatroom_id",)),
-       argument_owners=(("chatroom_id", "web"),)),
+    ), (R("messages", "array", "从新到旧"), NEXT_CURSOR("还有更早的输入时返回")), target="resident_id"),
     _d("GetMessage", ON_RESIDENT, "按消息 ID 读取一条消息。", (
         R("resident_id", description="消息所在对话的 Resident"), R("message_id", description="要读取的消息"),
     ), (
@@ -157,17 +159,13 @@ DECLARATIONS = (
         R("rounds", "array", "从旧到新；每项包含 kind（request 是请求；sent 是 Resident 或 Family 主动发给这位发送者的消息）、message_id、sender、created_at、request、answered_by（门面上是转交的成员，sent 是写这条消息的成员）、state 与 reply"),
         P("direct", "array", "Family 门面且指定 sender_id 时给出：这位发送者在门面之外直接和成员的最近对话，从新到旧，最多 3 个成员；每项包含 resident_id、title、created_at、kind（request 是发送者最后发给成员的消息，sent 是成员最后发给发送者的消息）、message_id 与 text"),
     ), target="resident_id"),
-    _d("SearchMessages", (On("resident_ids", "resident", optional=True), On("chatroom_id", "chatroom", optional=True)), "按内容搜索消息；resident_ids 与 chatroom_id 二选一。"
-       "带 resident_ids：在这些 Resident 的对话中搜索。带 chatroom_id：在聊天室全部当前历史中搜索正文和附件名称。", (
-        P("resident_ids", "array", "在这些 Resident 的对话中搜索", items={"type": "string"}),
-        P("chatroom_id", description="在这个聊天室中搜索"),
+    _d("SearchResidentMessages", (On("resident_ids", "resident"),), "在指定 Resident 的对话中按内容搜索。", (
+        R("resident_ids", "array", "搜索范围", items={"type": "string"}),
         R("query", description="要查找的文字", max_length=200),
-        CURSOR("上一页返回的 next_cursor，原样交回；不填时从最新的结果读起"),
-        P("limit", "integer", "默认 50；聊天室每页最多 100", minimum=1, maximum=200),
-    ), (P("results", "array", "带 resident_ids 时：每项包含 Resident ID、消息与前后消息 ID"),
-        P("messages", "array", "带 chatroom_id 时：匹配的聊天室消息，从新到旧"),
-        NEXT_CURSOR("还有更多结果时返回")),
-       one_of=(("resident_ids",), ("chatroom_id",)), argument_owners=(("chatroom_id", "web"),)),
+        CURSOR("上一页 next_cursor，省略时从最新结果读起"),
+        P("limit", "integer", "默认 50", minimum=1, maximum=200),
+    ), (R("results", "array", "每项包含 Resident ID、消息与前后消息 ID"),
+        NEXT_CURSOR("还有更多结果时返回")), target="resident_ids"),
     _d("GetMessageArtifact", ON_RESIDENT, "读取 Agent 消息引用的一项产物。", (
         R("resident_id", description="消息所在对话的 Resident"), R("artifact_id", description="消息中引用的产物 ID"),
     ), (
@@ -197,12 +195,17 @@ DECLARATIONS = (
     ), target="resident_id"),
     _d("ClearContext", ON_RESIDENT, "提交上下文重置并归档当前对话；后续输入待清理完成后从新的模型上下文开始，Resident 身份保持不变。此操作不保证删除 Provider 端保留的会话历史。", (
         R("resident_id", description="要清除上下文的 Resident"),
-        P("active_execution_policy", description="reject（默认）在任务排队或运行时拒绝；wait 允许当前轮结束，在下一条输入提交前清空，保留排队消息及原账号。", enum=("reject", "wait")),
     ), (
         R("cleanup_pending", "boolean", "归档对话与释放旧会话绑定已排队；新输入可排队等待清理，不表示 Provider 端历史已删除"),
-        R("operation_id", description="本次操作 ID。wait 返回等待回执 ID，立即清空返回清理生命周期 ID"),
-        P("restart_id", description="wait 的稳定等待回执 ID。GetSessionRestart 按 resident_id 查询；取消时传 resident_id 和此 ID，仍须有 ClearContext 管理权限"),
-        P("status", description="wait 受理返回 accepted；GetSessionRestart 返回等待、已清空、失败或取消的进度"),
+        R("operation_id", description="清理生命周期 ID"),
+    ), mutates=True, target="resident_id"),
+    _d("CreateContextReset", ON_RESIDENT, "安排当前轮结束后、下一条输入提交前清空上下文，保留排队消息及原账号。", (
+        R("resident_id", description="要清除上下文的 Resident"),
+    ), (
+        R("cleanup_pending", "boolean", "是否已有归档与释放旧绑定工作待处理"),
+        R("operation_id", description="本次等待清空的操作 ID"),
+        R("restart_id", description="等待操作的回执 ID，供 GetSessionRestart 查询结果与 CancelSessionRestart 取消"),
+        R("status", description="accepted 表示等待清空已受理"),
     ), mutates=True, target="resident_id"),
     _d("AbsorbContext", (On("source_resident_id", "resident"), On("target_resident_id", "resident")), "让目标 Resident 吸收来源 Resident 在 Fork 之后的讨论和工作理解。", (
         R("source_resident_id", description="来源 Resident：吸收它在 Fork 之后的讨论和工作理解"),
@@ -222,10 +225,13 @@ DECLARATIONS = (
         R("request", "object", "请求：resident_id、message_id、kind（question 或 approval）、questions、status、answers、created_at"),
         R("status", enum=("pending", "answered", "declined", "cancelled", "expired"), description="请求的回答状态，同 request.status；declined 表示已拒绝"),
     ), target="resident_id"),
-    _d("AnswerResidentRequest", ON_RESIDENT, "回答一个请求，并把回答送回 Resident 正在等待的那一轮工作；对消息中的问题组只能用 action=cancel 关闭，不通知 Resident。", (
-        R("resident_id", description="发出请求的 Resident"), R("message_id", description="请求所在的消息"),
-        R("answers", "object", "按问题序号给出的回答；批准请求给出批准或拒绝"),
-    ), (R("status", enum=("pending", "answered", "declined", "cancelled", "expired"),
-          description="回答后的状态：已送达为 answered、declined 或 cancelled，仍在排队为 pending，没能送达为 expired"),),
-       mutates=True, target="resident_id"),
+    _d("AnswerResidentRequest", ON_RESIDENT, "回答问题或作出审批决定，送回等待中的轮次。", (
+        *RESIDENT_REQUEST,
+        P("answers", "object", "按问题序号给出的回答"),
+        P("decision", description="审批决定", enum=("accept", "decline")),
+        P("content", "object", "接受 MCP 请求时返回的内容"),
+    ), REQUEST_STATUS, mutates=True, target="resident_id", one_of=(("answers",), ("decision",))),
+    _d("CancelResidentRequest", ON_RESIDENT, "关闭等待中的请求或消息问题组。", (
+        *RESIDENT_REQUEST,
+    ), REQUEST_STATUS, mutates=True, target="resident_id"),
 )

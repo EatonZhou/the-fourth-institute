@@ -266,7 +266,7 @@ def _text(text):
 def test_a_resident_sends_a_user_a_message_in_its_own_conversation(delivery_resident, readers):
     """Resident 用 DeliverMessage 给用户发消息，消息写在自己的对话中
 
-    DeliverMessage 给出 user_id 时，消息以 Resident 的 agent 消息写入它自己的对话并立即显示，注明收件人，不进入队列、不开始工作；同一幂等键重试得到同一条消息，同一消息 ID 换正文报冲突；只有收件人看到未读和会话条目，能看这段对话的其他用户没有。
+    DeliverUserMessage 把 Resident 的消息写入它自己的对话，注明收件人，即时显示。收件人看到未读，同一幂等键复用原消息，同一消息 ID 换正文报冲突。
 
     :module: resident.conversation
     :design: decision_c524c775e0be, decision_15f7df737ed5
@@ -275,7 +275,7 @@ def test_a_resident_sends_a_user_a_message_in_its_own_conversation(delivery_resi
     readers[sender] = {"CASE-A", "sample_admin"}
     repository = resident_conversation_stream.get_repository()
 
-    sent = run("DeliverMessage", {"user_id": "CASE-A", "message": _text("周报已经写好，请看第三节。")},
+    sent = run("DeliverUserMessage", {"user_id": "CASE-A", "message": _text("周报已经写好，请看第三节。")},
                actor=sender, key="report-ready").raise_for_error()
 
     assert (sent["resident_id"], sent["sender_id"], sent["input_state"]) == (sender, sender, {})
@@ -291,11 +291,11 @@ def test_a_resident_sends_a_user_a_message_in_its_own_conversation(delivery_resi
     assert repository.snapshot(sender)["queue"]["items"] == []
 
     # A retry is the same message.
-    again = run("DeliverMessage", {"user_id": "CASE-A", "message": _text("周报已经写好，请看第三节。")},
+    again = run("DeliverUserMessage", {"user_id": "CASE-A", "message": _text("周报已经写好，请看第三节。")},
                 actor=sender, key="report-ready").raise_for_error()
     assert again["message_id"] == sent["message_id"]
     assert [item["message_id"] for item in repository.read_messages(sender)].count(sent["message_id"]) == 1
-    changed = run("DeliverMessage", {"user_id": "CASE-A", "message": {
+    changed = run("DeliverUserMessage", {"user_id": "CASE-A", "message": {
         "message_id": sent["message_id"], **_text("改过的正文")}}, actor=sender)
     assert changed.error["code"] == "instruction.conflict"
 
@@ -352,17 +352,17 @@ def test_a_message_to_a_user_needs_a_resident_sender_a_reader_and_plain_content(
     """
     sender = delivery_resident["resident_id"]
     readers[sender] = {"CASE-A"}
-    by_user = run("DeliverMessage", {"user_id": "CASE-A", "message": _text("你好")}, actor="sample_admin")
+    by_user = run("DeliverUserMessage", {"user_id": "CASE-A", "message": _text("你好")}, actor="sample_admin")
     assert by_user.error["code"] == "instruction.forbidden"
-    unreadable = run("DeliverMessage", {"user_id": "nobody", "message": _text("你好")}, actor=sender)
+    unreadable = run("DeliverUserMessage", {"user_id": "nobody", "message": _text("你好")}, actor=sender)
     assert unreadable.error["code"] == "instruction.forbidden"
-    image = run("DeliverMessage", {"user_id": "CASE-A", "message": {"content_parts": [
+    image = run("DeliverUserMessage", {"user_id": "CASE-A", "message": {"content_parts": [
         {"type": "text", "text": "截图"}, {"type": "image", "path": "/tmp/a.png"}]}}, actor=sender)
     assert image.error["code"] == "instruction.invalid_arguments"
-    info = run("DeliverMessage", {"user_id": "CASE-A", "message": _text("背景"), "activation_policy": "attach_to_next"},
+    info = run("DeliverUserMessage", {"user_id": "CASE-A", "message": _text("背景"), "activation_policy": "attach_to_next"},
                actor=sender)
     assert info.error["code"] == "instruction.invalid_arguments"
-    both = run("DeliverMessage", {"user_id": "CASE-A", "resident_id": sender, "message": _text("你好")}, actor=sender)
+    both = run("DeliverUserMessage", {"user_id": "CASE-A", "resident_id": sender, "message": _text("你好")}, actor=sender)
     assert both.error["code"] == "instruction.invalid_arguments"
     assert resident_conversation_stream.get_repository().read_messages(sender) == []
 
@@ -384,7 +384,7 @@ def test_a_family_member_writes_to_a_user_as_the_facade(delivery_resident, reade
     monkeypatch.setattr(outward_messages, "speaking_identity",
                         lambda sender, recipient: facade if sender == member else sender)
 
-    sent = run("DeliverMessage", {"user_id": "CASE-A", "message": _text("需要你决定发布时间。")},
+    sent = run("DeliverUserMessage", {"user_id": "CASE-A", "message": _text("需要你决定发布时间。")},
                actor=member).raise_for_error()
 
     assert (sent["resident_id"], sent["sender_id"]) == (facade, facade)

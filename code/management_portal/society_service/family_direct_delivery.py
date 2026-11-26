@@ -11,7 +11,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 def deliver(record, message_id, actor):
-    from . import family_facade, family_quota, resident_conversation_stream
+    from . import family_facade, relay_domain, resident_conversation_stream
 
     rid = record['resident_id']
     repository = resident_conversation_stream.get_repository()
@@ -28,10 +28,9 @@ def deliver(record, message_id, actor):
     target = family_facade.direct_member(record, message)
     if not target:
         return
-    # Use the actual accepting caller, never a fabricated User/Leader. The
-    # owner rechecks source authority, cancellation, membership, quota and
-    # deterministic relay identity, including nested facade deliveries.
-    return family_quota.relay_message(rid, message_id, target, actor)
+    if relay_domain.target_status(record, target)["status"] in {"quota_low", "unavailable"}:
+        return  # The arrival Effect owns the response to a known gate.
+    return relay_domain.relay_message(rid, message_id, target, actor)
 
 
 def resume(record, message_id, actor):

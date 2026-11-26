@@ -15,15 +15,15 @@ from management_portal.society_service.resident_record_domain import find_reside
 from management_portal.society_service.lineage_program_effect_execution import _family_note_context
 from tests.cases.isa_test_support import run
 from tests.cases.permission_test_support import Fact, permissions  # noqa: F401
-from tests.cases.test_family_quota import quota_family, team, owners  # noqa: F401
+from tests.cases.test_family_continued_relay import relay_family, team, owners  # noqa: F401
 
 EXTERNAL = "storage-outsider"
 EFFECT = "effect_123456789abc"
 
 
 @pytest.fixture
-def reply(quota_family, permissions):
-    f = quota_family
+def reply(relay_family, permissions):
+    f = relay_family
     permissions.place(Fact("resident", f.facade), Fact("resident", f.member))
     permissions.deny(EXTERNAL, f.facade, "@contributor")
     permissions.grant(f.facade, f.facade, "@contributor")
@@ -51,26 +51,26 @@ def reply(quota_family, permissions):
 
 def context(r, **overrides):
     return _family_note_context(overrides.get("view", r.view), overrides.get("effect", EFFECT),
-           overrides.get("instruction", "RelayFamilyMessage"), overrides.get("args", r.args),
+           overrides.get("instruction", "RelayMessage"), overrides.get("args", r.args),
            overrides.get("context", r.context), lineage_id=overrides.get("lineage", r.lineage),
            event=overrides.get("event", r.event))
 
 
 def test_external_reply_isa_denial_then_scoped_original_delivery_once(reply):
     r = reply
-    denied = run("RelayFamilyMessage", r.args, actor=EXTERNAL, entry="lineage")
+    denied = run("RelayMessage", r.args, actor=EXTERNAL, entry="lineage")
     assert denied.error["code"] == "instruction.forbidden"
     c = context(r)
     assert c.caller == r.f.facade
-    delivered = run("RelayFamilyMessage", r.args, actor=c.caller, entry=c.entry).raise_for_error()
+    delivered = run("RelayMessage", r.args, actor=c.caller, entry=c.entry).raise_for_error()
     assert delivered["status"] == "relayed"
     message = r.repo.message(r.f.member, delivered["message_id"])
     assert message["author_id"] == EXTERNAL
     assert message["content_parts"] == r.original["content_parts"]
     assert r.repo.message(r.f.facade, r.original["message_id"]) == r.original
-    assert run("RelayFamilyMessage", r.args, actor=c.caller, entry=c.entry).raise_for_error() == delivered
+    assert run("RelayMessage", r.args, actor=c.caller, entry=c.entry).raise_for_error() == delivered
     # The sender never gained contributor, including after a successful automatic relay.
-    assert run("RelayFamilyMessage", r.args, actor=EXTERNAL).error["code"] == "instruction.forbidden"
+    assert run("RelayMessage", r.args, actor=EXTERNAL).error["code"] == "instruction.forbidden"
 
 
 @pytest.mark.parametrize("change", ["ordinary", "other-effect", "other-family", "other-lineage", "web",
@@ -113,7 +113,7 @@ def test_scoped_relay_keeps_original_stop_and_failure_boundary(reply, state):
     r = reply
     r.repo.set_input_state(r.f.facade, r.original["message_id"], state)
     c = context(r)
-    result = run("RelayFamilyMessage", r.args, actor=c.caller, entry=c.entry)
+    result = run("RelayMessage", r.args, actor=c.caller, entry=c.entry)
     if state == "cancelled":
         assert result.raise_for_error()["status"] == "withdrawn"
     else:
@@ -124,7 +124,7 @@ def test_scoped_relay_keeps_original_stop_and_failure_boundary(reply, state):
 
 def test_finished_effect_retains_actual_caller_after_instruction_receipt_cleanup():
     from management_portal.society_service.lineage_effect_script_journal import call_summary
-    calls = call_summary({"calls": {"c1": {"caller": "resident_123456789abc", "instruction": "RelayFamilyMessage",
+    calls = call_summary({"calls": {"c1": {"caller": "resident_123456789abc", "instruction": "RelayMessage",
                          "instruction_id": "inst_lin_example", "ok": True}}})
     assert calls[0]["caller"] == "resident_123456789abc"
 
@@ -136,14 +136,14 @@ def test_external_unquoted_arrival_can_only_ask_its_own_router_to_choose(reply, 
     r.repo.append_message(r.f.facade, message)
     r.repo.set_input_state(r.f.facade, message["message_id"], "queued")
     r.event.payload.update(message_id=message["message_id"], quoted_member_id="")
-    args = dict(resident_id=r.f.facade, source_message_id=message["message_id"], trigger="route")
+    args = dict(resident_id=r.f.facade, message_id=message["message_id"], section="request")
     kwargs = {}
     if mutation == "cancelled":
         r.repo.set_input_state(r.f.facade, message["message_id"], "cancelled")
     elif mutation == "other-message":
-        args["source_message_id"] = r.f.message
+        args["message_id"] = r.f.message
     elif mutation == "other-trigger":
-        args["trigger"] = "recruit"
+        r.event.type = "manual.triggered"
     elif mutation == "extra-facts":
         args["facts"] = {"content": "forged"}
     elif mutation == "other-facade":
@@ -152,22 +152,38 @@ def test_external_unquoted_arrival_can_only_ask_its_own_router_to_choose(reply, 
         r.view["function_blocks"][0]["elements"][0]["key"] = "workflow:" + EFFECT
     elif mutation == "other-author":
         kwargs["context"] = InstructionContext(caller="another-sender", entry="lineage")
-    c = context(r, instruction="DispatchFamilyTask", args=args, **kwargs)
-    assert (c.caller == r.f.facade) == (mutation == "none")
+    c = context(r, instruction="GetRelayContext", args=args, **kwargs)
+    if mutation == "extra-facts":
+        result = run("GetRelayContext", args, actor=c.caller, entry=c.entry)
+        assert result.error["code"] == "instruction.invalid_arguments"
+        return
+    assert (c.caller == r.f.facade) == (mutation in {"none", "cancelled"})
+    if c.caller == r.f.facade:
+        read = run("GetRelayContext", args, actor=c.caller, entry=c.entry).raise_for_error()
+        assert read["request"]["input_state"]["state"] == ("cancelled" if mutation == "cancelled" else "queued")
+        assert message["message_id"] not in family_facade.relay_links(_find_resident(r.f.facade))
 
 
 @pytest.mark.parametrize("old_review", [False, True])
-def test_nested_facade_does_not_spend_model_quota_and_deletes_old_review(quota_family, old_review, monkeypatch):
-    from tests.cases.family_test_support import set_role
+def test_nested_facade_does_not_spend_model_quota_and_deletes_old_review(relay_family, old_review, monkeypatch):
     from tests.cases.test_cross_owner_storage_integration import ACTOR
     from management_portal.society_service import family_quota
 
-    f = quota_family
+    f = relay_family
     repo = resident_conversation_stream.get_repository()
     if old_review:
-        waiting = family_quota.relay_message(f.facade, f.message, f.member, ACTOR)
+        notices = []
+        # The fixture stores the roster, without installing the generated
+        # guide. Exercise the legacy review state and observe its notice.
+        with monkeypatch.context() as capture:
+            capture.setattr(family_facade, "tell_steward", lambda **notice: notices.append(notice))
+            waiting = family_quota.relay_message(f.facade, f.message, f.member, ACTOR)
         assert waiting["status"] == "waiting_for_quota_review"
-    set_role(f.member, role="facade", family_id="fbi_inner", actor=ACTOR)
+        notice, = notices
+        assert notice["task_trigger"] == "quota"
+        assert notice["steward_id"] == f.steward
+        assert notice["task_facts"]["message_id"] == f.message
+    f.nest()
     if not old_review:
         def unexpected_account_query():
             raise AssertionError("A non-executing facade must not depend on account service availability")
@@ -188,16 +204,12 @@ def test_nested_facade_does_not_spend_model_quota_and_deletes_old_review(quota_f
         assert review["quota_not_applicable"] == "family_facade"
 
 
-def test_nested_reply_resolves_outward_writer_through_saved_relay_not_quote_excerpt(quota_family, monkeypatch):
-    from tests.cases.family_test_support import set_role
+def test_nested_reply_resolves_outward_writer_through_saved_relay_not_quote_excerpt(relay_family):
     from tests.cases.test_cross_owner_storage_integration import ACTOR
-    from management_portal.society_service import family_quota
+    from management_portal.society_service import relay_domain
 
-    f = quota_family
-    set_role(f.member, role="facade", family_id="fbi_inner", actor=ACTOR)
-    set_role(f.spare, role="member", family_id="fbi_inner", actor=ACTOR)
-    monkeypatch.setattr(family_facade, "family_member_ids", lambda record:
-                        {f.member} if record["resident_id"] == f.facade else {f.spare})
+    f = relay_family
+    f.nest()
     repo = resident_conversation_stream.get_repository()
     outbound = _message("agent", "Who wrote this?", f.facade)
     outbound.update(recipients=[{"kind": "user", "id": EXTERNAL}],
@@ -208,7 +220,7 @@ def test_nested_reply_resolves_outward_writer_through_saved_relay_not_quote_exce
     repo.append_message(f.facade, original)
     repo.set_input_state(f.facade, original["message_id"], "queued")
     assert family_facade.quoted_member(_find_resident(f.facade), original) == f.member
-    first = family_quota.relay_message(f.facade, original["message_id"], f.member, ACTOR)
+    first = relay_domain.relay_message(f.facade, original["message_id"], f.member, ACTOR)
     copy = repo.message(f.member, first["message_id"])
     assert "message_id" not in copy["quote"]  # The display excerpt stays immutable.
     inner = _find_resident(f.member)
@@ -218,16 +230,16 @@ def test_nested_reply_resolves_outward_writer_through_saved_relay_not_quote_exce
     assert family_facade.quoted_member(inner, {**copy, "message_id": "msg_unlinked"}) == ""
     event = SimpleNamespace(type="resident.message_received", subject_resident_id=f.member,
                             payload={"resident_id": f.member, "message_id": copy["message_id"], "quoted_member_id": f.spare})
-    view = {"function_blocks": [{"id": "fbi_inner", "family": {"facade": f.member, "members": [f.spare]},
+    view = {"function_blocks": [{"id": f.inner_id, "family": {"facade": f.member, "members": [f.spare]},
              "elements": [{"id": EFFECT, "kind": "component", "key": "router"}]}]}
     args = dict(resident_id=f.member, message_id=copy["message_id"], member_id=f.spare)
-    c = _family_note_context(view, EFFECT, "RelayFamilyMessage", args,
+    c = _family_note_context(view, EFFECT, "RelayMessage", args,
             InstructionContext(caller=EXTERNAL, entry="lineage"), lineage_id=inner["lineage_id"], event=event)
     assert c.caller == f.member
-    second = family_quota.relay_message(f.member, copy["message_id"], f.spare, c.caller)
+    second = relay_domain.relay_message(f.member, copy["message_id"], f.spare, c.caller)
     assert second["status"] == "relayed"
     received = repo.message(f.spare, second["message_id"])
     assert received["author_id"] == EXTERNAL
     assert received["content_parts"] == original["content_parts"]
-    assert family_quota.relay_message(f.member, copy["message_id"], f.spare, c.caller) == second
+    assert relay_domain.relay_message(f.member, copy["message_id"], f.spare, c.caller) == second
 

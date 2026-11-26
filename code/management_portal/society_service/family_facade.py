@@ -1,7 +1,7 @@
-"""Family facade Residents: one external identity whose messages are relayed to members (decision_44cf587c1721).
+"""Facade Residents: one external identity whose messages are relayed to members.
 
-A facade is an ordinary Resident assigned the facade role in a Family.  It never runs a turn: intake accepts each message with input state
-``queued`` and leaves it for the Family Router.  The Router delivers the
+A facade is an ordinary Resident with registered relay targets. It never runs a turn: intake accepts each message with input state
+``queued`` for routing. The relay delivers the
 message to the chosen member with ``business_ref`` = ``<facade>/message/<id>``
 (the relay mark).  The message enters the facade Conversation when it
 arrives, so its sender sees it at once.  When the delivery commits, the facade
@@ -23,7 +23,7 @@ from management_common.actor_identity import canonical_actor_id, same_actor
 from management_common.clock import utc_now_iso
 from management_portal.execution.chat_position_index import RELAYED_COPY_PATTERN
 
-from . import family_familize, family_storage, resident_conversation_stream, resident_lineage, resident_mailbox
+from . import facade_members, family_familize, family_storage, resident_conversation_stream, resident_lineage, resident_mailbox
 from .input_progress import event_input_ids, input_progress
 from .domain_ports import resident_domain_port
 from .state_store import get_lineage_data_store
@@ -43,7 +43,15 @@ def facade_configuration(record: Mapping[str, Any] | None) -> dict[str, Any]:
 
 
 def is_facade(record: Mapping[str, Any] | None) -> bool:
-    return ((record or {}).get('family') or {}).get('role') == 'facade'
+    return bool(record and not record.get("deleted_at") and relay_target_ids(record))
+
+
+def relay_target_ids(facade: Mapping[str, Any]) -> list[str]:
+    facade_id = str(facade.get("resident_id") or "")
+    if not facade_id:
+        return []
+    with get_lineage_data_store().database.read() as connection:
+        return facade_members.read(connection, facade_id)
 
 
 def changed_roster_facades(before: Mapping[str, Any] | None, after: Mapping[str, Any]) -> list[str]:
@@ -108,7 +116,7 @@ def validate_relay(business_ref: object, actor: str) -> tuple[str, str] | None:
         return None
     message = resident_conversation_stream.get_repository().message(source[0], source[1])
     if message is None:
-        raise KeyError("Family 门面中没有这条消息")
+        raise KeyError("门面中没有这条消息")
     actor_id = canonical_actor_id(actor)
     if not (
         same_actor(message.get("author_id"), actor_id)
@@ -124,13 +132,9 @@ MEMBER_SLOT = "members"
 
 
 def family_members(facade: Mapping[str, Any]) -> list[str]:
-    """Residents belonging to the facade's Family, in stable Resident-ID order."""
-
-    family_id = str(facade_configuration(facade).get("family_id") or "")
-    if not family_id:
-        return []
-    with get_lineage_data_store().database.read() as connection:
-        return family_storage.members_of(connection, family_id)
+    """Business routing members in stable order, excluding the Family Steward."""
+    steward_id = family_steward_id(facade)
+    return [member_id for member_id in relay_target_ids(facade) if member_id != steward_id]
 
 
 def family_member_ids(facade: Mapping[str, Any]) -> set[str]:
@@ -156,6 +160,14 @@ def chat_presentation(facade: Mapping[str, Any]) -> dict[str, Any]:
         member = resident_record_domain.find_resident(member_id) or {}
         members.append({"resident_id": member_id, "title": str(member.get("title") or member_id)})
     family_id = str(facade_configuration(facade).get("family_id") or "")
+    if not family_id:
+        return {
+            "family_id": "",
+            "title": str(facade.get("title") or resident_lineage.resident_id(facade)),
+            "members": members,
+            "nodes": [{**member, "role": "member"} for member in members],
+            "lineage_id": resident_lineage.lineage_id(facade),
+        }
     with get_lineage_data_store().database.read() as connection:
         roster = family_storage.roles_of(connection, family_id)
     from . import resident_catalog, resident_execution_gate
@@ -278,12 +290,8 @@ def forward_info(facade: Mapping[str, Any], message: Mapping[str, Any], actor: s
 
 
 def is_relay_target(facade: Mapping[str, Any], resident_id: str) -> bool:
-    """Business members and this Family's steward can own facade requests.
-
-    The steward owns organization work without becoming a business roster member.
-    """
-    return bool(resident_id) and (
-        resident_id in family_member_ids(facade) or resident_id == family_steward_id(facade))
+    """Whether the facade has registered this Resident as a relay target."""
+    return bool(resident_id) and resident_id in relay_target_ids(facade)
 
 
 def relay_delegates(source: tuple[str, str] | None, member_id: str) -> bool:
@@ -385,6 +393,17 @@ def complete_relay(source: tuple[str, str], member_id: str, member_message_id: s
     invariant_locks.defer_until_state_unlock(lambda: _complete_relay(source, member_id, member_message_id))
 
 
+def record_relay_link(facade: Mapping[str, Any], message_id: str, member_id: str, member_message_id: str) -> None:
+    """Persist the verified link in the caller's admission transaction without publishing Chat."""
+    store = get_lineage_data_store()
+    with store.family_relays.transaction(resident_lineage.lineage_id(facade), resident_lineage.resident_id(facade)) as state:
+        links = state.setdefault("links", {})
+        links.setdefault(message_id, {
+            "resident_id": member_id, "message_id": member_message_id, "relayed_at": utc_now_iso(),
+        })
+        (state.get("pending_deliveries") or {}).pop(message_id, None)
+
+
 def _complete_relay(source: tuple[str, str], member_id: str, member_message_id: str) -> None:
     from . import resident_record_domain
 
@@ -392,24 +411,14 @@ def _complete_relay(source: tuple[str, str], member_id: str, member_message_id: 
     facade = resident_record_domain.find_resident(facade_id)
     if not facade:
         return
-    store = get_lineage_data_store()
-    lineage_id = resident_lineage.lineage_id(facade)
     repository = resident_conversation_stream.get_repository()
-    with store.family_quota_reviews.transaction(lineage_id, facade_id):
+    with resident_record_domain.state_lock(facade_id):
         current = repository.input_state(facade_id, facade_message_id).get("state")
         if current == "queued":
-            with store.family_relays.transaction(lineage_id, facade_id) as state:
-                links = state.setdefault("links", {})
-                links.setdefault(facade_message_id, {
-                    "resident_id": member_id, "message_id": member_message_id, "relayed_at": utc_now_iso(),
-                })
-                restorations = (state.get("route_restorations") or {}).get(facade_message_id) or []
-                if restorations:
-                    restorations[-1].update(status="relayed", result={
-                        "status": "relayed", "member_id": member_id, "message_id": member_message_id})
+            record_relay_link(facade, facade_message_id, member_id, member_message_id)
             show_request(facade_id, facade_message_id)
             repository.set_input_state(facade_id, facade_message_id, "completed")
-    if current == "queued":
+    if current == "queued" and facade_configuration(facade):
         from . import family_recovery
         family_recovery.relay_completed(facade, facade_message_id)
     if current == "cancelled":
@@ -438,7 +447,7 @@ def keep_notice(facade_id: str, message_id: str, actor: str, reason: str = "") -
 
     facade = resident_record_domain.find_resident(facade_id)
     if not is_facade(facade):
-        raise ValueError("目标必须是 Family 门面")
+        raise ValueError("目标必须是门面")
     validate_relay(relay_mark(facade_id, message_id), actor)
     repository = resident_conversation_stream.get_repository()
     message = repository.message(facade_id, message_id)
@@ -446,7 +455,7 @@ def keep_notice(facade_id: str, message_id: str, actor: str, reason: str = "") -
         raise KeyError("门面消息不存在")
     store = get_lineage_data_store()
     lineage_id = resident_lineage.lineage_id(facade)
-    with store.family_quota_reviews.transaction(lineage_id, facade_id):
+    with resident_record_domain.state_lock(facade_id):
         current = repository.input_state(facade_id, message_id).get("state")
         if current == "cancelled":
             return {"status": "withdrawn", "message_id": message_id}
@@ -464,7 +473,7 @@ def keep_notice(facade_id: str, message_id: str, actor: str, reason: str = "") -
         if current == "queued":
             show_request(facade_id, message_id)
             repository.set_input_state(facade_id, message_id, "completed")
-    if current == "queued":
+    if current == "queued" and facade_configuration(facade):
         family_recovery.relay_completed(facade, message_id)
     return {"status": "kept", "message_id": message_id}
 
@@ -682,11 +691,11 @@ def withdraw_request(facade: Mapping[str, Any], message_id: str, actor: str, *, 
     relays nothing (family_quota.relay_message reports it withdrawn).
     """
 
-    from management_common.actor_identity import same_actor
+    from . import resident_record_domain
 
     facade_id = resident_lineage.resident_id(facade)
     repository = resident_conversation_stream.get_repository()
-    with get_lineage_data_store().family_quota_reviews.transaction(resident_lineage.lineage_id(facade), facade_id):
+    with resident_record_domain.state_lock(facade_id):
         message = repository.message(facade_id, message_id)
         if not message or message.get("role") != "user":
             raise KeyError("queue item not found")
@@ -1486,7 +1495,7 @@ def quoted_member(facade: Mapping[str, Any], message: Mapping[str, Any] | None) 
                 member_id = outward_quote_owner(facade, outward)
                 if member_id:
                     break
-    if not member_id or (member_id not in family_member_ids(facade) and member_id != family_steward_id(facade)):
+    if not is_relay_target(facade, member_id):
         return ""
     return member_id if _can_take(member_id, message) else ""
 
@@ -1609,24 +1618,16 @@ def _can_take(member_id: str, message: Mapping[str, Any]) -> bool:
 def facade_for_arrival_call(lineage, component_id, instruction, arguments, event, caller, *, lineage_id):
     """Only the generated Router may route its verified arrival as its facade.
 
-    This is a single unchanged-delivery capability, not the external sender's
-    Project permission. The relay owner still checks cancellation, membership,
-    intake, quota and the original author's attachment grants.
+    The capability covers one unchanged delivery with an already addressed
+    route. The relay owner checks cancellation, current targets and the
+    original author's attachment grants.
     """
     from . import resident_record_domain
 
-    if event is None or event.type != "resident.message_received":
+    if (instruction != "RelayMessage" or event is None or event.type != "resident.message_received"
+            or set(arguments) != {"resident_id", "message_id", "member_id"}):
         return ""
-    relaying = instruction == "RelayFamilyMessage"
-    if relaying:
-        if set(arguments) != {"resident_id", "message_id", "member_id"}:
-            return ""  # No reassign, review overrides or arbitrary delivery fields.
-        message_id = arguments["message_id"]
-    else:
-        if (instruction != "DispatchFamilyTask" or arguments.get("trigger") != "route"
-                or set(arguments) != {"resident_id", "source_message_id", "trigger"}):
-            return ""
-        message_id = arguments["source_message_id"]
+    message_id = arguments["message_id"]
     block = family_familize.component_family(lineage, component_id)
     if not block or not any(e["id"] == component_id and e.get("key") == "router"
                             for e in block.get("elements") or []):
@@ -1648,21 +1649,13 @@ def facade_for_arrival_call(lineage, component_id, instruction, arguments, event
             or not same_actor(message.get("author_id"), caller)):
         return ""
     direct = direct_member(facade, message)
-    if relaying and payload.get("direct_member_id"):
+    if payload.get("direct_member_id"):
         return facade_id if direct == arguments["member_id"] == payload["direct_member_id"] else ""
     quoted = quoted_member(facade, message)
-    target = quoted if quoted == direct else ""
-    if relaying:
-        if target:
-            return facade_id if target == arguments["member_id"] == payload.get("quoted_member_id") else ""
-        # Recomputed from stored relays, never taken from the payload alone.
-        continued = continued_member(facade, message)
-        return facade_id if continued and continued == arguments["member_id"] == payload.get("continued_member_id") else ""
-    # Asking this Family's Router to choose is internal maintenance of an
-    # accepted request; it gives the sender no right to dispatch other tasks.
-    # A continuing request may still be asked about: it only takes longer.
-    return facade_id if (not target and not payload.get("quoted_member_id")
-                         and repository.input_state(facade_id, message_id).get("state") == "queued") else ""
+    if quoted and quoted == direct:
+        return facade_id if quoted == arguments["member_id"] == payload.get("quoted_member_id") else ""
+    continued = continued_member(facade, message)
+    return facade_id if continued and continued == direct == arguments["member_id"] == payload.get("continued_member_id") else ""
 
 
 def announce_member_retitle(resident_id: str, previous: str, title: str, actor: str) -> bool:

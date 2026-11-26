@@ -52,7 +52,7 @@ links:
 
 - 参数：`group`、`category` 均可选。两者均省略时只返回 `general` 通用能力；`group` 可选 `general`、`application`、`internal`、`operations`，或 `all` 显式读取完整安装目录。单独指定 `category` 时跨分组查询该对象类别；同时指定时取交集。
 - 四个发现分组分别服务于日常操作、应用任务、内部维护角色和系统运维。声明的 `discovery_group` 是分组的唯一来源，默认 `general`；功能或领域 owner 为专用能力指定分组。分组不替代对象类别、服务 owner 或权限方案，也不限制已知指令的直接调用。
-- 结果：指令列表，每项包含指令名、类别、`discovery_group`、拥有服务、一句话说明、是否改变状态和是否流式。`RunResourceAction` 下按资源类型列出各类型声明的动作。
+- 结果：指令列表，每项包含指令名、类别、`discovery_group`、拥有服务、一句话说明、是否改变状态和是否流式。
 - 结果另带 `groups`：四组的 `group`、`title`、当前安装指令数量 `count` 与 `categories`。调用者依据任务或职责继续展开；目录不依据权限隐去组，发现不构成授权。
 - Harness 工具说明只给出发现方法，不展开全部指令名；HTTP 与命令行遵守同一发现合同。命令行 `list --group` 对应 `group`，完整性审计显式使用 `group=all`。已送达会话的工具说明不会被追溯修改。
 - 结果另带 `guide`：Agent 指引的 Portal 内路径 `/guide/agent.md`。已经持有凭据、不经过网页的 agent 在发现指令时就能找到按任务组织的说明，不必一次读完整个目录（decision_3286d4167180）。

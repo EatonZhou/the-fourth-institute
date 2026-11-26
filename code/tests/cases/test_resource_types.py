@@ -174,27 +174,27 @@ def test_resource_type_instruction_contracts(isolated_portal_case, monkeypatch):
             assert row['registerable'] == service.resource_types.identity.declaration(row['type'])['registerable']
         device = isa.get_resource_type(invocation(resource_type='device'))
         assert device['type'] == 'device'
-        assert device['actions'] and device['registerable'] and device['installed']
-        disabled = isa.update_resource_type(invocation('UpdateResourceType', resource_type='device', enabled=False, expected_version=0))
+        assert 'actions' not in device and device['registerable'] and device['installed']
+        disabled = isa.set_resource_type_enabled(invocation('SetResourceTypeEnabled', resource_type='device', enabled=False, expected_version=0))
         assert disabled['version'] == 1
         with pytest.raises(InstructionError) as conflict:
-            isa.update_resource_type(invocation('UpdateResourceType', resource_type='device', enabled=True, expected_version=0))
+            isa.set_resource_type_enabled(invocation('SetResourceTypeEnabled', resource_type='device', enabled=True, expected_version=0))
         assert conflict.value.code == 'instruction.version_conflict'
         assert conflict.value.details == {'object_id': 'device', 'expected_version': 0, 'current_version': 1}
         assert service.resource_types.get('device')['enabled'] is False
         assert service.resource_types.get('device')['version'] == 1
-        mapped = isa.update_resource_type(invocation(
-            'UpdateResourceType', resource_type='device', enabled=False, expected_version={'device': 1},
+        mapped = isa.set_resource_type_enabled(invocation(
+            'SetResourceTypeEnabled', resource_type='device', enabled=False, expected_version={'device': 1},
         ))
         assert mapped['version'] == 2
-        unconditional = isa.update_resource_type(invocation('UpdateResourceType', resource_type='device', enabled=True))
+        unconditional = isa.set_resource_type_enabled(invocation('SetResourceTypeEnabled', resource_type='device', enabled=True))
         assert unconditional['version'] == 3 and unconditional['enabled'] is True
         with pytest.raises(InstructionError):
-            declaration('UpdateResourceType').validate_arguments({'resource_type': 'device', 'enabled': False, 'expected_version': 3})
-        assert declaration('UpdateResourceType').schema()['target'] == 'resource_type'
+            declaration('SetResourceTypeEnabled').validate_arguments({'resource_type': 'device', 'enabled': False, 'expected_version': 3})
+        assert declaration('SetResourceTypeEnabled').schema()['target'] == 'resource_type'
         for instruction, arguments in (
             ('GetResourceType', {'type': 'device'}),
-            ('UpdateResourceType', {'type': 'device', 'enabled': False}),
+            ('SetResourceTypeEnabled', {'type': 'device', 'enabled': False}),
         ):
             with pytest.raises(InstructionError):
                 declaration(instruction).validate_arguments(arguments)

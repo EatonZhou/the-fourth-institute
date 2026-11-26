@@ -581,7 +581,7 @@ def managed_ssh_profile(device_id: str) -> Path | None:
 def allows_device_ssh(actor: str, device_id: str) -> bool:
     from management_portal import permission_system
 
-    return permission_system.allows(actor, "RunResourceAction", {"resource_id": device_id, "action": "ssh.run"})
+    return permission_system.allows(actor, "RunDeviceCommand", {"resource_id": device_id})
 
 
 def managed_ssh_command(profile: Path) -> list[str]:
@@ -590,7 +590,7 @@ def managed_ssh_command(profile: Path) -> list[str]:
 
 def run_device_ssh(device_id: str, command: str, *, actor: str) -> dict[str, Any]:
     if not allows_device_ssh(actor, device_id):
-        raise PermissionError("SSH requires action permission on this device")
+        raise PermissionError("SSH requires RunDeviceCommand permission on this device")
     from management_portal import google_cloud_devices
 
     if not isinstance(command, str) or not command.strip() or len(command) > 8192:

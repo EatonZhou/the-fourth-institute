@@ -129,7 +129,7 @@ Home 通过应用工具 application:pulse.read（名称 GetPulse）读取 Pulse�
 
 ### 公开与撤回
 
-Home 把当前条目的 `source_period`、`source_key`、`item_id` 和目标 `published` 状态交给应用工具 application:pulse.publish（名称 PublishPulseItem）。服务重新核对当前调用者的原条目内容和所有者；公开记录由所有者和来源周期、键、条目 ID 稳定确定，重复发布复用同一身份；撤回仅作用于本人已公开记录。成功时页面使用返回的完整 `pulse` 重绘当前范围并提示结果；失败时保留原内容并显示错误。
+Home 将当前条目的 `source_period`、`source_key`、`item_id` 交给应用工具：`PublishPulseItem`（`application:pulse.publish`）公开，`UnpublishPulseItem`（`application:pulse.unpublish`）撤回。两者均返回更新后的 `pulse`；公开另返回 `publication`。服务重新核对当前调用者的原条目内容和所有者；公开记录由所有者和来源周期、键、条目 ID 稳定确定，重复发布复用同一身份；撤回仅作用于本人已公开记录。成功时页面使用返回的完整 `pulse` 重绘当前范围并提示结果；失败时保留原内容并显示错误。
 
 两项工具不进入 ISA。读取必填 user_id，沿原方案要求对目标 User 有 @admin；发布沿原固定判定槽，并检查当前调用者来源所有权。网页使用认证应用接口；Resident 显式注册后才装配，配置不替代权限。参数 schema 由应用目录提供，公开入口不接受 actor 替代身份。
 

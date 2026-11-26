@@ -112,13 +112,17 @@ def fit_to_window(
 
 
 def select_segments(
-    snapshot: dict[str, Any], *, recent_turns: int = 0,
+    snapshot: dict[str, Any], *, recent_turns: int = 0, require_round_count: bool = False,
 ) -> list[dict[str, Any]]:
     """Select contiguous trace history; Provider IDs only group known inputs."""
     segments = snapshot["segments"]
     if not recent_turns:
         return segments
     starts = context_turn_starts(segments)
+    if require_round_count:
+        if recent_turns > len(starts):
+            raise ValueError(f"recent_rounds 超过来源会话有效轮数（{len(starts)}）")
+        return segments[starts[-recent_turns]:]
     return segments[starts[-recent_turns]:] if len(starts) > recent_turns else segments
 
 

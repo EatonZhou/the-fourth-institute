@@ -3,7 +3,7 @@
 Only durable relays, admission reviews and accepted role tasks identify owners.
 Reading never chooses a member, captures routing preferences or starts work.
 """
-from . import (family_facade, family_quota, family_task_dispatches, resident_access,
+from . import (family_facade, family_quota, family_task_receipts, resident_access,
                resident_conversation_stream, resident_execution_gate, resident_mailbox,
                resident_record_domain, resident_catalog)
 from .state_store import get_lineage_data_store
@@ -76,7 +76,7 @@ def quota_switch(record, actor):
             elif _unfinished(work.get((rid, mid), {})):
                 candidate(rid, roots)
         # A role is relevant only through its accepted task for this request.
-        tasks = family_task_dispatches.request_tasks(facade, unlinked)
+        tasks = family_task_receipts.task_targets(facade["lineage_id"], fid, list(unlinked))
         task_states = resident_mailbox.InputProjection(
             [(task['target'], task['message_id']) for task in tasks], repository).states() if tasks else {}
         for task in tasks:

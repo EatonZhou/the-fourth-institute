@@ -73,7 +73,7 @@ def parse_cursor_value(value: object) -> int | None:
 
 
 def message_arrivals(events: Iterable[Mapping[str, Any]]) -> list[dict[str, Any]]:
-    """The first arrival state of each message in one ordered slice of the log."""
+    """The first arrival of each message and any explicit routing retry."""
 
     arrivals: list[dict[str, Any]] = []
     seen: set[str] = set()
@@ -83,12 +83,15 @@ def message_arrivals(events: Iterable[Mapping[str, Any]]) -> list[dict[str, Any]
         payload = event.get("payload") if isinstance(event.get("payload"), Mapping) else {}
         state = payload.get("input_state") if isinstance(payload.get("input_state"), Mapping) else {}
         message_id = str(state.get("message_id") or "").strip()
-        if not message_id or message_id in seen or str(state.get("state") or "") not in ARRIVAL_STATES:
+        cursor = int(event.get("cursor") or 0)
+        occurrence_id = f"{message_id}:retry:{cursor}" if payload.get("routing_retry") is True else message_id
+        if not message_id or occurrence_id in seen or str(state.get("state") or "") not in ARRIVAL_STATES:
             continue
-        seen.add(message_id)
+        seen.add(occurrence_id)
         arrivals.append({
             "message_id": message_id,
-            "cursor": int(event.get("cursor") or 0),
+            **({"occurrence_id": occurrence_id} if occurrence_id != message_id else {}),
+            "cursor": cursor,
             "occurred_at": str(event.get("occurred_at") or ""),
         })
     return arrivals
@@ -173,6 +176,7 @@ def pushed_source(source: Mapping[str, Any]) -> bool:
 
 def arrival_details(
     repository: Any, subject_id: str, message_id: str, actor_id: str, facade: Mapping[str, Any] | None,
+    *, routing_occurrence: str = "",
 ) -> dict[str, Any] | None:
     """Arrival facts, or None when its message is absent or a facade no longer waits.
 
@@ -181,11 +185,12 @@ def arrival_details(
     prefetch so reconciliation retains its cursor and retries.
     """
 
-    occurrence_id = message_id
+    occurrence_id = routing_occurrence or message_id
     if facade:
         from . import family_facade, family_recovery
 
-        message_id = family_recovery.arrival(facade, message_id)
+        if not routing_occurrence:
+            message_id = family_recovery.arrival(facade, message_id)
         if not message_id:
             return None
 
@@ -341,7 +346,10 @@ def prefetch_message_arrivals(
         next_cursor = int(events[-1]["cursor"]) if events else max(base_cursor, int(page.get("cursor") or 0))
         arrivals = []
         for arrival in message_arrivals(events):
-            details = arrival_details(repository, subject_id, arrival["message_id"], actor_id, facade)
+            details = arrival_details(
+                repository, subject_id, arrival["message_id"], actor_id, facade,
+                routing_occurrence=arrival.get("occurrence_id") or "",
+            )
             if details is not None:
                 arrivals.append({**arrival, **details})
         result[(source_id, scope)] = {

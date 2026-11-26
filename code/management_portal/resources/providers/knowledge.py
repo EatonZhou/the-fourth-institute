@@ -145,40 +145,39 @@ def install_mutation_provider(service: "ResourceService") -> None:
         )
 
 
-def install_action_provider(service: "ResourceService") -> None:
-    def rename_file(resource_id: str, payload: dict[str, Any], *, actor: str = "") -> dict[str, Any]:
-        from ..knowledge_move import rename_knowledge
-        return rename_knowledge(resource_id, payload, actor=actor,
-                                project_batch=service._index().project_relocated)
+def update_knowledge_file_name(service, resource_id, filename, expected_version, *, actor, operation_id=""):
+    from ..knowledge_move import rename_knowledge
+    resource_id = service._named_operation_target(resource_id, MARKDOWN_REGISTERABLE_RESOURCE_TYPES,
+                                                   actor=actor, instruction="UpdateKnowledgeFileName")
+    return rename_knowledge(resource_id, {"filename": filename, "expected_version": expected_version,
+                                         "operation_id": operation_id}, actor=actor,
+                            project_batch=service._index().project_relocated)
 
-    def create_file(resource_id: str, payload: dict[str, Any], *, actor: str = "") -> dict[str, Any]:
-        from knowledge_board_lan.knowledge_backend import create_item_file, KnowledgeVersionConflict
-        from management_portal import permission_system
-        from ..locking import mutation_projection_scope
-        from ..content_changes import capture_content_changes
 
-        if resource_id not in permission_system.permitted_ids(
-            actor, "RunResourceAction", "resource_id", [resource_id],
-        ):
-            raise PermissionError("Knowledge file creation requires contributor permission")
-        with mutation_projection_scope(resource_id):
-            with capture_content_changes(actor=actor, resource_id=resource_id) as captured:
-                try:
-                    result = create_item_file(resource_id, actor=actor, **payload)
-                except KnowledgeVersionConflict as exc:
-                    raise ResourceVersionConflict(str(exc), expected_version=exc.expected_version,
-                                                  current_version=exc.current_version) from exc
-            change_recording = None
-            if captured and (captured["errors"] or captured.get("unconfirmed_reason")):
-                change_recording = {"status": "unconfirmed",
-                                    "reason": captured.get("unconfirmed_reason") or "receipt_failed"}
-            return service._complete_mutation(
-                canonical_record(resource_id, result), resource_type=resource_id.partition("_")[0],
-                expected_id=resource_id, actor=actor, kind="update",
-                wait_for_index=True, index_timeout=45.0, change_recording=change_recording,
-            )
+def create_knowledge_file(service, resource_id, filename, text, expected_version, *, actor):
+    from knowledge_board_lan.knowledge_backend import create_item_file, KnowledgeVersionConflict
+    from ..locking import mutation_projection_scope
+    from ..content_changes import capture_content_changes
 
-    service.register_action_provider(MARKDOWN_REGISTERABLE_RESOURCE_TYPES, {
-        "knowledge.file.create": create_file,
-        "knowledge.file.rename": rename_file,
-    })
+    resource_id = service._named_operation_target(resource_id, MARKDOWN_REGISTERABLE_RESOURCE_TYPES,
+                                                   actor=actor, instruction="CreateKnowledgeFile")
+    with mutation_projection_scope(resource_id):
+        # Recheck after waiting for the writer lock, before creating bytes.
+        service._named_operation_target(resource_id, MARKDOWN_REGISTERABLE_RESOURCE_TYPES,
+                                         actor=actor, instruction="CreateKnowledgeFile")
+        with capture_content_changes(actor=actor, resource_id=resource_id) as captured:
+            try:
+                result = create_item_file(resource_id, filename=filename, text=text,
+                                          expected_version=expected_version, actor=actor)
+            except KnowledgeVersionConflict as exc:
+                raise ResourceVersionConflict(str(exc), expected_version=exc.expected_version,
+                                              current_version=exc.current_version) from exc
+        change_recording = None
+        if captured and (captured["errors"] or captured.get("unconfirmed_reason")):
+            change_recording = {"status": "unconfirmed",
+                                "reason": captured.get("unconfirmed_reason") or "receipt_failed"}
+        return service._complete_mutation(
+            canonical_record(resource_id, result), resource_type=service._identity.parse(resource_id).resource_type,
+            expected_id=resource_id, actor=actor, kind="update",
+            wait_for_index=True, index_timeout=45.0, change_recording=change_recording,
+        )

@@ -19,7 +19,14 @@ def get_pulse(inv: Invocation) -> dict[str, Any]:
 
 
 def publish_pulse_item(inv: Invocation) -> dict[str, Any]:
-    published = bool(inv.argument("published"))
+    return _change_publication(inv, published=True)
+
+
+def unpublish_pulse_item(inv: Invocation) -> dict[str, Any]:
+    return _change_publication(inv, published=False)
+
+
+def _change_publication(inv: Invocation, *, published: bool) -> dict[str, Any]:
     result = _pulse().update_publication(inv.caller, {
         "action": "publish" if published else "unpublish",
         "source_period": inv.argument("source_period"),
@@ -35,4 +42,5 @@ def publish_pulse_item(inv: Invocation) -> dict[str, Any]:
 HANDLERS = {
     "GetPulse": get_pulse,
     "PublishPulseItem": publish_pulse_item,
+    "UnpublishPulseItem": unpublish_pulse_item,
 }

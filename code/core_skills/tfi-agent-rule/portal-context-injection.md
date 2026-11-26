@@ -61,7 +61,7 @@ Fork 子 Resident 在首条真实输入按自己的身份与规则构造注入�
 切换保留原 Resident 身份、Segment 和 trace；新绑定首条真实输入由 Fork 的
 上下文投递机制导入有效窗口，按目标 Provider 注入自身规则，遵守正常额度准入。
 同账号只改模型或 effort 沿原生会话更新参数，不做 Portal 记忆交接。
-Fork 提供 full、compacted、recent-5、recent-10、message；默认完整继承，
+Fork 的 `fork_mode` 支持 `full`、`compacted`、`recent`、`message`；默认完整继承。选择 `recent` 时显式提供 `recent_rounds`，
 支持选定历史消息截止点和目标账号。压缩继承由原 Fork 初始化过程准备。
 清空仍用独立 ClearContext；选择账号不会清空上下文。
 完整协议见

@@ -64,7 +64,8 @@
       const draft = runtime.draft.body.components.find(row => row.key === effectId)?.config?.script_draft;
       if (!draft) throw new Error(t('请重新读取候选脚本'));
       if (!await window.PortalUI.confirm({title:t(decision === 'confirm' ? '确认候选脚本？' : '取消脚本草稿？'),message:`${draft.description}\n\n${draft.script}\n\n${(draft.endpoints || []).join(', ')}`,confirmLabel:t(decision === 'confirm' ? '确认' : '取消草稿')})) return;
-      const result = await execute('ReviewTemplateScript',{template_id:runtime.draft.template_id,effect_id:effectId,draft_hash:draftHash,decision},{expectedVersion:runtime.draft.version});
+      const instruction = decision === 'confirm' ? 'ConfirmTemplateScript' : 'CancelTemplateScriptDraft';
+      const result = await execute(instruction,{template_id:runtime.draft.template_id,effect_id:effectId,draft_hash:draftHash},{expectedVersion:runtime.draft.version});
       runtime.edit(result.template); onSaved?.(result.template);
     }),{signal:abort.signal});
     async function save(payload, copy = false) {
@@ -73,7 +74,7 @@
       if (!copy && !own) throw new Error(t('请用 Save As 保存为自己的模板'));
       const name = id && !copy ? 'UpdateTemplate' : 'CreateTemplate';
       const args = name === 'UpdateTemplate' ? {template_id: id, template: payload} : {template: payload};
-      await execute(name, {...args, dry_run: true});
+      await execute(name === 'UpdateTemplate' ? 'GetTemplateUpdatePreview' : 'GetTemplateCreatePreview', args);
       const result = await execute(name, args);
       if (copy) documentRevision += 1;
       templateId = result.template.template_id;
@@ -204,7 +205,7 @@
       save: () => runtime.view.busy(() => save(runtime.readDraft())), template: () => runtime?.draft,
       async acceptDraft(value) {
         const payload = window.LineageTemplateWorkshopDraft.payload({...runtime.draft,...value});
-        await execute('CreateTemplate', {template:payload, dry_run:true});
+        await execute('GetTemplateCreatePreview', {template:payload});
         if (dirty() && !await window.PortalUI.confirm({title:t('助手草稿已就绪'), message:t('画布有未保存的修改，是否使用助手版本？'), confirmLabel:t('使用助手版本'), cancelLabel:t('保留我的版本')})) return false;
         if (payload.kind !== runtime.draft.kind) throw new Error(t('模板 kind 不可修改；请另存为副本'));
         const savedBase = base;
@@ -215,7 +216,7 @@
       async load() {
         await templates.load();
         if (storeId) {
-          previewItem = (await execute('ListTemplateStore',{store_id:storeId})).items[0];
+          previewItem = (await execute('GetTemplateStoreItem',{store_id:storeId})).item;
           if (!previewItem) throw new Error(t('商店模板不存在或已下架'));
           templates.edit({...previewItem,builtin_key:'store_preview'});
         } else if (templateId) {await templates.openEditor(templateId);templateId=runtime.draft.template_id;onOpened?.(runtime.draft);} else templates.newTemplate();

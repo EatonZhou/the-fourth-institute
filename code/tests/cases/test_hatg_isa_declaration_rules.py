@@ -256,12 +256,12 @@ def test_each_object_has_one_parameter_name():
 
 
 # Changes with no single object to name: a work queue, a Portal instance,
-# Portal-wide settings and a backup export profile.
+# Portal-wide settings.
 # AcceptUserAuthorization creates credentials from a verified input; it does
 # not modify that message. CorrectResourceLifecycleAssociation changes the
 # (scope_id, resource_id) allocation, not the Workspace used as read evidence.
 # Neither operation has a single resource version to use as scalar CAS.
-WITHOUT_TARGET = {"ClaimResidentSummaryJobs", "RunGoogleDriveBackup", "RestartPortal",
+WITHOUT_TARGET = {"ClaimResidentSummaryJobs", "RestartPortal",
                   "UpdateExecutionSettings",
                   "AcceptUserAuthorization", "CorrectResourceLifecycleAssociation"}
 
@@ -272,10 +272,17 @@ def test_changes_to_an_existing_object_declare_it_as_target():
     创建与登记指令给出新对象的位置，“恰好给一个”的指令每种对象一个参数；其余修改指令的 target 指向它作用的对象，调用信封的标量 expected_version 按它比较。
     """
     catalog = instruction_catalog()
+    # This delete is a transaction over multiple entries, while the switch
+    # updates the single installation setting. Neither has a scalar object CAS.
+    batch = catalog["DeletePermissionEntry"]
+    switch = catalog["SetPermissionSystemEnabled"]
+    assert batch.parameter_map["entry_ids"].required and batch.parameter_map["entry_ids"].type == "array"
+    assert switch.parameter_map["enabled"].required and switch.parameter_map["enabled"].type == "boolean"
+    assert set(switch.parameter_map) == {"enabled"}
     missing = {name for name, declaration in catalog.items()
                if declaration.mutates and not declaration.target and not declaration.one_of
                and not name.startswith(("Create", "Register"))}
-    assert missing == WITHOUT_TARGET
+    assert missing == WITHOUT_TARGET | {batch.name, switch.name}
 
 
 def test_watch_instructions_resume_after_the_returned_cursor():
@@ -344,6 +351,115 @@ def test_at_least_one_group_rejects_a_call_without_any_of_its_parameters():
         declaration.validate_arguments(arguments)
 
 
+def test_d066_dry_run_matches_the_documented_exceptions():
+    """dry_run 只能出现在 ISA 规范单独列明的指令上。"""
+    paths = sorted(DECISIONS.glob("*decision_898b8911a2ff.md"))
+    if not DECISIONS.is_dir():
+        pytest.skip("HATG ISA decisions are not available on this host")
+    assert len(paths) == 1
+    spec = paths[0].read_text(encoding="utf-8")
+    clauses = [line for line in spec.splitlines() if line.startswith("- **按指令契约执行。**")]
+    assert len(clauses) == 1
+    documented = set(re.findall(r"`([A-Z][A-Za-z]+)\(dry_run(?:=true)?\)`", clauses[0]))
+    assert "RenameProject" in documented
+    actual = {name for name, spec in instruction_catalog().items() if "dry_run" in spec.parameter_map}
+    assert actual == documented
+
+
+@pytest.mark.parametrize(("name", "legacy"), [
+    ("ClearContext", ("active_execution_policy",)),
+    ("CreateLineage", ("familize",)),
+    ("CreateUpload", ("source_address",)),
+    ("DeletePermissionEntry", ("entry_id",)),
+    ("DeliverMessage", ("user_id", "temporary_credentials", "reply_to_message_id")),
+    ("InstallStoreTemplate", ("mode", "target_template_id")),
+    ("ListTemplateStore", ("store_id",)),
+    ("RelayMessage", ("quota_reviewed", "scope_gap", "scope_reviewed", "recover")),
+    ("ResolveRelayedRequest", ("steward_message_id",)),
+    ("RestartSession", ("operation", "context_strategy", "active_execution_policy")),
+    ("RunWorkspaceHandoff", ("source_resident_id", "target_resident_id")),
+    ("SetIntakeOpen", ("resident_id",)),
+    ("UpdatePostReadVersion", ("unread",)),
+    ("UpdateResidentWorkSummary", ("source_versions", "consolidation")),
+])
+def test_d066_removed_parameters_are_rejected_by_declarations(name, legacy):
+    command = declaration(name)
+    for parameter in legacy:
+        with pytest.raises(InstructionError) as raised:
+            command.validate_arguments({parameter: True})
+        assert raised.value.code == "instruction.invalid_arguments"
+        assert raised.value.details["unknown_arguments"] == [parameter]
+
+
+def test_d066_fork_and_delivery_enum_values_are_explicit():
+    fork = declaration("ForkResident")
+    assert set(fork.parameter_map["fork_mode"].enum) == {"full", "compacted", "recent", "message"}
+    assert fork.parameter_map["recent_rounds"].type == "integer"
+    activation_policy = declaration("DeliverMessage").parameter_map["activation_policy"]
+    assert set(activation_policy.enum) == {"enqueue_and_trigger", "attach_to_next"}
+
+
+def test_d066_prepared_input_declares_optional_credential_identifiers():
+    result = {field.name: field for field in declaration("PrepareResidentInput").result}
+    assert {name for name, field in result.items() if field.required} == {
+        "resident_id", "message_id", "status",
+    }
+    for name, parameter in (("credential_recipient_id", "principal_id"),
+                            ("credential_message_id", "message_id")):
+        field = result[name]
+        assert field.type == "string" and not field.required
+        assert parameter in field.description
+
+
+@pytest.mark.parametrize(("name", "identifier"), [
+    ("CreateContextReset", "resident_id"),
+    ("DeletePermissionEntry", "entry_ids"),
+    ("DeliverMessage", "resident_id"),
+    ("InstallStoreTemplate", "store_id"),
+    ("RunWorkspaceHandoff", "handoff_id"),
+    ("SetIntakeOpen", "resident_ids"),
+])
+def test_d066_single_target_endpoints_have_a_required_identifier(name, identifier):
+    command = declaration(name)
+    assert command.parameter_map[identifier].required
+    assert not command.one_of
+
+
+def test_d066_resource_type_declarations_omit_action_metadata():
+    for name in ("GetResourceType", "ListResourceTypes"):
+        fields = {field.name for field in declaration(name).result}
+        assert fields.isdisjoint({"actions", "resource_actions"}), name
+
+
+def test_d066_preview_declarations_are_read_only():
+    for name in (
+        "GetPermissionSchemeActivationPreview", "GetPermissionSchemeCreatePreview",
+        "GetPermissionSchemeUpdatePreview", "GetTemplateApplyPreview",
+        "GetTemplateCreatePreview", "GetTemplateUpdatePreview",
+    ):
+        command = declaration(name)
+        assert not command.mutates and not command.streaming, name
+        assert "dry_run" not in command.parameter_map, name
+
+
+@pytest.mark.parametrize(("name", "left", "right"), [
+    ("GetMailbox", {"resident_id": "resident_aaaaaaaaaaaa"}, {"user_id": "user_example"}),
+    ("GetInstructionExecution", {"instruction_id": "inst_example"},
+     {"instruction": "ListInstructions", "idempotency_key": "example"}),
+])
+def test_d066_alternative_arguments_are_declared_and_enforced(name, left, right):
+    command = declaration(name)
+    assert {frozenset(group) for group in command.schema()["one_of"]} == {
+        frozenset(left), frozenset(right),
+    }
+    for valid in (left, right):
+        command.validate_arguments(valid)
+    for invalid in ({}, left | right):
+        with pytest.raises(InstructionError) as raised:
+            command.validate_arguments(invalid)
+        assert raised.value.code == "instruction.invalid_arguments"
+
+
 def test_post_marks_declares_a_partial_update_on_a_post():
     """置顶和精华独立可选，显式 false 是有效更新，必须给出至少一个标记。"""
     marks = declaration("UpdatePostMarks")
@@ -405,19 +521,20 @@ def _contract_values(value):
 
 
 def test_instruction_name_migration_preserves_catalog_and_default_permissions():
-    """保留仍在目录中的改名指令契约；三份收缩计划移除的后继指令不得留下权限槽。"""
+    """保留仍在目录中的改名指令契约，退役后继指令不得留下权限槽。"""
     from management_portal.permission_system.scheme.compiler import compile_scheme
     from management_portal.permission_system.scheme.repository import builtin_documents
-    from tests.cases.test_hatg_instruction_discovery import RETIRED_PLAN_INSTRUCTIONS
+    from tests.cases.test_hatg_instruction_discovery import D066_RETIRED_INSTRUCTIONS, RETIRED_PLAN_INSTRUCTIONS
 
+    retired = RETIRED_PLAN_INSTRUCTIONS | D066_RETIRED_INSTRUCTIONS
     baseline = Path(__file__).with_name("fixtures") / "isa_renamed_contracts.json"
     expected = json.loads(baseline.read_text(encoding="utf-8"))
-    assert set(expected) == set(INSTRUCTION_RENAMES.values()) - RETIRED_PLAN_INSTRUCTIONS
+    assert set(expected) == set(INSTRUCTION_RENAMES.values()) - retired
     default = builtin_documents()["default"]
     scheme = compile_scheme(default)
     classified = {element.split(":", 1)[0] for element in default["instructions"]}
-    assert not RETIRED_PLAN_INSTRUCTIONS & classified
-    assert not {name for name in RETIRED_PLAN_INSTRUCTIONS if scheme.slots(name)}
+    assert not retired & classified
+    assert not {name for name in retired if scheme.slots(name)}
     assert scheme.unmapped() == []
     assert scheme.describe("UpdatePostMarks") == {
         "required": True,
@@ -430,7 +547,7 @@ def test_instruction_name_migration_preserves_catalog_and_default_permissions():
             result = routing.execute({"instruction": name, "arguments": arguments}, context)
             assert result.status == "failed" and result.error["code"] == "instruction.unknown", old
         assert not scheme.slots(old)
-        if new in RETIRED_PLAN_INSTRUCTIONS:
+        if new in retired:
             continue
         schema = declaration(new).schema()
         assert schema["instruction"] == new

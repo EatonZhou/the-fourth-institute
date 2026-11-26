@@ -32,6 +32,18 @@
     const accessUser = (username = state.selectedUsername) => (
       state.access?.users?.find(user => user.username === username) || null
     );
+    const isPortalAdmin = me.access?.user_category === "portal_admin";
+    const isOwnUser = user => user.username.toLowerCase() === String(me.username || "").toLowerCase();
+    const isAdministratorLocked = user => user.category === "portal_admin" && (!isPortalAdmin || isOwnUser(user));
+    const mayEditAccess = user => isPortalAdmin && !isAdministratorLocked(user);
+    let saving = false;
+    const renderEditability = user => {
+      const mayUpdate = user?.allows?.UpdateUser === true;
+      const mayEdit = Boolean(user && mayEditAccess(user));
+      ["display-name", "email"].forEach(name => { $(name).disabled = saving || !mayUpdate; });
+      ["status", "category"].forEach(name => { $(name).disabled = saving || !mayEdit; });
+      $("editor").querySelector('button[type="submit"]').disabled = saving || (!mayUpdate && !mayEdit);
+    };
     const renderUserList = () => {
       const host = $("user-list");
       host.replaceChildren();
@@ -62,34 +74,25 @@
       $("email").value = user.email || "";
       $("status").value = user.status || "active";
       $("category").value = user.category || "member";
-      // Saving runs UpdateUser on this username, category included; each user row carries the
-      // server's answer for the caller (allows.UpdateUser), and the form is editable only when it allows it.
-      const mayUpdate = user.allows?.UpdateUser === true;
-      ["display-name", "email", "status", "category"].forEach(name => { $(name).disabled = !mayUpdate; });
-      $("editor").querySelector('button[type="submit"]').disabled = !mayUpdate;
-      // The administrator list is for Portal 管理员 alone and never their own row, in either mode
-      // and under every scheme (b820 §3.1): the category and status of an administrator's row,
-      // its deletion, and making anyone an administrator.
-      const callerAdmin = me.access?.user_category === "portal_admin";
       const rowAdmin = user.category === "portal_admin";
-      const own = user.username.toLowerCase() === String(me.username || "").toLowerCase();
-      const listLocked = rowAdmin && (!callerAdmin || own);
-      if (listLocked) { $("status").disabled = true; $("category").disabled = true; }
-      $("category").querySelector('option[value="portal_admin"]').disabled = !callerAdmin && !rowAdmin;
+      const listLocked = isAdministratorLocked(user);
+      renderEditability(user);
+      $("category").querySelector('option[value="portal_admin"]').disabled = !isPortalAdmin && !rowAdmin;
       $("remove-user-button").hidden = listLocked;
       $("admin-note").hidden = !listLocked;
       $("admin-note").textContent = !listLocked ? ""
-        : window.PortalI18n.t(own ? "不能取消、停用或删除自己的 Portal 管理员身份；需要时由另一位 Portal 管理员操作。"
+        : window.PortalI18n.t(isOwnUser(user) ? "不能取消、停用或删除自己的 Portal 管理员身份；需要时由另一位 Portal 管理员操作。"
           : "只有 Portal 管理员能修改管理员名单：这位 Portal 管理员的分类和状态不能在这里修改，也不能删除。");
       $("reset-password-button").hidden = user.username === me.username;
       const draft = userDrafts.get(user.username);
       if (draft) {
+        if (saving) remember($("editor"));
         const values = JSON.parse(draft.values);
         $("editor").querySelectorAll("input,select,textarea").forEach((input, index) => {
           if (input.type === "checkbox" || input.type === "radio") input.checked = values[index];
           else input.value = values[index];
         });
-        baselines.set($("editor"), draft.baseline);
+        if (!saving) baselines.set($("editor"), draft.baseline);
       } else remember($("editor"));
     };
     const renderAudit = () => {
@@ -134,26 +137,46 @@
     const saveAccess = async event => {
       event.preventDefault();
       const user = accessUser();
-      if (!user) return;
+      if (!user || saving || panelState.destroyed) return;
+      const userId = user.username;
+      const displayName = $("display-name").value.trim();
+      const email = $("email").value.trim();
+      const category = $("category").value;
+      const status = $("status").value;
+      const changes = {};
+      if (displayName !== (user.display_name || userId)) changes.display_name = displayName;
+      if (email !== (user.email || "")) changes.recovery_email = email;
+      const calls = [];
+      if (user.allows?.UpdateUser === true && Object.keys(changes).length) calls.push(["UpdateUser", {changes}]);
+      if (mayEditAccess(user)) {
+        if (status !== (user.status || "active")) calls.push(["UpdateUserStatus", {status}]);
+        if (category !== (user.category || "member")) calls.push(["UpdateUserCategory", {category}]);
+      }
+      if (!calls.length) return;
+      saving = true;
+      panelState.pending++;
+      renderEditability(user);
       try {
-        // Status and category go only when changed: on an administrator's row either one is a
-        // change to the administrator list, which a profile edit must not ask for.
-        const category = $("category").value;
-        const status = $("status").value;
-        await userInstruction("UpdateUser", {
-          user_id: user.username,
-          changes: {
-            display_name: $("display-name").value.trim(),
-            recovery_email: $("email").value.trim(),
-            ...(status !== (user.status || "active") ? {status} : {}),
-            ...(category !== (user.category || "member") ? {category} : {}),
-          },
-        });
-        await loadAccess(user.username, user.username);
-        invalidate({views: ["entries"], principalId: user.username, reason: "user.updated"});
-        notice(window.PortalI18n.text`Access saved for ${user.username}.`, "success");
+        for (const [name, args] of calls) {
+          if (panelState.destroyed) return;
+          await userInstruction(name, {user_id: userId, ...args});
+        }
+        if (panelState.destroyed) return;
+        await loadAccess(userId, userId);
+        notice(window.PortalI18n.text`Access saved for ${userId}.`, "success");
       } catch (error) {
+        if (panelState.destroyed) return;
+        // An earlier field may already have committed. Keep the draft and compare
+        // against the refreshed row so retrying does not repeat a confirmed change.
+        await loadAccess(userId).catch(() => {});
         notice(error.message || window.PortalI18n.t("Unable to save access."), "error");
+      } finally {
+        saving = false;
+        panelState.pending--;
+        if (!panelState.destroyed) {
+          renderEditability(accessUser());
+          invalidate({views: ["entries"], principalId: userId, reason: "user.updated"});
+        }
       }
     };
 

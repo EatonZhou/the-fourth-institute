@@ -613,6 +613,39 @@ class DeviceRegistryAdapter(_PathsAdapter):
         }
 
 
+class MailboxTodoAdapter(_PathsAdapter):
+    """Discovery cache only; the owner rechecks private reads and supplies ordering."""
+
+    name = "mailbox_todo"
+    resource_types = frozenset({"mailbox_todo"})
+
+    def fingerprint(self):
+        from management_portal import mailbox_todos
+        rows = mailbox_todos.all_items()
+        return hashlib.sha256(json.dumps(rows, sort_keys=True).encode()).hexdigest()
+
+    def project_record(self, resource_type, item):
+        from management_portal import mailbox_todos
+        if resource_type != "mailbox_todo":
+            raise ValueError("Mailbox Todo projection requires its resource type")
+        current = mailbox_todos.lookup_resource(item["resource_id"])
+        return self._project_body(current)
+
+    def _project_body(self, current):
+        result = resource_record(
+            resource_id=current["resource_id"], resource_type="mailbox_todo",
+            title=current["text"], adapter=self.name, modified_at=current["updated_at"],
+            attributes=current,
+        )
+        result["version"] = current["version"]
+        return result
+
+    def scan(self):
+        from management_portal import mailbox_todos
+        rows = mailbox_todos.all_items()
+        return [self._project_body(row) for row in rows], {}
+
+
 class SavedSearchAdapter(_PathsAdapter):
     name = "saved_search"
     resource_types = frozenset({"search"})

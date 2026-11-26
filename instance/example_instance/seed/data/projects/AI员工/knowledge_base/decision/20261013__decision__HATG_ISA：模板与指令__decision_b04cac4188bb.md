@@ -105,7 +105,7 @@ links:
 - `from: target` 绑定本次目标，不新建 Resident。
 - `from: lineage_leader` 绑定当前 Lineage Leader；没有 Leader 时拒绝施加。
 - `from: new` 创建 Resident，可声明 `title`、`provider`、`account`、`settings`。
-- `from: fork` 从前面已声明的角色派生；`fork_of` 是来源角色 key，`fork_mode` 可为 `full`、`compacted`、`recent-5`、`recent-10`。
+- `from: fork` 从前面已声明的角色派生；`fork_of` 是来源角色 key，`fork_mode` 可为 `full`、`compacted`、`recent`；`recent` 须配整数字段 `fork_recent_rounds`（最少 1）。
 
 包含 target 角色时，选择多个 Resident 会分别施加一份结构；所有 target 角色在每份结构中绑定该次目标。没有 target 角色时只生成一份结构。参数、图配置和所有目标的 Fork Provider 继承链在创建之前检查。新建 Resident、组件、连线取得新 ID，并放到目标附近或给定坐标；`function_block` 为 true 时把本次新建元素封装，目标和既有 Leader 保留在块外。块内元素的 `key` 保留模板局部标识，块的 `template_id` 记录来源。
 
@@ -179,7 +179,7 @@ Fork 的 Provider 一律继承来源。模板或施加参数显式填写相同 P
 
 值完全由一个引用组成时保留其原始类型，例如 `"max_rounds": "{{param.max_rounds}}"` 渲染为整数；引用嵌在文本中时转为文本。未知参数名、角色名和修饰符在规范化时拒绝。角色引用必须由模块提供；结构角色来自 roles，Prompt 与探索等模块使用 target。
 
-Effect DSL 内的替换使用脚本专用转义器。在带引号的脚本文本中，参数包含引号、换行或类似 DSL 变量的文本时仍按参数内容处理，不把内容拼成新的指令。创建或编辑的 `dry_run` 负责正文校验与行为预览，不执行脚本、不投递消息、不创建 Resident，也不验证只有实际施加目标才能确定的所有运行条件。
+Effect DSL 内的替换使用脚本专用转义器。在带引号的脚本文本中，参数包含引号、换行或类似 DSL 变量的文本时仍按参数内容处理，不把内容拼成新的指令。创建或编辑预览 负责正文校验与行为预览，不执行脚本、不投递消息、不创建 Resident，也不验证只有实际施加目标才能确定的所有运行条件。
 
 ## 九个内置模板
 
@@ -211,9 +211,9 @@ Effect DSL 内的替换使用脚本专用转义器。在带引号的脚本文本
 
 模板是全 Portal 共享的普通资料。各操作沿当前权限方案鉴权，本篇“指令一览”列出默认方案要求；不能把已认证或创建者身份当作模板写入授权（decision_b820faf42218）。模板写入记录真实 created_by/updated_by，施加到 Lineage 的步骤继续按其目标判定。
 
-`ApplyTemplate` 要求目标 `lineage_id` 的 contributor，因为施加可能修改图、创建 Resident 或执行指令。`CreateTemplate` 和 UpdateTemplate 一样要求对“公共内容”有 contributor，因为 Lineage 模板是所有人共用的定义；携带 `from_selection` 时还要求其中 `lineage_id` 的 viewer，因为需要读取图与角色设置。此检查也适用于带选区的 dry_run。内嵌 ISA 调用继续使用施加者身份和各指令自己的权限规则。模板不是额外授权凭证。
+`ApplyTemplate` 要求目标 `lineage_id` 的 contributor，因为施加可能修改图、创建 Resident 或执行指令。`CreateTemplate` 和 UpdateTemplate 一样要求对“公共内容”有 contributor，因为 Lineage 模板是所有人共用的定义；携带 `from_selection` 时还要求其中 `lineage_id` 的 viewer，因为需要读取图与角色设置。此检查也适用于带选区的创建或更新预览。内嵌 ISA 调用继续使用施加者身份和各指令自己的权限规则。模板不是额外授权凭证。
 
-模板商店四条指令同样走公共内容权限：`ListTemplateStore` 要求对“公共内容”有 viewer，`PublishTemplate`、`InstallStoreTemplate` 与 `UnpublishTemplate` 要求对“公共内容”有 contributor。业务层同时核验所有权：`PublishTemplate` 允许创建者发布本人的非内置模板，也允许对“公共内容”持有 admin 权限的调用者发布 Resident 自建源模板（不含商店安装副本，保留原创建者归属，人类个人模板仍仅本人可发布）；`InstallStoreTemplate` 只在调用者本人名下创建或更新安装副本；`UnpublishTemplate` 只允许该条目发布者或对“公共内容”持有 admin 权限的调用者下架。
+模板商店指令同样走公共内容权限：`ListTemplateStore` 与 `GetTemplateStoreItem` 要求对“公共内容”有 viewer，`PublishTemplate`、`InstallStoreTemplate`、`UpdateInstalledTemplate`、`InstallStoreTemplateAsNew` 与 `UnpublishTemplate` 要求对“公共内容”有 contributor。业务层同时核验所有权：`PublishTemplate` 允许创建者发布本人的非内置模板，也允许对“公共内容”持有 admin 权限的调用者发布 Resident 自建源模板（不含商店安装副本，保留原创建者归属，人类个人模板仍仅本人可发布）；`InstallStoreTemplate`、`UpdateInstalledTemplate` 与 `InstallStoreTemplateAsNew` 只在调用者本人名下创建或更新安装副本；`UnpublishTemplate` 只允许该条目发布者或对“公共内容”持有 admin 权限的调用者下架。
 
 ## 资源类型
 
@@ -241,19 +241,19 @@ HATG 画布的控件分在四角：左上是缩放（缩小、百分比、放大
 
 - **进入与切换**：HATG 工具箱标题栏在商店旁提供工坊图标。工坊最左侧是可滚动的双列图标工具箱，各组独立展开／收起且显示折叠标识和 aria-expanded；折叠仅改本面板视图，不改变共用目录或草稿，替代文字列表与左下角抽屉，包含内置及本人创建或安装的模板，隐藏内部工坊助手。按职责、角色、组织、交办分区，空角色组不生成模板。卡片使用共用图标／缩略图，名称与说明通过悬停和键盘焦点提示展示，保留 aria-label 与当前项选中态。单击在当前面板载入模板；有未保存或无效草稿时可保留或放弃，迟到加载不能覆盖新选择或新编辑。HATG 保留拿起／施加动作。
 - **顶栏**：标题行位于组件最上方并横跨组件；可直接修改模板名，商店图标放标题右侧，不独占工具箱顶部。图／列表／JSON 为独立的视图分组，保留选中态；恢复内置、删除、Save、Save As 属于另一模板操作组，保留原权限与确认。两组统一使用 Portal 按钮、图标和焦点样式，窄屏按组换行，Save 可达，不混成裸按钮菜单。撤销／重做使用独立的草稿历史控件。右侧按权限保留本人已保存非内置模板的发布按钮或商店预览的安装入口；发布前仍要求先保存草稿。删除后关闭卡片，已施加实例保留。
-- **Save 与 Save As**：Save 把草稿存回当前模板，新模板第一次 Save 走 `CreateTemplate`，之后走 `UpdateTemplate`。Save As 用当前草稿 `CreateTemplate` 一份新模板并切换过去。内置模板、他人创建的模板与未安装的商店预览快照（独立页地址为 `/template-workshop?store=<store_id>`）不能 Save，按钮不可用，改动用 Save As 存成自己的模板。两者都先用 dry_run 校验，服务端错误显示在页面上。保存只写入本人的模板，与发布到商店是两个动作。“从未保存”与“相对当前编辑基线有变化”分开：编辑器初始化完成后建立基线，未操作的新模板、已有／内置模板及商店预览直接关闭不提示；查看节点、缩放、平移和自动校验不构成修改。正文、参数、图结构及需持久保存的位置变化受保护，撤回原值恢复干净。Save／Save As 成功更新基线，失败、无效草稿及助手交回的实际新修改保持保护；关闭、离开页面和模板切换使用同一草稿状态。
+- **Save 与 Save As**：Save 把草稿存回当前模板，新模板第一次 Save 走 `CreateTemplate`，之后走 `UpdateTemplate`。Save As 用当前草稿 `CreateTemplate` 一份新模板并切换过去。内置模板、他人创建的模板与未安装的商店预览快照（独立页地址为 `/template-workshop?store=<store_id>`）不能 Save，按钮不可用，改动用 Save As 存成自己的模板。两者都先用对应的创建或更新预览校验，服务端错误显示在页面上。保存只写入本人的模板，与发布到商店是两个动作。“从未保存”与“相对当前编辑基线有变化”分开：编辑器初始化完成后建立基线，未操作的新模板、已有／内置模板及商店预览直接关闭不提示；查看节点、缩放、平移和自动校验不构成修改。正文、参数、图结构及需持久保存的位置变化受保护，撤回原值恢复干净。Save／Save As 成功更新基线，失败、无效草稿及助手交回的实际新修改保持保护；关闭、离开页面和模板切换使用同一草稿状态。
 - **画布**：结构模板用图视图铺满卡片，打开时适配全部节点，缩放不超过 100%；目标、Lineage Leader 与已有元素等施加绑定位置灰显。选中节点或连线时弹出浮动检查器。原语 Event、Effect、Loop、Filter、Selector、Reducer、Seed 在标题行下方、画布上方横排，图标和默认配置来自现有 manifest；绑定空位（目标、Leader、新建、Fork、已有元素）放上方独立小组，不作为左栏角色模板。单击顶部按钮插入，支持拖放；左栏模板拖入时复制其元素，key 与参数冲突自动改名。不支持组合的模板仍在目录中，拖入明确反馈且不改变草稿。配方图按编辑能力禁用原语插入。窄面板顶部横向滚动，Save 与画布保持可见。沿用 Portal 默认／暗色及 liquid-glass 主题变量，并在减少透明或无模糊能力时使用可读的实色表面，不强制切换用户主题。
 - **自动计算**：结构模板的分组固定为 structure，`targets` 由图决定：有 `from: target` 角色时为 resident，否则有已有元素时为 selection，都没有时为 canvas。页面不再提供分组和目标范围的选择。说明、参数与施加预览放在默认收起的“模板信息”面板。
-- **配方图**：familize 与 family_duty 通过各自施加时使用的图生成器提供 `editor.graph`，包含本地角色／组件／连线与可编辑字段映射。它是派生视图，不写入模板正文、不创建运行对象；成员以按施加名册展开的绑定位置显示。选中元素可修改其配方字段和任务指南，并查看实际配置；平台维护的结构与脚本不能在配方图中自由增删。职责实例工坊仍按实例归属编辑。`GetTemplate`、保存及 dry_run 返回该图，`ListTemplates` 只返回轻量编辑说明。
+- **配方图**：familize 与 family_duty 通过各自施加时使用的图生成器提供 `editor.graph`，包含本地角色／组件／连线与可编辑字段映射。它是派生视图，不写入模板正文、不创建运行对象；成员以按施加名册展开的绑定位置显示。选中元素可修改其配方字段和任务指南，并查看实际配置；平台维护的结构与脚本不能在配方图中自由增删。职责实例工坊仍按实例归属编辑。`GetTemplate`、保存结果及预览 返回该图，`ListTemplates` 只返回轻量编辑说明。
 - **其他模块**：prompt、explore、script 保留对应的正文、字段或脚本编辑器；没有持久 HATG 结构的模板不生成虚构节点。
 
 草稿历史与 dirty 使用同一编辑内容：图／列表／JSON、Inspector、元数据、参数、结构及位置、助手草稿接收共用撤销／重做。一次拖动为一步，连续文本输入合并；撤销后新编辑清除 redo，切换资源重置历史。Save 成功更新比较基线但不把服务端保存当作可撤销动作；本地撤销到已保存内容时恢复干净，Save As 切到新资源。无效 JSON 原文和失败草稿保留并受关闭保护，可通过本地历史恢复；视图、折叠、缩放和平移、浮层不是内容变更。删除已保存模板、恢复内置、Effect 确认和消息发送不作为可逆服务端操作。职责实例复用本地历史机制，仍由自己的 revision、预览和保存流程提交。
 
-工坊助手每个用户一个，是用户 My Lineage（`lineage_membership` 为 personal、由该用户创建的 Lineage）中的一个普通 Resident，帮用户画职责模板的图。它不加入 My Lineage 中的个人助手 Family，Family 的初始化与同步也不吸收它。用户第一次在工坊里发消息时，页面以 My Lineage 的画布为目标施加内置模板 workshop_assistant，再用 `CreateDuty` 给它加一条固定职责（memory_level 为 session），内容是助手的操作说明；操作说明自带结构写法，不依赖某个项目的知识条目。之后在任何 Lineage 打开工坊，都与同一位助手对话。页面在 My Lineage 中按 Function Block 的 `template_id` 等于该内置模板固定 ID 找到助手，不按名字查找。用户没有 My Lineage 时，对话栏说明原因并停用发送，不在其他 Lineage 中创建助手。对话框使用 Portal 的 Chat 组件，运行设置走助手自己的对话设置。
+工坊助手每个用户一个，是用户 My Lineage（`lineage_membership` 为 personal、由该用户创建的 Lineage）中的一个普通 Resident，帮用户画职责模板的图。它不加入 My Lineage 中的个人助手 Family，Family 的初始化与同步也不吸收它。用户第一次在工坊里发消息时，页面以 My Lineage 的画布为目标施加内置模板 workshop_assistant，再用 以仅含提示词的 structure 模板通过 `ApplyTemplate` 为它安装固定职责（memory_level 为 session），内容是助手的操作说明；操作说明自带结构写法，不依赖某个项目的知识条目。之后在任何 Lineage 打开工坊，都与同一位助手对话。页面在 My Lineage 中按 Function Block 的 `template_id` 等于该内置模板固定 ID 找到助手，不按名字查找。用户没有 My Lineage 时，对话栏说明原因并停用发送，不在其他 Lineage 中创建助手。对话框使用 Portal 的 Chat 组件，运行设置走助手自己的对话设置。
 
 发给助手的消息只带当前模板的资源引用；新模板尚未保存时注明“新模板，尚未保存”，不附带画布内容。画布有未保存的修改时，输入框上方提示助手看到的是上次保存的版本，旁边有 Save 按钮。
 
-助手不保存模板。它用 `GetTemplate` 读模板，按本篇 structure 一节写出完整草稿（kind、title、description、parameters、body、layout），先用 `CreateTemplate` 的 dry_run 校验，再写入自己 Workspace 的 `workshop/<template_id>.json`；新模板写 `workshop/new-<页面会话标识>.json`。助手不调用 `UpdateTemplate`、`ApplyTemplate`，也不调用非 dry_run 的 `CreateTemplate`。助手这一轮结束后，工坊用 `ReadResource` 读取这个文件，载入画布成为未保存的草稿；画布上已有用户的未保存修改时，先让用户选择使用助手版本或保留自己的版本。草稿改变 kind 时拒绝载入。用户可以继续修改，最后由用户 Save，模板因此始终记在用户名下。
+助手不保存模板。它用 `GetTemplate` 读模板，按本篇 structure 一节写出完整草稿（kind、title、description、parameters、body、layout），先用 `GetTemplateCreatePreview` 校验，再写入自己 Workspace 的 `workshop/<template_id>.json`；新模板写 `workshop/new-<页面会话标识>.json`。助手不调用 `UpdateTemplate`、`ApplyTemplate`，也不调用`CreateTemplate`。助手这一轮结束后，工坊用 `ReadResource` 读取这个文件，载入画布成为未保存的草稿；画布上已有用户的未保存修改时，先让用户选择使用助手版本或保留自己的版本。草稿改变 kind 时拒绝载入。用户可以继续修改，最后由用户 Save，模板因此始终记在用户名下。
 
 编辑器提供通用标题、说明、分组、目标范围、参数页与模块内容页，标题旁显示模板的鸽子：内置模板沿用原 Function Block 的鸽子（Agent Loop 0、扩展想法 2、修订回流 3、Family 4、扩展方案 34、Leader 脉冲 35、固定提醒 37、定时工作 38，即鸽子图集的序号），其他模板按 template_id 取鸽子。Prompt 编辑消息正文，并说明中括号占位和填入草稿的用法；脚本使用代码编辑区；专用模块使用 editor.fields。结构模板有图、列表、JSON 三种视图，默认是图视图：
 
@@ -273,11 +273,11 @@ HATG 画布的控件分在四角：左上是缩放（缩小、百分比、放大
   - 检查器为已有元素显示“施加时”（保留、删除）、连线的“查找数量”（恰好一条、全部逐条施加）与 Event 的“事件类型条件”，下方是与 HATG 编辑区相同的设置字段。在保留的元素上修改设置，元素自动变为“修改”，只把改动的字段写入 `update.config`，原配置保留在 `config` 中用于比较；“撤销修改”恢复为保留。
   - 新建组件和连线的检查器可选“沿用已有元素的设置”，对应 `config_from`。
 
-列表视图与 JSON 视图编辑同一份 body；列表视图另有“已有元素”一页。编辑过程通过 CreateTemplate 或 UpdateTemplate 的 dry_run 获得规范结果与 describe 预览，保存时才写入模板。
+列表视图与 JSON 视图编辑同一份 body；列表视图另有“已有元素”一页。编辑过程通过 `GetTemplateCreatePreview` 或 `GetTemplateUpdatePreview` 获得规范结果与 describe 预览，保存时才写入模板。
 
 `editor.fields` 的字段说明包含 `name`、`type`、`label`，并可带 `default`、`options`、`multiline`、`language`、数值范围等。需要配置新建角色时，结构模板读取 body.roles 中的 new/fork；其他模块提供 `editor.resident_roles`，每项含 `key`、`title`、`from`，以及可选 Provider、账号、settings、说明。Family 提供 steward/router，探索提供 explorer。新增模块的角色表单复用这一描述。
 
-提示词以外的模板施加时存在参数或新建角色则展示参数与起始设置表单，同时显示行为预览；持续结构可填写结果标题。没有参数也没有新建角色时直接施加。带已有元素的结构模板在施加前总是打开施加表单：表单以 `ApplyTemplate` 的 dry_run 按目标列出会找到、修改、删除的元素和将新建的数量，同时在画布上标出这些元素；某个“恰好一条”的连线找到多条时，表单提供候选下拉框，选定结果作为 `match_choices` 提交。工坊提供 Save As、删除与恢复内置；删除或恢复只改变模板资料。改变 kind 需要创建另一份模板，不能在已有条目上换执行类型。
+提示词以外的模板施加时存在参数或新建角色则展示参数与起始设置表单，同时显示行为预览；持续结构可填写结果标题。没有参数也没有新建角色时直接施加。带已有元素的结构模板在施加前总是打开施加表单：表单以 `GetTemplateApplyPreview` 按目标列出会找到、修改、删除的元素和将新建的数量，同时在画布上标出这些元素；某个“恰好一条”的连线找到多条时，表单提供候选下拉框，选定结果作为 `match_choices` 提交。工坊提供 Save As、删除与恢复内置；删除或恢复只改变模板资料。改变 kind 需要创建另一份模板，不能在已有条目上换执行类型。
 
 施加表单的行为说明代入当前填写的参数，并随输入更新。例如间隔填写 300 时，说明显示 300 秒。预览先翻译模板说明，再把参数值作为纯文本插入；空参数保留引用以提示尚未填写。模板编辑器继续显示参数引用，施加预览不改写模板正文或已保存的默认值。
 
@@ -292,10 +292,10 @@ HATG 画布的控件分在四角：左上是缩放（缩小、百分比、放大
 发布与安装以快照隔离个人编辑与全站共享：
 
 - **发布与新版本**：本人创建的已保存非内置模板可发布到商店（对“公共内容”持有管理员权限的调用者也可发布 Resident 自建源模板），可附一句 `release_note`。首次发布分配稳定的 `store-<12位小写十六进制>`、记录源模板创建者为 `publisher` 并保存版本 1 快照；之后源模板在本地的修改不会自动改动商店条目，再次发布才递增商店 `version`、追加 `versions` 历史元信息并刷新快照，曾下架的条目同步恢复上架。
-- **安装与更新冲突处理**：安装把当前上架快照复制为调用者名下的个人模板，记录 `installed_from_store_id`、`installed_store_version` 与 `installed_store_hash`。源条目发布新版本后，若本地副本的内容哈希仍等于 `installed_store_hash`（未做本地修改），更新原地覆盖该模板并保留 `template_id`；若本地已修改（`locally_modified` 为真），界面让用户选择“覆盖更新”（`mode: "overwrite"`，用商店新版覆盖当前模板）或“保留本地修改并另存新版”（`mode: "copy"`，解除旧模板的商店关联以保留本地改动，同时新建一份跟踪商店新版的模板）。
+- **安装与更新冲突处理**：安装把当前上架快照复制为调用者名下的个人模板，记录 `installed_from_store_id`、`installed_store_version` 与 `installed_store_hash`。源条目发布新版本后，若本地副本的内容哈希仍等于 `installed_store_hash`（未做本地修改），界面可以直接调用 `UpdateInstalledTemplate` 原地覆盖并保留 `template_id`；若本地已修改（`locally_modified` 为真），界面让用户选择“覆盖更新”（`UpdateInstalledTemplate`，用商店新版覆盖当前模板）或“保留本地修改并另存新版”（`InstallStoreTemplateAsNew`，解除旧模板的商店关联以保留本地改动，同时新建一份跟踪商店新版的模板）。
 - **下架**：发布者本人或公共内容管理员可下架条目。下架后 `active` 置为 `false`，商店列表不再返回该条目；其他用户已安装进个人工具箱的副本继续保留。
 
-职责实例可通过 Resident Menu 的“打开详情”或 Function Block 的“在工坊中编辑”进入同一工坊组件，资源身份为 `{lineage_id,function_block_id}`，入口 URL 为 `/lineage?lineage=<id>&view=hatg&duty=<id>`。直接拥有的组件、连线和职责记忆进入本地草稿，外部引用只读；Resident 节点配置与嵌套职责在后续角色／组织层处理。保存调用带 `expected_version` 的 ApplyLineageChanges，先 dry_run 展示同一请求的差异，再由用户确认提交。冲突保留草稿，重新载入需确认丢弃。助手草稿携带 Lineage、职责 ID、revision；每张卡片使用独立草稿路径，加载时只做校验，不直接保存。
+职责实例可通过 Resident Menu 的“打开详情”或 Function Block 的“在工坊中编辑”进入同一工坊组件，资源身份为 `{lineage_id,function_block_id}`，入口 URL 为 `/lineage?lineage=<id>&view=hatg&duty=<id>`。直接拥有的组件、连线和职责记忆进入本地草稿，外部引用只读；Resident 节点配置与嵌套职责在后续角色／组织层处理。保存调用带 `expected_version` 的 ApplyLineageChanges，先用 `GetLineageChangesPreview` 展示同一请求的差异，再由用户确认提交。冲突保留草稿，重新载入需确认丢弃。助手草稿携带 Lineage、职责 ID、revision；每张卡片使用独立草稿路径，加载时只做校验，不直接保存。
 
 结构 body 可选 `duty:{description,category,memory:{level,prompt}}`，只保存职责定义，不保存 holder_id；须与 target 空位和 function_block:true 同用。施加到目标 Resident 时按原记忆层级建立职责，纯提示词也可建立没有程序元素的职责块。从单条职责另存模板保留这些字段，持有者转换为 target；组织持有的纯 Effect 链可保存为结构模板。包含 Resident 或嵌套职责的抽取留给角色／组织模板；无法用现有 match 关系解析的外部引用拒绝导出，不把当前实例 ID 固化成模板。
 
@@ -305,35 +305,49 @@ HATG 画布的控件分在四角：左上是缩放（缩小、百分比、放大
 | --- | --- | --- | --- |
 | `ListTemplates` | 否 | 列出共享模板与模块描述，可按施加目标过滤。 | 对“共享”有 @viewer |
 | `GetTemplate` | 否 | 读取一份模板、行为预览与编辑字段。 | 对“共享”有 @viewer |
-| `CreateTemplate` | 是 | 新建模板，或从选区生成结构模板；支持只校验的 dry_run。 | 对“公共内容”有 @contributor；对 `from_selection.lineage_id` 有 @viewer |
-| `ReviewTemplateScript` | 是 | 确认或取消模板中的 Effect 脚本草稿；另须匹配确认人和内容 hash。 | 对“公共内容”有 @contributor |
-| `UpdateTemplate` | 是 | 修改模板内容；支持 dry_run，不回写已有图。 | 对“公共内容”有 @contributor |
+| `CreateTemplate` | 是 | 新建模板；from_selection 从选区生成结构模板。 | 对“公共内容”有 @contributor；对 `from_selection.lineage_id` 有 @viewer |
+| `UpdateTemplate` | 是 | 修改模板并保留已有 Function Block。 | 对“公共内容”有 @contributor |
 | `DeleteTemplate` | 是 | 删除模板，保留已经施加的结果。 | 对“公共内容”有 @admin |
 | `RestoreTemplate` | 是 | 从代码恢复内置模板，包括已删除的内置条目。 | 对“公共内容”有 @contributor |
 | `ApplyTemplate` | 是 | 在指定 Lineage 上向目标施加模板；结构模板支持只预览的 dry_run。 | 对 `lineage_id` 有 @contributor |
-| `ListTemplateStore` | 否 | 列出已上架的模板快照、施加指令标签与调用者安装状态，支持搜索、分组与按 `store_id` 读取。 | 对“公共内容”有 @viewer |
+| `ListTemplateStore` | 否 | 浏览已上架的模板快照及当前调用者的安装状态。 | 对“公共内容”有 @viewer |
 | `PublishTemplate` | 是 | 发布本人创建的非内置模板快照，公共内容管理员也可发布 Resident 自建源模板；再次发布递增商店版本并恢复上架。 | 对“公共内容”有 @contributor |
-| `InstallStoreTemplate` | 是 | 将上架快照安装到个人工具箱，或覆盖更新、保留本地修改并另存新版。 | 对“公共内容”有 @contributor |
+| `InstallStoreTemplate` | 是 | 将上架快照安装到个人工具箱；已安装时返回现有副本。 | 对“公共内容”有 @contributor |
+| `UpdateInstalledTemplate` | 是 | 用商店当前快照原地覆盖已安装的模板，保留模板 ID。 | 对“公共内容”有 @contributor |
+| `InstallStoreTemplateAsNew` | 是 | 解除已安装副本与商店的关联以保留本地修改，并另装跟踪商店新版的模板。 | 对“公共内容”有 @contributor |
 | `UnpublishTemplate` | 是 | 下架商店条目，保留各用户已安装的副本。 | 对“公共内容”有 @contributor |
+| `ConfirmTemplateScript` | 是 | 由指定确认人采纳模板中 Effect 的候选脚本，须携带模板 expected_version。 | 对“公共内容”有 @contributor |
+| `CancelTemplateScriptDraft` | 是 | 由确认人或发起者撤销模板中 Effect 的候选脚本，须携带模板 expected_version。 | 对“公共内容”有 @contributor |
+| `GetTemplateStoreItem` | 否 | 读取已上架的单个模板及当前调用者的安装状态。 | 对“公共内容”有 @viewer |
+| `GetTemplateCreatePreview` | 否 | 校验新模板并返回规范结果。 | 对“公共内容”有 @contributor；对 `from_selection.lineage_id` 有 @viewer |
+| `GetTemplateUpdatePreview` | 否 | 预览修改后的模板与行为。 | 对“公共内容”有 @contributor |
+| `GetTemplateApplyPreview` | 否 | 预览结构模板的匹配和改动。 | 对 `lineage_id` 有 @contributor |
 
 ## 参数名契约
 
-以下参数位于调用的 arguments 内；通用调用信封、幂等键和执行回执遵守 HATG ISA 公共契约。创建与更新虽然支持 dry_run，其指令声明仍属于改变状态的指令。模板版本是内容审计版本，模板指令没有另行声明模板专用的 expected_version 参数。
+以下参数位于调用的 arguments 内；通用调用信封、幂等键和执行回执遵守 HATG ISA 公共契约。创建、更新与施加分别有独立预览入口。模板版本是内容审计版本，模板指令没有另行声明模板专用的 expected_version 参数。
 
 | 指令名 | arguments 参数名 |
 | --- | --- |
 | `ListTemplates` | `target_kind` |
 | `GetTemplate` | `template_id` |
-| `CreateTemplate` | `template`、`from_selection`、`dry_run` |
-| `ReviewTemplateScript` | `template_id`、`effect_id`、`draft_hash`、`decision` |
-| `UpdateTemplate` | `template_id`、`template`、`kind`、`category`、`title`、`description`、`targets`、`parameters`、`body`、`dry_run` |
+| `CreateTemplate` | `template`、`from_selection` |
+| `UpdateTemplate` | `template_id`、`template`、`kind`、`category`、`title`、`description`、`targets`、`parameters`、`body` |
 | `DeleteTemplate` | `template_id` |
 | `RestoreTemplate` | `template_id` |
-| `ApplyTemplate` | `lineage_id`、`template_id`、`target`、`parameters`、`title`、`resident_settings`、`match_choices`、`dry_run` |
-| `ListTemplateStore` | `search`、`group`、`store_id` |
+| `ApplyTemplate` | `lineage_id`、`template_id`、`target`、`parameters`、`title`、`resident_settings`、`match_choices` |
+| `ListTemplateStore` | `search`、`group` |
 | `PublishTemplate` | `template_id`、`release_note` |
-| `InstallStoreTemplate` | `store_id`、`target_template_id`、`mode` |
+| `InstallStoreTemplate` | `store_id` |
+| `UpdateInstalledTemplate` | `store_id`、`target_template_id` |
+| `InstallStoreTemplateAsNew` | `store_id`、`target_template_id` |
 | `UnpublishTemplate` | `store_id` |
+| `ConfirmTemplateScript` | `template_id`、`effect_id`、`draft_hash` |
+| `CancelTemplateScriptDraft` | `template_id`、`effect_id`、`draft_hash` |
+| `GetTemplateStoreItem` | `store_id` |
+| `GetTemplateCreatePreview` | `template`、`from_selection` |
+| `GetTemplateUpdatePreview` | `template_id`、`template`、`kind`、`category`、`title`、`description`、`targets`、`parameters`、`body` |
+| `GetTemplateApplyPreview` | `lineage_id`、`template_id`、`target`、`parameters`、`title`、`resident_settings`、`match_choices` |
 
 ### ListTemplates
 
@@ -349,19 +363,19 @@ HATG 画布的控件分在四角：左上是缩放（缩小、百分比、放大
 
 ### CreateTemplate
 
-参数：可选 `template`、`from_selection`、`dry_run`。未提供 from_selection 时，template 至少给出合法 kind、title 与该模块所需 body；category、targets、parameters 等按通用与模块规则补齐。
+参数：可选 `template`、`from_selection`。未提供 from_selection 时，template 至少给出合法 kind、title 与该模块所需 body；category、targets、parameters 等按通用与模块规则补齐。
 
 `from_selection` 形如 `{lineage_id, element_ids, rewrite?}`；`rewrite: true` 把选区作为已有结构生成改写模板，规则见“改写已有结构”。直接保存一个 Function Block 可以提交 `{from_selection: {lineage_id, element_ids: [function_block_id]}, template: {title: "我的模板"}}`。title 放在同级 template 内；from_selection 本身只描述来源。需要时 template 的内容字段覆盖抽取的默认内容。
 
-结果：`{template}`。正常创建分配新的 template_id，保存 version 与审计，再附加行为和编辑器描述。`dry_run: true` 只返回规范化内容与行为预览，不保存条目、不分配正式模板 ID；from_selection 仍会读取选区。施加目标、Provider 可用性等运行条件由 ApplyTemplate 校验。
+结果：`{template}`。正常创建分配新的 template_id，保存 version 与审计，再附加行为和编辑器描述。`GetTemplateCreatePreview` 只返回规范化内容与行为预览，不保存条目、不分配正式模板 ID；from_selection 仍会读取选区。施加目标、Provider 可用性等运行条件由 ApplyTemplate 校验。
 
 ### UpdateTemplate
 
-参数：必填 `template_id`；变更可放入 `template` 对象，也可使用同级 `kind`、`category`、`title`、`description`、`targets`、`parameters`、`body`；可选 `dry_run`。两种写法同时出现时，同级字段优先。
+参数：必填 `template_id`；变更可放入 `template` 对象，也可使用同级 `kind`、`category`、`title`、`description`、`targets`、`parameters`、`body`。两种写法同时出现时，同级字段优先。
 
 变更按内容字段替换；body、parameters 等字段不是局部路径补丁。kind 只能保持原值，未知内容字段被拒绝。正常更新递增 version，保留创建审计并更新修改审计。
 
-结果：`{template}`。`dry_run: true` 返回合并后的规范内容、行为预览与编辑描述，模板存储和版本保持不变。任何更新都不升级或重建已有 Function Block。
+结果：`{template}`。`GetTemplateUpdatePreview` 返回合并后的规范内容、行为预览与编辑描述，模板存储和版本保持不变。任何更新都不升级或重建已有 Function Block。
 
 ### DeleteTemplate
 
@@ -377,7 +391,7 @@ HATG 画布的控件分在四角：左上是缩放（缩小、百分比、放大
 
 ### ApplyTemplate
 
-参数：必填 `lineage_id`、`template_id`、`target`；可选 `parameters`、`title`、`resident_settings`、`match_choices`、`dry_run`。target 使用本文约定的目标对象；parameters 是参数名到实际值的映射；title 默认为模板标题；resident_settings 按模块角色 key 指定本次创建的 Provider、账号与运行设置。`match_choices` 形如 `{已有元素 key: [元素 ID]}`，把该 key 的候选限制在给定元素中，用于选定“恰好一条”的连线。
+参数：必填 `lineage_id`、`template_id`、`target`；可选 `parameters`、`title`、`resident_settings`、`match_choices`。target 使用本文约定的目标对象；parameters 是参数名到实际值的映射；title 默认为模板标题；resident_settings 按模块角色 key 指定本次创建的 Provider、账号与运行设置。`match_choices` 形如 `{已有元素 key: [元素 ID]}`，把该 key 的候选限制在给定元素中，用于选定“恰好一条”的连线。
 
 结果固定包含：
 
@@ -393,7 +407,7 @@ HATG 画布的控件分在四角：左上是缩放（缩小、百分比、放大
 
 `function_block_ids` 列出本次新建的块；created 只列新建元素，不重复列入既有目标或 Family 成员；delivered 中每项含 resident_id 与 message_id；trigger_path_ids 汇总本次施加产生的 Trigger Path ID；summary 是用户可读结果。模块可以补充其专有结果，例如脚本 output、探索者与候选信息、Family 的角色与成员信息；结构模板另返回 `deleted_ids` 与 `updated_ids`，列出本次删除（含连带删除的连线）和修改的已有元素。没有某类结果时保留空数组。
 
-`dry_run: true` 只适用于结构模板，其他模块返回错误。它不创建、不修改任何元素，在统一字段之外返回 `preview`，每个目标一项：
+`GetTemplateApplyPreview` 只适用于结构模板，其他模块返回错误。它不创建、不修改任何元素，在统一字段之外返回 `preview`，每个目标一项：
 
 ```json
 {
@@ -407,14 +421,16 @@ HATG 画布的控件分在四角：左上是缩放（缩小、百分比、放大
 }
 ```
 
-`removed` 包含连带删除的连线；`ambiguous` 列出仍需选定的 key 与候选；没有标签的连线以“来源标题 → 目标标题”作为 title，便于区分候选；某个目标找不到已有元素时，`error` 给出原因，其他目标照常预览。模板编辑时的正文预览仍通过 CreateTemplate/UpdateTemplate 的 dry_run 完成。
+`removed` 包含连带删除的连线；`ambiguous` 列出仍需选定的 key 与候选；没有标签的连线以“来源标题 → 目标标题”作为 title，便于区分候选；某个目标找不到已有元素时，`error` 给出原因，其他目标照常预览。模板编辑时的正文预览仍通过 `GetTemplateCreatePreview` 或 `GetTemplateUpdatePreview` 完成。
 
 
 ### ListTemplateStore
 
-参数：可选 `search`（匹配标题、说明、发布者）、`group`（`duty`、`role`、`organization`、`task`）、`store_id`（精确读取单个上架条目 `store-<12位小写十六进制>`）。
+参数：可选 `search`（匹配标题、说明、发布者）、`group`（`duty`、`role`、`organization`、`task`）。
 
 结果：`{items}`。仅返回 `active` 为真的上架条目，每项包含快照正文、`behavior`、`editor`、`group`、`instructions_used`、版本历史 `versions`，以及相对于当前调用者的 `is_publisher`、`can_unpublish`、`source_available`、`installed_template_id`、`installed_version`、`has_update` 与 `locally_modified`。
+
+精确读取一个上架条目用 `GetTemplateStoreItem(store_id)`。
 
 ### PublishTemplate
 
@@ -424,9 +440,15 @@ HATG 画布的控件分在四角：左上是缩放（缩小、百分比、放大
 
 ### InstallStoreTemplate
 
-参数：必填 `store_id`；可选 `target_template_id`（本人从该商店条目安装的模板 ID）、`mode`（`install`、`overwrite`、`copy`，默认 `install`）。
+参数：必填 `store_id`。结果：`{template}`。把当前上架快照复制为调用者名下的个人模板，记录 `installed_from_store_id`、`installed_store_version` 与内容哈希 `installed_store_hash`。调用者已经从这个商店条目安装过模板时，不做任何修改，幂等返回现有副本；有新版本时用 `UpdateInstalledTemplate` 或 `InstallStoreTemplateAsNew`。
 
-结果：`{template, detached_template_id?}`。首次安装新建调用者名下的个人模板并记录安装来源与内容哈希；已安装同版本时 `mode: "install"` 幂等返回现有副本；有新版本且本地未修改时自动原地覆盖更新，本地已修改时 `mode: "install"` 返回冲突错误，交由调用方显式选择 `overwrite`（原地覆盖并保留 `template_id`）或 `copy`（清空旧副本的安装关联并在 `detached_template_id` 返回其 ID，同时新建一份跟踪商店新版的模板）。
+### UpdateInstalledTemplate
+
+参数：必填 `store_id`、`target_template_id`（本人从该商店条目安装的模板 ID）。结果：`{template}`。用商店当前快照原地覆盖这个模板并保留 `template_id`，同时更新安装来源版本与哈希。本地副本已修改（`locally_modified` 为真）时同样覆盖，本地改动丢失，是否覆盖由调用方先让用户确认。
+
+### InstallStoreTemplateAsNew
+
+参数：必填 `store_id`、`target_template_id`。结果：`{template, detached_template_id}`。清空旧副本的安装关联以保留本地改动，在 `detached_template_id` 返回其 ID，同时新建一份跟踪商店新版的模板。
 
 ### UnpublishTemplate
 
@@ -442,7 +464,7 @@ HATG 画布的控件分在四角：左上是缩放（缩小、百分比、放大
 
 Effect 的运行版本保存在 config.script / endpoints；待编写、待确认版本保存在 config.script_draft：description、script、endpoints、requested_by、confirm_by、hash。发起者和内容 hash 由服务端写入，确认人默认是发起者，已有草稿只有发起者可换确认人。工坊的描述、确认人和候选脚本编辑保存到草稿；助手只交回候选内容，不替用户确认。保存候选不改变运行脚本，新建的候选 Effect 运行脚本为空，不能执行；已有 Effect 继续运行原脚本。
 
-ReviewComponentScript(lineage_id, effect_id, draft_hash, decision) 和 ReviewTemplateScript(template_id, effect_id, draft_hash, decision) 分别处理实例和模板，decision 为 confirm 或 cancel。请求必须带所属资源读取时的 expected_version（Lineage revision 或模板 version）。实例 effect_id 是组件 ID，模板中是组件 key。版本或 hash 不符拒绝；confirm 只允许指定确认人，cancel 允许发起者或确认人，且仍须具备对应资源写权限。确认先复用 Effect DSL 校验，空脚本、无效指令和参数不晋升；成功原子替换运行 script/endpoints 并清除草稿。取消只清除草稿，保留原运行版本。调用记录保留操作者和确认内容 hash。
+实例变更用 `ConfirmComponentScript` 或 `CancelComponentScriptDraft`，传 `lineage_id`、`effect_id`、`draft_hash`。模板变更用 `ConfirmTemplateScript` 或 `CancelTemplateScriptDraft`，传 `template_id`、`effect_id`、`draft_hash`。确认和取消分别检查各自的权限。调用携带读取所属资源时的 `expected_version`（Lineage revision 或模板 version）。实例 effect_id 是组件 ID，模板中是组件 key。版本或 hash 不符时拒绝；确认只允许指定确认人，取消允许发起者或确认人，且均须具备对应资源写权限。确认先复用 Effect DSL 校验，空脚本、无效指令和参数不晋升；成功原子替换运行 script/endpoints 并清除草稿。取消只清除草稿，保留原运行版本。调用记录保留操作者和确认内容 hash。
 
 进入此流程后 script_review_required 为 true；同一 Effect 后续修改运行脚本必须再走候选与确认，不能删除标记或草稿绕过确认。既有未进入流程的直接脚本编辑保持兼容。候选字段不进入运行计划，不改变现行执行契约；失败通知收件人仍独立配置。含待确认草稿的模板不可发布商店；确认后可发布、安装并施加，模板和已施加实例仍各自独立。
 
@@ -451,7 +473,7 @@ ReviewComponentScript(lineage_id, effect_id, draft_hash, decision) 和 ReviewTem
 
 family_duty 模块属于“职责”分组，当前提供内置“周期组织回顾”。目标仅为一个普通 Family 的 Steward；body 为 interval_seconds（正整数秒）、guide 与 prompt（各 1–20000 字，prompt 保留 ${facts}，仅允许 facts、guide_path、guide_version 占位符）。模板不保存 Family、Steward 或共享事件的具体身份，施加时从目标解析；个人 AMA Family 与重复安装拒绝。
 
-ApplyTemplate 的 dry_run 使用同一安装及图校验路径，不改变定义。首次施加接管原回顾结构，后续撤下、再安装沿用职责生命周期；持久的 independent_duties 标记阻止 Family 同步重新生成。共享成员完成事件仍属 Family，职责工坊可编辑自己的组件与连线。既有任务的原请求身份、业务活动及空闲门控不变。
+`GetTemplateApplyPreview` 使用同一安装及图校验路径，不改变定义。首次施加接管原回顾结构，后续撤下、再安装沿用职责生命周期；持久的 independent_duties 标记阻止 Family 同步重新生成。共享成员完成事件仍属 Family，职责工坊可编辑自己的组件与连线。既有任务的原请求身份、业务活动及空闲门控不变。
 
 CreateTemplate.from_selection 选择这条职责时生成 family_duty 配方，可通过工坊修改周期、指南和触发提示词，另存、发布商店、安装后用于另一 Family。任意自定义结构、Effect 脚本或附加职责记忆不静默省略：目前超出该配方可复用范围时明确拒绝导出，实例编辑仍保留。
 
@@ -461,13 +483,13 @@ role 模板是单一 Resident 的可模板化配置、分层记忆和职责组�
 
 Family 配方 role_templates 按角色键引用同一模板 ID；新组装解析版本并安装实际角色框及职责框，源模板更新不自动修改实例。family.router／steward 仍是绑定唯一真值，role_bindings 指向对应实例；角色框恰好包含该 Resident。配置只用于新节点初始化；对已有 Resident 施加角色不静默覆盖后端，模板含后端改动时明确要求经节点设置处理。未绑定、类型冲突或重复安装明确拒绝。旧 Family／未声明角色引用的旧配方不自动迁移，个人助手沿原生命周期。 已自定义且尚未引用角色的旧内置 Family 配方保持原内容；此时额外提供 Family（角色组合）配方供默认新建使用，显式选择旧配方仍沿旧语义。未自定义的原内置配方直接引用角色，不重复提供该后备条目。
 
-角色源版本记录于角色及每条职责来源；实际指南只归职责的按需记忆，触发提示词只归职责参数，工作指南文件是这些记录的投影。UpdateDuty 与 ApplyLineageChanges 的 duty_changes 对 Family 角色职责支持 task_prompt，保留 ${facts} 并仅允许 facts、guide_path、guide_version。工坊原子预览／保存、冲突检查和草稿历史沿用同一职责责任方。
+角色源版本记录于角色及每条职责来源；实际指南只归职责的按需记忆，触发提示词只归职责参数，工作指南文件是这些记录的投影。ApplyLineageChanges 的 duty_changes 对 Family 角色职责支持 task_prompt，保留 ${facts} 并仅允许 facts、guide_path、guide_version。工坊原子预览／保存、冲突检查和草稿历史沿用同一职责责任方。
 
 Router 拥有 route 职责、调用其 Resident 的选人结构与指南。Steward 拥有队列、摘要、回顾、recruit、route_review、恢复、额度和组织变化职责；recruit／route_review 是消息型职责，引用 Family 单份 relay，不另造 Event 或投递。周边触发／Effect／连线按职责真实归属收拢；member_done、名册、门面、原请求转交和平台可用性保障留在 Family／平台。角色和职责的折叠只改变图呈现，工坊可展开实际组成与灰显外部引用。
 
 名册同步仅刷新显式 Family 引用，保留用户编辑的事件参数、脚本确认和内部连线。已撤职责及单独删除的结构不自动重建；显式 ApplyTemplate 可从角色源重装缺失职责，复用原 Resident，不覆盖其他职责／记忆。周期回顾与独立回顾安装互斥，撤下后可显式重装，共享完成事件仍单份。角色整体撤除使用 Unfamilize／DeleteFamily 的停止与在途任务检查，通用删除／拆框不能绕过。已受理任务继续由原冻结意图和原请求生命周期负责，本地撤销不撤销服务端投递。
 
-Router／Steward 接口保持原协议：target 仅本层直属成员或本 Family Steward，嵌套 Family 经门面；输出 target／confidence／scope／continue_previous 或 disposition:notice。忙碌不等于缺口；缺口 scope_reviewed、失败未转交 recover、必要改派 reassign 与完成归档 ResolveFamilyRequest 各保留原意义、理由及同 Family Steward 审批。低置信复核可能已转交，不能重复 relay。原请求、角色任务、成员副本 ID 不混用；取消不复活，重复重试保持原 ID，冻结唯一上一轮、缺失 null 与按需 GetFamilyRoutingContext 均不变。角色名称不授予权限，不开启 Router／Steward 逐轮摘要任务。
+Router／Steward 接口保持原协议：target 仅本层直属成员或本 Family Steward，嵌套 Family 经门面；输出 target／confidence／scope／continue_previous 或 disposition:notice。忙碌不等于缺口；缺口由 Steward 复核后调用 RelayMessage、失败未转交的请求用 RequeueMessage 重开、必要改派 reassign 与完成归档 ResolveRelayedRequest 各保留原意义与理由。低置信复核可能已转交，不能重复 relay。原请求、角色任务、成员副本 ID 不混用；取消不复活，重复重试保持原 ID，冻结唯一上一轮、缺失 null 与按需 GetRelayContext 均不变。角色名称不授予权限，不开启 Router／Steward 逐轮摘要任务。
 
 ### 工坊模板上下文、外部绑定与唯一 Family（2026-11-26）
 

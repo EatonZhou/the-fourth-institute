@@ -341,7 +341,8 @@ def declared_decisions() -> dict[str, tuple[DecisionSlot, ...]]:
     """instruction -> its declared decision slots, for every instruction this Portal installs."""
     from management_portal.application_tool_contracts import permission_catalog
 
-    return {name: declaration.decides for name, declaration in permission_catalog().items()}
+    from ..operation_elements import decisions
+    return decisions({name: declaration.decides for name, declaration in permission_catalog().items()})
 
 
 # What a slot judges is declared with the instruction; a scheme only classifies its element.

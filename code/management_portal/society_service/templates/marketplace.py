@@ -1,5 +1,6 @@
 """Published snapshots and atomic synchronization of personally owned copies."""
 
+from contextlib import contextmanager
 from copy import deepcopy
 import secrets
 
@@ -26,6 +27,18 @@ def _write(connection, rows):
               json_columns=("targets", "parameters", "body", "versions"))
 
 
+def migrate_fork_modes(connection):
+    from .structure import migrate_fork_modes as migrate_structure
+
+    current = items(connection)
+    migrated = [migrate_structure(item) for item in current]
+    if migrated != current:
+        for previous, item in zip(current, migrated, strict=True):
+            if item != previous:
+                item["content_hash"] = store.content_hash(item)
+        _write(connection, migrated)
+
+
 def group_for(template):
     return {"structure": "duty", "family_duty": "duty", "familize": "organization", "role": "role"}.get(template["kind"], "task")
 
@@ -38,29 +51,31 @@ def instructions_used(template):
     if kind == "prompt":
         return ["DeliverMessage"]
     if kind == "explore":
-        return ["ForkResident", "CreateComponent", "DeliverMessage"]
+        return ["ForkResident", "ApplyLineageChanges", "DeliverMessage"]
     if kind == "familize":
         return ["Familize"]
     if kind == "family_duty":
-        return ["MaintainFamilyReview"]
+        from .family_graph import project
+
+        body = project(template)["body"]
+        return list(dict.fromkeys(
+            call.instruction
+            for component in body["components"]
+            if (script := component["config"].get("script"))
+            for call in parse(script).calls
+        ))
     if kind == 'role':
-        return ['Functionalize', 'CreateDuty', 'CreateComponent', 'CreateWire']
+        return ['Functionalize', 'ApplyLineageChanges']
     if kind == "script":
         return list(dict.fromkeys(call.instruction for call in parse(body["script"]).calls))
     names = []
     for role in body.get("roles", []):
         if role["from"] in ("new", "fork"):
             names.append("CreateResident" if role["from"] == "new" else "ForkResident")
-    for found in body.get("match", []):
-        op = found.get("op")
-        if op in ("delete", "update"):
-            from .rewrite import is_wire
-            noun = "Resident" if found.get("kind") == "resident" else "Wire" if is_wire(found) else "Component"
-            names.append(("Delete" if op == "delete" else "Update") + noun)
-    if body.get("components"):
-        names.append("CreateComponent")
-    if body.get("wires"):
-        names.append("CreateWire")
+    if body.get("components") or body.get("wires") or any(
+        found.get("op") in {"delete", "update"} for found in body.get("match", [])
+    ):
+        names.append("ApplyLineageChanges")
     if body.get("function_block"):
         names.append("Functionalize")
     for component in body.get("components", []):
@@ -114,33 +129,57 @@ def is_admin(actor):
     return permission_system.manage("CheckPermission", {"principal_id": actor, "a": "@admin", "resource_id": "@public"}, actor=actor)["allowed"]
 
 
-def listing(actor, *, search="", group=None, store_id=None):
-    templates = store.all_templates()
-    with store.database().read() as connection:
-        records = items(connection)
+def _store_inventory(connection, actor, records):
+    templates = sorted(
+        store.read_rows(connection, "templates"),
+        key=lambda row: (row["category"], row["title"], row["template_id"]),
+    )
     annotated = annotate(templates, records)
     own = {row["template_id"]: row for row in annotated if row["created_by"] == actor}
     installed = {row["installed_from_store_id"]: row for row in reversed(annotated)
                  if row.get("installed_from_store_id") and row["created_by"] == actor}
+    return own, installed
+
+
+def _describe_item(item, actor, admin, own, installed):
+    local = installed.get(item["store_id"])
+    status = local["store_status"] if local else {}
+    return {**describe(item), "group": group_for(item),
+            "instructions_used": instructions_used(item), "is_publisher": item["publisher"] == actor,
+            "can_unpublish": item["publisher"] == actor or admin,
+            "source_available": item["source_template_id"] in own,
+            "installed_template_id": local["template_id"] if local else None,
+            "installed_version": status.get("installed_version"),
+            "has_update": status.get("has_update", False), "locally_modified": status.get("locally_modified", False)}
+
+
+def listing(actor, *, search="", group=None):
     admin = is_admin(actor)
+    with store.database().read() as connection:
+        records = items(connection)
+        own, installed = _store_inventory(connection, actor, records)
     result = []
     for item in records:
-        if not item["active"] or (store_id and item["store_id"] != store_id):
+        if not item["active"]:
             continue
         if group and group_for(item) != group:
             continue
         if search and search.casefold() not in " ".join(str(item[key]) for key in ("title", "description", "publisher")).casefold():
             continue
-        local = installed.get(item["store_id"])
-        status = local["store_status"] if local else {}
-        result.append({**describe(item), "group": group_for(item),
-                       "instructions_used": instructions_used(item), "is_publisher": item["publisher"] == actor,
-                       "can_unpublish": item["publisher"] == actor or admin,
-                       "source_available": item["source_template_id"] in own,
-                       "installed_template_id": local["template_id"] if local else None,
-                       "installed_version": status.get("installed_version"),
-                       "has_update": status.get("has_update", False), "locally_modified": status.get("locally_modified", False)})
+        result.append(_describe_item(item, actor, admin, own, installed))
     return sorted(result, key=lambda item: (item["title"], item["store_id"]))
+
+
+def get_item(store_id, actor):
+    with store.database().read() as connection:
+        row = connection.execute(
+            "SELECT * FROM template_store_items WHERE store_id=%s AND active", (store_id,)
+        ).fetchone()
+        if row is None:
+            raise KeyError(store_id)
+        item = decode_times(row, TIMES)
+        own, installed = _store_inventory(connection, actor, [item])
+    return _describe_item(item, actor, is_admin(actor), own, installed)
 
 
 def publish(template_id, actor, release_note=""):
@@ -170,48 +209,74 @@ def publish(template_id, actor, release_note=""):
                               {"version": version, "release_note": release_note, "content_hash": digest, "published_at": stamp}])
         rows[template_id] = item
         _write(connection, rows.values())
-    return {"item": next(row for row in listing(actor, store_id=item["store_id"])), "template": get_template(template_id)}
+        records = list(rows.values())
+        own, installed = _store_inventory(connection, actor, records)
+    return {"item": _describe_item(item, actor, admin, own, installed),
+            "template": describe(annotate([template], records)[0])}
 
 
-def install(store_id, actor, *, target_template_id=None, mode="install"):
-    from ..instruction_name_migration import normalize_template
-
-    if mode not in ("install", "overwrite", "copy"):
-        raise TemplateError("未知安装方式")
-    store.ensure_builtins()
+@contextmanager
+def _installation(store_id):
     with store.database().transaction("templates") as connection:
         records = items(connection)
         item = next((row for row in records if row["store_id"] == store_id and row["active"]), None)
         if item is None:
             raise TemplateError("商店模板不存在或已下架")
         rows = {row["template_id"]: row for row in store.read_rows(connection, "templates")}
-        previous = rows.get(target_template_id) if target_template_id else None
-        if target_template_id and (not previous or previous["created_by"] != actor or previous.get("installed_from_store_id") != store_id):
-            raise TemplateError("只能更新自己从该商店条目安装的模板")
-        if mode == "overwrite" and not previous:
-            raise TemplateError("覆盖更新需要 target_template_id")
-        if mode == "install":
-            previous = previous or next((row for row in rows.values() if row["created_by"] == actor and row.get("installed_from_store_id") == store_id), None)
-            if previous:
-                if previous["installed_store_version"] == item["version"]:
-                    return {"template": describe(annotate([previous], records)[0])}
-                if store.content_hash(previous) != previous["installed_store_hash"]:
-                    raise TemplateError("该模板有本地修改，请选择覆盖或另存新版副本")
-                mode = "overwrite"
-        detached = None
-        if mode == "copy" and previous:
-            detached = previous["template_id"]
-            previous.update({key: None for key in INSTALL})
-        identity = previous["template_id"] if mode == "overwrite" else "template_" + secrets.token_hex(6)
-        stamp = now()
-        value = normalize_template({key: deepcopy(item[key]) for key in store.CONTENT})
-        value.update(template_id=identity, builtin_key=None, builtin_source=None,
-                     created_by=actor, created_at=previous["created_at"] if mode == "overwrite" else stamp,
-                     updated_by=actor, updated_at=stamp, version=previous["version"] + 1 if mode == "overwrite" else 1,
-                     installed_from_store_id=store_id, installed_store_version=item["version"], installed_store_hash=store.content_hash(value))
-        rows[identity] = value
+        yield connection, item, rows, records
+
+
+def _owned_installation(item, rows, target_template_id, actor):
+    previous = rows.get(target_template_id)
+    if previous is None or previous["created_by"] != actor or previous["installed_from_store_id"] != item["store_id"]:
+        raise TemplateError("只能更新自己从该商店条目安装的模板")
+    return previous
+
+
+def _installed_snapshot(item, actor, *, previous=None):
+    from ..instruction_name_migration import normalize_template
+
+    stamp = now()
+    value = normalize_template({key: deepcopy(item[key]) for key in store.CONTENT})
+    value.update(
+        template_id=previous["template_id"] if previous else "template_" + secrets.token_hex(6),
+        builtin_key=None, builtin_source=None,
+        created_by=actor, created_at=previous["created_at"] if previous else stamp,
+        updated_by=actor, updated_at=stamp, version=previous["version"] + 1 if previous else 1,
+        installed_from_store_id=item["store_id"], installed_store_version=item["version"],
+        installed_store_hash=store.content_hash(value),
+    )
+    return value
+
+
+def install(store_id, actor):
+    with _installation(store_id) as (connection, item, rows, records):
+        value = next((row for row in rows.values()
+                      if row["created_by"] == actor and row["installed_from_store_id"] == store_id), None)
+        if value is None:
+            value = _installed_snapshot(item, actor)
+            rows[value["template_id"]] = value
+            store._write(connection, rows.values())
+    return {"template": describe(annotate([value], records)[0])}
+
+
+def update_installed(store_id, actor, *, target_template_id):
+    with _installation(store_id) as (connection, item, rows, records):
+        previous = _owned_installation(item, rows, target_template_id, actor)
+        value = _installed_snapshot(item, actor, previous=previous)
+        rows[target_template_id] = value
         store._write(connection, rows.values())
-    return {"template": describe(annotate([value], records)[0]), **({"detached_template_id": detached} if detached else {})}
+    return {"template": describe(annotate([value], records)[0])}
+
+
+def install_as_new(store_id, actor, *, target_template_id):
+    with _installation(store_id) as (connection, item, rows, records):
+        previous = _owned_installation(item, rows, target_template_id, actor)
+        previous.update({key: None for key in INSTALL})
+        value = _installed_snapshot(item, actor)
+        rows[value["template_id"]] = value
+        store._write(connection, rows.values())
+    return {"template": describe(annotate([value], records)[0]), "detached_template_id": target_template_id}
 
 
 def unpublish(store_id, actor):

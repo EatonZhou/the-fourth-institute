@@ -15,15 +15,13 @@ SOURCE_ARGUMENTS = {
     "ForkResident": ("source_resident_id",),
     "PromoteSeed": ("seed_id",),
     "UpdateResident": ("resident_id",),
-    "DeleteResident": ("resident_id",),
-    "MoveResident": ("resident_id",),
     "MoveLineageObjects": ("object_ids",),
     "CreateCandidateFork": ("seed_id", "source_resident_id"),
     "DeleteCandidateFork": ("seed_id",),
     "CreateWorkspaceHandoff": ("source_resident_id", "target_resident_id"),
     "UpdateWorkspaceHandoff": ("handoff_id",),
     "DeleteWorkspaceHandoff": ("handoff_id",),
-    "RunWorkspaceHandoff": ("handoff_id", "source_resident_id", "target_resident_id"),
+    "RunWorkspaceHandoff": ("handoff_id",),
     "MoveWorkspaceHandoff": ("handoff_id",),
 }
 
@@ -87,19 +85,6 @@ def guard_source_scope(name, handler):
                 ids.add(value)
         scope = _Scope(lineage_id, frozenset(ids))
         # Avoid external work on an invalid source; the commit checks again.
-        if name == "DeleteResident":
-            # A retry may finish cleanup of an already deleted Resident. Its
-            # immutable tombstone still carries the original Lineage.
-            from . import resident_catalog
-            try:
-                record = resident_catalog.get_catalog().get_historical(inv.argument("resident_id"))
-            except KeyError:
-                record = {}
-            if record.get("deleted_at") and record.get("lineage_id") == lineage_id:
-                scope.object_ids = frozenset()
-        # The original Lineage can itself have been deleted after this
-        # Resident. A matching immutable tombstone is sufficient source
-        # evidence for finalization; authorization still runs in the kernel.
         if scope.object_ids:
             current = lineage_aggregate.read_lineage_state(lineage_id)
             _require_members(current, scope)

@@ -43,6 +43,12 @@ def database():
     return _database(os.getenv('PORTAL_DATABASE_URL'),os.getenv('PORTAL_DATABASE_NAMESPACE'))
 
 
+def permission_posts_readonly():
+    """Current post authors, without initializing storage or reading content."""
+    with database().database.readonly_snapshot() as c:
+        return [dict(row) for row in c.execute('SELECT post_id,author FROM posts')]
+
+
 def write(c,kind,value):
     if kind=='posts':
         posts = value['posts']

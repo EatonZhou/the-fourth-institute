@@ -1,4 +1,4 @@
-"""ResourceService changes: registration, updates, unregistration and actions, and what
+"""ResourceService changes: registration, updates and unregistration, and what
 follows a committed change (identity checks, permission sync, index projection)."""
 from __future__ import annotations
 
@@ -7,7 +7,6 @@ from contextlib import nullcontext
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any
 
-from .action import action_payload
 from .mutation import mutation_payload
 from .locking import serialized_mutation, mutation_projection_scope
 
@@ -347,30 +346,3 @@ def unregister(
                 actor=actor, kind="delete", wait_for_index=wait_for_index,
                 index_timeout=index_timeout,
             )
-
-
-def action(
-    service: "ResourceService",
-    resource_id: str,
-    action: str,
-    payload: Mapping[str, Any] | None = None,
-    *,
-    actor: str = "",
-    resource_type: str = "",
-) -> dict[str, Any]:
-    identity = service._existing_identity(resource_id, resource_type, actor=actor)
-    clean_action = str(action or "").strip()
-    service._ensure_action_providers(identity.resource_type)
-    handler = service._action_providers.handler_for(identity.resource_type, clean_action)
-    service._require_mutation_actor(actor)
-    clean_payload = action_payload(payload)
-    result = handler(
-        identity.resource_id,
-        clean_payload,
-        actor=str(actor or ""),
-    )
-    if not isinstance(result, Mapping):
-        raise TypeError(
-            f"{identity.resource_type} action {clean_action} must return an object"
-        )
-    return dict(result)

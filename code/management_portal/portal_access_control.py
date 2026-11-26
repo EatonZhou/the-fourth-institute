@@ -148,7 +148,9 @@ class PortalAccessStore:
             self._signature = signature
             return payload
 
-    def snapshot(self) -> dict[str, Any]:
+    def snapshot(self, *, read_only: bool = False) -> dict[str, Any]:
+        if read_only:
+            return self._normalize(self.state.readonly({"schema": ACCESS_SCHEMA, "users": {}, "updated_at": ""}))
         return copy.deepcopy(self._current())
 
     def user(self, username: object) -> dict[str, Any]:

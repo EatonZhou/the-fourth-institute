@@ -18,7 +18,16 @@ def _d(name, decides, description, parameters=(), result=(), *, mutates=False, t
 
 # Every registered agent Backend; registering a Backend adds it here.
 PROVIDERS = tuple(AGENT_PROVIDERS)
-FORK_MODES = ("full", "compacted", "recent-5", "recent-10", "message")
+FORK_MODES = ("full", "compacted", "recent", "message")
+WORK_SUMMARY_RESULT = (
+    R("resident_id", description="摘要所属的 Resident"),
+    R("summary", "object", "保存后的工作摘要（九个语义字段）"),
+    R("revision", "integer", "内容有变化时加一"),
+    R("source_versions", "object", "保存的门面汇总来源版本；成员摘要为空对象"),
+    R("missing_message_ids", "array", "仍未被摘要覆盖的已登记轮次"),
+    R("updated_at", description="摘要内容最近一次变化的时间"),
+    R("writer_id", description="最近写入摘要内容的身份"),
+)
 # A Resident's prompt injection (decision_ef1d6c925955).
 PROMPT_INJECTION_PARTS = {
     name: {"type": "string", "enum": list(choices), "description": f"{label}：{description}"}
@@ -96,6 +105,7 @@ DECLARATIONS = (
                         On("context_source_resident_id", "resident", optional=True)), "从来源 Resident Fork 出一个新 Resident，新 Resident 按选定方式继承来源的上下文。", (R("lineage_id", description="对象当前所属的源 Lineage"),
         R("source_resident_id", description="被 Fork 的来源 Resident"),
         P("fork_mode", description="上下文继承方式，默认 full", enum=FORK_MODES),
+        P("recent_rounds", "integer", "fork_mode=recent 时必填，仅保留最近的这些轮次", minimum=1),
         P("context_source_resident_id", description="上下文来源，默认与 source_resident_id 相同"),
         P("message", "object", "fork_mode=message 时的历史截止点 {message_id}",
           properties={"message_id": {"type": "string"}}),
@@ -137,12 +147,6 @@ DECLARATIONS = (
     ), (
         R("resident", "object", "修改后的 Resident 基本信息，与 GetResident 的 resident 相同"),
     ), mutates=True, target="resident_id"),
-    _d("DeleteResident", (On("lineage_id", "lineage"), On("resident_id", "resident")), "将 Resident 标记为已删除，永久保留同一身份及历史；释放模型会话，移除活动成员关系和 Lineage 引用，并删除文件夹（含自有工作区）。不提供恢复入口。", (R("lineage_id", description="对象当前所属的源 Lineage"),
-        R("resident_id", description="要删除的 Resident"),
-    ), (
-        R("resident_id", description="被删除的 Resident ID"),
-        P("new_leader_resident_id", description="删除 Leader 时随机选出的新 Leader"),
-    ), mutates=True, target="resident_id"),
     _d("GetResidentSummaries", (On("resident_ids", "resident"),), "批量读取 Resident 的累计摘要，供搜索、路由、工作查看和摘要维护共用。", (
         R("resident_ids", "array", "最多 128 个 Resident ID", items={"type": "string"}),
         P("fields", "array", "只返回 summary 中的这些字段；列出 pending_requests 时才带待处理请求", items={"type": "string"}),
@@ -152,7 +156,8 @@ DECLARATIONS = (
     ), (
         R("summaries", "array", "每项包含 resident_id、title、lineage_id、summary（当前重点、近期成果、负责范围、"
           "适合与不适合接收的任务等）、pending_requests、summary_updated_at 与 summary_stale；"
-          "include_maintenance 时另有 revision、source_versions、missing_message_ids、pending_message_ids 与 writer_id"),
+          "include_maintenance 时另有 revision、source_versions、missing_message_ids、pending_message_ids 与 writer_id；"
+          "有适用且尚未等待投递的漏写提醒时，另有 reminder（message_id、content_parts），可直接作为 DeliverMessage.message"),
         R("unavailable_resident_ids", "array", "调用者看不到或尚无摘要的 Resident"),
     )),
     _d("RequestResidentSummaryRebuild", ON_RESIDENT, "请求完整重建独立 Resident 的累计摘要，由 Portal 职责 resident-summary 的承担者重写；Family 成员与门面使用各自维护者，不能全局重建。", (
@@ -197,19 +202,20 @@ DECLARATIONS = (
         R("resident_id", description="被放弃的摘要所属的 Resident"), R("status", description="retry 或 parked"),
         R("attempts", "integer", "这份摘要累计被认领的次数，含本次"),
     ), mutates=True, target="claim_id"),
-    _d("UpdateResidentWorkSummary", FIXED, "本人替换近期事实，本 Family Steward 归纳阶段与长期层或汇总门面；各层各字段合计上限默认 5000 字符，不另限层间占比。省略 summary 表示仅登记覆盖轮次。", (
-        R("resident_id", description="摘要所属的 Resident：本人、Steward 归纳的本 Family 成员或汇总的门面"),
+    _d("UpdateResidentWorkSummary", FIXED, "本人替换近期事实。各层各字段合计上限默认 5000 字符。省略 summary 表示仅登记覆盖轮次。", (
+        R("resident_id", description="摘要所属的 Resident，必须是调用人"),
         P("summary", "object", "供工作查看、搜索和路由共用的九个语义字段"),
         P("message_ids", "array", "最多 128 个本人正在运行或已完成、被摘要覆盖的输入 ID", items={"type": "string"}),
-        P("source_versions", "object", "门面汇总保存 GetFamilySummaryInputs 的来源版本"),
-        P("consolidation", "object", "仅本 Family Steward：phase 为替换后的九字段阶段摘要，long_term 可同时替换长期层；近期层由本人维护。consolidated_message_ids 列出来自 pending_message_ids 的已归纳输入，只推进这些输入的水位。resolved_threads 可选，为原未决事项到解决/取消/交接说明的映射，其余未决事项自动保留。不能同时提交 summary/message_ids/source_versions"),
-    ), (R("resident_id", description="摘要所属的 Resident"),
-        R("summary", "object", "保存后的工作摘要（九个语义字段）"),
-        R("revision", "integer", "工作摘要的内容版本；内容有变化时加一"),
-        R("source_versions", "object", "保存的门面汇总来源版本；成员本人的摘要为空对象"),
-        R("missing_message_ids", "array", "仍未被摘要覆盖的已登记轮次"),
-        R("updated_at", description="摘要内容最近一次变化的时间"),
-        R("writer_id", description="最近写入摘要内容的身份")), mutates=True, target="resident_id"),
+    ), WORK_SUMMARY_RESULT, mutates=True, target="resident_id"),
+    _d("UpdateResidentSummaryConsolidation", FIXED, "本 Family Steward 归纳业务成员的阶段与长期摘要。", (
+        R("resident_id", description="被归纳摘要的业务成员"),
+        R("consolidation", "object", "phase 为阶段摘要，long_term 可同时替换长期层，consolidated_message_ids 登记已归纳输入，resolved_threads 可记录未决事项的处理结果"),
+    ), WORK_SUMMARY_RESULT, mutates=True, target="resident_id"),
+    _d("UpdateFacadeSummary", FIXED, "本 Family Steward 汇总门面摘要。", (
+        R("resident_id", description="门面 Resident"),
+        R("summary", "object", "九个语义字段组成的门面摘要"),
+        R("source_versions", "object", "GetFacadeSummaryInputs 返回的来源版本"),
+    ), WORK_SUMMARY_RESULT, mutates=True, target="resident_id"),
     _d("GetResidentSettings", ON_RESIDENT, "读取 Resident 当前的运行设置，以及 Prompt 注入每个类别的时机和它在当前 Provider 中的位置；"
        "Family 门面汇报策略属于门面；其他运行设置仅在有 Router 权限时返回。", (R("resident_id", description="要读取设置的 Resident"),), (
         R("reporting_effective", "object", "汇报策略和来源；实际输入按核验后的 Family 转交链选择来源"),
@@ -274,9 +280,8 @@ DECLARATIONS = (
         R("candidate_agent_id", description="恢复所用候选会话的 agent ID；没有时为空"),
         R("candidate_binding_id", description="候选会话的绑定 ID；没有时为空"),
     ), mutates=True, target="resident_id"),
-    _d("RestartSession", ON_RESIDENT, "切换 Resident 后端或账号，复用完整 Fork 上下文继承；保存配置不调用模型，首条新消息交付历史。", (
+    _d("RestartSession", ON_RESIDENT, "等当前轮结束后重启或切换 Resident 后端或账号，保留上下文；保存配置不调用模型，首条新消息交付历史。", (
         R("resident_id", description="要切换的 Resident"),
-        P("operation", description="switch_account 改选账号；restart 显式重建会话。两者都保留有效上下文；要从空上下文开始，另用 ClearContext", enum=("switch_account", "restart")),
         P("provider", description="目标 Provider；省略时保持当前 Provider", enum=(*PROVIDERS, "provider_api")),
         P("account_id", description="固定目标 Provider 账号；按额度自动选择时省略"),
         P("account_selection", description="原生后端账号策略：auto 按目标模型和额度选账号，不能同时指定 account_id；fixed 固定账号", enum=("auto", "fixed")),
@@ -287,9 +292,6 @@ DECLARATIONS = (
         P("permission_preset", description="目标 Provider 的权限预设；切换成功后生效"),
         P("prompt_context", "object", "仅 Model API：固定上下文和 history 设置"),
         P("backend_options", "object", "仅 Model API：协议参数、超时和重试"),
-        P("context_strategy", description="默认 preserve：复用完整 Fork 的有效上下文继承；账号切换保留 Resident 身份和历史。同账号只改参数使用 UpdateResidentSettings", enum=("preserve",)),
-        P("active_execution_policy", description="有正在进行的轮次时：wait 等本轮结束再切换（默认），cancel 先取消它",
-          enum=("wait", "cancel")),
     ), (
         R("restart_id", description="本次重启 ID。GetSessionRestart 只按 resident_id 查询；CancelSessionRestart 传 resident_id 和此 ID"),
         R("status", description="当前进度"),
@@ -313,7 +315,7 @@ DECLARATIONS = (
     ), target="resident_id"),
     _d("CancelSessionRestart", ON_RESIDENT, "取消等待中的会话操作，保留原会话。取消等待清空仍须有 ClearContext 管理权限。", (
         R("resident_id", description="会话操作所属 Resident"),
-        R("restart_id", description="取 RestartSession 或 ClearContext(wait) 返回的 restart_id"),
+        R("restart_id", description="取 RestartSession 或 CreateContextReset 返回的 restart_id"),
     ), (R("restart_id", description="被取消的重启"),
         R("status", description="cancelling 正在取消，或 cancelled 已取消"),), mutates=True, target="resident_id"),
     _d("BindWorkspace", ON_RESIDENT, "为 Resident 绑定一个已存在的工作目录。", (

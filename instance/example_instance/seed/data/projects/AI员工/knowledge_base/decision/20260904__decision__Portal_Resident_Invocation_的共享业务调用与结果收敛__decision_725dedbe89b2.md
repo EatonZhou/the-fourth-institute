@@ -75,16 +75,16 @@ Portal 的很多功能需要让 AI 做一件事：深读一篇论文、给一条
 
 ### 页面讨论
 
-Paper、WALL 和资源页中的“讨论”面板，都用 Invocation 为“某个用户对某个条目的讨论”找到固定的 Resident。
+WALL 和资源页中的“讨论”面板用 Invocation 为“某个用户对某个条目的讨论”找到固定的 Resident。Paper 的持续研究槽和旧会话由 Paper 用户关联 owner 解析，再交给公共 Resident 会话入口。Paper 新槽必须由当前用户显式创建于其已存在的个人 AMA，不能沿用下面的共享 Lineage 首发创建规则；旧会话保持原 scope 和 Resident，通过明确的关联转换退出共享工作台，见 decision_528bf9985705。
 
-- **讨论 Resident 按“用户 + 条目”复用。** Paper 按用户与论文，WALL 按用户与工程中的条目，资源页按用户与资源。从不同页面打开同一讨论，使用同一个 Resident 和会话。
-- **每类讨论放在明确绑定的共享 Lineage 中。** Paper 与 WALL 读取各自应用的主 Lineage 绑定；资源讨论按资源类型分组：知识条目（`resources.portal.KNOWLEDGE_ENTRY_TYPES` 中的类型）进入知识条目讨论 Lineage，Article、Repo、Skill、Experiment、Device 各有对应目标。资源讨论由 `application_targets` 的 `resource_chat:<类型>` 配置指定；`application_targets` 是 Portal 的应用目标配置表，每个应用一行，记录它使用的 Resident 或 Lineage。`resource-chat:<类型>` 是调用适配层的应用名，映射到该表的对应类型。配置维护与权限边界见 decision_6591e7793116。解析目标不授予目标权限，也不自动创建 Lineage；资源类型取自当前用户有权读取的资源记录，不从标题或页面筛选推断。
+- **讨论 Resident 按“用户 + 条目”复用。** WALL 按用户与工程中的条目，资源页按用户与资源。从不同页面打开同一讨论，使用同一个 Resident 和会话。
+- **每类讨论放在明确绑定的共享 Lineage 中。** WALL 读取其应用的主 Lineage 绑定；资源讨论按资源类型分组：知识条目（`resources.portal.KNOWLEDGE_ENTRY_TYPES` 中的类型）进入知识条目讨论 Lineage，Article、Repo、Skill、Experiment、Device 各有对应目标。资源讨论由 `application_targets` 的 `resource_chat:<类型>` 配置指定；`application_targets` 是 Portal 的应用目标配置表，每个应用一行，记录它使用的 Resident 或 Lineage。`resource-chat:<类型>` 是调用适配层的应用名，映射到该表的对应类型。配置维护与权限边界见 decision_6591e7793116。解析目标不授予目标权限，也不自动创建 Lineage；资源类型取自当前用户有权读取的资源记录，不从标题或页面筛选推断。
 - **打开讨论不创建 Resident。** 打开讨论、读取历史、刷新或输入草稿只查找已有关联。还没有 Resident 时显示空对话和可编辑的输入框，草稿按用户与条目分开保存。
 - **第一次发送非空消息时才创建讨论。** 页面在发送时检查当前用户对条目的访问权限，再幂等地找到或创建讨论 Resident，然后通过标准消息投递。空消息和权限被拒时不创建。并发准备同一用户与条目时复用同一个身份。
 - **起始上下文只随第一条用户消息提供。** 之后的消息读取真实会话状态，已经有用户消息时不再重复附加起始说明。绑定后的发送、停止和刷新由共享的 Resident 会话组件负责。
 - **切换条目会让旧的发送准备失效。** 旧请求返回后不能发送消息，也不能覆盖新条目的草稿；再次打开原条目时可以复用已准备好的 Resident。
 - **讨论使用普通 Lineage 和普通 Resident。** 讨论只是业务用途，不是新的资源类型，也没有讨论专用的指令；成员、迁移、生命周期和访问控制都与其他 Lineage 相同。加入同一个共享 Lineage 不会让讨论公开：资源读取、Resident 会话和成员操作仍按当前调用者鉴权。绑定缺失、目标不可访问或成员关系不一致时报告错误，由管理入口修复。
-- **合并讨论保留原身份和历史。** 用 `MoveResident` 转移已有成员，等迁移的持久回执完成后，再删除空的源 Lineage。用户与条目的原关联仍指向原 Resident，所属 Lineage 以当前的成员关系为准；迁移不创建替代讨论。
+- **合并讨论保留原身份和历史。** 用 `MoveLineageObjects` 转移已有成员，等迁移的持久回执完成后，再删除空的源 Lineage。用户与条目的原关联仍指向原 Resident，所属 Lineage 以当前的成员关系为准；迁移不创建替代讨论。
 
 ### 提交
 
@@ -191,7 +191,7 @@ Paper、WALL 和资源页中的“讨论”面板，都用 Invocation 为“某�
 ## 其他后台能力使用的 Lineage
 
 - Repo 简介与提交信息生成使用 Repo 的讨论 Lineage；Notice Board 的分类由 `application_targets` 中 `notice_classifier` 一行指定的 Resident 完成。调用时把目标 Lineage 作为 `lineage_binding` 传入，已有的调用者、scope 与 Resident ID 不变，成员关系以当前 Lineage 为准。登记不存在或无法访问时明确失败，不另建团队。
-- 把旧的讨论 Resident 或定时工作的 Resident 合并到新的分组时：先创建普通的目标 Lineage，用 `MoveResident` 迁移已有成员并确认工作目录迁移完成，再更新 `application_targets` 中的引用、删除空的源 Lineage。分组不引入专用的 Resident 类型或指令，也不扩大任何用户的访问权限。
+- 把旧的讨论 Resident 或定时工作的 Resident 合并到新的分组时：先创建普通的目标 Lineage，用 `MoveLineageObjects` 迁移已有成员并确认工作目录迁移完成，再更新 `application_targets` 中的引用、删除空的源 Lineage。分组不引入专用的 Resident 类型或指令，也不扩大任何用户的访问权限。
 - **迁移前的身份取证。** Portal Admin 可以对自己有管理权的 Lineage 调用 `diagnose_lineage_invocations`，读出其中每个 Resident 被哪个用户的哪个 scope 关联、对应的资源 ID 和记录的资源类型；结果不包含消息、提示词或凭据。读取结束时重新核对 Lineage 版本和管理权限，期间有变化则报错。
 - 通用的成员迁移可以迁入空的目标 Lineage；源与目标的成员变化在同一个事务中提交，工作目录搬移随后由持久的生命周期操作完成，重试使用原来的幂等回执。全部成员迁移并核验后才删除空的源 Lineage。
 

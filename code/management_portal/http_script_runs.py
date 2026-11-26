@@ -46,8 +46,8 @@ class ScriptRunHttp:
                 raise ValueError("产物超过读取上限")
             data = bytearray()
             while True:
-                chunk = isa_client.call(actor, "ReadScriptRunOutput", {
-                    "lineage_id": lineage_id, "script_run_id": run_id, "stream": "artifact", "name": name,
+                chunk = isa_client.call(actor, "ReadScriptRunArtifact", {
+                    "lineage_id": lineage_id, "script_run_id": run_id, "name": name,
                     "offset": len(data), "limit": 65536,
                 })
                 raw = base64.b64decode(chunk["base64"], validate=True)

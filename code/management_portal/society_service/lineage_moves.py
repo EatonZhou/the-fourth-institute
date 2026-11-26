@@ -66,6 +66,8 @@ def _resident_move_plan(
         raise ValueError("allow_empty_source must be a boolean")
     allow_empty_source = allow_empty_source and [node["id"] for node in source.get("nodes") or []] == [resident_id]
     if allow_empty_source:
+        if (source.get("principal_hierarchy") or {}).get("level") == "project":
+            raise ValueError("Project leader must remain in its own Lineage")
         program = source.get("program") or {}
         if source.get("edges") or source.get("function_blocks") or any(program.get(key) for key in (
             "wires", "components",
@@ -129,14 +131,25 @@ def _resident_move_plan(
 
 
 def move_lineage_subgraph(lineage_id: str, payload: dict[str, Any], actor: str) -> dict[str, Any]:
+    object_ids = payload.get("object_ids")
+    allow_empty_source = payload.get("allow_empty_source", False)
+    if not isinstance(allow_empty_source, bool):
+        raise ValueError("allow_empty_source must be a boolean")
+    if allow_empty_source:
+        if not isinstance(object_ids, list) or len(object_ids) != 1:
+            raise ValueError("allow_empty_source requires selecting one Resident")
+        identity_contract.validate_id(object_ids[0], "resident")
     target_id = str(payload.get("target_lineage_id") or "")
     if not target_id:
         source = lineage_aggregate.read_lineage(lineage_id, actor=actor)
         lineage_aggregate.ensure_manager(source, actor)
         # Validate the selection before publishing a destination identity.
-        lineage_subgraph.plan(source, {"program": lineage_program.empty_program()}, payload.get("object_ids"), source_member_ids={
-            record["resident_id"] for record in resident_catalog.get_catalog().for_lineage(lineage_id)
-        })
+        if allow_empty_source:
+            _resident_move_plan(source, object_ids[0], allow_empty_source=True)
+        else:
+            lineage_subgraph.plan(source, {"program": lineage_program.empty_program()}, object_ids, source_member_ids={
+                record["resident_id"] for record in resident_catalog.get_catalog().for_lineage(lineage_id)
+            })
         target = lineage_lifecycle.create_lineage({
             "title": f"{source.get('title') or lineage_id} · 迁出",
             "project_id": source.get("project_id"), "lineage_membership": source["lineage_membership"],
@@ -149,6 +162,11 @@ def move_lineage_subgraph(lineage_id: str, payload: dict[str, Any], actor: str) 
             if not current_target.get("nodes") and not (current_target.get("program") or {}).get("components"):
                 lineage_lifecycle.delete_lineage(target_id, actor)
             raise
+    if allow_empty_source:
+        moved = move_lineage_resident(lineage_id, {
+            "resident_id": object_ids[0], "target_lineage_id": target_id, "allow_empty_source": True,
+        }, actor)
+        return {**moved, "detached_edges": moved["detached"]}
     identity_contract.validate_id(target_id, "lineage")
     if target_id == lineage_id:
         raise ValueError("请选择不同的目标 Lineage")
@@ -159,7 +177,7 @@ def move_lineage_subgraph(lineage_id: str, payload: dict[str, Any], actor: str) 
         source, target = lineage_aggregate.read_lineage(lineage_id, actor=actor), lineage_aggregate.read_lineage(target_id, actor=actor)
         lineage_aggregate.ensure_manager(source, actor)
         lineage_aggregate.ensure_manager(target, actor)
-        plan = lineage_subgraph.plan(source, target, payload.get("object_ids"),
+        plan = lineage_subgraph.plan(source, target, object_ids,
             source_member_ids={record["resident_id"]
                                for record in resident_catalog.get_catalog().for_lineage(lineage_id)})
         lineage_placement.place_moved_objects(target, plan["target"], set(plan["moved_ids"]))

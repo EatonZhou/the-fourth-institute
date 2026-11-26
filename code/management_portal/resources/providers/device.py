@@ -56,69 +56,43 @@ def install_mutation_provider(service: "ResourceService") -> None:
 
 
 
-def install_action_provider(service: "ResourceService") -> None:
+def check_device_ssh(service, resource_id, *, actor, timeout_seconds=15):
     from management_portal import device_identity_backend
+    resource_id = service._named_operation_target(resource_id, {"device"}, actor=actor,
+                                                   instruction="CheckDeviceSsh")
+    report = device_identity_backend.test_ssh_connection(resource_id, timeout_seconds=timeout_seconds)
+    # The SSH domain report carries diagnostics; the public instruction has the
+    # existing ok/error contract, independent of the device implementation.
+    result = {"ok": bool(report["reachable"])}
+    if not result["ok"]:
+        result["error"] = str(report.get("message") or "SSH connection failed")
+    return result
 
-    def test_ssh(
-        resource_id: str,
-        payload: dict[str, Any],
-        *,
-        actor: str = "",
-    ) -> dict[str, Any]:
-        del actor
-        return device_identity_backend.test_ssh_connection(
-            resource_id,
-            timeout_seconds=payload.get("timeout_seconds", 15),
-        )
 
-    def save_ssh_credential(
-        resource_id: str,
-        payload: dict[str, Any],
-        *,
-        actor: str = "",
-    ) -> dict[str, Any]:
-        del actor
-        access = device_identity_backend.effective_ssh_access(
-            resource_id,
-        )
-        via_resource_id = str(access["via_resource_id"])
-        result = device_identity_backend.save_device_ssh_password(
-            via_resource_id,
-            str(payload.get("password") or ""),
-        )
-        return {
-            "resource_id": resource_id,
-            "via_resource_id": via_resource_id,
-            "credential_saved": bool(result["credential_saved"]),
-        }
+def update_device_ssh_credential(service, resource_id, password, *, actor):
+    from management_portal import device_identity_backend
+    resource_id = service._named_operation_target(resource_id, {"device"}, actor=actor,
+                                                   instruction="UpdateDeviceSshCredential")
+    access = device_identity_backend.effective_ssh_access(resource_id)
+    via_resource_id = str(access["via_resource_id"])
+    result = device_identity_backend.save_device_ssh_password(via_resource_id, password)
+    return {"resource_id": resource_id, "via_resource_id": via_resource_id,
+            "credential_saved": bool(result["credential_saved"])}
 
-    def delete_ssh_credential(
-        resource_id: str,
-        _payload: dict[str, Any],
-        *,
-        actor: str = "",
-    ) -> dict[str, Any]:
-        del actor
-        access = device_identity_backend.effective_ssh_access(
-            resource_id,
-        )
-        via_resource_id = str(access["via_resource_id"])
-        result = device_identity_backend.delete_device_ssh_password(via_resource_id)
-        return {
-            "resource_id": resource_id,
-            "via_resource_id": via_resource_id,
-            "credential_saved": bool(result["credential_saved"]),
-            "deleted": bool(result["deleted"]),
-        }
 
-    service.register_action_provider(
-        "device",
-        {
-            "ssh.test": test_ssh,
-            "ssh.run": lambda rid, payload, *, actor: device_identity_backend.run_device_ssh(
-                rid, payload.get("command"), actor=actor,
-            ),
-            "ssh.credential.save": save_ssh_credential,
-            "ssh.credential.delete": delete_ssh_credential,
-        },
-    )
+def delete_device_ssh_credential(service, resource_id, *, actor):
+    from management_portal import device_identity_backend
+    resource_id = service._named_operation_target(resource_id, {"device"}, actor=actor,
+                                                   instruction="DeleteDeviceSshCredential")
+    access = device_identity_backend.effective_ssh_access(resource_id)
+    via_resource_id = str(access["via_resource_id"])
+    result = device_identity_backend.delete_device_ssh_password(via_resource_id)
+    return {"resource_id": resource_id, "via_resource_id": via_resource_id,
+            "credential_saved": bool(result["credential_saved"]), "deleted": bool(result["deleted"])}
+
+
+def run_device_command(service, resource_id, command, *, actor):
+    from management_portal import device_identity_backend
+    resource_id = service._named_operation_target(resource_id, {"device"}, actor=actor,
+                                                   instruction="RunDeviceCommand")
+    return device_identity_backend.run_device_ssh(resource_id, command, actor=actor)

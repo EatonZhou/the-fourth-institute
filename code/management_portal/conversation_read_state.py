@@ -75,6 +75,19 @@ def set_pinned(actor: str, key: str, pinned: bool) -> dict[str, Any] | None:
         return store.set_pinned(connection, actor, key, pinned)
 
 
+def update_marks(actor: str, key: str, *, muted=None, pinned=None, unread=None, expected_revision=None):
+    """Apply personal conversation flags together under the actor's lock."""
+    with _transaction(actor) as connection:
+        state = store.read_keys(connection, actor, [key]).get(key) or store.empty_state()
+        if unread is not None:
+            state = store.set_read(connection, actor, key, unread=unread, expected_revision=expected_revision)
+        if pinned is not None:
+            state = store.set_pinned(connection, actor, key, pinned) or state
+        if muted is not None:
+            state = store.set_muted(connection, actor, key, muted)
+        return state
+
+
 def retain_pins(actor: str, available_keys: set[str]) -> dict[str, Any]:
     """Release pins only after every pinned target was checked for this viewer."""
     with _transaction(actor) as connection:

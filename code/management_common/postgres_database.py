@@ -466,6 +466,38 @@ class PostgresDatabase:
                 yield connection
 
     @contextmanager
+    def readonly_snapshot(self) -> Iterator[PostgresConnection]:
+        """Read installed state in an independent, repeatable read-only transaction.
+
+        Preview callers must not inherit a writer's uncommitted state or invoke
+        schema installation on a cold process. This connection deliberately
+        bypasses the pool and the current-transaction context.
+        """
+        psycopg, row_factory, _pool = _postgres_modules()
+        with psycopg.connect(
+            self.dsn, autocommit=True, row_factory=row_factory,
+            application_name=self._application_name,
+        ) as raw:
+            with raw.transaction():
+                raw.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
+                raw.execute("SET LOCAL timezone = 'UTC'")
+                raw.execute("SET LOCAL lock_timeout = '30s'")
+                raw.execute("SET LOCAL statement_timeout = '360s'")
+                raw.execute("SET LOCAL jit = off")
+                exists = raw.execute(
+                    "SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname=%s",
+                    (self.schema,),
+                ).fetchone()
+                if exists is None:
+                    raise RuntimeError(f"PostgreSQL schema {self.schema!r} is not installed")
+                raw.execute(
+                    psycopg.sql.SQL("SET LOCAL search_path TO {}").format(
+                        psycopg.sql.Identifier(self.schema)
+                    )
+                )
+                yield PostgresConnection(raw)
+
+    @contextmanager
     def snapshot(self) -> Iterator[PostgresConnection]:
         """A read-only transaction whose statements all see one committed snapshot."""
 

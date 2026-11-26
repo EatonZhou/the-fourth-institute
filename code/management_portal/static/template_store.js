@@ -26,7 +26,11 @@
     let mode = item.installed_template_id ? 'overwrite' : 'install';
     if (item.installed_template_id && item.locally_modified) mode = await conflictMode();
     if (!mode) return null;
-    const result = await request('InstallStoreTemplate', {store_id:item.store_id,target_template_id:item.installed_template_id || undefined,mode});
+    const instructions = {install:'InstallStoreTemplate', overwrite:'UpdateInstalledTemplate', copy:'InstallStoreTemplateAsNew'};
+    const result = await request(instructions[mode], {
+      store_id:item.store_id,
+      ...(mode === 'install' ? {} : {target_template_id:item.installed_template_id}),
+    });
     changed(result.template);
     window.PortalUI.toast(`${t(mode === 'install' ? '已安装' : '已更新到')} v${result.template.installed_store_version}`, 'success');
     return result.template;

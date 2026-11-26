@@ -73,6 +73,58 @@ def test_stop_commit_does_not_wait_for_conversation_or_workspace(running, monkey
         pending.result(2)
 
 
+@pytest.mark.usefixtures('registered_execution_defaults')
+def test_cancel_input_then_restart_waits_for_terminal_and_preserves_queue(running, monkeypatch):
+    from tests.cases.isa_test_support import reset_kernels, run
+    from management_portal.society_service import resident_deferred_restart
+
+    record, repo = running
+    rid = record['resident_id']
+    following_id = 'msg_' + 'b' * 32
+    following = {'message_id': following_id, 'role': 'user', 'author_id': 'CASE-A',
+                 'content_parts': [{'type': 'text', 'text': 'following input'}]}
+    repo.accept_user_message(rid, following)
+    repo.set_input_state(rid, following_id, 'queued')
+    job = resident_execution_work.read(record)
+    job['queue'] = [{'user_message_id': following_id, 'input_message': following,
+                     'actor': 'CASE-A', 'effective_message': 'following input'}]
+    resident_execution_work.write(record, job)
+    monkeypatch.setattr(resident_input_queue_domain, 'acknowledge_execution', lambda *_: True)
+    monkeypatch.setattr(resident_execution_domain, '_notify_lineage_message_terminal', mock.Mock())
+
+    reset_kernels()
+    try:
+        stopped = run('CancelInput', {'resident_id': rid, 'message_id': MID}, actor='CASE-A', key='stop-before-restart')
+        assert stopped.status == 'committed', stopped.error
+        assert stopped.result['cancellation_requested'] and not stopped.result['backend_cancelled']
+        assert stopped.result['input_state']['state'] == 'running'
+        restarted = run('RestartSession', {'resident_id': rid, 'account_id': 'one'}, actor='CASE-A', key='restart-after-stop')
+        assert restarted.status == 'committed', restarted.error
+        assert restarted.result['phase'] == 'waiting_current_execution'
+        current = resident_record_domain.find_resident(rid)
+        assert resident_deferred_restart.advance(current) is False
+        assert repo.input_state(rid, MID)['state'] == 'running'
+        assert repo.input_state(rid, following_id)['state'] == 'queued'
+        assert [item['user_message_id'] for item in resident_execution_work.read(current)['queue']] == [following_id]
+        lifecycle.notify_execution_cancellation.assert_called_once_with(EID, 'CASE-A')
+
+        # Supply the backend's terminal acknowledgement through the real owner.
+        resident_execution_domain.apply_cancelled_continuation(rid, 'continuation-stop')
+        assert repo.input_state(rid, MID)['state'] == 'cancelled'
+        assert repo.input_state(rid, following_id)['state'] == 'queued'
+        resident_deferred_restart.advance(resident_record_domain.find_resident(rid))
+        current = resident_record_domain.find_resident(rid)
+        assert current['session_restart']['restart_id'] == restarted.result['restart_id']
+        assert current['session_restart']['status'] == 'completed'
+        assert current['backend_route_id'] == 'one'
+        current_job = resident_execution_work.read(current)
+        assert following_id in [current_job.get('user_message_id'),
+                                *(item['user_message_id'] for item in current_job.get('queue', []))]
+        assert repo.input_state(rid, following_id)['state'] == 'queued'
+    finally:
+        reset_kernels()
+
+
 def test_lost_wake_recovers_state_without_redelivery_and_keeps_newer_revision(running, monkeypatch):
     """停止通知丢失后由恢复流程补发状态，不重复投递，保留较新的状态版本"""
     record, repo = running

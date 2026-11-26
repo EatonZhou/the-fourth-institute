@@ -50,7 +50,7 @@ Resident 是长期存在的工作身份。它选择执行账号、可以使用�
 
 **能力配置变化不自动替换会话。** Portal 只在后端明确支持时，把变化应用到现有会话的后续轮次；不支持时显示待生效项，由用户选择是否另建会话。查询失败、记录缺失和版本未知都不能成为自动重建理由。
 
-**账号切换是一个独立动作，优先保留当前有效上下文。** 账号切换表单根据后端 context_options 自动选用可用的完整保留方案；无法完整保留且支持 compact 时，展示摘要交接的范围、可能遗漏细节与工具过程的影响，主按钮显示“交接并切换”。用户无需选择底层策略，点击按钮才提交；选账号本身不执行操作。不支持完整保留或摘要交接时禁止切换，不自动使用 visible 或 fresh。完整保留提交 operation=switch_account、context_strategy=preserve；已说明影响的摘要交接提交 operation=restart、context_strategy=compact。两者默认 wait，准备失败均保留原会话；失败后不得静默降级。更换目标重新计算方案并更新说明，刷新不覆盖编辑。跨 Provider 仍须明确选择目标模型。空白开始只在独立“重新开始会话”入口明确选择。
+**账号切换保留当前有效上下文。** 选择账号只改表单。提交 `RestartSession` 时带目标配置，跨 Provider 明确目标模型。系统等待在途执行并校验目标；配置保存失败时保留原绑定。
 
 本协议负责能力定义、配置引用、实际装配、更新和账号切换之间的边界。执行排队、权限判定、资源内容与会话历史仍由现有领域拥有，不新增第二个 Resident 配置服务、账号库或会话历史库。
 
@@ -228,7 +228,7 @@ flowchart LR
 - 初始化处于 pending、running 或 failed 时，面板显示“继续当前初始化”，不显示账号选择。
 - 弹窗的关闭按钮、取消、Escape 与点击卡片外区域均可退出并恢复页面交互；内嵌面板用“还原”放弃未保存的修改。关闭界面不取消已受理的操作。面板不显示绑定诊断。
 
-界面不提供能力配置编辑和同账号“重新开始会话”。这两项仍由 `UpdateResidentSettings` 的 capability_config 和 `RestartSession` 的 operation=restart 承担，Agent 和脚本通过 HATG 调用。
+界面不提供能力配置编辑和同账号“重新开始会话”。这两项仍由 `UpdateResidentSettings` 的 capability_config 和 `RestartSession(resident_id=…)` 承担，Agent 和脚本通过 HATG 调用。
 
 “智能选择、原生 Fork、精简交接”不出现在正常换账号表单里。系统应当承担无损路径选择，只有遇到信息无法保留等真实取舍才让用户决定。
 
@@ -266,7 +266,7 @@ flowchart LR
 | 换执行账号 | 切换账号 | 优先保留有效上下文；需要摘要时说明影响并由交接按钮提交，失败保留原会话 |
 | 注册、停用和撤销应用工具或自定义 MCP 工具 | Settings 的 Tools 面板，选择目标 Resident 后条件保存 | 显示当前选择与生效预期；默认不选，不把配置保存等同于旧 Session 已装配 |
 | 配置 Prompt、Skill | 既有运行设置与 UpdateResidentSettings | 沿各自注入时机生效，工具配置保存不覆盖这些选择 |
-| 在同账号重新建立会话 | `RestartSession` operation=restart（界面不提供） | 明确选择保留有效上下文或空白开始，不暗含账号切换 |
+| 在同账号重新建立会话 | `RestartSession(resident_id=…)`（界面不提供） | 保留有效上下文。空白开始使用清空入口 |
 | 减少上下文长度 | 压缩上下文 | 独立且可见的压缩操作，说明方法与信息损失 |
 | 继续失败任务 | 重试这条任务 | 指向具体原输入，先查是否已接受、执行或部分完成 |
 | 排查故障 | 查看诊断 | 查看绑定、版本、回执和原错误，不改变工作 |
@@ -303,7 +303,7 @@ GET /api/tool-settings 投影已安装应用目录；带 resident_id 时回读�
 
 设置读取与保存继续通过正式 GetResidentSettings / UpdateResidentSettings；Prompt 预览复用 GetPromptInjectionPreview，实际发送复用现有查询。工具/MCP 扩展字段应进入同一有版本契约，不另造无约束 JSON 设置。
 
-会话业务 owner 分别定义换账号、重启、压缩、恢复的操作意图，复用底层候选、等待与条件提交机制。界面自动选择支持的方案并提前说明影响，提交显式 preserve 或 compact；API smart 兼容值仍归一 preserve，不在执行层自动压缩。
+会话业务 owner 分别处理换账号、重启、压缩和恢复。换账号和重启复用完整 Fork 的校验与投递；历史已受理操作按原恢复合同推进。
 
 配置写入返回 revision 及逐项生效状态。会话操作返回 operation_id、源/目标账号、当前阶段、实际绑定、上下文处理结果和错误。语义状态至少区分：等待当前工作、准备目标、核对保留内容、提交绑定、完成、失败、取消；重读同一个操作能收敛未知结果，不以重复按钮点击生成新请求。
 
@@ -373,7 +373,7 @@ MCP 连接是可授权读取的 JSON 资源，schema 为 `tfi.mcp-connection.v1`
 | 显式 fresh | 清空有效上下文并保存配置，下次真实输入懒建；页面历史仍保留 |
 | 显式 compact/visible 交接 | 独立的有损模型操作；不作为普通切换的 fallback |
 
-`RestartSession` 复用既有状态 owner；operation 为 switch_account 或 restart（省略保持 restart），默认 context_strategy=preserve、active_execution_policy=wait、resume_failed_input=false。smart 仅兼容旧请求并映射 preserve，退出条件为旧客户端停止发送该值。switch_account 只允许 preserve；跨 Provider 要明确目标模型，原生运行参数按目标校验，Portal 能力与 Prompt 配置保留。返回 operation_id（restart_id 别名）、phase、context_result；GetSessionRestart 返回实际绑定。相同操作身份与请求重放复用，改请求冲突；等待、取消、后台恢复和提交前 CAS 沿现有生命周期，不另设状态库。
+`RestartSession` 复用会话状态 owner，根据是否提供目标 Provider 或账号配置判断操作。等待实际当前执行结束再保存配置，首条新输入按完整 Fork 合同交付上下文。跨 Provider 明确目标模型；配置失败保留原绑定。如需主动停止当前工作，先对目标输入调用 `CancelInput`，核实该轮执行已经结束，再调用 `RestartSession`。后续队列保留。 通过 `GetSessionRestart` 核对进度与实际绑定。
 
 运行设置面板的形式见上文“用户看到什么”。压缩和具体失败输入恢复保留各自入口；未知状态不得标成失败或已生效。
 

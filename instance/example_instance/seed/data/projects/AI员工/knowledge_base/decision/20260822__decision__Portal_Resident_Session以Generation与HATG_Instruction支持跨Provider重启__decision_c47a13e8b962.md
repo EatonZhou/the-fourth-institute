@@ -59,10 +59,10 @@ Resident 是 Portal 中有稳定身份的 AI 节点。它长期保留 ID、所�
 能力配置、会话装配与账号切换的统一规范入口为 decision_ccbb1cac24aa。本篇规定会话生命周期，按用户目的区分三项操作：
 
 - **切换账号**：优先保留当前有效上下文，无法完整保留时按下文展示摘要交接并由用户提交；等待当前工作完成后切换，准备失败保留原账号与会话。
-- **重新开始会话**：显式选择保留有效上下文、模型交接或空白开始，不承担普通换账号的入口含义。它由 `RestartSession` 的 operation=restart 发起，用户界面不提供同账号重开的入口。
+- **重新开始会话**：保留有效上下文并重新建立会话，不承担普通换账号的入口含义。它由 `RestartSession` 发起，用户界面不提供同账号重开的入口。
 - **清空上下文（Reset Context）**：归档当前对话和运行资料，释放当前会话；下次真实输入才建立空白会话。
 
-这些操作都保留 Resident 的身份、所属 Lineage、Resident Folder、工作区绑定和文件。公开接口复用 `RestartSession`、`GetSessionRestart`、`CancelSessionRestart`（decision_d19b9909a674）和 `ClearContext`（decision_2fe6fd5367fb），各操作意图及上下文策略必须明确。
+这些操作都保留 Resident 的身份、所属 Lineage、Resident Folder、工作区绑定和文件。公开接口复用 `RestartSession`、`GetSessionRestart`、`CancelSessionRestart`（decision_d19b9909a674）以及 `ClearContext`、`CreateContextReset`（decision_2fe6fd5367fb）。
 
 ## 基本概念
 
@@ -79,9 +79,9 @@ Resident 是 Portal 中有稳定身份的 AI 节点。它长期保留 ID、所�
 
 ### 用户在哪里操作
 
-Resident Menu、Chat 运行摘要和 Family 成员入口共用运行控制器和同一张单页运行设置面板（形式见 decision_ccbb1cac24aa）：Resident Menu 内嵌，其他入口在弹窗中打开。只改参数时“保存”不换账号、不创建模型轮次。账号切换表单根据后端 context_options 自动选用可用的完整保留方案；无法完整保留且支持 compact 时，展示摘要交接的范围、可能遗漏细节与工具过程的影响，主按钮显示“交接并切换”。用户无需选择底层策略，点击按钮才提交；选账号本身不执行操作。不支持完整保留或摘要交接时禁止切换，不自动使用 visible 或 fresh。完整保留提交 operation=switch_account、context_strategy=preserve；已说明影响的摘要交接提交 operation=restart、context_strategy=compact。两者默认 wait，准备失败均保留原会话；失败后不得静默降级。更换目标重新计算方案并更新说明。跨 Provider 时参数区换成目标 Provider 的参数，须明确目标模型；同 Provider 切换时一并修改的参数先保存再提交切换。空白开始只能通过 `RestartSession` 的 operation=restart 明确选择。关闭按钮、取消、Escape 与点击卡片外区域均可退出并恢复页面交互；关闭页面不取消已受理的操作。面板不显示绑定诊断。
+Resident Menu、Chat 运行摘要和 Family 成员入口共用运行设置面板：Resident Menu 内嵌，其余入口使用弹窗。只改参数时用 `UpdateResidentSettings` 保存。选择账号只更新表单；提交 `RestartSession` 时带目标设置，跨 Provider 明确模型。系统等待当前执行结束后校验完整上下文并保存配置，失败保留原绑定。关闭面板只结束界面交互，已受理的操作仍继续。
 
-相同 Provider、相同稳定账号 ID 的普通切换是 noop，不创建候选，也不显示 zero → zero。同账号重建通过 `RestartSession` 的 operation=restart 发起。关闭界面不取消已经受理的操作。进度与错误注明动作、时间及当前实际绑定，后续成功后旧失败归入历史。
+相同 Provider、相同稳定账号 ID 的普通切换是 noop，不创建候选，也不显示 zero → zero。同账号重建用 `RestartSession(resident_id=…)` 发起。关闭界面不取消已经受理的操作。进度与错误注明动作、时间及当前实际绑定，后续成功后旧失败归入历史。
 
 ### 弹窗刷新与提交校验
 
@@ -94,7 +94,7 @@ Resident Menu、Chat 运行摘要和 Family 成员入口共用运行控制器和
 - **发起和取消会话重启需要对该 Resident 的 `@contributor` 权限。** 读取重启进度需要 `@viewer`；两者都由当前权限方案判定（decision_b820faf42218）。
 - **新会话准备好之后才替换旧会话。** 准备期间旧会话保持不变；新会话准备失败、被取消或替换后的保存失败时，Resident 继续使用旧会话，页面提示“迁移未完成，原会话已保留”。被替换的旧会话保留下来，供审计和必要时恢复。
 - **候选保留完整平台配置。** 切换或重启使用当前设置 owner 的完整能力与 Prompt 配置，包括 Tools、MCP、Skills、Portal 注入策略和业务指令；按目标 Provider 验证并记录实际装配结果。只复制一个工具名称不能证明配置已保留。`hatg_instruction` 的参数定义与执行处理来自正式 ISA，Markdown 可以强调其使用方式。
-- **普通输入沿用当前会话。** 工具名称记录缺失、为空或不包含 `hatg_instruction`，均不得自动关闭接单、创建替代 Session 或执行精简交接。会话工具元数据不构成自动重建的触发条件；显式 `RestartSession` 的策略选择、已受理迁移的恢复与原会话故障恢复各自遵守原有契约。历史自动工具刷新记录保留用于审计，不据此发起新的重建。
+- **普通输入沿用当前会话。** 工具名称记录缺失、为空或不包含 `hatg_instruction`，均不得自动关闭接单、创建替代 Session 或执行精简交接。会话工具元数据不构成自动重建的触发条件；显式 `RestartSession` 的调用、已受理迁移的恢复与原会话故障恢复各自遵守原有契约。历史自动工具刷新记录保留用于审计，不据此发起新的重建。
 - **重启期间 Resident 暂停开始新工作。** 发起重启时，Portal 关闭这个 Resident 的接单开关；新消息照常排队，等新会话切换完成或旧会话恢复后才执行。完成后，Portal 只重新打开由本次重启关闭、且之后没有被人工改动过的接单开关。
 - **跨 Provider 显式选择模型。** 目标 Provider 与账号来自已鉴权目录；同 Provider 未指定账号时沿用当前账号，跨 Provider 的目标账号和模型由调用方明确选择，不静默采用默认模型。完整保存平台能力与 Prompt 配置，逐项校验目标 Model、Effort、Mode、Speed、Permissions 及 Provider 专属参数；不兼容时明确拒绝，不静默丢字段。准备时冻结目标配置，成功提交后才替换当前 Provider、账号和配置。
 - **普通会话创建直接提交执行，额度准入由 Scheduler 拥有。** Society 不在创建或迁移受理前读取健康快照检查剩余额度，也不为普通候选 binding 自动放行。只有人类明确确认本次目标 Session 使用 credits 时，验证一次最新认证及可用 credits，记录实际读取的完整 `quota_admission` 快照，并给唯一准备 Execution 授予范围例外；普通操作的 `quota_admission` 为空。付费确认的范围、成功提升后的 Session 授权、取消和失败不提升规则见 decision_d40f59f5508f。
@@ -131,7 +131,7 @@ fresh 也可显式放弃尚未交付的 Fork 来源材料（decision_5bf5bfbd52c
 ### 正在运行的工作
 
 - **普通切换默认等待当前工作完成。** Portal 持久保存 preserve 请求，在同一事务关闭接单并记录 `status=accepted`、`phase=waiting_current_execution`；当前工作继续，新输入排队。当前轮结束后冻结最新有效上下文边界，服务恢复后沿原操作继续。
-- **停止当前工作必须显式选择。** 用户可在等待状态请求“停止当前工作并切换”；先走正式停止机制，结果明确后再推进。停止未完成或工具业务结果未知时不推断完成、不重做业务。最近失败输入不随账号切换自动重试，须另行选择具体任务的正式恢复入口。
+- **停止只针对选定的输入。** 如需主动停止当前工作，先对目标输入调用 `CancelInput`，核实该轮执行已经结束，再调用 `RestartSession`。后续队列保留。 停止受理后可用 `GetInputState` 或对话事件确认执行终态；旧输入结果不明时无需重做业务，已失败输入由独立恢复入口处理。
 - **只是在排队、还没有进入执行的消息不妨碍重启。** 消息、任务和队列位置保留。迁移记录接单开关的变更编号；成功、失败或取消时，只在编号仍一致且确由本次迁移关闭时重新打开。原先人工关闭的开关保持关闭，期间发生的新开关操作优先。
 - **已提交但尚未被 Worker 领取的额度等待请求可原子交接。** Society 持久记录原输入、迁移操作与原/替换 Execution 身份，再由 ExecutionService 在 Scheduler 行锁内确认仍为 queued、没有领取者、尝试、checkpoint 或 Stop。确认后只撤回内部 Execution，并在同一事务保存可回读的交接凭据；业务输入不记为取消，也不生成某人主动停止的通知。已经领取或事实不明时不强行交接。会话迁移完成后，以原消息和队列位置在新绑定上重新准备执行，不复用旧路由的 prepared prompt；迁移失败或取消则在原绑定恢复准备。公开 restart_id/request_id 保持不变，内部 execute 幂等键独立；丢失回执按固定交接身份核对，不能重复执行或凭超时推断成功。
 - **仅保存配置、没有会话且只有一条尚未被执行层认领的 Codex 执行时，可直接改它的账号。** 这种情况下选择“等待完成”并换到同一 Provider 的另一个账号，Portal 把这条排队执行的账号路线改为目标账号，并保存为 Resident 的默认账号；执行、任务、消息和输入的 ID 都不变，也不创建会话。执行已被认领或已有会话时，不使用这条路径。需要创建候选 Session 的请求（包括人类明确确认本次 credits 的 fresh 或 preserve）不使用直接改派；已提交未领取的原输入按上述原子交接协议保留，再准备并条件提升目标 Session，不能先改派旧执行再让它与新会话创建竞争。 这项操作先核对当前调用者的 Resident 管理权限，再用原输入已核验的发起身份定位排队执行；实际切换账号的人单独记入操作审计。两种身份可以不同，切换不改变原输入的归属。缺少原输入身份时拒绝改派，不借用当前操作人或 Resident owner 的身份。

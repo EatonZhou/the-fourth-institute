@@ -46,7 +46,7 @@ Router 选人输入另外保存 `family-route/<门面ID>/message/<原消息ID>`�
 
 延续直交取得同一有限转交身份，核对方式相同：运行时按已存转交关系重新算出延续成员，与转交参数、到达事件的 `continued_member_id` 三者一致才放行，不只信任事件载荷。
 
-无有效引用目标时，包括有延续直交目标的请求，同一生成的 `router` Effect 可用门面身份调用 `DispatchFamilyTask(trigger="route")`，但参数只含本门面与该到达事件对应的 `source_message_id`，原输入须仍 queued、真实作者须匹配。该授权只让本 Family Router 对已接收请求选人；不得附任意 facts、选择其他 trigger 或替换原消息。普通内部通信仍沿既有通路，不因这一限定阻止成员正常互发。
+无有效引用目标时，包括有延续直交目标的请求，同一生成的 `router` Effect 可用门面身份用 `DeliverMessage` 向本 Family Router 投递 route 任务，消息 ID 与业务关联由该到达事件对应的原消息 ID 确定，原输入须仍 queued、真实作者须匹配。该授权只让本 Family Router 对已接收请求选人；不得投递给其他目标或其他任务类型，也不替换原消息。普通内部通信仍沿既有通路，不因这一限定阻止成员正常互发。
 
 **原作者和对外署名不授予通用工具权限。** Router、Steward 与成员仍按实际执行主体核权。平台只对经过校验的门面原请求提供有限转交授权：校验转交者及 Family 目标，允许原样转交的附件和引用沿用来源授权；不能据此冒充发送者执行其他读写或继承其管理权限。具体权限规则见 [权限模型](/resource/knowledge?item=decision_b820faf42218)。
 
@@ -64,7 +64,7 @@ Router 选人输入另外保存 `family-route/<门面ID>/message/<原消息ID>`�
 
 ### 个人门面的手机消息
 
-带可信 `origin.channel.kind=weixin/telegram` 的个人门面输入按 [Telepus 手机助手](/r/decision_d09c55133f12) 直达：问答交回提问成员，引用交回回复成员，其余交手机助手；首次需要时通过正式 Family 生命周期创建唯一成员。此分支先于网页 Solo/Mute 和接续规则，不经过 Router 或 steward 选人，仍走正常 RelayFamilyMessage 校验与门面回复投影。网页 Solo/Mute 仅限制网页消息，手机请求及其回复保持可见。Solo 切换后的手机请求由 Telepus 提示一次；精准 `/route` 仍直接发给目标 Resident。
+带可信 `origin.channel.kind=weixin/telegram` 的个人门面输入按 [Telepus 手机助手](/r/decision_d09c55133f12) 直达：问答交回提问成员，引用交回回复成员，其余交手机助手；首次需要时通过正式 Family 生命周期创建唯一成员。此分支先于网页 Solo/Mute 和接续规则，不经过 Router 或 steward 选人，仍走正常 RelayMessage 校验与门面回复投影。网页 Solo/Mute 仅限制网页消息，手机请求及其回复保持可见。Solo 切换后的手机请求由 Telepus 提示一次；精准 `/route` 仍直接发给目标 Resident。
 
 个人门面的输入 `relay`、回复 `family_reply` 及协作 `family_context` 用 `request_channel` 投影已保存原请求的渠道。服务端过滤、浏览器增量显示和可见请求的停止统计共用该事实，使手机往来不被网页 Solo/Mute 再次隐藏；它不改变原消息署名或权限。
 
@@ -91,14 +91,14 @@ Solo 一次一个；点另一成员的 S 切换，点亮着的 S 或头部“退
 
 `family_chat_preferences` 保存个人 Mute/Solo，读取已有分离设置时将旧 Mute 与旧 Exclude 的成员并入 Mute；修改后清除旧 Exclude 值，解除 Mute 可完整撤销两种来源。`family_chat_inputs` 保留每个已受理输入的不可变路由约束。路由读取边界将旧 `excluded_member_ids` 快照映射为当前 `muted_member_ids`；未设置偏好的空快照提供明确默认值，已存在但格式错误的排除列表须拒绝，不能按空偏好放行。共享代码激活期间仍由旧存储 owner 返回的快照也遵守这一边界，不重算或放宽原请求约束。LineageData v66 的私有旧字段仅承载兼容读取与原快照，不再作为独立功能或公开合同；本次无需破坏性 DDL 或重写历史请求。
 
-到达事件中的 `direct_member_id` 由平台根据持久原输入的偏好与合法问题回答归属计算。生成的 router Effect 仅在原消息作者、事件主体、目标与平台重算值一致时取得有限转交身份；不信任单独提供的目标字段。普通路由同时约束 Router 的候选 facts 与 `RelayFamilyMessage` 的最终成员检查，不能仅靠 prompt 绕过 Solo/Mute。Conversation、翻页及浏览器增量显示均使用当前查看者偏好；原消息与权限本身不被删除或收紧。
+到达事件中的 `direct_member_id` 由平台根据持久原输入的偏好与合法问题回答归属计算。生成的 router Effect 仅在原消息作者、事件主体、目标与平台重算值一致时取得有限转交身份；不信任单独提供的目标字段。普通路由同时约束 Router 的候选 facts 与 `RelayMessage` 的最终成员检查，不能仅靠 prompt 绕过 Solo/Mute。Conversation、翻页及浏览器增量显示均使用当前查看者偏好；原消息与权限本身不被删除或收紧。
 
 | 条件 | 行动 |
 | --- | --- |
 | 无 Solo 时，引用门面中某个成员的回复或主动发件 | 直接交写信成员；该成员已离开、已删除或不能接收所带媒体时，回到普通路由 |
 | 引用 Steward 经门面提出的问题 | 直接交本 Family Steward，不作业务成员额度复核；Steward 同时承接组织请求，但不加入业务名册 |
 | 无 Solo 时，Family 以外的 Resident 发来不带引用的请求，它在本门面最近一条已转交的请求 4 小时内交给了未被 Mute 的业务成员 | 延续直交：直接交该成员，不询问 Router。上一条交给 Steward、超过 4 小时、该成员已离开、已删除或不能接收所带媒体时，回到普通路由 |
-| 无引用直交或延续直交目标，包括单成员或空业务名册 | DispatchFamilyTask 发给持续 Router，区分业务工作和本 Family Steward 的组织职责；有 Steward 时不因空名册阻止原事件 |
+| 无引用直交或延续直交目标，包括单成员或空业务名册 | route 任务投递给持续 Router，区分业务工作和本 Family Steward 的组织职责；有 Steward 时不因空名册阻止原事件 |
 | 创建成员、调整分工等组织请求 | Router 选择本 Family Steward，scope=in；复用原输入，不把创建职责交给新建成员，也不扩大为撰写业务 |
 
 嵌套转交时，内层会话若只有引用摘录，平台沿已接受输入的持久转交关系追溯外层原请求和外发记录，以记录中的实际写信者及当前名册确定本层目标；每层原作者与正文必须一致。不能从摘录、调用者提供的 business_ref 或失效名册推造归属，不复制外发消息或改写原引用。
@@ -109,15 +109,15 @@ Solo 一次一个；点另一成员的 S 切换，点亮着的 S 或头部“退
 
 引用发送者以前的请求不强制交回上次承接者，避免把被质疑的错误路由再次固定。引用摘录随副本保留，原文不在成员会话中时仍可看到摘录。
 
-路由任务只带门面与原消息 ID、原作者、原文和附件、显式引用及指南路径和版本。平台仍冻结同一发送者在当前消息之前的唯一上一轮请求及其答复；Router 需要判断指代时，用 `GetFamilyRoutingContext(resident_id=门面, message_id=原消息, section=previous_round)` 读取。上一轮未答复、已撤回、无法核验或不在有界候选范围内时返回 null，不越过它寻找更早任务，不混用其他用户的上一轮。该读取不重算历史、不自动建立延续关系。
+路由任务只带门面与原消息 ID、原作者、原文和附件、显式引用及指南路径和版本。平台仍冻结同一发送者在当前消息之前的唯一上一轮请求及其答复；Router 需要判断指代时，用 `GetRelayContext(resident_id=门面, message_id=原消息, section=previous_round)` 读取。上一轮未答复、已撤回、无法核验或不在有界候选范围内时返回 null，不越过它寻找更早任务，不混用其他用户的上一轮。该读取不重算历史、不自动建立延续关系。
 
 Router 分别判断执行成员与是否延续上一轮，`continue_previous` 缺省为 false，证据不足时倾向独立任务。时间相近、主题相似或选择同一成员本身不足以正判；只有当前请求明确依赖上一轮的方案、结果或尚未展开的指代时才为 true。不得从更早记录另选延续对象。用户引用与 Solo 的既有直达规则不变，也不因此启动 Router。
 
-`RelayFamilyMessage(continue_previous=true)` 只启用已冻结的上一轮候选，不接受任意上下文 ID 或模型改写的背景。平台在来源授权和成员校验后保存独立的关系判断；确认延续后，受理 owner 从经核验的原样转交链读取冻结的上一轮原请求与答复，作为单独的运行背景保存并送达执行成员。原用户消息、作者、正文和引用保持不变。背景注明真实来源 ID、原承接者与截断情况，不包含工具日志、加密思考或更早递归历史，也不授予新的资源权限；截断部分无法读取时说明缺失。跨成员执行仍携带同一背景，嵌套 Family 保留外层的单一关系，不逐层累积各自历史。
+`RelayMessage(continue_previous=true)` 只启用已冻结的上一轮候选，不接受任意上下文 ID 或模型改写的背景。平台在来源授权和成员校验后保存独立的关系判断；确认延续后，受理 owner 从经核验的原样转交链读取冻结的上一轮原请求与答复，作为单独的运行背景保存并送达执行成员。原用户消息、作者、正文和引用保持不变。背景注明真实来源 ID、原承接者与截断情况，不包含工具日志、加密思考或更早递归历史，也不授予新的资源权限；截断部分无法读取时说明缺失。跨成员执行仍携带同一背景，嵌套 Family 保留外层的单一关系，不逐层累积各自历史。
 
 续谈候选与关系在同一原请求下冻结；迟到消息不替换候选。额度、职责复核与失败恢复的缺省重试不抹掉已确认关系，已经按独立任务受理的请求也不能改写为续谈。显式改派沿原请求携带已确认背景；取消检查与副本幂等规则仍先于受理。
 
-Router 每轮输入不预装成员名册、职责摘要、能力、状态或纠正示例。需要时通过 `GetFamilyRoutingContext(section=members)` 读取当前可选直属成员和 Steward，再按职责、状态或附件判断所需分别调用 `GetResidentSummaries`、`ListResidentStates`、`GetResidentSettings`；改派记录由 `GetSharedState` 按需读取。不可读不推断为空闲，也不例行取全。按需资料不能替代最终投递时的权限、名册、额度和取消检查。长期续谈与取材规则只放在首轮指南中，后续提供路径、版本和短重读提示；已受理任务保持冻结文本。
+Router 每轮输入不预装成员名册、职责摘要、能力、状态或纠正示例。需要时通过 `GetRelayContext(section=members)` 读取当前可选直属成员和 Steward，再按职责、状态或附件判断所需分别调用 `GetResidentSummaries`、`ListResidentStates`、`GetResidentSettings`；改派记录由 `GetSharedState` 按需读取。不可读不推断为空闲，也不例行取全。按需资料不能替代最终投递时的权限、名册、额度和取消检查。长期续谈与取材规则只放在首轮指南中，后续提供路径、版本和短重读提示；已受理任务保持冻结文本。
 
 已保存并核验目标的定向消息（Solo、合法引用回信或确定的续接）在受理提交、原消息发布及恢复请求判定后，由 Family 转交 owner 立即原样投递到目标，不等待到达 Event、Proposal、Effect 脚本或 Router 模型。owner 使用本次真实调用身份，重新检查原消息权限、成员归属、取消、额度、附件及转交深度，沿用确定性副本 ID 和转交收据；嵌套门面逐层采用同一机制。没有确定目标的消息才触发 Router 选择；到达事件与 Lineage 对账保留为通知和漏送补偿，已提交转交不重复派发。定向尝试失败不把已持久接收的消息伪报为拒收，记录失败并保留原到达恢复路径。Router Resident 自己按队列回答，不因另一条投递等待而丢弃后续请求。Router 模型与账号属于该 Resident 的运行设置；门面设置兼容接口读写 Router 的设置，脚本不自行调用模型。
 
@@ -125,9 +125,9 @@ Router 每轮输入不预装成员名册、职责摘要、能力、状态或纠�
 
 一条请求交一个当前业务成员或本 Family Steward。Route Packet 的格式、解析、target/confidence/scope/gap 以及 Effect 分支见角色工作流。缺 target 或目标既不在名册也不是本 Family Steward 时保留原请求，派发诊断复核并以失败结束；不按固定候选兜底。
 
-直达、引用直交、延续直交和模型选人都经过 RelayFamilyMessage，检查当前归属、来源授权、媒体能力、取消、接单和额度。成员关闭接单而阻塞由 Steward 恢复；业务额度复核见 [运行维护](/resource/knowledge?item=decision_a64b3ea2c3c5)。
+直达、引用直交、延续直交和模型选人都经过 RelayMessage，检查当前归属、来源授权、媒体能力、取消和接单；额度由转交前的脚本检查。成员关闭接单而阻塞由 Steward 恢复；业务额度复核见 [运行维护](/resource/knowledge?item=decision_a64b3ea2c3c5)。
 
-scope=in 表示职责覆盖；寒暄或成员顺手可答的问题也属于 in。真正无职责覆盖才 scope=out，gap 写缺口、target 写最接近成员。忙碌或队列长不是职责缺口。scope=out 保留原输入，向 Steward 派发 recruit，由它招募、调整分工或交现有成员；安排后以 scope_reviewed=true 和理由继续同一请求，再经过额度检查。私人 Family 先遵守组织变更确认要求。
+scope=in 表示职责覆盖；寒暄或成员顺手可答的问题也属于 in。真正无职责覆盖才 scope=out，gap 写缺口、target 写最接近成员。忙碌或队列长不是职责缺口。scope=out 保留原输入，向 Steward 投递 recruit，由它招募、调整分工或交现有成员；安排后由 Steward 调用 RelayMessage（写明理由）继续同一请求，转交前自行核对承接成员的额度。私人 Family 先遵守组织变更确认要求。
 
 低置信度表示覆盖候选之间不确定。Effect 先尝试转交，再按 route_threshold 派发 route_review；已转交的任务不能因为复核通知再次派发。缺置信度按 0 处理。原请求已撤回则返回 withdrawn，不再转交或复核。
 
@@ -143,7 +143,7 @@ scope=in 表示职责覆盖；寒暄或成员顺手可答的问题也属于 in�
 
 用户改派另以 info 告知 Steward；Steward 自己的操作无需自我通知。界面入口和确认由界面 Design 定义。
 
-已在路由复核输入完成的组织成果，通过 `ResolveFamilyRequest` 归档到原失败请求。前提、授权、来源验证和失败沿革保留由 [原输入恢复](/resource/knowledge?item=decision_a64b3ea2c3c5) 定义；不重复执行业务。
+已在路由复核输入完成的组织成果，通过 `ResolveRelayedRequest` 归档到原失败请求。前提、授权、来源验证和失败沿革保留由 [原输入恢复](/resource/knowledge?item=decision_a64b3ea2c3c5) 定义；不重复执行业务。
 
 ## 状态、停止与撤回
 

@@ -62,12 +62,12 @@
       if (typeof accepted.permission_system_enabled === "boolean") syncPermissionSystem(accepted.permission_system_enabled);
     };
 
-    // /api/me asks UpdateExecutionSettings about the switch alone, which a Portal 管理员 always passes
+    // /api/me reports the independent permission switch capability, which a Portal 管理员 always passes
     // whatever the scheme (b820 §3.1); the switch shows /api/me's mode, so a scheme that refuses
     // GetExecutionSettings cannot take it away.
     const permissionSwitches = executionInputs.filter(input => input.dataset.executionSetting === "permission_system_enabled");
     const switchInput = permissionSwitches[0];
-    const maySwitch = allows.UpdateExecutionSettings === true;
+    const maySwitch = allows.SetPermissionSystemEnabled === true;
 
     const readExecutionSettings = () => {
       if (executionRead) { void readTelepus(); void readWallScheduling(); readFeatureSwitches(); return; }

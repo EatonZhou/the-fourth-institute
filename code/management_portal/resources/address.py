@@ -12,6 +12,7 @@ from management_common.resource_identity import ParsedResourceId, ResourceTypeRe
 
 ResolveHandler = Callable[..., dict[str, Any]]
 ContentHandler = Callable[..., tuple[bytes, str, dict[str, Any]]]
+QueryHandler = Callable[..., dict[str, Any]]
 
 
 @dataclass(frozen=True)
@@ -68,6 +69,7 @@ class ResourceResolver:
     resolve: ResolveHandler
     read_content: ContentHandler | None = None
     read_content_range: ContentHandler | None = None
+    query: QueryHandler | None = None
 
 
 class ResolverRegistry:

@@ -12,3 +12,15 @@ def is_resident_input_open(resident_id: str, message_id: str) -> bool:
     except KeyError:
         return False
     return str(state.get("state") or "") not in resident_conversation_records.TERMINAL_INPUT_STATES
+
+
+def is_resident_input_open_for_issuer(resident_id: str, message_id: str, issuer: str, *, connection=None) -> bool:
+    """Verify the trusted issuer and recipient of a live prepared input."""
+    from . import resident_prepared_inputs
+
+    if connection is not None:
+        return resident_prepared_inputs.open_for_issuer(connection, resident_id, message_id, issuer)
+    from .state_store import get_lineage_data_store
+
+    with get_lineage_data_store().database.read() as connection:
+        return resident_prepared_inputs.open_for_issuer(connection, resident_id, message_id, issuer)

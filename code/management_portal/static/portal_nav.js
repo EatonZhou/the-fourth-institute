@@ -1163,7 +1163,10 @@
     const buildId = String(data.build_id || "").trim();
     // The management page holds accounts and execution settings; show it to whoever may use either.
     const allows = data.access?.allows || {};
-    const canManage = ["CreateUser", "GetExecutionSettings", "UpdateExecutionSettings", "ListResourceTypes", "ListProviders", "RegisterProviderAccount"].some(name => allows[name] === true);
+    const canManage = [
+      "CreateUser", "GetExecutionSettings", "UpdateExecutionSettings", "SetPermissionSystemEnabled",
+      "ListResourceTypes", "ListProviders", "RegisterProviderAccount",
+    ].some(name => allows[name] === true);
     if (data.preferences) currentUserPreferences = normalizeUserPreferences(data.preferences);
     menu.dataset.portalDeployment = deployment;
     renderPortalDeploymentButtons(menu, route, deployment);

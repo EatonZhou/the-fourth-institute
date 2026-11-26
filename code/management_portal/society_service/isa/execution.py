@@ -33,6 +33,19 @@ def get_input_state(inv: Invocation) -> dict[str, Any]:
             actor=inv.caller, resident_id=inv.argument("resident_id"),
             message_id=inv.argument("message_id"),
         )}
+    if inv.argument("include_input_facts") is True:
+        from .. import resident_conversation_stream, resident_held_infos
+
+        repository = resident_conversation_stream.get_repository()
+        resident_id, message_id = inv.argument("resident_id"), inv.argument("message_id")
+        message = repository.message(resident_id, message_id)
+        if message is not None:
+            state = {**state, "input_facts": {
+                "role": message.get("role"),
+                "is_info": resident_held_infos.is_info({"resident_id": resident_id}, message_id),
+                "business_ref": repository.message_business_ref(resident_id, message_id),
+                "completed_cursor": repository.completed_input_cursor(resident_id, message_id),
+            }}
     return {"input_state": state}
 
 
@@ -55,12 +68,10 @@ def _change_intake(inv: Invocation, transition: str) -> dict[str, Any]:
     # Human or Resident callers change intake by hand; manual opening also
     # records a manual release of the account's quota guard.
     manual = inv.entry != "lineage"
-    single = inv.argument("resident_id")
-    targets = [single] if single else [str(item).strip().lower() for item in inv.argument("resident_ids") or []]
+    targets = [str(item).strip().lower() for item in inv.argument("resident_ids")]
     changed: list[str] = []
     unchanged: list[str] = []
     failed: list[dict[str, Any]] = []
-    last: dict[str, Any] = {}
     quota_override_pending = False
     for resident_id in targets:
         try:
@@ -69,7 +80,6 @@ def _change_intake(inv: Invocation, transition: str) -> dict[str, Any]:
             # by the quota guard into a manual one, so quota recovery keeps it closed.
             if previous == target_state and not (manual and transition == "close"):
                 unchanged.append(resident_id)
-                last = {"previous": previous, "current": previous, "changed": False}
                 continue
             lineage_id = lineage_of_resident(resident_id)
             result = lineage_resident_controls().change_lineage_resident_state(
@@ -83,13 +93,8 @@ def _change_intake(inv: Invocation, transition: str) -> dict[str, Any]:
             current = str(result.get("intake_state") or result.get("state") or "")
             (changed if previous != current else unchanged).append(resident_id)
             quota_override_pending = quota_override_pending or bool(result.get("quota_override_pending"))
-            last = {"previous": previous, "current": current, "changed": previous != current, "state": result}
         except Exception as exc:  # noqa: BLE001 - one Resident failing does not stop the batch
-            if single:
-                raise
             failed.append({"resident_id": resident_id, "error": str(exc) or type(exc).__name__})
-    if single:
-        return last
     return {
         "changed_resident_ids": changed,
         "unchanged_resident_ids": unchanged,
@@ -157,6 +162,15 @@ def cancel_input(inv: Invocation) -> dict[str, Any]:
     withdrawn from the facade (decision_44cf587c1721).
     """
     from management_portal.society_service import family_reassign
+    from .. import resident_prepared_inputs
+
+    preparation = resident_prepared_inputs.cancel(inv.argument("resident_id"), inv.caller, inv.argument("message_id"))
+    if preparation is not None:
+        return {
+            "resident_id": preparation["resident_id"],
+            "message_id": preparation["message_id"],
+            "input_state": {"state": preparation["status"], "message_id": preparation["message_id"]},
+        }
     withdrawn = family_reassign.withdraw_reassignment(
         inv.argument("resident_id"), inv.argument("message_id"), inv.caller)
     if withdrawn is not None:
@@ -265,8 +279,18 @@ def split_mailbox_item(inv: Invocation) -> dict[str, Any]:
 
 
 def requeue_message(inv: Invocation) -> dict[str, Any]:
+    from .. import family_facade, relay_domain, resident_record_domain
+    from ..resident_mailbox import MailboxConflict
+
+    resident_id = inv.argument("resident_id")
+    message_id = inv.argument("message_id")
+    if family_facade.is_facade(resident_record_domain.find_resident_for_admission(resident_id)):
+        try:
+            return relay_domain.requeue_failed(resident_id, message_id, inv.caller)
+        except MailboxConflict as exc:
+            raise InstructionError("instruction.conflict", str(exc)) from exc
     return _mailbox_call(lambda: protocol().requeue_resident_message(
-        inv.argument("resident_id"), inv.caller, inv.argument("message_id"),
+        resident_id, inv.caller, message_id,
     ))
 
 

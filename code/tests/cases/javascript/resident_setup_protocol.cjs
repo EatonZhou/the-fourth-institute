@@ -62,8 +62,9 @@ const plain = value => JSON.parse(JSON.stringify(value));
   assert.doesNotMatch(submit.textContent, /^(保存|Save)$/, 'another account turns the action into a switch');
   click('[data-session-restart-submit]'); await flush();
   assert.equal(changes.length, 1);
-  assert.equal(changes[0].operation, 'switch_account'); assert.equal(changes[0].context_strategy, 'preserve');
-  assert.equal(changes[0].active_execution_policy, 'wait'); assert.equal(Object.hasOwn(changes[0], 'resume_failed_input'), false);
+  for (const key of ['operation', 'context_strategy', 'active_execution_policy', 'resume_failed_input']) {
+    assert.equal(Object.hasOwn(changes[0], key), false, key);
+  }
   assert.equal(changes[0].target_account, 'three'); assert.equal(changes[0].model, undefined, 'same-provider switch must not overwrite model with a default');
   observe({restart: {restart_id: 'op1', status: 'completed', operation: 'switch_account'}}); await flush();
   dialog.destroy();
@@ -107,8 +108,8 @@ const plain = value => JSON.parse(JSON.stringify(value));
   assert.equal(w.document.querySelector('[data-session-restart-submit]').textContent, w.PortalI18n.t('切换账号'));
   click('[data-session-restart-submit]'); await flush();
   assert.equal(changes.length, 4, 'the displayed catalog default is a valid choice for a cross-provider switch');
-  assert.equal(changes[3].model, 'm'); assert.equal(changes[3].target_provider, 'claude'); assert.equal(changes[3].context_strategy, 'preserve');
-  assert.equal(changes[3].operation, 'switch_account');
+  assert.equal(changes[3].model, 'm'); assert.equal(changes[3].target_provider, 'claude');
+  assert.equal(Object.hasOwn(changes[3], 'active_execution_policy'), false);
   cross.destroy();
   const handoff = api.createSessionRestartDialog();
   handoff.open(config, async values => {changes.push(plain(values)); return {status: 'accepted', restart_id: 'compact'};}); await flush();

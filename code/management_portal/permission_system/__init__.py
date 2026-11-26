@@ -98,9 +98,12 @@ def _off() -> bool:
     return configured_mode() == OPEN
 
 
-def active() -> Any:
+def active(*, read_only: bool = False) -> Any:
     """The PAR implementation of this process, loaded on first use."""
     global _IMPLEMENTATION
+    if read_only:
+        from .par import PARPermissions
+        return PARPermissions(getattr(_IMPLEMENTATION, "store", None), read_only=True)
     implementation = _IMPLEMENTATION
     if implementation is None:
         with _LOCK:
@@ -163,7 +166,7 @@ def authorize_instruction(declaration: Any, arguments: Mapping[str, Any], contex
         return None
     if _off() or administrators.passes(context.caller, declaration.name, arguments):
         return None
-    return active().authorize_instruction(declaration, arguments, context, instruction_id=instruction_id)
+    return active(read_only=declaration.name in PREVIEW_INSTRUCTIONS).authorize_instruction(declaration, arguments, context, instruction_id=instruction_id)
 
 
 def authorize_reads(declaration: Any, arguments: list[Mapping[str, Any]], context: Any) -> list[Any]:
@@ -188,7 +191,7 @@ def authorize_reads(declaration: Any, arguments: list[Mapping[str, Any]], contex
         return results
     if _off():
         return [None] * len(arguments)
-    return active().authorize_reads(declaration, arguments, context)
+    return active(read_only=declaration.name in PREVIEW_INSTRUCTIONS).authorize_reads(declaration, arguments, context)
 
 
 def readable_ids(instruction: str, parameter: str, identifiers: Iterable[str], *, actor: str, entry: str = "web") -> set[str]:
@@ -221,7 +224,7 @@ def allows(actor: str, instruction: str, arguments: Mapping[str, Any] | None = N
         return _signed_in(actor)
     if administrators.passes(actor, instruction, arguments):
         return True
-    return active().allows(actor, instruction, dict(arguments or {}))
+    return active(read_only=instruction in PREVIEW_INSTRUCTIONS).allows(actor, instruction, dict(arguments or {}))
 
 
 def allows_roles(actor: str, requirements: Iterable[tuple[str, str]]) -> bool:
@@ -237,6 +240,16 @@ def allows_roles(actor: str, requirements: Iterable[tuple[str, str]]) -> bool:
     if _off():
         return _signed_in(actor)
     return active().allows_roles(actor, items)
+
+
+def allows_elements(actor: str, requirements: Iterable[tuple[str, str]]) -> bool:
+    """Domain owner recheck of registered A elements and actual resources, retaining custom rules."""
+    items = list(requirements)
+    if not items or any(not action or action.startswith("@") or not resource for action, resource in items):
+        return False
+    if _off():
+        return _signed_in(actor)
+    return active().allows_elements(actor, items)
 
 
 def allows_each(actor: str, instructions: Iterable[str], arguments: Mapping[str, Any] | None = None) -> dict[str, bool]:
@@ -401,6 +414,33 @@ def rename_element(connection: Any, old_id: str, new_id: str, *, apply: bool) ->
     return rename_paths(connection, old_id, new_id, apply=apply)
 
 
+def activate_prepared_task_credentials(connection: Any, resident_id: str, message_id: str) -> int:
+    """Society only: enable staged grants inside canonical input acceptance, before wakeup.
+
+    This internal hook does not prove admission. Its caller has validated the
+    stored issuer/intent and inserted the input in this same transaction.
+    It is not a public permission instruction and never initializes storage.
+    """
+    from .inline import activate_prepared
+
+    return activate_prepared(connection, str(resident_id or "").strip(), str(message_id or "").strip())
+
+
+def activate_approved_task_credentials(connection: Any, *, issuer: str, resident_id: str,
+                                       message_id: str, credentials: list[dict[str, str]]) -> int:
+    """Society approval admission: verify the stored exact scope and enable it in this TX.
+
+    The caller proves the durable question, issuer, final recipient and exact
+    answer input. This owner checks the whole credential set and current issuer
+    rights. A failure must abort admission. All-active exact retries return zero;
+    missing, revoked, expired or changed grants are never recreated.
+    """
+    from .temporary import activate_approved
+
+    return activate_approved(connection, issuer=issuer, resident_id=resident_id,
+                             message_id=message_id, credentials=credentials)
+
+
 def end_task_credentials(connection: Any, resident_id: str, message_id: str) -> int:
     """A Resident's input ended (completed, failed, cancelled): the temporary credentials lent with that message end too.
 
@@ -467,18 +507,28 @@ def accept_user_authorization(connection: Any, *, issuer: str, resident_id: str,
                 source_resident_id=source_resident_id, expires_in_seconds=expires_in_seconds)
 
 
+PREVIEW_INSTRUCTIONS = frozenset({
+    "GetPermissionSchemeCreatePreview", "GetPermissionSchemeUpdatePreview", "GetPermissionSchemeActivationPreview",
+    "GetLineageChangesPreview", "GetTemplateCreatePreview", "GetTemplateUpdatePreview", "GetTemplateApplyPreview",
+})
+
+
 def manage(instruction: str, arguments: Mapping[str, Any], *, actor: str, collect_facts: Callable[[], list] | None = None,
-           expected_version: Any = None) -> dict[str, Any]:
+           expected_version: Any = None, derive_arguments: Callable[..., Mapping[str, Any]] | None = None) -> dict[str, Any]:
     """Answer a permission instruction (schemes, nodes, entries, checks, temporary credentials).
 
     ``expected_version`` is the call envelope's version token for the scheme or entry the call targets.
+    ``derive_arguments`` is an application-supplied read-only owner port for
+    instruction checks: (instruction, arguments, *, actor, principal_id).
+    ``actor`` is the authenticated reader; ``principal_id`` is only the subject
+    being checked. The port must not run the operation or impersonate its subject.
     """
     if _off() and not _signed_in(actor):
         from management_portal.hatg.contracts import InstructionError
 
         raise InstructionError("instruction.forbidden", "需要已登录的 User 或 Resident")
-    return active().manage(instruction, dict(arguments), actor=actor, collect_facts=collect_facts, enforce=not _off(),
-                           expected_version=expected_version)
+    return active(read_only=instruction in PREVIEW_INSTRUCTIONS).manage(instruction, dict(arguments), actor=actor, collect_facts=collect_facts, enforce=not _off(),
+                           expected_version=expected_version, derive_arguments=derive_arguments)
 
 
 def prompt_rule() -> str:

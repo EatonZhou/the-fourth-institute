@@ -113,8 +113,8 @@ HATG 页面的画布把 Resident 和 Program 组件都画成卡片。Resident �
 **创建身份和确定归属是同一个操作。** 创建 Resident 或 Fork 时，归属随身份一起提交，提交后立刻出现在该 Lineage 的 HATG 中。普通登记准备身份、成员关系、工作区和运行设置，不因此派发模型业务。Fork 的上下文、原生会话准备及首轮压缩有独立初始化前置，不能一概推迟到第一条业务消息；具体合同见 decision_5bf5bfbd52cb。
 
 **离开 Lineage 只有两条路：迁移或删除。**
-- 迁移：用 `MoveResident` 或 `MoveLineageObjects` 迁到别的 Lineage，保留身份。
-- 删除：`DeleteResident`，将身份标记为已删除并移出有效成员集合；身份与历史记录保留。
+- 迁移：用 `MoveLineageObjects` 迁到别的 Lineage，保留身份。
+- 删除：`ApplyLineageChanges` 的删除 Resident 操作，将身份标记为已删除并移出有效成员集合；身份与历史记录保留。
 - 不提供"移出 HATG 但仍属于该 Lineage"的操作。清理连线或解除角色都不会移除成员。
 
 ### Project 绑定
@@ -182,9 +182,9 @@ HATG 页面的画布把 Resident 和 Program 组件都画成卡片。Resident �
 ```text
 创建 Resident（同时确定归属）──> 成员 ──> 自动显示为 HATG 节点
                                   ├─ Fork ──────────> 新 Resident + 归属 + 一次性起步上下文
-                                  ├─ MoveResident ──> 同一身份 + 新归属
+                                  ├─ MoveLineageObjects ──> 同一身份 + 新归属
                                   ├─ MoveLineageObjects ──> 同一身份随选区迁到新归属
-                                  └─ DeleteResident ──> 已删除（保留身份与历史）
+                                  └─ ApplyLineageChanges ──> 已删除（保留身份与历史）
 ```
 
 创建和迁移先验证调用者、Project、目标可见性和并发条件，再提交成员关系。HATG 读取时直接使用完整成员集合，不需要第二次"加入"。
@@ -213,9 +213,9 @@ Fork 固定来源 Resident 的有效上下文窗口，并为新身份准备独�
 
 只创建新身份不会让来源 Resident 自动成为运行上游。删除图中的中间继承节点时，服务可以补一条"继承链重连"边，保持原继承路径连通。这条边只修复图的拓扑，不压缩任何历史，也不代表一次 Fork。
 
-### 迁移单个 Resident：MoveResident
+### 迁移单个 Resident
 
-`MoveResident` 把一个没有被流程引用的 Resident 迁到目标 Lineage，保留身份和会话。页面"新节点"中按 Resident ID 加入已有 Resident、在侧栏跨 Lineage 移动 Resident，都走这条路径。
+`MoveLineageObjects` 把一个没有被流程引用的 Resident 迁到目标 Lineage，保留身份和会话。页面"新节点"中按 Resident ID 加入已有 Resident、在侧栏跨 Lineage 移动 Resident，都走这条路径。
 
 以下情况被拒绝，且什么都不移动：
 - 被连线、组件或 Function Block 实例引用（它所在 Family 为它生成的元素除外）；
@@ -274,7 +274,7 @@ Family 成员迁出时离开它的 Family，规则见 decision_44cf587c1721 的�
 
 对本图成员，以下入口的删除语义相同：
 - 画布删除；
-- `DeleteResident`；
+- `ApplyLineageChanges` 的删除 Resident 操作；
 - `ApplyLineageChanges` 中的 Resident 删除；
 - 调用 `DeleteResident` 的 Effect。
 

@@ -67,7 +67,7 @@ def test_duty_removal_reinstall_and_roster_preserve_binding_and_unrelated_source
     assert {e['key']: e['id'] for e in parent['elements'] if e.get('key') in shared} == shared
     args['target']['resident_ids'] = [f['steward_resident_id']]
     before = deepcopy(body)
-    ok('ApplyTemplate', {**args, 'dry_run': True})
+    ok('GetTemplateApplyPreview', args)
     assert graph(lineage) == before
     ok('ApplyTemplate', args)
     body, parent = current(lineage, f['family_id'])

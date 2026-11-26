@@ -1,4 +1,4 @@
-"""Resident-authored work facts, mechanical coverage checks and Family rollups.
+"""Resident-authored work facts, mechanical coverage checks and facade rollups.
 
 Search, routing and work views read the same summary. Family members write
 their own; a facade's steward writes its summary; the global writer maintains
@@ -6,6 +6,7 @@ standalone Residents. No model runs here.
 """
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
 
 from management_common.message_identity import derived_message_identity
@@ -15,6 +16,7 @@ from .service import resident_context
 
 REMINDER_REF = "duty/work-summary-reminder"
 ROLLUP_REF = "duty/family-work-summary"
+MAINTENANCE_REFS = (REMINDER_REF, ROLLUP_REF, "duty/family-progress")
 REMINDER = (
     "你有已完成轮次尚未登记工作摘要。请用 GetResidentSummaries（resident_ids 只含自己，include_maintenance=true）"
     "读取 layers.recent 和 missing_message_ids；用 UpdateResidentWorkSummary 替换近期事实，勿复制阶段与长期层。"
@@ -59,35 +61,66 @@ def maintenance_view(actor: str, resident_id: str) -> dict:
     """The written summary with what its maintainer needs: revision, sources, uncovered rounds and writer."""
     record = _visible(actor, resident_id)
     item = resident_context().store.work_summary(resident_id)
+    if item["missing_message_ids"] and _tracks_work_rounds(record):
+        reminder = _work_summary_reminder(record, resident_id, item["missing_message_ids"])
+        if reminder is not None:
+            item["reminder"] = reminder
     return {**item, "title": str(record.get("title") or ""), "lineage_id": str(record.get("lineage_id") or "")}
 
 
+def _tracks_work_rounds(record: dict) -> bool:
+    from .. import family_facade
+    return (not record.get("deleted_at") and (record.get("family") or {}).get("role") == "member"
+            and not family_facade.is_facade(record))
+
+
+def record_completed_work_round(resident_id: str, message_id: str) -> None:
+    """Register a completed business input for coverage before terminal observers read it."""
+    from .. import resident_conversation_stream, resident_held_infos
+    key = (resident_id, message_id)
+    repo = resident_conversation_stream.get_repository()
+    if repo.input_statuses_by_id([key]).get(key, {}).get("state") != "completed":
+        return
+    try:
+        record = _record(resident_id)
+    except KeyError:
+        return
+    if not _tracks_work_rounds(record) or resident_held_infos.is_info(record, message_id):
+        return
+    if repo.message_business_ref(resident_id, message_id).startswith(MAINTENANCE_REFS):
+        return
+    resident_context().store.missing_work_round(resident_id, message_id)
+
+
+def _work_summary_reminder(record: dict, resident_id: str, missing_ids: list[str]) -> dict | None:
+    from .. import resident_conversation_stream, resident_held_infos
+    repo = resident_conversation_stream.get_repository()
+    if any(repo.message_business_ref(resident_id, entry["message_id"]) == REMINDER_REF
+           for entry in resident_held_infos.peek(record)):
+        return None
+    states = repo.input_statuses_by_id([(resident_id, mid) for mid in missing_ids])
+    completed = [
+        (datetime.fromisoformat(state["updated_at"]).astimezone(timezone.utc), mid)
+        for (_, mid), state in states.items()
+        if state.get("state") == "completed" and state.get("updated_at")
+    ]
+    if not completed:
+        return None
+    _, oldest_id = min(completed)
+    return {
+        "message_id": derived_message_identity(REMINDER_REF, resident_id, oldest_id),
+        "content_parts": [{"type": "text", "text": REMINDER}],
+    }
+
+
 def update_resident_work_summary(actor: str, resident_id: str,
-                                summary: Any = None, message_ids: list[str] | None = None,
-                                source_versions: dict | None = None, consolidation: dict | None = None) -> dict:
+                                 summary: Any = None, message_ids: list[str] | None = None) -> dict:
     from .. import resident_conversation_stream, family_facade
     record = _visible(actor, resident_id)
-    facade = family_facade.is_facade(record)
-    if consolidation is not None:
-        if facade:
-            raise ValueError("门面由本 Family Steward 整体汇总，不归纳其他 Family 的门面时间层")
-        _, roles = _family(record)
-        if actor not in roles["steward"] or resident_id not in roles["member"]:
-            raise PermissionError("只有本 Family Steward 可以归纳业务成员摘要")
-        if summary is not None or message_ids or source_versions:
-            raise ValueError("归纳只提交 consolidation，不同时提交 summary、message_ids 或 source_versions")
-    elif facade:
-        _, roles = _family(record)
-        if actor not in roles["steward"]:
-            raise PermissionError("门面工作摘要只能由本 Family 的 Steward 写入")
-        if not isinstance(source_versions, dict) or not source_versions:
-            raise ValueError("门面汇总必须保存 GetFamilySummaryInputs 返回的 source_versions")
-        if message_ids:
-            raise ValueError("门面汇总不登记成员轮次")
-    elif actor != resident_id:
+    if actor != resident_id or family_facade.is_facade(record):
         raise PermissionError("工作摘要只能由 Resident 本人写入")
     ids = list(dict.fromkeys(message_ids or []))
-    if not facade and consolidation is None and not ids:
+    if not ids:
         raise ValueError("必须提供本次摘要覆盖的 message_ids")
     if len(ids) > 128 or any(not isinstance(mid, str) or not mid for mid in ids):
         raise ValueError("message_ids 最多 128 个有效输入 ID")
@@ -97,60 +130,74 @@ def update_resident_work_summary(actor: str, resident_id: str,
         if not state or state.get("state") not in {"running", "completed"}:
             raise ValueError("摘要只能登记本人正在运行或已经完成的输入")
     clean = validate_summary(summary) if summary is not None else None
-    counted = [mid for mid in ids if not repository.message_business_ref(resident_id, mid).startswith(
-        (REMINDER_REF, ROLLUP_REF, "duty/family-progress"))]
-    return resident_context().store.write_work_summary(resident_id, actor, clean, ids,
-                                                      source_versions or {},
-                                                      temporal=not facade, consolidation=consolidation,
-                                                      counted_message_ids=counted)
+    counted = [mid for mid in ids if not repository.message_business_ref(resident_id, mid).startswith(MAINTENANCE_REFS)]
+    return resident_context().store.write_work_summary(
+        resident_id, actor, clean, ids, {}, temporal=True, counted_message_ids=counted,
+    )
 
 
-def check_resident_work_summary(actor: str, resident_id: str, message_id: str) -> dict:
-    from .. import invariant_locks, resident_conversation_stream, resident_held_infos, family_facade
-    from .. import resident_intake_domain
+def update_resident_summary_consolidation(actor: str, resident_id: str, consolidation: dict) -> dict:
+    from .. import family_facade
     record = _visible(actor, resident_id)
     if family_facade.is_facade(record):
-        return {"status": "facade"}
-    if (record.get("family") or {}).get("role") in {"router", "steward"}:
-        return {"status": "skipped"}
+        raise ValueError("门面由本 Family Steward 整体汇总，不归纳门面时间层")
     _, roles = _family(record)
-    if actor not in roles["facade"] + roles["steward"] + [resident_id]:
-        raise PermissionError("摘要检查只允许本 Family 或 Resident 本人执行")
-    repo = resident_conversation_stream.get_repository()
-    state = repo.input_state(resident_id, message_id)
-    if not state or state.get("state") != "completed":
-        return {"status": "skipped"}
-    ref = repo.message_business_ref(resident_id, message_id)
-    if ref.startswith((REMINDER_REF, ROLLUP_REF, "duty/family-progress")):
-        return {"status": "skipped"}
-    store = resident_context().store
-    if not store.missing_work_round(resident_id, message_id):
-        return {"status": "covered", "consolidation_due": store.work_summary(resident_id)["consolidation"]["due"]}
-    # The held Mailbox is authoritative: one fixed reminder covers every gap.
-    # Only this look-then-attach step is serialized, so two checks for
-    # different rounds cannot both attach one.
-    with invariant_locks.resident_lock(resident_id, operation="work-summary-check"):
-        if any(repo.message_business_ref(resident_id, item["message_id"]) == REMINDER_REF for item in resident_held_infos.peek(record)):
-            return {"status": "reminder_pending"}
-        reminder_id = derived_message_identity(REMINDER_REF, resident_id, message_id)
-        resident_intake_domain.deliver_resident_message_content(resident_id, roles["facade"][0], REMINDER,
-                                        activation_policy="attach_to_next", business_ref=REMINDER_REF,
-                                        message_id=reminder_id)
-    return {"status": "reminder_attached"}
+    if actor not in roles["steward"] or resident_id not in roles["member"]:
+        raise PermissionError("只有本 Family Steward 可以归纳业务成员摘要")
+    if not isinstance(consolidation, dict):
+        raise ValueError("consolidation 必须是 JSON object")
+    return resident_context().store.write_work_summary(
+        resident_id, actor, None, [], {}, temporal=True, consolidation=consolidation,
+    )
 
 
-def get_family_summary_inputs(actor: str, resident_id: str, *, overview_only: bool = False) -> dict:
+def _facade_family(record: dict) -> tuple[dict, dict]:
+    if (record.get("family") or {}).get("role") != "facade":
+        return {}, {"facade": [], "steward": [], "member": []}
+    return _family(record)
+
+
+def update_facade_summary(actor: str, resident_id: str, summary: Any, source_versions: dict) -> dict:
+    from .. import family_facade
     facade = _visible(actor, resident_id)
-    family, roles = _family(facade)
-    if resident_id not in roles["facade"] or actor not in roles["facade"] + roles["steward"]:
-        raise PermissionError("仅本 Family 的门面与 Steward 可以读取汇总材料")
+    _, roles = _facade_family(facade)
+    if resident_id not in roles["facade"] or actor not in roles["steward"] or not family_facade.is_facade(facade):
+        raise PermissionError("门面工作摘要只能由本 Family 的 Steward 写入")
+    if not isinstance(source_versions, dict) or not source_versions:
+        raise ValueError("门面汇总必须保存 GetFacadeSummaryInputs 返回的 source_versions")
+    return resident_context().store.write_work_summary(
+        resident_id, actor, validate_summary(summary), [], source_versions,
+    )
+
+
+def get_facade_summary_inputs(actor: str, resident_id: str, *, overview_only: bool = False) -> dict:
+    from management_portal import permission_system
+    from .. import family_facade
+    facade = _visible(actor, resident_id)
+    family, roles = _facade_family(facade)
+    owns_family_summary = resident_id in roles["facade"] and actor in roles["facade"] + roles["steward"]
+    if actor != resident_id and not owns_family_summary and not permission_system.allows_roles(
+        actor, [("@admin", resident_id)],
+    ):
+        raise PermissionError("需要门面本人、本 Family Steward 或门面管理权限")
+    relay_targets = family_facade.relay_target_ids(facade)
+    if not relay_targets or facade.get("deleted_at"):
+        raise ValueError("Resident 未登记为门面")
     context = resident_context()
+    family_members = set(roles["member"]) if owns_family_summary else set()
+    operating_roles = set(roles["steward"] + roles.get("router", []))
+    member_ids = [rid for rid in relay_targets if rid not in operating_roles]
+    other_members = [rid for rid in member_ids if rid not in family_members]
+    if other_members:
+        visible = set(context.source.authorized_resident_ids(actor, other_members))
+        member_ids = [rid for rid in member_ids if rid in family_members or rid in visible]
+    title = family.get("title") or str(facade.get("title") or resident_id)
+    goal = family.get("goal", "")
     members = []
     pending = []
     pending_inputs = {}
-    from .. import family_facade
-    versions: dict[str, Any] = {"roster": fingerprint({"members": roles["member"], "title": family["title"], "goal": family["goal"]})}
-    for rid in roles["member"]:
+    versions: dict[str, Any] = {"roster": fingerprint({"members": member_ids, "title": title, "goal": goal})}
+    for rid in member_ids:
         work = context.store.work_summary(rid)
         record = _record(rid)
         summary = work["summary"]
@@ -159,7 +206,7 @@ def get_family_summary_inputs(actor: str, resident_id: str, *, overview_only: bo
         members.append({"resident_id": rid, "title": record.get("title", rid), "summary": summary,
                         "summary_stale": bool(work["missing_message_ids"]) or not bool(summary)})
         # A nested facade belongs to its own Steward's summary workflow.
-        if not family_facade.is_facade(record) and work["consolidation"]["due"]:
+        if rid in family_members and not family_facade.is_facade(record) and work["consolidation"]["due"]:
             pending.append({"resident_id": rid, "revision": work["revision"],
                             "level": work["consolidation"]["level"], "reason": work["consolidation"]["reason"]})
             pending_inputs[rid] = work["pending_message_ids"]
@@ -180,12 +227,13 @@ def get_family_summary_inputs(actor: str, resident_id: str, *, overview_only: bo
                 "notification": {
                     "message_id": derived_message_identity(ROLLUP_REF, resident_id, fingerprint(material)),
                     "content_parts": [{"type": "text", "text":
-                        f"Family {resident_id} 有摘要维护待办。先用 GetFamilySummaryInputs overview_only=true 查看；"
+                        f"门面 {resident_id} 有摘要维护待办。先用 GetFacadeSummaryInputs overview_only=true 查看；"
                         "对 consolidation_due 按需读取 GetResidentSummaries include_maintenance=true，"
-                        "用 UpdateResidentWorkSummary 的 consolidation 归纳阶段与长期层，"
+                        "用 UpdateResidentSummaryConsolidation 归纳阶段与长期层，"
                         "在 consolidated_message_ids 中列出已纳入的 pending_message_ids，保留未决事项和项目记录入口。"
-                        "随后按需读取 Family 材料并更新门面；遵守各层合计字数上限，归纳而非截断，不读取成员历史。"}]}}
-    return {"resident_id": resident_id, "title": family["title"], "goal": family["goal"],
+                        "汇总由本 Family Steward 调用 UpdateFacadeSummary，原样提交 source_versions。"
+                        "遵守各层合计字数上限，归纳而非截断，不读取成员历史。"}]}}
+    return {"resident_id": resident_id, "title": title, "goal": goal,
             "members": members, "notices": notices, "source_versions": versions, "previous_summary": previous["summary"],
             "needs_update": changed or bool(pending),
             "facade_needs_update": changed, "consolidation_due": pending}

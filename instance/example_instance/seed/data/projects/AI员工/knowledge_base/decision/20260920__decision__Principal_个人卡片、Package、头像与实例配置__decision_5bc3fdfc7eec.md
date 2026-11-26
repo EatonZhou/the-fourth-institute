@@ -73,7 +73,7 @@ Portal 中能够持有权限的参与者称为 **Principal**，包括人类用�
 - **关闭卡片时保护未保存的修改。** 有未保存的编辑时先确认；保存等操作进行中时不能关闭；关闭后焦点回到打开卡片的控件，未完成的读取和监听被取消。
 - **Resident Menu 由共享 `PortalResidentMenu` 管理。** Chat Workspace、导航入口与 HATG 调用同一组件；HATG 只响应改名、转移和删除后的图更新，不维护另一套 Menu 模板、样式或分栏状态。Harness、Package 和 Mailbox 仅在选中对应分栏后加载，打开 Menu 不改变当前聊天目标。
 - **Resident 身份区显示头像、名称、Resident ID 与所属 Lineage 名称和 ID。** 名称旁的铅笔打开内联改名，保存成功后更新标题并保留 Menu；失败保留输入。接单状态直接显示 OPEN/CLOSED 并复用现有接单切换。Move 打开现有 Lineage 转移选择与确认，Leader 的转移限制保持不变。
-- **右上角星标管理当前用户的收藏，叉号关闭卡片。** 星标用黄色标识，通过 GetUserNavigation 与 UpdateUserNavigation 读取、修改收藏，成功后同步左侧“我的收藏”；失败保留原状态并提示。收藏不修改 Resident、Lineage 或权限。
+- **右上角星标管理当前用户的收藏，叉号关闭卡片。** 星标用黄色标识，通过 GetUserNavigation 与 SetUserNavigationFavorite 读取、修改收藏，成功后同步左侧“我的收藏”；失败保留原状态并提示。收藏不修改 Resident、Lineage 或权限。
 - **Mailbox 中每类消息均可展开全文。** 待处理请求、群体、info，以及处理中和最近已送达的请求及其随行 info，均以可点击、可键盘操作的正文预览提供“展开全文／收起全文”。第一次展开沿既有 GetMessage 读取，重复展开复用本次挂载的结果；群体分别读取成员消息。正文与附件名安全显示，读取失败可收起后重试，关闭后不渲染迟到结果。
 - **Work Journal 展示当前 Resident 的职责与活动摘要。** 正文直接展示摘要，不重复显示 Work Journal 栏目标题。 第一次打开时通过 GetResidentSummaries 只读取当前 Resident，按职责范围、当前重点、近期成果、进行中的工作和近期变化组织摘要服务已有内容；显示摘要更新时间与待更新状态。没有摘要或读取失败时明确提示，失败可重试；不以运行列表替代职责，不自动启动摘要重建。内容按文本显示，同卡片内重复打开复用结果，迟到读取不覆盖关闭或切换对象后的卡片。
 - **Resident Settings 以 Backend、Model、Effort、Fast 四行呈现当前运行设置。** Backend 打开现有 Session 切换界面，其余行使用共享运行设置编辑器与 Provider 能力目录；更改提交现有 Resident 设置接口，不创建第二套模型设置或绕过账号路由。运行设置下方以独立的紧凑小字信息行显示完整 Session ID，使用等宽字体、按宽度换行和专用复制按钮；尚未绑定时显示“尚未创建”并禁用复制，读取失败显示原因且不影响运行设置。Session 身份沿用共享 Resident 界面信息缓存，打开 Menu 时按需读取，完成 Backend 切换后重新读取；不新增轮询，迟到结果不覆盖关闭或切换对象后的菜单。Session ID 下方是同样排版的头像行，点击“编辑头像”展开头像编辑区（见“头像”）。删除节点保留在 Settings 底部，底栏滚动时盖住其下方内容。
@@ -124,7 +124,7 @@ User、Resident、Project 和 Lineage 都可以有头像。头像有两种：42 
 ### 修改头像
 
 - **四种 Menu 的 Settings 都有同样的头像行。** User Menu、Resident Menu（Session ID 下方；Family 门面没有运行设置表单，头像行在 Family 设置上方）、Project Menu 和 Lineage Menu 都由共享组件 `PortalAvatarEditor` 渲染：平时只显示“编辑头像”按钮，点击后展开图案网格和“上传图片”。选择或上传后，身份区的头像即时预览；点击“保存头像”后才提交，未修改或保存中时按钮不可用；“取消”撤销预览并收起编辑区，保存成功后编辑区也收起。Project 和 Lineage 的编辑区另有“恢复默认”，保存后回到名称首字。头像保存中不能切换分栏或关闭 Menu；切换分栏会收起编辑区并放弃未保存的选择。User Menu 关闭前确认未保存的头像选择，其他 Menu 关闭时直接放弃。
-- **上传的图片需要满足限制。** 最大 2 MiB，只接受 PNG、JPEG 和 WebP，不接受动画；宽和高都在 16–2048 像素之间。服务端解码后去除元数据，统一保存为 PNG。
+- **上传的图片自动适配头像尺寸。** 选择 PNG、JPEG 或 WebP 原图时不限制为 2 MiB，也无需预先调整宽高。保存时浏览器在本地按图片方向等比缩小到 256×256 像素以内，较小图片不放大，保留透明度、去除原图元数据并生成 PNG；只把处理后的小图提交给 CreateUpload，原图字节不上传、不持久保存。压缩后的上传载荷继续接受服务端 2 MiB 上限、格式与完整性校验及权威头像归一化；这个载荷上限不作为原文件选择限制。动画仍不支持；读取或压缩失败时保留选择供重试，不回退上传原图。图片解码器的异常图片与解压资源保护继续生效。
 - **保存通过 ISA 指令完成。** 上传图片时先用 `CreateUpload`（用途 `avatar`）上传，得到 `upload_id`；选择图案时直接使用 `{"sprite_index": 0–41}`。四种对象分别提交：
 
   | 对象 | 指令与字段 | 判定 |
@@ -157,7 +157,7 @@ User、Resident、Project 和 Lineage 都可以有头像。头像有两种：42 
 Portal Management 的页面整体与分栏入口见 decision_30528aff7035；本篇只定义其中与 Principal 和 Package 有关的界面行为。“权限表项”使用本文的组件；“权限方案”是独立的方案编辑器（decision_ea13b85216d0），同样经 `PortalNav.mountPermissionManagement`（view `entries` 或 `schemes`）挂载。
 
 - **权限表项分栏：** 左侧名册列出 User 和 Resident（User 名册向有效登录用户显示；Resident 名册分页读取，每页默认 60 个、最多 100 个），选中后显示该 Principal 的 Package（GetEffectivePermissions 返回的表项），带刷新按钮。权限系统关闭时这个分栏隐藏。
-- **执行设置的“权限”分组：** 管理员在这里开关权限系统（`permission_system_enabled`），并从内置方案与自定义方案中选择启用的方案；换用其他方案前先以 ActivatePermissionScheme 的 `dry_run` 报告补齐或生成实例的节点和表项数，确认后切换，各方案实例中的修改原样保留（decision_b820faf42218）。
+- **执行设置的“权限”分组：** 管理员在这里开关权限系统（`permission_system_enabled`），并从内置方案与自定义方案中选择启用的方案；换用其他方案前先以 `GetPermissionSchemeActivationPreview` 报告补齐或生成实例的节点和表项数，确认后切换，各方案实例中的修改原样保留（decision_b820faf42218）。
 
 ### 分栏的加载与刷新
 

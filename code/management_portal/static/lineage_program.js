@@ -63,7 +63,7 @@
         tone: "amber",
         id_prefix: ID_PREFIX.effect,
         default_title: "新 Effect",
-        // The same default as CreateComponent without config
+        // The default used when creating an Effect
         // (lineage_program_authoring.DEFAULT_EFFECT_CONFIG): deliver this
         // input to the Resident wired to "target".
         default_config: {

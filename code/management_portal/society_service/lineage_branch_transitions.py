@@ -38,17 +38,28 @@ def absorption_nodes(
     return _clone_json(source), _clone_json(target)
 
 
+def _fork_selection(payload: dict[str, Any]) -> tuple[str, int | None]:
+    mode = _text(payload.get("mode"), 24).lower() or "full"
+    if mode not in {"full", "compacted", "recent", "message"}:
+        raise ValueError("不支持的轨迹分支模式")
+    rounds = payload.get("recent_rounds")
+    if mode == "recent":
+        if type(rounds) is not int or rounds < 1:
+            raise ValueError("fork_mode=recent 需要正整数 recent_rounds")
+    elif "recent_rounds" in payload:
+        raise ValueError("recent_rounds 只用于 fork_mode=recent")
+    return mode, rounds
+
+
 def branch_request(payload: dict[str, Any]) -> tuple[str, str, str, str]:
     source_id = _text(payload.get("source_resident_id"), 80).lower()
     context_source_id = _text(payload.get("context_source_resident_id"), 80).lower() or source_id
     edge_id = _text(payload.get("edge_id"), 80).lower()
-    mode = _text(payload.get("mode"), 24).lower() or "full"
+    mode, _ = _fork_selection(payload)
     if not source_id:
         raise ValueError("创建轨迹分支需要来源节点")
     if not edge_id or not ITEM_ID_RE.fullmatch(edge_id):
         raise ValueError("创建轨迹分支需要有效的 edge_id")
-    if mode not in {"full", "compacted", "recent-5", "recent-10", "message"}:
-        raise ValueError("不支持的轨迹分支模式")
     return source_id, context_source_id, edge_id, mode
 
 
@@ -192,13 +203,13 @@ def branch_child(
 def branch_edge(
     *, edge_id: str, source_id: str, target_id: str,
     context_source_resident_id: str, mode: str, message: dict[str, Any], now: str,
+    recent_rounds: int | None = None,
 ) -> dict[str, Any]:
     label = {
         "message": "从消息继续",
         "full": "完整轨迹",
         "compacted": "压缩继承",
-        "recent-5": "最近 5 轮",
-        "recent-10": "最近 10 轮",
+        "recent": f"最近 {recent_rounds} 轮",
     }[mode]
     return {
         "id": edge_id,
@@ -220,9 +231,7 @@ def create_derived_resident(
     context_source_resident_id = _text(
         payload.get("context_source_resident_id"), 80,
     ).lower() or source_resident_id
-    mode = _text(payload.get("mode"), 24).lower() or "full"
-    if mode not in {"full", "compacted", "recent-5", "recent-10", "message"}:
-        raise ValueError("不支持的轨迹分支模式")
+    mode, recent_rounds = _fork_selection(payload)
     if mode != "message" and context_source_resident_id != source_resident_id:
         raise ValueError("context_source_resident_id 与 source_resident_id 不同时只支持 message 模式")
     backend_route_id = _text(payload.get("backend_route_id"), 160)
@@ -239,11 +248,11 @@ def create_derived_resident(
             provider=provider,
             fork_title=fork_title,
         )
-    if mode in {"recent-5", "recent-10"}:
+    if recent_rounds is not None:
         return resident_authority.create_resident_context_fork(
             source_resident_id,
             actor,
-            5 if mode == "recent-5" else 10,
+            recent_rounds,
             lineage_source,
             backend_route_id=backend_route_id,
             provider=provider,

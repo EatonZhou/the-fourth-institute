@@ -11,10 +11,10 @@ from ..declarations import FIXED, ON_RESIDENT, ON_USER, InstructionDeclaration a
 
 
 def _d(name, decides, description, parameters=(), result=(), *, mutates=False, streaming=False,
-       target="", owner="web", one_of=(), argument_owners=()):
+       target="", owner="web", one_of=(), any_of=(), argument_owners=()):
     return D(name=name, category="mailbox", owner=owner, description=description,
              parameters=tuple(parameters), result=tuple(result), mutates=mutates,
-             streaming=streaming, target=target, one_of=one_of, argument_owners=argument_owners,
+             streaming=streaming, target=target, one_of=one_of, any_of=any_of, argument_owners=argument_owners,
              decides=decides)
 
 
@@ -35,7 +35,7 @@ DECLARATIONS = (
     ), (
         P("items", "array", "带 user_id 时：置顶在前，其余按最近活动从新到旧，同一时间按 key 升序；每项是一段对话或一条通知；"
           "Resident 对话条目的 latest_message_id 是这段对话最近一条可通知消息的 ID，用 GetMessage(resident_id, message_id) 读取原文，"
-          "input_message_id 是它回应的那条输入；version 是条目阅读状态的修订号，作为 SetMailboxItemRead 的 expected_version"),
+          "input_message_id 是它回应的那条输入；version 是条目阅读状态的修订号，作为 UpdateMailboxItem 的 expected_version"),
         P("unread_count", "integer", "带 user_id 时：需要提醒的未读条目数，免打扰的普通未读不计入"),
         P("pending_requests", "array", "带 user_id 时：当前仍待这位 User 回答且有回答权限的问题。与未读、清除和消息列表独立，阅读不等于回答；"
           "每项含稳定 key、source_resident_id/source_message_id（源问题身份）、resident_id/message_id（可打开的对话与问题）、"
@@ -54,20 +54,13 @@ DECLARATIONS = (
         P("timeout_seconds", "integer", "本次订阅时长，默认 30 秒", minimum=1, maximum=60),
     ), (R("keys", "array", "这批有变化的 Mailbox 条目键；待回答问题随所属对话变化提示，用 GetMailbox 重读 pending_requests"), R("cursor", description="下次作 after_cursor 续读的游标"),
         R("snapshot_required", "boolean", "为 true 时须用 GetMailbox 重读整个 Mailbox")), streaming=True),
-    _d("SetMailboxItemMuted", FIXED, "设置调用者自己的对话消息免打扰。消息与未读仍保留，普通未读不计入 Mailbox 提醒总数；聊天室 @ 提及仍提醒。", (
-        R("key", description="Mailbox 对话条目键；不支持单向通知"),
-        R("muted", "boolean", "true 开启消息免打扰，false 恢复提醒"),
-    ), (R("item", "object", "更新后的条目，包含 muted、unread、attention_unread 与 read_revision"),),
-       mutates=True, target="key"),
-    _d("SetMailboxItemPinned", FIXED, "置顶或取消置顶调用者 Mailbox 中的对话；可固定尚未交谈的可见 Resident，不改变未读状态。通知不能置顶，最多 50 个。", (
-        R("key", description="条目键；Resident 为 resident:resident_<id>"), R("pinned", "boolean", "true 置顶，false 取消置顶"),
-    ), (R("item", "object", "改后的对话条目，与 GetMailbox 的条目同形；仍未列出时为空对象"),), mutates=True, target="key"),
-    _d("SetMailboxItemRead", FIXED, "把调用者 Mailbox 中的条目标为已读，或重新标为未读；给出 expected_version 时，条目之后有新提醒或其他变化则拒绝修改。"
-        "页面打开一段 Resident Chat 时不带 expected_version 调用，读到它最新的一条提醒。", (
-        R("key", description="条目键；Resident 对话为 resident:resident_<id>，可以是 Mailbox 中尚未列出的可见 Resident"),
-        P("unread", "boolean", "true 时重新标为未读"),
-    ), (R("item", "object", "条目阅读状态：key、unread、read_revision（新的 version），以及 pinned、dismissed_through"),),
-       mutates=True, target="key"),
+    _d("UpdateMailboxItem", FIXED, "更新调用者自己的 Mailbox 标记，省略的标记保持原值。通知只能修改已读状态；聊天室 @ 提及仍提醒。", (
+        R("key", description="条目键；Resident 为 resident:resident_<id>"),
+        P("muted", "boolean", "true 开启免打扰，false 恢复提醒"),
+        P("pinned", "boolean", "true 置顶，false 取消置顶，最多 50 个"),
+        P("unread", "boolean", "true 标为未读，false 读到最新提醒；expected_version 可保护已看到的阅读版本"),
+    ), (R("item", "object", "更新后的 Mailbox 条目或阅读状态"),),
+        mutates=True, target="key", any_of=("muted", "pinned", "unread")),
     _d("ClearMailbox", (On("resident_id", "resident", optional=True), On("user_id", "user", optional=True)), "清空一个 Mailbox，resident_id 与 user_id 二选一。"
         "带 resident_id：一次原子地取消这个 Resident Mailbox 中所有还能撤回的等待消息。"
         "带 user_id：按 mode 清理这位 User 的 Mailbox 条目或未读状态；user_id 是调用者自己时清理自己的 Mailbox。", (
@@ -115,37 +108,25 @@ DECLARATIONS = (
         R("group_message_id", description="被拆开的群体消息"), R("member_message_ids", "array", "拆回队列的成员消息，按处理顺序"),
         R("items", "array", "调整后的队列"), R("revision", description="调整后等待顺序的标识，与 GetMailbox 的 revision 相同"),
     ), mutates=True, target="resident_id", owner="lineage"),
-    _d("RequeueMessage", ON_RESIDENT, "把停止或失败的一轮放回队列：原请求以原消息 ID、发送者、时间和正文回到队首，"
+    _d("RequeueMessage", ON_RESIDENT, "普通 Resident：把停止或失败的一轮放回队列，原请求以原消息 ID、发送者、时间和正文回到队首，"
         "随它送达的 info 重新等待，随下一条请求送达。接受最近几轮中停止或失败的请求，"
         "以及已接收但丢失执行位置的 queued 请求；后者必须保有同一 Resident 的完整原消息和接收封装。"
         "群体按原成员和顺序恢复，缺原件、前像冲突或成员已有其他执行位置时拒绝。"
         "原请求已在等待或正在处理时不重复入队；不从 prompt 或发送方副本重建原件。"
-        "这是显式恢复，User 与 Resident 按相同的整理权限执行，不受后台自动恢复次数限制，也不消耗该次数。", QUEUE_ITEM, (
-        R("message_ids", "array", "放回的消息：请求在前，随行 info 按原顺序"),
-        R("items", "array", "调整后的队列"), R("revision", description="调整后等待顺序的标识，与 GetMailbox 的 revision 相同"),
+        "这是显式恢复，User 与 Resident 按相同的整理权限执行，不受后台自动恢复次数限制，也不消耗该次数。"
+        "门面只重新登记失败的原请求到达，沿用同一条消息与正文；已经转交或无需重开的请求返回当前状态。", QUEUE_ITEM, (
+        P("message_ids", "array", "普通 Resident：放回的消息，请求在前，随行 info 按原顺序"),
+        P("items", "array", "普通 Resident：调整后的队列"),
+        P("revision", description="普通 Resident：调整后的等待顺序标识，与 GetMailbox 的 revision 相同"),
+        P("resident_id", description="门面分支：原请求所属的门面"),
+        P("message_id", description="门面分支：原请求的消息 ID"),
+        P("status", description="门面分支：原请求的当前状态，已转交时为 relayed"),
+        P("input_state", "object", "门面分支：原请求的输入状态"),
+        P("requeued", "boolean", "门面分支：重新登记原请求到达时为 true，否则省略"),
     ), mutates=True, target="resident_id", owner="lineage"),
     _d("InjectMailboxItem", ON_RESIDENT, "把一条等待消息立即交给 Resident 当前正在进行的工作。", QUEUE_ITEM, (
         R("status", description="投递回执；pending 表示等待当前工作接收"),
     ), mutates=True, target="resident_id", owner="lineage"),
-    _d("ListMailboxTodos", ON_USER, "读取一位 User 的 Mailbox 待办，按日期倒序、同日个人顺序排列；勾选不改变位置。", (
-        R("user_id", description="待办所属 User 的用户名"),
-    ), (R("items", "array", "待办列表，每项 todo_id、text、date、completed、indent、position 等"),
-        R("pending_count", "integer", "未完成的待办数")), target="user_id"),
-    _d("CreateMailboxTodo", FIXED, "添加一条 1–100 字的个人待办；User 添加给自己，Resident 添加给指定的 User。", (
-        R("text", description="待办文字，1–100 字", max_length=100), R("user_id", description="接收待办的 User；User 只能写自己的用户名"),
-        P("date", description="YYYY-MM-DD，省略时为香港时区今天；用于折叠日期分组"),
-    ), (R("item", "object", "新建的待办：todo_id、user_id、text、date、completed、indent 等"),), mutates=True),
-    _d("UpdateMailboxTodo", ON_USER, "编辑指定 User 的待办文字、日期、完成状态或缩进；User 只能管理自己，Resident 须有目标 User 的权限。", (
-        R("user_id", description="待办所属 User；User 只能指定自己，Resident 须获目标 User 的授权"),
-        R("todo_id", description="要编辑的待办"), R("changes", "object", "text（1–100 字）、date（YYYY-MM-DD）、completed（布尔值）、indent（0–4 整数）"),
-    ), (R("item", "object", "修改后的待办：todo_id、user_id、text、date、completed、indent 等"),), mutates=True, target="user_id"),
-    _d("DeleteMailboxTodo", FIXED, "删除自己的一条个人待办。", (R("todo_id", description="要删除的待办"),),
-       (R("todo_id", description="被删除的待办"),), mutates=True, target="todo_id"),
-    _d("MoveMailboxTodo", FIXED, "移动自己的待办：指定同日方向，或另一条待办之前/之后；跨日期时一并更新日期。三种位置须且只能指定一种。", (
-        R("todo_id", description="要移动的待办"),
-        P("direction", description="在同一天内上移（up）或下移（down）一位", enum=("up", "down")),
-        P("before_todo_id", description="放在此待办之前"), P("after_todo_id", description="放在此待办之后"),
-    ), (R("item", "object", "移动后的待办，含新的 date 与 position"),), mutates=True, target="todo_id"),
     _d("CreateNotification", FIXED, "向人类参与者发送一条持久通知，写入每位接收者的 Mailbox。", (
         R("title", description="通知标题"), R("message", description="通知正文"),
         P("recipients", "array", "接收者用户名；省略时通知人类发起人，或 Resident 发起人的登记 owner", items={"type": "string"}),

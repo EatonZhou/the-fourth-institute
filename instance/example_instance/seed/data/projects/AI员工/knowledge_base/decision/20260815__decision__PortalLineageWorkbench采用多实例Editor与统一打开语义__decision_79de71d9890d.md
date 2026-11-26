@@ -135,7 +135,7 @@ Society Workbench 是 Portal 中查看和操作 Lineage 的工作台页面。用
 
 ### 删除当前打开的 Resident
 
-普通 Resident、派生出的 Resident 和对话房间使用同一个删除流程。Personal AMA Resident 不显示删除操作。确认框说明删除的后果；被删除的是 Lineage 的 Leader 时，确认框另外说明“删除后系统从其余 Resident 中随机选出新的 Leader”。执行 `DeleteResident` 之前，流程关闭它的对话，撤销当前对话目标、浮层菜单和页面地址中的 Resident 链接，并暂停它的身份、导航、会话控制和工作区读取。
+普通 Resident、派生出的 Resident 和对话房间使用同一个删除流程。Personal AMA Resident 不显示删除操作。确认框说明删除的后果；被删除的是 Lineage 的 Leader 时，确认框另外说明“删除后系统从其余 Resident 中随机选出新的 Leader”。通过 `ApplyLineageChanges` 执行删除 Resident 的操作之前，流程关闭它的对话，撤销当前对话目标、浮层菜单和页面地址中的 Resident 链接，并暂停它的身份、导航、会话控制和工作区读取。
 
 - 成功后清理目录、对话房间关联、最近会话和本地选择。删除派生 Resident 时，Chat 回到它的父 Resident；其他情况下 Chat 显示“该 Resident 已删除。”，不改为打开 Leader 或其他 Resident。
 - 失败时恢复原来的页面地址和对话目标。

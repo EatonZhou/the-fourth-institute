@@ -1,7 +1,7 @@
 """Telepus Telegram contacts: the Portal User each Telegram user ID acts as.
 
-Portal owns this table and writes every binding (BindTelepusContactForUser,
-UnbindTelepusContactForUser and the Telepus Watchboard's own-contact action).
+Portal owns this table and writes every binding (BindTelepusContact,
+UnbindTelepusContact and the Telepus Watchboard's own-contact action).
 The Telepus Telegram router reads it to authorize each Telegram message, so
 the table lives in the bridge's schema (``telepus``); the Portal Web side
 never touches the bridge's other tables.

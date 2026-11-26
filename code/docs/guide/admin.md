@@ -144,16 +144,16 @@ PostgreSQL 程序的位置写在清单 `instance.json` 的 `dependencies.postgre
 - 资源按它在树上的位置管理，创建者没有额外权限。例外有三个：实习用户创建的 Project 由创建人管理，聊天室创建者可以删除聊天室，帖子作者可以修改和删除自己的帖子；
 - User 对自己的账号和个人空间有 admin；
 - Family 的 steward 对 Family 所在 Lineage 有 admin，聊天室成员可以在聊天室发言；
-- Portal 管理员对全部共享内容有全部动作，包括打开终端。发布、重启 Portal、在主机上运行脚本和登记模型接口要求对“共享”下的“Portal 运维”节点有 admin，默认只有 Portal 管理员满足；要让开发团队发布，给它写一条该节点的表项。
+- Portal 管理员对全部共享内容有全部动作，包括打开终端。重启 Portal 和模型接口登记要求对“Portal 运维”节点有 admin；通过 `RunScript` 运行系统脚本要求对实际承载脚本的 Lineage 有 admin。
 
 规则只在对象第一次出现时应用到这个对象本身：新建的 Project 得到 Project 内管理和创建人的表项，新建的 Family 得到 steward 的表项，已有的表项不受影响。对象移动只改它在树上的位置；Family 换 steward、聊天室换成员时，旧关系的表项换成新关系的表项；对象删除时，指名它的表项一起删除。
 
-“权限方案”分栏可以查看和编辑方案。每条指令按参数要求动作树上的某个节点，例如在目标资源上持有“协作”；所有人都能调用的指令也显式映射到“免检”节点。方案没有映射的指令落在“未归类”节点上，只有管理员能调用，新增指令忘记登记时不会对所有人放行；`GetPermissionScheme` 和创建、修改、启用方案的 `dry_run` 在 `unmapped` 中列出这些指令。页面和后台的检查都询问调用者能否通过对应指令，不另设等级或管理员特权；用 `GetInstructionSchema` 读取一条指令时，结果中的 `permission` 列出启用方案对它的要求。
+“权限方案”分栏可以查看和编辑方案。每条指令按参数要求动作树上的某个节点，例如在目标资源上持有“协作”；所有人都能调用的指令也显式映射到“免检”节点。方案没有映射的指令落在“未归类”节点上，只有管理员能调用，新增指令忘记登记时不会对所有人放行；`GetPermissionScheme` 和创建、修改、启用方案对应的预览指令 在 `unmapped` 中列出这些指令。页面和后台的检查都询问调用者能否通过对应指令，不另设等级或管理员特权；用 `GetInstructionSchema` 读取一条指令时，结果中的 `permission` 列出启用方案对它的要求。
 
 方案的创建、修改和启用分别是：
 
 - `CreatePermissionScheme` 复制一个已有方案（连同它的实例），或按新规则为现有对象生成实例；
-- `UpdatePermissionScheme` 修改规则后重新生成实例，实例中手工增删和停用的表项都会丢失；先用 `dry_run` 查看将新增、删除的表项和将丢失的修改。只改标题、说明或指令映射时不重新生成；
+- `UpdatePermissionScheme` 修改规则后重新生成实例，实例中手工增删和停用的表项都会丢失；先用 `GetPermissionSchemeUpdatePreview` 查看将新增、删除的表项和将丢失的修改。只改标题、说明或指令映射时不重新生成；
 - `ActivatePermissionScheme` 先把方案的实例补齐到现有对象（期间新建、移动、删除的对象），再切换；实例中已有的表项和修改都保留。权限系统关闭时只记录选择，开启时再补齐。
 
 保存规则、合并来源的修改和启用方案时，确认区先列出授权差（`auth_diff`）：按现有对象比较前后两份实例，哪些主体在哪些资源上获得或失去哪一级动作。每组一行，写明主体节点、资源节点、变化前后的最高动作分类，以及涉及的主体数和资源数，并按收紧、放宽、混合着色；改指令映射就是在 A 树上移动 A 元素：即使实例的表项不变，移动的元素也按现有实例计入授权差，每组写成“P 在 R 上：DeleteLineage 从 管理 改到 查看（得到）”，固定槽改了 R 节点时另写“R：旧 → 新”。下面另外列出归类改变的指令：每条指令下每个 A 元素一行，只写变了的部分，例如“A：查看 → 管理”，固定槽另有“R：Portal → 共享”；只在一边出现的元素标“新增元素”或“去掉的元素”。计算超过 2 秒时标注“未算完”，计数是下限。授权差只供核对，不阻止确认。Portal 启动时自动合并来源方案的修改后，“上次自动合并”面板也显示这次合并的授权差。
@@ -162,21 +162,23 @@ PostgreSQL 程序的位置写在清单 `instance.json` 的 `dependencies.postgre
 
 实例中的每一行表项都可以直接增加、修改、停用和删除，不论它最初是规则生成的还是后来加的，例如让某位 User 管理所有 Project，或让某人修改一个不属于任何 Project 的工作台。让某人管理所有 Project 只需要一条表项：主体是这位 User，动作为 @admin，资源是“全部 Project”；以后新建的 Project 也在这个节点下，不需要再加表项。写入只检查节点存在，不检查表项之间是否矛盾。在“权限表项”分栏操作，对应指令为 `CreatePermissionEntry`、`UpdatePermissionEntry`、`DeletePermissionEntry`、`ListPermissionEntries`；`ListPermissionEntries` 可以按节点本身、它的祖先或它的子树筛选，主体和资源至少给一个，列出整个实例时资源填 `@portal`、范围选子树。只有在资源上能写表项的主体（默认是对资源有 admin）才能写入、修改和删除那里的表项：修改和删除按表项已保存的资源判定，把表项移到另一个资源时两个资源都要能写。修改时可以在调用信封的 `expected_version` 中给出读到的表项版本，表项已被别人改过时返回版本冲突；不给时按当前内容修改。要查看某个主体实际拥有的权限，用 `GetEffectivePermissions` 或 `CheckPermission`。
 
-需要把自己的权限临时交给别人时，签发临时凭证：给 Resident 派任务时在 `DeliverMessage` 的 `temporary_credentials` 中附上，或用 `CreateTemporaryCredential` 并给出 `message_id`，凭证在对方处理完这条消息时失效；也可以按时长签发，到期前用 `UpdateTemporaryCredential` 续期。两种都最长 7 天，接收者用完可以用 `RevokeTemporaryCredential` 交还。
+随任务给 Resident 交出权限时，以同一真实 User 或 Resident 身份先用 `PrepareResidentInput` 固定消息 ID、完整正文和投递参数，再为每项权限调用 `CreateTemporaryCredential`。任务凭证在受理前处于 pending，此时不能使用。凭证均签发成功后，原样调用 `DeliverMessage`，受理事务启用凭证，输入完成、失败或取消即回收。未投递时可在原会话用 `CancelInput` 取消准备并回收凭证。Family 对话审批由问题卡片按原 User 身份处理，权限只给服务核实的原提问成员。
+
+按时长签发的凭证立即生效，可以到期前用 `UpdateTemporaryCredential` 续期。两类凭证最长均为 7 天，接收者可用 `RevokeTemporaryCredential` 提前交还。调用前查看当前实例的指令目录。
 
 判定只看执行者自己的权限：Resident 代替用户工作时，不叠加发起用户的权限，用户也不能借 Resident 越权。
 
 ### User 分类与增加管理员
 
-每个 User 属于一个分类：Portal 管理员、一般用户或实习用户，新账号是一般用户。在“Portal 管理”→“用户”分栏选中用户，改“User 分类”后保存；对应指令为 `UpdateUser`（`user_id`，`changes.category` 取 `portal_admin`、`member` 或 `intern`）。管理员名单不论权限系统开关和启用哪套方案，都只有 Portal 管理员能改：把其他 User 设为或取消 Portal 管理员，停用、启用或删除管理员账号；不能取消、停用自己。用户表单按这条规则停用控件：不是管理员时“Portal 管理员”选项不可选，管理员那一行的状态、分类不可改，也没有“Delete user”；管理员自己那一行同样如此。一般用户与实习用户之间的调整，权限系统关闭时已登录的 User 和 Resident 都能做；开启时按启用方案对 `UpdateUser` 的要求判定，默认方案要求对这个 User 有管理权限（@admin），账号本人也满足。对方下次打开账号菜单就会看到“Portal 管理”。分类只属于人类用户的账号，Resident 不能成为管理员；Resident 通过所在 Project 管理自己的工作范围，需要更多权限时由 Portal 管理员写表项或签发临时凭证。管理员不能取消自己，Portal 因此始终至少有一位启用中的 Portal 管理员，建议保留至少两位。
+每个 User 属于一个分类：Portal 管理员、一般用户或实习用户，新账号是一般用户。在“Portal 管理”→“用户”分栏选中用户，改“User 分类”后保存；对应指令为 `UpdateUserCategory`（`user_id`，`category` 取 `portal_admin`、`member` 或 `intern`）。管理员名单不论权限系统开关和启用哪套方案，都只有 Portal 管理员能改：把其他 User 设为或取消 Portal 管理员，停用、启用或删除管理员账号；不能取消、停用自己。用户表单按这条规则停用控件：不是管理员时“Portal 管理员”选项不可选，管理员那一行的状态、分类不可改，也没有“Delete user”；管理员自己那一行同样如此。账号状态和 User 分类由 Portal 管理员通过 `UpdateUserStatus`、`UpdateUserCategory` 管理。资料字段使用 `UpdateUser`。对方下次打开账号菜单就会看到“Portal 管理”。分类只属于人类用户的账号，Resident 不能成为管理员；Resident 通过所在 Project 管理自己的工作范围，需要更多权限时由 Portal 管理员写表项或签发临时凭证。管理员不能取消自己，Portal 因此始终至少有一位启用中的 Portal 管理员，建议保留至少两位。
 
-Portal 管理员永远可以开关权限系统（“执行设置”中的权限系统开关，`UpdateExecutionSettings` 只改 `permission_system_enabled`），也永远可以读取方案列表（`ListPermissionSchemes`）和启用方案（`ActivatePermissionScheme`），不论启用中的方案怎样写。这是方案之外的保底：方案写错把管理员也挡在外面时，管理员不用关开关，直接在“执行设置”的方案下拉框里选一套可用的方案启用即可；需要所有人都不受限时，关闭权限系统。方案不让管理员读取执行设置时，“Portal 管理”仍然打开“执行设置”分栏，权限系统开关和方案下拉框照常可用，其余设置停用。
+Portal 管理员永远可以开关权限系统（“执行设置”中的权限系统开关，使用 `SetPermissionSystemEnabled`），也永远可以读取方案列表（`ListPermissionSchemes`）和启用方案（`ActivatePermissionScheme`），不论启用中的方案怎样写。这是方案之外的保底：方案写错把管理员也挡在外面时，管理员不用关开关，直接在“执行设置”的方案下拉框里选一套可用的方案启用即可；需要所有人都不受限时，关闭权限系统。方案不让管理员读取执行设置时，“Portal 管理”仍然打开“执行设置”分栏，权限系统开关和方案下拉框照常可用，其余设置停用。
 
 ## 5. 日常运维
 
 ### 资源类型
 
-在“Portal 管理”→“资源类型”查看类型状态、实例数、所属发行单元和有效登记能力，按类别或名称筛选；点击类型可查看原始只读声明及动作。声明不能在页面修改。顶层 `registerable` 同时要求声明允许登记和提供者实现登记，原始 `declaration` 保留声明内容。
+在“Portal 管理”→“资源类型”查看类型状态、实例数、所属发行单元和有效登记能力，按类别或名称筛选。点击类型可查看原始只读声明。顶层 `registerable` 同时要求声明允许登记和提供者实现登记，原始 `declaration` 保留声明内容。通过 `SetResourceTypeEnabled` 启停类型。
 
 管理员启停类型前需要确认；未安装类型不能启用。停用后该类型不再出现在目录和搜索中，也不能登记新实例，已有资源仍可按 ID 读取和撤销登记。保存使用当前版本，冲突时页面刷新该行后再重试。Backup 是独立的资源维护入口，不是可启停的资源类型。
 
@@ -186,13 +188,15 @@ Portal 管理员永远可以开关权限系统（“执行设置”中的权限�
 
 执行账号在“Portal 管理”→“AI Backend”中管理。停用账号会停止向它派发新回合，已有会话保留绑定并显示停用状态；恢复后沿原绑定继续。删除账号前必须解除会话与排队/运行工作占用，活跃登录会先取消并等待进程退出。`ListProviderAccounts.registration` 返回登记的初始并发、配置、版本及有权限查看的路径；公开登录状态和 Home 调度设置各自保留所属语义。运行时缺失时，用 `RunScript` 在固定 Portal 运维 Lineage 运行 `install_provider_runtime`，传入 `provider`，再用 `ListProviders` 或 `GetProviderAccountSetup` 核实就绪。原生配置和用量事件能力由适配器声明：用 `GetProviderAccountConfiguration` 读取版本与配置，更新用 `UpdateProviderAccountConfiguration` 提交 `changes` 和信封 `expected_version`；只有声明支持的账号可用 `GetProviderUsageEvents`。
 
+用 `RestartSession` 重启 Resident 会话或切换执行账号时，当前工作会先执行完毕，后续输入保留在队列中。若用户明确要求停止当前工作，先对该条输入调用 `CancelInput`，用 `GetInputState` 或对话事件确认实际执行已结束，再调用 `RestartSession`。用 `GetSessionRestart` 查看会话操作进度和实际绑定。
+
 人类用户账号在“Portal 管理”→“用户”分栏中，选中用户后操作：
 
 | 情况 | 操作 | 指令 |
 | --- | --- | --- |
 | 用户忘记密码且没有恢复邮箱 | “重置密码”，填写新密码后告诉对方。对方所有设备需要重新登录 | `ResetUserPassword` |
 | 设备丢失或怀疑会话被盗 | “撤销会话”，该用户所有浏览器会话失效，个人访问令牌也全部撤销 | `RevokeUserSessions` |
-| 暂停某人使用 | 状态改为“已禁用”并保存。数据全部保留，改回“活跃”即可恢复，但已撤销的令牌不会恢复 | `UpdateUser` |
+| 暂停某人使用 | 状态改为“已禁用”并保存。数据全部保留，改回“活跃”即可恢复，但已撤销的令牌不会恢复 | `UpdateUserStatus` |
 | 永久移除 | “删除用户”，再输入一次完整的用户名确认。个人数据和该用户的个人 AMA 被清除，Project、其他 Lineage 和对话历史保留，用户名不能再次使用 | `DeleteUser` |
 
 管理员不能重置自己的密码，也不能删除自己；本人在“菜单”→“账户安全”中修改。
@@ -205,6 +209,8 @@ Portal 管理员永远可以开关权限系统（“执行设置”中的权限�
 ### 备份
 
 几乎所有数据都在 PostgreSQL 中；另外还要备份实例的各区域（projects、lineages、skills、papers、uploads、features、provider-state，位置见“Portal 管理 → 数据目录”）、`secrets/`、清单 `instance.json` 和站点设置 `site.json`；`cache/`、`runtime/` 不需要备份。先导出数据库，再复制各区域。Portal 本身不执行备份，需要部署者另配备份程序（例如用 restic 定期备份数据库导出和上述目录）。配好备份服务后，“资源 → 备份”页面显示最近恢复点和自动计划，管理员可以在这里手动发起备份或校验，见设计条目 `decision_b06ae321a668`。
+
+Google Drive 异地备份使用本站备份 Lineage 中登记的 `google_drive_backup`。该脚本通过 `RunScript` 运行，`profile` 为 `critical`、`content` 或 `probe`，可选 `network_route`，并使用 `resource-backup` 互斥键。调用者须对该备份 Lineage 通过 `RunScript` 的权限校验。用返回的 `script_run_id` 查询运行结果。
 
 ### 代码更新与发布
 

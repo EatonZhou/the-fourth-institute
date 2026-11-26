@@ -124,13 +124,10 @@ def test_old_scope_schema_does_not_gate_unrelated_startup():
         assert connection.execute("SELECT value FROM lineage_meta WHERE key='schema'").fetchone()["value"] == "tfi.lineage-data.v46"
 
 
-def test_creation_failure_reports_the_committed_lineage(lineage, monkeypatch):
-    """CreateLineage 建立 Family 失败时报告已提交的 Lineage，该 Lineage 保留"""
-    from management_portal.society_service.templates import familize as family
-    def fail(*args, **kwargs):
-        raise ValueError('Role setup unavailable')
-    monkeypatch.setattr(family, 'familize', fail)
-    result = run('CreateLineage', {'project_id': 'project_test', 'title': 'Retained', 'familize': True})
-    assert result.error['commit_state'] == 'committed'
-    created_id = result.error['details']['lineage_id']
-    assert graph(created_id)['title'] == 'Retained'
+def test_create_lineage_uses_a_separate_family_operation(lineage):
+    arguments = {'project_id': 'project_test', 'title': 'Explicit family'}
+    result = run('CreateLineage', {**arguments, 'familize': True})
+    assert result.error['code'] == 'instruction.invalid_arguments'
+    created = ok('CreateLineage', arguments)
+    assert 'family_id' not in created
+    assert graph(created['lineage_id'])['title'] == 'Explicit family'

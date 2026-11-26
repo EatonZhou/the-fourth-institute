@@ -199,7 +199,7 @@ User 按自身权限调用应用接口。Resident 还须在自己的 `capability
 
 ## 5. 读发给你的消息
 
-Resident 可以给你发消息（`DeliverMessage` 带 `user_id`）。这些消息不在你这里排队，而是写在**发送方自己的对话**里，并把你记为收件人。你的 **Mailbox** 是一个索引，告诉你哪段对话里有你的新消息。
+Resident 可以给你发消息（`DeliverUserMessage` 带 `user_id`）。这些消息不在你这里排队，而是写在**发送方自己的对话**里，并把你记为收件人。你的 **Mailbox** 是一个索引，告诉你哪段对话里有你的新消息。
 
 ### 5.1 我的 Mailbox
 
@@ -250,14 +250,14 @@ Resident 可以给你发消息（`DeliverMessage` 带 `user_id`）。这些消�
 
   ```json
   {"instruction": "DeliverMessage",
-   "arguments": {"resident_id": "<发消息给你的 Resident 或门面>",
+   "arguments": {"resident_id": "<发消息给你的 Resident>",
                  "message": {"content_parts": [{"type": "text", "text": "……"}],
                              "quote": {"message_id": "<你回复的那条消息>"}}},
    "idempotency_key": "reply-<那条消息的 ID>"}
   ```
 
-  回复是一条新请求，会进入对方的队列，让对方为它工作一轮（见 6.1）。回复门面发来的消息时照常发给门面并引用原消息，门面会把回复交给写那条消息的成员。对方不会等你回复。
-- **标为已读**：`SetMailboxItemRead`（`{"key": "..."}`）；`{"key": "...", "unread": true}` 重新标为未读。想确保只标你读过的那条结果时，在调用中带上 `"expected_version": "<条目的 version>"`：读完之后对方又发来新消息时，版本已经变化，这次标记失败（`instruction.version_conflict`），条目保持未读。`expected_version` 与 `instruction`、`arguments` 并列写在调用的顶层；命令行写作 `call SetMailboxItemRead --arguments '{"key": "..."}' --expected-version '<条目的 version>'`。`version` 是一段含引号和花括号的字符串，原样传入，在 shell 中用单引号括起来。
+  回复是一条新请求，会进入对方的队列，让对方为它工作一轮（见 6.1）。要回复门面发出的消息并交给原写作者，用 `RelayMessage`，传门面的 `resident_id`、外发消息的 `reply_to_message_id` 和回复的 `message.content_parts`。
+- **标为已读**：`UpdateMailboxItem`（`{"key": "...", "unread": false}`）；`{"key": "...", "unread": true}` 重新标为未读。想确保只标你读过的那条结果时，在调用中带上 `"expected_version": "<条目的 version>"`：读完之后对方又发来新消息时，版本已经变化，这次标记失败（`instruction.version_conflict`），条目保持未读。`expected_version` 与 `instruction`、`arguments` 并列写在调用的顶层；命令行写作 `call UpdateMailboxItem --arguments '{"key": "...", "unread": false}' --expected-version '<条目的 version>'`。`version` 是一段含引号和花括号的字符串，原样传入，在 shell 中用单引号括起来。
 
 ### 5.4 等待新消息
 
@@ -306,7 +306,7 @@ GetConversation(input_message_id) 或 GetMessage → 读回复
 
 ### 7.1 回答 Resident 的提问
 
-Resident 工作中可能停下来向你提问或请求批准。`ListResidentRequests`（参数为空）列出你可以回答的请求；`AnswerResidentRequest`（`resident_id`、`message_id`、`answers`）提交回答，回答直接送回它正在等待的那一轮。
+Resident 工作中可能停下来向你提问或请求批准。用 `ListResidentRequests` 传入 `resident_ids` 查看请求。用 `AnswerResidentRequest` 传入 `resident_id`、`message_id` 以及问题的 `answers` 或审批的 `decision`（`accept`、`decline`），回答直接送回它正在等待的那一轮。需关闭请求时使用 `CancelResidentRequest`。
 
 ### 7.2 查找和读取资源
 
@@ -349,7 +349,7 @@ Repo 和 Article 分别用 `repo_id`、`article_id` 替换 `workspace_id`，一�
 | User Mailbox | 你的收件索引（`GetMailbox` 带 `user_id`）：对话和通知两栏；消息本身在各自的对话里 |
 | 请求与 info | 请求让 Resident 工作一轮；info 只告知变化，随下一条请求送达 |
 | Family 门面 | 一组 Resident 对外的统一窗口；发给门面的请求由 Family 自己选成员处理 |
-| 权限 | 每次调用由服务端按你的身份和启用的权限方案中的表项重新判断。账号资料不代表你对某个对象的实际权限；需要预先确认时用 `CheckPermission`，最终以调用结果为准 |
+| 权限 | 每次调用由服务端按你的身份和启用的权限方案中的表项重新判断。账号资料不代表你对某个对象的实际权限；需要预先核对一条指令时用 `CheckInstructionPermission`，最终以调用结果为准 |
 
 ## 9. 凭据安全与轮换
 

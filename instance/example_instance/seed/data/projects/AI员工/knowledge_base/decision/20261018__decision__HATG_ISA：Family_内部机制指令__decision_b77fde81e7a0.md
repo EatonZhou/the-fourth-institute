@@ -25,109 +25,110 @@ links:
   derived_from: []
 ---
 
-# HATG ISA：Family 内部机制指令
+# HATG ISA：门面与转交指令
 
-Family 内部机制指令是一个 Family 自己运转时使用的步骤：Router 转交门面请求，steward 撰写和发布进展简报、汇总门面摘要，Family 内部的 Effect 机械检查成员摘要和失败任务。调用者是 Family 自己的角色和组件，默认方案把它们放在免检或门面权限下，执行时再核对调用者属于本 Family。在 Family 之外创建、解除、删除和修改 Family 用 Family 类指令。Family 的整体设计、角色和内部工作流见 decision_44cf587c1721，工作摘要的存储与维护见 decision_d19b9909a674；所有指令共同遵守的调用格式、执行流程和错误语义见 decision_898b8911a2ff。
+门面是一个接收对外消息、再把消息转交给其他 Resident 的 Resident。门面登记它的转交对象集合：任何团队模板用 `UpdateFacadeMembers` 登记，前台、分诊、秘书都用同一种方式；Family 的成员关系在创建和修改时调用同一登记，不另存一份。本类指令提供转交的机制：以原作者的身份把门面收到的消息交给转交对象，记录转交关系，保证同一条原请求只有一个承接者，处理撤回与归档，并读取转交和汇总所需的材料，包括判定某个转交对象现在能否承接。
+
+选谁承接、承接者额度不足怎么办、没有合适对象怎么办、失败怎么跟进、什么时候汇总摘要，是团队模板的策略，由模板用 Event、Effect 和共享状态组合出来，不属于指令（thinking_ca8f397a47de）。Family 的运行图见 decision_89b9df038a95，运行维护见 decision_a64b3ea2c3c5，消息路由见 decision_9ad68dd077d4，工作摘要的存储与维护见 decision_d19b9909a674；所有指令共同遵守的调用格式、执行流程和错误语义见 decision_898b8911a2ff。创建、解除、删除和修改 Family 用 Family 类指令。
 
 ## 指令一览
 
 | 指令 | 改变状态 | 作用 | 默认方案要求 |
 | --- | --- | --- | --- |
-| `GetFamilyRoutingContext` | 否 | 按需读取原请求的可选成员或冻结上一轮 | 对 `resident_id` 有 @viewer，领域再次核验门面可读 |
-| `DispatchFamilyTask` | 是 | 按 Family 当前场景模板派发精简任务 | 对 `resident_id` 有 @contributor |
-| `ResolveFamilyRequest` | 是 | 将 Steward 已完成的路由复核成果归档到原请求，保留原失败回执且不重新执行 | 对 `resident_id` 有 @contributor |
-| `RelayFamilyMessage` | 是 | 转交门面原请求，成员周额度低于 10% 时先等待 steward 复核；纯告知由门面收下 | 对 `resident_id` 有 @contributor |
-| `MaintainFamilyReview` | 是 | 记录已完成业务活动，定时检查有新材料且 Steward 可承接时合并派发回顾 | 对 `lineage_id` 有 @contributor，且通过领域角色/管理校验 |
-| `MaintainFamilyProgress` | 是 | 登记门面收到的工作轮次，达到配置间隔后请 Steward 撰写简报；同一输入只计一次 | 对 `lineage_id` 有 @contributor |
-| `PublishFamilyProgress` | 是 | Steward 保存最多 500 字的简报并更新门面摘要，不向成员群发；按相关性另行定向通知 | 免检 |
-| `MaintainFamilyRoleAvailability` | 是 | 维护 Router／Steward 接单并返回已有迁移状态；不查额度、不发起迁移；门面关闭暂停 | 对 `lineage_id` 有 @contributor |
-| `MaintainFamilyRecovery` | 是 | 核验 Family 原任务的恢复结果，持续交给 steward 定位修复；无法恢复或 steward 失败时由门面通知实际创立者 | 对 `lineage_id` 有 @contributor |
-| `MaintainResidentWorkSummary` | 是 | Effect 机械检查成功轮次并挂下一轮提醒 | 免检 |
-| `GetFamilySummaryInputs` | 否 | 读取按小时汇总的材料与来源版本 | 免检 |
+| `UpdateFacadeMembers` | 是 | 登记或替换门面的转交对象集合；空集合取消门面身份 | 对 `resident_id` 有 @admin（它决定谁能接收门面转交的请求，weihao 2026-11-26） |
+| `CheckRelayTarget` | 否 | 判定一个转交对象现在能否承接：可承接、额度不足、不可用或未知 | 对 `resident_id` 有 @viewer，领域再次核验门面可读 |
+| `GetRelayContext` | 否 | 按需读取转交所需的候选对象、原请求或冻结的上一轮 | 对 `resident_id` 有 @viewer，领域再次核验门面可读 |
+| `RelayMessage` | 是 | 以原作者身份把门面原请求转交给一个转交对象，或由门面收下纯告知 | 转交原请求要求对门面 `resident_id` 有 @contributor；回复门面外发消息要求对门面 `resident_id` 有 @message |
+| `ResolveRelayedRequest` | 是 | 将已经完成的复核成果归档到原失败请求，保留原失败回执且不重新执行 | 对 `resident_id` 有 @contributor |
+| `GetFacadeSummaryInputs` | 否 | 读取按小时汇总的材料与来源版本 | 免检 |
 
-`ResolveFamilyRequest` 是 Family 成果归档入口：对 `resident_id` 要求 @contributor，并由领域校验本 Family Steward 或门面管理权。结果为 `status=archived`、原 `message_id`、`steward_message_id` 和真实 `reply_message_ids`。它不投递新业务、不重开失败输入；前提与来源校验见 `decision_a64b3ea2c3c5`。
+失败输入的重开使用 `RequeueMessage`，它同样作用于门面的失败输入，见下文“重开门面的失败输入”。读取原请求经转交链后的实际状态与回复使用 `GetInputState`。
 
-## 角色可用性
+## 登记门面
 
-`MaintainFamilyRoleAvailability(lineage_id, family_id)` 供独立 `role_availability` Effect 调用。本 Family 门面、Steward 或有 Lineage 管理权限的调用者可执行；自动 Effect 仅在属于该 Family 且参数指向同一 Family 时使用门面身份。
+### `UpdateFacadeMembers`
 
-它先核验门面是否暂停，再恢复 Router／Steward 接单，返回已有迁移状态。返回 `family_id`、`paused`、`waiting_count`，未暂停时另有 `roles`（resident_id、status、reason、intake）。waiting_count 统计已有迁移记录；本指令不读取额度、不发起迁移，全程无需模型任务。
+`UpdateFacadeMembers(resident_id, member_ids)` 把 `resident_id` 登记为门面，转交对象集合整体替换为 `member_ids`；空数组取消它的门面身份。`member_ids` 中的对象必须是调用者可见、未删除的 Resident，且不能包含门面自己。同一对象集合不变时重复调用返回当前登记。集合变化后，已经转交的请求保持原承接者，不重新转交；被移出集合的对象不再接收新的转交。登记不创建 Resident、不创建 Lineage 组件，也不连线：门面收到消息后的路由由团队模板自己的 Event 与 Effect 完成。结果返回 `resident_id`、`member_ids` 和 `status`（`registered` 或 `unchanged`、`removed`）。
 
-触发入口为两角色的 `resident.state_changed(intake)` 及每 5 分钟 timer 接单补查。额度随待执行原输入进入平台准入检查；不另设 usage Event。所有 Resident 共用 ExecutionService 额度准入；Router／Steward 执行前另按既有策略决定有限迁移。具体职责、执行入口和脚本见[角色工作流](/resource/knowledge?item=decision_89b9df038a95)。
+Family 的成员关系是登记来源之一：Familize、UpdateFamily 改变成员时，同一事务调用这一登记，结果以 Family 的成员列表为准；其他模板直接调用，无须使用 Family 类指令。
 
-## 组织回顾门控
+新增转交对象时，调用者须对该对象拥有 `DeliverMessage` 的权限；门面成员关系在一次提交中整体替换。
 
-`MaintainFamilyReview(lineage_id, family_id, event?)` 属于 Family 内部机制，owner 为 lineage。event 提供时只记录经持久状态、当前业务成员、非 info 和非维护输入核验的 resident.work_finished，不派发回顾。省略 event 时比较未消费活动，机械核验门面暂停与 Steward 运行/排队状态后，按持久意图合并派发一次 review。参数不接受 N 次门槛、任意 facts、外部指定目标或消息 ID。
+## 判定转交对象
 
-结果为 family_id、status，以及派发时的稳定 message_id。status：recorded 已登记；skipped 非有效业务完成；unchanged 无新材料；busy 角色或检查忙碌/运行态不可确认；paused 门面暂停；requested 本次派发或已受理同意图的消费收尾；target_changed 尚未受理的原派发目标角色已变更、保留待处理意图；not_applicable 个人助手使用原独立机制。requested 不代表模型任务完成。
+### `CheckRelayTarget`
 
-调用需 Lineage @contributor 及本 Family 门面/Steward 或管理校验；受控生成 Effect 的身份绑定不授予事件外部作者权限，普通 workflow 不继承。快照消费、失败、取消和升级协议见 decision_a64b3ea2c3c5“组织回顾”。
+`CheckRelayTarget(resident_id, member_id)` 只读判定门面的一个转交对象现在能否承接新请求，返回 `status`：
 
-## 派发场景任务
+- `ready`：对象存在，当前接单开放，执行账号可用且额度判定充足（含已开启并生效的付费额度）。
+- `quota_low`：对象所用账号额度低于保留阈值，且没有生效的付费额度。
+- `unavailable`：已登记对象已删除、接单关闭、账号不可用，或正在进行账号迁移与生命周期操作。
+- `unknown`：额度观察缺失或已过期，系统不推测。
 
-Event 类型、Watch 对象、触发参数、Route 到 Effect 的连线及各场景的实际 prompt 字段，统一见 [Family 角色工作流](/resource/knowledge?item=decision_89b9df038a95)。本篇维护指令参数和执行语义，不另存一份场景表。
+同时返回 `reason`（原因码）和 `remaining_percent`（限制窗口的最低剩余比例，未知为 null）。判定的阈值、窗口取最小值和付费额度口径由系统按现有额度策略计算，调用者拿到的是结论；Effect 只比较 `status` 字符串，不比较数值。指令不改变任何状态，也不保证之后的转交成功，转交时对象状态变化由 `RelayMessage` 自己的错误返回。
 
-### `DispatchFamilyTask`
+不在门面当前登记集合中的 `member_id` 返回参数错误。
 
-以门面 resident_id 和 trigger 指向 Family 的当前工作场景。仅本 Family 门面、Router、Steward 或 Lineage 管理者可以调用；目标内部角色由执行契约决定。
+## 转交
 
-- trigger 为 route、queue、review、summary、progress、recruit、route_review、recovery、quota、organization。
-- 可选 facts 为本轮结构化事实；source_message_id 绑定原门面消息，route 场景必需。平台读取该消息的作者、原文、附件引用及引用信息，覆盖对应事实，不让调用者伪造原请求。
-- 可选 event 只提取事件标识、类型、主体、队列指标等本轮必要信息，不透传完整运行快照。
-- 可选 message_id 为此次派发的稳定消息 ID，用于去重；与原请求 source_message_id 不同。
-- 指令进程中断后，只有显式稳定 message_id 且已保存首次派发意图时，原幂等调用才进入领域核对：重新检查当前权限、来源范围和原目标角色，沿同一任务身份核对完整首次请求及接收回执；已接收或已取消的任务只返回原接收事实，未接收的任务续完已冻结意图。不得重渲染首次意图、重新选目标、复活已取消任务或创建新消息 ID。没有可靠意图、角色已变化或身份冲突时保留结果未知，不能以盲目重发消除错误。Effect 已要求人工处置的旧激活仍需核验领域事实后终结，不因部署新代码自动重跑。
-- 从对应 Route 的 family_tasks 参数读取 guide/prompt；物化工作区 family-work-guide.md，渲染当前事实、指南路径和版本。完整指南仅由统一上下文构造器在会话首轮注入。
-- 任务以门面为发送者、调用者为发起者投给对应内部角色，返回投递回执。内部角色不因此进入发起者的直接会话列表；不自动加载成员摘要、状态和往来。
+### `RelayMessage`
 
-`trigger` 是任务场景，不是 Event 类型。`DispatchFamilyTask` 在内部受理记录为 facts 加入 facade、lineage_id、family_id；source_message_id 另映射为 facts.message_id。route 渲染仅保留 facade、message_id、sender、content 及存在的 quote，其他内部事实不自动写入正文；指南路径和版本即使在自定义模板中遗漏也补齐，并给出短重读提示。event 只保留顶层 id、event_id、type、subject_resident_id，以及 payload 中的 resident_id、message_id、queue_count、pressure_metric、pressure_threshold、pressure_value、oldest_wait_seconds，并把后者平铺到 facts.event；不存在的字段不补造。
+- 参数：`resident_id`（门面）、`message_id`（原请求）、`member_id`（承接者，`notice=true` 时不填）；可选 `notice`、`continue_previous`、`reassign`、`reason`。
+- 转交对象必须是门面当前登记的转交对象。指令不检查额度，不判断职责是否覆盖，不要求复核；额度由调用方先用 `CheckRelayTarget` 判定，职责和复核由调用它的 Effect 或 Resident 在转交前完成。
+- 转交以原作者的身份投递：原消息内容、原发送者和附件访问权限保持不变，门面转交关联是对外投影的真值。成功返回 `status=relayed`、`member_id` 和承接者上的 `message_id`。
+- 同一原请求同一时间只有一个承接者。转交时持有这条原请求的互斥所有权，慢转交期间重复调用返回 `instruction.in_progress`（可重试）。选择和投递持久保存，重复调用返回原回执；改为另一个对象必须显式 `reassign=true` 并写明 `reason`，原承接者正在执行时须先停止；改派记录保留来源。
+- 取消优先：原请求已被撤回时返回 `withdrawn`，不再转交。转交期间的撤回仍可提交，最终关联提交核对当前取消状态。
+- `notice=true` 由门面收下不要求承接者行动的消息，例如对方完成工作后的结果报告、已发布或已交付的通知、无问题无待办的进展说明。门面记下这条告知，在门面 Conversation 中显示并结束它，返回 `status=kept`；之后不能再转交。`notice` 不能与 `member_id` 或 `reassign` 同用。门面保留最近 20 条告知，`GetFacadeSummaryInputs` 把它们作为门面摘要的来源。
+- `continue_previous`：调用者判定当前请求明确依赖同一发送者的上一轮时设为 true，默认 false。平台保存这个判断，并给承接者附上可信的上一轮背景；换承接者仍可使用。它不能与 `notice` 或 `reassign` 同用。
+- 重复调用沿原转交身份核验；中断后的同键重试在原执行的活动锁内核验转交事实，只补齐原关联和回执。
 
-当前 Effect 也可通过服务分支派发：`RelayFamilyMessage` 引出 recruit/quota，`MaintainFamilyRecovery` 引出 recovery，`MaintainFamilyProgress` 引出 progress，组织变更与门面 info 引出 organization。这些路径用 `tell_steward` 读取同一场景模板，但只渲染各调用方传入的 task_facts，不自动补充 `DispatchFamilyTask` 的三个公共字段；不能把配置所在连线误认为独立触发 Event。
+### 回复门面发出的消息
 
-## 按需读取路由材料
+要把回复交给门面外发消息的原写作者，以门面为 `resident_id`，传 `reply_to_message_id` 和 `message`。可用 `business_ref` 关联调用方业务记录。原外发消息决定承接者；服务按当前身份校验消息与门面的关系，正文和附件仍写入对应对话。这种调用不提供 `member_id` 或原转交请求的 `message_id`。
 
-`GetFamilyRoutingContext(resident_id, message_id, section?)` 是只读入口。resident_id 为 Family 门面，message_id 为已经存在的门面原请求；先按当前调用者核验可见性，再读取消息和路由材料。
+## 读取转交材料
 
-- `section=members`（默认）：返回当前允许的直属成员和 Steward 的 ID、角色、名称及可读状态，以及该请求原发送者的 Solo/Mute 约束。已受理请求读取冻结约束；尚无快照时只读当前设置，不创建快照。嵌套团队以门面为候选；缺失／不可读成员标为 unavailable。摘要、工作状态和能力不合并返回，使用各自指令按需读取。
-- `section=previous_round`：返回受理原请求时已冻结的唯一上一轮问答，缺失为 null。读取不扫描会话、替换候选或建立续谈关系，也不派发任务。后续 `RelayFamilyMessage(continue_previous=true)` 仍由原有规则核验并携带可信背景。
-- 两类结果都包含 resident_id 与 message_id；section 不支持取全，避免把读取入口变成每轮自动整包预取。
+### `GetRelayContext`
 
-## 转交门面请求
+`GetRelayContext(resident_id, message_id, section?)` 是只读入口。`resident_id` 为门面，`message_id` 为已经存在的门面原请求；先按当前调用者核验可见性，再读取。
 
-### `RelayFamilyMessage`
+- `section=members`（默认）：返回门面当前登记的转交对象的 ID、角色、名称和可读状态，以及该请求原发送者的 Solo/Mute 约束，列表已经按这些约束过滤。已受理请求读取冻结约束；尚无快照时只读当前设置，不创建快照。嵌套团队以内层门面为候选；缺失或不可读的对象标为 `unavailable`。摘要、工作状态和能力不合并返回，使用各自指令按需读取。
+- `section=request`：返回原请求的作者、正文、附件引用和被引用的消息，取自受理时冻结的材料。
+- `section=previous_round`：返回受理原请求时已冻结的唯一上一轮问答，缺失为 null。读取不扫描会话、不替换候选、不建立续谈关系。
+- 结果都包含 `resident_id` 与 `message_id`；`section` 不支持取全，读取入口不变成每轮自动整包预取。
 
-`continue_previous`：仅当前请求明确依赖同一发送者上一轮 previous_round 时设 true；默认 false，证据不足按独立任务。不追溯更早历史，不因同一成员、相邻或相似话题判定延续；换成员执行仍可 true。平台保存正判并附可信上一轮背景，后续恢复、职责安排与额度放行的缺省 false 不清除已冻结正判；不能与 notice 或 reassign 同用。
+## 归档复核成果
 
-按 Family Router 的选择转交门面原请求；当前成员和本 Family Steward 都是合法承接者，组织工作归 Steward，并在成员周额度低于 10% 时进行执行前复核（decision_a64b3ea2c3c5）。
+### `ResolveRelayedRequest`
 
-- 参数：`resident_id`（门面）、`message_id`（原请求）、`member_id`（所选成员，`notice=true` 时不填）；可选 `notice`、`quota_reviewed`、`scope_gap`、`scope_reviewed`、`reassign`、`recover`、`reason`。
-- `recover=true` 在 Router 或转交失败后，把尚未转交的同一原请求恢复给已核定的 `member_id`。必须填写 `reason`，限原发送者、本 Family Steward 或门面管理者；不能与 `notice`、`reassign` 同用。它先持久保存原失败回执、操作者、理由、时间和目标，再重新开放原输入并进入通常的成员、接单、附件、额度及职责准入，不改变原作者、时间、正文或附件，不复制业务请求；失败回执仍保留在 Conversation 事件和恢复审计中。恢复结果附带 `recovery` 审计对象。相同目标重复调用或保存意图后中断重试，复用原转交身份，不重复派发；已取消请求返回 `withdrawn`，活动或完成的无转交请求不能恢复，已有承接关系不能被恢复覆盖。恢复已选目标后，旧 Router 失败和原输入到达重放不能再次启动路由；改派已有承接关系使用 `reassign`。
+参数：`resident_id`（门面）、`message_id`（原失败请求）、`review_message_id`（复核输入）、`reason`。结果为 `status=archived`、原 `message_id`、`review_message_id` 和真实 `reply_message_ids`。它不投递新业务、不重开失败输入；前提与来源校验见 decision_a64b3ea2c3c5。
 
-失败恢复复用当前原请求已经取得的消息级转交归属，不递归领取同一归属。门面状态锁只覆盖鉴权、原回执复核、恢复意图保存和输入重新开放；成员输入准备、额度查询与实际转交在状态锁外进行。慢转交期间取消仍可提交，通常准入和最终关联提交继续核对当前取消状态；恢复意图和转交身份用于中断重试，不能重新创造业务请求。
+## 汇总材料
 
-- 不要求成员行动的消息由门面收下：对方完成工作后的结果报告、已发布或已交付的通知、无问题无待办的进展说明。Router 输出 `disposition="notice"`，转交 Effect 以 `notice=true` 调用，门面记下这条告知、在门面 Conversation 中显示并结束它，返回 status=kept。它不选成员、不建成员输入、不做额度复核，之后也不能再转交；`notice` 不能与 `member_id` 或复核、改派参数同用。门面保留最近 20 条告知，`GetFamilySummaryInputs` 把它们作为门面摘要的来源，成员从门面摘要和门面 Conversation 查到它们。含提问、待确认事项或要求复核、接手、修改的消息仍按请求转交。
-- `scope_gap` 使请求等待 steward 安排职责；只有本 Family steward 可以用 `scope_reviewed=true` 或 `quota_reviewed=true` 并填写理由放行。`reassign=true` 显式改派，原成员正在执行时须先停止；改派记录保留来源。
-- 默认先检查成员实际绑定账号的周额度；低于 10% 时保留门面请求，并以门面身份向 steward 发出一次判断请求。返回 status=waiting_for_quota_review 和 steward_message_id，成员尚未收到原请求。
-- 只有本 Family steward 能以 quota_reviewed=true 并填写判断理由放行已经登记的复核。它先评估工作强度，必要时等待成员迁移完成；放行只转交原请求，不新造任务。
-- 正常或批准的转交返回 status=relayed、member_id 和成员上的 message_id；原消息内容、原发送者和附件访问权限保持，门面转交关联仍是对外投影的真值。
-- 同一门面请求的选择和投递持久保存；重复调用返回原回执；改为另一成员必须显式改派，已取消请求返回 withdrawn，不再放行。该指令只处理已到达门面的请求，不替代普通消息投递。
+### `GetFacadeSummaryInputs`
 
-## 进展简报与故障监督
+`GetFacadeSummaryInputs(resident_id, overview_only?)` 读取门面摘要的来源，只有门面本身和对门面有管理权的调用者能读。默认返回 `title`、`goal`、`members`、`notices`（门面收下的最近告知，含正文，其指纹计入 `source_versions`）、`previous_summary`、`source_versions`、`needs_update`、`facade_needs_update`、`consolidation_due`。`consolidation_due` 只列到期业务成员的 `resident_id`、`revision`、`level`、`reason`，不带成员各层全文；承担团队运转角色的转交对象不进入归纳清单。内层门面不进入外层归纳待办。
 
-`MaintainFamilyProgress`、`PublishFamilyProgress` 与 `MaintainFamilyRecovery` 的调用时机、批次和升级规则见 [Family 运行维护](/resource/knowledge?item=decision_a64b3ea2c3c5) 的进展简报与持续监督。三条指令都以 `lineage_id` 和 `family_id` 指向一个 Family：
+`overview_only=true` 仅返回门面 ID、是否需要更新、归纳待办和 `notification`，不返回成员全文、门面旧摘要或来源列表。`notification` 是可交给 `DeliverMessage` 的短入口，同小时同材料复用消息 ID。`needs_update` 为门面来源变化或存在到期待办。成员来源版本考虑内容、缺失、标题、名单和目标。比较来源版本需要对整张映射求差，脚本没有这种能力，所以由这条读取指令完成。
 
-- `MaintainFamilyProgress`：仅保留显式调用及旧批次兼容；当前 Family 自动运行图不调用。显式调用时记录轮次，达到 `every_turns`（默认 20）时登记待写批次并请 Steward 撰写；结果是计数和本次请求的批次。
-- `PublishFamilyProgress`：只允许本 Family Steward 提交对应批次。简报正文 1–500 字，并带九字段门面工作摘要、`expected_revision` 和 `GetFamilySummaryInputs` 的 `source_versions`；只保存简报和门面摘要，不投递成员 info。由 Steward 按相关性另用 DeliverMessage 定向通知；同批次同内容重试返回同一结果，旧部分投递批次也不继续群发。
-- `MaintainFamilyRecovery`：监督 Effect 把成员、Router 或 steward 的失败以及消息到达后的接单阻塞交给它；定时复查同时检查关闭成员的当前队列，不扫描历史失败。Steward 按原请求恢复接单或修复故障，排队中的原输入不重复投递。Router/Steward 自身接单由 MaintainFamilyRoleAvailability 维护，额度迁移由待执行输入的准入检查触发；关闭门面返回 paused 并暂停自维护。未解决任务继续跟进；Steward 用 `escalate_reason` 报告无法继续时，由门面通知实际的真人创立者。取消、删除和已准入执行仍受保留。
+## 重开门面的失败输入
 
-## 工作摘要的机械检查与汇总材料
+`RequeueMessage(resident_id=门面, message_id=失败的原请求)` 把门面上状态为 `failed` 的原请求放回 `queued`，重新触发门面收到消息的 Event，转交流程再运行一次。原消息 ID、作者、时间、正文和附件保持不变，失败回执保留在 Conversation 事件和恢复审计中，不复制业务请求。已取消的请求返回取消状态，不重新入队；已经有承接者的请求保持现状并返回成功；已经排队、运行或完成的请求只观察结果。门面输入没有执行轮次，重开只改变输入状态并重新发出到达 Event。权限、幂等与显式恢复语义见 decision_c54e68a82d7a。
 
-`MaintainResidentWorkSummary` 接收 resident_id、message_id，仅允许本 Family 门面、Steward 或本人执行。Effect 在成功完成后比较覆盖记录；失败、取消、纯维护轮次及 Router／Steward 全部跳过。漏写时合并一条 attach_to_next 提醒。已覆盖时另返回 consolidation_due，完成事件 Effect 仅在其为真时尝试短通知 Steward。status 为 covered、skipped、facade、reminder_pending 或 reminder_attached。
+## 由团队模板组合的策略
 
-`GetFamilySummaryInputs` 接收门面 resident_id 和可选 overview_only，仅本 Family 门面和 Steward 可读。默认返回 title、goal、members、notices（门面作为告知收下的最近结果报告，含正文，其指纹计入 source_versions）、previous_summary、source_versions、expected_revision、needs_update、facade_needs_update、consolidation_due。后者仅列到期业务成员的 resident_id、revision、level、reason；排除 Router／Steward，不带成员各层全文；Steward 按需读 GetResidentSummaries include_maintenance=true。内层门面不进入外层归纳待办。
+下列工作由团队模板的 Effect 用通用指令和共享状态组合完成，指令集不为它们登记专用指令：
 
-overview_only=true 仅返回门面 ID、是否需要更新、归纳待办和 notification，不返回成员全文、门面旧摘要或来源列表。notification 是可交给 DeliverMessage 的短入口，同小时同材料复用消息 ID；忙碌/排队时不投递，下一小时继续检查。needs_update 为门面来源变化或存在到期待办；私人 Family 不因门面变化触发小时汇总，成员归纳仍有效。成员来源版本考虑内容、缺失、标题、名单和目标。
-
-Steward 先归纳到期成员，再读取所需 Family 材料汇总门面；材料缺失标为未覆盖，不读取成员历史。归纳及门面写入均使用 UpdateResidentWorkSummary，权限、总量、未决事项保护及版本协议见 decision_d19b9909a674。
+| 工作 | 组合用到的指令 |
+| --- | --- |
+| 周期汇总检查 | `ListResidentStates`、`GetFacadeSummaryInputs`、`DeliverMessage` |
+| 摘要遗漏提醒 | `GetResidentSummaries`（`include_maintenance`）、`DeliverMessage`（`attach_to_next`） |
+| 恢复原请求并升级 | `GetInputState`、`RequeueMessage`、`RelayMessage`、`CreateNotification`、`GetSharedState`、`UpdateSharedState` |
+| 角色接单 | `SetIntakeOpen`、`ListResidentStates` |
+| 业务活动水位与回顾门控 | `GetSharedState`、`UpdateSharedState`、`ListResidentStates`、`DeliverMessage` |
+| 门面摘要 | `UpdateFacadeSummary` |
+| 额度不足时改走招募或额度任务 | `CheckRelayTarget`、`DeliverMessage` |
+| 派发任务给承接者 | `GetRelayContext`、`DeliverMessage` |
 
 ## 参数名契约
 
@@ -135,16 +136,9 @@ Steward 先归纳到期成员，再读取所需 Family 材料汇总门面；材�
 
 | 指令名 | arguments 参数名 |
 | --- | --- |
-| `GetFamilyRoutingContext` | `resident_id`、`message_id`、`section` |
-| `DispatchFamilyTask` | `resident_id`、`trigger`、`facts`、`source_message_id`、`message_id`、`event` |
-| `ResolveFamilyRequest` | `resident_id`、`message_id`、`steward_message_id`、`reason` |
-| `RelayFamilyMessage` | `resident_id`、`message_id`、`member_id`、`notice`、`continue_previous`、`quota_reviewed`、`scope_gap`、`scope_reviewed`、`reassign`、`recover`、`reason` |
-| `MaintainFamilyReview` | `lineage_id`、`family_id`、`event` |
-| `MaintainFamilyProgress` | `lineage_id`、`family_id`、`event`、`every_turns` |
-| `PublishFamilyProgress` | `lineage_id`、`family_id`、`batch_id`、`report`、`summary`、`expected_revision`、`source_versions` |
-| `MaintainFamilyRoleAvailability` | `lineage_id`、`family_id` |
-| `MaintainFamilyRecovery` | `lineage_id`、`family_id`、`event`、`escalate_reason` |
-| `MaintainResidentWorkSummary` | `resident_id`、`message_id` |
-| `GetFamilySummaryInputs` | `resident_id`、`overview_only` |
-
-当前 Family 只保留每小时的按需摘要检查，成员完成事件补查自身覆盖及到期归纳。Router／Steward 均不写自身摘要；GetFamilySummaryInputs 的归纳清单仅包含业务成员。门面来源变化仍由同一 summary 任务汇总，无自动输入批次简报。
+| `UpdateFacadeMembers` | `resident_id`、`member_ids` |
+| `CheckRelayTarget` | `resident_id`、`member_id` |
+| `GetRelayContext` | `resident_id`、`message_id`、`section` |
+| `RelayMessage` | `resident_id`、`message_id`、`member_id`、`notice`、`continue_previous`、`reassign`、`reason`、`reply_to_message_id`、`message`、`business_ref` |
+| `ResolveRelayedRequest` | `resident_id`、`message_id`、`review_message_id`、`reason` |
+| `GetFacadeSummaryInputs` | `resident_id`、`overview_only` |

@@ -4,7 +4,7 @@ Whether the permission system is on or off and whichever scheme is active,
 the port answers these before the scheme, and no scheme can take them back:
 
 - a Portal 管理员 may always turn the permission system on or off
-  (UpdateExecutionSettings with only ``permission_system_enabled``), list
+  (``SetPermissionSystemEnabled``), list
   the schemes (ListPermissionSchemes, a read) and activate one
   (ActivatePermissionScheme), so switching schemes never needs the switch
   off; for anyone else the scheme decides, and with the system off everyone
@@ -12,7 +12,7 @@ the port answers these before the scheme, and no scheme can take them back:
 - only a Portal 管理员 changes the administrator list: makes another User one
   or takes the category away, disables, enables or deletes an administrator's
   account, never its own.  Moving a User between 一般用户 and 实习用户 stays
-  with UpdateUser's own check.  Every administrator is a User; a Resident
+  with UpdateUserCategory's own check.  Every administrator is a User; a Resident
   never is.
 
 A personal AMA's Resident acts as its owner (§5.5): an administrator's AMA
@@ -29,19 +29,19 @@ from contextlib import contextmanager
 from typing import Any
 
 ADMINISTRATOR = "portal_admin"
-SWITCH = "permission_system_enabled"
 
 REQUIREMENTS = {
-    "UpdateExecutionSettings": "Portal 管理员只改 permission_system_enabled 时永远通过，不问方案；同一次调用里还有其他设置项时整次按方案判定",
+    "SetPermissionSystemEnabled": "Portal 管理员永远可以切换权限系统，不问方案",
     "ListPermissionSchemes": "Portal 管理员永远可以读取方案列表，不问方案，以便不关开关也能切换方案",
     "ActivatePermissionScheme": "Portal 管理员永远通过，不问方案",
-    "UpdateUser": "设为或取消 Portal 管理员、停用或启用管理员账号只有 Portal 管理员能做，不能对自己做，不问方案；"
-                  "changes 只含 category、status 且改的是管理员名单时，Portal 管理员不问方案",
+    "GetPermissionSchemeActivationPreview": "Portal 管理员永远可以预览方案启用，不问方案",
+    "UpdateUserStatus": "启停管理员账号只有其他 Portal 管理员能做；名单变更不问方案",
+    "UpdateUserCategory": "设为或取消 Portal 管理员只有其他 Portal 管理员能做；名单变更不问方案",
     "DeleteUser": "删除 Portal 管理员只有其他 Portal 管理员能做；Portal 管理员删除管理员时不问方案",
 }
 
 
-def _user(actor: Any) -> str:
+def _user(actor: Any, *, read_only: bool = False) -> str:
     """The User ``actor`` acts as: itself, or the owner of a personal AMA's Resident (§5.5)."""
     from management_common.principal import actor_principal
 
@@ -50,6 +50,9 @@ def _user(actor: Any) -> str:
     except ValueError:
         return ""
     if principal.kind == "resident":
+        if read_only:
+            from management_portal.permission_system.personal_ama import readonly_owners_of
+            return readonly_owners_of([principal.id]).get(principal.id, "")
         from management_portal.permission_system.personal_ama import owner_of
 
         return owner_of(principal.id)
@@ -62,34 +65,40 @@ def _account(username: str) -> Mapping[str, Any]:
     return accounts().user(username) if username else {}
 
 
-def is_administrator(actor: Any) -> bool:
+def is_administrator(actor: Any, *, read_only: bool = False) -> bool:
     """An active User account in the Portal 管理员 category, or a personal AMA's Resident of one."""
-    account = _account(_user(actor))
+    if read_only:
+        from .categories import accounts
+        username = _user(actor, read_only=True)
+        users = accounts().snapshot(read_only=True)["users"] if username else {}
+        account = {**users.get(username, {}), "configured": username in users}
+    else:
+        account = _account(_user(actor))
     return bool(account.get("configured")) and account.get("status") == "active" and account.get("category") == ADMINISTRATOR
 
 
 def _changes_list(instruction: str, arguments: Mapping[str, Any]) -> bool:
-    """Whether a UpdateUser or DeleteUser call changes the administrator list and nothing else."""
+    """Whether a status/category change or deletion changes the administrator list."""
     target = str(arguments.get("user_id") or "").strip()
     account = _account(target)
     current = account.get("category") == ADMINISTRATOR
     if instruction == "DeleteUser":
         return current
-    changes = arguments.get("changes")
-    if not isinstance(changes, Mapping) or not changes or set(changes) - {"category", "status"}:
-        return False
-    return (("category" in changes and (changes["category"] == ADMINISTRATOR) != current)
-            or ("status" in changes and current and changes["status"] != account.get("status")))
+    if instruction == "UpdateUserCategory":
+        return "category" in arguments and (arguments["category"] == ADMINISTRATOR) != current
+    return instruction == "UpdateUserStatus" and current and arguments.get("status") != account.get("status")
 
 
 def passes(actor: Any, instruction: str, arguments: Mapping[str, Any] | None = None) -> bool:
     """Whether the call passes without asking the scheme: an administrator doing what the scheme cannot take back."""
     arguments = arguments or {}
-    if instruction not in REQUIREMENTS or not is_administrator(actor):
+    if instruction not in REQUIREMENTS:
         return False
-    if instruction == "UpdateExecutionSettings":
-        return {name for name, value in arguments.items() if value is not None} == {SWITCH}
-    if instruction in {"UpdateUser", "DeleteUser"}:
+    administrator = (is_administrator(actor, read_only=True)
+                     if instruction == "GetPermissionSchemeActivationPreview" else is_administrator(actor))
+    if not administrator:
+        return False
+    if instruction in {"UpdateUserStatus", "UpdateUserCategory", "DeleteUser"}:
         return _changes_list(instruction, arguments)
     return True
 

@@ -327,6 +327,7 @@ def _attach_lineage_branch(
         mode=mode,
         message=(payload.get("message") if isinstance(payload.get("message"), dict) else {}),
         now=now,
+        recent_rounds=payload.get("recent_rounds"),
     )
     def commit_branch() -> dict[str, Any]:
         current = _locked_branch_definition(previous, actor_id)

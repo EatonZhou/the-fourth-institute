@@ -74,6 +74,10 @@ def _change_resident_intake_state(
         if not record:
             raise KeyError("resident not found")
         ensure_resident_visible_to_actor(record, actor_id)
+        if (next_state == resident_state.INTAKE_OPEN and not allow_quota_override
+                and resident_record_domain.lifecycle_operations().pending(resident_id)):
+            return {"intake_state": resident_record_domain.resident_intake_state(record),
+                    "quota_override_pending": False}
         human_actor = not actor_id.startswith("resident_") and not get_portal_access_store().is_service_actor(actor_id)
         result = _commit_manual_resident_intake_state(
             record, next_state, allow_quota_override=human_actor and allow_quota_override,

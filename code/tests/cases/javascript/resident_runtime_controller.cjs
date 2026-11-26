@@ -71,7 +71,7 @@ async function runtimeSubmissionRegressions() {
       if (scenario.duringRead) readHook = () => emit('portal:change', {resident_changes: {a: ['runtime']}});
       if (scenario.identityDuringRead) readHook = () => emit('portal:identity-changed');
       if (scenario.readFailure) readHook = () => {throw new Error('projection unavailable');};
-      const values = scenario.kind === 'settings' ? {model: 'm2'} : {target_provider: 'codex', target_account: 'codex_three', active_execution_policy: 'wait'};
+      const values = scenario.kind === 'settings' ? {model: 'm2'} : {target_provider: 'codex', target_account: 'codex_three'};
       if (scenario.rejected) {
         await assert.rejects(() => callback(values));
         assert.equal(submitted.length, 0, scenario.name);
@@ -83,7 +83,7 @@ async function runtimeSubmissionRegressions() {
         if (scenario.kind === 'settings') assert.equal(submitted[0].changes.model, 'm2');
         else {
           assert.equal(submitted[0].target_account, 'codex_three');
-          assert.equal(submitted[0].active_execution_policy, 'wait');
+          assert.equal(Object.hasOwn(submitted[0], 'active_execution_policy'), false);
         }
       }
       console.log(`PASS ${scenario.name}`);

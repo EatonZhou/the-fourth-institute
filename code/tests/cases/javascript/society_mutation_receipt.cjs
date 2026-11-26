@@ -38,10 +38,10 @@ test('slow refresh cannot raise the version of a concurrently constructed old dr
  // Construct a config from the old visible graph while refresh is blocked.
  const mutation=client.saveProgramComponent({lineage_id:'L',component_id:'c',component:{title:'old draft'}});
  const rejection=assert.rejects(mutation,error=>error.code==='instruction.version_conflict');
- await turn();assert.equal(calls.some(x=>x.name==='UpdateComponent'),false);
+ await turn();assert.equal(calls.some(x=>x.name==='ApplyLineageChanges'),false);
  displayed=11;read.resolve({lineage:{lineage_id:'L',revision:11}});await receipt.refresh;await rejection;
- assert.equal(calls.filter(x=>x.name==='UpdateComponent').length,1);
- assert.equal(calls.find(x=>x.name==='UpdateComponent').controls.expectedVersion,10);
+ assert.equal(calls.filter(x=>x.name==='ApplyLineageChanges').length,1);
+ assert.equal(calls.find(x=>x.name==='ApplyLineageChanges').controls.expectedVersion,10);
 });
 
 test('a failed asynchronous refresh carries a committed receipt and never replays the write',async()=>{

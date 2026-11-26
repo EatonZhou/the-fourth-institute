@@ -334,6 +334,36 @@ class RegistryStore:
             str(item["document_id"]): json_value(item["document_json"]) for item in rows
         }
 
+    def readonly_snapshots(self, *collections: str) -> dict[str, tuple[int, dict[str, dict[str, Any]]]]:
+        """Persisted facts without bootstrap, migration, caches or ambient writes.
+
+        An absent collection in an installed store is empty. Missing storage or
+        incompatible fields are errors, never evidence of an empty registry.
+        """
+        names = tuple(dict.fromkeys(collections))
+        if not names or any(not isinstance(name, str) or not name.strip() for name in names):
+            raise ValueError("readonly registry snapshots require collection names")
+        with self.database.readonly_snapshot() as connection:
+            format_row = connection.execute("SELECT value FROM registry_meta WHERE key='schema'").fetchone()
+            if format_row is None or format_row['value'] != SCHEMA_VERSION:
+                raise RuntimeError("Unsupported resource registry format for readonly facts")
+            revisions = {row['collection']: int(row['revision']) for row in connection.execute(
+                'SELECT collection, revision FROM registry_collections WHERE collection = ANY(%s)',
+                (list(names),)).fetchall()}
+            result = {name: (revisions.get(name, 0), {}) for name in names}
+            for row in connection.execute(
+                'SELECT collection, document_id, document_json FROM registry_documents '
+                'WHERE collection = ANY(%s) ORDER BY collection, document_id', (list(names),)
+            ).fetchall():
+                document = json_value(row['document_json'])
+                if not isinstance(document, dict):
+                    raise RuntimeError("Registry document must be an object for readonly facts")
+                result[row['collection']][1][row['document_id']] = document
+        return result
+
+    def readonly_snapshot(self, collection: str) -> tuple[int, dict[str, dict[str, Any]]]:
+        return self.readonly_snapshots(collection)[collection]
+
     def snapshots(self, *collections: str) -> dict[str, tuple[int, dict[str, dict[str, Any]]]]:
         """Related collection revisions and contents in one committed snapshot."""
         self._ensure()

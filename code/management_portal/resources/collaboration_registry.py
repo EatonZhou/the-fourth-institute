@@ -403,6 +403,24 @@ class CollaborationDescriptorStore:
         descriptor, _changed = self.put_with_change(raw)
         return descriptor
 
+    def readonly_lists(self, *resource_types: str) -> dict[str, list[dict[str, Any]]]:
+        """Uncached persisted facts for collaboration types owned by this store.
+
+        Workspace has its own authoritative store and must not be read through
+        historical collaboration documents by a permission preview.
+        """
+        kinds = tuple(dict.fromkeys(resource_types))
+        for kind in kinds:
+            if kind not in {"lineage", "resident", "family"}:
+                raise ValueError(f"unsupported readonly collaboration fact type: {kind}")
+        snapshots = self._registry.readonly_snapshots(*kinds)
+        return {kind: [self.normalize(document, expected_id=identifier)
+                       for identifier, document in snapshot[1].items()]
+                for kind, snapshot in snapshots.items()}
+
+    def readonly_list(self, resource_type: str) -> list[dict[str, Any]]:
+        return self.readonly_lists(resource_type)[resource_type]
+
     def list(self, resource_type: str) -> list[dict[str, Any]]:
         clean_type = stripped_text(resource_type)
         if clean_type not in RESOURCE_TYPES:

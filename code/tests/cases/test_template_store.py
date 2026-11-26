@@ -33,6 +33,7 @@ def test_snapshot_install_update_conflicts_and_unpublish(lineage, users):
     assert first['instructions_used'] == ['DeliverMessage']
     found = ok('ListTemplateStore', {'search':'store-author','group':'task'}, actor='store-reader')['items']
     assert found[0]['store_id'] == identity
+    assert ok('GetTemplateStoreItem', {'store_id':identity}, actor='store-reader')['item'] == found[0]
     installed = ok('InstallStoreTemplate', {'store_id':identity}, actor='store-reader')['template']
     local_id = installed['template_id']
     assert installed['created_by'] == 'store-reader' and not installed['store_status']['locally_modified']
@@ -44,24 +45,26 @@ def test_snapshot_install_update_conflicts_and_unpublish(lineage, users):
     assert len(second['versions']) == 2
     state = ok('GetTemplate', {'template_id':local_id}, actor='store-reader')['template']['store_status']
     assert state['has_update'] and not state['locally_modified']
-    synced = ok('InstallStoreTemplate', {'store_id':identity,'target_template_id':local_id,'mode':'overwrite'}, actor='store-reader')['template']
+    synced = ok('UpdateInstalledTemplate', {'store_id':identity,'target_template_id':local_id}, actor='store-reader')['template']
     assert synced['title'] == 'Review v2' and synced['template_id'] == local_id
     ok('UpdateTemplate', {'template_id':local_id,'title':'My edit'}, actor='store-reader')
     ok('UpdateTemplate', {'template_id':source['template_id'],'title':'Review v3'}, actor='store-author')
     ok('PublishTemplate', {'template_id':source['template_id']}, actor='store-author')
     assert ok('GetTemplate', {'template_id':local_id}, actor='store-reader')['template']['store_status']['locally_modified']
-    assert run('InstallStoreTemplate', {'store_id':identity}, actor='store-reader').status == 'failed'
-    copied = ok('InstallStoreTemplate', {'store_id':identity,'target_template_id':local_id,'mode':'copy'}, actor='store-reader')
+    repeated = ok('InstallStoreTemplate', {'store_id':identity}, actor='store-reader')['template']
+    assert repeated['template_id'] == local_id and repeated['title'] == 'My edit'
+    copied = ok('InstallStoreTemplateAsNew', {'store_id':identity,'target_template_id':local_id}, actor='store-reader')
     assert copied['detached_template_id'] == local_id and copied['template']['template_id'] != local_id
     retained = ok('GetTemplate', {'template_id':local_id}, actor='store-reader')['template']
     assert retained['title'] == 'My edit' and retained['store_status'] is None
     new_id = copied['template']['template_id']
     ok('UpdateTemplate', {'template_id':new_id,'description':'personal'}, actor='store-reader')
-    overwritten = ok('InstallStoreTemplate', {'store_id':identity,'target_template_id':new_id,'mode':'overwrite'}, actor='store-reader')['template']
+    overwritten = ok('UpdateInstalledTemplate', {'store_id':identity,'target_template_id':new_id}, actor='store-reader')['template']
     assert not overwritten['store_status']['locally_modified']
     assert run('UnpublishTemplate', {'store_id':identity}, actor='store-reader').status == 'failed'
     ok('UnpublishTemplate', {'store_id':identity}, actor='store-admin')
     assert not ok('ListTemplateStore', {}, actor='store-reader')['items']
+    assert run('GetTemplateStoreItem', {'store_id':identity}, actor='store-reader').status == 'failed'
     assert not ok('GetTemplate', {'template_id':new_id}, actor='store-reader')['template']['store_status']['has_update']
     assert run('InstallStoreTemplate', {'store_id':identity}, actor='store-reader').status == 'failed'
     restored = ok('PublishTemplate', {'template_id':source['template_id']}, actor='store-author')['item']
@@ -74,7 +77,7 @@ def test_snapshot_install_update_conflicts_and_unpublish(lineage, users):
     ('familize', {}, 'organization',['Familize']),
     ('prompt', {'message':'hello'}, 'task',['DeliverMessage']),
     ('script', {'script':'ListTemplates\nGetTemplate template_id=template_0123456789ab\nListTemplates','endpoints':[]}, 'task',['ListTemplates','GetTemplate']),
-    ('explore', {}, 'task',['ForkResident','CreateComponent','DeliverMessage']),
+    ('explore', {}, 'task',['ForkResident','ApplyLineageChanges','DeliverMessage']),
 ])
 def test_publish_kinds_and_instruction_summary(lineage, users, kind, body, group, used):
     source = create(kind=kind,body=body)
@@ -90,7 +93,7 @@ def test_builtin_ownership_and_save_as(lineage, users):
     source = create()
     item = ok('PublishTemplate', {'template_id':source['template_id']}, actor='store-author')['item']
     installed = ok('InstallStoreTemplate', {'store_id':item['store_id']}, actor='store-reader')['template']
-    assert run('InstallStoreTemplate', {'store_id':item['store_id'],'target_template_id':installed['template_id'],'mode':'overwrite'}, actor='store-author').status == 'failed'
+    assert run('UpdateInstalledTemplate', {'store_id':item['store_id'],'target_template_id':installed['template_id']}, actor='store-author').status == 'failed'
     copied = ok('CreateTemplate', {'template':{key:installed[key] for key in ('kind','category','title','description','targets','parameters','body')}}, actor='store-reader')['template']
     assert copied['store_status'] is None and copied['installed_from_store_id'] is None
 
@@ -140,4 +143,4 @@ def test_structure_effect_and_rewrite_instruction_summary():
     assert instructions_used({'kind':'structure','body':{
         'roles':[{'from':'fork'}], 'match':[{'kind':'route','op':'delete'},{'kind':'effect','op':'update'}],
         'components':[{'kind':'effect','config':{'script':'ListTemplates\nListTemplates'}}],
-        'wires':[{}], 'function_block':True}}) == ['ForkResident','DeleteWire','UpdateComponent','CreateComponent','CreateWire','Functionalize','ListTemplates']
+        'wires':[{}], 'function_block':True}}) == ['ForkResident','ApplyLineageChanges','Functionalize','ListTemplates']

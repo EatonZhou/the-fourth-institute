@@ -177,3 +177,27 @@ Resource Backup 页面位于 Resource 领域导航下，由工具栏、健康摘
 3. 实际恢复需要备份服务读取仓库和凭据，由操作者选择快照、目标和影响范围；Portal 不持有这些权限。
 
 Home 的设备状态（decision_ed57c4ad1001）可以显示备份的一句摘要并链接到本页；备份流程在 Portal System 的“资源备份”Function Block 中查看与控制，快照、恢复点与校验事实仍以备份服务投影为准。统一资源 ID 与 ResourceService 的一般规则见 decision_4a9ba5dfada6 与 decision_b6e74d78f7b6。
+
+## Google Drive 异地副本
+
+Google Drive 异地副本由系统脚本 `google_drive_backup` 完成，源码在 `scripts/google_drive_backup.py`，与资源备份的其他操作同一模式：现有备份 Lineage（不并入 `portal_operations` 的运维 Lineage）的备份 Function Block 经 Event → Effect → `RunScript` 启动（decision_8b510cbd9c58、decision_5ff0cb51ed84），不设专用指令。脚本接受 `profile`（`critical`、`content` 或 `probe`）和可选的 `network_route`（`direct`、`vps` 或 `inherited`），复用 `resource-backup` 互斥键；调用者须通过 `RunScript` 的权限校验。`RunScript` 返回的 `script_run_id` 用于查询 `GetScriptRun` 的最终状态和快照 ID。
+
+`critical` 与 `content` 选择本地 restic 仓库里对应档位最近一次已完成的快照，并使用 restic copy 将快照复制到独立的加密仓库。仓库位于指定 Google Drive 文件夹下的 `Backups/Portal`。复制成功后从云端仓库重新查询快照并确认目标快照 ID，重复复制同一快照沿用 restic 去重。Google Drive 连接同时要求 `drive.file` 和显式根目录，脚本读取既有私有配置，调用者不能指定任意主机文件或云端目的地。`probe` 使用独立的临时源仓库和云端目录，恢复并比较合成文件全部字节后清理临时云端目录。例行本地备份与自动计划继续由现有流程管理。云端副本使用既有受控备份密码的引用，凭据须在独立的恢复资料中可获得。
+
+### 传输通道
+
+脚本的可选参数 `network_route` 控制该次任务中 restic 和 rclone 发起的 HTTPS 连接：
+
+- `direct` 清除继承的代理变量，通过绑定部署配置的物理网卡直接连接 Google 的公开 HTTPS 地址。临时回环转发器只允许 Google Drive 所需域名的 443 端口，TLS 由客户端端到端校验。
+- `vps` 使用部署配置的 VPS HTTPS 代理。
+- `inherited` 沿用 Portal 进程的网络环境。
+
+站点配置的 `deployment.transfer_network` 设定默认通道。省略参数的备份任务和 Google Drive 容量查询均使用站点默认值。显式指定的通道不可用时任务失败，不自动切换到其他通道。该选项只作用于服务端出站连接，浏览器上传与下载沿客户端连接 Portal 时所用的入口。
+
+### Resident 调用速查
+
+1. 验收 Google Drive 备份时，通过 Portal System 备份 Function Block 的 Google Drive 入口运行 `google_drive_backup`，`arguments` 为 `{"profile":"probe"}`；探针会上传、恢复并核对合成文件，然后清理临时副本。
+2. 用返回的 `lineage_id` 和 `script_run_id` 调用 `GetScriptRun`，以最终状态和 `outputs.verified_bytes` 判定探针结果。若指定通道，在 `arguments` 里加 `"network_route":"vps"` 或其他上节列出的值。
+3. 复制正式快照时，将 `profile` 换为 `critical` 或 `content`。任务复制该档位最近一次已完成的本地快照。
+
+普通文件上传下载有独立的网络要求，默认应走 VPS。备份验收以该脚本的运行结果为准。

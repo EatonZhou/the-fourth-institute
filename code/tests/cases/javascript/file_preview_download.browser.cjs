@@ -2,11 +2,14 @@
 // Exercise the actual FilePreview -> PanelPackage toolbar, not an anchor wired
 // directly from the fixture. Only the authorized source/HTTP transport is mocked.
 const assert = require('node:assert/strict');
+const {execFileSync} = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
 const {chromium} = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
 const root = path.resolve(__dirname, '../../../management_portal');
+const base = process.env.D066_TEST_BASE;
+const baselineFilePreview = base ? execFileSync('git', ['show', `${base}:code/management_portal/static/portal_file_preview.js`], {cwd: root}) : null;
 const groups = JSON.parse(fs.readFileSync(path.join(root, 'script_groups.json')));
 const scripts = ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'portal_translations.js',
   'portal_i18n.js', 'portal_ui_primitives.js', 'portal_document_statistics.js',
@@ -43,6 +46,7 @@ const server = http.createServer((req, res) => {
   const file = path.join(root, url.pathname);
   if (!file.startsWith(root + '/static/') || !fs.existsSync(file)) { res.statusCode = 404; return res.end(); }
   res.setHeader('Content-Type', file.endsWith('.css') ? 'text/css' : 'text/javascript');
+  if (baselineFilePreview && url.pathname === '/static/portal_file_preview.js') return res.end(baselineFilePreview);
   res.end(fs.readFileSync(file));
 });
 
@@ -95,6 +99,39 @@ const server = http.createServer((req, res) => {
         await entry.file.show({address: `article_0123456789a${index}`}); entry.update();
       };
     }, files.map(file => file.name));
+    if (process.argv.includes('--workspace-contract-only')) {
+      const workspace = 'workspace_0123456789ab', address = `${workspace}/file/fixture-1`;
+      const cases = await page.evaluate(async ({ workspace, address }) => {
+        const results = [];
+        for (const allowed of [true, false]) {
+          const calls = [];
+          window.PortalInstructionClient = { execute: async (name, args) => {
+            calls.push([name, args]);
+            if (name === 'ResolveResource') return { target: { target_kind: 'file', exists: true, address,
+              file_reference: { workspace_id: workspace, relative_path: 'fixture-1' } } };
+            return { allowed };
+          } };
+          const root = document.createElement('div');
+          document.body.append(root);
+          const preview = PortalFilePreview.create({ root });
+          await preview.show({ address });
+          const toolbar = preview.toolbar();
+          results.push({ calls, editable: !toolbar.actions.code.disabled, download: toolbar.download?.url });
+          preview.destroy();
+          root.remove();
+        }
+        return results;
+      }, { workspace, address });
+      for (const [index, editable] of [true, false].entries()) {
+        assert.deepEqual(cases[index], { calls: [
+          ['ResolveResource', { address }],
+          ['CheckInstructionPermission', { principal_id: 'isolated-download-fixture', instruction: 'UpdateWorkspaceFile', arguments: { address } }],
+        ], editable, download: '/file/1?download=1' });
+      }
+      assert.deepEqual(errors, []);
+      console.log('PASS FilePreview checks the named write instruction against the canonical workspace address');
+      return;
+    }
     const button = page.locator('.portalPreviewDownloadButton');
     for (const index of [0, 1, 0]) {
       await page.evaluate(index => selectFile(index), index);

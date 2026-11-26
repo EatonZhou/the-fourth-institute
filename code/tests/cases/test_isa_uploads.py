@@ -84,7 +84,7 @@ def test_source_copy_rejects_empty_images_before_creating_upload(monkeypatch, up
     monkeypatch.setattr(resource_isa, '_service', lambda: SimpleNamespace(
         read_content=lambda *args, **kwargs: (b'', 'image/png', {'filename': 'image.png'})))
     with pytest.raises(InstructionError, match='图片内容为空'):
-        resource_isa.create_upload(invoke('CreateUpload', {
+        resource_isa.create_upload_from_file(invoke('CreateUploadFromFile', {
             'purpose': 'conversation_attachment', 'source_address': 'workspace_fixture/file/image.png'}))
     assert not upload_root.exists()
 
@@ -187,7 +187,7 @@ def test_real_create_put_read_download_and_copy_keep_original_name(name, permiss
     assert value['text'] == data.decode() and value['name'] == name
     assert call('ReadResource', 'bob', address={'upload_id': second['upload_id']})['text'] == 'X' * len(data)
     assert Path(resource_isa.read_upload(identifier)['path']).name == name
-    copied = call('CreateUpload', purpose='conversation_attachment', source_address=first['upload_url'])
+    copied = call('CreateUploadFromFile', purpose='conversation_attachment', source_address=first['upload_url'])
     assert copied['ready'] is True and copied['upload_id'] != identifier
     assert Path(resource_isa.read_upload(copied['upload_id'])['path']).name == name
     assert call('ReadResource', 'bob', address={'upload_id': copied['upload_id']})['text'] == data.decode()
@@ -446,7 +446,7 @@ def test_resource_mutations_compare_the_version_get_resource_reports(monkeypatch
         get=lambda resource_id, actor: {"resource_id": resource_id, "version": "v7"}))
     resource_id = "article_0123456789ab"
     for name, arguments in (("UnregisterResource", {"resource_id": resource_id}),
-                            ("RunResourceAction", {"resource_id": resource_id, "action": "refresh"})):
+                            ("UpdateKnowledgeFileName", {"resource_id": resource_id, "filename": "new.md", "expected_version": 7})):
         assert resource_isa.version_of(invoke(name, arguments), resource_id) == "v7"
 
 
@@ -465,7 +465,9 @@ def test_version_envelope_only_compares_the_target_resource(monkeypatch, tmp_pat
         read_content=lambda *args, **kwargs: looked_up.append(args[0]) or (b"secret", "text/plain", {})))
     resource_id = "article_0123456789ab"
     for name, arguments in (("UpdateResource", {"resource_id": resource_id, "changes": {"title": "x"}}),
-                            ("UnregisterResource", {"resource_id": resource_id})):
+                            ("UnregisterResource", {"resource_id": resource_id}),
+                            ("UpdateKnowledgeFileName", {"resource_id": resource_id, "filename": "new.md", "expected_version": 7}),
+                            ("MoveKnowledgeItems", {"project_id": "Target", "items": [{"resource_id": resource_id, "expected_version": 7}]})):
         for key in (str(probed), "/etc/hostname", f"{resource_id}/notes.md", "article_ba9876543210"):
             assert resource_isa.version_of(invoke(name, arguments), key) is None
     assert looked_up == []
@@ -499,7 +501,7 @@ def test_upload_target_and_purpose_rules_are_checked_before_bytes_are_kept(monke
         "read_content": staticmethod(lambda address, actor, max_bytes: (b"plain text", "text/plain", {"filename": "a.txt"})),
     })())
     with pytest.raises(InstructionError):
-        resource_isa.create_upload(invoke("CreateUpload", {"purpose": "avatar", "source_address": "workspace_x/a.txt"}))
+        resource_isa.create_upload_from_file(invoke("CreateUploadFromFile", {"purpose": "avatar", "source_address": "workspace_x/a.txt"}))
 
 
 def test_oversized_read_returns_a_download_address_bound_to_its_caller(monkeypatch, tmp_path):

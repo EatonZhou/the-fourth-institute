@@ -296,7 +296,6 @@
       || ((name, args = {}, controls = {}) => window.PortalInstructionClient.execute(name, args, controls));
     const execute = (name, args = {}, controls = {}) => {
       const operation = () => executeInstruction(name, args, controls);
-      if (name === "DeleteResident") return withResidentDeletion(args.resident_id, operation);
       if (args.resident_id && /^(Get|List|Search|Preview)/.test(name)) return readResident(args.resident_id, operation);
       return operation();
     };
@@ -305,6 +304,14 @@
     const watchboardRuns = new Map();
     const newKey = prefix => `${prefix}:${globalThis.PortalUIPrimitives.randomUUID()}`;
     const keyed = (payload, prefix) => ({ idempotencyKey: String(payload?.idempotency_key || "").trim() || newKey(prefix) });
+    const inputArguments = payload => ({
+      resident_id: required(payload.resident_id, "resident_id"),
+      message: payload.message,
+      ...(payload.activation_policy ? { activation_policy: payload.activation_policy } : {}),
+      ...(payload.context_policy ? { context_policy: payload.context_policy } : {}),
+      ...(payload.execution_constraints ? { execution_constraints: payload.execution_constraints } : {}),
+      ...(payload.business_ref ? { business_ref: payload.business_ref } : {}),
+    });
     const ids = values => [...new Set((values || []).map(String).map(value => value.trim()).filter(Boolean))];
     // A Resident's backend is the provider name the ISA uses; CreateResident checks it.
     const providerOf = payload => (payload?.backend ? { provider: String(payload.backend) } : {});
@@ -407,14 +414,13 @@
         if (action === "status") {
           return execute("GetResidentRequest", { resident_id: residentId, message_id: messageId });
         }
-        const answers = ["accept", "decline", "cancel"].includes(action)
-          ? { action, ...(payload.content === undefined || payload.content === null ? {} : { content: payload.content }) }
-          : payload.answers || {};
-        return execute("AnswerResidentRequest", {
-          resident_id: residentId,
-          message_id: messageId,
-          answers,
-        }, keyed(payload, "resident-request-answer"));
+        const target = {resident_id: residentId, message_id: messageId};
+        const key = keyed(payload, "resident-request-answer");
+        if (action === "cancel") return execute("CancelResidentRequest", target, key);
+        const response = action === "accept" || action === "decline"
+          ? {decision: action, ...(payload.content == null ? {} : {content: payload.content})}
+          : {answers: payload.answers || {}};
+        return execute("AnswerResidentRequest", {...target, ...response}, key);
       },
       list(values = {}) { return get(residentPath(""), values); },
       shortcuts() { return get(residentPath("/shortcuts")); },
@@ -528,20 +534,20 @@
         }).then(pageTokenOf);
       },
       businessHistory(residentId, { pageToken = "", inputMessageId = "", limit = 50 } = {}) {
-        return execute("ListMessages", {
-          resident_id: required(residentId, "resident_id"), view: "attempts", cursor: pageToken,
+        return execute("ListMessageAttempts", {
+          resident_id: required(residentId, "resident_id"), ...(pageToken ? {cursor: pageToken} : {}),
           ...(inputMessageId ? { input_message_id: inputMessageId } : {}), limit,
         }).then(pageTokenOf);
       },
       inputHistory(residentId, { pageToken = "", limit = 50 } = {}) {
-        return execute("ListInputHistory", {
+        return execute("ListResidentInputHistory", {
           resident_id: required(residentId, "resident_id"),
           ...(pageToken ? { cursor: pageToken } : {}),
           limit: Math.max(1, Number(limit || 50)),
         }).then(pageTokenOf);
       },
       searchMessages(residentIds, searchQuery, { pageToken = "", limit = 120 } = {}) {
-        return execute("SearchMessages", {
+        return execute("SearchResidentMessages", {
           resident_ids: ids(residentIds),
           query: String(searchQuery || ""),
           ...(pageToken ? { cursor: pageToken } : {}),
@@ -549,13 +555,19 @@
         }).then(pageTokenOf);
       },
       sendInput(payload = {}) {
-        return execute("DeliverMessage", {
-          resident_id: required(payload.resident_id, "resident_id"),
-          message: payload.message,
-          ...(payload.activation_policy ? { activation_policy: payload.activation_policy } : {}),
-          ...(payload.business_ref ? { business_ref: payload.business_ref } : {}),
-          ...(payload.temporary_credentials?.length ? { temporary_credentials: payload.temporary_credentials } : {}),
-        }, keyed(payload, "deliver"));
+        return execute("DeliverMessage", inputArguments(payload), keyed(payload, "deliver"));
+      },
+      prepareInput(payload) {
+        // The domain deduplicates the fixed input and returns its current state.
+        return execute("PrepareResidentInput", inputArguments(payload));
+      },
+      createInputCredential({ principal_id, message_id, a, resource_id }) {
+        return execute("CreateTemporaryCredential", {
+          principal_id: required(principal_id, "principal_id"),
+          message_id: required(message_id, "message_id"),
+          a,
+          resource_id,
+        });
       },
       injectInput(payload = {}) {
         return execute("InjectMailboxItem", {
@@ -601,7 +613,7 @@
       },
       // A Family request given to the wrong member goes to the one named here (decision_44cf587c1721).
       reassignFamilyRequest(payload = {}) {
-        return execute("RelayFamilyMessage", {
+        return execute("RelayMessage", {
           resident_id: required(payload.resident_id, "resident_id"),
           message_id: required(payload.message_id, "message_id"),
           member_id: required(payload.member_id, "member_id"),
@@ -659,7 +671,7 @@
       },
       setIntake(payload = {}) {
         return execute("SetIntakeOpen", {
-          resident_id: required(payload.resident_id, "resident_id"),
+          resident_ids: [required(payload.resident_id, "resident_id")],
           open: Boolean(payload.open),
         }, keyed(payload, "intake"));
       },
@@ -684,7 +696,9 @@
         // the server instruction until after the user has closed this page.
         return withResidentDeletion(residentId, async () => {
           const lineageId = payload.lineage_id || (await executeInstruction("GetResident", { resident_id: residentId }))?.resident?.lineage_id;
-          return executeInstruction("DeleteResident", { lineage_id: required(lineageId, "lineage_id"), resident_id: residentId }, keyed(payload, "resident-delete"));
+          return executeInstruction("ApplyLineageChanges", {
+            lineage_id: required(lineageId, "lineage_id"), operations: [{op: "delete", kind: "resident", id: residentId}],
+          }, keyed(payload, "resident-delete"));
         }, { waitForReads: false });
       },
       async update(payload = {}) {
@@ -699,8 +713,8 @@
           if (!targetLineageId) {
             targetLineageId = String((await execute("GetResident", { resident_id: payload.target_lineage_resident_id }))?.resident?.lineage_id || "");
           }
-          const moved = await execute("MoveResident", {
-            lineage_id: required(lineageId, "lineage_id"), resident_id: residentId, target_lineage_id: required(targetLineageId, "target_lineage_id"),
+          const moved = await execute("MoveLineageObjects", {
+            lineage_id: required(lineageId, "lineage_id"), object_ids: [residentId], target_lineage_id: required(targetLineageId, "target_lineage_id"),
             ...(payload.allow_empty_source ? { allow_empty_source: true } : {}),
           }, keyed(payload, "resident-move"));
           return { ...(record || {}), ...moved, resident_id: residentId };
@@ -762,8 +776,7 @@
         const source = payload && typeof payload === "object" ? payload : {};
         const residentId = source.resident_id;
         const options = Object.fromEntries([
-          "idempotency_key", "target_provider", "target_account", "operation",
-          "context_strategy", "active_execution_policy",
+          "idempotency_key", "target_provider", "target_account",
           "model", "reasoning_effort", "collaboration_mode", "service_tier", "permission_preset", "prompt_context", "backend_options", "account_selection",
         ].filter(name => Object.prototype.hasOwnProperty.call(source, name))
           .map(name => [name, source[name]]));
@@ -784,11 +797,8 @@
         try {
           const receipt = await execute("RestartSession", {
             resident_id: residentId,
-            ...(options.operation ? {operation: options.operation} : {}),
             ...(options.target_provider ? { provider: options.target_provider } : {}),
             ...(options.target_account ? { account_id: options.target_account } : {}),
-            ...(options.context_strategy ? { context_strategy: options.context_strategy } : {}),
-            ...(options.active_execution_policy ? { active_execution_policy: options.active_execution_policy } : {}),
             ...(options.model ? { model: options.model } : {}),
             ...(options.reasoning_effort ? { reasoning_effort: options.reasoning_effort } : {}),
             ...Object.fromEntries(["collaboration_mode", "service_tier", "permission_preset", "account_selection"]
@@ -908,7 +918,7 @@
       // (source_resident_id) unless an item names another one.
       forward(payload = {}) {
         const messages = Array.isArray(payload.messages) ? payload.messages : [];
-        return execute("ForwardMessages", {
+        return execute(payload.target_chatroom_id ? "ForwardMessagesToChatroom" : "ForwardMessagesToResident", {
           ...(payload.target_chatroom_id
             ? { target_chatroom_id: required(payload.target_chatroom_id, "target_chatroom_id") }
             : { target_resident_id: required(payload.target_resident_id, "target_resident_id") }),
@@ -918,7 +928,7 @@
             message_id: required(item.message_id || item.id, "message_id"),
           })),
           ...(payload.note || payload.message ? { note: String(payload.note || payload.message) } : {}),
-          ...(payload.activation_policy ? { activation_policy: payload.activation_policy } : {}),
+          ...(!payload.target_chatroom_id && payload.activation_policy ? { activation_policy: payload.activation_policy } : {}),
         }, keyed(payload, "forward"));
       },
       resetContext(payload = {}) {

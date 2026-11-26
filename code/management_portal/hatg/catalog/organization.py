@@ -84,19 +84,11 @@ DECLARATIONS = (
         P("busy_resident_ids", "array", "dry_run：正在执行的 Resident"),
         P("blockers", "array", "dry_run：阻止改名的挂载与服务"),
     ), mutates=True, target="project_id", owner="resource"),
-    _d("MoveResident", (On("lineage_id", "lineage"), On("resident_id", "resident"), On("target_lineage_id", "lineage")), "把一个没有被流程引用的 Resident 迁移到目标 Lineage，保留其身份和会话；Family 成员随之离开 Family，继承等关系断开。", (R("lineage_id", description="对象当前所属的源 Lineage"),
-        R("resident_id", description="要迁移的 Resident"),
-        R("target_lineage_id", description="迁入的目标 Lineage，须与源不同"),
-        P("allow_empty_source", "boolean", "允许迁走源 Lineage 中唯一的 Resident，默认 false"),
-    ), (
-        R("operation_id", description="这次迁移的操作 ID，用 GetMoveOperation 跟踪工作区迁移"),
-        P("family_id", description="成员离开的 Family；不是成员时为空"),
-        P("detached", "array", "被断开的关系"),
-    ), mutates=True, target="resident_id"),
     _d("MoveLineageObjects", (On("lineage_id", "lineage"), On("target_lineage_id", "lineage", optional=True)), "把一组对象及其中的 Resident 原子迁移到目标 Lineage，保留身份、会话和运行游标。", (R("lineage_id", description="对象当前所属的源 Lineage"),
         R("object_ids", "array", "要迁移的 Resident、组件或 Function Block，至少一个；所在 Function Block 整体迁移",
           items={"type": "string"}),
         P("target_lineage_id", description="省略时迁入一个新 Lineage"),
+        P("allow_empty_source", "boolean", "允许迁走源 Lineage 中全部 Resident，默认 false"),
     ), (
         R("operation_id", description="这批迁移的操作 ID，用 GetMoveOperation 跟踪"),
         R("source_lineage_id", description="迁出的源 Lineage"),
@@ -104,7 +96,7 @@ DECLARATIONS = (
         R("detached", "array", "被断开的关系"),
     ), mutates=True, target="object_ids"),
     _d("GetMoveOperation", FIXED, "读取一次迁移操作的阶段和终态。", (
-        R("operation_id", description="MoveResident 或 MoveLineageObjects 返回的操作 ID"),
+        R("operation_id", description="MoveLineageObjects 返回的操作 ID"),
     ), (
         R("phase", description="当前步骤，如 directory_dependencies、finalizing；结束后为 completed"),
         P("status", description="pending 进行中、retrying 出错重试中、completed 已完成"),

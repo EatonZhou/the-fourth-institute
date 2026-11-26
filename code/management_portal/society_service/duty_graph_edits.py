@@ -43,6 +43,8 @@ def finish(body, scope, changes, actor):
     changes = deepcopy(changes)
     if set(changes) - {"title", "description", "category", "prompt", "memory_level", "task_prompt"}:
         raise ValueError("Unknown duty edit fields")
+    if "memory_level" in changes and changes["memory_level"] not in blocks.MEMORY_LEVELS:
+        raise ValueError("Duty memory level must be trigger, turn, session or on_demand")
     if "title" in changes:
         title = changes.pop("title")
         if not isinstance(title, str) or not title.strip():

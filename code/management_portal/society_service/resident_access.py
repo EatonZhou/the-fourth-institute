@@ -59,7 +59,7 @@ def resident_deliverable_to_actor(record: dict[str, Any], actor: str) -> bool:
 
 
 RESIDENT_ACTIONS = ("DeliverMessage", "UpdateResidentSettings", "SetIntakeOpen", "RestartSession",
-                    "CancelInput", "UpdateResident", "DeleteResident", "ForkResident")
+                    "CancelInput", "UpdateResident", "ApplyLineageChanges", "ForkResident")
 
 
 def resident_allows(record: dict[str, Any], actor: str) -> dict[str, bool]:
@@ -75,12 +75,25 @@ def resident_allows(record: dict[str, Any], actor: str) -> dict[str, bool]:
     # ForkResident is asked for a fork in this Resident's own Lineage.
     arguments = {"resident_id": resident_id, "lineage_id": str(record.get("lineage_id") or "").strip(),
                  "source_resident_id": resident_id}
-    allowed = permission_system.allows_each(actor, RESIDENT_ACTIONS, arguments)
+    allowed = permission_system.allows_each(
+        actor, tuple(name for name in RESIDENT_ACTIONS if name != "ApplyLineageChanges"), arguments,
+    )
+    allowed["ApplyLineageChanges"] = False
+    if arguments["lineage_id"]:
+        # The delete button submits one operation, with both the Lineage and
+        # Resident checks derived by the same owner as the actual Apply call.
+        delete_arguments = resident_lineage_host_port.resident_delete_permission_arguments(
+            arguments["lineage_id"], resident_id,
+        )
+        allowed["ApplyLineageChanges"] = permission_system.allows(actor, "ApplyLineageChanges", delete_arguments)
     for instruction in RESIDENT_ACTIONS:
         action = instruction
         if record.get("personal_owner_id") and not personal_ama.acts_for(actor, record.get("personal_owner_id")):
             from .resident_access_scope import action_for_parameter
-            action = action_for_parameter(instruction, "source_resident_id" if instruction == "ForkResident" else "resident_id")
+            parameter = {"ForkResident": "source_resident_id", "ApplyLineageChanges": "delete_resident.resident_id"}.get(
+                instruction, "resident_id",
+            )
+            action = action_for_parameter(instruction, parameter)
         if instruction != "DeliverMessage" and not can_manage_resident(record, actor, operation=action):
             allowed[instruction] = False
     return allowed

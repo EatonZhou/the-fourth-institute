@@ -21,7 +21,7 @@ window.PortalIdentity={username:()=>actor,load:async()=>({username:actor}),userI
 window.PortalEvents={isConnected:()=>false,connect(){}};
 window.PortalNav={personalAssistantTarget:async()=>null};
 window.PortalAPI={get:async()=>({entries:structuredClone(items),ready:true,content_signature:JSON.stringify(items),read_revision:Date.now()})};
-window.PortalInstructionClient={execute:async(name,args)=>{calls.push(name);if(name==='ListMailboxTodos')return {items:[]};if(name==='GetChatroom'){if(window.blockOpen)await new Promise(r=>window.releaseOpen=r);if(deny)throw Error('forbidden');const e=items.find(e=>e.chatroom_id===args.chatroom_id);return {chatroom:e&&{...e}};}throw Error('Unexpected write '+name);}};
+window.PortalInstructionClient={execute:async(name,args)=>{calls.push(name);if(name==='SearchResources')return {items:[]};if(name==='GetChatroom'){if(window.blockOpen)await new Promise(r=>window.releaseOpen=r);if(deny)throw Error('forbidden');const e=items.find(e=>e.chatroom_id===args.chatroom_id);return {chatroom:e&&{...e}};}throw Error('Unexpected write '+name);}};
 window.addEventListener('portal:agent-conversation-open',event=>{window.opened.push(event.detail.entry);event.detail.handled=true});
 </script>${scripts.map(n => `<script src="/static/${n}.js"></script>`).join("")}
 <script>PortalMailboxAlerts.mount();</script></body></html>`;
@@ -102,7 +102,7 @@ let browser;
   await page.waitForFunction(()=>!document.querySelector('[data-mailbox-alert-open]').disabled);
   assert.equal(await page.evaluate(()=>opened.length),1,"late permission reply cannot navigate across users");
   assert.equal(await page.locator(alert).isVisible(),false);
-  assert.ok((await page.evaluate(()=>calls)).every(name=>['ListMailboxTodos','GetChatroom'].includes(name)),"no read/write instructions from alerts");
+  assert.ok((await page.evaluate(()=>calls)).every(name=>['SearchResources','GetChatroom'].includes(name)),"no read/write instructions from alerts");
   assert.deepEqual(errors,[]);
   console.log("PASS: isolated mentions, mute, dismissal/reload, new mentions, navigation, read receipts, user switching, permission denial, async identity race, desktop/mobile");
 })().catch(error=>{console.error(error);process.exitCode=1;}).finally(async()=>{await browser?.close();server.close();});

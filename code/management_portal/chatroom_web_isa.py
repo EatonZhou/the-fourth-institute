@@ -39,7 +39,12 @@ def update_chatroom(inv: Invocation) -> dict[str, Any]:
         inv.caller, inv.argument("chatroom_id"),
         title=inv.argument("title"),
         add_members=inv.argument("add_members"),
-        muted=inv.argument("muted"),
+    )}
+
+
+def set_chatroom_muted(inv: Invocation) -> dict[str, Any]:
+    return {"chatroom": _chatrooms().update_chatroom(
+        inv.caller, inv.argument("chatroom_id"), muted=inv.argument("muted"),
     )}
 
 
@@ -74,13 +79,13 @@ def _chatroom_page(page: dict[str, Any]) -> dict[str, Any]:
 
 
 def list_chatroom_input_history(inv: Invocation) -> dict[str, Any]:
-    """ListInputHistory with chatroom_id."""
+    """Return the caller's previous Chatroom inputs."""
     return _chatroom_page(_chatrooms().input_history(inv.caller, inv.argument("chatroom_id"),
         before=inv.argument("cursor") or "", limit=inv.argument("limit") or 50))
 
 
 def search_chatroom_messages(inv: Invocation) -> dict[str, Any]:
-    """SearchMessages with chatroom_id."""
+    """Search the room after its membership check."""
     return _chatroom_page(_chatrooms().search_messages(inv.caller, inv.argument("chatroom_id"), inv.argument("query"),
         before=inv.argument("cursor") or "", limit=inv.argument("limit") or 50))
 
@@ -137,12 +142,13 @@ HANDLERS = {
     "GetChatroom": get_chatroom,
     "CreateChatroom": create_chatroom,
     "UpdateChatroom": update_chatroom,
+    "SetChatroomMuted": set_chatroom_muted,
     "LeaveChatroom": leave_chatroom,
     "DeleteChatroom": delete_chatroom,
     "ListChatroomMessages": list_chatroom_messages,
     # The Web part of two core instructions: calls with chatroom_id run here (argument_owners).
-    "SearchMessages": search_chatroom_messages,
-    "ListInputHistory": list_chatroom_input_history,
+    "SearchChatroomMessages": search_chatroom_messages,
+    "ListChatroomInputHistory": list_chatroom_input_history,
     "UpdateChatroomMessage": update_chatroom_message,
     "RetractChatroomMessage": retract_chatroom_message,
     "UpdateChatroomReaction": update_chatroom_reaction,

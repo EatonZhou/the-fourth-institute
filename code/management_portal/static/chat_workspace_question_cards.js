@@ -106,6 +106,7 @@
                 // The server resolves facade replies to the original member's
                 // question set; closing uses the same conversation permission.
                 closable: true,
+                projected: Boolean(message.family_reply?.resident_id),
                 recipient_id: message.family_reply?.resident_id || message.author_id || "",
                 recipient_title: message.family_reply?.title || "",
                 questions: (part.questions || []).map(question => ({ id: question.question_index, title: question.title, options: question.options || [],
@@ -181,11 +182,12 @@
         const status = labels[group.state] || window.PortalI18n.t("请求已结束");
         const pick = canSend && group.state === "open";
         const closing = this.sending.has(`${this.scope}:${group.key}`);
-        const signature = JSON.stringify([group.state, status, group.answers, pick, closing]);
+        const approvalPending = this.progress.get(group.key)?.approvalPending;
+        const signature = JSON.stringify([group.state, status, group.answers, pick, closing, approvalPending]);
         if (host.dataset.questionSummary === signature) return;
         host.dataset.questionSummary = signature;
         host.innerHTML = window.PortalI18n.html`<div class="residentQuestionSummary" data-state="${escapeHtml(group.state)}">
-        <div class="residentQuestionSummaryHead"><span class="residentQuestionTitle">${escapeHtml(window.PortalI18n.text`Agent 的问题 · ${group.questions.length}`)}</span><span class="residentQuestionStatus" role="status">${escapeHtml(status)}</span>${pick ? window.PortalI18n.html`<span class="residentQuestionSummaryActions"><button type="button" class="portalButton is-compact" data-question-pick ${closing ? "disabled" : ""}>回答</button>${group.closable ? window.PortalI18n.html`<button type="button" class="portalButton is-compact is-quiet" data-question-close ${closing ? "disabled" : ""}>不再回答</button>` : ""}</span>` : ""}</div>
+        <div class="residentQuestionSummaryHead"><span class="residentQuestionTitle">${escapeHtml(window.PortalI18n.text`Agent 的问题 · ${group.questions.length}`)}</span><span class="residentQuestionStatus" role="status">${escapeHtml(status)}</span>${pick ? window.PortalI18n.html`<span class="residentQuestionSummaryActions"><button type="button" class="portalButton is-compact" data-question-pick ${closing ? "disabled" : ""}>回答</button>${group.closable ? window.PortalI18n.html`<button type="button" class="portalButton is-compact is-quiet" data-question-close ${closing ? "disabled" : ""}>${escapeHtml(window.PortalI18n.t(approvalPending ? "取消审批" : "不再回答"))}</button>` : ""}</span>` : ""}</div>
         <ol>${group.questions.map(question => {
           const answer = group.answers[question.id];
           return window.PortalI18n.html`<li><span>${escapeHtml(question.title)}</span>${answer ? window.PortalI18n.html`<strong>${escapeHtml(answer)}</strong>` : ""}</li>`;
@@ -262,15 +264,20 @@
         element.innerHTML = window.PortalI18n.html`<div class="residentQuestionStepHead">
           <span class="residentQuestionStepProgress">${escapeHtml(window.PortalI18n.text`问题 ${step + 1}/${group.questions.length}`)}</span>
           <span class="residentQuestionStatus" role="status">${escapeHtml(hint)}</span>
-          ${step > 0 ? window.PortalI18n.html`<button type="button" class="portalButton is-compact" data-question-back>上一题</button>` : ""}
+          ${step > 0 && !progress.approvalPending ? window.PortalI18n.html`<button type="button" class="portalButton is-compact" data-question-back>上一题</button>` : ""}
           ${group.kind === "native" ? window.PortalI18n.html`<button type="button" class="portalButton is-compact" data-question-cancel>取消请求</button>` : ""}
-          ${group.kind === "async" && group.closable ? window.PortalI18n.html`<button type="button" class="portalButton is-compact is-quiet" data-question-close>不再回答</button>` : ""}
+          ${group.kind === "async" && group.closable ? window.PortalI18n.html`<button type="button" class="portalButton is-compact is-quiet" data-question-close>${escapeHtml(window.PortalI18n.t(progress.approvalPending ? "取消审批" : "不再回答"))}</button>` : ""}
         </div>
         <div class="residentQuestionTitle">${escapeHtml(question.title)}</div>
         ${credentials}
+        ${progress.approvalPending ? window.PortalI18n.html`<button type="button" class="portalButton is-compact is-primary" data-question-retry>重试提交</button>` : ""}
         <div class="residentQuestionChoices">${question.options.map((option, index) => window.PortalI18n.html`<button type="button" class="portalButton residentQuestionChoice" data-question-option="${index}" aria-pressed="${String(option === chosen)}">${index < 9 ? window.PortalI18n.html`<kbd>${index + 1}</kbd>` : ""}<span>${escapeHtml(lending ? window.PortalI18n.t(option) : option)}</span></button>`).join("")}</div>
         ${lending ? "" : window.PortalI18n.html`<div class="residentQuestionCustom"><input type="text" data-question-custom value="${escapeHtml(custom)}" placeholder="${escapeHtml(question.options.length ? window.PortalI18n.t("其他回答，按 Enter 确认") : window.PortalI18n.t("输入回答，按 Enter 确认"))}" aria-label="${escapeHtml(window.PortalI18n.text`回答：${question.title}`)}" /><button type="button" class="portalButton is-compact is-primary" data-question-confirm>${escapeHtml(step === group.questions.length - 1 ? window.PortalI18n.t("提交回答") : window.PortalI18n.t("下一题"))}</button></div>`}`;
-        for (const control of element.querySelectorAll("button, input")) control.disabled = sending;
+        for (const control of element.querySelectorAll("button, input")) {
+          control.disabled = sending || Boolean(progress.approvalPending)
+            && !control.matches("[data-question-retry], [data-question-close]");
+        }
+        element.querySelector("[data-question-retry]")?.addEventListener("click", () => void this.sendAnswers(group));
         element.querySelectorAll("[data-question-option]").forEach(button => {
           let pointerStart = null;
           button.addEventListener("pointerdown", event => { pointerStart = { x: event.clientX, y: event.clientY }; });
@@ -338,6 +345,7 @@
         const { group } = this.active;
         if (!group || !value || this.sending.has(`${this.active.scope}:${group.key}`)) return;
         const progress = this.progressOf(group);
+        if (progress.approvalPending) return;
         const step = Math.min(progress.step, group.questions.length - 1);
         progress.answers[group.questions[step].id] = value;
         if (progress.drafts) delete progress.drafts[group.questions[step].id];
@@ -372,13 +380,17 @@
             for (const item of question.credentials) lent.set(`${item.a}\n${item.resource_id}`, { a: item.a, resource_id: item.resource_id });
           }
         }
+        const expectedRecipient = group.projected ? group.recipient_id : target.resident_id;
+        if (lent.size) {
+          progress.approvalPending = true;
+          this.saveProgress();
+        }
         this.sending.add(key);
         this.render(this.panel.snapshot() || {});
         try {
           const result = await window.PortalResidentProtocol.sendInput({
             resident_id: target.resident_id,
             lineage_id: target.lineage_id,
-            ...(lent.size ? { temporary_credentials: [...lent.values()] } : {}),
             message: {
               message_id: group.key,
               role: "user",
@@ -387,7 +399,9 @@
                 { type: "async_question_answer", source_message_id: group.source_message_id, answers },
               ],
             },
-          });
+          }, lent.size ? {
+            prepare: payload => window.PortalResidentProtocol.prepareInputCredentials(payload, [...lent.values()], expectedRecipient),
+          } : {});
           if (this.scope === scope) {
             this.answerReceipts.set(group.key, {
               answers: Object.fromEntries(answers.map(entry => [entry.question_index, entry.answer])),
@@ -411,7 +425,7 @@
       }
 
       // Closing a group leaves it unanswered and tells the Resident nothing; the
-      // server records it on the group's answer slot (AnswerResidentRequest cancel).
+      // server records it on the group's answer slot through CancelResidentRequest.
       async closeGroup(group) {
         const target = this.panel.workspace.target();
         const scope = this.scope;
@@ -420,6 +434,13 @@
         this.sending.add(key);
         this.render(this.panel.snapshot() || {});
         try {
+          if (this.progress.get(group.key)?.approvalPending) {
+            try {
+              await window.PortalResidentProtocol.cancelInput({ resident_id: target.resident_id, message_id: group.key });
+            } catch (error) {
+              if (error?.code !== "instruction.not_found") throw error;
+            }
+          }
           await window.PortalResidentProtocol.respondUserInput({ resident_id: target.resident_id, message_id: group.source_message_id, action: "cancel" });
           if (this.scope === scope) this.closed.add(group.key);
         } catch (error) {

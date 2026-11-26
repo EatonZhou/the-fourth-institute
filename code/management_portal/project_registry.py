@@ -152,6 +152,29 @@ def projects() -> list[dict[str, Any]]:
     return [item for item in load()["projects"] if isinstance(item, dict)]
 
 
+def projects_readonly() -> list[dict[str, Any]]:
+    """Persisted Project facts without cache refresh or owner migrations.
+
+    Permission previews need the projects, not the tags projection. An absent
+    document in an installed registry means no projects have been registered.
+    Storage/format failures are propagated instead of becoming empty facts.
+    """
+    _revision, documents = get_registry_store().readonly_snapshot(COLLECTION)
+    document = documents.get(DOCUMENT_ID)
+    if document is None:
+        return []
+    if type(document.get('schema_version')) is not int or document['schema_version'] != SCHEMA_VERSION:
+        raise RuntimeError('Unsupported Project registry format for readonly facts')
+    projects = _only_known_fields(_normalized(document))['projects']
+    identifiers = set()
+    for project in projects:
+        identifier = project.get('id')
+        if not isinstance(identifier, str) or not PROJECT_ID.fullmatch(identifier) or identifier in identifiers:
+            raise RuntimeError('Invalid or duplicate Project identity in readonly facts')
+        identifiers.add(identifier)
+    return copy.deepcopy(projects)
+
+
 def project(project_id: str) -> dict[str, Any] | None:
     target = str(project_id or "").strip()
     if not target:

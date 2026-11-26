@@ -6,7 +6,7 @@ import secrets
 import time
 from .. import effect_script_authoring
 from management_common.service_shutdown import wait_for_shutdown
-from typing import Any, Iterator
+from typing import Any, Iterator, Mapping
 
 from management_portal.hatg.contracts import InstructionError, invalid, not_found
 from management_portal.hatg.kernel import Invocation
@@ -16,7 +16,6 @@ from .common import (
     lineage_graph_edits,
     lineage_handoffs,
     lineage_lifecycle,
-    lineage_program_edits,
     lineage_reads,
     lineage_revision,
     lineage_state,
@@ -45,17 +44,7 @@ def create_lineage(inv: Invocation) -> dict[str, Any]:
         raise invalid("definition 只包含 nodes、edges、program", unknown_fields=unknown)
     payload.update(copy.deepcopy(definition))
     lineage = lineage_lifecycle().create_lineage(payload, inv.caller)
-    lineage_id = str(lineage.get("lineage_id") or "")
-    result = {"lineage_id": lineage_id}
-    if inv.argument("familize", False):
-        from ..templates import create_family
-        try:
-            result["family_id"] = create_family(lineage_id, [], inv.caller, scope="lineage",
-                                           goal=payload.get("description") or "")["family_id"]
-        except Exception as exc:
-            raise InstructionError("instruction.failed", f"Lineage 已创建，但 Familize 未完成：{exc}",
-                                   commit_state="committed", details={"lineage_id": lineage_id}) from exc
-    return result
+    return {"lineage_id": str(lineage.get("lineage_id") or "")}
 
 
 
@@ -131,102 +120,6 @@ def _lineage_for_object(object_id: str, lineage_id: str = "") -> str:
     return found
 
 
-def create_component(inv: Invocation) -> dict[str, Any]:
-    lineage_id = inv.argument("lineage_id")
-    payload: dict[str, Any] = {
-        "kind": inv.argument("kind"),
-        **placement(inv, lineage_id),
-    }
-    for name in ("title", "config", "client_key"):
-        if inv.argument(name) is not None:
-            payload[name] = inv.argument(name)
-    if inv.context.is_resident and inv.entry != "lineage":
-        payload["created_by_principal_id"] = inv.caller
-    result = lineage_program_edits().create_lineage_program_component(lineage_id, payload, inv.caller, full_view=False)
-    component = result.get("component") or {}
-    return {"component_id": str(component.get("id") or ""), "component": component}
-
-
-EFFECT_FIELDS = ("script", "endpoints", "failure_recipients")
-
-
-def update_component(inv: Invocation) -> dict[str, Any]:
-    lineage_id = inv.argument("lineage_id")
-    component_id = inv.argument("component_id")
-    changes = inv.argument("changes") or {}
-    unknown = sorted(set(changes) - {"title", "client_key", "config", *EFFECT_FIELDS, "watch_subject"})
-    if unknown:
-        raise invalid("changes 不接受字段：" + "、".join(unknown), unknown_fields=unknown)
-    component_patch: dict[str, Any] = {key: changes[key] for key in ("title", "client_key") if key in changes}
-    effect_changes = {key: changes[key] for key in EFFECT_FIELDS if key in changes}
-    if "config" in changes or effect_changes:
-        config = copy.deepcopy(changes.get("config")) if isinstance(changes.get("config"), dict) else None
-        if effect_changes and config is not None:
-            config.update(copy.deepcopy(effect_changes))
-        if config is not None or "config" in changes:
-            component_patch["config"] = config
-    payload: dict[str, Any] = {
-        "component_id": component_id,
-        "component": component_patch,
-    }
-    if effect_changes and "config" not in component_patch:
-        payload["effect_changes"] = copy.deepcopy(effect_changes)
-    if "watch_subject" in changes:
-        payload["watch_subject"] = changes["watch_subject"]
-    result = lineage_program_edits().save_lineage_program_component(lineage_id, payload, inv.caller, full_view=False)
-    return {"component": result.get("component") or {}}
-
-
-def delete_component(inv: Invocation) -> dict[str, Any]:
-    lineage_id = inv.argument("lineage_id")
-    result = lineage_program_edits().delete_lineage_program_component(
-        lineage_id,
-        {"component_id": inv.argument("component_id")},
-        inv.caller,
-        full_view=False,
-    )
-    return {
-        "component_id": inv.argument("component_id"),
-        "wire_ids": list(result.get("deleted_wire_ids") or []),
-    }
-
-
-def create_wire(inv: Invocation) -> dict[str, Any]:
-    lineage_id = inv.argument("lineage_id")
-    wire = {
-        name: inv.argument(name)
-        for name in ("source", "source_port", "target", "target_port", "kind", "config", "label", "client_key")
-        if inv.argument(name) is not None
-    }
-    result = lineage_program_edits().save_lineage_program_wire(
-        lineage_id, {"wire": wire}, inv.caller, operation="create", full_view=False,
-    )
-    return {"wire_id": str((result.get("wire") or {}).get("id") or ""), "wire": result.get("wire") or {}}
-
-
-def update_wire(inv: Invocation) -> dict[str, Any]:
-    lineage_id = inv.argument("lineage_id")
-    changes = inv.argument("changes") or {}
-    unknown = sorted(set(changes) - {"source", "source_port", "target", "target_port", "kind", "config", "label", "client_key"})
-    if unknown:
-        raise invalid("changes 不接受字段：" + "、".join(unknown), unknown_fields=unknown)
-    result = lineage_program_edits().save_lineage_program_wire(
-        lineage_id,
-        {"wire_id": inv.argument("wire_id"), "wire": dict(changes)},
-        inv.caller,
-        operation="update", full_view=False,
-    )
-    return {"wire": result.get("wire") or {}}
-
-
-def delete_wire(inv: Invocation) -> dict[str, Any]:
-    lineage_id = inv.argument("lineage_id")
-    lineage_program_edits().delete_lineage_program_wire(
-        lineage_id, {"wire_id": inv.argument("wire_id")}, inv.caller, full_view=False,
-    )
-    return {"wire_id": inv.argument("wire_id")}
-
-
 # -- candidate fork ----------------------------------------------------------------
 
 
@@ -251,24 +144,18 @@ def delete_candidate_fork(inv: Invocation) -> dict[str, Any]:
 # -- workspace handoff -----------------------------------------------------------
 
 
-def _create_handoff(inv: Invocation, source: str, target: str) -> tuple[str, bool]:
+def create_workspace_handoff(inv: Invocation) -> dict[str, Any]:
     lineage_id = inv.argument("lineage_id")
     payload: dict[str, Any] = {
-        "source_resident_id": source,
-        "target_resident_id": target,
+        "source_resident_id": inv.argument("source_resident_id"),
+        "target_resident_id": inv.argument("target_resident_id"),
     }
     for name in ("items", "explanation", "label"):
         if inv.argument(name) is not None:
             payload[name] = inv.argument(name)
     result = lineage_handoffs().create_handoff(lineage_id, payload, inv.caller, full_view=False, idempotent=True)
-    return str((result.get("handoff") or {}).get("id") or ""), bool(result.get("created"))
-
-
-def create_workspace_handoff(inv: Invocation) -> dict[str, Any]:
-    handoff_id, created = _create_handoff(
-        inv, inv.argument("source_resident_id"), inv.argument("target_resident_id"),
-    )
-    return {"handoff_id": handoff_id, "created": created}
+    return {"handoff_id": str((result.get("handoff") or {}).get("id") or ""),
+            "created": bool(result.get("created"))}
 
 
 def update_workspace_handoff(inv: Invocation) -> dict[str, Any]:
@@ -300,10 +187,6 @@ def _handoff_result(handoff: dict[str, Any]) -> dict[str, Any]:
 
 def prepare_workspace_handoff(inv: Invocation) -> dict[str, Any]:
     handoff_id = inv.argument("handoff_id")
-    if not handoff_id:
-        handoff_id, _created = _create_handoff(
-            inv, inv.argument("source_resident_id"), inv.argument("target_resident_id"),
-        )
     lineage_id = inv.argument("lineage_id")
     try:
         result = lineage_handoffs().execute_handoff(lineage_id, handoff_id, inv.caller)
@@ -440,8 +323,58 @@ def translate_changes(operations: list[Any]) -> tuple[list[dict[str, Any]], list
     return program, residents, refs
 
 
-def apply_lineage_changes(inv: Invocation) -> dict[str, Any]:
+def _operation_permission_checks(
+    instruction: str, arguments: Mapping[str, Any], requirements: tuple[tuple[str, str], ...],
+) -> list[tuple[str, str]]:
+    lineage_id = arguments["lineage_id"]
+    operations = arguments["operations"]
+    # A one-operation replacement keeps the old operation's exact grant. The
+    # original batch grant still applies to a composition, clone or duty edit scope.
+    count = len(operations) + bool(arguments.get("duty_changes"))
+    batch = count != 1 or any(item["op"] == "clone" for item in operations)
+    scoped_graph_edit = bool(operations and arguments.get("function_block_id"))
+    checks = [(f"{instruction}:lineage_id", lineage_id)] if batch or scoped_graph_edit else []
+    for operation, target in requirements:
+        if operation == "delete_resident":
+            parameter = "lineage_id" if target == lineage_id else "resident_id"
+            operation = f"delete_resident.{parameter}"
+        checks.append((f"{instruction}:{operation}", target))
+    return checks
+
+
+def lineage_changes_permission_arguments(arguments: Mapping[str, Any]) -> dict[str, Any]:
+    from management_portal.hatg.catalog import declaration
+    from ..lineage_graph_edits import _lineage_change_requirements
+    from ..lineage_program_graph_mutation import normalize_graph_mutations
+
+    declaration("ApplyLineageChanges").validate_arguments(arguments)
+    program, residents, _ = translate_changes(arguments["operations"])
+    requirements = _lineage_change_requirements(
+        arguments["lineage_id"], normalize_graph_mutations(program), residents, arguments.get("duty_changes") or {},
+    )
+    checks = _operation_permission_checks("ApplyLineageChanges", arguments, requirements)
+    return {**arguments, "_permission_operations": [
+        {"element": element, "resource_id": target} for element, target in checks
+    ]}
+
+
+def describe_lineage_change_permissions(arguments: Mapping[str, Any], *, actor: str) -> dict[str, Any]:
+    """Derive checks from the validated request without loading graph state."""
+    from management_common.principal import actor_principal
+
+    # The authenticated Resource invocation controls access to the inspection.
+    # All identifiers returned here come from that request, including refs;
+    # no subject identity or stored graph facts enter this calculation.
+    actor_principal(actor)
+    return lineage_changes_permission_arguments(arguments)
+
+
+def apply_lineage_changes(inv: Invocation, *, preview: bool = False) -> dict[str, Any]:
+    from management_portal import permission_system
+
     lineage_id = inv.argument("lineage_id")
+    if preview and isinstance(inv.expected_version, dict) and set(inv.expected_version) != {lineage_id}:
+        raise invalid("expected_version 映射的键必须是本次预览的 Lineage ID")
     if inv.argument("function_block_id") and inv.expected_version_for(lineage_id) is None:
         raise invalid("职责实例编辑必须携带 GetLineage revision 作为 expected_version")
     program, residents, refs = translate_changes(inv.argument("operations") or [])
@@ -450,11 +383,19 @@ def apply_lineage_changes(inv: Invocation) -> dict[str, Any]:
         "resident_ids": residents,
         "function_block_id": inv.argument("function_block_id"),
         "duty_changes": inv.argument("duty_changes"),
-        "dry_run": inv.argument("dry_run", False),
+        "dry_run": preview,
         "expected_revision": inv.expected_version_for(lineage_id),
         **placement(inv, lineage_id),
     }
-    result = lineage_graph_edits().apply_lineage_changes(lineage_id, payload, inv.caller, include_lineage=False)
+    def authorize(requirements: tuple[tuple[str, str], ...]) -> None:
+        checks = _operation_permission_checks(inv.declaration.name, inv.call.arguments, requirements)
+        if not permission_system.allows_elements(inv.caller, checks):
+            raise InstructionError("instruction.forbidden", "缺少图或职责操作的权限")
+
+    result = lineage_graph_edits().apply_lineage_changes(
+        lineage_id, payload, inv.caller, include_lineage=False, authorize=authorize,
+        creator_resident_id=inv.caller if inv.context.is_resident and inv.entry != "lineage" else "",
+    )
     return {
         "created_ids": result.get("created_ids") or [],
         "updated_ids": result.get("updated_ids") or [],
@@ -492,19 +433,14 @@ def watch_lineage(inv: Invocation) -> Iterator[list[dict[str, Any]]]:
 
 
 HANDLERS = {
-    "ReviewComponentScript": effect_script_authoring.review,
+    "ConfirmComponentScript": lambda inv: effect_script_authoring.review(inv, decision="confirm"),
+    "CancelComponentScriptDraft": lambda inv: effect_script_authoring.review(inv, decision="cancel"),
     "CreateLineage": create_lineage,
     "GetLineage": get_lineage,
     "UpdateLineage": update_lineage,
     "UpdateLineageLayout": update_lineage_layout,
     "DeleteLineage": delete_lineage,
     "ListComponentTypes": list_component_types,
-    "CreateComponent": create_component,
-    "UpdateComponent": update_component,
-    "DeleteComponent": delete_component,
-    "CreateWire": create_wire,
-    "UpdateWire": update_wire,
-    "DeleteWire": delete_wire,
     "CreateCandidateFork": create_candidate_fork,
     "DeleteCandidateFork": delete_candidate_fork,
     "CreateWorkspaceHandoff": create_workspace_handoff,
@@ -515,6 +451,7 @@ HANDLERS = {
     "MoveWorkspaceHandoff": relocate_workspace_handoff,
     "GetLineageDiagnostics": get_lineage_diagnostics,
     "ApplyLineageChanges": apply_lineage_changes,
+    "GetLineageChangesPreview": lambda inv: apply_lineage_changes(inv, preview=True),
 }
 
 STREAMS = {"WatchLineage": watch_lineage}

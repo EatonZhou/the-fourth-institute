@@ -89,7 +89,7 @@ Portal 页面、Resident 和 Portal 的其他服务都通过 ResourceService 查
 | Python 方法 | ResourceService 进程内的代码，以及 `local` 模式下的测试和脚本 | 调用时传入的 `actor` | 直接调用 `ResourceService` 的同名方法 |
 | Resource RPC | Portal Web、SocietyService、ExecutionService 等其他进程 | 请求中的签名认证信息 | 通过 Unix socket 调用同名方法，方法名为 `resource.<方法>` |
 | Portal HTTP 读取接口 | 浏览器页面 | 登录 Session | `GET /api/resources/resolve`、`reference`、`content`、`capabilities`，以及 `/api/resource-index/query`、`suggest`、`status`、`resources/<ID>` |
-| HATG ISA 资源指令 | Resident，以及页面上的修改操作 | 指令入口确认的调用者（`decision_898b8911a2ff`） | `SearchResources`、`ReadResource`、`RegisterResource`、`RunResourceAction` 等，由 ResourceService 执行（`decision_ad3e21094f14`） |
+| HATG ISA 资源指令 | Resident，以及页面上的修改操作 | 指令入口确认的调用者（`decision_898b8911a2ff`） | `SearchResources`、`ReadResource`、`RegisterResource`、`CreateKnowledgeFile` 等，由 ResourceService 执行（`decision_ad3e21094f14`） |
 
 四种入口的传输格式和大小上限不同，同一个业务操作的参数含义、授权结果、返回内容和错误类别保持一致。
 
@@ -262,7 +262,7 @@ Resident 在一次执行中修改资源正文时，ResourceService 为每次实�
 **执行资源类型声明的一个动作。**
 
 - 参数：`resource_id`、`action`、`payload`（默认空对象），可选的 `resource_type`。
-- 按资源类型和动作名找到已安装处理函数。RunResourceAction 通过正式动作目录校验参数，并按指令声明要求目标资源 contributor；领域继续履行自身约束。通用动作注册表不再维护一套 viewer/contributor/admin 的旧 operation 映射，也不能以动作后缀推导授权。
+- 资源专用操作是具名指令，指令声明给出参数和权限要求，由已安装的类型处理函数执行；领域继续履行自身约束。不再维护一套 viewer/contributor/admin 的旧 operation 映射，也不能以名称后缀推导授权。
 - 注册表校验类型、动作名和可调用处理函数，重复绑定默认拒绝，装载失败原子撤回；ISA 声明与有效能力的关系见 decision_355ed742bca5。
 
 - 处理函数必须返回对象，ResourceService 原样返回，不包装成变更记录。动作的请求字段、幂等规则和结果结构由领域定义；请求内容中的 `timeout_seconds` 只延长客户端的等待时间。

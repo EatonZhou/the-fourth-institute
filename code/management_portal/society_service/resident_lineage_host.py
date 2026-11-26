@@ -17,6 +17,16 @@ class ResidentLineageHost:
     """Adapter exposing only the Lineage operations required by Residents."""
 
     @staticmethod
+    def resident_delete_permission_arguments(lineage_id: str, resident_id: str) -> dict[str, Any]:
+        """Derive the delete button's actual Apply request without reading or changing the graph."""
+        from .isa.definition import lineage_changes_permission_arguments
+
+        return lineage_changes_permission_arguments({
+            "lineage_id": lineage_id,
+            "operations": [{"op": "delete", "kind": "resident", "id": resident_id}],
+        })
+
+    @staticmethod
     def authorize_lineage_resident_access(lineage_id: str, resident_id: str) -> str:
         return lineage_state.authorize_lineage_resident_access(lineage_id, resident_id)
 

@@ -17,8 +17,7 @@ class ProviderPlugin:
 
     def install(self, capability: str, service: "ResourceService") -> None:
         module = import_module(f"{__name__}.{self.name}")
-        method = {"resolver": "install_resolver", "mutation": "install_mutation_provider",
-                  "action": "install_action_provider"}[capability]
+        method = {"resolver": "install_resolver", "mutation": "install_mutation_provider"}[capability]
         installer = getattr(module, method, None)
         if not callable(installer):
             raise TypeError(f"resource provider {self.name!r} declares {capability!r} without a callable installer")
@@ -42,8 +41,7 @@ def provider_plugins(resource_type: str = "") -> tuple[ProviderPlugin, ...]:
         if not callable(getattr(module, attribute)):
             raise TypeError(f'{kind}: provider attribute must be callable')
         ownership = groups.setdefault(module_name.removeprefix(__name__ + '.'), {})
-        for capability, installer in {'resolver': 'install_resolver', 'mutation': 'install_mutation_provider',
-                                      'action': 'install_action_provider'}.items():
+        for capability, installer in {'resolver': 'install_resolver', 'mutation': 'install_mutation_provider'}.items():
             if callable(getattr(module, installer, None)):
                 ownership.setdefault(capability, set()).add(kind)
     return tuple(ProviderPlugin(name, {key: frozenset(values) for key, values in owners.items()})
@@ -82,4 +80,3 @@ class ProviderLoader:
 
 install_resolvers = ProviderLoader("resolver")
 install_mutation_providers = ProviderLoader("mutation")
-install_action_providers = ProviderLoader("action")

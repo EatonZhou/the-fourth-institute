@@ -354,7 +354,7 @@ class ConversationInputs:
                     value.get("state"), replies.get(resident_id, {}).get(str(value["message_id"])),
                 )
 
-    def reopen_input(self, resident_id: object, message_id: object) -> dict[str, Any]:
+    def reopen_input(self, resident_id: object, message_id: object, *, routing_retry: bool = False) -> dict[str, Any]:
         """Put a finished input back to ``queued`` for a Mailbox requeue (decision_15f7df737ed5).
 
         Every other writer keeps an input's first terminal state (see
@@ -393,7 +393,10 @@ class ConversationInputs:
                 'updated_at = %s WHERE resident_id = %s AND message_id = %s',
                 ("queued", compact_json({}), value["updated_at"], stream_id, target),
             )
-            self.events.record_event(connection, stream_id, INPUT_STATE_CHANGED, {"input_state": value}, subject_id=target)
+            payload: dict[str, Any] = {"input_state": value}
+            if routing_retry:
+                payload["routing_retry"] = True
+            self.events.record_event(connection, stream_id, INPUT_STATE_CHANGED, payload, subject_id=target)
             return value
 
         with self.events.protocol_scope(stream_id):

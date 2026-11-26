@@ -44,7 +44,7 @@ Portal 用 Device resource 表示一台可管理设备或设备中的硬件单�
 
 **宿主设备**是提供实际 SSH 入口的设备。GPU 等子设备可以通过父子关系指向宿主服务器。用户请求连接子设备时，Portal 沿父链找到真正提供主机地址的设备，再使用该设备的凭据。
 
-**权限系统**决定谁能执行 Device 操作（decision_b820faf42218）。设备在 R 树上挂在“共享”下，全员对它有 viewer；默认模板中 RunResourceAction 要求对目标设备有 contributor，设备的创建者和管理员满足，其他主体需要实例中增加的表项或临时凭证。连接参数和秘密文件仍由设备组件校验。
+**权限系统**决定谁能执行 Device 操作（decision_b820faf42218）。设备在 R 树上挂在“共享”下，全员对它有 viewer；默认模板按指令分别要求：`CheckDeviceSsh` 对目标设备有 viewer，`UpdateDeviceSshCredential`、`DeleteDeviceSshCredential` 与 `RunDeviceCommand` 有 admin。设备的创建者和管理员满足，其他主体需要实例中增加的表项或临时凭证。连接参数和秘密文件仍由设备组件校验。
 
 ## 用户和调用方看到的能力
 
@@ -81,7 +81,7 @@ Portal 用 Device resource 表示一台可管理设备或设备中的硬件单�
 
 ### 凭据管理
 
-- **保存和删除密码经 RunResourceAction 执行。** 服务端验证调用身份，由权限系统按 RunResourceAction 的要求判定，设备组件不另设权限检查。
+- **保存和删除密码经 `UpdateDeviceSshCredential`、`DeleteDeviceSshCredential` 执行。** 服务端验证调用身份，由权限系统按这两条指令的要求（对设备 admin）判定，设备组件不另设权限检查。
 - **重复保存同一密码后，仍保留这一份密码。** 响应只确认保存成功，并标明请求设备和实际连接设备。
 - **重复删除后，设备仍处于无密码状态。** 凭据不存在时返回明确状态，不泄露过去保存过的内容。
 
@@ -130,7 +130,7 @@ GPU identity 是宿主服务器内部用于区分 GPU 的稳定硬件标识。�
 
 ```text
 调用方请求某个 Device
-  → ResourceService 验证调用身份与动作参数
+  → ResourceService 验证调用身份与指令参数
   → Device backend 读取设备记录
   → 当前设备有 SSH 主机地址？
        ├─ 有：它就是实际连接设备
@@ -151,29 +151,27 @@ GPU identity 是宿主服务器内部用于区分 GPU 的稳定硬件标识。�
 - 超过 1024 字节的密码；
 - 含回车、换行或空字节的密码。
 
-写入通过同目录临时文件和原子替换完成。秘密文件权限异常时，终端连接报错；ssh.test 将其视为没有可用密码并以 BatchMode 尝试连接。
+写入通过同目录临时文件和原子替换完成。秘密文件权限异常时，终端连接报错；`CheckDeviceSsh` 将其视为没有可用密码并以 BatchMode 尝试连接。
 
 SSH 子进程需要密码时，Portal 把秘密文件路径交给受控的 `SSH_ASKPASS` 辅助程序。这个辅助程序仅在认证时读取密码，从而避免把明文放进进程命令行、Resource 清单或浏览器状态。
 
-## Resource action 协议
+## 设备指令
 
-Resource action 是资源类型为自己声明的专用操作，调用方通过 HATG 指令 `RunResourceAction`（decision_ad3e21094f14）执行。ResourceService 验证有效调用者和参数；所需等级由当前权限模板中 RunResourceAction 的要求决定，Device provider 执行相应动作。
+设备的专用操作是四条具名 HATG 指令，参数都以 `resource_id`（目标 Device）为首：`UpdateDeviceSshCredential`、`DeleteDeviceSshCredential`、`CheckDeviceSsh`、`RunDeviceCommand`。ResourceService 验证有效调用者和参数；所需等级由当前权限模板中各指令自己的要求决定（见上文权限一节），Device provider 执行操作。Colab 会话通过系统脚本 `colab_session`（源码 `scripts/colab_session.py`）管理，经站点配置绑定的固定 Portal 运维 Lineage 由 `RunScript` 运行。调用者须对该 Lineage 有 `@admin`；脚本以调用者身份确认目标是已登记的 Colab Device，会话变更要求对设备有 `@contributor`（decision_5ff0cb51ed84）。参数为 `resource_id`、`running`；`running=true` 须带 `hardware`，分配会消耗 CU，已有同规格会话可复用；`running=false` 释放会话，省略 `hardware`。
 
-Colab 会话由 Portal 运维 Lineage 的系统脚本 `colab_session` 经 `RunScript` 管理。真实调用者需要该 Lineage 的 `@admin`，并通过 Device 的领域授权。参数为 `resource_id`、`running` 和可选的 `hardware`；`running=true` 按指定硬件分配或复用会话并可能消耗 CU，启动时必须给出 `hardware`；`running=false` 释放会话，省略 `hardware`。真实调用者须能解析所登记的 Colab Device，并具备该资源上的会话操作权限。
+### `UpdateDeviceSshCredential`
 
-### `ssh.credential.save`
+参数为 `resource_id`（目标 Device）和 `password`。服务端先解析实际连接设备，再覆盖该设备的密码文件。成功响应只返回请求 Device ID、实际连接 Device ID 和 `credential_saved: true`。
 
-请求包含目标 Device 和新密码。服务端先解析实际连接设备，再覆盖该设备的密码文件。成功响应只返回请求 Device ID、实际连接 Device ID 和 `credential_saved: true`。
-
-### `ssh.credential.delete`
+### `DeleteDeviceSshCredential`
 
 服务端解析实际连接设备并删除其密码文件。文件不存在时返回明确缺失状态；响应不包含历史密码。
 
-### `ssh.test`
+### `CheckDeviceSsh`
 
-请求可以提交 `timeout_seconds`，其合法范围为 1 至 45 秒，省略时为 15 秒。服务端使用解析后的主机、用户、端口、SSH 配置路径和私钥路径，并在需要时读取保存密码。
+参数为 `resource_id` 和可选的 `timeout_seconds`；`timeout_seconds`，其合法范围为 1 至 45 秒，省略时为 15 秒。服务端使用解析后的主机、用户、端口、SSH 配置路径和私钥路径，并在需要时读取保存密码。
 
-SSH 进程以非交互模式运行，主机密钥策略为 `accept-new`：首次出现的主机密钥可写入 known hosts，已知主机密钥变化则失败。结果包含 `reachable`、延迟、非敏感消息、测试时间、请求 Device ID 和实际连接 Device ID。
+SSH 进程以非交互模式运行，主机密钥策略为 `accept-new`：首次出现的主机密钥可写入 known hosts，已知主机密钥变化则失败。返回 `ok`；连接失败时可带 `error`。错误内容不包含凭据。
 
 ## 注册、注销和地址解析
 
@@ -186,3 +184,13 @@ Device resolver 支持根 Device 地址和已经定义的 GPU 嵌套地址。解
 ## 本地终端
 
 浏览器只发送终端输入、窗口控制和结束指令，并接收输出与状态。服务端负责读取 SSH 凭据、启动进程和维护生命周期。浏览器断开或 SSH 进程退出时，终端状态随之更新；长期保存的 Device secret 不会被自动删除。
+
+## 使用设备绑定的 SSH 密钥
+
+ICWS2、UST ACF3234 和 PCRD027 各自绑定实例托管的 SSH 配置，共用原有密钥。UST 配置包含跳板。具备目标设备相应权限的用户可在设备详情打开 Terminal。Resident 调用 `RunDeviceCommand(resource_id, command)`，指定目标设备和远端命令，例如：
+
+```json
+{"resource_id":"device_6dc448ba22e7","command":"hostname"}
+```
+
+命令返回退出码、合并输出及截断标记，最多等待 30 秒。服务端根据设备 ID 选取受限配置并完成密钥认证。

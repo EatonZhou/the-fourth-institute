@@ -209,12 +209,12 @@ export function createInstructionWorkbench(root, {content, onSelect, onNavigate,
       decision.dataset.matched = String(view.result?.matched ?? 'pending');
       decision.append(node('p', '', view.result ? `matched: ${view.result.matched} · changed: ${view.result.changed}` : '只有相等才写入'));
       mechanism.append(decision, block('状态单元', view.after, 'iw-cell'));
-    } else if (schema.instruction === 'CreateWire') {
+    } else if (schema.instruction === 'ApplyLineageChanges' && ['route', 'watch', 'target'].includes(view.variant)) {
       mechanism.append(block('选定关系', view.before));
       const diagram = node('div', 'iw-wire-diagram');
-      diagram.append(node('div', 'iw-wire-node', view.variant === 'watch' ? '观察事件源' : view.variant === 'target' ? 'Effect' : '输出节点'));
+      diagram.append(node('div', 'iw-wire-node', view.variant === 'watch' ? '观察事件源' : view.variant === 'target' ? 'Effect' : '事件源'));
       diagram.append(node('div', `iw-wire-edge iw-edge-${view.variant}`, state.step ? view.variant : '尚未创建'));
-      diagram.append(node('div', 'iw-wire-node', view.variant === 'route' ? '接收节点' : '被引用对象'));
+      diagram.append(node('div', 'iw-wire-node', view.variant === 'route' ? 'Effect' : 'Resident'));
       diagram.dataset.revealed = String(!!state.step); mechanism.append(diagram);
     } else if (view.visual === 'graph') {
       mechanism.append(block('原组成', view.before, 'iw-origin-graph'));

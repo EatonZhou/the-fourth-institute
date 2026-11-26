@@ -66,7 +66,12 @@ def test_direct_agent_summary_requires_unique_text_and_time(monkeypatch):
     message = {"message_id": "r", "author_id": "resident_test", "created_at": "2026-01-01T00:00:00Z",
         "content_parts": [{"type": "text", "text": body}], "generation_source": {"model": "old", "account_id": "account-at-time", "provider": "kimi"}}
     def call(actor, instruction, args):
-        return {"results": [{"message": message}]} if instruction == "SearchMessages" else {"message": message}
+        assert actor == "caller"
+        if instruction == "SearchResidentMessages":
+            assert args == {"resident_ids": ["resident_test"], "query": body, "limit": 200}
+            return {"results": [{"message": message}]}
+        assert instruction == "GetMessage" and args == {"resident_id": "resident_test", "message_id": "r"}
+        return {"message": message}
     monkeypatch.setattr(p.isa_client, "call", call)
     result, _ = p.resolve_usage({"generated_at": "2026-01-02T00:00:00Z", "generation_source": {"resident_id": "resident_test"}}, body, "caller")
     assert result["model"] == "old" and result["account_id"] == "account-at-time"

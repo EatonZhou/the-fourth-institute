@@ -41,7 +41,7 @@ personal AMA by itself (decision_b820faf42218 §5.5).
 """
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from typing import Any
 
@@ -218,14 +218,6 @@ class TooManyRemoved(RuntimeError):
 
 class InstanceReplaced(RuntimeError):
     """The instance was generated from other rules while a 补齐 waited for it (an automatic merge); nothing was written."""
-
-
-class _RolledBack(Exception):
-    """Ends a dry run's transaction, carrying its report out."""
-
-    def __init__(self, report: dict[str, Any]) -> None:
-        super().__init__("dry run")
-        self.report = report
 
 
 class Instance:
@@ -444,8 +436,8 @@ class Instance:
         ``changes`` adds the rows the instance gains and loses (``added``,
         ``removed``); ``auth_limit`` adds the authorization difference from
         the instance as it was to the new one (``auth_diff``, at most that many
-        groups); ``dry_run`` does everything in a transaction it rolls back,
-        so the report says what a merge would do.
+        groups); ``dry_run`` computes the merge from stored rows and facts
+        without running a write transaction.
 
         The instance is first brought up to date under ``previous``, the rules
         it was generated from, so every row those rules give the live objects
@@ -461,14 +453,8 @@ class Instance:
           instance; the others are revoked and ``unrestored``.
         """
         if dry_run:
-            if connection is not None:
-                raise ValueError("dry_run 在自己的事务中执行并回滚")
-            try:
-                with self.store.transaction() as own:
-                    raise _RolledBack(self.regenerate_keeping_edits(facts, previous, max_removed=max_removed, changes=changes,
-                                                                    auth_limit=auth_limit, connection=own))
-            except _RolledBack as rolled:
-                return rolled.report
+            return self.preview_regeneration(facts, previous, max_removed=max_removed, changes=changes,
+                                             auth_limit=auth_limit, connection=connection)
         facts = list(facts)
         active = {fact.id: fact for fact in _flatten(facts) if fact.active}
         before = Instance(previous, self.store)
@@ -512,6 +498,54 @@ class Instance:
                 result["auth_diff"] = compare(was, View(self.scheme, self.store.nodes(connection), after), limit=auth_limit)
         return result
 
+    def preview_regeneration(self, facts: Iterable[Fact], previous: CompiledScheme, *, max_removed=None,
+                             changes=False, auth_limit=None, connection=None) -> dict[str, Any]:
+        """Compute the merge from stored rows and facts; never execute a write, even rolled back."""
+        facts = list(facts)
+        active = {fact.id: fact for fact in _flatten(facts) if fact.active}
+        before = Instance(previous, self.store)
+        with self.store.read(connection) as connection:
+            present = self.store.contents(connection)
+            was = View(previous, self.store.nodes(connection), present)
+            completed = before.complete(facts, dry_run=True, preview=True, max_removed=max_removed,
+                                        connection=connection)["preview"]
+            entries = self.store.entries(connection)
+        baseline = before.generated(active.values(), self.creators(active))
+        targets = self.targets(active)
+        generated = self.generated(active.values(), self.creators(active))
+
+        def missing(entry, scheme, nodes):
+            return [tree for tree, node in (("P", entry.p), ("A", entry.a), ("R", entry.r))
+                    if node not in scheme.trees[tree].nodes and (tree, node) not in nodes]
+
+        lasting = [entry for entry in entries if not entry.temporary and entry.content in completed.entries]
+        edited = [entry for entry in lasting if entry.disabled or entry.content not in baseline]
+        temporary = [entry for entry in entries if entry.temporary
+                     and not any(tree in {"P", "R"} for tree in missing(entry, previous, completed.nodes))]
+        unrestored = [{**_listed(entry), "missing": missing(entry, self.scheme, targets)}
+                      for entry in [*edited, *temporary] if missing(entry, self.scheme, targets)]
+        gone = {row["entry_id"] for row in unrestored}
+        restored = [entry for entry in edited if entry.entry_id not in gone]
+        deleted = baseline - completed.entries.keys()
+        after = dict.fromkeys(generated, False)
+        after.update({entry.content: entry.disabled for entry in restored})
+        redeleted = after.keys() & deleted
+        for content in redeleted:
+            after.pop(content)
+        result = {"nodes": len(targets), "entries": len(generated), "restored_entries": len(restored),
+                  "revoked_credentials": sum(entry.entry_id in gone for entry in temporary),
+                  "unrestored": unrestored,
+                  "deleted_again": [dict(zip(("effect", "p", "a", "r"), content)) for content in sorted(redeleted)],
+                  "preview": View(self.scheme, targets, after)}
+        if changes:
+            result["added"] = [(*item, after[item]) for item in sorted(after.keys() - present.keys())]
+            result["removed"] = [(*item, present[item]) for item in sorted(present.keys() - after.keys())]
+        if auth_limit:
+            from .personal_ama import readonly_owners_of
+            result["auth_diff"] = compare(was, result["preview"], limit=auth_limit,
+                                          represents=readonly_owners_of)
+        return result
+
     def complete(self, facts: Iterable[Fact], *, dry_run: bool = False, max_removed: int | None = None,
                  rules_digest: str | None = None, preview: bool = False, connection=None) -> dict[str, Any]:
         """补齐: bring the saved instance up to date with ``facts``, keeping every row it already has.
@@ -531,7 +565,7 @@ class Instance:
         # Worked out from the facts alone, before the instance tables are locked.
         creators = self.creators(active)
         targets = self.targets(active)
-        with self.store.transaction(connection) as connection:
+        with (self.store.read(connection) if dry_run else self.store.transaction(connection)) as connection:
             if not dry_run:
                 self._lock(connection)
                 saved = self.store.instance(connection)
@@ -620,7 +654,9 @@ def _listed(entry) -> dict[str, Any]:
 # -- every current Portal object, for a rebuild -------------------------------------------
 
 
-def collect_portal_facts(service) -> list[Fact]:
+def collect_portal_facts(service=None, *, read_only: bool = False,
+                         resident_workspaces: Callable[[], Mapping[str, str]] | None = None,
+                         index_snapshot: Callable[[], Mapping[str, Any]] | None = None) -> list[Fact]:
     """The facts of every live object, read inside ResourceService (``service``).
 
     Users come from the account store, Lineages, Residents and Families from
@@ -629,27 +665,53 @@ def collect_portal_facts(service) -> list[Fact]:
     from the features (``permission.records`` hook), and everything the
     resource index holds (knowledge, papers, skills, Workbenches …) from the
     index snapshot.
+
+    Preview callers select ``read_only`` without constructing ResourceService.
+    Each domain owns its cold snapshot and propagates missing/incompatible
+    storage; this adapter neither initializes domains nor substitutes partial
+    facts. Ordinary instance maintenance keeps the existing owner lifecycle.
     """
     from management_portal import portal_features, project_registry
-    from management_portal.society_service.state_store import get_lineage_data_store
-    from management_portal.portal_access_control import get_portal_access_store
+    from .categories import accounts, categories, categories_from_users
 
-    from .categories import categories
+    if read_only:
+        if resident_workspaces is None:
+            raise ValueError("Read-only permission facts require the Society workspace reader")
+        if index_snapshot is None:
+            raise ValueError("Read-only permission facts require the resource index reader")
+        from management_portal.resources.collaboration_registry import CollaborationDescriptorStore
+
+        users = accounts().snapshot(read_only=True)["users"]
+        stored_categories = categories_from_users(users)
+        projects = project_registry.projects_readonly()
+        collaboration = CollaborationDescriptorStore().readonly_lists("lineage", "resident", "family")
+        owned = resident_workspaces()
+        read_index = index_snapshot
+    else:
+        if service is None:
+            raise ValueError("Ordinary permission fact collection requires ResourceService")
+        from management_portal.society_service.state_store import get_lineage_data_store
+        from management_portal.portal_access_control import get_portal_access_store
+
+        stored_categories = categories().all()
+        users = get_portal_access_store().snapshot().get("users") or {}
+        projects = project_registry.load().get("projects") or []
+        with get_lineage_data_store().database.read() as connection:
+            owned = {row["resident_id"]: row["owned_workspace_id"] for row in connection.execute(
+                "SELECT resident_id, owned_workspace_id FROM residents WHERE deleted_at IS NULL AND owned_workspace_id IS NOT NULL").fetchall()}
+        collaboration = {kind: service._collaboration.list(kind) for kind in ("lineage", "resident", "family")}
+        read_index = lambda: service._index().authorization_snapshot()
 
     facts: dict[str, Fact] = {}
-    stored_categories = categories().all()
-    for username, user in sorted((get_portal_access_store().snapshot().get("users") or {}).items()):
+    for username, user in sorted(users.items()):
         facts[username] = user_fact(username, active=_text((user or {}).get("status")) != "deleted",
                                     category=stored_categories.get(username, DEFAULT_CATEGORY))
-    for project in project_registry.load().get("projects") or []:
+    for project in projects:
         project_id = _text(project.get("id")) if isinstance(project, Mapping) else ""
         if project_id:
             facts[project_id] = fact_from_record({**project, "resource_id": project_id}, "project")
-    with get_lineage_data_store().database.read() as connection:
-        owned = {row["resident_id"]: row["owned_workspace_id"] for row in connection.execute(
-            "SELECT resident_id, owned_workspace_id FROM residents WHERE deleted_at IS NULL AND owned_workspace_id IS NOT NULL").fetchall()}
     for kind in ("lineage", "resident", "family"):
-        for record in service._collaboration.list(kind):
+        for record in collaboration[kind]:
             fact = fact_from_record(record, kind)
             if not fact.active:
                 continue
@@ -657,12 +719,12 @@ def collect_portal_facts(service) -> list[Fact]:
                 fact = replace(fact, dependents=(Fact("workspace", owned[fact.id], {"resident": fact.id}),))
             facts[fact.id] = fact
     for _feature, records in portal_features.contributions("permission.records"):
-        for record in records():
+        for record in records(read_only=True) if read_only else records():
             fact = fact_from_record(record, _text(record["resource_type"]))
             facts[fact.id] = fact
     # A Resident's own Workspace is placed with that Resident; the index record does not name its owner.
     placed = set(facts) | {dependent.id for fact in _flatten(facts.values()) for dependent in fact.dependents}
-    for record in service._index().authorization_snapshot().get("records") or []:
+    for record in read_index().get("records") or []:
         resource_id, kind = _text(record.get("resource_id")), _text(record.get("resource_type"))
         if resource_id and kind and resource_id not in placed and kind not in {"user", "project", "lineage", "resident", "family"}:
             fact = fact_from_record(record, kind)

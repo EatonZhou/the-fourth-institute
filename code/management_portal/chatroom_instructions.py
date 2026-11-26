@@ -36,10 +36,13 @@ DECLARATIONS = (
     _d("CreateChatroom", FIXED, "创建一个聊天室，调用者和所选用户成为成员。", (
         P("members", "array", "其他成员的用户名", items={"type": "string"}), P("title", description="聊天室名称", max_length=80),
     ), (CHATROOM,), mutates=True),
-    _d("UpdateChatroom", ON_CHATROOM, "修改聊天室名称、加入新的用户成员，或设置调用者自己的消息免打扰。", (
+    _d("UpdateChatroom", ON_CHATROOM, "修改聊天室名称或加入新的用户成员。", (
         R("chatroom_id", description="聊天室 ID"), P("title", description="聊天室名称", max_length=80),
         P("add_members", "array", "要加入的用户名", items={"type": "string"}),
-        P("muted", "boolean", "仅设置调用者自己的消息免打扰；直接 @ 自己的消息仍提醒"),
+    ), (CHATROOM,), mutates=True, target="chatroom_id"),
+    _d("SetChatroomMuted", ON_CHATROOM, "设置调用者自己的聊天室免打扰；直接 @ 自己的消息仍提醒。", (
+        R("chatroom_id", description="聊天室 ID"),
+        R("muted", "boolean", "true 开启免打扰，false 恢复提醒"),
     ), (CHATROOM,), mutates=True, target="chatroom_id"),
     _d("LeaveChatroom", FIXED, "调用者退出聊天室；最后一位成员退出后聊天室被删除。", (R("chatroom_id", description="聊天室 ID"),), (
         R("chatroom_id", description="聊天室 ID"), R("deleted", "boolean", "调用者是最后一位成员、聊天室随之删除时为 true"),
@@ -47,6 +50,14 @@ DECLARATIONS = (
     _d("DeleteChatroom", ON_CHATROOM, "删除聊天室：所有成员都不再看到它，消息随之归档；成员与创建者身份不限制此操作。", (R("chatroom_id", description="聊天室 ID"),), (
         R("chatroom_id", description="聊天室 ID"), R("deleted", "boolean", "恒为 true：聊天室已删除"),
     ), mutates=True, target="chatroom_id"),
+    _d("ListChatroomInputHistory", ON_CHATROOM, "读取调用者在聊天室发过的消息，撤回的消息返回撤回前的内容。", (
+        R("chatroom_id", description="聊天室 ID"), CURSOR(),
+        P("limit", "integer", "默认 50", minimum=1, maximum=200),
+    ), (R("messages", "array", "从新到旧"), NEXT_CURSOR()), target="chatroom_id"),
+    _d("SearchChatroomMessages", ON_CHATROOM, "搜索聊天室历史中的正文和附件名称。", (
+        R("chatroom_id", description="聊天室 ID"), R("query", description="搜索词", max_length=200), CURSOR(),
+        P("limit", "integer", "默认 50；聊天室每页最多 100", minimum=1, maximum=200),
+    ), (R("messages", "array", "匹配消息，从新到旧"), NEXT_CURSOR()), target="chatroom_id"),
     _d("ListChatroomMessages", ON_CHATROOM, "按顺序读取聊天室消息：默认最新一页，可向前翻页或读取某个位置之后的新消息。", (
         R("chatroom_id", description="聊天室 ID"),
         CURSOR("上一页返回的 next_cursor，原样交回，读更早的一页；不填时读最新一页"),

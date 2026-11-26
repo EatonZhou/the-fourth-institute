@@ -24,14 +24,15 @@
       try { return await action(); } catch (err) { report(err); throw err; }
       finally { busy = false; editor.inert = false; updateHistory(history.state()); }
     };
-    const preview = args => execute('ApplyLineageChanges',{...args,dry_run:true},{expectedVersion:model.revision});
+    const preview = args => execute('GetLineageChangesPreview',args,{expectedVersion:model.revision});
     root.addEventListener('workshop:review-effect',event => void run(async () => {
       if (dirty()) throw new Error(t('请先保存职责草稿，再确认此版本'));
       const {effectId,draftHash,decision} = event.detail;
       const draft = model.draft.body.components.find(row => row.key === effectId)?.config?.script_draft;
       if (!draft) throw new Error(t('请重新读取候选脚本'));
       if (!await window.PortalUI.confirm({title:t(decision === 'confirm' ? '确认候选脚本？' : '取消脚本草稿？'),message:`${draft.description}\n\n${draft.script}`,confirmLabel:t(decision === 'confirm' ? '确认' : '取消草稿')})) return;
-      await execute('ReviewComponentScript',{lineage_id:lineageId,effect_id:effectId,draft_hash:draftHash,decision},{expectedVersion:model.revision});
+      const instruction = decision === 'confirm' ? 'ConfirmComponentScript' : 'CancelComponentScriptDraft';
+      await execute(instruction,{lineage_id:lineageId,effect_id:effectId,draft_hash:draftHash},{expectedVersion:model.revision});
       await load(); onSaved({function_block_id:functionBlockId,title:model.block.title});
     }).catch(() => {}),{signal:abort.signal});
     function inspect(key = '') {
@@ -158,7 +159,7 @@
       if (event.target.closest('[data-duty-template]')) void run(async () => {
         if (dirty()) throw new Error(t('请先保存职责，再存为模板'));
         const args = {from_selection:{lineage_id:lineageId,element_ids:[functionBlockId]},template:{title:model.block.title}};
-        await execute('CreateTemplate',{...args,dry_run:true});
+        await execute('GetTemplateCreatePreview',args);
         const {template} = await execute('CreateTemplate',args); onOpenWorkshop({lineage_id:lineageId,template_id:template.template_id});
       }).catch(() => {});
     },{signal:abort.signal});
@@ -168,7 +169,7 @@
     return {sessionId,lineageId,load,save,acceptDraft,dirty,fit:() => graph?.fit(),
       documentKey:() => `${sessionId}:${generation}`,template:() => ({title:model?.block.title || t('职责工坊')}),
       draftFileKey:() => `duty-${functionBlockId}-${sessionId}`,
-      assistantContext:() => `当前编辑职责实例，遵循职责草稿协议：先 GetLineage {lineage_id:"${lineageId}"}，目标 function_block_id=${functionBlockId}，基准 revision=${model.revision}。只能改该职责拥有的组件、连线及职责元数据，不得改外部元素或 Resident 配置。交回完整 JSON {lineage_id,function_block_id,revision,operations,duty_changes}，operations 使用 ApplyLineageChanges 格式，duty_changes 仅 title/description/category/prompt/memory_level；Family角色职责另可含task_prompt，须保留facts并遵守模板校验。先 ApplyLineageChanges 加 dry_run:true 和 expected_version:${model.revision} 校验；禁止正式提交。将 JSON 写入本轮指定草稿路径，由用户在工坊预览、保存。`,
+      assistantContext:() => `当前编辑职责实例，遵循职责草稿协议：先 GetLineage {lineage_id:"${lineageId}"}，目标 function_block_id=${functionBlockId}，基准 revision=${model.revision}。只能改该职责拥有的组件、连线及职责元数据，不得改外部元素或 Resident 配置。交回完整 JSON {lineage_id,function_block_id,revision,operations,duty_changes}，operations 使用 ApplyLineageChanges 格式，duty_changes 仅 title/description/category/prompt/memory_level；Family角色职责另可含task_prompt，须保留facts并遵守模板校验。先调用 GetLineageChangesPreview，传入 lineage_id、function_block_id、operations、duty_changes，并在信封中带 expected_version:${model.revision} 校验；禁止正式提交。将 JSON 写入本轮指定草稿路径，由用户在工坊预览、保存。`,
       destroy() {disposed=true;surface.destroy();abort.abort();templates.destroy();tools?.destroy();disposeInspector?.();graph?.destroy();editor.replaceChildren();},
     };
   }

@@ -734,10 +734,8 @@
             }
             const result = retry
               ? await restartService.retrySessionRestart(current.resident_id)
-              : await restart({operation: "switch_account",
-                target_provider: provider, ...(!automatic() ? {target_account: account} : {}),
-                context_strategy: contextChoice().id,
-                active_execution_policy: "wait", ...runtime, idempotency_key: requestKey});
+              : await restart({target_provider: provider, ...(!automatic() ? {target_account: account} : {}),
+                ...runtime, idempotency_key: requestKey});
             current.restart = result; restartView.restart = result;
             tracking = sessionRestartActive(result); progress.update(restartView);
             if (result?.status === "completed") complete(result);

@@ -1,7 +1,7 @@
 """Messages a Resident sends to users, and a Family's messages to the outside (decision_c524c775e0be).
 
-A Resident sends to a user with the same ``DeliverMessage`` it uses for a
-Resident.  The message starts no work: it is written into the sender's own
+A Resident sends to a user with ``DeliverUserMessage``. The message starts
+no work: it is written into the sender's own
 Conversation as the sender's message, naming the user in ``recipients``, and
 the user sees that Conversation in the Inbox as unread (decision_15f7df737ed5).
 Whether to answer, and to whom, is up to whoever receives a message; nothing
@@ -40,8 +40,9 @@ from management_common.async_questions import normalize_async_questions, questio
 from management_common.message_identity import derived_message_identity
 from management_common.operation_identity import current_operation_identity, operation_identity_scope
 from management_common.principal import OperationIdentity, Principal, actor_principal, message_origin
+from management_portal.hatg.contracts import invalid
 
-from . import family_facade, family_storage, resident_access, resident_conversation_stream, resident_lineage
+from . import family_facade, family_storage, resident_access, resident_conversation_stream, resident_lineage, resident_message_contract
 from .state_store import get_lineage_data_store
 
 # A message to a user is read, not executed: it carries text and references to resources.
@@ -174,6 +175,25 @@ def _write(resident_id: str, message: dict[str, Any]) -> dict[str, Any]:
     now = utc_now()
     message["created_at"] = str((existing or {}).get("created_at") or now)
     return repository.append_message(resident_id, message, activated_at=now)
+
+
+def deliver_user_message(
+    sender: str, user_id: str, message: Mapping[str, Any], *, idempotency_key: str = "", business_ref: str = "",
+) -> dict[str, Any]:
+    """Validate a user delivery and keep its established idempotent message identity."""
+    unknown = sorted(set(message) - {"message_id", "role", "content_parts", "metadata"})
+    if unknown:
+        raise invalid("发给用户的 message 只包含 message_id、role、content_parts 和 metadata", unknown_fields=unknown)
+    if str(message.get("role") or "user") != "user":
+        raise invalid("message.role 只能是 user")
+    supplied = str(message.get("message_id") or "").strip()
+    if not supplied and idempotency_key:
+        supplied = derived_message_identity("isa-deliver", f"user:{user_id}", sender, idempotency_key)
+    result = deliver_to_user(
+        sender, user_id, message.get("content_parts"),
+        message_id=resident_message_contract.message_identity(supplied), business_ref=business_ref,
+    )
+    return {**result, "input_state": {}}
 
 
 def deliver_to_user(
@@ -397,9 +417,10 @@ def reply_hint(resident_id: str, actor: str, message_id: str, business_ref: str 
     if not facade_id:
         return ""
     return (
-        f"这条消息由 Family 门面 {facade_id} 代它的成员发出。本轮用 DeliverMessage 发给 {facade_id}，"
+        f"这条消息由门面 {facade_id} 代它的成员发出。本轮用 DeliverMessage 发给 {facade_id}，"
         "平台会把它记成对这条消息的回复，直接交给写它的成员；"
-        f"以后的轮次再回复它，DeliverMessage 加参数 reply_to_message_id: {message_id}。"
+        f"以后的轮次再回复它，调用 RelayMessage，传 resident_id={facade_id}、"
+        f"reply_to_message_id={message_id} 和你的回复 message。"
     )
 
 
@@ -419,6 +440,7 @@ def _as_reply(payload: Mapping[str, Any], sender_id: str, recipient_id: str, rep
 
 def deliver_to_resident(
     payload: Mapping[str, Any], sender: str, *, delivery_context: Any, reply_to: str = "",
+    allow_implicit_reply: bool = True,
 ) -> dict[str, Any]:
     """Deliver to a Resident as the sender, or as its Family's facade when the recipient is outside the Family.
 
@@ -437,7 +459,9 @@ def deliver_to_resident(
         family_facade.parse_relay_mark(getattr(delivery_context, "business_ref", "")) is None
         and not resident_input_scope.permits(recipient_id, sender_id, message_id)
     )
-    payload, received_id = _as_reply(payload, sender_id, recipient_id, str(reply_to or "").strip(), plain=plain)
+    received_id = ""
+    if reply_to or allow_implicit_reply:
+        payload, received_id = _as_reply(payload, sender_id, recipient_id, str(reply_to or "").strip(), plain=plain)
     delivery_context = replace(
         delivery_context or resident_protocol.ResidentDeliveryContext(), reply_source_message_id=received_id,
     )

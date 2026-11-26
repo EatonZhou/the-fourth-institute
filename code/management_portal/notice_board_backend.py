@@ -1023,11 +1023,16 @@ class NoticeBoardBackend:
 notice_board = NoticeBoardBackend()
 
 
-def resource_records() -> list[dict[str, Any]]:
+def resource_records(*, read_only: bool = False) -> list[dict[str, Any]]:
     """Every post as the permission system places it (``permission.records`` hook): its author created it."""
+    if read_only:
+        from .notice_store import permission_posts_readonly
+        posts = permission_posts_readonly()
+    else:
+        posts = notice_board.posts.read().get("posts") or []
     return [{"resource_id": post["post_id"], "resource_type": "notice", "created_by": post.get("author"),
              "created_for": post.get("created_for")}
-            for post in notice_board.posts.read().get("posts") or [] if str(post.get("post_id") or "").strip()]
+            for post in posts if str(post.get("post_id") or "").strip()]
 
 
 def mention_entries(events: object) -> list[dict[str, Any]]:

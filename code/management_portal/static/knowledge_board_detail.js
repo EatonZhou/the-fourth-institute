@@ -125,10 +125,9 @@ async function renameDetailFile() {
     // Save before dispatch, so a reload while the HTTP response is in flight
     // can only continue the same actor's original operation.
     rememberDetailRename(operationKey, operation);
-    const receipt = await window.PortalInstructionClient.execute("RunResourceAction", {
-      resource_id: id, action: "knowledge.file.rename", arguments: { ...operation },
+    const result = await window.PortalInstructionClient.execute("UpdateKnowledgeFileName", {
+      resource_id: id, ...operation,
     }, { idempotencyKey: `knowledge.file.rename:${window.PortalUIPrimitives.randomUUID()}` });
-    const result = receipt?.result;
     const resultVersion = result?.version?.number ?? result?.version;
     if (result?.resource_id !== id || result?.address !== id
       || result?.operation_id !== operation.operation_id

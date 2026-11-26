@@ -409,14 +409,30 @@ def test_admitted_output_preserves_caller_and_rejects_artifact_traversal(work,mo
 
 
 def test_instruction_adapters_are_owned_by_lineage():
-    """RunScript 等五条脚本运行指令由 Lineage 服务实现
+    """RunScript 等脚本运行指令由 Lineage 服务实现
 
     :design-point:"""
     from management_portal.hatg.catalog import declaration
     from management_portal.society_service.isa import _handlers
     handlers=_handlers()
-    for name in ('RunScript','GetScriptRun','ListScriptRuns','ReadScriptRunOutput','CancelScriptRun'):
+    for name in ('RunScript','GetScriptRun','ListScriptRuns','ReadScriptRunOutput','ReadScriptRunArtifact','CancelScriptRun'):
         assert name in handlers and declaration(name).owner=='lineage'
+    log = declaration('ReadScriptRunOutput')
+    artifact = declaration('ReadScriptRunArtifact')
+    assert 'name' not in {parameter.name for parameter in log.parameters}
+    assert 'stream' not in {parameter.name for parameter in artifact.parameters}
+
+
+def test_script_run_artifact_adapter_uses_original_caller(monkeypatch):
+    from management_portal.society_service.isa.script_runs import HANDLERS
+
+    arguments = {'lineage_id': 'lineage_aaaaaaaaaaaa', 'script_run_id': 'script_run_one',
+                 'name': 'result.txt', 'offset': 3}
+    invoke = SimpleNamespace(arguments=arguments, caller='sample_admin')
+    read_output = mock.Mock(return_value={'text': 'result'})
+    monkeypatch.setattr(service, 'read_output', read_output)
+    assert HANDLERS['ReadScriptRunArtifact'](invoke) == {'text': 'result'}
+    read_output.assert_called_once_with({**arguments, 'stream': 'artifact'}, 'sample_admin')
 
 
 def test_run_script_is_judged_on_the_lineage_it_runs_in(monkeypatch):

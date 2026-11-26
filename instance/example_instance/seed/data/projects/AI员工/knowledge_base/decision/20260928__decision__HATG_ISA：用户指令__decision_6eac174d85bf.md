@@ -64,18 +64,20 @@ Project 角色和系统能力及其 ISA 已删除；资源授权见 decision_222
 | `ListUsers` | 否 | 列出用户 | 对“共享”有 @viewer |
 | `GetUser` | 否 | 读取一个用户的资料与账号状态 | 对 `user_id` 有 @viewer |
 | `CreateUser` | 是 | 创建一个用户账号 | 对“共享”有 @admin |
-| `UpdateUser` | 是 | 修改用户资料、账号状态或分类 | 对 `user_id` 有 @admin |
+| `UpdateUser` | 是 | 修改用户的显示名称、恢复邮箱或头像；状态和分类分别使用 UpdateUserStatus、UpdateUserCategory。 | 对 `user_id` 有 @admin |
 | `ResetUserPassword` | 是 | 重置他人密码并撤销会话 | 对“共享”有 @admin |
 | `RevokeUserSessions` | 是 | 撤销用户的浏览器会话 | 对“共享”有 @admin |
 | `DeleteUser` | 是 | 永久删除一个用户账号 | 对“共享”有 @admin |
 | `GetUserNavigation` | 否 | 读取用户的收藏 | 对 `user_id` 有 @admin |
-| `UpdateUserNavigation` | 是 | 收藏或取消收藏一个对象 | 对 `user_id` 有 @admin |
 | `CreateUserInvitation` | 是 | 创建绑定用户名的一次性邀请 | 对“共享”有 @admin |
 | `ListUserInvitations` | 否 | 列出邀请状态，不返回密钥 | 对“共享”有 @admin |
 | `RevokeUserInvitation` | 是 | 撤销邀请 | 对“共享”有 @admin |
 | `CreateUserAccessToken` | 是 | 为一位 User 创建个人访问凭据 | 对 `user_id` 有 @admin |
 | `ListUserAccessTokens` | 否 | 列出一位 User 的个人访问凭据 | 对 `user_id` 有 @admin |
 | `RevokeUserAccessToken` | 是 | 撤销当前 User 个人访问凭据 | 免检 |
+| `UpdateUserStatus` | 是 | 由 Portal 管理员启用或停用用户；停用时撤销其会话。变更管理员账号保留本人和最后一位启用管理员保护。 | 对“Portal”有 @admin |
+| `UpdateUserCategory` | 是 | 由 Portal 管理员修改用户分类；管理员名单变更在同一账号事务内校验，不能取消本人的管理员身份，并保留一位启用中的管理员。 | 对“Portal”有 @admin |
+| `SetUserNavigationFavorite` | 是 | 为一位 User 收藏或取消收藏一个 Project、Lineage 或 Resident。 | 对 `user_id` 有 @admin |
 
 ## 指令说明
 
@@ -105,14 +107,19 @@ Project 角色和系统能力及其 ISA 已删除；资源授权见 decision_222
 
 ### `UpdateUser`
 
-**修改用户的显示名称、恢复邮箱、头像、账号状态或分类；用户名保持不变。**
+通过 `user_id` 和 `changes` 修改显示名称 `display_name`、恢复邮箱 `recovery_email` 或头像 `avatar`。返回更新后的用户资料。默认方案要求在目标 User 上有 `@admin`；账号本人对自己的账号满足该要求。恢复邮箱须通过格式与唯一性核验。
 
-- 参数：`user_id`、`changes`（可以包含 `display_name`、`recovery_email`、`avatar`、`status` 与 `category`；`avatar` 是已上传图片的引用，`status` 取 `active` 或 `disabled`，`category` 取 `portal_admin`、`member` 或 `intern`）。
-- 结果：修改后的用户资料（含 `category`），以及 `category_changed`（这次是否改变了分类）。
-- 默认模板要求对目标 User 账号有 admin；账号本人对自己的账号有 admin，管理员对全部账号有 admin。恢复邮箱须通过格式与唯一性校验。服务先保存分类和资料，再写入头像；权限或资料校验失败时头像保持不变。账号安全操作使用下列独立指令，UpdateUser 不接受 reset_password 或 revoke_sessions。
-- **管理员名单**（weihao 2026-10-19，decision_b820faf42218 §3.1“Portal 管理员保底”）：不论权限系统开关和启用哪套方案，只有 Portal 管理员能把其他 User 设为或取消 Portal 管理员，也只有 Portal 管理员能停用、启用管理员账号；不能对自己做。非管理员这样调用时返回 `instruction.forbidden`，管理员对自己这样做时返回 `instruction.invalid_arguments`。管理员只改名单的调用（`changes` 只含 `category`、`status`）不问方案。这推翻了 10-18“关闭时谁都能改分类、本人能改自己的分类”中涉及管理员的部分。管理员不能取消自己，但两位管理员可能同时互相停用，所以名单变更的检查和写入在同一个账号事务里依次进行，后一个看到前一个的写入；写入后没有启用中的 Portal 管理员时整次回滚，返回 `instruction.invalid_arguments`（5124a418）。管理员只能是 User，Resident 没有分类。
-- **一般用户与实习用户之间**的调整由 UpdateUser 自身的权限检查决定（weihao 2026-10-18）：权限系统关闭时已登录主体都能改，开启时按启用方案对 UpdateUser 的要求判定。修改其他账号状态问 DeleteUser。分类与当前相同时不算修改。User 在同一事务中移到新分类的 P 树节点下。修改写入访问审计 `user_category_updated`。页面按该用户行的 `allows.UpdateUser` 判断是否允许编辑。
-- 分类是账号记录的 `category` 列，删除账号时随账号记录一起删除。新部署时第一个创建的账号在同一事务中成为 Portal 管理员，不论它来自初始化链接、普通邀请还是 CreateUser；初始化链接只在 Portal 还没有任何账号时可用（decision_3286d4167180）。
+### `UpdateUserStatus`
+
+Portal 管理员用 `user_id`、`status`（`active` 或 `disabled`）启用或停用账号，返回用户资料。停用时撤销登录会话。
+
+### `UpdateUserCategory`
+
+Portal 管理员用 `user_id`、`category`（`portal_admin`、`member` 或 `intern`）设置账号类别。返回用户资料及 `category_changed`。类别保存到账号记录，并同步到权限 P 树；实际变更写入 `user_category_updated` 审计。
+
+管理员名单的变更在同一账号事务内校验。调用者不能通过类别或停用操作移除自己的管理员资格，系统必须保留一位启用中的 Portal 管理员。个人 AMA 主体与权限开关规则见 decision_b820faf42218。页面分别读取 `allows.UpdateUser`、`allows.UpdateUserStatus` 和 `allows.UpdateUserCategory`。
+
+新部署时第一个创建的账号在同一事务中成为 Portal 管理员。初始化链接只在 Portal 尚无账号时可用（decision_3286d4167180）。
 
 ### `ResetUserPassword`
 
@@ -135,7 +142,7 @@ Project 角色和系统能力及其 ISA 已删除；资源授权见 decision_222
 
 - 参数：`user_id`。
 - 结果：被删除的用户名。
-- 删除撤销该用户的登录会话并清理个人数据。删除就是删除，不保留可恢复的数据；只想暂停使用、以后恢复时，改用 `UpdateUser` 把状态设为 `disabled`。
+- 删除撤销该用户的登录会话并清理个人数据。删除就是删除，不保留可恢复的数据；只想暂停使用、以后恢复时，改用 `UpdateUserStatus` 把状态设为 `disabled`。
 
 ### `GetUserNavigation`
 
@@ -145,7 +152,7 @@ Project 角色和系统能力及其 ISA 已删除；资源授权见 decision_222
 - 结果：收藏对象的统一 ID 列表；已删除的 Project 和 Lineage 不再出现。
 - 导航列出调用者能访问的全部 Lineage 和 Resident，收藏不改变这个范围，只决定“我的收藏”视图里出现哪些对象和导航菜单上的星标状态。
 
-### `UpdateUserNavigation`
+### `SetUserNavigationFavorite`
 
 **收藏或取消收藏一个 Project、Lineage 或 Resident。**
 
@@ -209,4 +216,6 @@ Telepus 绑定、提醒及服务控制改用应用工具，见 decision_692a484e
 | `RevokeUserSessions` | `user_id` |
 | `DeleteUser` | `user_id` |
 | `GetUserNavigation` | `user_id` |
-| `UpdateUserNavigation` | `user_id`、`object_id`、`favorite` |
+| `UpdateUserStatus` | `user_id`、`status` |
+| `UpdateUserCategory` | `user_id`、`category` |
+| `SetUserNavigationFavorite` | `user_id`、`object_id`、`favorite` |

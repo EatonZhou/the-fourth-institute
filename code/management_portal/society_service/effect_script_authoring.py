@@ -5,7 +5,7 @@ from management_portal.hatg.contracts import InstructionError
 from .effect_script_candidate import review_config, template_items
 
 
-def review(inv, *, template=False):
+def review(inv, *, decision, template=False):
     identity = inv.argument('template_id' if template else 'lineage_id')
     effect_id = inv.argument('effect_id')
     version = inv.expected_version_for(identity)
@@ -19,7 +19,7 @@ def review(inv, *, template=False):
         item = next((item for item in items if item.get('key' if template else 'id') == effect_id and item.get('kind') == 'effect'), None)
         if item is None:
             raise ValueError('Effect 不存在')
-        item['config'] = review_config(item['config'], inv.caller, inv.argument('draft_hash'), inv.argument('decision'))
+        item['config'] = review_config(item['config'], inv.caller, inv.argument('draft_hash'), decision)
         return body
     if template:
         from .templates import store

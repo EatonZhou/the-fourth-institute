@@ -348,10 +348,8 @@ def test_handoff_isa_prepares_durable_binding_and_idempotent_delivery(team, mode
         assert connection.execute("SELECT COUNT(*) FROM conversation_input_states").fetchone()[0] == 0
 
 
-def test_handoff_isa_prepares_a_new_handoff_named_by_its_resident_pair(team, monkeypatch):
-    """按 Resident 对准备交接时新建交接并共享来源的当前工作区
-
-    RunWorkspaceHandoff 只给来源和目标 Resident 时，先建立这对端点的交接；没有交接项时直接共享来源当前工作目录所在的 Workspace，准备成功为 ready，再次准备复用同一条交接。
+def test_handoff_isa_creates_then_prepares_by_handoff_id(team, monkeypatch):
+    """创建交接后用交接 ID 准备并共享来源的当前工作区。
 
     :importance: P1
     :aspects: functional, behavior
@@ -363,14 +361,18 @@ def test_handoff_isa_prepares_a_new_handoff_named_by_its_resident_pair(team, mon
 
     monkeypatch.setattr(subprocess, "Popen", local_git_only)
     pair = {"lineage_id": team.lineage_id, "source_resident_id": team.source["resident_id"], "target_resident_id": team.target["resident_id"]}
-    prepared = instruction(team, "RunWorkspaceHandoff", pair)
+    rejected = instruction(team, "RunWorkspaceHandoff", pair)
+    assert rejected.status == "failed" and rejected.error["code"] == "instruction.invalid_arguments"
+    created = instruction(team, "CreateWorkspaceHandoff", pair)
+    assert created.status == "committed", created.to_payload().get("error")
+    operation = {"lineage_id": team.lineage_id, "handoff_id": created.result["handoff_id"]}
+    prepared = instruction(team, "RunWorkspaceHandoff", operation)
     assert prepared.status == "committed", prepared.to_payload().get("error")
     assert prepared.result["handoff_id"].startswith("handoff_") and prepared.result["status"] == "ready"
     # Without items the handoff shares the Workspace the source works in.
     [item] = prepared.result["items"]
     assert Path(item["result"]["target_path"]).resolve() == Path(team.source["default_cwd"]).resolve()
-    # The pair now names that handoff; preparing it again reuses it.
-    again = instruction(team, "RunWorkspaceHandoff", pair)
+    again = instruction(team, "RunWorkspaceHandoff", operation)
     assert again.result["handoff_id"] == prepared.result["handoff_id"]
 
 

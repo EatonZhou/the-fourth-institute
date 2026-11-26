@@ -25,6 +25,8 @@ LOOKBACK = timedelta(minutes=30)
 
 
 def _candidates_sql(agent_schema: str) -> str:
+    from .family_task_receipts import RECEIPTS
+
     agent = '"' + agent_schema + '"'
     return f"""
 SELECT e.agent_id, e.execution_id, e.actor_ref, x.message_id
@@ -35,14 +37,14 @@ SELECT e.agent_id, e.execution_id, e.actor_ref, x.message_id
    AND (e.finished_at >= %s OR EXISTS (
        -- An unfinished Family request owns its Router's recovery regardless
        -- of age. Completed/cancelled requests must not be resurrected.
-       SELECT 1 FROM family_task_dispatches task
+       SELECT 1 FROM ({RECEIPTS}) task
        JOIN conversation_input_states parent
-         ON parent.resident_id=task.intent_json->'request'->>'facade'
-        AND parent.message_id=task.intent_json->'request'->'facts'->>'message_id'
+         ON parent.resident_id=task.facade_id
+        AND parent.message_id=task.source_message_id
         AND parent.state='queued'
        WHERE task.message_id=x.message_id
-         AND task.intent_json->'request'->>'target'=e.agent_id
-         AND task.intent_json->'request'->>'trigger'='route'))
+         AND task.target_id=e.agent_id
+         AND task.trigger='route'))
    AND EXISTS (SELECT 1 FROM lineage_edges w JOIN lineages l ON l.lineage_id = w.lineage_id
                 WHERE w.source_node_id = e.agent_id AND w.edge_type = 'route'
                   AND w.deleted_at IS NULL AND l.deleted_at IS NULL)

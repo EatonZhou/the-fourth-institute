@@ -30,6 +30,16 @@ def database():
     return _database(os.getenv('PORTAL_DATABASE_URL'),os.getenv('PORTAL_DATABASE_NAMESPACE'))
 
 
+def permission_rooms_readonly():
+    """Current room authors/members; no messages, receipt reads or bootstrap."""
+    with database().database.readonly_snapshot() as c:
+        rooms = {row['chatroom_id']: {**dict(row), 'members': []}
+                 for row in c.execute('SELECT chatroom_id,created_by FROM rooms ORDER BY chatroom_id')}
+        for row in c.execute('SELECT chatroom_id,actor FROM members ORDER BY chatroom_id,actor'):
+            rooms[row['chatroom_id']]['members'].append(row['actor'])
+    return list(rooms.values())
+
+
 def reactions(chatroom_id, message_ids):
     if not message_ids:
         return {}

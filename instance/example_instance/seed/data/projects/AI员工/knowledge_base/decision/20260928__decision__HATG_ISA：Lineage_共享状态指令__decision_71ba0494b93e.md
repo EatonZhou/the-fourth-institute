@@ -35,7 +35,7 @@ Lineage 共享状态指令读写一个 Lineage 在运行中保存的键值数据
 
 ## 操作的对象
 
-- **状态单元（cell）**：一个键和一个 JSON 值。每个 Lineage 最多 128 个状态单元，单个值最大 64 KiB，全部值合计最大 512 KiB。
+- **状态单元（cell）**：一个键和一个 JSON 值。每个 Lineage 最多 128 个状态单元，单个值最大 64 KiB，全部值合计最大 2 MiB。
 - **变化计数**：共享状态有独立的变化计数（`revision`），每次实际改变值时加一，随 `state.changed` 事件记录。它与 Lineage 定义的变化计数分开，写状态不会改变 Lineage 定义。指令结果不返回它，也不接受它作为前提；需要“只在当前值符合预期时写入”时，给 `UpdateSharedState` 或 `DeleteSharedState` 带上 `expected_value`。
 
 共享状态在运行中的使用方式（`state.changed` 与 `state.condition_met` 事件源、调用共享状态指令的 Effect）见 decision_4adcc1ff2f2c，实现中这组数据称为 Graph State。

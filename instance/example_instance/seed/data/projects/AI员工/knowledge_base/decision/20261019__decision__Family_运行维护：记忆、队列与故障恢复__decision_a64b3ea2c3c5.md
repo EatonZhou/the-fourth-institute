@@ -40,19 +40,17 @@ Family 的基础可用性由平台监督，Steward 处理需要判断的组织�
 
 ## 工作记忆
 
-**业务成员写近期事实，Steward 做阶段和长期归纳。** 仅业务成员通过 UpdateResidentWorkSummary 维护自己的近期层；Router 和 Steward 均不维护自身工作摘要，不参与自身摘要覆盖检查、提醒和归纳。本 Family Steward 消费已读取的近期事实，替换阶段及必要时长期层。归纳保留有效职责、成果、未解决事项和资料入口，省略已经被结论覆盖的过程。项目级长期记录独立增量保存。
+**业务成员写近期事实，Steward 做阶段和长期归纳。** 仅业务成员通过 UpdateResidentWorkSummary 维护自己的近期层；Router 和 Steward 均不维护自身工作摘要，不参与自身摘要覆盖检查、提醒和归纳。本 Family Steward 消费已读取的近期事实，用 `UpdateResidentSummaryConsolidation` 替换阶段及必要时长期层。归纳保留有效职责、成果、未解决事项和资料入口，省略已经被结论覆盖的过程。项目级长期记录独立增量保存。
 
 [Resident ISA](/resource/knowledge?item=decision_d19b9909a674) 唯一定义摘要字段、时间层、总字符预算、归纳阈值、revision、覆盖登记与提交冲突协议。各层合计受总预算约束；未决承诺、阻塞和重要约束不能因时间久而消失。信息取舍交给 Agent，不能通过删除未决事项来凑预算。
 
 业务成员成功完成事件检查原输入是否已经登记覆盖。遗漏时以稳定消息 ID 合并一条 attach_to_next 提醒，挂到该成员下次工作；失败、取消、纯维护及提醒自身不形成循环。已有摘要且确无新增时可以只登记已检查的输入，不改内容版本。Steward 忙碌时推迟归纳，由小时检查补偿。
 
-同一稳定任务 ID 的派发以首次保存的业务请求与消息快照为准。Family 派发入口每次核验当前调用者权限，首次投递前保存目标、任务类型、规范化事实、业务关联及当时的文本和发起人；再次派发同一请求复用原快照和已接收回执，不因调用者、模板或 JSON 对象键顺序变化改写消息，不重开已完成、失败或取消的输入。同 ID 改用其他目标、任务类型、事实或关联时拒绝。消息内容与输入状态继续由原受理领域维护，派发意图不构成第二个执行队列。
+同一稳定消息 ID 的投递以首次受理的消息为准。Family 的 Effect 以门面身份用 `DeliverMessage` 向 Steward 投递任务，消息 ID 与业务关联由事件和材料确定；再次投递同一 ID 返回原受理回执，不因调用者、模板或事实顺序变化改写消息，不重开已完成、失败或取消的输入。同 ID 带不同目标、正文或关联时按 `DeliverMessage` 的身份冲突规则拒绝。消息内容与输入状态由原受理领域维护，投递不构成第二个执行队列。
 
-升级前已接收、没有请求快照的任务，只在业务关联、发送者与含事实模板生成的原消息能精确核对时登记快照；模板中明确的 guide_version 占位可匹配并保留原十二位十六进制指南摘要，任务事实、正文常量和指南路径仍须逐字相符，不能把任意摘要或正文变化当作版本变化；无法确定时保留原件并拒绝，不能从任意提示词猜测请求或放宽不可变消息检查。新的任务 ID 使用当前模板。
+小时 Effect 先检查 Steward 空闲且无排队，再读取 GetFacadeSummaryInputs 的概览；有成员到期归纳或门面来源变化时才投递 summary。通知不附成员全文；消息 ID 只由材料（成员与门面的来源版本、到期清单）决定，同材料始终复用同一 ID。按消息 ID 幂等，已完成、失败或被人停止的同材料任务不会重开，材料变化后才投新任务，因此停掉一次摘要任务不会每小时重派。Steward 先处理到期层，再以 source_versions 更新门面。私人 Family 维护成员时间层，但不做小时门面汇总；嵌套 Family 只读取内层门面投影，外层不改内层成员时间层。
 
-小时 Effect 先检查 Steward 空闲且无排队，再读取 GetFamilySummaryInputs 的概览；有成员到期归纳或门面来源变化时才派发 summary。通知不附成员全文；消息 ID 只由材料（成员与门面的来源版本、到期清单）决定，同材料始终复用同一 ID。按统一派发幂等，已完成、失败或被人停止的同材料任务不会重开，材料变化后才派新任务，因此停掉一次摘要任务不会每小时重派。Steward 先处理到期层，再以 source_versions 和 expected_revision 更新门面。私人 Family 维护成员时间层，但不做小时门面汇总；嵌套 Family 只读取内层门面投影，外层不改内层成员时间层。
-
-摘要维护是本 Family 的内部工作。系统生成的 `summary_check`（业务成员 `resident.work_finished`）以及 `summary_rollup`／`memory_rollup`（`time.reached`）调用 `DispatchFamilyTask(trigger="summary")` 时，以所属 Family 的门面为调用主体；不沿用完成事件中的外部发起者。绑定只接受本门面目标和材料生成的稳定消息 ID，不接受自带 facts、原业务消息关联或其他任务类型；所属门面必须仍在同一 Lineage、同一 Family 担任门面。普通工作流、其他组件和外部直接调用不获得这项能力，仍按原调用主体校验权限。派发继续经过正常 ISA 权限、任务快照、受理幂等和取消检查；Effect 回执记录本次实际调用主体，原事件的发起者审计不变。失败流程保留历史记录，后续成员完成或小时检查按当前材料补查。
+摘要维护是本 Family 的内部工作。系统生成的 `summary_check`（业务成员 `resident.work_finished`）以及 `summary_rollup`／`memory_rollup`（`time.reached`）以所属 Family 的门面为调用主体向 Steward 投递 summary 任务，不沿用完成事件中的外部发起者。投递只接受本门面、Steward 目标和材料生成的稳定消息 ID，所属门面必须仍在同一 Lineage、同一 Family 担任门面。普通工作流、其他组件和外部直接调用不获得这项能力，仍按原调用主体校验权限。投递经过正常 ISA 权限、受理幂等和取消检查；Effect 回执记录本次实际调用主体，原事件的发起者审计不变。失败流程保留历史记录，后续成员完成或小时检查按当前材料补查。
 
 工作查看、搜索与路由使用同一份时间层投影。Family 内摘要不由全局 Summary Resident 续写；后者只维护独立 Resident。加入 Family 撤销全局写作认领；移出保留内容与版本，由全局写作者从已有内容续写。归属和版本在认领、证据读取与提交时复核。
 
@@ -62,21 +60,21 @@ Family 的基础可用性由平台监督，Steward 处理需要判断的组织�
 
 门面摘要概述成果、进行中事项和阻塞，缺失资料明确标记，不把待办写成完成。它不向全体成员发送 info；确有成员需要行动时才定向通知。
 
-`MaintainFamilyProgress`／`PublishFamilyProgress` 保留显式调用和旧批次收尾兼容，默认运行图不再调用。旧账本保留；本 Family Steward 可提交对应批次，report 与随附门面九字段摘要各不超过 500 字符，带 source_versions 和 expected_revision；冲突后重读，同内容重试不重复写入，也不恢复广播。
+门面摘要由 Steward 在 summary 任务中直接用 `UpdateFacadeSummary` 写入，门面摘要的文字合计不超过 500 字符，带 `GetFacadeSummaryInputs` 返回的 `source_versions`；同内容重试不重复写入，也不向成员群发。
 
 ## 组织回顾
 
-普通 Family 保存业务活动与已消费活动水位。成员 `resident.work_finished` 事件调用 MaintainFamilyReview 时，只核验并登记活动，不启动模型。主体必须为当前直属业务成员，持久输入状态为 completed，消息为 user 且非 info、business_ref 非 `duty/`。事件时间戳不作完成证明；水位使用 Conversation 为该输入首次 completed 状态保存的持久事件 cursor 与输入 ID 排序，每个成员只前进、不回退；时钟回拨或同输入终态元数据更新不改变完成顺序。重复或乱序旧事件不产生新的回顾批次，工具调用及维护工作不参与。成员退出后保留此前合法登记、尚未消费的活动；退出之后到达的新登记仍按当前名册跳过。
+普通 Family 在共享状态中为每个业务成员保存活动水位和已回顾水位。成员 `resident.work_finished` 事件到达时，`review_activity` 脚本核验并登记活动，不启动模型。主体必须为当前直属业务成员，持久输入状态为 completed，消息为 user 且非 info、business_ref 非 `duty/`。事件时间戳不作完成证明；水位使用 Conversation 为该输入首次 completed 状态保存的持久事件 cursor 与输入 ID 排序，每个成员只前进、不回退；时钟回拨或同输入终态元数据更新不改变完成顺序。重复或乱序旧事件不产生新的回顾，工具调用及维护工作不参与。成员退出后保留此前合法登记、尚未回顾的活动；退出之后到达的新登记仍按当前名册跳过。
 
-原 periodic_review 定时事件和 review_interval_seconds 保留，普通 Family 默认一天。到点由 Effect 不带 event 调用同一指令：无未消费活动则结束，不读角色运行态或启动模型；有活动时再确认门面开放、Steward 空闲且无排队。忙碌、排队、未知运行态或并发检查由下一次定时检查补偿，不改接单或另投提示词。
+原 periodic_review 定时事件和 review_interval_seconds 保留，普通 Family 默认一天。到点由 `notify_periodic_review_task` 脚本逐成员比较活动水位与已回顾水位：无未回顾活动则结束，不读角色运行态或启动模型；有活动时再确认门面开放、Steward 空闲且无排队。忙碌、排队、未知运行态由下一次定时检查补偿，不改接单或另投提示词。
 
-Family 在已有 family_relays 账本的 activity_review 中独立保存 activity、reviewed 与 pending；统一任务派发仍拥有不可变请求/文本意图，Resident intake 仍拥有受理与取消。满足条件时冻结活动快照和目标 Steward，先保存由门面、目标与快照确定的稳定消息 ID，再通过现有 review 模板派发；任务派发入口核对当前角色与冻结目标一致后选择目标，角色切换不能把该 ID 投给新 Steward。派发失败保留 pending，重试相同 ID；持久受理后才消费冻结的快照，派发期间的新活动留在 activity 中。检查所有权不延迟 intake 提交，不持有活动账本事务跨运行态读取或消息受理。
+满足条件时，脚本以当时的活动水位快照确定稳定消息 ID，以门面身份向当前 Steward 投递 review 任务；`DeliverMessage` 受理后，脚本把已回顾水位推进到该快照，投递期间新增的活动留在活动水位中。投递失败时不推进已回顾水位，重试使用相同消息 ID。检查不持有跨运行态读取或消息受理的锁，不延迟 intake 提交。
 
-派发已受理而消费前中断时，重试先核对统一派发意图中的门面、Family、原目标、任务类型、事实及业务关联，再读取原目标输入回执；匹配时只消费冻结快照，不再次投递，即使 Steward 已更换或自身任务已排队、运行也可收尾。已 failed/cancelled/completed 的同材料任务不重开。成功消费表示回顾已受理，不表示 Steward 已完成组织判断。尚未受理的 pending 目标 Steward 已变更时返回 target_changed 并保留意图，不把同一消息 ID 改派给另一角色；需沿现有控制与诊断处理该冲突。
+投递已受理而水位尚未推进时中断，重试沿相同消息 ID 得到原受理回执，再推进已回顾水位；即使 Steward 已更换或自身任务已排队、运行也可收尾。已 failed/cancelled/completed 的同材料任务不重开。水位推进表示回顾已受理，不表示 Steward 已完成组织判断。Steward 已变更而原消息尚未受理时，以新 Steward 为目标重算快照与消息 ID，不把同一消息 ID 投给另一角色。
 
-只有生成的 review_activity 完成记录 Effect 和 notify_periodic_review_task 定时门控 Effect，可在同 Lineage、同 Family 的准确参数及事件形态下使用本门面调用身份。普通 workflow 不借用该身份，外部直接调用仍需正常 Lineage contributor 与领域角色/管理校验；原事件的外部发起者不传为新维护任务的权限主体。
+只有生成的 review_activity 完成记录 Effect 和 notify_periodic_review_task 定时门控 Effect，可在同 Lineage、同 Family 的准确参数及事件形态下使用本门面调用身份。普通 workflow 不借用该身份；原事件的外部发起者不传为新维护任务的权限主体。
 
-已有 Family 通过生成结构同步替换原无条件派发 Effect，保留 timer/route ID、已编辑回顾间隔及 review guide/prompt，增加成员完成记录 Route。既有时间水位只按其中已记录输入的首次完成事件转换为 cursor；pending 的事实与消息 ID 原样保留，消费时转换其水位，不扫描旧历史补造活动，不撤销已受理的旧回顾；用户 workflow:* 和指定定时业务不变。个人助手维持独立的原对话活动机制，不宣称已具备本节的派发意图保障。
+已有 Family 通过生成结构同步这两个脚本，保留 timer/route ID、已编辑回顾间隔及 review guide/prompt，并包含成员完成记录 Route；用户 workflow:* 和指定定时业务不变。个人助手维持独立的原对话活动机制，不宣称已具备本节的水位与消息 ID 保障。
 
 ## 队列与通信整理
 
@@ -87,7 +85,7 @@ Steward 的处理顺序：
 1. 读取 GetMailbox、ListResidentStates，区分重复请求、可一起处理的同一事项、依赖等待、短暂忙碌与职责过宽。
 2. 在权限允许时用 MergeMailboxItems、MoveMailboxItems 整理尚未执行的相关请求。保留原作者、原文、独立诉求和取消语义；已领取输入不变，info 不参与合并。合并减少轮次，不表示实际工作量消失，也不能为降低队列数字撤销有效请求。
 3. 重读整理后的 Mailbox，按剩余工作量、可并行性、既有职责和交接成本决定串行、分流或增员。维持串行也是有效结果，摘要中保留依据，必要时安排复查。
-4. 新成员通过 CreateResident/ForkResident 与 UpdateFamily 的归属契约加入；门面原请求用 RelayFamilyMessage 的改派协议转交，其他输入明确交接，避免重复执行。私人 Family 的组织变更须经所有者确认。
+4. 新成员通过 CreateResident/ForkResident 与 UpdateFamily 的归属契约加入；门面原请求用 RelayMessage 的改派协议转交，其他输入明确交接，避免重复执行。私人 Family 的组织变更须经所有者确认。
 
 Mailbox 操作和授权由 [Mailbox Design](/resource/knowledge?item=decision_15f7df737ed5) 定义，整理不会扩大原发送者权限。
 
@@ -105,29 +103,29 @@ Mailbox 操作和授权由 [Mailbox Design](/resource/knowledge?item=decision_15
 
 取消优先于恢复：原请求或当前成员副本已取消时，continue 只展示取消状态，不重新入队。保存恢复意图后发生撤回，中断续跑也不得重开或再派发路由。恢复命令自身被取消后不得继续处理。取消后的新业务意图须另行明确提交。
 
-`RelayFamilyMessage` 负责当前有效请求的转交，不隐式重开 failed；`RequeueMessage` 负责实际执行者的轮次，门面没有可放回的执行轮次。恢复进入 routing／queued／running 只表示工作已继续，只有原请求关联的实际执行完成及真实回复才能证明成功；修复回执本身不构成业务完成。
+`RelayMessage` 负责当前有效请求的转交；门面上状态为 failed 的原请求用 `RequeueMessage` 放回 queued，重新触发路由，再由 Router 流程或 Steward 调用 `RelayMessage`。重开保持原消息 ID、作者、时间、正文和附件，已取消的请求不重开，已有承接者的请求保持现状。恢复进入 routing／queued／running 只表示工作已继续，只有原请求关联的实际执行完成及真实回复才能证明成功；修复回执本身不构成业务完成。
 
 ### 成员执行与 Session 恢复
 
-恢复使用原消息 ID、原文、发送者与已保存的输出，不发送替代任务。RestartSession 默认在成功后恢复最近失败输入；取消迁移、初始化失败、明确停止、已经完成或已排队的输入不得重复放回。用户取消本次失败恢复的选择持久保存。详细迁移、接单持有与取消协议由 [Session 重启 Design](/resource/knowledge?item=decision_c47a13e8b962) 定义。
+恢复使用原消息 ID、原文、发送者与已保存的输出，不发送替代任务。会话操作成功只表明会话配置已提交。根据原输入的真实终态决定是否用 `RequeueMessage` 显式恢复；取消迁移、初始化失败、明确停止、已经完成或已排队的输入不得重复放回。用户取消本次失败恢复的选择持久保存。详细迁移、接单持有与取消协议由 [Session 重启 Design](/resource/knowledge?item=decision_c47a13e8b962) 定义。
 
-Steward 先查当前输入、账号与执行者有效自动切换策略，再按账号种类策略选择已登记 Agent 账号，自动完成交接并检查 GetSessionRestart 与原输入状态。能够完整导入时优先 preserve；不支持完整导入时，由目标账号执行 compact 整理交接，目标会话准备好后再切换并继续原任务，不等待用户选择交接方式。旧会话和历史保留，不自动采用空白 fresh 重开。环境已经修复但原输入仍失败时，显式 RequeueMessage 继续原输入。
+Steward 先查当前输入、账号与执行者有效自动切换策略，再按账号种类策略选择已登记 Agent 账号，自动完成交接并检查 GetSessionRestart 与原输入状态。公开 `RestartSession` 等待当前执行结束并校验完整有效上下文；目标不能完整承载时保留原绑定与历史。环境已经修复但原输入仍失败时，显式 RequeueMessage 继续原输入。
 
 平台每十分钟复查环境原因导致的失败输入及准入前因额度策略挂起的输入。网络未恢复时不消耗恢复次数；原账号额度恢复后继续原输入。后台对同输入的自动恢复及备用迁移有持久的次数限制，达到上限后不再盲试。显式 RequeueMessage 或显式 RestartSession 按正常权限执行，不受后台计数限制，也不重置后台计数。
 
 ### 既有组织成果归档
 
-对于未转交、路由失败的原请求，若本 Family Steward 的 route_review 输入已经完成原组织目标，授权恢复者调用 `ResolveFamilyRequest(resident_id, message_id, steward_message_id, reason)`。允许本 Family Steward 或具门面管理权的主体；原作者权限不自动扩展为归档权。
+对于未转交、路由失败的原请求，若本 Family Steward 的 route_review 输入已经完成原组织目标，授权恢复者调用 `ResolveRelayedRequest(resident_id, message_id, review_message_id, reason)`。允许本 Family Steward 或具门面管理权的主体；原作者权限不自动扩展为归档权。
 
 领域读取持久消息和输入回执，校验复核来源为本门面、本 Family 当前 Steward、原请求之后的输入，且不可变 business_ref 绑定同一原请求。旧版 `duty/family-route_review` 仅接受本门面签发的存储输入中唯一 JSON facts 对象，精确匹配 facade、lineage_id、family_id、message_id；不能用调用者提交的文本或任意完成消息代替来源。新派发使用 `family-review/<facade>/message/<原ID>`，不解析 prompt 取关联。
 
 复核输入必须 completed，并有属于该输入、由 Steward 实际写出的 agent 回复。调用者在 reason 中审计说明成果如何满足组织请求；平台校验来源和终态，不替代对成果含义的判断。取消、仍排队／运行、其他承接关系、未完成或无回复的来源、跨 Family／不相关来源均拒绝。同一来源重复归档幂等，不创建或执行新任务。
 
-归档只在 Family 的原请求关联账本保存真实来源、操作者、理由、时间、回复 ID 和原失败回执。原消息 ID、作者、时间、正文及原失败回执保持不变；GetInputState/GetMessage 沿已有回复投影展示既有完成成果。MaintainFamilyRecovery 复查原 incident 为 resolved，包括先前的 missing_creator；不得从 Resident 创建链推造人类创立者。归档不自动填写 human_familizer_id，不把修复轮次“受理”当业务完成。
+归档只在 Family 的原请求关联账本保存真实来源、操作者、理由、时间、回复 ID 和原失败回执。原消息 ID、作者、时间、正文及原失败回执保持不变；GetInputState/GetMessage 沿已有回复投影展示既有完成成果。`recovery_check` 脚本复查时把原 incident 记为 resolved，包括先前的 missing_creator；不得从 Resident 创建链推造人类创立者。归档不自动填写 human_familizer_id，不把修复轮次“受理”当业务完成。
 
 ## 持续监督与关闭接单
 
-成员、Router、Steward 的失败信号和路由链失败信号进入 MaintainFamilyRecovery；每分钟机械复查及 Steward 完成事件核对当前状态。登记按原门面请求定位，没有门面请求时按 Resident 与消息 ID 定位。延迟事件对应的输入已经完成就结案；改派后跟随现接手者，历史 failed/continue 副本不再次执行。
+成员、Router、Steward 的失败信号和路由链失败信号进入 `recovery_check` 脚本；每分钟机械复查及 Steward 完成事件核对当前状态。登记按原门面请求定位，没有门面请求时按 Resident 与消息 ID 定位，故障键与未完成通知记在共享状态中。延迟事件对应的输入已经完成就结案；改派后跟随现接手者，历史 failed/continue 副本不再次执行。
 
 成员消息到达时检查接单阻塞；周期检查当前队列，覆盖消息到达后才关闭或事件漏送。每个关闭成员取一个有效阻塞输入，同一 Family 合并为一条未完成修复请求。已准入且未因关闭而挂起的活动工作不误报。
 
@@ -137,14 +135,14 @@ Steward 可用 SetIntakeOpen 恢复成员，必要时修复 Session、代码缺�
 
 门面开放时，平台恢复 Router、Steward 的接单能力，不要求它们先能运行模型。生命周期迁移持有的临时关闭须等待该操作，不能抢先开放或重复迁移。**关闭门面是暂停整个 Family 自维护的边界**；重新开放后继续检查当前阻塞。开放接单本身不授予额度 override（门面人工放行的同步见“额度与自动转组”），不打断已准入执行，也不复活取消或明确停止的输入。
 
-Steward 自己失败、收不到恢复任务、恢复后仍不能接单，或显式报告 escalate_reason 时，平台直接升级。故障与当前状态保留，后续完成仍可结案。
+Steward 自己失败、收不到恢复任务、恢复后仍不能接单，或 Steward 用 CreateNotification 把无法继续的原因报告给实际创建人时，视为已升级。故障与当前状态保留，后续完成仍可结案。
 
 ## 额度与自动转组
 
 | 对象 | 检查与行动 |
 | --- | --- |
-| 业务成员 | RelayFamilyMessage 在直达、引用直交、模型选人后统一检查五小时、周等所有新鲜窗口的最低剩余额度；低于 5% 时保存复核记录，原请求留在门面，派发 quota 给 Steward。恰好 5% 不触发该复核；未知不当作零 |
-| 业务成员、Router、Steward | auto_migrate 开启且有待执行原输入时，在实际执行入口检查真实绑定账号；任一新鲜额度窗口不高于 5%，或按量余额耗尽时，平台寻找安全备用账号。空闲时不查询额度或迁移。resident.state_changed(intake) 与每分钟 timer 只经 MaintainFamilyRoleAvailability 维护接单，不再设置额度 Watch |
+| 业务成员 | 转交脚本在直达、引用直交、模型选人后、调用 `RelayMessage` 之前统一用 `CheckRelayTarget` 判定（系统按五小时、周等所有新鲜窗口的最低剩余额度计算）；`quota_low`（低于 5%）时不转交，原请求留在门面，向 Steward 投递 quota 任务。恰好 5% 不触发该复核；未知不当作零 |
+| 业务成员、Router、Steward | auto_migrate 开启且有待执行原输入时，在实际执行入口检查真实绑定账号；任一新鲜额度窗口不高于 5%，或按量余额耗尽时，平台寻找安全备用账号。空闲时不查询额度或迁移。resident.state_changed(intake) 与每分钟 timer 只经 `role_availability` 脚本维护接单，不再设置额度 Watch |
 | 备用账号 | 已登记、观测新鲜、可用，所有已知额度窗口严格高于 5%；按量后端有确认的正余额。自动切换只在订阅账号之间进行：服务账号和 API 只有在用户把该种类列入 Family.auto_migrate_priority，或与原账号同种类时才可选。优先同账号种类的安全备用账号；同种类不可用时按有效排序选择：成员显式开启使用站点 default.backend_priority，否则非空 auto_migrate_priority 优先，空数组使用站点默认 |
 
 **门面的人工额度放行覆盖 Router 与 Steward。** 有人在门面上人工打开接单时记录的额度放行（`quota_reserve_override`），由平台同步给本 Family 的 Router 和 Steward：每个角色以自己的 binding（`resident:<角色 ID>`）和递增的 revision 写入同一份三字段放行，并交给 Execution Scheduler；门面停用放行时同样同步为停用。门面没有放行记录时不改动角色自己的设置。同步发生在平台每次维护角色接单时，Family 暂停期间也照常同步。
@@ -153,11 +151,11 @@ Steward 自己失败、收不到恢复任务、恢复后仍不能接单，或显
 
 **Router、Steward 找不到账号时由门面管理者选择。** 角色的额度经新鲜读数确认不足，且找不到安全账号或迁移次数已用完时，平台除了向 Family 创建人发送 Lineage 通知，还以门面名义在门面对话里发一组问题卡片（`family_role_quota_questions`），写明角色、账号、剩余额度、预计重置时间和等待中的工作数，选项为“用当前账号的 credits 继续”“等额度重置”“我去补账号”。每个额度窗口只发一次；额度读数未知或过期时不发。门面管理者都能回答：回答留在门面对话里，标为已完成，不交给 Router；DeliverMessage 随后执行选择——选择 credits 继续时，以回答者自己的门面管理权对门面做人工放行，Router、Steward 按上段同步后继续运行；选择等待只回复确认；选择补账号回复首页 AI 账号入口。执行结果作为门面消息写回对话。角色恢复安全账号或进入新的额度窗口时，未回答的卡片关闭。业务成员仍按原方式通知创建人。
 
-所有 Resident 都受 ExecutionService 的通用额度准入保护；该调度门槛取自账号配置，区别于 Family 的 5% 预防线。底层账号额度观测仍维护新鲜快照；取消的是额外的运行图 usage 轮询。自动转组先读取执行者 execution_settings.auto_switch_on_quota 的显式布尔值；未设置时继承直属 Family.auto_migrate，默认开启。内层门面不执行模型，内层成员、Router、Steward 使用内层 Family 默认，不借用外层策略；成员的直接工作流输入也经过执行前检查。业务额度复核由本 Family Steward 在该策略内决定是否迁移；核对迁移完成后用 quota_reviewed=true 和理由放行原请求，仍检查取消及附件权限。
+所有 Resident 都受 ExecutionService 的通用额度准入保护；该调度门槛取自账号配置，区别于 Family 的 5% 预防线。底层账号额度观测仍维护新鲜快照；取消的是额外的运行图 usage 轮询。自动转组先读取执行者 execution_settings.auto_switch_on_quota 的显式布尔值；未设置时继承直属 Family.auto_migrate，默认开启。内层门面不执行模型，内层成员、Router、Steward 使用内层 Family 默认，不借用外层策略；成员的直接工作流输入也经过执行前检查。业务额度复核由本 Family Steward 在该策略内决定是否迁移；核对迁移完成后调用 RelayMessage（写明理由）转交原请求，仍检查取消及附件权限。
 
 首次安装尚未配置默认 AI，或持续角色绑定的账号已不存在时，Router、Steward 的已受理输入保持待执行。后台把账号缺失保存为 `family_quota_migrations.account_wait`，角色可用性显示账号配置提示；不会将它记成 coordinator 故障、消耗额度迁移次数或选择其他账号。其他 Resident 和 Lineage 仍按各自状态恢复。后续扫描观察到账号后，仅移除这项等待标记，再执行原有额度保护；既有额度事故与迁移记录继续保留，取消、停止及已准入工作维持原语义。尚未绑定的角色按当前默认 Backend 的实际 Provider 和账号查询额度，支持默认 AI 从 Codex 占位配置切换到其他 Provider。
 
-Family 执行成员迁移沿用账号策略和 Restart 领域，跨 Provider 或跨账号种类显式选择目标账号当前默认 model，优先使用 preserve 完整保留上下文，不支持完整导入时自动在目标账号执行 compact 交接；已准入工作先完成，未准入 job、消息与发送者跨迁移保留。family_quota_migrations 持久保存账号窗口、尝试次数、已试账号、幂等迁移意图和通知去重；5% 预防性迁移在同一账号窗口最多尝试两个备用账号；确认耗尽后的共享切换按有效排序逐个尝试，保存失败原因；无可用候选时保留原任务并等待账号恢复，跨 Provider 不支持完整导入时自动整理交接，不因上下文策略要求人工选择。实际初始化失败或权限拒绝继续按原失败与幂等协议处理。预防性换号在提交生命周期操作之前遇到确定性上下文校验或权限拒绝时，清除该次待重试意图，在同一账号额度窗口保存 migration_failed 与源账号，不再反复执行同一失败准备；原 Session、输入及已准入执行保留。该失败按当前源账号投影为需要人工处理，即使 Scheduler 的额度准入仍为 open，也不能显示为切换就绪。切换开关关闭或绑定已换到其他账号时，旧失败记录不阻挡当前执行；账户额度恢复或进入新的额度窗口后按当前事实重新判断。传输中断保持同一持久幂等意图重试，不将未知结果视为成功，也不放宽原生历史完整性、权限或 Scheduler 额度保护。角色已迁离原 Lineage 的旧记录不能再启动迁移；未知或过期观测不能清除已登记的不可用状态。
+Family 执行成员迁移沿用账号策略和 Restart 领域，跨 Provider 或跨账号种类显式选择目标账号当前默认 model，优先使用 preserve 完整保留上下文，不支持完整导入时自动在目标账号执行 compact 交接；已准入工作先完成，未准入 job、消息与发送者跨迁移保留。family_quota_migrations 持久保存账号窗口、尝试次数、已试账号、幂等迁移意图和通知去重；5% 预防性迁移在同一账号窗口最多尝试两个备用账号；确认耗尽后的共享切换按有效排序逐个尝试，保存失败原因；无可用候选时保留原任务并等待账号恢复，跨 Provider 不支持完整导入时自动整理交接，不因上下文策略要求人工选择。实际初始化失败或权限拒绝继续按原失败与幂等协议处理。预防性换号在提交生命周期操作之前遇到确定性上下文校验或权限拒绝时，清除该次待重试意图，在同一账号额度窗口保存 migration_failed 与源账号，不再反复执行同一失败准备；原 Session、输入及已准入执行保留。该失败按当前源账号投影为需要人工处理；仅 Scheduler 的额度准入为 open 仍不能显示为切换就绪，因为 Family 预防线可以高于调度准入门槛。若当前 Scheduler 明确返回门控 open 且人工额度放行有效（override_enabled=true），界面按当前放行显示就绪，旧失败回执保留但不再要求手动选择；门控关闭或未知时不能用放行标记掩盖失败，也不因读取投影改变迁移意图、额度、消息或会话。切换开关关闭或绑定已换到其他账号时，旧失败记录不阻挡当前执行；账户额度恢复或进入新的额度窗口后按当前事实重新判断。传输中断保持同一持久幂等意图重试，不将未知结果视为成功，也不放宽原生历史完整性、权限或 Scheduler 额度保护。角色已迁离原 Lineage 的旧记录不能再启动迁移。额度事故归属于其源账号：新记录显式保存 source_account，既有预防迁移按该领域的账号窗口 epoch 识别来源；无法识别来源时保持保守。手动固定到另一个账号后，旧源账号事故不得因目标额度未知而继续阻挡新绑定，执行与可用性投影遵守同一归属判定；当前账号不存在的 account_wait 仍独立生效。旧事故与尝试次数保留供审计及切回原账号使用，不以未知读数清除。相同账号的未知或过期观测不能解除已登记阻塞；自动选账号仍要求满足原有可用性规则，Scheduler 准入和已开始的生命周期操作不被绕过。放行只允许正常 continuation 接续已准备的同一原输入，不重新投递业务消息。
 
 门面菜单的 Family 页签提供“额度不足时自动转组”，通过 `UpdateFamily(auto_migrate=bool)` 保存。所有现有和新建 Family 默认开启。关闭后，未显式覆盖的直属执行者停止新的自动迁移，包括 quota failure 恢复中的换账号；原任务和队列仍等待原账号恢复，额度保护继续有效。已开始的生命周期迁移可完成；不撤销人工操作。Steward 每轮任务带开关事实，行动前按 GetLineage 重读；人工暂停、取消、已完成输入和迁移幂等边界保持不变。没有确定证据区分取消原因时，不将历史 cancelled 输入自动恢复。
 

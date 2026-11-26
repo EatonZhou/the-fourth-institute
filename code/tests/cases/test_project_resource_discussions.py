@@ -10,7 +10,10 @@ from tests.cases.permission_test_support import Fact, permissions
 
 
 class Resources:
-    def __init__(self):
+    def __init__(self, monkeypatch):
+        from management_portal.resources.providers import project
+
+        monkeypatch.setattr(project, "project_summary", self.read_summary)
         self.records = {
             "A": {"resource_id": "A", "resource_type": "project", "title": "Alpha", "summary": "Goal A"},
             "B": {"resource_id": "B", "resource_type": "project", "title": "Beta"},
@@ -28,9 +31,8 @@ class Resources:
             raise PermissionError(resource_id)
         return deepcopy(self.records[resource_id])
 
-    def action(self, resource_id, action, *, actor):
-        assert action == "summary.read"
-        self.calls.append((action, actor, resource_id))
+    def read_summary(self, resource_id):
+        self.calls.append(("summary.read", "alice", resource_id))
         return {"text": self.summary}
 
     def resolve(self, resource_id, *, actor):
@@ -46,8 +48,8 @@ class Resources:
 RID = "article_123456789abc"
 
 
-def test_background_reads_authorized_current_project_and_bounded_index():
-    service = Resources()
+def test_background_reads_authorized_current_project_and_bounded_index(monkeypatch):
+    service = Resources(monkeypatch)
     service.records["article_000000000002"] = {"resource_id": "article_000000000002", "projects": ["A"], "title": "private"}
     service.denied.add("article_000000000002")
     service.records["repo_000000000003"] = {"resource_id": "repo_000000000003", "projects": ["B"], "title": "other project"}
@@ -60,8 +62,8 @@ def test_background_reads_authorized_current_project_and_bounded_index():
     assert "New shared conclusion" in discussions.context(service, "alice", service.records[RID])["context_text"]
 
 
-def test_multiple_projects_require_explicit_choice_or_resource_only():
-    service = Resources()
+def test_multiple_projects_require_explicit_choice_or_resource_only(monkeypatch):
+    service = Resources(monkeypatch)
     service.records[RID]["projects"] = ["A", "B"]
     result = discussions.context(service, "alice", service.records[RID])
     assert result["selection_required"] and result["context_text"] == ""
@@ -75,8 +77,8 @@ def test_multiple_projects_require_explicit_choice_or_resource_only():
 
 
 @pytest.mark.parametrize("change", ["denied", "unlinked", "removed"])
-def test_project_revocation_and_unlink_fail_before_sending(change):
-    service = Resources()
+def test_project_revocation_and_unlink_fail_before_sending(change, monkeypatch):
+    service = Resources(monkeypatch)
     snapshot = deepcopy(service.records[RID])
     if change == "denied":
         service.denied.add("A")
@@ -88,8 +90,8 @@ def test_project_revocation_and_unlink_fail_before_sending(change):
         discussions.context(service, "alice", snapshot, selected="A", require_selection=True)
 
 
-def test_readable_resource_does_not_grant_project_or_hide_service_failure():
-    service = Resources()
+def test_readable_resource_does_not_grant_project_or_hide_service_failure(monkeypatch):
+    service = Resources(monkeypatch)
     service.denied.add("A")
     result = discussions.context(service, "alice", service.records[RID])
     assert result["projects"] == [] and result["context_text"] == ""
@@ -103,7 +105,7 @@ def test_readable_resource_does_not_grant_project_or_hide_service_failure():
 
 
 def test_actual_binding_store_is_private_and_association_follows_live_membership(monkeypatch):
-    service = Resources()
+    service = Resources(monkeypatch)
     store = PortalUIStateStore()
     namespace = discussions.resident_handoff.INVOCATION_ASSOCIATION_NAMESPACE
     own = {"resident_id": "resident_123456789abc", "metadata": {"resource_id": RID}}
@@ -134,7 +136,7 @@ def test_actual_binding_store_is_private_and_association_follows_live_membership
 
 def test_project_route_uses_authenticated_actor_and_returns_permission_failure(monkeypatch):
     from management_portal import http_projects, http_responses, resources
-    service = Resources()
+    service = Resources(monkeypatch)
     monkeypatch.setattr(resources, "get_resource_service", lambda: service)
     monkeypatch.setattr(http_responses, "_serve_json", lambda request, status, payload: (status, payload))
     calls = []
@@ -151,7 +153,7 @@ def test_project_route_uses_authenticated_actor_and_returns_permission_failure(m
 def test_real_resource_authorization_retains_revocation_and_uses_live_provider_links(monkeypatch, permissions):
     from management_portal import portal_features
     from management_portal.resources import ResourceService
-    data = Resources()
+    data = Resources(monkeypatch)
     permissions.users("alice")
     permissions.place(Fact("project", "A"), Fact("project", "B"), Fact("article", RID))
     permissions.grant("alice", RID, "@viewer")
@@ -167,8 +169,7 @@ def test_real_resource_authorization_retains_revocation_and_uses_live_provider_l
         def query(self, **kwargs):
             return {"resources": [{"resource_id": RID}], "total": 1}
 
-    service = ResourceService(index_provider=Index(), action_provider_loader=lambda _: None)
-    service.register_action_provider("project", {"summary.read": lambda rid, payload, **kw: {"text": data.summary}})
+    service = ResourceService(index_provider=Index())
     live = deepcopy(data.records[RID])
     service.register_resolver("article", lambda address, **kw: {
         "root_id": address, "resource_type": "article", "target_kind": "article", "record": deepcopy(live), "exists": True})

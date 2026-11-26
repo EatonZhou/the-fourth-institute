@@ -9,13 +9,18 @@ from types import SimpleNamespace
 import pytest
 
 from management_portal.hatg.contracts import InstructionContext
-from management_portal.society_service import family_facade, lineage_message_events, resident_conversation_stream
+from management_portal.society_service import (
+    family_facade, family_storage, lineage_message_events, lineage_resident_nodes, resident_backend,
+    resident_conversation_stream, resident_intake_domain, resident_record_domain,
+)
+from management_portal.society_service.domain_ports import execution_port
 from management_portal.society_service.lineage_program_effect_execution import _family_note_context
 from management_portal.society_service.resident_input_queue_domain import build_message as _message
 from management_portal.society_service.resident_record_domain import find_resident as _find_resident
 from management_portal.society_service.state_store import get_lineage_data_store
-from tests.cases.permission_test_support import Fact, permissions  # noqa: F401
-from tests.cases.test_family_quota import quota_family, team, owners  # noqa: F401
+from tests.cases.test_cross_owner_storage_integration import ACTOR, owners  # noqa: F401
+from tests.cases.test_family_quota import _account
+from tests.cases.test_wall04_residual_20260919 import team  # noqa: F401
 
 SENDER = "resident_5e4de4000001"
 OTHER_SENDER = "resident_5e4de4000002"
@@ -28,8 +33,56 @@ def _ago(minutes: float) -> str:
 
 
 @pytest.fixture
-def family(quota_family):
-    f = quota_family
+def relay_family(team, monkeypatch):
+    """Store a generated Family roster and its real facade registry together."""
+    facade = team.source["resident_id"]
+    member = team.target["resident_id"]
+
+    def create(title):
+        return lineage_resident_nodes.create_lineage_resident(team.lineage_id, {
+            "title": title, "backend": "codex", "mode": "new_session",
+        }, ACTOR)["resident"]["resident_id"]
+
+    steward, spare = create("Relay steward"), create("Relay spare")
+    outer_id, inner_id = "fbi_0123456789ab", "fbi_0123456789ac"
+    blocks = [{"id": outer_id, "family": {
+        "title": "Relay fixture", "facade": facade, "steward": steward, "members": [member],
+    }}]
+    store = get_lineage_data_store()
+
+    def persist():
+        store.database.write(lambda c: family_storage.store_program(
+            c, team.lineage_id, {"function_blocks": blocks}, _ago(0),
+        ))
+
+    def nest():
+        blocks.append({"id": inner_id, "family": {
+            "title": "Inner relay fixture", "facade": member, "members": [spare],
+        }})
+        persist()
+
+    persist()
+    assert set(family_facade.relay_target_ids({"resident_id": facade})) == {member, steward}
+    monkeypatch.setattr(resident_intake_domain, "resolve_context_refs", lambda *args, **kwargs: {})
+    monkeypatch.setattr(resident_backend, "session_record", lambda _: {})
+    for rid, route in ((member, "one"), (steward, "one"), (spare, "two")):
+        record = _find_resident(rid)
+        record["backend_route_id"] = route
+        resident_record_domain.save_resident_record(record, commit_configuration=True)
+    accounts = [_account("one", 4), _account("two", 90)]
+    monkeypatch.setattr(execution_port, "service", lambda: SimpleNamespace(accounts=lambda: {"accounts": accounts}))
+    repo = resident_conversation_stream.get_repository()
+    original = _message("user", "持续检查权限并修复所有缺陷", ACTOR)
+    repo.append_message(facade, original)
+    repo.set_input_state(facade, original["message_id"], "queued")
+    return SimpleNamespace(facade=facade, member=member, steward=steward, spare=spare,
+                           accounts=accounts, message=original["message_id"], nest=nest,
+                           inner_id=inner_id)
+
+
+@pytest.fixture
+def family(relay_family):
+    f = relay_family
     repo = resident_conversation_stream.get_repository()
     record = _find_resident(f.facade)
 
@@ -150,6 +203,6 @@ def test_the_router_effect_may_relay_only_the_member_it_recomputes(family, chang
                                     InstructionContext(caller=caller, entry="lineage"),
                                     lineage_id=record["lineage_id"], event=event).caller
 
-    assert (acting_as("RelayFamilyMessage", args) == f.facade) == (change == "none")
-    asked = acting_as("DispatchFamilyTask", dict(resident_id=f.facade, source_message_id=message["message_id"], trigger="route"))
+    assert (acting_as("RelayMessage", args) == f.facade) == (change == "none")
+    asked = acting_as("GetRelayContext", dict(resident_id=f.facade, message_id=message["message_id"], section="request"))
     assert (asked == f.facade) == (change != "other-author")

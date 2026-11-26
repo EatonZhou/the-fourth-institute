@@ -18,7 +18,7 @@ from management_portal.resource_index_knowledge import ProjectKnowledgeAdapter, 
 from management_portal.resource_index_refresh import AdapterLayer
 from management_portal.resource_index_registries import (
     ProjectRegistryAdapter, CollaborationRegistryAdapter, ResourceRegistryAdapter, DeviceRegistryAdapter,
-    SavedSearchAdapter, WorkbenchAdapter, KnowledgeTagsRegistryAdapter,
+    SavedSearchAdapter, WorkbenchAdapter, KnowledgeTagsRegistryAdapter, MailboxTodoAdapter,
 )
 from management_portal.resource_index_store import IndexStore
 
@@ -33,6 +33,7 @@ DEFAULT_ADAPTERS = (
     ResourceRegistryAdapter,
     DeviceRegistryAdapter,
     SavedSearchAdapter,
+    MailboxTodoAdapter,
 )
 
 
@@ -97,6 +98,11 @@ class ResourceIndexService(ResourceIndexRuntime):
 
 _SERVICE_LOCK = threading.Lock()
 _SERVICE: ResourceIndexService | None = None
+
+
+def readonly_authorization_snapshot() -> dict[str, Any]:
+    """Persisted facts for previews; deliberately bypass the service singleton."""
+    return IndexStore.readonly_authorization_snapshot()
 
 
 def get_service() -> ResourceIndexService:
