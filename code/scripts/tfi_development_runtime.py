@@ -132,6 +132,10 @@ def health(port, expected=None):
                 result = json.load(response)
             if result.get("ok") is False:
                 raise ValueError("Web health reports not ready")
+            for name in ("society_service", "resource_service", "execution_service"):
+                service = result.get(name)
+                if isinstance(service, dict) and service.get("ok") is False:
+                    raise ValueError(name + " reports not ready: " + str(service.get("error", "")))
             if expected and result.get("deployment") != expected:
                 raise ValueError("Unexpected Web deployment: " + str(result.get("deployment")))
             return result

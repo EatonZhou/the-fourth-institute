@@ -10,7 +10,7 @@ from .lineage_primitives import now_iso as _now_iso
 
 
 STATE_SCHEMA = "tfi.hatg-graph-state.v1"
-MAX_STATE_CELLS = 128
+MAX_STATE_CELLS = 4096
 MAX_VALUE_BYTES = 64 * 1024
 MAX_STATE_BYTES = 2 * 1024 * 1024
 _EXPECTED_VALUE_UNSET = object()
@@ -71,7 +71,7 @@ def _normalize(raw: object) -> dict[str, Any]:
     for raw_key, raw_value in cells.items():
         normalized_cells[_key(raw_key)] = _value(raw_value)
     if len(normalized_cells) > MAX_STATE_CELLS:
-        raise ValueError("Graph State 最多包含 128 个 cell")
+        raise ValueError(f"Graph State 最多包含 {MAX_STATE_CELLS} 个 cell")
     result = {
         "schema": STATE_SCHEMA,
         "revision": max(0, int(item.get("revision") or 0)),
@@ -148,7 +148,7 @@ def update_cell(
         changed = matched and (not existed or previous_value != clean_value)
         if changed:
             if not existed and len(state["cells"]) >= MAX_STATE_CELLS:
-                raise ValueError("Graph State 最多包含 128 个 cell")
+                raise ValueError(f"Graph State 最多包含 {MAX_STATE_CELLS} 个 cell")
             state["cells"][clean_key] = clean_value
             state["revision"] = int(state["revision"]) + 1
             state["updated_at"] = _now_iso()

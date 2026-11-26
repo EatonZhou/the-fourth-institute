@@ -110,12 +110,8 @@ def _input_status(connection, resident_id, message_id):
     return row["state"] if row else None
 
 
-def migrate_family_state(connection, lineage_id):
-    """Copy verified policy cells in the caller's stopped-owner transaction.
-
-    The outer cutover owns removing source fields and the intent table when
-    their last consumer crosses over. This function changes only Shared State.
-    """
+def _family_cells(connection, lineage_id):
+    """Plan from the caller's snapshot without initialization or mutation."""
     rows = connection.execute(
         """SELECT f.family_id, facade.resident_id AS facade_id, steward.resident_id AS steward_id,
                   relays.relay_json, quota.review_json
@@ -136,7 +132,26 @@ def migrate_family_state(connection, lineage_id):
             root_status=lambda message_id: _input_status(connection, row["facade_id"], message_id),
             steward_status=lambda message_id: _input_status(connection, row["steward_id"], message_id),
         ))
-    return _write_cells(connection, lineage_id, candidates)
+    return candidates
+
+
+def migrate_family_state(connection, lineage_id):
+    """Copy verified facts in the caller's stopped-owner graph transaction."""
+    return _write_cells(connection, lineage_id, _family_cells(connection, lineage_id))
+
+
+def check_family_state(connection, lineage_id):
+    """Validate the same merge and capacity within a read-only snapshot."""
+    try:
+        candidates = _family_cells(connection, lineage_id)
+        if candidates:
+            stored = connection.execute(
+                "SELECT cells_json FROM lineage_shared_state WHERE lineage_id=%s", (lineage_id,),
+            ).fetchone()
+            _merge_cells(json_value(stored["cells_json"]) if stored else {}, candidates)
+    except ValueError as error:
+        return [{"kind": "family_state", "lineage_id": lineage_id, "reason": str(error)}]
+    return []
 
 
 def _write_cells(connection, lineage_id, candidates):
@@ -145,7 +160,18 @@ def _write_cells(connection, lineage_id, candidates):
     stored = connection.execute(
         "SELECT cells_json FROM lineage_shared_state WHERE lineage_id=%s FOR UPDATE", (lineage_id,),
     ).fetchone()
-    state = lineage_graph_state._normalize(json_value(stored["cells_json"]) if stored else {})
+    state, changed = _merge_cells(json_value(stored["cells_json"]) if stored else {}, candidates)
+    if changed:
+        connection.execute(
+            "INSERT INTO lineage_shared_state (lineage_id,cells_json) VALUES (%s,%s) "
+            "ON CONFLICT(lineage_id) DO UPDATE SET cells_json=excluded.cells_json",
+            (lineage_id, json_text(state, ensure_ascii=False, sort_keys=True)),
+        )
+    return changed
+
+
+def _merge_cells(raw, candidates):
+    state = lineage_graph_state._normalize(raw)
     changed = []
     for key, value in candidates.items():
         if key in state["cells"]:
@@ -158,12 +184,7 @@ def _write_cells(connection, lineage_id, candidates):
         state["revision"] += 1
         state["updated_at"] = lineage_primitives.now_iso()
         state = lineage_graph_state._normalize(state)
-        connection.execute(
-            "INSERT INTO lineage_shared_state (lineage_id,cells_json) VALUES (%s,%s) "
-            "ON CONFLICT(lineage_id) DO UPDATE SET cells_json=excluded.cells_json",
-            (lineage_id, json_text(state, ensure_ascii=False, sort_keys=True)),
-        )
-    return changed
+    return state, changed
 
 
 def _same_cell(left, right):

@@ -7,10 +7,9 @@ import json
 
 MIGRATION = "isa-d066-20261126"
 
-# One approved unresolved row is retained, not translated into new capabilities.
-# This disposition belongs only to this migration; it grants no runtime access
-# and does not exempt rule documents, other schemes, IDs or A elements.
-_RETAINED_ENTRY = ("default", "entry_8236fdec67d3108a91b6bdb1", "UpdateUser")
+# Existing profile grants remain byte-for-byte unchanged. New Portal status and
+# category capabilities are never inferred from a grant on a User resource.
+# This does not exempt explicit rule documents or other ambiguous A elements.
 _RETENTION_SOURCE = "msg_ed8c7e62384080bc8c4dceaa1f5f9b41"
 
 # A elements, including slots, rather than a text substitution of instruction names.
@@ -217,7 +216,7 @@ def migrate(store):
         for row in rows:
             element = row["a_node"]
             target = targets(element)
-            if (row["scheme_id"], row["entry_id"], element) == _RETAINED_ENTRY:
+            if element == "UpdateUser":
                 target = (element,)
                 retained.add((row["scheme_id"], row["entry_id"]))
                 history.append({"table": "scheme_entries", "row": dict(row),

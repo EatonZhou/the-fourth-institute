@@ -1,4 +1,4 @@
-"""The one approved d066 legacy row, using synthetic data on isolated PostgreSQL."""
+"""Preserve legacy profile grants without manufacturing Portal administration."""
 import json
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -83,13 +83,22 @@ def test_normal_cold_owner_retains_exact_row_and_audits_without_expanding_rights
     assert snapshot(store) == after  # No duplicate audit or renewed credential on cold retry.
 
 
-@pytest.mark.parametrize("changes", [
-    {"scheme_id": "other-scheme"},
-    {"entry_id": "entry_another_updateuser"},
-    {"element": "UpdateExecutionSettings"},
-])
-def test_same_name_id_or_scheme_alone_never_bypasses_ambiguity(changes):
-    store, _entry = seed(**changes)
+@pytest.mark.parametrize("mode", ["permit", "deny", "disabled", "task", "duration", "expired"])
+@pytest.mark.parametrize("scheme_id", ["default", "other-scheme"])
+def test_other_updateuser_entries_are_retained_without_new_capabilities(mode, scheme_id):
+    entry_id = "entry_another_updateuser"
+    store, _entry = seed(mode=mode, scheme_id=scheme_id, entry_id=entry_id)
+    before = rows(store, entry_id)
+    assert migration.migrate(store)
+    assert rows(store, entry_id) == before
+    assert not any(row["p_node"] == PRINCIPAL and row["a_node"] in {
+        "UpdateUserStatus", "UpdateUserCategory"} for row in snapshot(store)["scheme_entries"])
+    assert not migration.migrate(store)
+    assert rows(store, entry_id) == before
+
+
+def test_other_ambiguous_instruction_still_requires_owner_resolution():
+    store, _entry = seed(element="UpdateExecutionSettings")
     before = snapshot(store)
     with pytest.raises(repo.SchemeConflict, match="需 owner 明确等价能力"):
         repo.Schemes(Store())
@@ -99,7 +108,7 @@ def test_same_name_id_or_scheme_alone_never_bypasses_ambiguity(changes):
 def test_other_conflict_rolls_back_preservation_audit_and_all_migration_changes():
     store, _entry = seed()
     with store.transaction() as con:
-        store.add(con, [Entry("entry_unapproved", "permit", PRINCIPAL, "UpdateUser", "another-user")])
+        store.add(con, [Entry("entry_unapproved", "permit", PRINCIPAL, "UpdateExecutionSettings", "@shared")])
     before = snapshot(store)
     with pytest.raises(repo.SchemeConflict, match="entry_unapproved"):
         repo.Schemes(Store())

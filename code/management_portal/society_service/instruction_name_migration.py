@@ -648,10 +648,13 @@ def check():
                 deferred.extend(isa_migration_scope.deferred_report())
                 continue
             definition = lineage_data_definitions.definition_from_connection(connection, lineage_id)
+            migrate_family = _has_original_family_script(definition)
             diagnostics = []
             effects, wires = _normalize_definition(definition, diagnostics=diagnostics)
             blocked.extend({"lineage_id": lineage_id, **issue} for issue in diagnostics)
             blocked.extend(_blockers(connection, lineage_id, effects, wires))
+            if migrate_family:
+                blocked.extend(family_strategy_state.check_family_state(connection, lineage_id))
         # Current, editable templates participate in the same preflight.
         # The template store's published snapshots and versions are evidence,
         # and are normalized only when installed into a current definition.
@@ -669,6 +672,13 @@ def check():
 def _require_clear(report):
     if report["blocked_count"]:
         raise RuntimeError("ISA definition migration blocked by unresolved contracts or Effect work: " + json.dumps(report))
+
+
+def _has_original_family_script(definition):
+    from . import family_definition
+    return any(isinstance(source := (component.get("config") or {}).get("script"), str)
+               and family_definition.is_original_family_script(source)
+               for component in definition["program"]["components"])
 
 
 def _migrate_lineage(lineage_id):
@@ -689,9 +699,7 @@ def _migrate_lineage(lineage_id):
             # Copy facts only during the exact canonical strategy cutover, on
             # the same locked transaction as the graph CAS. Subsequent starts
             # must not replay old facts over an evolved SharedState cell.
-            if any(isinstance(source := (component.get("config") or {}).get("script"), str)
-                   and family_definition.is_original_family_script(source)
-                   for component in before["program"]["components"]):
+            if _has_original_family_script(before):
                 family_strategy_state.migrate_family_state(connection, lineage_id)
             lineage_state._persist_lineage_state_transaction(
                 before, after, "Migrate current ISA instruction contracts",

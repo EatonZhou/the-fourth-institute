@@ -6,6 +6,7 @@
 :risk: no-external-side-effects
 """
 import json
+import io
 import os
 import subprocess
 import sys
@@ -30,6 +31,25 @@ def write_pair(root):
 
 
 class PairedRuntimeTest(unittest.TestCase):
+    def test_health_waits_for_owners_even_when_web_is_ready(self):
+        responses = [
+            {"ok": True, "deployment": "dev", "society_service": {"ok": False, "error": "migrating"}},
+            {"ok": True, "deployment": "dev", "society_service": {"ok": True}},
+        ]
+        with patch.object(paired.urllib.request, "urlopen", side_effect=[
+                io.StringIO(json.dumps(value)) for value in responses]) as request, \
+                patch.object(paired.time, "sleep"):
+            self.assertEqual(paired.health(1234, "dev"), responses[-1])
+            self.assertEqual(request.call_count, 2)
+
+    def test_health_refuses_an_unavailable_owner(self):
+        def response(*args, **kwargs):
+            return io.StringIO(json.dumps({"ok": True, "society_service": {"ok": False}}))
+        with patch.object(paired.urllib.request, "urlopen", side_effect=response), \
+                patch.object(paired.time, "sleep"):
+            with self.assertRaisesRegex(RuntimeError, "society_service reports not ready"):
+                paired.health(1234)
+
     def test_explicit_instance_without_pair_never_uses_checkout_runtime(self):
         from tests.cases.instance_test_support import write_instance
         with tempfile.TemporaryDirectory() as directory:
