@@ -1,12 +1,14 @@
 """Move active Family policy facts into Lineage Shared State at cutover."""
 from __future__ import annotations
 
+import json
 from copy import deepcopy
+from hashlib import sha256
 from typing import Callable
 
 from management_common.json_columns import json_text, json_value
 
-from . import family_review, family_task_dispatches, lineage_graph_state, lineage_primitives
+from . import family_review, family_task_dispatches, isa_migration_scope, lineage_graph_state, lineage_primitives
 from .resident_conversation_records import INPUT_STATE_CHANGED
 
 
@@ -168,28 +170,139 @@ def _same_cell(left, right):
     return json_text(left, sort_keys=True) == json_text(right, sort_keys=True)
 
 
-def _legacy_dispatch_lineages(connection):
-    return [row["lineage_id"] for row in connection.execute("""
-        SELECT DISTINCT t.lineage_id FROM family_task_dispatches t JOIN lineages l USING(lineage_id)
-        WHERE l.deleted_at IS NULL ORDER BY t.lineage_id
-    """).fetchall()]
+def _legacy_dispatch_scope(connection):
+    rows = connection.execute("""
+        SELECT DISTINCT t.lineage_id, (l.lineage_id IS NOT NULL AND l.deleted_at IS NULL) AS live
+        FROM family_task_dispatches t LEFT JOIN lineages l USING(lineage_id)
+        ORDER BY t.lineage_id
+    """).fetchall()
+    active = []
+    retain_table = False
+    for row in rows:
+        lineage_id = row["lineage_id"]
+        if isa_migration_scope.is_deferred(lineage_id):
+            retain_table = True
+        elif row["live"]:
+            active.append(lineage_id)
+    return active, retain_table
 
 
-def _has_legacy_dispatch_table(connection):
+# One reviewed production decision, recorded by GetConversation from weihao's
+# original User input. This is migration data, not a caller-controlled override.
+_AUTHORIZED_ABANDONMENT = {
+    "lineage_id": "lineage_8794980b1bb7",
+    "message_id": "msg_dabab17f8068d5d9f7440b7a9060001f",
+    "intent_sha256": "60f45291f787c04836791979abbf362ebefde2ef33a3d17035a1e5ee62095787",
+    "facade_id": "resident_94b20c757fe7",
+    "target_id": "resident_6b4867560621",
+    "initiated_by": "resident_dfc7781a9baa",
+    "authorization": {
+        "resident_id": "resident_9edb49ed68fb",
+        "message_id": "msg_37a7163b7eaa8ccf2c44fa5327a550d1",
+        "user_id": "weihao",
+        "occurred_at": "2026-11-26T18:47:09Z",
+        "content_sha256": "9c1d0388f77d134d250818ea01549b5b80a1768272b68677ecd8f73966355ef0",
+        "instruction_id": "inst_lin_2650a12d66587d9a4067",
+        "receipt_sha256": "d629460932e6d6ee734a410a2eaa265f0246856de5c9c75ed13b9d0c95d22669",
+    },
+}
+
+
+def _dispatch_table_exists(connection, name):
     row = connection.execute(
-        "SELECT to_regclass(quote_ident(current_schema()) || '.family_task_dispatches') AS name"
+        "SELECT to_regclass(quote_ident(current_schema()) || '.' || quote_ident(%s)) AS name", (name,),
     ).fetchone()
     return bool(row and row["name"])
 
 
+def _fingerprint(value):
+    return sha256(json.dumps(value, ensure_ascii=False, sort_keys=True).encode()).hexdigest()
+
+
+def _read_authorization_message(connection, evidence):
+    from management_common.portal_database import _database_schema
+    from management_portal.execution.agent_data_chat import ChatReads
+    from .resident_conversation_records import message_from_storage, protocol_message
+
+    class SnapshotChat(ChatReads):
+        def _bring_current(self, sequence_ids):
+            if sequence_ids:
+                raise family_task_dispatches._DispatchProjectionBehind
+
+    chat = SnapshotChat(family_task_dispatches._DispatchSnapshot(connection, schema=_database_schema("agent")))
+    stored = chat.chat_message(evidence["resident_id"], evidence["message_id"])
+    return protocol_message(message_from_storage(stored)) if stored is not None else None
+
+
+def _same_archived_dispatch(connection, lineage_id, message_id, intent, decision):
+    prior = connection.execute("SELECT intent_json, decision_json FROM family_dispatch_dispositions "
+                               "WHERE lineage_id=%s AND message_id=%s", (lineage_id, message_id)).fetchone()
+    if prior is None:
+        return None
+    return _same_cell(prior["intent_json"], intent) and _same_cell(prior["decision_json"], decision)
+
+
+def _plan_abandonment(connection, lineage_id, message_id, reason):
+    expected = _AUTHORIZED_ABANDONMENT
+    if (lineage_id, message_id, reason) != (expected["lineage_id"], expected["message_id"], "unaccepted_frozen_intent"):
+        return None, reason
+    row = connection.execute("SELECT intent_json FROM family_task_dispatches WHERE lineage_id=%s AND message_id=%s",
+                             (lineage_id, message_id)).fetchone()
+    if row is None:
+        return None, reason
+    intent = row["intent_json"]
+    if (_fingerprint(intent) != expected["intent_sha256"] or
+            intent["request"]["facade"] != expected["facade_id"] or
+            intent["request"]["target"] != expected["target_id"] or
+            intent["initiated_by"] != expected["initiated_by"]):
+        return None, reason
+
+    evidence = expected["authorization"]
+    try:
+        approval = _read_authorization_message(connection, evidence)
+    except (family_task_dispatches._DispatchProjectionBehind, ValueError):
+        approval = None
+    user = {"kind": "user", "id": evidence["user_id"]}
+    if (not approval or approval["role"] != "user" or approval["message_id"] != evidence["message_id"] or
+            approval.get("author_id") != user["id"] or (approval.get("origin") or {}).get("sender") != user or
+            (approval.get("origin") or {}).get("initiated_by") != user or
+            _fingerprint(approval["content_parts"]) != evidence["content_sha256"]):
+        return None, "abandonment_authorization_unverified"
+
+    decision = {**expected, "disposition": "abandoned_by_user", "admission": "unknown"}
+    if (_dispatch_table_exists(connection, "family_dispatch_dispositions") and
+            _same_archived_dispatch(connection, lineage_id, message_id, intent, decision) is False):
+        return None, "conflicting_dispatch_disposition"
+    return (intent, decision), None
+
+
+def _archive_dispatch_dispositions(connection, lineage_id, dispositions):
+    if not dispositions:
+        return
+    # This is an internal audit archive, separate from public Shared State and
+    # from routing receipts. The original intent and decision survive retirement.
+    connection.execute("""CREATE TABLE IF NOT EXISTS family_dispatch_dispositions (
+        lineage_id TEXT NOT NULL, message_id TEXT NOT NULL, intent_json JSONB NOT NULL,
+        decision_json JSONB NOT NULL, PRIMARY KEY (lineage_id, message_id))""")
+    for message_id, (intent, decision) in dispositions.items():
+        inserted = connection.execute("""INSERT INTO family_dispatch_dispositions
+            (lineage_id, message_id, intent_json, decision_json) VALUES (%s,%s,%s,%s) ON CONFLICT DO NOTHING""",
+            (lineage_id, message_id, json_text(intent), json_text(decision)))
+        if not inserted.rowcount and not _same_archived_dispatch(connection, lineage_id, message_id, intent, decision):
+            raise ValueError(f"Cannot retire Family task {message_id}: conflicting_dispatch_disposition")
+
+
 def check_legacy_dispatches(connection):
     """Check live legacy intents on the caller's snapshot without initializing stores."""
-    if not _has_legacy_dispatch_table(connection):
+    if not _dispatch_table_exists(connection, "family_task_dispatches"):
+        return []
+    lineages, _retain_table = _legacy_dispatch_scope(connection)
+    if not lineages:
         return []
     readers = family_task_dispatches.snapshot_dispatch_readers(connection)
     issues = []
-    for lineage_id in _legacy_dispatch_lineages(connection):
-        candidates, blockers = _dispatch_candidates(connection, lineage_id, readers)
+    for lineage_id in lineages:
+        candidates, blockers, _dispositions = _dispatch_candidates(connection, lineage_id, readers)
         if candidates:
             stored = connection.execute("SELECT cells_json FROM lineage_shared_state WHERE lineage_id=%s",
                                         (lineage_id,)).fetchone()
@@ -209,17 +322,23 @@ def retire_legacy_dispatches() -> None:
 
     with get_lineage_data_store().database.transaction() as connection:
         connection.execute("SELECT pg_advisory_xact_lock(hashtextextended(current_schema() || ':schema-init', 0))")
-        if not _has_legacy_dispatch_table(connection):
+        if not _dispatch_table_exists(connection, "family_task_dispatches"):
             return
         connection.execute("LOCK TABLE family_task_dispatches IN SHARE ROW EXCLUSIVE MODE")
-        for lineage_id in _legacy_dispatch_lineages(connection):
-            readers = family_task_dispatches.live_dispatch_readers(get_repository())
-            candidates, blockers = _dispatch_candidates(connection, lineage_id, readers)
+        lineages, retain_table = _legacy_dispatch_scope(connection)
+        readers = family_task_dispatches.live_dispatch_readers(get_repository()) if lineages else None
+        for lineage_id in lineages:
+            candidates, blockers, dispositions = _dispatch_candidates(connection, lineage_id, readers)
             if blockers:
                 message_id, reason = blockers[0]
                 raise ValueError(f"Cannot retire Family task {message_id}: {reason}")
             _write_cells(connection, lineage_id, candidates)
-        connection.execute("DROP TABLE family_task_dispatches")
+            _archive_dispatch_dispositions(connection, lineage_id, dispositions)
+            if retain_table:
+                # Consume only processed rows so a retry never reuses old receipts.
+                connection.execute("DELETE FROM family_task_dispatches WHERE lineage_id=%s", (lineage_id,))
+        if not retain_table:
+            connection.execute("DROP TABLE family_task_dispatches")
 
 
 def _dispatch_candidates(connection, lineage_id, readers):
@@ -229,9 +348,15 @@ def _dispatch_candidates(connection, lineage_id, readers):
     """, (lineage_id,)).fetchall()}
     candidates = {}
     blockers = []
+    dispositions = {}
     for receipt in family_task_dispatches.plan_legacy_dispatches(connection, lineage_id, *readers):
         if receipt["state"] == "blocked":
-            blockers.append((receipt["message_id"], receipt["reason"]))
+            message_id = receipt["message_id"]
+            entry, reason = _plan_abandonment(connection, lineage_id, message_id, receipt["reason"])
+            if entry is None:
+                blockers.append((message_id, reason))
+            else:
+                dispositions[message_id] = entry
             continue
         root = receipt.get("source_message_id")
         if receipt["state"] != "accepted" or not root:
@@ -244,4 +369,4 @@ def _dispatch_candidates(connection, lineage_id, readers):
             continue
         key = f"family.{families[facade]}.dispatch_receipts"
         candidates.setdefault(key, {})[receipt["message_id"]] = receipt
-    return candidates, blockers
+    return candidates, blockers, dispositions

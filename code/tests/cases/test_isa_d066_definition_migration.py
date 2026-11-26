@@ -227,6 +227,7 @@ def test_verified_stock_bindings_use_current_owner_defaults_in_one_pass(role, ta
 
 @pytest.mark.parametrize("failed_stage", [None, "lineage_b", "runtime", "templates", "retire"])
 def test_legacy_dispatch_retirement_runs_after_all_definitions_and_fails_closed(monkeypatch, failed_stage):
+    from contextlib import nullcontext
     from types import SimpleNamespace
     from management_portal.society_service import family_strategy_state, lineage_aggregate, resident_runtime_domain
     from management_portal.society_service.templates import store
@@ -239,7 +240,8 @@ def test_legacy_dispatch_retirement_runs_after_all_definitions_and_fails_closed(
 
     monkeypatch.setattr(migration, "check", lambda: {"blocked_count": 0})
     monkeypatch.setattr(lineage_aggregate, "lineage_catalog_store", lambda: SimpleNamespace(
-        listing_records=lambda: [{"lineage_id": "lineage_a"}, {"lineage_id": "lineage_b"}]))
+        state_store=SimpleNamespace(database=SimpleNamespace(read=lambda: nullcontext(None)))))
+    monkeypatch.setattr(migration, "_current_lineage_ids", lambda connection: ["lineage_a", "lineage_b"])
     monkeypatch.setattr(migration, "_migrate_lineage", stage)
     monkeypatch.setattr(resident_runtime_domain, "migrate_instruction_names", lambda: stage("runtime"))
     monkeypatch.setattr(store, "migrate_instruction_names", lambda: stage("templates"))
@@ -797,7 +799,7 @@ def test_readonly_preflight_reports_every_legacy_intent_without_initializing_own
     from management_common.json_columns import json_text
     from management_portal.execution import agent_data_store
     from management_portal.society_service import (
-        family_strategy_state, family_task_dispatch_storage, lineage_aggregate, lineage_metadata_storage,
+        family_strategy_state, family_task_dispatch_storage, lineage_aggregate,
         resident_conversation_stream,
     )
     from tests.cases.test_isa_definition_semantic_migration import make_lineage
@@ -818,7 +820,7 @@ def test_readonly_preflight_reports_every_legacy_intent_without_initializing_own
                                (lineage_id, mid, json_text(intent)))
         before = connection.execute("SELECT * FROM family_task_dispatches ORDER BY message_id").fetchall()
 
-    read_many = lineage_metadata_storage.read_many
+    read_ids = migration._current_lineage_ids
     check_dispatches = family_strategy_state.check_legacy_dispatches
     snapshots = []
     dispatch_snapshots = []
@@ -829,14 +831,14 @@ def test_readonly_preflight_reports_every_legacy_intent_without_initializing_own
         assert connection.execute("SHOW search_path").fetchone()["search_path"] == search_path
         return result
 
-    def readonly_metadata(connection, *args):
+    def readonly_ids(connection, *args):
         assert connection.execute("SHOW transaction_read_only").fetchone()["transaction_read_only"] == "on"
         assert connection.execute("SHOW transaction_isolation").fetchone()["transaction_isolation"] == "repeatable read"
         snapshots.append(connection)
-        return read_many(connection, *args)
+        return read_ids(connection, *args)
 
     with monkeypatch.context() as patch:
-        patch.setattr(lineage_metadata_storage, "read_many", readonly_metadata)
+        patch.setattr(migration, "_current_lineage_ids", readonly_ids)
         patch.setattr(family_strategy_state, "check_legacy_dispatches", readonly_dispatches)
         patch.setattr(lineage_aggregate, "lineage_catalog_store", lambda: pytest.fail("catalog initialized"))
         patch.setattr(resident_conversation_stream, "get_repository", lambda: pytest.fail("repository initialized"))
@@ -873,7 +875,7 @@ def test_readonly_dispatch_preflight_owner_error_cannot_be_reported_as_clear(pri
 
 def test_read_only_cutover_keeps_journal_then_versions_current_definitions(primitive_store, monkeypatch):
     from hashlib import sha256
-    from management_portal.society_service import lineage_aggregate, lineage_metadata_storage
+    from management_portal.society_service import lineage_aggregate
     from management_portal.society_service import lineage_effect_script_journal as journal
     from tests.cases.test_isa_definition_semantic_migration import make_lineage
 
@@ -888,14 +890,14 @@ def test_read_only_cutover_keeps_journal_then_versions_current_definitions(primi
         "instruction_id": "inst_lin_11111111111111111111",
     })
     active = journal.load(lineage_id, "d066-activation")
-    read = lineage_metadata_storage.read_many
+    read = migration._current_lineage_ids
 
     def read_only(connection, *args):
         assert connection.execute("SHOW transaction_read_only").fetchone()["transaction_read_only"] == "on"
         return read(connection, *args)
 
     with monkeypatch.context() as patch:
-        patch.setattr(lineage_metadata_storage, "read_many", read_only)
+        patch.setattr(migration, "_current_lineage_ids", read_only)
         patch.setattr(lineage_aggregate, "lineage_catalog_store", lambda: pytest.fail("ordinary owner initialized"))
         assert migration.check()["blockers"][0]["activation_key"] == "d066-activation"
     with pytest.raises(RuntimeError, match="d066-activation"):

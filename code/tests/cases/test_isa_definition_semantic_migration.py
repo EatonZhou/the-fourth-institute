@@ -223,15 +223,14 @@ def test_read_only_preflight_collects_unknown_current_calls_and_templates_withou
         connection.execute("UPDATE templates SET body=%s::jsonb WHERE template_id=%s",
                            (json.dumps(body), template["template_id"]))
 
-    from management_portal.society_service import lineage_metadata_storage
-    original_read = lineage_metadata_storage.read_many
+    original_read = migration._current_lineage_ids
 
     def read_only(connection, *args):
         assert connection.execute("SHOW transaction_read_only").fetchone()["transaction_read_only"] == "on"
         return original_read(connection, *args)
 
     with monkeypatch.context() as patch:
-        patch.setattr(lineage_metadata_storage, "read_many", read_only)
+        patch.setattr(migration, "_current_lineage_ids", read_only)
         patch.setattr(lineage_aggregate, "lineage_catalog_store", lambda: pytest.fail("owner store constructed"))
         patch.setattr(store, "database", lambda: pytest.fail("template schema initialized"))
         report = migration.check()

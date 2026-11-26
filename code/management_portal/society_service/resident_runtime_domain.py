@@ -422,12 +422,24 @@ def write_resident_runtime_settings(record: dict, settings: dict[str, Any]) -> d
 
 
 def migrate_instruction_names() -> None:
-    from . import instruction_name_migration, resident_store
+    from . import instruction_name_migration, isa_migration_scope, resident_store
 
     catalog = resident_catalog.get_catalog()
-    for record in catalog.all():
-        resident_id = resident_domain_common.record_resident_id(record)
+    # Read only durable ownership before opening any Resident record.
+    with catalog.state_store.database.read() as connection:
+        memberships = connection.execute("""
+            SELECT r.resident_id,n.lineage_id FROM residents r
+            JOIN lineage_nodes n ON n.node_id=r.resident_id
+            WHERE r.deleted_at IS NULL ORDER BY r.resident_id
+        """).fetchall()
+    for membership in memberships:
+        if isa_migration_scope.is_deferred(membership["lineage_id"]):
+            continue
+        resident_id = membership["resident_id"]
         with resident_record_domain.state_lock(resident_id):
+            current_membership = catalog.get_usage_memberships([resident_id])
+            if not current_membership or isa_migration_scope.is_deferred(current_membership[0]["lineage_id"]):
+                continue
             current = resident_record_domain.find_resident(resident_id)
             if not current:
                 continue

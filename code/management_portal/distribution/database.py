@@ -139,8 +139,12 @@ class DatabaseSnapshot:
 
     def current_definitions(self, lineage_ids):
         """Read complete graphs on this exported snapshot, without initializing owners."""
+        from management_portal.society_service.isa_migration_scope import is_deferred
         from management_portal.society_service.lineage_data_definitions import definition_from_connection
 
+        lineage_ids = {lid for lid in lineage_ids if not is_deferred(lid)}
+        if not lineage_ids:
+            return {}
         previous = self.connection.execute("SHOW search_path").fetchone()["search_path"]
         # A savepoint restores the original path even when a graph read fails.
         # The enclosing snapshot keeps its READ ONLY isolation and transaction.
@@ -157,6 +161,11 @@ class DatabaseSnapshot:
         return result
 
     def definition_rows(self, lineage_ids, *, script_path=None):
+        from management_portal.society_service.isa_migration_scope import is_deferred
+
+        lineage_ids = {lid for lid in lineage_ids if not is_deferred(lid)}
+        if not lineage_ids:
+            return {}
         output = {}
         known = set(lineage_ids)
         pending = set(STRUCTURE)

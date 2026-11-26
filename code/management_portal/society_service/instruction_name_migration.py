@@ -16,6 +16,7 @@ from management_portal.hatg.instruction_renames import INSTRUCTION_RENAMES
 
 from . import lineage_effect_script
 from . import isa_contract_migration as contracts
+from . import isa_migration_scope
 
 
 _POST_MARKS = {"SetPostPinned": "UpdatePostMarks", "SetPostFeatured": "UpdatePostMarks"}
@@ -613,6 +614,14 @@ def _report(blocked):
     return {"blocked_count": sum(item.get("count", 1) for item in blocked), "blockers": blocked}
 
 
+def _current_lineage_ids(connection):
+    # Read identity indexes only. A deferred object's metadata, graph and work
+    # must never be loaded merely to decide that its migration is out of scope.
+    return [row["lineage_id"] for row in connection.execute(
+        "SELECT lineage_id FROM lineages WHERE deleted_at IS NULL ORDER BY lineage_id"
+    ).fetchall()]
+
+
 def check():
     """Read owner checkpoints and report IDs only, before stopping the old owner."""
     from psycopg import IsolationLevel, connect, sql
@@ -621,10 +630,11 @@ def check():
     from management_common.portal_database import portal_database
     from management_common.postgres_database import PostgresConnection
 
-    from . import family_strategy_state, lineage_data_definitions, lineage_metadata_storage
+    from . import family_strategy_state, lineage_data_definitions
 
     target = portal_database(schema="lineage")
     blocked = []
+    deferred = []
     # An ordinary owner store initializes its schema on connection. Use an
     # unpooled read-only snapshot so preflight is safe with the old owner live.
     with connect(target.dsn, row_factory=dict_row) as raw:
@@ -633,8 +643,10 @@ def check():
         raw.execute(sql.SQL("SET LOCAL search_path TO {}").format(sql.Identifier(target.schema)))
         connection = PostgresConnection(raw)
         blocked.extend(family_strategy_state.check_legacy_dispatches(connection))
-        for record in lineage_metadata_storage.read_many(connection):
-            lineage_id = record["lineage_id"]
+        for lineage_id in _current_lineage_ids(connection):
+            if isa_migration_scope.is_deferred(lineage_id):
+                deferred.extend(isa_migration_scope.deferred_report())
+                continue
             definition = lineage_data_definitions.definition_from_connection(connection, lineage_id)
             diagnostics = []
             effects, wires = _normalize_definition(definition, diagnostics=diagnostics)
@@ -651,7 +663,7 @@ def check():
                 except DefinitionMigrationRequired as error:
                     blocked.extend({"kind": "template_contract", "template_id": row["template_id"], **issue}
                                    for issue in error.issues)
-    return _report(blocked)
+    return {**_report(blocked), "deferred_count": len(deferred), "deferred": deferred}
 
 
 def _require_clear(report):
@@ -660,6 +672,8 @@ def _require_clear(report):
 
 
 def _migrate_lineage(lineage_id):
+    if isa_migration_scope.is_deferred(lineage_id):
+        return False
     from . import family_definition, family_strategy_state, lineage_aggregate, lineage_state
 
     catalog = lineage_aggregate.lineage_catalog_store()
@@ -699,8 +713,11 @@ def migrate():
 
     _require_clear(check())
     catalog = lineage_aggregate.lineage_catalog_store()
-    for record in catalog.listing_records():
-        _migrate_lineage(record["lineage_id"])
+    with catalog.state_store.database.read() as connection:
+        lineage_ids = _current_lineage_ids(connection)
+    for lineage_id in lineage_ids:
+        if not isa_migration_scope.is_deferred(lineage_id):
+            _migrate_lineage(lineage_id)
     resident_runtime_domain.migrate_instruction_names()
     store.migrate_instruction_names()
     family_strategy_state.retire_legacy_dispatches()

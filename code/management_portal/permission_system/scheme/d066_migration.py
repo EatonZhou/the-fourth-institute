@@ -7,6 +7,12 @@ import json
 
 MIGRATION = "isa-d066-20261126"
 
+# One approved unresolved row is retained, not translated into new capabilities.
+# This disposition belongs only to this migration; it grants no runtime access
+# and does not exempt rule documents, other schemes, IDs or A elements.
+_RETAINED_ENTRY = ("default", "entry_8236fdec67d3108a91b6bdb1", "UpdateUser")
+_RETENTION_SOURCE = "msg_ed8c7e62384080bc8c4dceaa1f5f9b41"
+
 # A elements, including slots, rather than a text substitution of instruction names.
 MAPPING = {
     "RelayFamilyMessage": ("RelayMessage:relay",),
@@ -54,6 +60,8 @@ MAPPING = {
     "SetMailboxItemPinned": ("UpdateMailboxItem",),
     "SetMailboxItemRead": ("UpdateMailboxItem",),
     "ApplyLineageChanges": ("ApplyLineageChanges:lineage_id",),
+    # The new Project slot of a move is classified by the scheme itself, never inherited from the old level.
+    "UpdateLineage": ("UpdateLineage:lineage_id",),
     "CreateComponent": ("ApplyLineageChanges:create_component",),
     "UpdateComponent": ("ApplyLineageChanges:update_component",),
     "DeleteComponent": ("ApplyLineageChanges:delete_component",),
@@ -205,10 +213,16 @@ def migrate(store):
         rows = [dict(row) for row in store.execute(con, "SELECT * FROM {s}.scheme_entries").fetchall()]
         _check_merges(rows, "a_node", ignored={"entry_id"})
         desired = {}
+        retained = set()
         for row in rows:
             element = row["a_node"]
             target = targets(element)
-            if ambiguous(element):
+            if (row["scheme_id"], row["entry_id"], element) == _RETAINED_ENTRY:
+                target = (element,)
+                retained.add((row["scheme_id"], row["entry_id"]))
+                history.append({"table": "scheme_entries", "row": dict(row),
+                                "disposition": "retained_unmodified", "source_message_id": _RETENTION_SOURCE})
+            elif ambiguous(element):
                 raise SchemeConflict(f"d066 表项 {row['scheme_id']}/{row['entry_id']} 的 {element} 需 owner 明确等价能力")
             if len(target) > 1 and row["expires_at"] is not None:
                 raise SchemeConflict(f"d066 临时凭证 {row['entry_id']} 需拆分；须先按原任务生命周期收回，不能扩大期限或破坏单ID撤回")
@@ -225,7 +239,8 @@ def migrate(store):
                         raise SchemeConflict(f"d066 目标表项冲突：{value}")
                 else:
                     desired[key] = new
-        changed_rows = [row for row in rows if targets(row["a_node"]) != (row["a_node"],)]
+        changed_rows = [row for row in rows if (row["scheme_id"], row["entry_id"]) not in retained
+                        and targets(row["a_node"]) != (row["a_node"],)]
         for row in changed_rows:
             keep("scheme_entries", row)
             store.execute(con, "DELETE FROM {s}.scheme_entries WHERE scheme_id=%s AND entry_id=%s", (row["scheme_id"], row["entry_id"]))

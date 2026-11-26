@@ -783,6 +783,7 @@ modules:
       - "management_portal/society_service/effect_*.py"
       - "management_portal/society_service/instruction_name_migration.py"
       - "management_portal/society_service/isa_contract_migration.py"
+      - "management_portal/society_service/isa_migration_scope.py"
       - "management_portal/society_service/script_runs"
       - "management_portal/society_service/isa/shared_state.py"
       - "management_portal/society_service/service_invocation*.py"

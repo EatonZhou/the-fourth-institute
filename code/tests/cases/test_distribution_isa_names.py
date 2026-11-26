@@ -13,6 +13,18 @@ from management_portal.distribution.database import DatabaseSnapshot, Table, rea
 from tests.cases.test_lineage_generic_primitives import ACTOR, WORK_A, WORK_B, _worker, primitive_store  # noqa: F401
 
 
+def test_deferred_snapshot_never_reads_graph_or_structure(monkeypatch):
+    from management_portal.society_service import lineage_data_definitions
+
+    source = object.__new__(DatabaseSnapshot)
+    # No connection or table inventory: deferral must precede both reads.
+    monkeypatch.setattr(lineage_data_definitions, 'definition_from_connection',
+                        lambda *_: pytest.fail('deferred graph read'))
+    source.rows = lambda *_a, **_k: pytest.fail('deferred structure read')
+    assert source.current_definitions({'lineage_7983b047d221'}) == {}
+    assert source.definition_rows({'lineage_7983b047d221'}) == {}
+
+
 def test_definition_export_normalizes_text_and_json_without_mutating_snapshot():
     records = {
         'lineage_nodes': [{'node_id': 'effect', 'lineage_id': 'selected', 'node_type': 'effect'}],
@@ -38,7 +50,14 @@ def test_definition_export_normalizes_text_and_json_without_mutating_snapshot():
                        'config': json.loads(records['lineage_edges'][0]['config_json'])}],
         },
     }}
-    result = source.definition_rows({'selected'})
+    selected = []
+    read_rows = source.rows
+    def checked_rows(schema, name, **kwargs):
+        selected.extend(value for values in kwargs.get('predicates', {}).values() for value in values)
+        return read_rows(schema, name, **kwargs)
+    source.rows = checked_rows
+    result = source.definition_rows({'selected', 'lineage_7983b047d221'})
+    assert 'lineage_7983b047d221' not in selected
     component = result['lineage', 'lineage_components'][0]['config_json']
     assert component['script'] == 'GetPromptInjectionPreview resident_id="resident_fixture"'
     assert component['script_draft'] == original['lineage_components'][0]['config_json']['script_draft']
