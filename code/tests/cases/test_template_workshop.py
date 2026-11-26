@@ -22,7 +22,8 @@ def test_workshop_draft_semantics():
     assert result.returncode == 0, result.stdout + result.stderr
 
 
-@pytest.mark.parametrize('script', ['template_workshop.browser.cjs', 'template_workshop_reload.browser.cjs'], ids=['editing', 'reload'])
+@pytest.mark.parametrize('script', ['template_workshop.browser.cjs', 'template_workshop_reload.browser.cjs',
+                                   'template_placement.browser.cjs'], ids=['editing', 'reload', 'placement'])
 def test_workshop_browser_with_real_instructions(lineage, script):
     from management_portal.script_groups import expand_document
     from management_portal.society_service import principal_hierarchy_domain, lineage_reads

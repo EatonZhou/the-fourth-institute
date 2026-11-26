@@ -38,6 +38,8 @@
   }
   function append(body, incoming, position) {
     const source = clone(incoming);
+    const geometry=window.LineageTemplateGraph.placement(source);
+    source.layout=geometry.layout;
     const used = new Set(lists.flatMap(list => (body[list] || []).map(row => row.key)));
     const renamed = new Map();
     const sourceKeys = lists.flatMap(list => (source[list] || []).map(row => row.key));
@@ -61,9 +63,7 @@
       window.LineageTemplateGraph.renameKey(source, `${prefix}${previous}`, key);
     }
     const layout = source.layout || {};
-    const positions = Object.values(layout);
-    const center = {x: positions.length ? positions.reduce((sum, p) => sum + p.x, 0) / positions.length : 50,
-      y: positions.length ? positions.reduce((sum, p) => sum + p.y, 0) / positions.length : 50};
+    const center = geometry.anchor;
     body.layout ||= {};
     let index = 0;
     lists.forEach(list => {

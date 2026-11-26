@@ -358,7 +358,7 @@ class StructureKind:
         ):
             raise TemplateError("只能引用未删除的已有元素")
         endpoints |= {key for key, item in found.items() if not rewrite.is_wire(item)}
-        # Where the graph editor draws each role and component; applying ignores it.
+        # Template-local coordinates translate around the explicit binding anchor.
         if "layout" in body:
             if not isinstance(body["layout"], dict):
                 raise TemplateError("layout 必须是对象")
@@ -599,7 +599,8 @@ class StructureKind:
         return result("预览施加结果。", preview=entries)
 
     def apply(self, ctx):
-        from .. import function_block_domain, lineage_placement
+        from .. import function_block_domain
+        from . import structure_layout
 
         body = ctx.template["body"]
         lineage, info, targets, leader = self._targets(ctx)
@@ -631,6 +632,15 @@ class StructureKind:
                 components, wires, element_keys = _parts(ctx, roles, plan["bindings"], plan["graph"])
                 keys.update(element_keys)
                 changed = _changes(ctx, plan["graph"], plan["bindings"], roles)
+                destination = next(node for node in lineage['nodes'] if node['id'] == target) if target else ctx.target
+                layout = structure_layout.placed(body, {axis: destination.get(axis, 50) for axis in ('x', 'y')})
+                positioned = {identity: layout[key] for identity, key in keys.items() if key in layout}
+                placement_request = {'authored_positions': {row['id']: positioned[row['id']] for row in components if row['id'] in positioned}}
+                if created:
+                    from .. import lineage_lifecycle
+                    lineage_lifecycle.update_lineage_layout(ctx.lineage_id, {'positions': [
+                        {'object_id': identity, **positioned[identity]} for identity in created if identity in positioned
+                    ]}, ctx.actor)
 
                 def edit(current, components=components, wires=wires, target=target, plan=plan, changed=changed):
                     if body["match"]:
@@ -644,14 +654,6 @@ class StructureKind:
                         "components", []
                     ).extend(deepcopy(components))
                     current["program"].setdefault("wires", []).extend(deepcopy(wires))
-                    request = {
-                        axis: ctx.target[axis]
-                        for axis in ("x", "y")
-                        if ctx.target.get(axis) is not None
-                    }
-                    if target:
-                        request["near_resident_id"] = target
-                    lineage_placement.place_new_components(lineage, current, request)
 
                 ids = [
                     *created,
@@ -670,11 +672,12 @@ class StructureKind:
                         x=ctx.target.get("x"),
                         y=ctx.target.get("y"),
                         duty=_duty(ctx, target, roles),
+                        placement_request=placement_request,
                     )
                     outcome["function_block_ids"].append(block["id"])
                 else:
                     lineage_graph_edits().commit_lineage_edit(
-                        ctx.lineage_id, ctx.actor, edit, reason="施加结构模板"
+                        ctx.lineage_id, ctx.actor, edit, reason="施加结构模板", placement_request=placement_request
                     )
                 outcome["created"]["resident_ids"].extend(created)
                 outcome["created"]["component_ids"].extend(

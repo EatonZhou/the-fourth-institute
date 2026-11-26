@@ -262,6 +262,13 @@ def place_new_components(
     request = request or {}
     _place_components(previous, lineage, request)
     _place_instances(previous, lineage, request)
+    # An authored batch carries exact relative geometry. It may position only
+    # objects created by this commit, never move an existing external object.
+    old_ids = {row['id'] for row in (previous or {}).get('program', {}).get('components', [])}
+    authored = request.get('authored_positions', {})
+    for row in lineage.get('program', {}).get('components', []):
+        if row['id'] not in old_ids and row['id'] in authored:
+            row.update({axis: round(_number(authored[row['id']][axis]), 2) for axis in ('x', 'y')})
 
 
 def _place_instances(previous: dict[str, Any] | None, lineage: dict[str, Any], request: dict[str, Any]) -> None:

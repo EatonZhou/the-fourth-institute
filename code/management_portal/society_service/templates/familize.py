@@ -613,6 +613,12 @@ def familize(lineage_id: str, resident_ids: Iterable[str], actor: str, *, title:
                            creation_key=f"personal-assistant:{personal_ama_id}:{role}" if personal_ama_id else "",
                            follow_default_backend=bool(personal_ama_id))
              for role in ("facade", "steward", "router")}
+    authored_layout = family_graph.placement({**values, 'tasks': tasks}, placement) if all(placement.get(axis) is not None for axis in ('x', 'y')) else None
+    if authored_layout:
+        from .. import lineage_lifecycle
+        lineage_lifecycle.update_lineage_layout(lineage_id, {'positions': [
+            {'object_id': identity, **authored_layout[role + '_resident']} for role, identity in roles.items()
+        ]}, actor)
     leader = str(lineage.get("leader_resident_id") or "")
     from .. import identity_contract
     family = {"resource_id": identity_contract.new_id("family"), "title": title, **values, **roles, "members": members, "lineage_scope": scope == "lineage",
@@ -651,6 +657,8 @@ def familize(lineage_id: str, resident_ids: Iterable[str], actor: str, *, title:
         family_workflows.update(body, block, actor, collect=True)
         reconcile_in_body(body, block, actor)
         family_graph.apply_tasks(body, block, tasks)
+        if authored_layout:
+            family_graph.place_generated(body, block, authored_layout)
         if parent_id:
             reconcile_in_body(body, parent, actor)
         if leader in members or scope == "lineage" or personal_ama_id:

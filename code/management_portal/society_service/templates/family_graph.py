@@ -51,6 +51,32 @@ def generate(recipe):
     return body, block, roles
 
 
+def local_key(key, roles):
+    for role, identity in roles.items():
+        key = key.replace(identity, role + '_resident')
+    return key
+
+
+def placement(recipe, destination):
+    from . import structure_layout
+    return structure_layout.placed(project({'kind': 'familize', 'body': recipe})['body'], destination)
+
+
+def place_generated(body, block, layout):
+    """Position newly assembled Family content from its real recipe projection.
+
+    Existing members are external anchors and retain their own coordinates.
+    This runs only on explicit assembly, never during roster reconciliation.
+    """
+    family = block['family']
+    roles = {role: family[role] for role in ('facade', 'steward', 'router')}
+    keys = {row['id']: row['key'] for row in block['elements']}
+    for component in body['program']['components']:
+        key = local_key(keys.get(component['id'], ''), roles)
+        if key in layout:
+            component.update(layout[key])
+
+
 def project(template):
     duty = template['kind'] == 'family_duty'
     body, parent, roles = generate({} if duty else template['body'])
@@ -60,10 +86,7 @@ def project(template):
         block = install_review(body, roles['steward'], 'template-preview',
                                {**template, 'template_id': template.get('template_id', '')})
     keys = {e['id']: e['key'] for b in body['function_blocks'] for e in b['elements']}
-    for identity, key in list(keys.items()):
-        for role, rid in roles.items():
-            key = key.replace(rid, role + '_resident')
-        keys[identity] = key
+    keys = {identity: local_key(key, roles) for identity, key in keys.items()}
     keys.update({rid: role + '_resident' for role, rid in roles.items()})
     keys.update({body['lineage_id']: 'lineage', parent['id']: 'family'})
     owned = {e['id'] for e in block['elements']}

@@ -8,7 +8,7 @@ from . import function_block_authoring, lineage_aggregate
 
 
 def functionalize(lineage_id, element_ids, actor, *, title="", x=None, y=None,
-                template_id=None, element_keys=None, edit=None, function_block_id=None, duty=None):
+                template_id=None, element_keys=None, edit=None, function_block_id=None, duty=None, placement_request=None):
     from . import lineage_graph_edits
 
     def apply(body):
@@ -17,7 +17,8 @@ def functionalize(lineage_id, element_ids, actor, *, title="", x=None, y=None,
         return function_block_authoring.functionalize_in_body(body, element_ids, actor, title=title, x=x, y=y,
                                    template_id=template_id, element_keys=element_keys,
                                    function_block_id=function_block_id, duty=duty)
-    _, block = lineage_graph_edits.commit_lineage_edit(lineage_id, actor, apply, reason="Functionalize", full_view=False)
+    _, block = lineage_graph_edits.commit_lineage_edit(lineage_id, actor, apply, reason="Functionalize", full_view=False,
+                                                     placement_request=placement_request)
     return block
 
 

@@ -179,6 +179,7 @@
       onSelectTemplate:openTemplate,
       acceptTemplate: item => runtime?.draft.kind === 'structure' && item.kind === 'structure',
       resolveTarget: event => ({kind:'canvas', ...runtime.editorState.graph.position(event)}),
+      placementView:()=>runtime.editorState.graph.placementView(),
       applyTemplate:insertTemplate,
     });
     listen(root, 'click', async event => {

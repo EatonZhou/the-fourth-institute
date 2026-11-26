@@ -27,6 +27,7 @@
   // One catalog per browser surface: every shelf observes the same revision,
   // identity transition and mutation refresh, while retaining its own actions.
   const subscribers = new Set();
+  let dragSession=null;
   let catalog = {templates:[], kinds:[]}, pending = null, epoch = 0, catalogAbort = null;
   const catalogUser = () => window.PortalIdentity?.username() || '';
   function publishCatalog() { subscribers.forEach(subscriber => subscriber.receive(catalog)); }
@@ -63,6 +64,8 @@
     const {MIME, apply, canvas, config, esc, getContext, openEditor, request, resolveTarget,
       shelf, t, targetLabels, templatesState, toast, promptText} = dependencies;
     let dragged = '', picked = null, pickupTimer = null;
+    let preview=null, previewId='', lastPointer=null, projectionEpoch=0;
+    const projections=new Map();
     const collapsed = new Set();
     const username = () => window.PortalIdentity?.username() || '';
     const abort = new AbortController();
@@ -79,6 +82,9 @@
       if (templatesState.disposed) return;
       if (templatesState.application && templatesState.application.lineageId !== getContext().lineage_id) templatesState.application.close();
       if (picked && (picked.lineageId !== getContext().lineage_id || picked.user !== username())) cancelPlacement();
+      if(dragSession?.owner===shelf && !dragSession.valid()) {
+        cancelPlacement();window.dispatchEvent(new Event('portal:template-drag-ended'));
+      }
       const user = username();
       const visible = visibleTemplates(templatesState.templates, user);
       shelf.classList.toggle('templateShelfIcons', !!config.iconOnly);
@@ -106,8 +112,12 @@
       canvas?.classList.remove('templateDropAllowed', 'templateDropForbidden');
       canvas?.querySelectorAll('.templateDropTarget').forEach(node => node.classList.remove('templateDropTarget'));
     }
+    function clearPreview() {preview?.destroy();preview=null;previewId='';lastPointer=null;}
     function cancelPlacement() {
-      clearTimeout(pickupTimer); pickupTimer = null; picked = null;
+      if(dragSession?.owner===shelf)dragSession.cancelled=true;
+      clearTimeout(pickupTimer); pickupTimer = null; picked = null; dragged='';
+      for(const [key,value] of projections)if(value===null)projections.delete(key);
+      projectionEpoch++;clearPreview();
       ghost.hidden = true; canvas?.classList.remove('templatePicking'); clearDrop();
     }
     // Saved recipes open in the workshop; palette entries are local draft elements.
@@ -118,10 +128,29 @@
     }
     function showTarget(event, item) {
       clearDrop();
-      const target = resolveTarget(event, item);
-      const supported = config.acceptTemplate ? config.acceptTemplate(item, target) : item.targets.includes(target.kind);
+      lastPointer={clientX:event.clientX,clientY:event.clientY,target:event.target};
+      let body=item.kind==='structure' ? item.body : projections.get(item.template_id);
+      if(!body && ['familize','family_duty','role'].includes(item.kind) && !projections.has(item.template_id)) {
+        projections.set(item.template_id,null);
+        const epoch=projectionEpoch,user=username(),lineageId=getContext().lineage_id;
+        void request('GetTemplate',{template_id:item.template_id}).then(result=>{
+          if(epoch!==projectionEpoch||user!==username()||lineageId!==getContext().lineage_id)return;
+          projections.set(item.template_id,result.template.editor?.graph?.body || false);
+          if(lastPointer)showTarget(lastPointer,item);
+        }).catch(error=>{if(epoch===projectionEpoch)report(error);});
+      }
+      const view=config.placementView?.();
+      if(body && view?.controller) {
+        if(previewId!==item.template_id){clearPreview();preview=window.LineageTemplateGraph.placementPreview(view,body,event=>showTarget(event,item));previewId=item.template_id;}
+      }
+      const placement=preview?.move(event);
+      const target = {...resolveTarget(placement?.event || event, item),...(placement ? {x:placement.x,y:placement.y} : {})};
+      const needsBinding=!config.isComposition && body?.roles?.some(row=>row.from==='target');
+      const supported = (!needsBinding || !!target.resident_ids?.length)
+        && (config.acceptTemplate ? config.acceptTemplate(item, target) : item.targets.includes(target.kind));
       canvas.classList.add(supported ? 'templateDropAllowed' : 'templateDropForbidden');
-      event.target.closest('.hatgNode')?.classList.add('templateDropTarget');
+      const highlighted=placement ? placement.hit : event.target.closest('.hatgNode');
+      highlighted?.classList.add('templateDropTarget');
       dropHint.textContent = supported ? `${t('施加到')} ${targetLabels()[target.kind]}` : `⊘ ${unsupported(item)}`;
       dropHint.dataset.allowed = String(supported);
       dropHint.style.left = `${Math.max(0, Math.min(event.clientX + 18, window.innerWidth - 300))}px`;
@@ -134,7 +163,7 @@
       if (!item || templatesState.disposed) return;
       cancelPlacement();
       picked = {id, lineageId: getContext().lineage_id, user: username()};
-      ghost.innerHTML = thumbnail(item); ghost.hidden = false;
+      ghost.innerHTML = thumbnail(item); ghost.hidden = Boolean(config.placementView && item.kind !== 'prompt');
       ghost.style.left = `${event.clientX || 20}px`; ghost.style.top = `${event.clientY || 20}px`;
       canvas.classList.add('templatePicking');
       shelf.dispatchEvent(new CustomEvent('portal:template-picked', {bubbles: true}));
@@ -146,6 +175,7 @@
     const unsubscribe = subscribeCatalog({request,report,receive(value) {
       if (templatesState.disposed) return;
       dragged = ''; cancelPlacement();
+      projections.clear();
       templatesState.templates = value.templates; templatesState.kinds = value.kinds;
       render(); config.onChange?.(value.templates);
     }});
@@ -190,7 +220,7 @@
     listen(document, 'mousemove', event => {
       const item = pickedItem(); if (!item) return;
       ghost.style.left = `${event.clientX + 14}px`; ghost.style.top = `${event.clientY + 14}px`;
-      if (onCanvas(event.target)) showTarget(event, item); else clearDrop();
+      if (onCanvas(event.target)) showTarget(event, item); else {clearDrop();clearPreview();}
     }, true);
     listen(document, 'pointerdown', event => {
       if (!pickedItem() || !onCanvas(event.target) || event.button !== 0) return;
@@ -209,39 +239,56 @@
       void apply(id, target).catch(report);
     }, true);
     const cancel = event => {
-      if (!picked && pickupTimer === null) return;
+      if (!picked && !dragged && pickupTimer === null) return;
       if (event.type === 'keydown' && event.key !== 'Escape') return;
       event.preventDefault(); event.stopImmediatePropagation(); cancelPlacement();
     };
     listen(document, 'keydown', cancel, true);
     listen(document, 'contextmenu', cancel, true);
+    listen(window,'portal:template-drag-ended',()=>{clearDrop();clearPreview();});
     for (const source of [shelf, config.palette].filter(Boolean)) listen(source, 'dragstart', event => {
       const tile = event.target.closest('[data-template-id]'); if (!tile) return;
       cancelPlacement(); dragged = tile.dataset.templateId;
+      const user=username(),lineageId=getContext().lineage_id;
+      dragSession={id:dragged,owner:shelf,cancelled:false,valid:()=>user===username() && lineageId===getContext().lineage_id && !templatesState.disposed};
       event.dataTransfer.setData(MIME, dragged);
       const item = find(dragged);
       if (item?.kind === 'prompt') event.dataTransfer.setData('text/plain', promptText(item));
       event.dataTransfer.effectAllowed = 'copy';
+      if(config.placementView && item?.kind!=='prompt') {
+        const image=document.createElement('canvas');image.width=image.height=1;
+        event.dataTransfer.setDragImage(image,0,0);
+      }
     });
-    for (const source of [shelf, config.palette].filter(Boolean)) listen(source, 'dragend', () => { dragged = ''; clearDrop(); });
+    for (const source of [shelf, config.palette].filter(Boolean)) listen(source, 'dragend', () => {
+      dragged = ''; cancelPlacement();dragSession=null;window.dispatchEvent(new Event('portal:template-drag-ended'));
+    });
     listen(canvas, 'dragover', event => {
       if (!onCanvas(event.target)) return;
       if (!dragged && !Array.from(event.dataTransfer?.types || []).includes(MIME)) return;
       event.preventDefault(); event.stopPropagation();
-      const item = find(dragged); if (!item) return;
+      if(dragSession && (dragSession.cancelled || !dragSession.valid())){clearDrop();clearPreview();return;}
+      const item = find(dragged || dragSession?.id); if (!item) return;
       event.dataTransfer.dropEffect = showTarget(event, item).supported ? 'copy' : 'none';
     }, true);
-    listen(canvas, 'dragleave', event => { if (!canvas.contains(event.relatedTarget)) clearDrop(); }, true);
+    listen(canvas, 'dragleave', event => { if (!canvas.contains(event.relatedTarget)) {clearDrop();clearPreview();} }, true);
     listen(canvas, 'drop', event => {
       if (!onCanvas(event.target)) return;
       const id = event.dataTransfer?.getData(MIME) || dragged; if (!id) return;
       event.preventDefault(); event.stopPropagation();
+      if(dragSession && (dragSession.cancelled || !dragSession.valid())){clearDrop();clearPreview();return;}
       const item = find(id); if (!item) return;
-      const {target,supported} = showTarget(event,item); clearDrop(); dragged = '';
+      const {target,supported} = showTarget(event,item); cancelPlacement(); dragged = '';
       if (!supported) { report(new Error(unsupported(item))); return; }
       void apply(id, target).catch(report);
     }, true);
-    abort.signal.addEventListener('abort', () => { cancelPlacement(); ghost.remove(); });
+    abort.signal.addEventListener('abort', () => {
+      cancelPlacement();ghost.remove();
+      if(dragSession?.owner===shelf) {
+        dragSession={id:dragSession.id,owner:null,cancelled:true,valid:()=>false};
+        window.dispatchEvent(new Event('portal:template-drag-ended'));
+      }
+    });
     return {abort, dropHint, find, load, render, unsupported};
   }
   const visibleTemplates = (items, user) => items.filter(item => !item.toolbox_group && item.builtin_key !== 'workshop_assistant' && (item.builtin_key || (user && item.created_by === user)));

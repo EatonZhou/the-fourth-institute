@@ -23,6 +23,10 @@
 .templateModuleGlyph { fill:none; stroke:currentColor; stroke-width:2; }
 .templateCarryPreview { position:fixed; width:100px; height:64px; z-index:10049; pointer-events:none; padding:5px; background:var(--panel); border:1px solid var(--accent); border-radius:8px; opacity:.85; }
 .templateCarryPreview[hidden] { display:none; }
+.templatePlacementPreview.hatgCanvas { position:absolute; inset:0; z-index:6; pointer-events:none; background:none; opacity:.82; }
+.templatePlacementPreview * { pointer-events:none !important; }
+.templatePlacementPreview .hatgNode { outline:1px dashed var(--accent); }
+.templatePlacementPreview .templateDropTarget { outline:3px solid var(--accent); }
 .templateCarryPreview .templateThumbnail { height:100%; }
 .templatePicking, .templatePicking * { cursor:copy !important; }
 .templateGlyph { position: relative; width: 43px; height: 43px; align-self: center; display: block; transition: transform 130ms ease; }

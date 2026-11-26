@@ -222,6 +222,92 @@
     return slots.map(item => `.templateGraph .hatgNode[data-node-id="${CSS.escape(item.key)}"]{opacity:.65;background:var(--panel-2)}`).join('\n');
   }
 
+  function project(body, {workshop = false} = {}) {
+    const program = window.PortalLineageProgram;
+    const source = collections(JSON.parse(JSON.stringify(body)));
+    const saved = source.layout || {};
+    const automatic = autoLayout(source);
+    if (workshop) {
+      const slots = [...source.roles.filter(row => ['target', 'lineage_leader'].includes(row.from)), ...foundNodes(source)];
+      slots.forEach((row, index) => {
+        automatic[row.key] = {x: source.roles.includes(row) ? 8 : 90, y: 20 + index * 18};
+      });
+    }
+    const place = key => (saved[key] ? { ...saved[key] } : { ...automatic[key] });
+    const found = new Set(source.match.map(item => item.key));
+    const roles = [...source.roles, ...foundNodes(source).filter(item => item.kind === 'resident')]
+      .map(role => ({ id: role.key, kind: 'agent', title: role.title || role.key, ...place(role.key), _template: role, _template_role: true }));
+    const components = [...source.components, ...foundNodes(source).filter(item => item.kind !== 'resident')]
+      .map(component => ({ ...component, ...(found.has(component.key) ? { config: effectiveConfig(component) } : {}), id: component.key, ...place(component.key) }));
+    const labels = stateLabels();
+    const wires = [...source.wires, ...foundWires(source)].map(wire => ({ ...wire, id: wire.key,
+      ...(found.has(wire.key) ? { config: effectiveConfig(wire), label: `${labels[wire.op || 'keep']} · ${wire.kind}${wire.count === 'all' ? ` · ${t('全部')}` : ''}` } : {}) }));
+    const authored = { components, wires };
+    const graph = program.projectGraph(authored, roles);
+    const templates = new Map([...source.roles, ...source.components, ...source.match].map(item => [item.key, item]));
+    graph.nodes.forEach(node => { node._template = templates.get(node.id); node._template_found = found.has(node.id); });
+    // A wire without ports is drawn from the first ones that fit, as applying resolves it.
+    graph.edges.forEach(edge => {
+      const sourceNode = graph.nodes.find(node => node.id === edge.source);
+      const targetNode = graph.nodes.find(node => node.id === edge.target);
+      if (!edge.source_port && sourceNode) edge.source_port = program.portsForNode(sourceNode).find(port => port.direction === 'out' && port.type === edge.type)?.port_id || '';
+      if (!edge.target_port && targetNode && ['route'].includes(edge.type)) {
+        const ports = program.portsForNode(targetNode).filter(port => port.direction === 'in');
+        const wanted = ['invoke', edge.type];
+        edge.target_port = wanted.map(type => ports.find(port => port.type === type)).find(Boolean)?.port_id || '';
+      }
+    });
+    return { nodes: graph.nodes, edges: graph.edges, wires: program.normalizeProgram(authored).wires };
+  }
+
+  function placement(body) {
+    const source=collections(JSON.parse(JSON.stringify(body)));
+    const layout={...autoLayout(source),...source.layout};
+    const slot=source.roles.find(row=>row.from==='target');
+    const points=Object.values(layout);
+    const anchor=slot ? layout[slot.key] : {x:points.length ? points.reduce((n,p)=>n+p.x,0)/points.length : 50,
+      y:points.length ? points.reduce((n,p)=>n+p.y,0)/points.length : 50};
+    return {layout,anchor,slot:slot?.key || ''};
+  }
+
+  // A temporary graph uses the same node/port/edge projection and camera as
+  // the destination. Its anchor, rather than the browser drag image, is hit-tested.
+  function placementPreview(view, body, onViewportChange) {
+    const geometry=placement(body), graph=project(body);
+    const root=document.createElement('div');root.className='hatgCanvas templatePlacementPreview';
+    root.setAttribute('aria-hidden','true');
+    root.innerHTML='<div class="hatgWorld"><svg class="hatgEdges" viewBox="0 0 100 100" preserveAspectRatio="none"><g data-layer="edges"></g><g data-layer="effects"></g></svg><div class="hatgEdgeLabels"></div><div class="hatgNodes"></div></div>';
+    view.root.append(root);
+    const controller=window.PortalHatgGraph.createGraph({root,world:root.firstElementChild,
+      edgeLayer:root.querySelector('[data-layer="edges"]'),effectLayer:root.querySelector('[data-layer="effects"]'),
+      labelLayer:root.querySelector('.hatgEdgeLabels'),nodeLayer:root.querySelector('.hatgNodes'),
+      worldWidth:1280,worldHeight:900,scaleExtent:[.01,10],nodeContent,
+      portsForNode:node=>window.PortalLineageProgram.portsForNode(node)});
+    let lastEvent=null,destroyed=false;
+    const observer=new MutationObserver(()=>{if(lastEvent&&!destroyed)onViewportChange(lastEvent);});
+    observer.observe(view.root.querySelector('.hatgWorld'),{attributes:true,attributeFilter:['style']});
+    function move(event) {
+      lastEvent=event;
+      // The anchor is held a little ahead of the pointer so even a pointer
+      // outside a card can bind via the visible target slot.
+      const anchor=view.controller.screenToPosition(event.clientX+28,event.clientY+28);
+      let hit=document.elementFromPoint(event.clientX+28,event.clientY+28)?.closest('[data-node-id]');
+      if(!view.root.contains(hit)||!geometry.slot)hit=null;
+      const candidate=hit?.dataset.nodeId;
+      const resident=candidate && view.residents?.().find(row=>row.id===candidate && row.accessible!==false);
+      const bounds=resident ? hit.getBoundingClientRect() : null;
+      const target=resident ? view.controller.screenToPosition(bounds.left+bounds.width/2,bounds.top+bounds.height/2) : anchor;
+      const nodes=graph.nodes.map(node=>({...node,x:target.x+node.x-geometry.anchor.x,y:target.y+node.y-geometry.anchor.y}));
+      controller.render({nodes,edges:graph.edges,layoutInteractive:false,selectionEnabled:false});
+      controller.setTransform(view.controller.getTransform(),{duration:0});
+      root.dataset.anchor=geometry.slot;root.dataset.boundResident=resident?.id || '';
+      root.querySelector(`[data-node-id="${CSS.escape(geometry.slot)}"]`)?.classList.toggle('templateDropTarget',!!resident);
+      return {x:target.x,y:target.y,hit:resident ? hit : null,
+        event:{clientX:event.clientX+28,clientY:event.clientY+28,target:resident ? hit : view.root}};
+    }
+    return {move,destroy(){destroyed=true;observer.disconnect();controller.destroy();root.remove();}};
+  }
+
   function mount({ root, body, workshop = false, readOnly = false, isReadonly = () => false, onBeforeChange = () => {}, onChange = () => {}, onSelect = () => {} }) {
     const program = window.PortalLineageProgram;
     const factory = window.PortalHatgGraph?.createGraph;
@@ -260,45 +346,9 @@
       if (message) hintTimer = setTimeout(() => { hintNode.hidden = true; }, 3600);
     };
 
-    function project() {
-      const source = collections(body());
-      const saved = source.layout || {};
-      const automatic = autoLayout(source);
-      if (workshop) {
-        const slots = [...source.roles.filter(row => ['target', 'lineage_leader'].includes(row.from)), ...foundNodes(source)];
-        slots.forEach((row, index) => {
-          automatic[row.key] = {x: source.roles.includes(row) ? 8 : 90, y: 20 + index * 18};
-        });
-      }
-      const place = key => (saved[key] ? { ...saved[key] } : { ...automatic[key] });
-      const found = new Set(source.match.map(item => item.key));
-      const roles = [...source.roles, ...foundNodes(source).filter(item => item.kind === 'resident')]
-        .map(role => ({ id: role.key, kind: 'agent', title: role.title || role.key, ...place(role.key), _template: role, _template_role: true }));
-      const components = [...source.components, ...foundNodes(source).filter(item => item.kind !== 'resident')]
-        .map(component => ({ ...component, ...(found.has(component.key) ? { config: effectiveConfig(component) } : {}), id: component.key, ...place(component.key) }));
-      const labels = stateLabels();
-      const wires = [...source.wires, ...foundWires(source)].map(wire => ({ ...wire, id: wire.key,
-        ...(found.has(wire.key) ? { config: effectiveConfig(wire), label: `${labels[wire.op || 'keep']} · ${wire.kind}${wire.count === 'all' ? ` · ${t('全部')}` : ''}` } : {}) }));
-      const authored = { components, wires };
-      const graph = program.projectGraph(authored, roles);
-      const templates = new Map([...source.roles, ...source.components, ...source.match].map(item => [item.key, item]));
-      graph.nodes.forEach(node => { node._template = templates.get(node.id); node._template_found = found.has(node.id); });
-      // A wire without ports is drawn from the first ones that fit, as applying resolves it.
-      graph.edges.forEach(edge => {
-        const sourceNode = graph.nodes.find(node => node.id === edge.source);
-        const targetNode = graph.nodes.find(node => node.id === edge.target);
-        if (!edge.source_port && sourceNode) edge.source_port = program.portsForNode(sourceNode).find(port => port.direction === 'out' && port.type === edge.type)?.port_id || '';
-        if (!edge.target_port && targetNode && ['route'].includes(edge.type)) {
-          const ports = program.portsForNode(targetNode).filter(port => port.direction === 'in');
-          const wanted = ['invoke', edge.type];
-          edge.target_port = wanted.map(type => ports.find(port => port.type === type)).find(Boolean)?.port_id || '';
-        }
-      });
-      return { nodes: graph.nodes, edges: graph.edges, wires: program.normalizeProgram(authored).wires };
-    }
 
     function render() {
-      current = project();
+      current = project(body(), {workshop});
       states.textContent = edgeStateRules(body()) + (workshop ? slotRules(body()) : '');
       if (selected && !current.nodes.some(node => node.id === selected) && !current.edges.some(edge => edge.id === selected)) selected = '';
       controller.render({
@@ -476,6 +526,7 @@
     return Object.freeze({
       render, select, addComponent, insertionPosition:center,
       position: event => controller.screenToPosition(event.clientX, event.clientY),
+      placementView: () => ({root:canvas,controller}),
       selected: () => selected,
       fit: () => controller.fit({ duration: 0, maxScale: workshop ? 1 : 1.1 }),
       remove: key => { if (!isReadonly(key)) change(source => { removeElement(source, key); return ''; }); },
@@ -511,5 +562,5 @@
     },{signal:abort.signal});
     return {setEnabled(enabled) {root.querySelectorAll('[data-template-id]').forEach(button=>{button.disabled=!enabled;button.draggable=enabled;});},destroy(){abort.abort();root.replaceChildren();}};
   }
-  window.LineageTemplateGraph = Object.freeze({ mount, thumbnail, removeElement, renameKey, effectiveConfig, isWireKind, authoringItems, mountTools });
+  window.LineageTemplateGraph = Object.freeze({ mount, project, placement, placementPreview, thumbnail, removeElement, renameKey, effectiveConfig, isWireKind, authoringItems, mountTools });
 })();
