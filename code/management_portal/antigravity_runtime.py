@@ -141,12 +141,33 @@ def command(root: Path | None = None):
     return [str(root / value["cmd"]), *value.get("args", []), "--logtostderr"]
 
 # Linux x64 build verified with Portal's authenticated HTTP ToolServer.
-CLI_CANARY = "cli-1.5.17"
-CLI_DIGEST = "f3f384bd2c15a74a036ebc3b0a2f48695cc6e56523ba0f9524fb6e4c4adb3baa"
+CLI_CANARY = "cli-1.5.18"
+CLI_DIGEST = "7c96ad8c944c1a8d195ca34d2041a3d74d5166c96662b52183b748a3c455d52f"
+PREVIOUS_CLI = "cli-1.5.17"
+PREVIOUS_DIGEST = "f3f384bd2c15a74a036ebc3b0a2f48695cc6e56523ba0f9524fb6e4c4adb3baa"
 
 
 def cli_session_marker(root: Path, session_id: str) -> Path:
     return root / "sessions" / hashlib.sha256(session_id.encode()).hexdigest()
+
+
+def cli_binding_root(account_root: Path, session_id: str) -> Path:
+    """Keep existing CLI sessions on their verified build, including during rollback."""
+    for build in (CLI_CANARY, PREVIOUS_CLI):
+        root = account_root / build
+        marker = cli_session_marker(root, session_id) if session_id else root / "enabled"
+        if marker.is_file():
+            return root
+    return account_root / CLI_CANARY
+
+
+def has_cli_binding(account_id: str, session_id: str) -> bool:
+    from management_common.provider_account_paths import account_runtime
+
+    if not account_id or not session_id:
+        return False
+    root = cli_binding_root(account_runtime("antigravity", account_id), session_id)
+    return cli_session_marker(root, session_id).is_file()
 
 
 def canary_command(root: Path, session_id: str, native: bool, env: dict):
@@ -160,12 +181,13 @@ def canary_command(root: Path, session_id: str, native: bool, env: dict):
         return None
     binary = root / "antigravity"
     with binary.open("rb") as stream:
-        if hashlib.file_digest(stream, "sha256").hexdigest() != CLI_DIGEST:
+        if hashlib.file_digest(stream, "sha256").hexdigest() != (PREVIOUS_DIGEST if root.name == PREVIOUS_CLI else CLI_DIGEST):
             raise NativeAgentUnavailable("Antigravity CLI differs from the verified HTTP MCP build")
     home = Path(env["HOME"])
     gemini = Path(env["GEMINI_HOME"]).relative_to(home)
-    return [str(binary), "acp", "--gemini-dir", str(gemini), "--app-data-dir", "antigravity-acp"]
+    flags = ["--process-per-session"] if root.name == CLI_CANARY else []
+    return [str(binary), "acp", *flags, "--gemini-dir", str(gemini), "--app-data-dir", "antigravity-acp"]
 
 
 def pin_cli_session(root: Path, session_id: str):
-    atomic_write_private_bytes(cli_session_marker(root, session_id), CLI_CANARY.encode())
+    atomic_write_private_bytes(cli_session_marker(root, session_id), root.name.encode())

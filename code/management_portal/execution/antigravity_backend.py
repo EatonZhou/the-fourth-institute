@@ -1,7 +1,8 @@
 """Antigravity's native ACP agent, with a durable Google session for each binding."""
 from __future__ import annotations
 
-from contextlib import ExitStack
+from contextlib import ExitStack, closing
+from datetime import datetime, timezone
 from pathlib import Path
 import sqlite3
 import threading
@@ -9,7 +10,7 @@ import threading
 from management_common.provider_turn_artifacts import ToolEditArtifacts
 from management_portal import antigravity_accounts as accounts
 from management_portal.antigravity_client import AcpClient, AcpTransportError, ToolServer
-from management_portal.antigravity_runtime import CLI_CANARY, canary_command, command, pin_cli_session
+from management_portal.antigravity_runtime import canary_command, cli_binding_root, command, has_cli_binding, pin_cli_session
 from management_portal.antigravity_input_media import prompt_content
 from management_portal.resident_shell_environment import resident_process_environment
 from .antigravity_workspace import additional_directories
@@ -19,7 +20,8 @@ from .native_harness_tools import prepare_tools
 from .native_options import NativeOptions
 from .provider_turn_usage import TOKEN_USAGE_KEYS, _CAMEL_KEYS, usage_payload
 from .resident_capability_assembly import require_offered_tools
-from .native_socket_backend import _report_tool_events, _observe_tool_edit_artifacts
+from .native_session_compaction import NativeCompaction, summary_history
+from .native_socket_backend import _report_tool_events, _observe_tool_edit_artifacts, record_native_compaction
 from .native_tool_events import tool_started, tool_completed
 from .provider_failures import ProviderOutcomeUnknown
 
@@ -110,6 +112,28 @@ def _read_steps(env, sid, after_idx=-1):
     return int(rows[-1][0]), steps
 
 
+def _latest_checkpoint(env, sid):
+    """Read the committed Cortex checkpoint, never a model reply or a usage estimate."""
+    if not sid or Path(sid).name != sid:
+        raise ValueError("Invalid Antigravity session ID")
+    db = Path(env["GEMINI_HOME"]) / "antigravity-acp" / "conversations" / f"{sid}.db"
+    with closing(sqlite3.connect(db.absolute().as_uri() + "?mode=ro", uri=True, timeout=2)) as conn:
+        row = conn.execute("SELECT idx, step_payload FROM steps WHERE step_type=23 AND status=3 "
+                           "ORDER BY idx DESC LIMIT 1").fetchone()
+    if not row:
+        return None
+    # CortexStep.checkpoint (30), checkpoint summary (5) and metadata.created_at (5/1).
+    fields = {k: v for k, wire, v in _pb_fields(row[1]) if wire == 2}
+    checkpoint = dict((k, v) for k, wire, v in _pb_fields(fields[30]) if wire == 2)
+    summary = checkpoint[5].decode("utf-8").strip()
+    metadata = {k: v for k, wire, v in _pb_fields(fields[5]) if wire == 2}
+    timestamp = {k: v for k, wire, v in _pb_fields(metadata[1]) if wire == 0}
+    created = datetime.fromtimestamp(timestamp[1] + timestamp.get(2, 0) / 1e9, timezone.utc).isoformat()
+    if not summary:
+        raise ValueError("Empty Antigravity checkpoint summary")
+    return NativeCompaction(f"{sid}:checkpoint:{row[0]}", created, created, summary_history(summary))
+
+
 def _raw_turn_usage(raw):
     """Normalize ACP session/prompt usage into Portal's canonical token usage."""
     if not isinstance(raw, dict):
@@ -177,6 +201,11 @@ class AntigravityOptions(NativeOptions):
 
         parts = str(content or "").strip().split(maxsplit=1)
         action = parts[0].lower() if parts else ""
+        if action == "/compact" and context.get("session_id"):
+            row = accounts.account_for_route(account_route())
+            if not has_cli_binding(row["account_id"], context["session_id"]):
+                return _result(settings, "当前会话使用独立 ACP。手动压缩需要绑定 Antigravity CLI 的会话。",
+                               title="Antigravity compact")
         if action == "/swarm":
             return _result(settings, "当前 Portal 使用的 Antigravity ACP 未提供原生 Swarm。可在 Antigravity App 或 CLI 中使用 `/swarm`。",
                            title="Antigravity Swarm")
@@ -260,7 +289,8 @@ class AntigravityBackend:
             # Google retains durable history when the Worker releases its session.
             return BackendResult({"message": "", "provider": self.provider_id, "operation": "release"},
                                  session.backend_session_id, route)
-        if request.operation not in {"create", "turn"}:
+        compact = request.operation == "compact"
+        if request.operation not in {"create", "turn", "compact"}:
             raise ValueError(f"Antigravity does not support {request.operation}")
         prior = invocation.recovery_checkpoint.get("provider_recovery_state") or {}
         if prior.get("turn_id") == request.execution_id:
@@ -275,12 +305,17 @@ class AntigravityBackend:
         env, _ = resident_process_environment(options)
         env.update(accounts.environment(row["account_id"]))
         native = self.native_tools_allowed(request)
-        catalog, dispatch = prepare_tools(invocation, context)
+        catalog, dispatch = ([], None) if compact else prepare_tools(invocation, context)
         offered_tools = {tool["name"] for tool in catalog}
-        require_offered_tools(invocation, {tool["name"] for tool in catalog})
+        if not compact:
+            require_offered_tools(invocation, offered_tools)
         sid = session.backend_session_id
-        cli_root = accounts.account_runtime("antigravity", row["account_id"]) / CLI_CANARY
+        cli_root = cli_binding_root(accounts.account_runtime("antigravity", row["account_id"]), sid)
         cli = canary_command(cli_root, sid, native, env)
+        if compact and (not sid or not cli):
+            raise ValueError("Manual compaction requires an existing Antigravity CLI session")
+        command_list_received = threading.Event()
+        compact_offered = False
         active_turn = False
         accepted = False
         segment = 0
@@ -313,9 +348,12 @@ class AntigravityBackend:
             completed_tools.add(tool_id)
 
         def update(params):
-            nonlocal segment, after_tool, context_usage, context_window
+            nonlocal segment, after_tool, context_usage, context_window, compact_offered
             item = params.get("update") or {}
             kind = item.get("sessionUpdate")
+            if compact and kind == "available_commands_update" and params.get("sessionId") == sid:
+                compact_offered = any(cmd.get("name") == "compact" for cmd in item.get("availableCommands", []))
+                command_list_received.set()
             if kind == "usage_update" and (not sid or params.get("sessionId") == sid):
                 context_window = int(item.get("size", 0)) or context_window
             if not active_turn or params.get("sessionId") != sid:
@@ -365,7 +403,7 @@ class AntigravityBackend:
             elif kind == "usage_update":
                 _, steps = _read_steps(env, sid, start_idx)
                 used = int(item.get("used", 0))
-                step_usage = steps[-1] if steps else ({"input_tokens": used} if used > 0 else {})
+                step_usage = steps[-1] if steps and not compact else ({"input_tokens": used} if used > 0 else {})
                 if step_usage:
                     context_usage = step_usage
                     context.observe_context_usage(step_usage, context_window)
@@ -376,6 +414,8 @@ class AntigravityBackend:
 
         def client_request(method, params):
             if method == "session/request_permission":
+                if compact:
+                    return {"outcome": {"outcome": "cancelled"}}
                 if active_turn and params.get("sessionId") == sid:
                     accept()
                 # ACP asks permission for MCP calls too. The private Portal
@@ -432,6 +472,11 @@ class AntigravityBackend:
                 return BackendResult({"message": "", "provider": self.provider_id, "operation": "create"}, sid, route)
             if context.is_cancelled():
                 raise InterruptedError("Antigravity execution cancelled before prompt")
+            if compact:
+                if not command_list_received.wait(8) or not compact_offered:
+                    raise ValueError("This Antigravity session did not advertise /compact")
+                previous_checkpoint = _latest_checkpoint(env, sid)
+                prompt = [{"type": "text", "text": "/compact"}]
             context.set_provider_recovery_state({"phase": "prompt_sent", "turn_id": turn_id, "session_id": sid})
             with self._lock:
                 self._active[(route, sid, turn_id)] = client
@@ -447,12 +492,22 @@ class AntigravityBackend:
                     raise ProviderOutcomeUnknown("Antigravity input delivery is uncertain after disconnection; refusing to replay it") from exc
                 if result.get("stopReason") == "cancelled" or context.is_cancelled():
                     raise InterruptedError("Antigravity turn cancelled")
+                if compact:
+                    if result.get("stopReason") != "end_turn":
+                        raise RuntimeError("Antigravity compaction did not finish")
+                    checkpoint = _latest_checkpoint(env, sid)
+                    if not checkpoint or (previous_checkpoint and previous_checkpoint.ref == checkpoint.ref):
+                        raise RuntimeError("Antigravity did not commit a new context checkpoint")
+                    record_native_compaction(context, provider=self.provider_id, backend_session_id=sid,
+                                             backend_route_id=route, compaction=checkpoint)
                 accept()
                 for tool_id, item in tools.items():
                     if tool_id not in completed_tools and item.get("status") == "failed":
                         complete_tool(tool_id, item)
                 output = {"message": "".join(text_parts), "provider": self.provider_id,
-                          "operation": "turn", "turn_id": turn_id, "model": model, "stop_reason": result.get("stopReason", "")}
+                          "operation": request.operation, "turn_id": turn_id, "model": model, "stop_reason": result.get("stopReason", "")}
+                if compact:
+                    output.update(message="已保存上下文摘要，可以继续当前会话。", compacted=True)
                 turn_usage = _raw_turn_usage(result.get("usage"))
                 _, steps = _read_steps(env, sid, start_idx)
                 if steps:
@@ -463,10 +518,11 @@ class AntigravityBackend:
                     }
                     if summed.get("total_tokens", 0) >= turn_usage.get("total_tokens", 0):
                         turn_usage = summed
-                    context_usage = steps[-1]
-                    if context_window:
-                        context.observe_context_usage(context_usage, context_window)
-                usage = usage_payload(turn_usage, context_usage or turn_usage, context_window)
+                    if not compact:
+                        context_usage = steps[-1]
+                        if context_window:
+                            context.observe_context_usage(context_usage, context_window)
+                usage = usage_payload(turn_usage, context_usage if compact else context_usage or turn_usage, context_window)
                 emit("item/completed", item={"id": f"{turn_id}:answer:{segment}", "type": "agentMessage", "text": output["message"], "phase": "final_answer"})
                 _observe_tool_edit_artifacts(context, tool_edits, provider=self.provider_id, session_id=sid,
                                              turn_id=turn_id, status="completed")

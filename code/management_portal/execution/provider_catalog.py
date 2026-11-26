@@ -260,7 +260,7 @@ class AgentProvider:
 
 AGENT_PROVIDERS = {
     p.provider: p for p in (
-        AgentProvider("antigravity", "Google Antigravity", frozenset({"create", "turn", "release"}),
+        AgentProvider("antigravity", "Google Antigravity", frozenset({"create", "turn", "compact", "release"}),
                       ("model", "permissions"), "management_portal.antigravity_accounts",
                       media=True,
                       account_adapter="AntigravityAccounts",

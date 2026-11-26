@@ -169,6 +169,8 @@ for line in sys.stdin:
     if method in {"session/new", "session/load"}:
         def advertise(session_id):
             time.sleep(.05)
-            update(session_id, sessionUpdate="available_commands_update",
-                   availableCommands=[] if os.environ.get("FAKE_NO_USAGE") else [{"name": "usage"}])
+            commands = [] if os.environ.get("FAKE_NO_USAGE") else [{"name": "usage"}]
+            if os.environ.get("FAKE_COMPACT"):
+                commands.append({"name": "compact"})
+            update(session_id, sessionUpdate="available_commands_update", availableCommands=commands)
         threading.Thread(target=advertise, args=(sid,), daemon=True).start()

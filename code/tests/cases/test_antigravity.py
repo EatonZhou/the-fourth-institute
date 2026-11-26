@@ -897,7 +897,7 @@ def test_cli_rollout_follows_binding_and_permission_profile(tmp_path, monkeypatc
     env = {"HOME": "/home/user", "GEMINI_HOME": "/home/user/accounts/one"}
     (root / "enabled").touch()
     args = runtime.canary_command(root, "", True, env)
-    assert args == [str(binary), "acp", "--gemini-dir", "accounts/one", "--app-data-dir", "antigravity-acp"]
+    assert args == [str(binary), "acp", "--process-per-session", "--gemini-dir", "accounts/one", "--app-data-dir", "antigravity-acp"]
     assert runtime.canary_command(root, "", False, env) is None
     assert runtime.canary_command(root, "existing-session", True, env) is None
     runtime.pin_cli_session(root, "cli-session")
@@ -909,3 +909,54 @@ def test_cli_rollout_follows_binding_and_permission_profile(tmp_path, monkeypatc
     binary.write_bytes(b"changed")
     with pytest.raises(runtime.NativeAgentUnavailable, match="verified"):
         runtime.canary_command(root, "cli-session", True, env)
+
+
+def test_rollout_preserves_previous_build_and_standalone_bindings(tmp_path):
+    previous = tmp_path / runtime.PREVIOUS_CLI
+    current = tmp_path / runtime.CLI_CANARY
+    runtime.pin_cli_session(previous, "old-cli")
+    current.mkdir()
+    (current / "enabled").touch()
+    assert runtime.cli_binding_root(tmp_path, "") == current
+    assert runtime.cli_binding_root(tmp_path, "old-cli") == previous
+    assert runtime.canary_command(current, "standalone", True, {}) is None
+    assert runtime.canary_command(current, "", False, {}) is None
+
+
+@pytest.mark.parametrize("advertised,new_checkpoint", [(False, False), (True, False), (True, True)])
+def test_compact_requires_advertisement_and_new_native_summary(agent, monkeypatch, advertised, new_checkpoint):
+    from management_portal.execution import antigravity_backend as backend
+    from management_portal.execution.native_session_compaction import NativeCompaction, summary_history
+
+    monkeypatch.setattr(backend, "canary_command", lambda *args: [sys.executable, str(FAKE)])
+    if advertised:
+        monkeypatch.setattr(accounts, "environment", lambda account: {"GEMINI_HOME": str(agent), "FAKE_COMPACT": "1"})
+    sid = "compact-session"
+    previous = NativeCompaction(sid + ":checkpoint:2", "", "", summary_history("before"))
+    current = NativeCompaction(sid + ":checkpoint:5", "", "", summary_history("after"))
+    checkpoints = mock.Mock(side_effect=[previous, current if new_checkpoint else previous])
+    monkeypatch.setattr(backend, "_latest_checkpoint", checkpoints)
+    request = invocation(agent, "ordinary prompt", sid=sid)
+    request.request.operation = "compact"
+    ctx, _, state = context()
+    recorder = mock.Mock()
+    ctx._compaction_observer = recorder
+    if advertised and new_checkpoint:
+        result = AntigravityBackend().execute(request, ctx)
+        assert result.output["compacted"] and result.backend_session_id == sid
+        assert recorder.call_args.kwargs["provider_compaction_ref"] == current.ref
+        assert state["phase"] == "completed"
+    else:
+        with pytest.raises((ValueError, RuntimeError), match="did not advertise|did not commit"):
+            AntigravityBackend().execute(request, ctx)
+        recorder.assert_not_called()
+    prompts = [req["params"]["prompt"] for req in requests(agent) if req["method"] == "session/prompt"]
+    assert prompts == ([[{"type": "text", "text": "/compact"}]] if advertised else [])
+
+
+def test_standalone_session_cannot_compact(agent):
+    request = invocation(agent, sid="standalone")
+    request.request.operation = "compact"
+    with pytest.raises(ValueError, match="existing Antigravity CLI session"):
+        AntigravityBackend().execute(request, context()[0])
+    assert not (agent / "requests.jsonl").exists()
