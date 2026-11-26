@@ -23,6 +23,12 @@ def _watch_pending() -> int:
         print(json.dumps(result, ensure_ascii=False, sort_keys=True), flush=True)
         if not result.get("pending") and not result.get("busy"):
             return 0 if not result.get("errors") else 1
+        pending = result.get("pending") or []
+        errors = result.get("errors") or {}
+        if pending and all(errors.get(name, {}).get("phase") == "interface_validation" for name in pending):
+            # A new scheduled or manual pass can retry. Polling the same broken
+            # candidate every thirty seconds does not make the SDK compatible.
+            return 1
         if time.monotonic() >= deadline:
             return 2
         time.sleep(30)

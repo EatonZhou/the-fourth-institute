@@ -99,7 +99,7 @@ def test_windows_junction_switch_and_rollback(tmp_path, monkeypatch):
     monkeypatch.setattr(updates, "_service_control", lambda: SimpleNamespace(
         restart=restart, status=lambda service: {"active": "active"}))
     with pytest.raises(RuntimeError, match="服务启用失败"):
-        updates._activate("kimi", updates.KimiRuntime(), new)
+        updates._activate_verified("kimi", updates.KimiRuntime(), new)
     assert link.resolve() == old
     assert len(calls) == 2
 

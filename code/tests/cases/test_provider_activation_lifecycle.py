@@ -102,7 +102,7 @@ def test_codex_update_leaves_existing_account_hosts_running(monkeypatch, tmp_pat
     monkeypatch.setattr(updates.CodexRuntime, 'services', property(lambda _: ('account-host',)))
     monkeypatch.setattr(runtime, 'activation_link', lambda: tmp_path/'link')
     monkeypatch.setattr(updates, '_link', lambda *a: None)
-    assert updates._activate('codex', runtime, tmp_path/'new')
+    assert updates._activate_verified('codex', runtime, tmp_path/'new')
     own.restart.assert_not_called()
 
 
@@ -192,7 +192,7 @@ def test_kimi_ownership_checks_creation_and_home_before_stop(monkeypatch, tmp_pa
 def test_kimi_busy_account_does_not_block_runtime_replacement(monkeypatch, tmp_path):
     monkeypatch.setattr(updates,'_active_executions', lambda _:0)
     switch=Mock(return_value=True); monkeypatch.setattr(updates,'_switch_runtime',switch)
-    assert updates._activate('kimi',updates.KimiRuntime(),tmp_path/'new')
+    assert updates._activate_verified('kimi',updates.KimiRuntime(),tmp_path/'new')
     switch.assert_called_once()
 
 
@@ -207,7 +207,7 @@ def test_kimi_account_restart_rolls_back_previous_runtime(monkeypatch,tmp_path):
     restart=Mock(side_effect=[RuntimeError('secret'), None])
     monkeypatch.setattr(runtime,'restart_account_process',restart)
     with pytest.raises(PreparationError) as error:
-        updates._activate('kimi',runtime,tmp_path/'new')
+        updates._activate_verified('kimi',runtime,tmp_path/'new')
     assert link.resolve()==old and restart.call_count==2
     assert not error.value.rollback_failed
 

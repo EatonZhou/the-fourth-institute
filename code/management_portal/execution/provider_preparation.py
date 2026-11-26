@@ -4,6 +4,7 @@ from contextlib import contextmanager
 MESSAGES = {
     "download": "无法获取运行环境包或版本，请检查下载网络及软件源后重试。",
     "dependency_install": "运行依赖安装失败，请检查磁盘空间、安装权限及软件包来源后重试。",
+    "interface_validation": "候选 SDK 接口验收失败，当前版本继续提供服务。",
     "executable_validation": "运行程序校验失败，请检查平台兼容性及运行依赖后重试。",
     "service_activation": "运行环境已安装，但服务启用失败。请检查当前实例的服务登记、权限及服务日志后重试。",
     "prerequisites": "系统运行依赖准备失败，请检查依赖安装权限和下载网络后重试。",

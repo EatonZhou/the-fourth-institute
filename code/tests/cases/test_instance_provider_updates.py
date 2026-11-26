@@ -94,7 +94,7 @@ class InstanceProviderUpdateTests(unittest.TestCase):
                 link.symlink_to(old)
                 with patch.object(updates, "_active_executions", return_value=0), \
                         patch.object(runtime, "ensure_ready") as ready:
-                    self.assertTrue(updates._activate(provider, runtime, new))
+                    self.assertTrue(updates._activate_verified(provider, runtime, new))
                     ready.assert_called_once()
                 self.assertIn(["systemctl", "--user", "restart", name], self.commands)
                 self.assertEqual(link.resolve(), new)
@@ -119,7 +119,7 @@ class InstanceProviderUpdateTests(unittest.TestCase):
         link.symlink_to(old)
         with patch.object(updates, '_active_executions', return_value=0), \
                 patch.object(updates.CodexRuntime, 'services', new_callable=PropertyMock, return_value=()):
-            self.assertTrue(updates._activate('codex', runtime, staged))
+            self.assertTrue(updates._activate_verified('codex', runtime, staged))
         self.assertEqual(link.resolve(), binary)
         self.assertEqual(old.read_text(), 'previous version')
 

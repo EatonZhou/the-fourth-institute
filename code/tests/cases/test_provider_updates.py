@@ -110,7 +110,7 @@ def test_activation_rollback_keeps_original_dynamic_service_snapshot(monkeypatch
         restart=lambda service: command("systemctl", "--user", "restart", service),
         status=lambda service: {"active": "active"}))
     with pytest.raises(RuntimeError, match="服务启用失败"):
-        updates._activate("claude", DynamicRuntime(), new)
+        updates._activate_verified("claude", DynamicRuntime(), new)
     assert link.resolve() == old
     assert calls == [("systemctl", "--user", "restart", "registered.service")] * 2
 
@@ -211,7 +211,7 @@ def test_activation_schedules_recovery_and_switches_while_execution_exists(monke
     calls = []
     monkeypatch.setattr(updates, "_prepare_execution_recovery", lambda provider: calls.append(provider))
     monkeypatch.setattr(updates, "_switch_runtime", lambda *a, **kw: True)
-    assert updates._activate("kimi", updates.KimiRuntime(), tmp_path / "staged")
+    assert updates._activate_verified("kimi", updates.KimiRuntime(), tmp_path / "staged")
     assert calls == ["kimi"]
 
 
@@ -427,7 +427,7 @@ def test_failed_service_restart_restores_previous_runtime(monkeypatch, tmp_path)
     monkeypatch.setattr(updates, "_service_control", lambda: SimpleNamespace(
         restart=lambda service: restart(service), status=lambda service: {"active": "active"}))
     with pytest.raises(RuntimeError, match="服务启用失败"):
-        updates._activate("kimi", updates.KimiRuntime(), new)
+        updates._activate_verified("kimi", updates.KimiRuntime(), new)
     assert link.resolve() == old
     assert len(calls) == 2
 
@@ -596,14 +596,14 @@ def test_restricted_runtime_revision_defers_while_native_turns_exist(monkeypatch
     monkeypatch.setattr(updates, '_active_executions', lambda provider: 0)
     monkeypatch.setattr(kimi_account_runtime, 'runtime_busy', lambda: True)
     root = tmp_path / 'kimi-code-2.4.1-portal-deny-all-v1'
-    assert not updates._activate('kimi', runtime, root)
+    assert not updates._activate_verified('kimi', runtime, root)
     switch.assert_not_called()
     monkeypatch.setattr(kimi_account_runtime, 'runtime_busy', lambda: False)
     monkeypatch.setattr(updates, '_active_executions', lambda provider: 1)
-    assert not updates._activate('kimi', runtime, root)
+    assert not updates._activate_verified('kimi', runtime, root)
     switch.assert_not_called()
     monkeypatch.setattr(updates, '_active_executions', lambda provider: 0)
-    assert updates._activate('kimi', runtime, root)
+    assert updates._activate_verified('kimi', runtime, root)
     recover.assert_not_called()
 
 
@@ -618,3 +618,71 @@ def test_kimi_incompatible_protocol_is_not_ready_or_staged(monkeypatch, tmp_path
         runtime.stage(('2.5.0',))
     assert isinstance(raised.value.__cause__, ValueError)
     assert 'unsupported native protocol' in str(raised.value.__cause__)
+
+
+def test_failed_candidate_is_retested_before_pending_activation(monkeypatch, tmp_path):
+    from management_portal.execution import provider_candidate
+    from management_portal.execution.provider_preparation import PreparationError
+    _isolated(monkeypatch, tmp_path)
+    root = tmp_path / "candidate"
+    _stage_into(monkeypatch, [], lambda name, versions: root)
+    attempts, switches = [], []
+    def validate(provider, candidate, active):
+        attempts.append((provider, candidate))
+        if len(attempts) < 3:
+            raise PreparationError("interface_validation", ValueError("private detail"))
+    monkeypatch.setattr(provider_candidate, "validate", validate)
+    monkeypatch.setattr(updates, "_activate_verified", lambda provider, *a, **kw: switches.append(provider) or True)
+    for result in (updates.run_update_pass(), updates.activate_pending_once()):
+        assert result["pending"] == ["kimi"] and result["activated"] == []
+        assert result["errors"]["kimi"]["phase"] == "interface_validation"
+        assert "private detail" not in str(result)
+    assert switches == []
+    assert updates.activate_pending_once()["activated"] == ["kimi"]
+    assert attempts == [("kimi", root)] * 3 and switches == ["kimi"]
+
+
+def test_candidate_uses_private_home_and_exact_sdk_paths(monkeypatch, tmp_path):
+    from management_portal.execution import provider_candidate
+
+    active, staged = tmp_path / "active", tmp_path / "staged"
+    active.mkdir()
+    staged.mkdir()
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "live-secret")
+    attempts = []
+
+    def run(command, *, env, cwd, **options):
+        attempts.append((command[-1], env["HOME"]))
+        assert "ANTHROPIC_API_KEY" not in env
+        assert cwd.parent == Path(env["HOME"])
+        marker = cwd / "old-session"
+        if len(attempts) == 1:
+            marker.write_text("saved")
+        else:
+            assert marker.read_text() == "saved"
+
+    monkeypatch.setattr(provider_candidate, "run_process", run)
+    provider_candidate.validate("codex", staged, active)
+    assert [path for path, _ in attempts] == [str(active), str(staged)]
+    assert attempts[0][1] == attempts[1][1] and not Path(attempts[0][1]).exists()
+
+
+def test_antigravity_upgrade_needs_designated_account(monkeypatch, tmp_path):
+    from management_portal.execution import provider_candidate
+
+    active, staged = tmp_path / "active", tmp_path / "staged"
+    active.mkdir()
+    staged.mkdir()
+    monkeypatch.delenv("AGY_TEST_PROFILE", raising=False)
+    with pytest.raises(provider_candidate.CandidateCheckError) as failure:
+        provider_candidate.validate("antigravity", staged, active)
+    assert failure.value.public()["diagnostic"]["check"] == "test_profile"
+
+
+def test_watcher_finishes_on_interface_failure(monkeypatch):
+    from scripts import update_provider_runtimes as script
+
+    result = {"pending": ["kimi"], "errors": {"kimi": {"phase": "interface_validation"}}}
+    monkeypatch.setattr(script, "activate_pending_once", lambda: result)
+    monkeypatch.setattr(script.time, "sleep", lambda _: pytest.fail("retry on next update pass"))
+    assert script._watch_pending() == 1

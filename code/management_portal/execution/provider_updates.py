@@ -590,6 +590,12 @@ def _active_executions(provider: str) -> int:
 
 @diagnosed("service_activation")
 def _activate(provider: str, runtime: ProviderRuntime, root: Path, *, prepare=False) -> bool:
+    from .provider_candidate import validate
+    validate(provider, root, runtime.activation_link())
+    return _activate_verified(provider, runtime, root, prepare=prepare)
+
+
+def _activate_verified(provider, runtime, root, *, prepare=False):
     with activation_window(provider) as reserved:
         if not reserved:
             return False
