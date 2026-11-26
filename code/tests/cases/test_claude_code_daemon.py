@@ -84,10 +84,8 @@ class ClaudeCodeDaemonTest(unittest.IsolatedAsyncioTestCase):
                 self.assertNotIn("private endpoint", json.dumps(health))
                 environment.assert_not_called()
 
-    async def test_health_preserves_runtime_capacity_when_busy(self):
-        """服务已就绪且容量已满时，不把 busy 混成账号或服务失败。"""
+    async def test_health_reports_active_sessions_without_a_daemon_limit(self):
         daemon = daemon_module.ClaudeCodeDaemon()
-        daemon.max_concurrency = 1
         daemon._sessions["busy"] = daemon_module.SessionHandle(
             key="busy", signature=(), client=mock.Mock(), active_turn_id="turn",
         )
@@ -96,8 +94,43 @@ class ClaudeCodeDaemonTest(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(health["runtime_ready"])
         self.assertEqual(health["active"], 1)
         self.assertEqual(health["loaded_sessions"], 1)
-        self.assertFalse(health["available"])
+        self.assertTrue(health["available"])
+        self.assertIsNone(health["max_concurrency"])
         self.assertTrue(health["capabilities"]["harness_tools"])
+
+    async def test_ten_distinct_sessions_can_execute_together(self):
+        daemon = daemon_module.ClaudeCodeDaemon()
+        handles = {
+            str(i): daemon_module.SessionHandle(key=str(i), signature=(), client=mock.Mock())
+            for i in range(10)
+        }
+        all_running = asyncio.Event()
+        release = asyncio.Event()
+        running = set()
+
+        async def get_handle(params):
+            return handles[params["session_key"]]
+
+        async def run(turn, delivery):
+            running.add(turn.handle.key)
+            if running == handles.keys():
+                all_running.set()
+            await release.wait()
+            return {}
+
+        with (
+            mock.patch.object(daemon, "_handle_for", get_handle),
+            mock.patch.object(daemon_module.ClaudeTurn, "run", run),
+        ):
+            tasks = [
+                asyncio.create_task(daemon._run_turn_once({"session_key": key, "prompt": "test"}, mock.AsyncMock()))
+                for key in handles
+            ]
+            try:
+                await asyncio.wait_for(all_running.wait(), timeout=2)
+            finally:
+                release.set()
+                await asyncio.gather(*tasks)
 
     async def test_context_usage_reports_current_window_and_rejects_stale_turn(self):
         """上下文用量按当前窗口上报，轮次已过期或读取失败时不上报

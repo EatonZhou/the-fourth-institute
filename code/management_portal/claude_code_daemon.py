@@ -1337,11 +1337,9 @@ class ClaudeCodeDaemon:
     """
 
     def __init__(self) -> None:
-        self.max_concurrency = max(1, int(os.getenv("PORTAL_CLAUDE_CODE_MAX_CONCURRENCY", "8")))
         self.max_loaded_sessions = max(1, int(os.getenv("PORTAL_CLAUDE_CODE_MAX_LOADED_SESSIONS", "24")))
         self.idle_seconds = max(60, int(os.getenv("PORTAL_CLAUDE_CODE_IDLE_SECONDS", "3600")))
         self.default_profile = os.getenv("PORTAL_CLAUDE_CODE_PROVIDER_PROFILE", DEFAULT_PROVIDER_PROFILE).strip()
-        self._slots = asyncio.Semaphore(self.max_concurrency)
         self._sessions: dict[str, SessionHandle] = {}
         self._session_ids: dict[str, str] = {}
         self._session_setup_locks: dict[str, asyncio.Lock] = {}
@@ -1540,8 +1538,7 @@ class ClaudeCodeDaemon:
         delivery = await _turn_delivery(params, handle, turn_id, prompt, blocks, media)
         turn = ClaudeTurn(self, handle, params, emit, turn_id)
         async with handle.lock:
-            async with self._slots:
-                return await turn.run(delivery)
+            return await turn.run(delivery)
 
     async def _turn_prompt(self, params: dict[str, Any]) -> tuple[str, list[Any], Any]:
         """The turn's prompt, its images, and the content blocks that carry both (``None``: text only)."""
@@ -1687,21 +1684,20 @@ class ClaudeCodeDaemon:
             raise ValueError("Claude session identity changed")
         compaction_id = f"compact:{params.get('request_id') or uuid.uuid4().hex}"
         async with handle.lock:
-            async with self._slots:
-                handle.active_turn_id = compaction_id
-                handle.interrupted_turn_id = ""
+            handle.active_turn_id = compaction_id
+            handle.interrupted_turn_id = ""
+            handle.last_used = time.monotonic()
+            try:
+                outcome = await ClaudeCompaction(self, handle, session_id).run()
+            except Exception as exc:
+                if handle.interrupted_turn_id == compaction_id:
+                    raise ClaudeTurnInterrupted("Claude Code compaction interrupted") from exc
+                if isinstance(exc, ClaudeSDKError):
+                    handle.invalidated = True
+                raise
+            finally:
+                handle.active_turn_id = ""
                 handle.last_used = time.monotonic()
-                try:
-                    outcome = await ClaudeCompaction(self, handle, session_id).run()
-                except Exception as exc:
-                    if handle.interrupted_turn_id == compaction_id:
-                        raise ClaudeTurnInterrupted("Claude Code compaction interrupted") from exc
-                    if isinstance(exc, ClaudeSDKError):
-                        handle.invalidated = True
-                    raise
-                finally:
-                    handle.active_turn_id = ""
-                    handle.last_used = time.monotonic()
         return {"session_id": handle.session_id, **outcome}
 
     async def session_status(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -1954,9 +1950,9 @@ class ClaudeCodeDaemon:
             "authentication_status": "not_checked",
             "provider_error": "",
             "enabled_models": [],
-            "max_concurrency": self.max_concurrency,
+            "max_concurrency": None,  # The scheduler limits each account.
             "active": active,
-            "available": active < self.max_concurrency,
+            "available": True,
             "loaded_sessions": loaded,
             "max_loaded_sessions": self.max_loaded_sessions,
         }
