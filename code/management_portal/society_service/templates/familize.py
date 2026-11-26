@@ -186,7 +186,15 @@ def _rewire(body: dict, sources: set[str], target: str, block: dict, *, removing
     return changed
 
 
-def reconcile_in_body(body: dict, block: dict, actor: str) -> None:
+def reconcile_in_body(body: dict, block: dict, actor: str, *, installing=False) -> None:
+    if block['family'].get('role_bindings'):
+        from .. import family_roles
+        family_roles.reconcile(body, block, actor, _reconcile_legacy_in_body, installing=installing)
+    else:
+        _reconcile_legacy_in_body(body, block, actor)
+
+
+def _reconcile_legacy_in_body(body: dict, block: dict, actor: str) -> None:
     """Reconcile generated components and wires by local key; preserve their IDs."""
     family = block["family"]
     from .. import personal_assistant
@@ -595,8 +603,13 @@ def familize(lineage_id: str, resident_ids: Iterable[str], actor: str, *, title:
     # The entry point supplies the recipe. Resolve it only after admission and
     # the existing-Lineage-Family return; per-application choices remain last.
     defaults = copy.deepcopy(dict(load_body()))
+    from . import role as role_templates
+    role_sources = role_templates.resolve(defaults.pop('role_templates', {})) if not personal_ama_id else {}
+    defaults.pop('role_templates', None)
     settings = _resident_settings(defaults.pop("resident_settings", None), resident_settings)
+    settings = _resident_settings({key: source['body']['resident'] for key, source in role_sources.items()}, settings)
     choices = {**defaults, **dict(parameters or {})}
+    choices.pop('role_templates', None)
     tasks = choices.pop("tasks", {})
     from . import family_graph
     family_graph.generate({**choices, "tasks": tasks})  # Validate before creating any roles.
@@ -655,7 +668,10 @@ def familize(lineage_id: str, resident_ids: Iterable[str], actor: str, *, title:
             parent["elements"].append({"id": block["id"], "kind": "function_block",
                                        "key": "member:" + roles["facade"]})
         family_workflows.update(body, block, actor, collect=True)
-        reconcile_in_body(body, block, actor)
+        if role_sources:
+            from .. import family_roles
+            family_roles.assemble(body, block, role_sources, actor)
+        reconcile_in_body(body, block, actor, installing=True)
         family_graph.apply_tasks(body, block, tasks)
         if authored_layout:
             family_graph.place_generated(body, block, authored_layout)
@@ -667,7 +683,8 @@ def familize(lineage_id: str, resident_ids: Iterable[str], actor: str, *, title:
 
     view, outcome = _lineage_graph_edits().commit_lineage_edit(lineage_id, actor, edit, reason="Familize：创建 Family")
     block = facts.family_block(view, outcome["family_id"])
-    family_task_dispatches.dispatch(roles["facade"], "organization", actor, facts={"change": "Family 已创建，检查分工并等待工作触发。"})
+    if 'organization' in family_tasks.configured(view, block):
+        family_task_dispatches.dispatch(roles["facade"], "organization", actor, facts={"change": "Family 已创建，检查分工并等待工作触发。"})
     return result(f"已创建 Family「{title}」", **outcome, resource_id=block["family"]["resource_id"], function_block_ids=[block["id"]],
         facade_resident_id=roles["facade"], steward_resident_id=roles["steward"], router_resident_id=roles["router"],
         member_resident_ids=members, leader_resident_id=view.get("leader_resident_id", ""),
@@ -697,7 +714,8 @@ def update_family(lineage_id: str, family_id: str, actor: str, *, add_member_ids
         grouping = {"lineage_scope": family.get("lineage_scope", False), "family_id": family_id}
         old_keys, new_keys = _member_elements(body, family["members"], **grouping), _member_elements(body, members, **grouping)
         # The Family owns its roster. The generic block editor protects this projection.
-        block.pop("family")
+        if not family.get('role_bindings'):
+            block.pop("family")
         try:
             block = function_block_authoring.update_in_body(body, family_id, actor, title=title,
                 add_element_ids=[rid for rid in new_keys if rid not in old_keys],
@@ -715,8 +733,8 @@ def update_family(lineage_id: str, family_id: str, actor: str, *, add_member_ids
         if not ownership_only:
             reconcile_in_body(body, block, actor)
             if review_interval_seconds is not None:
-                owner = find_review_duty(body, block) or block
-                event_id = next((e["id"] for e in owner["elements"] if e.get("key") == "periodic_review"), None)
+                from ..family_definition import family_elements
+                event_id = next((e["id"] for e in family_elements(body, block) if e.get("key") == "periodic_review"), None)
                 event = next((c for c in body["program"]["components"] if c["id"] == event_id), None)
                 if event:
                     event["config"]["interval_seconds"] = max(86400, review_interval_seconds) if family.get("personal_ama_id") else review_interval_seconds
@@ -757,7 +775,8 @@ def unfamilize(lineage_id: str, family_id: str, actor: str, *, successor_id: str
     target = rewire_to or successor
     if target and target not in members:
         raise TemplateError("门面上的外部连线只能改接到 Family 成员")
-    owned = {e["id"] for e in block["elements"] if facts.is_generated(e)}
+    from ..family_definition import family_elements
+    owned = {e["id"] for e in family_elements(lineage, block) if facts.is_generated(e)}
     external = [w for w in lineage.get("program", {}).get("wires", [])
                 if w["kind"] in REWIRED_KINDS and w["target"] == facade and w["id"] not in owned]
     parents = [b for b in lineage.get("function_blocks", []) if any(e["id"] == family_id for e in b["elements"])]
@@ -795,6 +814,11 @@ def unfamilize(lineage_id: str, family_id: str, actor: str, *, successor_id: str
             if successor:
                 body["leader_resident_id"] = successor
             internals = {e["id"] for e in current["elements"] if facts.is_generated(e)} | set(roles)
+            from .. import family_roles
+            for role in family_roles.role_blocks(body, current):
+                scope, _ = function_block_authoring.deletion_scope(body, role['id'])
+                internals.update(scope)
+            body['function_blocks'] = [b for b in body['function_blocks'] if b['id'] not in internals]
             review = find_review_duty(body, current)
             if review:
                 scope, _ = function_block_authoring.deletion_scope(body, review["id"])
@@ -853,9 +877,14 @@ class FamilizeKind:
 
     def normalize(self, template: dict) -> dict:
         body = dict(template.get("body") or {})
+        refs = body.pop('role_templates', {})
+        if not isinstance(refs, dict) or set(refs) - {'router', 'steward'} or any(not isinstance(v, str) for v in refs.values()):
+            raise TemplateError('Family role_templates 必须为角色到模板 ID 的引用')
         settings = _validate_resident_settings(body.pop("resident_settings", None))
         tasks = body.pop("tasks", {})
-        normalized = {**_values(body), "resident_settings": settings, **({"tasks": tasks} if tasks else {})}
+        if refs and tasks:
+            raise TemplateError('独立角色的指南与触发提示词请在角色模板编辑；Family 仅保存角色引用')
+        normalized = {**_values(body), "resident_settings": settings, **({'role_templates': refs} if refs else {}), **({"tasks": tasks} if tasks else {})}
         from . import family_graph
         family_graph.generate({**normalized, "tasks": tasks})
         return {**template, "body": normalized}
@@ -878,7 +907,7 @@ class FamilizeKind:
         return parameters
 
     def editor(self) -> dict:
-        return {"resident_roles": copy.deepcopy(RESIDENT_ROLES), "fields": [{"name": "goal", "type": "text", "label": "共同目标"},
+        return {"resident_roles": copy.deepcopy(RESIDENT_ROLES), "fields": [{"name": "role_templates", "type": "json", "label": "角色模板引用"}, {"name": "goal", "type": "text", "label": "共同目标"},
                            {"name": "route_threshold", "type": "integer", "label": "路由置信度阈值", "min": 0, "max": 100},
                            {"name": "review_interval_seconds", "type": "integer", "label": "回顾间隔（秒）", "min": 1}]}
 

@@ -24,7 +24,7 @@ def delete(inv):
 
 def update_duty(inv):
     block = blocks.update_duty(inv.argument("lineage_id"), inv.argument("function_block_id"), inv.caller,
-                               **{k: inv.argument(k) for k in ("description", "category", "prompt", "memory_level")
+                               **{k: inv.argument(k) for k in ("description", "category", "prompt", "memory_level", "task_prompt")
                                   if k in inv.call.arguments})
     return {"function_block": block}
 

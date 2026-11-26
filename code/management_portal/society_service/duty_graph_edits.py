@@ -41,7 +41,7 @@ def finish(body, scope, changes, actor):
     kinds = blocks.element_kinds(body)
     block["elements"].extend({"id": key, "kind": kinds[key], "key": None} for key in after.keys() - before.keys())
     changes = deepcopy(changes)
-    if set(changes) - {"title", "description", "category", "prompt", "memory_level"}:
+    if set(changes) - {"title", "description", "category", "prompt", "memory_level", "task_prompt"}:
         raise ValueError("Unknown duty edit fields")
     if "title" in changes:
         title = changes.pop("title")

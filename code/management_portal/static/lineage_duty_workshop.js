@@ -93,6 +93,7 @@
           <label>${esc(t('说明'))}<input data-duty-meta="description" value="${esc(meta.description)}"></label>
           <label>${esc(t('类别'))}<select data-duty-meta="category">${['fixed','common','custom'].map(value => `<option value="${value}" ${value === meta.category ? 'selected' : ''}>${esc(t({fixed:'固定',common:'通用',custom:'自定义'}[value]))}</option>`).join('')}</select></label>
           ${residentHolder ? `<label>${esc(t('职责提示词'))}<textarea data-duty-meta="prompt" rows="4">${esc(meta.prompt)}</textarea></label>
+          ${meta.task_prompt !== undefined ? `<label>${esc(t('触发提示词'))}<textarea data-duty-meta="task_prompt" rows="4">${esc(meta.task_prompt)}</textarea></label>` : ''}
           <label>${esc(t('记忆层'))}<select data-duty-meta="memory_level">${['session','turn','trigger','on_demand'].map(value => `<option ${value === meta.memory_level ? 'selected' : ''}>${value}</option>`).join('')}</select></label>` : ''}
           <p>${esc(t('此处只编辑当前职责。Resident 的其他记忆与职责保持独立。'))}</p></details>
         <div class="dutyWorkshopContent"><div data-duty-graph></div><aside class="portalHatgOverlayComponent" data-duty-inspector hidden></aside></div></main>`;
@@ -167,7 +168,7 @@
     return {sessionId,lineageId,load,save,acceptDraft,dirty,fit:() => graph?.fit(),
       documentKey:() => `${sessionId}:${generation}`,template:() => ({title:model?.block.title || t('职责工坊')}),
       draftFileKey:() => `duty-${functionBlockId}-${sessionId}`,
-      assistantContext:() => `当前编辑职责实例，遵循职责草稿协议：先 GetLineage {lineage_id:"${lineageId}"}，目标 function_block_id=${functionBlockId}，基准 revision=${model.revision}。只能改该职责拥有的组件、连线及职责元数据，不得改外部元素或 Resident 配置。交回完整 JSON {lineage_id,function_block_id,revision,operations,duty_changes}，operations 使用 ApplyLineageChanges 格式，duty_changes 仅 title/description/category/prompt/memory_level。先 ApplyLineageChanges 加 dry_run:true 和 expected_version:${model.revision} 校验；禁止正式提交。将 JSON 写入本轮指定草稿路径，由用户在工坊预览、保存。`,
+      assistantContext:() => `当前编辑职责实例，遵循职责草稿协议：先 GetLineage {lineage_id:"${lineageId}"}，目标 function_block_id=${functionBlockId}，基准 revision=${model.revision}。只能改该职责拥有的组件、连线及职责元数据，不得改外部元素或 Resident 配置。交回完整 JSON {lineage_id,function_block_id,revision,operations,duty_changes}，operations 使用 ApplyLineageChanges 格式，duty_changes 仅 title/description/category/prompt/memory_level；Family角色职责另可含task_prompt，须保留facts并遵守模板校验。先 ApplyLineageChanges 加 dry_run:true 和 expected_version:${model.revision} 校验；禁止正式提交。将 JSON 写入本轮指定草稿路径，由用户在工坊预览、保存。`,
       destroy() {disposed=true;surface.destroy();abort.abort();templates.destroy();tools?.destroy();disposeInspector?.();graph?.destroy();editor.replaceChildren();},
     };
   }

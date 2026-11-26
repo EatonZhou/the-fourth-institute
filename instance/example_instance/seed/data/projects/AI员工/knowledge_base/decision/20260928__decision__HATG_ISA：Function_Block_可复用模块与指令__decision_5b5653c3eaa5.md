@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 65
+  number: 69
   created_at: '2026-09-28T10:45:00Z'
   created_by:
     user: tfi-exported-user
     agent: resident_2a1fc6cd272d
-  updated_at: '2026-10-31T02:00:01Z'
+  updated_at: '2026-11-26T05:11:38Z'
   updated_by:
     user: ''
-    agent: resident_73cb83291316
+    agent: resident_021703e3659a
 importance: 8
 metaness: 2
 ai_generated: false
@@ -200,7 +200,7 @@ Family 块还包含如下 `family` 字段。它是 Family 领域事实的读取�
 | `UpdateFunctionBlock` | `lineage_id`、`function_block_id`、`title`、`x`、`y`、`add_element_ids`、`remove_element_ids` |
 | `DeleteFunctionBlock` | `lineage_id`、`function_block_id` |
 | `CreateDuty` | `lineage_id`、`holder_id`、`description`、`prompt`、`memory_level`、`category` |
-| `UpdateDuty` | `lineage_id`、`function_block_id`、`description`、`category`、`prompt`、`memory_level` |
+| `UpdateDuty` | `lineage_id`、`function_block_id`、`description`、`category`、`prompt`、`task_prompt`、`memory_level` |
 | `MoveDuties` | `lineage_id`、`holder_id`、`function_block_ids` |
 
 ### Functionalize
@@ -281,3 +281,5 @@ Function Block 与 Family 实例菜单提供“内部对象”和“问题”页
 打开“问题”页即自动将本次显示的问题记录为当前用户已查看，存入 Workbench PageState 的 functionBlockFailureAcknowledgements，不再要求点击“已知悉”；不修改错误、运行事实或其他用户的提示。查看按 Lineage、对象及失败发生标识匹配，新的失败重新提示。只打开概览或内部对象页不消除提醒；问题页打开后的后台刷新不自动将新失败标为已查看，再次打开问题页才消除新提醒。成功执行、修正配置或 Resident 错误清除后，该问题移出当前清单；已查看但尚未修好的错误仍可在问题页查看。
 
 格式名与版本须精确匹配当前规范值，校验规则见 decision_86aed2f0e8c7；本篇同时校验各字段和结构版本，不接受历史前缀或其他版本。
+
+Family 角色职责的指南复用按需职责记忆，触发任务模板只在职责参数保存。UpdateDuty 的 task_prompt 以及职责范围 ApplyLineageChanges 的同名变更须保留 ${facts}，仅允许 facts、guide_path、guide_version。非此类职责不能设置 task_prompt，修改不产生消息或撤销已受理投递。

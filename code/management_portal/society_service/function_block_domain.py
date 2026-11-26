@@ -75,6 +75,8 @@ def delete(lineage_id, function_block_id, actor):
     with lineage_aggregate.lineage_scope(lineage_id):
         previous = lineage_aggregate.read_lineage(lineage_id, actor=actor)
         ids, residents = function_block_authoring.deletion_scope(previous, function_block_id)
+        if function_block_authoring.find_block(previous, function_block_id).get('role'):
+            raise ValueError('Family 角色整体撤除需要 Unfamilize 或 DeleteFamily，以保留在途任务生命周期检查')
         if any("family" in b for b in previous["function_blocks"] if b["id"] in ids):
             raise ValueError("Family requires Unfamilize or DeleteFamily")
         lineage_graph_edits.commit_lineage_edit(lineage_id, actor, lambda body: function_block_authoring.remove_elements_in_body(body, ids),

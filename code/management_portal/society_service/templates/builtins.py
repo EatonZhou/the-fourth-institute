@@ -1,4 +1,4 @@
-"""Initial content for the eight editable built-in templates."""
+"""Initial content for editable built-in templates."""
 
 from __future__ import annotations
 
@@ -80,6 +80,7 @@ def definitions():
 
     from ..family_tasks import defaults
     review = defaults("notify_periodic_review")["review"]
+    from . import role
     templates = [
         {
             "builtin_key": "family_review", "kind": "family_duty", "category": "structure",
@@ -104,6 +105,7 @@ def definitions():
             "targets": ["selection", "resident"],
             "parameters": [],
             "body": {
+                "role_templates": role.references(),
                 "goal": "",
                 "route_threshold": 60,
                 "review_interval_seconds": 86400,
@@ -412,6 +414,9 @@ def definitions():
                 },
             }
         )
+    templates.extend({'builtin_key': 'family_role_' + key, 'kind': 'role', 'category': 'structure',
+                      'title': key.title(), 'description': '所属 Family 的独立角色；共享对象通过外部绑定接入。',
+                      'targets': ['resident'], 'parameters': [], 'body': role.definition(key)} for key in role.KEYS)
     return [
         {**item, "template_id": template_id(item["builtin_key"])} for item in templates
     ]

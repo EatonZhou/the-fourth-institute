@@ -43,6 +43,8 @@ def instructions_used(template):
         return ["Familize"]
     if kind == "family_duty":
         return ["MaintainFamilyReview"]
+    if kind == 'role':
+        return ['Functionalize', 'CreateDuty', 'CreateComponent', 'CreateWire']
     if kind == "script":
         return list(dict.fromkeys(call.instruction for call in parse(body["script"]).calls))
     names = []

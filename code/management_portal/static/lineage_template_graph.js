@@ -222,7 +222,7 @@
     return slots.map(item => `.templateGraph .hatgNode[data-node-id="${CSS.escape(item.key)}"]{opacity:.65;background:var(--panel-2)}`).join('\n');
   }
 
-  function project(body, {workshop = false} = {}) {
+  function project(body, {workshop = false, groups = []} = {}) {
     const program = window.PortalLineageProgram;
     const source = collections(JSON.parse(JSON.stringify(body)));
     const saved = source.layout || {};
@@ -257,7 +257,24 @@
         edge.target_port = wanted.map(type => ports.find(port => port.type === type)).find(Boolean)?.port_id || '';
       }
     });
-    return { nodes: graph.nodes, edges: graph.edges, wires: program.normalizeProgram(authored).wires };
+    const representative = new Map(), grouped = [];
+    for (const group of groups.filter(group => !group.expanded)) {
+      const resident = graph.nodes.find(node => node.id === group.resident);
+      if (!resident) continue;
+      for (const key of group.members) representative.set(key, group.key);
+      grouped.push({...resident, id:group.key, kind:'function_block', title:group.title,
+        _template_role:false,_template:{key:group.key,title:group.title}});
+    }
+    const edges = graph.edges.filter(edge=>!(representative.has(edge.source) && representative.get(edge.source)===(representative.get(edge.target)||edge.target)))
+      .map(edge=>({...edge, source:representative.get(edge.source)||edge.source,
+        target:representative.get(edge.target)||edge.target}));
+    let nodes = [...graph.nodes.filter(node=>!representative.has(node.id)),...grouped];
+    if (grouped.length) {
+      const compact = autoLayout({roles:nodes.map(node=>({key:node.id})),components:[],match:[],
+        wires:edges.map(edge=>({...edge,key:edge.id}))});
+      nodes = nodes.map(node=>({...node,...compact[node.id]}));
+    }
+    return { nodes, edges, wires: program.normalizeProgram(authored).wires };
   }
 
   function placement(body) {
@@ -308,7 +325,7 @@
     return {move,destroy(){destroyed=true;observer.disconnect();controller.destroy();root.remove();}};
   }
 
-  function mount({ root, body, workshop = false, readOnly = false, isReadonly = () => false, onBeforeChange = () => {}, onChange = () => {}, onSelect = () => {} }) {
+  function mount({ root, body, workshop = false, readOnly = false, groups = () => [], isReadonly = () => false, onBeforeChange = () => {}, onChange = () => {}, onSelect = () => {} }) {
     const program = window.PortalLineageProgram;
     const factory = window.PortalHatgGraph?.createGraph;
     if (!program || !factory) throw new Error(t('HATG 图形引擎未加载'));
@@ -348,7 +365,7 @@
 
 
     function render() {
-      current = project(body(), {workshop});
+      current = project(body(), {workshop,groups:groups()});
       states.textContent = edgeStateRules(body()) + (workshop ? slotRules(body()) : '');
       if (selected && !current.nodes.some(node => node.id === selected) && !current.edges.some(edge => edge.id === selected)) selected = '';
       controller.render({

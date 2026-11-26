@@ -145,6 +145,9 @@ const {chromium} = require(path.join(repo, 'management_portal/test_framework/tau
         workshop.destroy();
         const prototype=(await execute('ListTemplates')).templates.find(template=>template.kind===kind);
         const payload=prototype?LineageTemplateWorkshopDraft.payload(prototype):{kind:'script',title:'Script recipe',body:{script:'ListTemplates',endpoints:[]}};
+        // Keep the old per-Family task recipe contract covered. New Families
+        // reference independent roles, exercised by family_roles.browser.cjs.
+        if(kind==='familize')delete payload.body.role_templates;
         const source=(await execute('CreateTemplate',{template:{...payload,title:'Module '+kind}})).template;
         window.workshop=LineageTemplateWorkshop.mount({root:document.querySelector('#templateWorkshop'),lineageId:'',templateId:source.template_id,execute});
         await workshop.load();

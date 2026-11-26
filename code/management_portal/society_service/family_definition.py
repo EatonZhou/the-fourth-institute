@@ -23,8 +23,9 @@ def find_review_duty(body, parent):
 
 
 def family_elements(body, parent):
+    from . import family_roles
     review = find_review_duty(body, parent)
-    return [*parent.get("elements", []), *(review["elements"] if review else [])]
+    return [*parent.get("elements", []), *family_roles.elements(body, parent), *(review["elements"] if review else [])]
 
 
 def bind_review_activity(body, parent):

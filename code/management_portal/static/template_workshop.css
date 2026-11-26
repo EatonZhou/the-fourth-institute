@@ -18,7 +18,8 @@
   [data-portal-theme="liquid-glass"] .workshopLibrary,[data-portal-theme="liquid-glass"] .workshopTools { background:var(--panel); }
 }
 .templateRecipeGraph { height:100%; display:flex; flex-direction:column; min-height:480px; }
-.templateRecipeToolbar { display:flex; gap:12px; align-items:center; padding:6px 12px; font-size:12px; }
+.templateRecipeToolbar { display:flex; gap:8px; align-items:center; padding:6px 12px; font-size:12px; overflow-x:auto; }
+.templateRecipeToolbar button { flex:none; }
 .templateRecipeToolbar select { min-width:0; max-width:50%; }
 .templateRecipeGraph>.templateGraphWorkspace { flex:1; min-height:0; }
 .templateRecipeGraph .templateGraphInspector { top:12px; right:12px; }

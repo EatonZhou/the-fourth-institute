@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 48
+  number: 50
   created_at: "2026-09-28T10:45:00Z"
   created_by:
     user: "weihao"
     agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-11-15T15:31:40Z"
+  updated_at: "2026-11-26T05:11:39Z"
   updated_by:
     user: ""
-    agent: "resident_25ac6961fafb"
+    agent: "resident_021703e3659a"
 importance: 8
 metaness: 2
 ai_generated: false
@@ -313,7 +313,7 @@ Lineage 不保存待确认的修改方案。需要先让人确认的团队结构
 - `operations` 中每项是对组件或连线的 `create`、`update`、`delete` 或 `clone`，或对 Resident 的 `delete`。删除 Resident 采用 `DeleteResident` 的完整语义（decision_d19b9909a674）。后面的操作通过 `$ref:<名称>` 引用前面 create 或 clone 的 `ref`。clone 的 `value` 保存覆盖字段，省略新对象 ID 时由服务生成。批量删除组件或连线只清理指定对象和悬空连线，留下的观察者由诊断提示补充绑定。
 - 结果：`created_ids`、`updated_ids`、`deleted_ids`、`revision`。删除 Leader 后，调用者通过 `GetLineage` 读取继任者。
 - 指定 `function_block_id` 时限定为一条职责实例，必须携带读取时的 Lineage `revision` 作为 `expected_version`。仅允许改这条职责直接拥有的组件、连线；新建元素自动归属，删除自动移除归属。拒绝 Resident 删除、外部元素修改以及会连带删除外部共享连线的操作。
-- `duty_changes` 仅在职责范围内接受 `title`、`description`、`category`、`prompt`、`memory_level`；元素变更、归属与职责记忆在同一事务提交。纯提示词职责允许空 `operations`。组织持有的职责仍不允许添加 Resident 提示词。
+- `duty_changes` 仅在职责范围内接受 `title`、`description`、`category`、`prompt`、`memory_level`；Family 角色职责另支持 `task_prompt`（须保留 ${facts}，仅允许 facts、guide_path、guide_version）；元素变更、归属与职责记忆在同一事务提交。纯提示词职责允许空 `operations`。组织持有的职责仍不允许添加 Resident 提示词。
 - `dry_run:true` 重新核对权限、版本、图和职责边界，返回预览而不持久化；职责结果附 `function_block` 与 `preview:{elements:[{id,before,after}],duty:{before,after}}`。正式提交使用同一请求和版本，过时返回 `instruction.conflict`，失败不留下部分变更。
 - Lineage 中的 Effect 可以在脚本中调用这条指令，在 `operations` 中用 `${event.outputs.<字段名>}` 引用上游 Effect 输出的对象 ID，或用 `${变量.字段}` 引用本脚本中前面调用返回的对象 ID；引用在调用时解析。
 

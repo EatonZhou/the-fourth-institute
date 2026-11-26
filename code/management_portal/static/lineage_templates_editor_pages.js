@@ -69,17 +69,19 @@
 
     function renderRecipeGraph() {
       let projection = draft.editor.graph;
+      const expanded = new Set();
       const rows = () => ['roles', 'components', 'wires'].flatMap(key => projection.body[key] || []);
-      bodyPage.innerHTML = `<div class="templateRecipeGraph"><div class="templateRecipeToolbar"><select data-recipe-select aria-label="${esc(t('选择图中元素'))}"><option value="">${esc(t('模板参数'))}</option>${rows().map(row => `<option value="${esc(row.key)}">${esc(row.title || row.key)}</option>`).join('')}</select><span>${esc(t('成员按施加时的名册展开'))}</span></div><div class="templateGraphWorkspace is-workshop"><div class="templateGraphHost" data-template-graph></div><aside class="templateGraphInspector" data-graph-inspector></aside></div></div>`;
+      bodyPage.innerHTML = `<div class="templateRecipeGraph"><div class="templateRecipeToolbar"><select data-recipe-select aria-label="${esc(t('选择图中元素'))}"><option value="">${esc(t('模板参数'))}</option>${rows().map(row => `<option value="${esc(row.key)}">${esc(row.title || row.key)}</option>`).join('')}</select><button type="button" class="portalButton is-compact" data-recipe-parameters>${esc(t('参数'))}</button>${(projection.groups||[]).map(group=>`<button type="button" class="portalButton is-compact" data-recipe-group="${esc(group.key)}" aria-expanded="false">${esc(group.title)}</button>`).join('')}</div><div class="templateGraphWorkspace is-workshop"><div class="templateGraphHost" data-template-graph></div><aside class="templateGraphInspector" data-graph-inspector hidden></aside></div></div>`;
       const inspector = bodyPage.querySelector('[data-graph-inspector]');
       const select = bodyPage.querySelector('[data-recipe-select]');
       const schemas = draft.editor.fields || [];
       function inspect(key) {
         readDraft();
+        inspector.hidden = false;
         select.value = key;
         const row = rows().find(row => row.key === key);
         const controls = key ? projection.controls[key] || [] : schemas.map(schema => ({field: schema.name}));
-        inspector.innerHTML = `<h3>${esc(row?.title || row?.key || t('模板参数'))}</h3>` + controls.map(control => {
+        inspector.innerHTML = `<button type="button" class="portalButton is-quiet is-compact" data-close-recipe-inspector aria-label="${esc(t('关闭检查器'))}">×</button><h3>${esc(row?.title || row?.key || t('模板参数'))}</h3>` + controls.map(control => {
           if (control.task) {
             const value = draft.body.tasks?.[control.task]?.[control.field] ?? control.value;
             return field({label: control.label, type:'text', multiline:true}, value, `data-recipe-task="${esc(control.task)}" data-task-field="${esc(control.field)}"`);
@@ -95,8 +97,15 @@
         draft.body.tasks[input.dataset.recipeTask] ||= {};
         draft.body.tasks[input.dataset.recipeTask][input.dataset.taskField] = input.value;
       });
+      inspector.addEventListener('click', event=>{if(event.target.closest('[data-close-recipe-inspector]'))inspector.hidden=true;});
+      bodyPage.querySelector('[data-recipe-parameters]').addEventListener('click',()=>inspect(''));
       editorState.graph = window.LineageTemplateGraph.mount({root:bodyPage.querySelector('[data-template-graph]'), body:() => projection.body,
-        workshop:true, readOnly:true, onSelect:inspect});
+        workshop:true, readOnly:true, groups:()=>(projection.groups||[]).map(group=>({...group,expanded:expanded.has(group.key)})), onSelect:inspect});
+      bodyPage.querySelectorAll('[data-recipe-group]').forEach(button=>button.addEventListener('click',()=>{
+        const key=button.dataset.recipeGroup;
+        if(expanded.has(key))expanded.delete(key);else expanded.add(key);
+        button.setAttribute('aria-expanded',String(expanded.has(key)));editorState.graph.render();
+      }));
       select.addEventListener('change', () => editorState.graph.select(select.value));
       editorState.refreshRecipeGraph = graph => {
         if (!graph) return;
@@ -104,7 +113,7 @@
         projection = graph;
         editorState.graph.render();
       };
-      inspect('');
+      if (draft.kind !== 'role' && !(draft.kind === 'familize' && Object.keys(draft.body.role_templates || {}).length)) inspect('');
     }
 
     function renderStructureLists() {

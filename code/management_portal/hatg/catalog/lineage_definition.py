@@ -157,7 +157,7 @@ DECLARATIONS = (
         R("operations", "array", "每项是对组件或连线的 create、update、delete、clone，或对 Resident 的 delete；后面的操作可以引用前面创建的对象",
           items={"type": "object"}),
         P("function_block_id", description="限定到这一条职责；须携带 expected_version，仅可改该职责拥有的组件、连线及元数据，新元素自动归属；不改 Resident 身份与外部元素"),
-        P("duty_changes", "object", "职责的 title、description、category、prompt、memory_level；仅在指定 function_block_id 时可用"),
+        P("duty_changes", "object", "职责的 title、description、category、prompt、memory_level；Family 角色职责另支持 task_prompt。仅在指定 function_block_id 时可用"),
         P("dry_run", "boolean", "只校验并预览，不写入；正式保存须提交同一变更和版本前提"),
         *PLACEMENT,
     ), (

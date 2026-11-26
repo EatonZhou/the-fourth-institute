@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-10-13'
 version:
-  number: 42
+  number: 43
   created_at: "2026-10-13"
   created_by:
     user: ""
     agent: "resident_e8fc8c899f00"
-  updated_at: "2026-11-26T04:28:54Z"
+  updated_at: "2026-11-26T05:05:17Z"
   updated_by:
     user: ""
     agent: "resident_021703e3659a"
@@ -454,3 +454,17 @@ family_duty 模块属于“职责”分组，当前提供内置“周期组织�
 ApplyTemplate 的 dry_run 使用同一安装及图校验路径，不改变定义。首次施加接管原回顾结构，后续撤下、再安装沿用职责生命周期；持久的 independent_duties 标记阻止 Family 同步重新生成。共享成员完成事件仍属 Family，职责工坊可编辑自己的组件与连线。既有任务的原请求身份、业务活动及空闲门控不变。
 
 CreateTemplate.from_selection 选择这条职责时生成 family_duty 配方，可通过工坊修改周期、指南和触发提示词，另存、发布商店、安装后用于另一 Family。任意自定义结构、Effect 脚本或附加职责记忆不静默省略：目前超出该配方可复用范围时明确拒绝导出，实例编辑仍保留。
+
+## Router／Steward 角色样例与 Family 引用
+
+role 模板是单一 Resident 的可模板化配置、分层记忆和职责组合，不是 structure.roles 绑定声明。首批内置 Router 与 Steward 在共用目录的角色组；body 包含 role_key、resident（provider／account／settings）、memories（唯一 key、level、prompt）、duties（唯一 key、title、guide、prompt）及显式外部 bindings（Family、门面、名册、同伴、共享 member_done）。不携带会话、执行、账本、凭证或权限。角色可在工坊独立查看、Save As 编辑；未绑定所属 Family 不运行。
+
+Family 配方 role_templates 按角色键引用同一模板 ID；新组装解析版本并安装实际角色框及职责框，源模板更新不自动修改实例。family.router／steward 仍是绑定唯一真值，role_bindings 指向对应实例；角色框恰好包含该 Resident。配置只用于新节点初始化；对已有 Resident 施加角色不静默覆盖后端，模板含后端改动时明确要求经节点设置处理。未绑定、类型冲突或重复安装明确拒绝。旧 Family／未声明角色引用的旧配方不自动迁移，个人助手沿原生命周期。
+
+角色源版本记录于角色及每条职责来源；实际指南只归职责的按需记忆，触发提示词只归职责参数，工作指南文件是这些记录的投影。UpdateDuty 与 ApplyLineageChanges 的 duty_changes 对 Family 角色职责支持 task_prompt，保留 ${facts} 并仅允许 facts、guide_path、guide_version。工坊原子预览／保存、冲突检查和草稿历史沿用同一职责责任方。
+
+Router 拥有 route 职责、调用其 Resident 的选人结构与指南。Steward 拥有队列、摘要、回顾、recruit、route_review、恢复、额度和组织变化职责；recruit／route_review 是消息型职责，引用 Family 单份 relay，不另造 Event 或投递。周边触发／Effect／连线按职责真实归属收拢；member_done、名册、门面、原请求转交和平台可用性保障留在 Family／平台。角色和职责的折叠只改变图呈现，工坊可展开实际组成与灰显外部引用。
+
+名册同步仅刷新显式 Family 引用，保留用户编辑的事件参数、脚本确认和内部连线。已撤职责及单独删除的结构不自动重建；显式 ApplyTemplate 可从角色源重装缺失职责，复用原 Resident，不覆盖其他职责／记忆。周期回顾与独立回顾安装互斥，撤下后可显式重装，共享完成事件仍单份。角色整体撤除使用 Unfamilize／DeleteFamily 的停止与在途任务检查，通用删除／拆框不能绕过。已受理任务继续由原冻结意图和原请求生命周期负责，本地撤销不撤销服务端投递。
+
+Router／Steward 接口保持原协议：target 仅本层直属成员或本 Family Steward，嵌套 Family 经门面；输出 target／confidence／scope／continue_previous 或 disposition:notice。忙碌不等于缺口；缺口 scope_reviewed、失败未转交 recover、必要改派 reassign 与完成归档 ResolveFamilyRequest 各保留原意义、理由及同 Family Steward 审批。低置信复核可能已转交，不能重复 relay。原请求、角色任务、成员副本 ID 不混用；取消不复活，重复重试保持原 ID，冻结唯一上一轮、缺失 null 与按需 GetFamilyRoutingContext 均不变。角色名称不授予权限，不开启 Router／Steward 逐轮摘要任务。

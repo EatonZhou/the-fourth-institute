@@ -21,6 +21,9 @@ def install(body, steward, actor, template, *, reconcile):
     parent = next((b for b in body['function_blocks'] if b.get('family', {}).get('steward') == steward), None)
     if not parent or parent['family'].get('personal_ama_id'):
         raise ValueError('请选择普通 Family 的 Steward')
+    from . import family_roles
+    if 'review' in family_roles.configured(body, parent):
+        raise ValueError('此角色已安装周期回顾职责；请编辑该职责或撤下后再安装')
     if independent(parent['family']) and find(body, parent):
         raise ValueError('此 Family 已安装周期组织回顾；请在职责工坊编辑或撤下后再安装')
     # Adopt the original graph once; reinstall creates only this recipe's elements.

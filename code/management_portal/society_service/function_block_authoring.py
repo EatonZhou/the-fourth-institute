@@ -118,7 +118,7 @@ def duties(body, holder_id):
 
 
 def update_duty_in_body(body, function_block_id, actor, *, description=None, category=None,
-                        prompt=None, memory_level=None):
+                        prompt=None, memory_level=None, task_prompt=None):
     block = find_block(body, function_block_id)
     if not block.get("duty"):
         raise ValueError("Function Block is not a duty")
@@ -127,6 +127,9 @@ def update_duty_in_body(body, function_block_id, actor, *, description=None, cat
         duty["description"] = description
     if category is not None:
         duty["category"] = category
+    if task_prompt is not None:
+        from . import family_roles
+        duty['parameters'] = family_roles.with_task_prompt(duty['parameters'], task_prompt)
     if prompt is not None or memory_level is not None:
         memory = dict(duty.get("memory") or {})
         if prompt is not None:
@@ -135,6 +138,8 @@ def update_duty_in_body(body, function_block_id, actor, *, description=None, cat
             memory["level"] = memory_level
         duty["memory"] = memory
     duty = normalize_duty(duty)
+    if duty['parameters'].get('family_task') and not duty.get('memory'):
+        raise ValueError('Family 角色职责须保留指南；撤下请删除职责')
     if not duty.get("memory") and not block.get("elements"):
         raise ValueError("A duty without elements keeps its prompt; remove the duty instead")
     block["duty"] = duty
@@ -201,7 +206,7 @@ def normalize_blocks(body, actor, *, previous=None):
         bid = raw.get("id", "")
         if not BLOCK_ID_RE.fullmatch(bid) or bid in blocks:
             raise ValueError("Function Block id must be unique and use fbi_<12hex>")
-        unknown = set(raw) - {"id", "title", "template_id", "x", "y", "elements", "family", "duty",
+        unknown = set(raw) - {"id", "title", "template_id", "x", "y", "elements", "family", "duty", "role",
                               "created_at", "created_by", "updated_at", "updated_by"}
         if unknown:
             raise ValueError("Unknown Function Block fields: " + ", ".join(sorted(unknown)))
@@ -217,6 +222,10 @@ def normalize_blocks(body, actor, *, previous=None):
             block["family"] = deepcopy(raw["family"])
             from .family_tasks import validate_routes
             validate_routes(body, raw)
+        if raw.get('role') is not None:
+            from . import family_roles
+            family_roles.validate(body, raw)
+            block['role'] = deepcopy(raw['role'])
         if raw.get("duty") is not None:
             if "family" in block:
                 raise ValueError("A Family is not a duty")
@@ -318,8 +327,8 @@ def update_in_body(body, function_block_id, actor, *, title=None, x=None, y=None
 
 def unfunctionalize_in_body(body, function_block_id):
     block = find_block(body, function_block_id)
-    if "family" in block:
-        raise ValueError("Family requires Unfamilize")
+    if "family" in block or block.get('role'):
+        raise ValueError("Family 或其角色整体拆除需要 Unfamilize")
     elements = deepcopy(block["elements"])
     body["function_blocks"] = [b for b in body["function_blocks"] if b["id"] != function_block_id]
     for parent in body["function_blocks"]:

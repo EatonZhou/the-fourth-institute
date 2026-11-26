@@ -7,7 +7,8 @@
   });
   const programItems = lineage => [...(lineage.program?.components || []), ...(lineage.program?.wires || [])];
   const metadata = block => ({title:block.title,description:block.duty.description || '',category:block.duty.category,
-    prompt:block.duty.memory?.prompt || '',memory_level:block.duty.memory?.level || 'session'});
+    prompt:block.duty.memory?.prompt || '',memory_level:block.duty.memory?.level || 'session',
+    ...(block.duty.parameters?.family_task ? {task_prompt:block.duty.parameters.prompt} : {})});
   function create(lineage, blockId) {
     const block = lineage.function_blocks.find(item => item.id === blockId);
     if (!block?.duty) throw new Error('这不是职责实例');

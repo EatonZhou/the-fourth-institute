@@ -231,6 +231,21 @@ def defaults(route_key: str, *, personal: bool = False) -> dict:
 
 
 def configured(body: dict, block: dict) -> dict:
+    if block.get('family', {}).get('role_bindings'):
+        from . import family_roles
+        entries = family_roles.configured(body, block)
+        entries.update({key: value for key, value in _configured_legacy(body, block).items()
+                        if value['role'] not in block['family']['role_bindings']})
+        # An explicitly installed independent review retains its own owner.
+        from . import family_review_duty
+        review = family_review_duty.task(body, block)
+        if review:
+            entries['review'] = review
+        return entries
+    return _configured_legacy(body, block)
+
+
+def _configured_legacy(body: dict, block: dict) -> dict:
     wires = {w["id"]: w for w in body.get("program", {}).get("wires", [])}
     # Older stored graphs may be read before startup reconciliation adds the new arguments.
     entries = {key: value for route in {row[0] for row in TASKS.values()}

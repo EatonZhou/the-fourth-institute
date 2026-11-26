@@ -3,7 +3,7 @@
   if (window.LineageTemplatesShelf) return;
   const GROUPS = Object.freeze([
     {key: 'duties', label: '职责', kinds: ['structure', 'family_duty']},
-    {key: 'roles', label: '角色', kinds: []},
+    {key: 'roles', label: '角色', kinds: ['role']},
     {key: 'organizations', label: '组织', kinds: ['familize']},
     {key: 'errands', label: '交办', kinds: ['prompt', 'explore', 'script']},
   ]);
@@ -14,6 +14,7 @@
     familize: '<circle cx="50" cy="26" r="9"/><circle cx="28" cy="60" r="9"/><circle cx="72" cy="60" r="9"/><path d="M50 35v10H28v6m22-6h22v6"/>',
     explore: '<circle cx="44" cy="36" r="18"/><path d="m57 49 20 20M44 26v20M34 36h20"/>',
     script: '<path d="m34 22-20 20 20 20m32-40 20 20-20 20M57 16 43 68"/>',
+    role: '<circle cx="50" cy="24" r="10"/><path d="M32 51v-6a18 18 0 0 1 36 0v6M20 60h20v14H20zM60 60h20v14H60zM40 67h20M50 51v16"/>',
   });
   const DEPENDENCIES = Object.freeze([
     'MIME', 'apply', 'canvas', 'config', 'esc', 'getContext', 'openEditor', 'request',

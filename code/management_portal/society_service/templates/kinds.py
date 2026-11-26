@@ -24,9 +24,9 @@ def _load() -> None:
     global _loaded
     if _loaded:
         return
-    from . import explore, familize, family_duty, prompt, script, structure
+    from . import explore, familize, family_duty, prompt, role, script, structure
 
-    for module in (prompt, structure, script, explore, familize, family_duty):
+    for module in (prompt, structure, script, explore, familize, family_duty, role):
         register(module.KIND)
     _loaded = True
 

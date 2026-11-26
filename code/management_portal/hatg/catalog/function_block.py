@@ -46,6 +46,7 @@ DECLARATIONS = (
         P("description", description="一句话描述", max_length=280),
         P("category", description="类别", enum=("fixed", "common", "custom")),
         P("prompt", description="职责的提示词；空字符串移除提示词，只含提示词的职责须保留提示词", max_length=20000),
+        P("task_prompt", description="仅 Family 角色职责：触发任务模板，须保留 ${facts}；与按需指南分别保存", max_length=20000),
         P("memory_level", description="提示词所在的记忆层级：trigger 只在这条职责触发持有者时、turn 每轮、session 会话开始和压缩后、on_demand 按需读取",
           enum=("trigger", "turn", "session", "on_demand")),
     ), (R("function_block", "object", "修改后的 Function Block，含 duty"),), mutates=True),

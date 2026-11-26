@@ -27,7 +27,7 @@ EDGE_FIELDS = {
     "revision_request_id": "text", "explanation": "text", "operation_contract": "object", "note": "text",
 }
 BLOCK_FIELDS = {"title": "text", "template_id": "text", "created_at": "instant",
-                "created_by": "text", "updated_at": "instant", "updated_by": "text"}
+                "created_by": "text", "updated_at": "instant", "updated_by": "text", "role": "object"}
 
 COLUMNS = {
     **edge_storage.COLUMNS,
@@ -37,7 +37,7 @@ COLUMNS = {
     "lineage_resident_nodes": ("node_id", *[column(k, v) for k, v in RESIDENT_FIELDS.items()]),
     "lineage_edges": ("edge_id", "lineage_id", "edge_type", "source_node_id", "source_port", "target_node_id", "target_port", *[column(k, v) for k, v in EDGE_FIELDS.items()], "deleted_at"),
     "lineage_observation_targets": ("edge_id", "target_edge_id"),
-    "function_blocks": ("function_block_id", "lineage_id", "title", "template_id", "x", "y", "created_at", "created_by", "updated_at", "updated_by"),
+    "function_blocks": ("function_block_id", "lineage_id", "title", "template_id", "x", "y", "created_at", "created_by", "updated_at", "updated_by", "role_json"),
     "function_block_elements": ("function_block_id", "element_id", "element_kind", "element_key"),
 }
 RECOVERY_INDEXES = {
@@ -98,7 +98,7 @@ def create_function_block_schema(connection: Any) -> None:
         lineage_id TEXT NOT NULL REFERENCES lineages(lineage_id),
         title TEXT NOT NULL DEFAULT '', template_id TEXT, x DOUBLE PRECISION, y DOUBLE PRECISION,
         created_at TIMESTAMPTZ NOT NULL, created_by TEXT NOT NULL,
-        updated_at TIMESTAMPTZ NOT NULL, updated_by TEXT NOT NULL)""")
+        updated_at TIMESTAMPTZ NOT NULL, updated_by TEXT NOT NULL, role_json JSONB)""")
     connection.execute("""CREATE TABLE function_block_elements (
         function_block_id TEXT NOT NULL REFERENCES function_blocks(function_block_id),
         element_id TEXT NOT NULL,
