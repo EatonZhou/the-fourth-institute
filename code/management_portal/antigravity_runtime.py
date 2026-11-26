@@ -151,33 +151,48 @@ def cli_session_marker(root: Path, session_id: str) -> Path:
     return root / "sessions" / hashlib.sha256(session_id.encode()).hexdigest()
 
 
-def cli_binding_root(account_root: Path, session_id: str) -> Path:
-    """Keep existing CLI sessions on their verified build, including during rollback."""
-    for build in (CLI_CANARY, PREVIOUS_CLI):
-        root = account_root / build
+def _can_upgrade(root: Path, session_id: str, home) -> bool:
+    if root.name != CLI_CANARY or not (root / "enabled").is_file():
+        return False
+    if not session_id:
+        return True
+    if not home or Path(session_id).name != session_id or session_id in {".", ".."}:
+        return False
+    return (Path(home) / "antigravity-acp" / "conversations" / f"{session_id}.db").is_file()
+
+
+def cli_binding_root(account_root: Path, session_id: str, home=None) -> Path:
+    current = account_root / CLI_CANARY
+    if _can_upgrade(current, session_id, home):
+        return current
+    for root in (current, account_root / PREVIOUS_CLI):
         marker = cli_session_marker(root, session_id) if session_id else root / "enabled"
         if marker.is_file():
             return root
-    return account_root / CLI_CANARY
+    return current
 
 
 def has_cli_binding(account_id: str, session_id: str) -> bool:
+    from management_portal.execution.account_hosting import account_home
     from management_common.provider_account_paths import account_runtime
 
     if not account_id or not session_id:
         return False
-    root = cli_binding_root(account_runtime("antigravity", account_id), session_id)
-    return cli_session_marker(root, session_id).is_file()
+    account = account_runtime("antigravity", account_id)
+    root = cli_binding_root(account, session_id)
+    if cli_session_marker(root, session_id).is_file():
+        return True
+    if not (account / CLI_CANARY / "enabled").is_file():
+        return False
+    return _can_upgrade(account / CLI_CANARY, session_id, account_home("antigravity", account_id))
 
 
 def canary_command(root: Path, session_id: str, native: bool, env: dict):
-    """The rollout flag applies to new bindings. Each resumed CLI binding stays pinned."""
-    marker = cli_session_marker(root, session_id) if session_id else root / "enabled"
-    if not marker.is_file():
-        return None
+    """Select the executable for this turn; both executables load the same account history."""
     if not native:
-        if session_id:
-            raise NativeAgentUnavailable("This Full Access session requires a new restricted session")
+        return None
+    marker = cli_session_marker(root, session_id) if session_id else root / "enabled"
+    if not marker.is_file() and not _can_upgrade(root, session_id, env.get("GEMINI_HOME")):
         return None
     binary = root / "antigravity"
     with binary.open("rb") as stream:

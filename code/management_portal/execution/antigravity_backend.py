@@ -10,7 +10,7 @@ import threading
 from management_common.provider_turn_artifacts import ToolEditArtifacts
 from management_portal import antigravity_accounts as accounts
 from management_portal.antigravity_client import AcpClient, AcpTransportError, ToolServer
-from management_portal.antigravity_runtime import canary_command, cli_binding_root, command, has_cli_binding, pin_cli_session
+from management_portal.antigravity_runtime import canary_command, cli_binding_root, command, cli_session_marker, has_cli_binding, pin_cli_session
 from management_portal.antigravity_input_media import prompt_content
 from management_portal.resident_shell_environment import resident_process_environment
 from .antigravity_workspace import additional_directories
@@ -310,7 +310,7 @@ class AntigravityBackend:
         if not compact:
             require_offered_tools(invocation, offered_tools)
         sid = session.backend_session_id
-        cli_root = cli_binding_root(accounts.account_runtime("antigravity", row["account_id"]), sid)
+        cli_root = cli_binding_root(accounts.account_runtime("antigravity", row["account_id"]), sid, env["GEMINI_HOME"])
         cli = canary_command(cli_root, sid, native, env)
         if compact and (not sid or not cli):
             raise ValueError("Manual compaction requires an existing Antigravity CLI session")
@@ -457,7 +457,7 @@ class AntigravityBackend:
             sid = sid or created.get("sessionId", "")
             if not sid:
                 raise RuntimeError("Antigravity returned no session ID")
-            if cli and not session.backend_session_id:
+            if cli and not cli_session_marker(cli_root, sid).is_file():
                 pin_cli_session(cli_root, sid)
             context.set_interrupt_target(sid, turn_id, route)
             discovered = accounts.save_catalog(row["account_id"], created, capabilities, authenticated=authenticated)

@@ -904,8 +904,7 @@ def test_cli_rollout_follows_binding_and_permission_profile(tmp_path, monkeypatc
     (root / "enabled").unlink()
     assert runtime.canary_command(root, "", True, env) is None
     assert runtime.canary_command(root, "cli-session", True, env) == args
-    with pytest.raises(runtime.NativeAgentUnavailable, match="restricted"):
-        runtime.canary_command(root, "cli-session", False, env)
+    assert runtime.canary_command(root, "cli-session", False, env) is None
     binary.write_bytes(b"changed")
     with pytest.raises(runtime.NativeAgentUnavailable, match="verified"):
         runtime.canary_command(root, "cli-session", True, env)
@@ -960,3 +959,22 @@ def test_standalone_session_cannot_compact(agent):
     with pytest.raises(ValueError, match="existing Antigravity CLI session"):
         AntigravityBackend().execute(request, context()[0])
     assert not (agent / "requests.jsonl").exists()
+
+def test_existing_account_history_upgrades_on_load_and_preserves_restricted_turns(tmp_path, monkeypatch):
+    current = tmp_path / runtime.CLI_CANARY
+    current.mkdir()
+    binary = current / "antigravity"
+    binary.write_bytes(b"tested")
+    monkeypatch.setattr(runtime, "CLI_DIGEST", hashlib.sha256(binary.read_bytes()).hexdigest())
+    (current / "enabled").touch()
+    env = {"HOME": str(tmp_path), "GEMINI_HOME": str(tmp_path / "account")}
+    histories = Path(env["GEMINI_HOME"]) / "antigravity-acp" / "conversations"
+    histories.mkdir(parents=True)
+    runtime.pin_cli_session(tmp_path / runtime.PREVIOUS_CLI, "old-cli")
+    for sid in ("standalone", "old-cli"):
+        (histories / f"{sid}.db").touch()
+        root = runtime.cli_binding_root(tmp_path, sid, env["GEMINI_HOME"])
+        assert root == current
+        assert runtime.canary_command(root, sid, True, env)[0] == str(binary)
+        assert runtime.canary_command(root, sid, False, env) is None
+    assert runtime.canary_command(current, "missing", True, env) is None
