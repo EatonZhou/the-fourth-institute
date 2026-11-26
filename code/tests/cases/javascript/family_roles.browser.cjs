@@ -47,12 +47,12 @@ const {chromium}=require('../../../management_portal/test_framework/tau_runtime/
     const fid=await page.evaluate(()=>family.template_id);await page.locator(`[data-template-id="${fid}"]`).click();
     try {await page.waitForFunction(()=>workshop.template().kind==='familize');}
     catch(error){throw new Error(JSON.stringify(await page.evaluate(()=>({kind:workshop.template().kind,dirty:workshop.dirty(),error:document.querySelector('#workshopError').textContent})))+' '+errors.join(';'));}
-    assert.equal(await page.locator('[data-recipe-group]').count(),2);
+    assert.equal(await page.locator('[data-template-resident-menu]').count(),3);
     const folded=await page.locator('.hatgNode').count();
-    await page.locator('[data-recipe-group]').first().click();
+    await page.locator('[data-recipe-expand]').click();
     assert.ok(await page.locator('.hatgNode').count()>folded);
     assert.equal(await page.evaluate(()=>workshop.dirty()),false,'role expansion only changes presentation');
-    await page.locator('[data-recipe-group]').first().click();
+    await page.locator('[data-recipe-expand]').click();
     await page.waitForFunction(count=>document.querySelectorAll('.hatgNode').length===count,folded);
     const folder='/tmp/family-role-evidence';fs.mkdirSync(folder,{recursive:true});
     for(const theme of ['auto','liquid-glass','dark'])for(const width of [1440,600]){
@@ -68,7 +68,7 @@ const {chromium}=require('../../../management_portal/test_framework/tau_runtime/
     await page.screenshot({path:`${folder}/family-reduced-transparency.png`});
     await cdp.send('Emulation.setEmulatedMedia',{features:[]});
     await page.setViewportSize({width:1440,height:1000});
-    await page.locator('[data-recipe-group]').first().click();await page.locator('[data-recipe-group]').last().click();
+    await page.locator('[data-recipe-expand]').click();
     await page.locator('[data-graph-fit]').click();await page.waitForTimeout(400);await page.screenshot({path:`${folder}/family-expanded.png`});
     const steward=await page.evaluate(()=>roles.find(t=>t.body.role_key==='steward').template_id);await page.locator(`[data-template-id="${steward}"]`).click();
     await page.waitForFunction(()=>workshop.template().body.role_key==='steward');

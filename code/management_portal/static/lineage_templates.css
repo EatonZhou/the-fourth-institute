@@ -191,6 +191,19 @@
   .templateResidentSettings { grid-template-columns: 1fr; }
   .templateForm .templateDialogFooter { padding: 12px; flex-wrap: wrap; }
 }
-.templateCompatibility { font-size:11px; max-width:100%; }
-.templateCompatibility summary { cursor:pointer; color:var(--muted); }
-.templateCompatibility button { max-width:100%; white-space:normal; }
+:is(.templateGraph .hatgCanvas, .templatePlacementPreview.hatgCanvas) .hatgNode[data-node-id]:has(.templateBinding) {
+  width:132px; min-height:132px; border:2px dashed var(--border); border-radius:50%;
+  background:var(--lg-surface-panel-glass,var(--panel)); box-shadow:none;
+}
+.templateBinding { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; min-height:104px; text-align:center; white-space:normal; overflow-wrap:anywhere; }
+.templateBinding strong { white-space:normal; }
+.templateBinding small { font-size:10px; color:var(--muted); }
+.templateGraph .hatgNodeOpenMenu { opacity:1; pointer-events:auto; }
+.templateBindingInfo { display:grid; grid-template-columns:auto 1fr; gap:8px; font-size:12px; }
+.templateBindingInfo dd { margin:0; overflow-wrap:anywhere; }
+.templateResidentOverlay [data-template-menu-content] { min-width:0; min-height:0; max-height:440px; overflow:auto; }
+.templateResidentOverlay .residentMenuHeading { display:grid; gap:5px; min-width:0; }
+.templateResidentOverlay .residentMenuMeta { overflow-wrap:anywhere; }
+.templateResidentOverlay .nodeSettingsTab:disabled { opacity:.45; cursor:default; }
+.templateResidentOverlay .templateField textarea { width:100%; box-sizing:border-box; }
+@media (max-width:600px) { .templateResidentOverlay .nodeSettingsBody { grid-template-columns:70px minmax(0,1fr); gap:10px; } }

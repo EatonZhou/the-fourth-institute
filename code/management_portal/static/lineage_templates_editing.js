@@ -63,10 +63,10 @@
       // The state the parts share: the pending check and its revision, the
       // code editor and its generation, the graph and the role settings.
       const editorState = {
-        timer: null, revision: 0, codeEditor: null, codeGeneration: 0, graph: null, roleSettings: null, workshop: !!editorHost,
+        timer: null, revision: 0, codeEditor: null, codeGeneration: 0, graph: null, roleSettings: null, workshop: !!editorHost, openTemplate:view.openTemplate,
       };
       const templateRoles = draft.kind === 'familize' && !editorHost ? residentRoles(draft) : [];
-      view.cleanups.push(() => { clearTimeout(editorState.timer); editorState.revision += 1; editorState.codeGeneration += 1; editorState.codeEditor?.destroy(); editorState.graph?.destroy(); });
+      view.cleanups.push(() => { clearTimeout(editorState.timer); editorState.revision += 1; editorState.codeGeneration += 1; editorState.codeEditor?.destroy(); editorState.recipeMenu?.destroy(); editorState.graph?.destroy(); });
       const supported = templatesState.kinds.find(item => item.key === draft.kind)?.targets || (draft.kind === 'prompt' ? ['resident', 'selection'] : ['resident', 'selection', 'canvas']);
       view.content.innerHTML = editorHost ? `<section data-page="body"></section>
         <details class="workshopInfo"><summary>${esc(t('模板信息'))}</summary>
@@ -121,7 +121,8 @@
       schedulePreview();
       function restore(value) {
         const mode = value.invalidMode || editorState.structureMode;
-        disposeCode(); delete editorState.invalidElement; Object.assign(draft,clone(value.content));
+        disposeCode(); delete editorState.invalidElement; delete editorState.invalidTemplateMenu; Object.assign(draft,clone(value.content));
+        if(value.invalidTemplateMenu)editorState.invalidTemplateMenu=clone(value.invalidTemplateMenu);
         view.root.querySelectorAll('[data-meta]').forEach(input => { input.value = draft[input.dataset.meta] ?? ''; });
         renderBody(); renderParameters();
         if (draft.kind === 'structure' && mode && mode !== editorState.structureMode) showStructure(mode);
@@ -138,6 +139,7 @@
         }
         else if(value.invalidSelection) editorState.graph?.select(value.invalidSelection);
         restoreInputs(value.invalidInputs);
+        if(value.invalidTemplateMenu)editorState.recipeMenu?.open(value.invalidTemplateMenu.resident,'settings');
         schedulePreview();
       }
       editorHost?.ready({draft, view, editorState, readDraft, snapshot, restore, schedulePreview, showStructure, renderParameters, edit});

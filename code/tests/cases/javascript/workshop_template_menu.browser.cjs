@@ -1,0 +1,84 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs');
+const {chromium}=require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
+(async()=>{
+ const browser=await chromium.launch({headless:true}),page=await browser.newPage({viewport:{width:1440,height:1000}});
+ const errors=[];page.on('pageerror',e=>errors.push(e.stack));page.setDefaultTimeout(12000);
+ try{
+  await page.goto(process.env.WORKSHOP_TEST_ORIGIN);
+  await page.evaluate(async lineageId=>{
+   PortalI18n.apply('zh-CN');window.PortalIdentity={username:()=>'sample_admin',userId:async()=>'sample_admin',listUIAssociations:async()=>({items:[]})};window.calls=[];
+   window.execute=async(instruction,args={},options={})=>{calls.push(instruction);const d=await(await fetch('/rpc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({instruction,arguments:args,options})})).json();if(d.error)throw Error(d.error.message);return d.result;};
+   await PortalTemplateWorkshopLoader.load();window.workshop=LineageTemplateWorkshop.mount({root:document.querySelector('#templateWorkshop'),lineageId,execute});await workshop.load();
+   window.catalog=(await execute('ListTemplates')).templates;window.router=catalog.find(t=>t.kind==='role'&&t.body.role_key==='router');window.family=catalog.find(t=>t.builtin_key==='family');
+  },process.env.WORKSHOP_TEST_LINEAGE);
+  assert.equal(await page.evaluate(()=>workshop.template().body.roles.length),0);
+  assert.equal(await page.evaluate(()=>workshop.dirty()),false);
+  await page.evaluate(()=>workshop.openTemplate(router.template_id));
+  assert.equal(await page.locator('[data-template-resident-menu]').count(),1);
+  assert.equal(await page.locator('.templateBinding').count()>=4,true);
+  assert.equal(await page.evaluate(()=>workshop.dirty()),false);
+  // Every menu action is against the current template draft, never a fake live ID.
+  await page.locator('[data-template-resident-menu]').click();
+  const menu=page.locator('.templateResidentOverlay.open');await menu.waitFor();
+  assert.equal(await menu.locator('[data-template-duty-graph]').count(),1);
+  await menu.locator('[data-template-menu-tab="memory"]').click();
+  assert.equal(await menu.locator('[data-memory-level]').count(),4);
+  assert.match(await menu.innerText(),/角色记忆/);assert.match(await menu.innerText(),/职责指南/);
+  const folder='/tmp/workshop-template-menu-evidence';fs.mkdirSync(folder,{recursive:true});
+  for(const theme of ['auto','liquid-glass','dark'])for(const width of [1440,600]){
+   await page.setViewportSize({width,height:1000});await page.evaluate(theme=>PortalTheme.setMode(theme),theme);await page.waitForTimeout(150);await page.screenshot({path:`${folder}/memory-${theme}-${width}.png`});
+  }
+  const cdp=await page.context().newCDPSession(page);await page.evaluate(()=>PortalTheme.setMode('liquid-glass'));await cdp.send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-transparency',value:'reduce'}]});assert.equal(await page.evaluate(()=>matchMedia('(prefers-reduced-transparency: reduce)').matches),true);await page.screenshot({path:`${folder}/memory-reduced-transparency.png`});await cdp.send('Emulation.setEmulatedMedia',{features:[]});
+  if(process.env.WORKSHOP_MENU_VISUAL_ONLY==='1')return;
+  await page.setViewportSize({width:1440,height:1000});
+  await menu.locator('[data-template-menu-tab="duties"]').click();await menu.locator('.residentMenuDuty summary').first().click();
+  await menu.locator('[data-template-duty][data-duty-field="title"]').fill('Browser route duty');
+  assert.equal(await page.evaluate(()=>workshop.dirty()),true);
+  await menu.locator('[data-menu-close]').click();await page.locator('[data-workshop-history="undo"]').click();
+  assert.equal(await page.evaluate(()=>workshop.dirty()),false);
+  await page.locator('[data-workshop-history="redo"]').click();assert.equal(await page.evaluate(()=>workshop.template().body.duties[0].title),'Browser route duty');
+  await page.locator('[data-action="copy"]').click();await page.waitForFunction(()=>!workshop.template().builtin_key);
+  assert.equal(await page.evaluate(()=>workshop.dirty()),false);
+  const own=await page.evaluate(()=>workshop.template().template_id);
+  assert.equal(await page.evaluate(()=>execute('GetTemplate',{template_id:router.template_id}).then(r=>r.template.body.duties[0].title===router.body.duties[0].title)),true);
+  await page.locator('[data-template-resident-menu]').click();
+  await menu.locator('[data-template-menu-tab="settings"]').click();await menu.locator('[data-template-resident-config]').fill('{');
+  await menu.locator('[data-menu-close]').click();assert.equal(await page.evaluate(()=>workshop.dirty()),true);
+  await page.locator('[data-workshop-history="undo"]').click();assert.equal(await page.evaluate(()=>workshop.dirty()),false);
+  await page.locator('[data-workshop-history="redo"]').click();await menu.waitFor();assert.equal(await menu.locator('[data-template-resident-config]').inputValue(),'{');
+  await menu.locator('[data-template-resident-config]').fill('{}');await menu.locator('[data-menu-close]').click();
+  assert.equal(await page.evaluate(()=>workshop.dirty()),false);
+  await page.locator('[data-template-resident-menu]').click();await menu.locator('[data-template-menu-tab="memory"]').click();await menu.locator('.residentMenuMemoryItem:has([data-template-memory]) summary').first().click();
+  await menu.locator('[data-template-memory][data-memory-field="prompt"]').fill('Saved role memory');await menu.locator('[data-menu-close]').click();await page.locator('[data-workshop-save]').click();
+  await page.waitForFunction(()=>!workshop.dirty());
+  assert.equal(await page.evaluate(id=>execute('GetTemplate',{template_id:id}).then(r=>r.template.body.memories[0].prompt),own),'Saved role memory');
+  await page.locator('[data-workshop-history="undo"]').click();assert.equal(await page.evaluate(()=>workshop.dirty()),true);if(await menu.isVisible())await menu.locator('[data-menu-close]').click();await page.locator('[data-workshop-history="redo"]').click();assert.equal(await page.evaluate(()=>workshop.dirty()),false);
+  await page.evaluate(()=>workshop.acceptDraft({...workshop.template(),body:{...workshop.template().body,memories:workshop.template().body.memories.map(m=>({...m,prompt:'Assistant draft memory'}))}}));
+  assert.equal(await page.evaluate(()=>workshop.dirty()),true);await page.locator('[data-workshop-history="undo"]').click();assert.equal(await page.evaluate(()=>workshop.dirty()),false);
+  await page.locator('[data-template-resident-menu]').click();await menu.locator('.residentMenuDuty summary').first().click();await menu.locator('[data-template-duty-graph]').click();
+  assert.equal(await page.locator('[data-recipe-back]').isVisible(),true);
+  assert.ok(await page.locator('.hatgNode:not(:has(.templateBinding))').count()>1,'duty local view contains actual primitives');
+  assert.equal(await page.evaluate(()=>workshop.dirty()),false);
+  await page.locator('[data-graph-fit]').click();await page.waitForTimeout(350);await page.screenshot({path:`${folder}/router-local-duty.png`});await page.locator('[data-recipe-back]').click();
+  await page.evaluate(()=>workshop.openTemplate(family.template_id));
+  assert.equal(await page.locator('[data-template-resident-menu]').count(),3);
+  await page.locator('[data-template-resident-menu="router_resident"]').click();
+  assert.equal(await menu.locator('[data-template-duty]').count(),0,'organization references cannot edit a copied role body');
+  await menu.locator('[data-menu-close]').click();
+  const title=await page.locator('[data-meta="title"]').inputValue();await page.locator('[data-meta="title"]').fill(title+' unsaved');
+  await page.evaluate(()=>{window.confirmations=0;window.confirmOriginal=PortalUI.confirm;PortalUI.confirm=async()=>{confirmations++;return false;};});
+  await page.locator('[data-template-resident-menu="router_resident"]').click();await menu.locator('[data-template-menu-source]').click();
+  assert.equal(await page.evaluate(()=>confirmations),1);assert.equal(await page.evaluate(()=>workshop.template().kind),'familize');assert.equal(await page.evaluate(()=>workshop.dirty()),true);
+  await page.locator('[data-meta="title"]').fill(title);await page.evaluate(()=>PortalUI.confirm=confirmOriginal);
+  await page.locator('[data-template-resident-menu="router_resident"]').click();await menu.locator('[data-template-menu-source]').click();
+  await page.waitForFunction(()=>workshop.template().template_id===router.template_id);
+  assert.equal(await page.evaluate(()=>workshop.dirty()),false);
+  await page.evaluate(async()=>{const {template}=await execute('CreateTemplate',{template:{kind:'structure',title:'Owned Resident and external target',body:{roles:[{key:'target',from:'target'},{key:'worker',from:'new',title:'Owned worker'}],components:[],wires:[]}}});await workshop.openTemplate(template.template_id);});
+  await page.locator('[data-node-id="target"]').click();assert.match(await page.locator('[data-template-binding-info]').innerText(),/target.*resident.*one/);
+  assert.equal(await page.locator('[data-template-resident-menu]').count(),1);await page.locator('[data-node-id="worker"]').dblclick();await menu.waitFor();await menu.locator('[data-template-menu-tab="settings"]').click();await menu.locator('[data-template-resident-inspect]').click();
+  assert.equal(await page.evaluate(()=>workshop.dirty()),false);
+  assert.deepEqual(await page.evaluate(()=>calls.filter(name=>['GetResident','GetResidentSettings','GetPromptInjectionPreview','CreateResident'].includes(name))),[]);
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();}
+})().catch(error=>{console.error(error);process.exit(1);});

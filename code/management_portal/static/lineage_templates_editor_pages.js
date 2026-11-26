@@ -34,6 +34,7 @@
     // 图视图 edits the structure as a HATG graph; 列表视图 and JSON 视图 edit the same body.
     function showStructure(mode) {
       editorState.structureMode = mode;
+      editorState.recipeMenu?.destroy();editorState.recipeMenu=null;
       disposeCode(); editorState.graph?.destroy(); editorState.graph = null;
       bodyPage.closest('form').querySelectorAll('[data-structure-view]').forEach(item => item.setAttribute('aria-pressed', String(item.dataset.structureView === mode)));
       const content = bodyPage.querySelector('[data-structure-content]');
@@ -41,7 +42,14 @@
       if (mode === 'list') { renderStructureLists(); return; }
       content.innerHTML = `<div class="templateGraphWorkspace ${editorState.workshop ? 'is-workshop' : ''}"><div class="templateGraphHost" data-template-graph></div><aside class="templateGraphInspector portalHatgOverlayComponent" data-graph-inspector aria-label="${esc(t('选中元素'))}"></aside></div>${functionBlockField()}`;
       editorState.graph = window.LineageTemplateGraph.mount({ root: content.querySelector('[data-template-graph]'), body: () => draft.body, workshop: editorState.workshop,
-        onBeforeChange: readDraft, onChange: schedulePreview, onSelect: renderInspector });
+        onBeforeChange: readDraft, onChange: schedulePreview, onSelect:key=>{
+          renderInspector(key);const binding=window.LineageTemplateGraph.bindings(draft.body)[key];
+          if(binding)content.querySelector('[data-graph-inspector]').insertAdjacentHTML('afterbegin',`<p class="templateBindingInfo" data-template-binding-info>${esc(binding.key)} · ${esc(binding.type)} · ${esc(binding.direction)} · ${esc(binding.cardinality)} · ${esc(t(binding.required?'必需':'可选'))}</p>`);
+        },onOpenResident:key=>{readDraft();editorState.recipeMenu.open(key);} });
+      const menu=window.LineageTemplateResidentMenu.create({root:bodyPage,draft,editorState,readDraft,onChange:schedulePreview,
+        projection:()=>({body:{...draft.body,presentation:{residents:window.LineageTemplateGraph.residentContexts(draft.body)}}}),
+        onInspect:renderInspector,onExpand:()=>editorState.graph.fit(),onLocalGraph:()=>editorState.graph.fit()});
+      editorState.recipeMenu=menu;
       renderInspector('');
     }
 
@@ -70,16 +78,23 @@
     function renderRecipeGraph() {
       let projection = draft.editor.graph;
       const expanded = new Set();
+      let localScope = null;
+      editorState.recipeMenu?.destroy();
+      editorState.graph?.destroy();
       const rows = () => ['roles', 'components', 'wires'].flatMap(key => projection.body[key] || []);
-      bodyPage.innerHTML = `<div class="templateRecipeGraph"><div class="templateRecipeToolbar"><select data-recipe-select aria-label="${esc(t('选择图中元素'))}"><option value="">${esc(t('模板参数'))}</option>${rows().map(row => `<option value="${esc(row.key)}">${esc(row.title || row.key)}</option>`).join('')}</select><button type="button" class="portalButton is-compact" data-recipe-parameters>${esc(t('参数'))}</button>${(projection.groups||[]).map(group=>`<button type="button" class="portalButton is-compact" data-recipe-group="${esc(group.key)}" aria-expanded="false">${esc(group.title)}</button>`).join('')}</div><div class="templateGraphWorkspace is-workshop"><div class="templateGraphHost" data-template-graph></div><aside class="templateGraphInspector" data-graph-inspector hidden></aside></div></div>`;
+      bodyPage.innerHTML = `<div class="templateRecipeGraph"><div class="templateRecipeToolbar"><button type="button" class="portalButton is-compact" data-recipe-back hidden>${esc(t('返回'))} · ${esc(draft.title)}</button><span data-recipe-breadcrumb></span><select data-recipe-select aria-label="${esc(t('选择图中元素'))}"><option value="">${esc(t('模板参数'))}</option>${rows().map(row => `<option value="${esc(row.key)}">${esc(row.title || row.key)}</option>`).join('')}</select><button type="button" class="portalButton is-compact" data-recipe-parameters>${esc(t('参数'))}</button><button type="button" class="portalButton is-compact" data-recipe-expand aria-expanded="false" ${projection.body.presentation?.level==='duty'?'hidden':''}>${esc(t('全部内部结构'))}</button></div><div class="templateGraphWorkspace is-workshop"><div class="templateGraphHost" data-template-graph></div><aside class="templateGraphInspector" data-graph-inspector hidden></aside></div></div>`;
       const inspector = bodyPage.querySelector('[data-graph-inspector]');
       const select = bodyPage.querySelector('[data-recipe-select]');
       const schemas = draft.editor.fields || [];
-      function inspect(key) {
-        readDraft();
+      function inspect(key, node) {
+        try{readDraft();}catch(error){if(editorState.invalidTemplateMenu){editorState.recipeMenu?.open(editorState.invalidTemplateMenu.resident,'settings');return;}throw error;}
         inspector.hidden = false;
         select.value = key;
         const row = rows().find(row => row.key === key);
+        const binding = node?._template_binding || window.LineageTemplateGraph.bindings(projection.body)[key];
+        if(binding){inspector.innerHTML=`<button type="button" class="portalButton is-quiet is-compact" data-close-recipe-inspector aria-label="${esc(t('关闭检查器'))}">×</button><h3>${esc(row?.title || binding.key)}</h3><dl class="templateBindingInfo">${[['绑定 key',binding.key],['类型',binding.type],['方向',binding.direction],['数量',binding.cardinality],['必需',binding.required?t('是'):t('否')]].map(([label,value])=>`<dt>${esc(t(label))}</dt><dd>${esc(value)}</dd>`).join('')}</dl>`;return;}
+        const resident=projection.body.presentation?.residents?.[key];
+        if(resident){inspector.innerHTML=`<button type="button" class="portalButton is-quiet is-compact" data-close-recipe-inspector aria-label="${esc(t('关闭检查器'))}">×</button><h3>${esc(resident.title)}</h3><button type="button" class="portalButton" data-open-template-menu="${esc(key)}">${esc(t('打开模板 Resident 菜单'))}</button>`;return;}
         const controls = key ? projection.controls[key] || [] : schemas.map(schema => ({field: schema.name}));
         inspector.innerHTML = `<button type="button" class="portalButton is-quiet is-compact" data-close-recipe-inspector aria-label="${esc(t('关闭检查器'))}">×</button><h3>${esc(row?.title || row?.key || t('模板参数'))}</h3>` + controls.map(control => {
           if (control.task) {
@@ -97,16 +112,23 @@
         draft.body.tasks[input.dataset.recipeTask] ||= {};
         draft.body.tasks[input.dataset.recipeTask][input.dataset.taskField] = input.value;
       });
-      inspector.addEventListener('click', event=>{if(event.target.closest('[data-close-recipe-inspector]'))inspector.hidden=true;});
+      inspector.addEventListener('click', event=>{if(event.target.closest('[data-close-recipe-inspector]')){inspector.hidden=true;inspector.innerHTML='';}const menu=event.target.closest('[data-open-template-menu]');if(menu)openMenu(menu.dataset.openTemplateMenu);});
       bodyPage.querySelector('[data-recipe-parameters]').addEventListener('click',()=>inspect(''));
+      function openMenu(key){readDraft();inspector.hidden=true;inspector.innerHTML='';editorState.recipeMenu.open(key);}
       editorState.graph = window.LineageTemplateGraph.mount({root:bodyPage.querySelector('[data-template-graph]'), body:() => projection.body,
-        workshop:true, readOnly:true, groups:()=>(projection.groups||[]).map(group=>({...group,expanded:expanded.has(group.key)})), onSelect:inspect});
-      bodyPage.querySelectorAll('[data-recipe-group]').forEach(button=>button.addEventListener('click',()=>{
-        const key=button.dataset.recipeGroup;
-        if(expanded.has(key))expanded.delete(key);else expanded.add(key);
-        button.setAttribute('aria-expanded',String(expanded.has(key)));editorState.graph.render();
-      }));
-      select.addEventListener('change', () => editorState.graph.select(select.value));
+        workshop:true, readOnly:true, expanded:()=>[...expanded],scope:()=>localScope, onSelect:inspect,onOpenResident:openMenu});
+      const menu=window.LineageTemplateResidentMenu.create({root:bodyPage,draft,editorState,projection:()=>projection,readDraft,onChange:schedulePreview,onInspect:inspect,
+        onSource:id=>editorState.openTemplate?.(id),onExpand:key=>{expanded.add(key);editorState.graph.render();editorState.graph.fit();},
+        onLocalGraph:(key,duty)=>{localScope=[key,...(duty?.members || [])];inspector.hidden=true;inspector.innerHTML='';bodyPage.querySelector('[data-recipe-back]').hidden=false;bodyPage.querySelector('[data-recipe-breadcrumb]').textContent=`${projection.body.presentation.residents[key].title} / ${duty?.title || ''}`;editorState.graph.render();editorState.graph.fit();}});
+      editorState.recipeMenu=menu;
+      bodyPage.querySelector('[data-recipe-back]').addEventListener('click',()=>{localScope=null;bodyPage.querySelector('[data-recipe-back]').hidden=true;bodyPage.querySelector('[data-recipe-breadcrumb]').textContent='';editorState.graph.render();editorState.graph.fit();});
+      bodyPage.querySelector('[data-recipe-expand]').addEventListener('click',event=>{const owners=Object.values(projection.body.presentation?.owners || {}),open=event.currentTarget.getAttribute('aria-expanded')!=='true';expanded.clear();if(open)owners.forEach(key=>expanded.add(key));event.currentTarget.setAttribute('aria-expanded',String(open));editorState.graph.render();editorState.graph.fit();});
+      select.addEventListener('change', () => {
+        const key=select.value,owner=projection.body.presentation?.owners?.[key];
+        if(owner)expanded.add(owner);
+        localScope=null;bodyPage.querySelector('[data-recipe-back]').hidden=true;bodyPage.querySelector('[data-recipe-breadcrumb]').textContent='';
+        editorState.graph.select(key);
+      });
       editorState.refreshRecipeGraph = graph => {
         if (!graph) return;
         graph.body.layout = projection.body.layout;

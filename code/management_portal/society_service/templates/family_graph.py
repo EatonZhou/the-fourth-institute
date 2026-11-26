@@ -111,10 +111,10 @@ def project(template):
     scopes = [block] if duty else [parent, *family_roles.role_blocks(body, parent)]
     for role in family_roles.role_blocks(body, parent):
         scopes.extend(family_roles.duties(body, role))
-    return project_body(body, parent, roles, scopes, duty=duty)
+    return project_body(body, parent, roles, scopes, duty=duty, source=template)
 
 
-def project_body(body, parent, roles, scopes, *, duty=False, role_key=''):
+def project_body(body, parent, roles, scopes, *, duty=False, role_key='', source=None):
     block = scopes[0]
     keys = {e['id']: e['key'] for b in body['function_blocks'] for e in b['elements']}
     keys = {identity: local_key(key, roles) for identity, key in keys.items()}
@@ -158,9 +158,11 @@ def project_body(body, parent, roles, scopes, *, duty=False, role_key=''):
             groups.append({'key': keys.get(scope['id'], scope['id']), 'title': scope['title'],
                 'members': [keys[e] for e in owned & (descendants | {r['id'] for r in scope['elements']}) if e in keys],
                 'resident': scope['role']['key'] + '_resident'})
-    return {'body': {
-        'roles': [{'key': role + '_resident', 'from': ('target' if role == role_key else 'lineage_leader') if role_key else ('target' if role == 'member' else 'new'),
+    projection = {'body': {
+        'roles': [{'key': role + '_resident', 'from': ('target' if role == role_key else 'lineage_leader') if role_key else ('target' if role == ('steward' if duty else 'member') else 'new'),
                    'title': {'facade': '门面', 'router': 'Router', 'steward': 'Steward', 'member': '成员（按名册展开）'}[role]}
                   for role, rid in sorted(roles.items(), key=lambda pair: pair[0] != role_key) if (not duty and not role_key) or rid in visible or role == ('steward' if duty else role_key)],
         'components': [row(c) for c in body['program']['components'] if c['id'] in visible],
         'wires': [row(w) for w in wires], 'match': []}, 'controls': controls, 'groups': [] if role_key else groups}
+    from .presentation import annotate
+    return annotate(projection, body, parent, roles, scopes, keys, source=source, role_key=role_key, duty=duty)

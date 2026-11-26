@@ -157,7 +157,7 @@ const {chromium} = require(path.join(repo, 'management_portal/test_framework/tau
       assert.equal(await page.locator('[data-meta="title"]').inputValue(),'Assistant '+kind);
       if(kind==='script') await page.waitForSelector('.monaco-editor');
       if(kind==='familize') {
-        assert.equal(await page.locator('.hatgNode[data-node-id="router"]').count(),1);
+        assert.equal(await page.locator('.hatgNode[data-node-id="router_resident"]').count(),1);
         await page.locator('[data-recipe-select]').selectOption('route');
         await page.locator('[data-recipe-task="route"][data-task-field="guide"]').fill('Choose by relevant expertise.');
         await page.locator('[data-workshop-save]').click();

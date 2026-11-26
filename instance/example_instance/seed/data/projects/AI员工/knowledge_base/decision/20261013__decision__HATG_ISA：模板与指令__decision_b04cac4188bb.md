@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-10-13'
 version:
-  number: 45
+  number: 46
   created_at: "2026-10-13"
   created_by:
     user: ""
     agent: "resident_e8fc8c899f00"
-  updated_at: "2026-11-26T06:39:22Z"
+  updated_at: "2026-11-26T07:07:54Z"
   updated_by:
     user: ""
     agent: "resident_021703e3659a"
@@ -469,8 +469,16 @@ Router 拥有 route 职责、调用其 Resident 的选人结构与指南。Stewa
 
 Router／Steward 接口保持原协议：target 仅本层直属成员或本 Family Steward，嵌套 Family 经门面；输出 target／confidence／scope／continue_previous 或 disposition:notice。忙碌不等于缺口；缺口 scope_reviewed、失败未转交 recover、必要改派 reassign 与完成归档 ResolveFamilyRequest 各保留原意义、理由及同 Family Steward 审批。低置信复核可能已转交，不能重复 relay。原请求、角色任务、成员副本 ID 不混用；取消不复活，重复重试保持原 ID，冻结唯一上一轮、缺失 null 与按需 GetFamilyRoutingContext 均不变。角色名称不授予权限，不开启 Router／Steward 逐轮摘要任务。
 
-### 工坊相机与 Family 目录兼容入口（2026-11-26）
+### 工坊模板上下文、外部绑定与唯一 Family（2026-11-26）
 
-工坊结构、职责、角色和组织图共用 Portal 相机的放大、缩小、比例、100%、适配、平移与滚轮。相机只改变组件视图，不进入草稿历史、不产生正文 revision；不同工坊相机独立。节点持久位置仍属于正文，拖放绑定锚点继续通过同一相机转换。
+工坊相机沿用 Portal 控制器，提供放大、缩小、比例、100%、适配、平移和滚轮。相机、悬停摘要、菜单、职责局部图和展开属于组件视图，不改变正文、dirty、内容历史或 revision；节点持久位置仍为编辑。各面板草稿和相机独立，空白新稿保持空白。
 
-ListTemplates 保留原有全量读取契约，由模板目录声明 catalog_entry 主入口和 compatibility 关系。存在旧自定义 Family 与后备角色组合时，组织组默认显示角色组合主入口；旧资源通过“旧配方（自定义）”显式打开和施加。HATG 与工坊共用目录及卡片，不按名称或实例 ID 去重。用户另存模板不隐藏；旧 ID、正文、已开资源、个人助手和商店快照不迁移。
+职责层呈现真实原语及连线；角色/组织层以模板实际拥有的 Resident 和必需接口呈现，内部职责由 Resident Menu 逐项进入局部图。菜单适配当前模板草稿，名称、指南、触发提示词、分层记忆和节点配置沿现有 schema 编辑并进入同一 Undo/Redo/Save/Save As 链；无效 JSON 保留和保护。模板上下文不实例化 live Resident 控制器、不伪造 ID 查询状态、设置或注入预览；会话、运行、Mailbox 与 Harness 禁用。结构配方的拓扑写入能力仍由既有契约决定。
+
+组织对角色保持源引用。菜单显示职责和记忆来源；修改共享角色经未保存保护进入源模板，或显式另存并改引用。Family Save 不暗中保存角色来源。预览中的 body.presentation 是派生的归属/绑定/局部图元数据，不是一份独立可写正文，也不改变编译或投递。
+
+目标、成员集合、peer、所属 Family 与共享对象用虚线圈绑定占位表示，保留稳定 key、类型、方向、单/多和必需性；不伪装为自有 Resident 或 Lineage Leader。外部占位打开绑定信息；只有实际拥有的 Resident 打开模板 Menu。预览、局部图及拖放共用投影/布局，职责拖出保留原语，角色/组织默认收起。可见目标锚点经同一相机吸附已有 Resident；集合映射真实选择，不创建伪成员；取消无副作用。Family 正式落地位置从同一角色组合投影推导。
+
+按 ET 开发阶段原位更新原则，当前唯一正式 Family 沿用 builtin_key=family 资源身份，直接更新为 Router/Steward 同源组合。删除本轮 family_roles 后备正文与默认选择/兼容入口；ListTemplates 不隐藏第二份，数据库实际只保留现行内置定义。仅针对该后备来源声明一次身份归一，已有工坊旧定位读取现行 ID 后写回组件资源；模板正文中的精确旧引用同步为现行 ID。不保留旧正文、旧配方或平行实现。明确另存与不同用途模板仍独立，不按名字合并。
+
+本条替代此前保留旧自定义 Family 模板及兼容入口的要求。运行中的 Family、Resident、职责、请求与版本冻结不迁移、不删除重建；个人助手会话域、Effect 确认、权限及原请求/取消/续谈/恢复幂等协议保持现行契约。商店快照不变，不代用户上架业务内容。

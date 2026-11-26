@@ -216,6 +216,7 @@ class PublicPagesHttp:
                     '/static/lineage_primitive_inspector.js',
                     '/static/lineage_program.js',
                     '/static/lineage_template_graph.js',
+                    '/static/lineage_template_resident_menu.js',
                     '/static/lineage_templates.js',
                     '/static/lineage_templates_application.js',
                     '/static/lineage_templates_dialogs.js',

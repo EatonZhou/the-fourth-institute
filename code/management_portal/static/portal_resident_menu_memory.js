@@ -26,6 +26,17 @@
     personal_assistant: "个人助手", reporting_policy: "汇报策略",
   });
 
+  // Both live and template menus render the same levels. Loading this pure
+  // renderer never constructs the live controller or requests runtime state.
+  function levelsHtml(items, itemHtml, {template = false,escapeHtml} = {}) {
+    const esc=escapeHtml || (value=>window.PortalUIPrimitives.escapeHtml(String(value ?? '')));
+    const t=value=>window.PortalI18n.t(value);
+    return LEVELS.map(([level,label,note])=>`<section class="residentMenuMemoryLevel" data-memory-level="${esc(level)}">
+      <h3>${esc(t(label))} <span class="residentMenuDutyCategory">${items[level]?.length || 0}</span></h3>
+      <p class="paneNote">${esc(t(template && level==='on_demand' ? '施加后由所属职责提供按需读取内容' : note))}</p>
+      ${items[level]?.length ? `<ol class="residentMenuDuties">${items[level].map(itemHtml).join('')}</ol>` : `<p class="residentMenuJournalMeta">${esc(t('没有内容。'))}</p>`}</section>`).join('');
+  }
+
   function createMemory(dependencies) {
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalResidentMenuMemory is missing: ${missing.join(", ")}`);
@@ -101,13 +112,7 @@
 
     function render(items) {
       $id("nodeMemoryRows").innerHTML = window.PortalI18n.html`<p class="paneNote">按四级列出进入这个 Resident 上下文的内容和来源，越靠上的层级占用上下文越多。展开一项可看到正文。</p>`
-        + LEVELS.map(([level, label, note]) => window.PortalI18n.html`<section class="residentMenuMemoryLevel" data-memory-level="${esc(level)}">
-          <h3>${esc(t(label))} <span class="residentMenuDutyCategory">${esc(String(items[level].length))}</span></h3>
-          <p class="paneNote">${esc(t(note))}</p>
-          ${items[level].length
-            ? window.PortalI18n.html`<ol class="residentMenuDuties">${items[level].map(itemHtml).join("")}</ol>`
-            : window.PortalI18n.html`<p class="residentMenuJournalMeta">没有内容。</p>`}
-        </section>`).join("");
+        + levelsHtml(items,itemHtml,{escapeHtml:esc});
     }
 
     async function loadNodeMemory() {
@@ -137,5 +142,5 @@
     return { loadNodeMemory };
   }
 
-  window.PortalResidentMenuMemory = Object.freeze({ createMemory, dependencies: DEPENDENCIES });
+  window.PortalResidentMenuMemory = Object.freeze({ createMemory, levelsHtml, dependencies: DEPENDENCIES });
 })();

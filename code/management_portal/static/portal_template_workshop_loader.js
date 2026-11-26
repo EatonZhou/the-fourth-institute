@@ -76,7 +76,7 @@
           execute:options.execute});
         await workshop.load();
         if (destroyed) { workshop.destroy(); return; }
-        target = {...target,title:workshop.template().title};
+        target = {...target,...(workshop.template().template_id ? {template_id:workshop.template().template_id} : {}),title:workshop.template().title};
         options.emit?.('workshop-title',target);
         chat = window.LineageTemplateWorkshopChat.mount({root:host,workshop,execute:options.execute,listLineages:options.listLineages});
         await chat.load();

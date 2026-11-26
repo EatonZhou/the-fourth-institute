@@ -50,6 +50,7 @@
     function readDraft() {
       view.root.querySelectorAll('[data-meta]').forEach(input => { draft[input.dataset.meta] = input.value; });
       if (editorState.invalidElement) throw new Error(t('请修正检查器中的 JSON'));
+      if (editorState.invalidTemplateMenu) throw new Error(t('请修正模板 Resident 配置中的 JSON'));
       if (!view.workshop) draft.targets = [...view.root.querySelectorAll('[data-target]:checked')].map(input => input.dataset.target);
       if (editorState.roleSettings) draft.body.resident_settings = clone(editorState.roleSettings);
       if (codeActive) {
@@ -95,6 +96,7 @@
       catch (_) {
         return {content:clone(window.LineageTemplateWorkshopDraft.payload(draft)),invalidCode:codeActive ? codeText : undefined,
           ...(editorState.invalidElement ? {invalidElement:clone(editorState.invalidElement)} : {}),
+          ...(editorState.invalidTemplateMenu ? {invalidTemplateMenu:clone(editorState.invalidTemplateMenu)} : {}),
           invalidMode:editorState.structureMode,invalidSelection:editorState.graph?.selected(),
           invalidInputs:inputs().map(input=>({key:inputKey(input),value:input.value,checked:input.checked}))};
       }
@@ -118,7 +120,7 @@
     function schedulePreview(event) {
       const control = event?.target || document.activeElement;
       const row = control?.closest?.('[data-row-key],[data-parameter-row]');
-      view.onChange?.(control?.matches?.('input,textarea') ? `${row?.dataset.rowKey || row?.dataset.parameterRow || ''}:${control.dataset.meta || control.dataset.rowField || control.dataset.parameterField || control.dataset.bodyField || control.getAttribute('aria-label') || 'text'}` : codeActive ? 'code' : '');
+      view.onChange?.(control?.dataset?.templateHistoryKey || (control?.matches?.('input,textarea') ? `${row?.dataset.rowKey || row?.dataset.parameterRow || ''}:${control.dataset.meta || control.dataset.rowField || control.dataset.parameterField || control.dataset.bodyField || control.getAttribute('aria-label') || 'text'}` : codeActive ? 'code' : ''));
       editorState.revision += 1; clearTimeout(editorState.timer);
       status.textContent = t('正在校验…'); status.dataset.state = 'pending';
       editorState.timer = setTimeout(preview, 320);

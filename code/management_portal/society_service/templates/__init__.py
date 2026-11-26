@@ -18,9 +18,7 @@ def create_family(lineage_id, resident_ids, actor, *, template_id=None, **option
 
     if not template_id:
         template_id = familize.TEMPLATE_ID
-        if not options.get('personal_ama_id') and not store.get(template_id)['body'].get('role_templates'):
-            from .builtins import template_id as builtin_id
-            template_id = builtin_id('family_roles')
+    template_id = store.get(template_id)['template_id']
     return familize.familize(
         lineage_id, resident_ids, actor, template_id=template_id,
         load_body=lambda: store.get(template_id)["body"], **options,
@@ -37,10 +35,9 @@ def list_templates(target_kind=None):
     }:
         raise TemplateError("未知目标类型")
     from .marketplace import annotate
-    from .catalog import project
     return [
         describe(item, editor_graph=False)
-        for item in project(annotate(store.all_templates()))
+        for item in annotate(store.all_templates())
         if target_kind is None or target_kind in item["targets"]
     ]
 

@@ -179,12 +179,16 @@
 
   function nodeContent(node) {
     const item = node._template;
+    if (node._template_binding) {
+      const binding = node._template_binding;
+      return `<span class="templateBinding" data-node-drag-handle data-binding-key="${esc(binding.key)}"><strong>${esc(item.title || binding.key)}</strong><small>${esc(binding.type)} · ${esc(t(binding.cardinality === 'many' ? '集合' : '单个'))}</small><small>${esc(t(binding.required ? '必需' : '可选'))} · ${esc(binding.direction)}</small>${node._template_found ? `<small class="templateStatePill" data-template-state="${esc(item.op || 'keep')}">${esc(stateLabels()[item.op || 'keep'])}</small>` : ''}</span>`;
+    }
     const state = node._template_found ? `<span class="templateStatePill" data-template-state="${esc(item.op || 'keep')}">${esc(stateLabels()[item.op || 'keep'])}</span>` : '';
     if (node._template_role) {
       const source = node._template_found ? 'Resident' : roleLabels()[item.from] || item.from;
       return `<span class="nodeTopline" data-node-drag-handle><span class="nodeIdentity">${esc(item.key)}</span>${state}</span>
         <strong title="${esc(item.title || source)}">${esc(item.title || source)}</strong>
-        <span class="nodeFooter"><span class="nodeTypePill" data-role-source="${esc(item.from || 'found')}">${esc(source)}${item.from === 'fork' ? ` · ${esc(item.fork_of || '')}` : ''}</span></span>`;
+        <span class="nodeFooter"><span class="nodeTypePill" data-role-source="${esc(item.from || 'found')}">${esc(node._template_menu ? t('模板 Resident') : source)}${item.from === 'fork' ? ` · ${esc(item.fork_of || '')}` : ''}</span></span>`;
     }
     const definition = window.PortalLineageProgram.manifest.component_kinds[item.kind] || {};
     const kind = item.kind === 'event_source' ? 'EVENT' : String(item.kind || '').toUpperCase();
@@ -219,10 +223,28 @@
       ...(body.roles || []).filter(role => role.from === 'target' || role.from === 'lineage_leader'),
       ...foundNodes(body),
     ];
-    return slots.map(item => `.templateGraph .hatgNode[data-node-id="${CSS.escape(item.key)}"]{opacity:.65;background:var(--panel-2)}`).join('\n');
+    return slots.filter(item=>!body.presentation?.residents?.[item.key]).map(item => `.templateGraph .hatgNode[data-node-id="${CSS.escape(item.key)}"]{background:transparent;border:0;box-shadow:none}`).join('\n');
   }
 
-  function project(body, {workshop = false, groups = []} = {}) {
+  function bindings(body) {
+    const result = {...body.presentation?.bindings};
+    for (const item of [...(body.roles || []).filter(item=>['target','lineage_leader'].includes(item.from)),...foundNodes(body)]) {
+      if (body.presentation?.residents?.[item.key] || result[item.key]) continue;
+      const wires=[...(body.wires || []),...foundWires(body)];
+      const input=wires.some(wire=>wire.target===item.key),output=wires.some(wire=>wire.source===item.key);
+      result[item.key]={key:item.key,type:item.from ? 'resident' : item.kind,direction:input&&output?'both':input?'in':output?'out':'both',
+        cardinality:item.count==='all'?'many':'one',required:true,source:item.from || 'match'};
+    }
+    return result;
+  }
+
+  function residentContexts(body) {
+    if(body.presentation)return body.presentation.residents || {};
+    return Object.fromEntries((body.roles || []).filter(role=>['new','fork'].includes(role.from)).map(role=>[role.key,
+      {key:role.key,title:role.title || role.key,structure:true,duties:[],memories:[],settings:role.settings || {}}]));
+  }
+
+  function project(body, {workshop = false, groups = [], expanded = [], scope = null} = {}) {
     const program = window.PortalLineageProgram;
     const source = collections(JSON.parse(JSON.stringify(body)));
     const saved = source.layout || {};
@@ -245,7 +267,10 @@
     const authored = { components, wires };
     const graph = program.projectGraph(authored, roles);
     const templates = new Map([...source.roles, ...source.components, ...source.match].map(item => [item.key, item]));
-    graph.nodes.forEach(node => { node._template = templates.get(node.id); node._template_found = found.has(node.id); });
+    const bindingRows=bindings(source), residents=residentContexts(source);
+    graph.nodes.forEach(node => { node._template = templates.get(node.id); node._template_found = found.has(node.id);
+      node._template_binding=bindingRows[node.id]; node._template_menu=residents[node.id];
+    });
     // A wire without ports is drawn from the first ones that fit, as applying resolves it.
     graph.edges.forEach(edge => {
       const sourceNode = graph.nodes.find(node => node.id === edge.source);
@@ -258,23 +283,54 @@
       }
     });
     const representative = new Map(), grouped = [];
-    for (const group of groups.filter(group => !group.expanded)) {
+    if (source.presentation && !scope) for (const [key,owner] of Object.entries(source.presentation.owners)) {
+      if (!expanded.includes(owner)) representative.set(key,owner);
+    }
+    for (const group of (source.presentation ? [] : groups).filter(group => !group.expanded)) {
       const resident = graph.nodes.find(node => node.id === group.resident);
       if (!resident) continue;
       for (const key of group.members) representative.set(key, group.key);
       grouped.push({...resident, id:group.key, kind:'function_block', title:group.title,
         _template_role:false,_template:{key:group.key,title:group.title}});
     }
-    const edges = graph.edges.filter(edge=>!(representative.has(edge.source) && representative.get(edge.source)===(representative.get(edge.target)||edge.target)))
+    let edges = graph.edges.filter(edge=>!(representative.has(edge.source) && representative.get(edge.source)===(representative.get(edge.target)||edge.target)))
       .map(edge=>({...edge, source:representative.get(edge.source)||edge.source,
-        target:representative.get(edge.target)||edge.target}));
+        target:representative.get(edge.watch_subject_wire_id)||representative.get(edge.target)||edge.target,
+        ...(representative.size && edge.watch_subject_wire_id ? {_template_watch_subject:edge.watch_subject_wire_id,canonical_target:representative.get(edge.watch_subject_wire_id)||representative.get(edge.target)||edge.target,watch_subject_wire_id:''} : {}),
+        ...(representative.has(edge.source)?{source_port:''}:{}),...(representative.has(edge.target)?{target_port:''}:{})})).filter(edge=>edge.source!==edge.target);
+    if(representative.size){
+      const summary=new Map();
+      for(const edge of edges){const key=JSON.stringify([edge.type,edge.source,edge.target]);const previous=summary.get(key);
+        if(previous)previous._template_edges.push(edge.id);else summary.set(key,{...edge,_template_edges:[edge.id]});}
+      edges=[...summary.values()];
+    }
     let nodes = [...graph.nodes.filter(node=>!representative.has(node.id)),...grouped];
+    let visibleEdges=edges;
+    if (scope) {
+      const selected=new Set(scope), wanted=new Set(scope);
+      visibleEdges=edges.filter(edge=>wanted.has(edge.id) || wanted.has(edge.source)&&wanted.has(edge.target));
+      for (const edge of visibleEdges) {selected.add(edge.source);selected.add(edge.target);}
+      nodes=nodes.filter(node=>selected.has(node.id));
+      // A local duty may observe a shared wire outside its ownership. Expose a
+      // typed reference, rather than inventing that wire or monitoring its
+      // target Resident instead. The full graph retains the actual wire ID.
+      const references=new Map();
+      visibleEdges=visibleEdges.map(edge=>{
+        const subject=edge.watch_subject_wire_id;
+        if(!subject || visibleEdges.some(other=>other.id===subject))return edge;
+        const key=`binding:${subject}`,target=graph.nodes.find(node=>node.id===edge.target);
+        if(!references.has(key))references.set(key,{id:key,kind:'event_source',x:(target?.x || 50)+18,y:target?.y || 50,
+          _template:{key,title:subject,kind:'wire'},_template_binding:{key:subject,type:'wire',direction:'in',cardinality:'one',required:true}});
+        return {...edge,target:key,canonical_target:key,watch_subject_wire_id:'',_template_watch_subject:subject};
+      });
+      nodes.push(...references.values());
+    }
     if (grouped.length) {
       const compact = autoLayout({roles:nodes.map(node=>({key:node.id})),components:[],match:[],
         wires:edges.map(edge=>({...edge,key:edge.id}))});
       nodes = nodes.map(node=>({...node,...compact[node.id]}));
     }
-    return { nodes, edges, wires: program.normalizeProgram(authored).wires };
+    return { nodes, edges:visibleEdges, wires: program.normalizeProgram(authored).wires };
   }
 
   function placement(body) {
@@ -325,7 +381,7 @@
     return {move,destroy(){destroyed=true;observer.disconnect();controller.destroy();root.remove();}};
   }
 
-  function mount({ root, body, workshop = false, readOnly = false, groups = () => [], isReadonly = () => false, onBeforeChange = () => {}, onChange = () => {}, onSelect = () => {} }) {
+  function mount({ root, body, workshop = false, readOnly = false, groups = () => [], expanded = () => [], scope = () => null, onOpenResident = () => {}, isReadonly = () => false, onBeforeChange = () => {}, onChange = () => {}, onSelect = () => {} }) {
     const program = window.PortalLineageProgram;
     const factory = window.PortalHatgGraph?.createGraph;
     if (!program || !factory) throw new Error(t('HATG 图形引擎未加载'));
@@ -371,7 +427,7 @@
 
 
     function render() {
-      current = project(body(), {workshop,groups:groups()});
+      current = project(body(), {workshop,groups:groups(),expanded:expanded(),scope:scope()});
       states.textContent = edgeStateRules(body()) + (workshop ? slotRules(body()) : '');
       if (selected && !current.nodes.some(node => node.id === selected) && !current.edges.some(edge => edge.id === selected)) selected = '';
       controller.render({
@@ -380,13 +436,19 @@
         selectedEdgeId: current.edges.some(edge => edge.id === selected) ? selected : '',
         wireDraft,
       });
+      canvas.querySelectorAll('[data-node-id]').forEach(element=>{
+        const node=current.nodes.find(node=>node.id===element.dataset.nodeId);
+        element.classList.toggle('is-template-binding',!!node?._template_binding);
+        if(node?._template_menu){element.tabIndex=0;element.setAttribute('aria-label',`${node.title} · ${t('模板 Resident 菜单')}`);element.title=node._template_menu.duties.map(duty=>duty.title).join(' · ');}
+      });
+      canvas.querySelectorAll('[data-node-open-menu]').forEach(button=>{button.dataset.templateResidentMenu=button.dataset.nodeOpenMenu;});
       root.dataset.graphEmpty = String(!current.nodes.length);
     }
 
     function select(key) {
       selected = key || '';
       render();
-      onSelect(selected);
+      onSelect(selected,current.nodes.find(node=>node.id===selected));
     }
 
     // `work` edits the body and returns the key to select, or nothing to keep the selection.
@@ -515,6 +577,8 @@
       fitButton: root.querySelector('[data-graph-fit]'),
       fitOptions: {duration:0,maxScale:workshop ? 1 : 1.1},
       nodeContent,
+      nodeOpenMenu:node=>node._template_menu ? {label:t('打开模板 Resident 菜单'),title:node._template_menu.duties.map(duty=>duty.title).join(' · ')} : null,
+      onNodeOpenMenu:node=>onOpenResident(node.id),
       portsForNode: node => program.portsForNode(node),
       connectionTargets: (source, item) => program.connectionTargets(source, item),
       isPortCompatible: (source, target) => Boolean(program.validateConnection(source, target, { existingWires: current.wires, nodes: current.nodes })?.ok),
@@ -522,7 +586,7 @@
       onWireDraftCancel: () => { wireDraft = null; hint(''); render(); },
       onPrimitiveDrop: (kind, position) => addComponent(kind, position),
       onNodeClick: node => select(node.id),
-      onNodeDoubleClick: node => select(node.id),
+      onNodeDoubleClick: node => {select(node.id);if(node._template_menu)onOpenResident(node.id);},
       onEdgeClick: edge => select(edge.id),
       onBackgroundClick: () => { if (selected) select(''); },
       onNodeMoveEnd: () => { change(keepPlaces); },
@@ -544,6 +608,8 @@
       event.dataTransfer.effectAllowed = 'copy';
     }, { signal: abort.signal });
     canvas.addEventListener('keydown', event => {
+      const node=event.target.closest('[data-node-id]');
+      if(node && ['Enter','ContextMenu'].includes(event.key) && current.nodes.find(item=>item.id===node.dataset.nodeId)?._template_menu){event.preventDefault();onOpenResident(node.dataset.nodeId);return;}
       if (!['Delete', 'Backspace'].includes(event.key) || !selected || event.target.closest('input, textarea, select')) return;
       event.preventDefault();
       deleteSelected();
@@ -590,5 +656,5 @@
     },{signal:abort.signal});
     return {setEnabled(enabled) {root.querySelectorAll('[data-template-id]').forEach(button=>{button.disabled=!enabled;button.draggable=enabled;});},destroy(){abort.abort();root.replaceChildren();}};
   }
-  window.LineageTemplateGraph = Object.freeze({ mount, project, placement, placementPreview, thumbnail, removeElement, renameKey, effectiveConfig, isWireKind, authoringItems, mountTools });
+  window.LineageTemplateGraph = Object.freeze({ mount, project, bindings, residentContexts, placement, placementPreview, thumbnail, removeElement, renameKey, effectiveConfig, isWireKind, authoringItems, mountTools });
 })();

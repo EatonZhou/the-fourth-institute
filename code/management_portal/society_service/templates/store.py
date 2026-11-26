@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS templates (
  version INTEGER NOT NULL, created_at TIMESTAMPTZ, created_by TEXT, updated_at TIMESTAMPTZ, updated_by TEXT
 );
 CREATE TABLE IF NOT EXISTS installed_builtins (builtin_key TEXT PRIMARY KEY, installed_at TIMESTAMPTZ NOT NULL);
+CREATE TABLE IF NOT EXISTS template_id_redirects (old_id TEXT PRIMARY KEY, template_id TEXT NOT NULL);
 ALTER TABLE templates ADD COLUMN IF NOT EXISTS installed_from_store_id TEXT;
 ALTER TABLE templates ADD COLUMN IF NOT EXISTS installed_store_version INTEGER;
 ALTER TABLE templates ADD COLUMN IF NOT EXISTS installed_store_hash TEXT;
@@ -100,10 +101,6 @@ def ensure_builtins():
             row["builtin_key"] for row in read_rows(connection, "installed_builtins")
         }
         for raw in definitions():
-            if raw['builtin_key'] == 'family_roles':
-                original = next((row for row in rows.values() if row.get('builtin_key') == 'family'), None)
-                if not original or original['body'].get('role_templates'):
-                    continue
             template = normalize(raw)
             key = raw["builtin_key"]
             template_id = raw["template_id"]
@@ -132,6 +129,8 @@ def ensure_builtins():
                 "updated_at": now(),
                 "updated_by": "portal",
             }
+        from .consolidation import family_definition
+        family_definition(connection, rows, installed)
         _write(connection, rows.values())
 
 
@@ -169,6 +168,7 @@ def all_templates():
 def get(template_id):
     ensure_builtins()
     with database().read() as connection:
+        template_id = resolve_id(connection, template_id)
         row = connection.execute(
             "SELECT * FROM templates WHERE template_id=%s", (template_id,)
         ).fetchone()
@@ -177,10 +177,16 @@ def get(template_id):
         return decode_times(row, ('created_at', 'updated_at'))
 
 
+def resolve_id(connection, identity):
+    row = connection.execute('SELECT template_id FROM template_id_redirects WHERE old_id=%s', (identity,)).fetchone()
+    return row['template_id'] if row else identity
+
+
 def save(template, actor, *, template_id=None, transform=None, reviewed_effect_id=None):
     ensure_builtins()
     with database().transaction("templates") as connection:
         rows = {row["template_id"]: row for row in read_rows(connection, "templates")}
+        template_id = resolve_id(connection, template_id) if template_id else None
         previous = rows.get(template_id)
         if template_id and previous is None:
             raise KeyError(template_id)
@@ -212,6 +218,7 @@ def save(template, actor, *, template_id=None, transform=None, reviewed_effect_i
 def delete(template_id):
     ensure_builtins()
     with database().transaction("templates") as connection:
+        template_id = resolve_id(connection, template_id)
         if not connection.execute(
             "DELETE FROM templates WHERE template_id=%s RETURNING template_id",
             (template_id,),
@@ -223,6 +230,9 @@ def restore(template_id, actor):
     from .kinds import normalize
     from .builtins import definitions
 
+    ensure_builtins()
+    with database().read() as connection:
+        template_id = resolve_id(connection, template_id)
     raw = next(
         (item for item in definitions() if item["template_id"] == template_id), None
     )

@@ -23,7 +23,8 @@ def test_workshop_draft_semantics():
 
 
 @pytest.mark.parametrize('script', ['template_workshop.browser.cjs', 'template_workshop_reload.browser.cjs',
-                                   'template_placement.browser.cjs', 'family_roles.browser.cjs', 'workshop_views.browser.cjs'], ids=['editing', 'reload', 'placement', 'roles', 'views'])
+                                   'template_placement.browser.cjs', 'family_roles.browser.cjs', 'workshop_views.browser.cjs',
+                                   'workshop_template_menu.browser.cjs','workshop_family_current.browser.cjs','template_bindings.browser.cjs'], ids=['editing', 'reload', 'placement', 'roles', 'views','template-menu','family-current','bindings'])
 def test_workshop_browser_with_real_instructions(lineage, script):
     from management_portal.script_groups import expand_document
     from management_portal.society_service import principal_hierarchy_domain, lineage_reads
@@ -33,6 +34,10 @@ def test_workshop_browser_with_real_instructions(lineage, script):
     principal_hierarchy_domain.ensure_personal_assistant('sample_admin',personal['resident_id'],'sample_admin')
     before = ok('GetLineage', {'lineage_id':personal['lineage_id']})['lineage']
     family_before = next(block['family'] for block in before['function_blocks'] if block.get('family',{}).get('personal_ama_id'))
+    previous_family = ''
+    if script == 'workshop_family_current.browser.cjs':
+        from tests.cases.test_template_consolidation import earlier_definitions
+        _, previous_family = earlier_definitions()
 
     html = expand_document((ROOT / "management_portal/template_workshop.html").read_text())
     fragment = (ROOT / 'management_portal/static/template_workshop_panel.html').read_text().replace('<div class="templateWorkshop">','<div class="templateWorkshop" id="templateWorkshop">',1)
@@ -125,7 +130,7 @@ def test_workshop_browser_with_real_instructions(lineage, script):
         result = subprocess.run(['node', str(ROOT / 'tests/cases/javascript' / script)],
             cwd=ROOT, env={**os.environ, 'WORKSHOP_TEST_ORIGIN': f'http://127.0.0.1:{server.server_port}',
                            'WORKSHOP_TEST_LINEAGE': lineage, 'WORKSHOP_PERSONAL_LINEAGE':personal['lineage_id'],
-                           'WORKSHOP_PERSONAL_ASSISTANT':personal['resident_id']}, capture_output=True, text=True, timeout=120)
+                           'WORKSHOP_PERSONAL_ASSISTANT':personal['resident_id'], 'WORKSHOP_PREVIOUS_FAMILY_ID':previous_family}, capture_output=True, text=True, timeout=120)
         assert result.returncode == 0, result.stdout + result.stderr
         # The actual personal-entry retry and Family reconcile leave the helper
         # outside that Family: no implicit canvas-wide membership discovery.

@@ -162,27 +162,10 @@ def test_role_task_prompt_preview_and_invalid_save_are_atomic(lineage, charters)
     assert family_tasks.configured(after, parent)['route']['prompt'] == request['duty_changes']['task_prompt']
 
 
-def test_custom_legacy_family_recipe_is_kept_and_new_default_uses_composition(lineage, charters):
-    from management_portal.society_service.templates import store
-    from tests.cases.isa_test_support import ACTOR
-    source = store.get(familize.TEMPLATE_ID)
-    source['body'].pop('role_templates')
-    source['body']['goal'] = 'Keep the custom old recipe'
-    store.save(source, ACTOR, template_id=source['template_id'])
-    original = deepcopy(store.get(familize.TEMPLATE_ID))
-    fallback = next(t for t in ok('ListTemplates')['templates'] if t.get('builtin_key') == 'family_roles')
-    assert fallback['body']['role_templates']
-    f = ok('Familize', {'lineage_id': lineage, 'resident_ids': [resident(lineage, 'Member')]})
-    body, parent = current(lineage, f['family_id'])
-    assert len(family_roles.role_blocks(body, parent)) == 2
-    assert parent['template_id'] == fallback['template_id']
-    assert store.get(familize.TEMPLATE_ID) == original
-
-
 def test_personal_assistant_keeps_its_original_recipe_and_configuration(monkeypatch):
     from management_portal.society_service import templates
     from management_portal.society_service.templates import store
-    source = {'body': {'goal': 'Personal configuration'}}
+    source = {'template_id': familize.TEMPLATE_ID, 'body': {'goal': 'Personal configuration'}}
     def get(identity):
         assert identity == familize.TEMPLATE_ID
         return deepcopy(source)

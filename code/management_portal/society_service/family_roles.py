@@ -234,4 +234,4 @@ def project(template):
     from .templates.familize import reconcile_in_body
     reconcile_in_body(body, parent, 'template-preview', installing=True)
     instance = next(iter(role_blocks(body, parent)))
-    return family_graph.project_body(body, parent, roles, [instance, *duties(body, instance)], role_key=key)
+    return family_graph.project_body(body, parent, roles, [instance, *duties(body, instance)], role_key=key, source=template)

@@ -626,7 +626,8 @@ def familize(lineage_id: str, resident_ids: Iterable[str], actor: str, *, title:
                            creation_key=f"personal-assistant:{personal_ama_id}:{role}" if personal_ama_id else "",
                            follow_default_backend=bool(personal_ama_id))
              for role in ("facade", "steward", "router")}
-    authored_layout = family_graph.placement({**values, 'tasks': tasks}, placement) if all(placement.get(axis) is not None for axis in ('x', 'y')) else None
+    authored_layout = family_graph.placement({**values, 'tasks': tasks, 'role_templates': {
+        key: source['template_id'] for key, source in role_sources.items()}}, placement) if all(placement.get(axis) is not None for axis in ('x', 'y')) else None
     if authored_layout:
         from .. import lineage_lifecycle
         lineage_lifecycle.update_lineage_layout(lineage_id, {'positions': [

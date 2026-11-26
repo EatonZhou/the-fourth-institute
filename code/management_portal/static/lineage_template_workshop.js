@@ -32,7 +32,7 @@
         const result = await execute('GetTemplate',{template_id:id});
         if (serial !== navigation || abort.signal.aborted) return;
         if (editVersion !== previousVersion || runtime?.view.working) return;
-        templateId = id; storeId = ''; previewItem = null; removed = false;
+        templateId = result.template.template_id; storeId = ''; previewItem = null; removed = false;
         documentRevision += 1; error(null); templates.edit(result.template);
         onOpened?.(result.template);
       } catch (exception) { if (serial === navigation) error(exception); }
@@ -98,7 +98,7 @@
           <footer aria-label="${esc(t('模板操作'))}"></footer></header><main class="workshopEditorContent"></main>`;
         const cleanups = [], view = {
           root: form, form, content: form.querySelector('main'), footer: form.querySelector('footer'), cleanups,
-          workshop: true, error, onChange: changed, save,
+          workshop: true, error, onChange: changed, save, openTemplate,
           deleted() { removed = true; onDeleted?.(); },
           close() { cleanups.forEach(cleanup => cleanup()); form.replaceChildren(); },
           async busy(work) {
@@ -218,7 +218,7 @@
           previewItem = (await execute('ListTemplateStore',{store_id:storeId})).items[0];
           if (!previewItem) throw new Error(t('商店模板不存在或已下架'));
           templates.edit({...previewItem,builtin_key:'store_preview'});
-        } else if (templateId) await templates.openEditor(templateId); else templates.newTemplate();
+        } else if (templateId) {await templates.openEditor(templateId);templateId=runtime.draft.template_id;onOpened?.(runtime.draft);} else templates.newTemplate();
         return controller;
       },
       destroy() { surface.destroy(); tools.destroy(); abort.abort(); runtime?.view.close(); templates.destroy(); },
