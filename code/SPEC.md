@@ -23,12 +23,13 @@
 - [HATG ISA：对话与上下文指令](/r/decision_2fe6fd5367fb)
 - [HATG ISA：Mailbox 指令](/r/decision_c54e68a82d7a)
 - [HATG ISA：Resident 执行与队列指令](/r/decision_2a3ff353165c)
-- [HATG ISA：Lineage 定义指令](/r/decision_4637ca4a69e2)
+- [HATG ISA：Lineage 定义指令](/r/decision_4637ca4a69e2)，含逐项授权的 `ApplyLineageChanges` 与只读 `GetLineageChangesPreview`。
 - [HATG ISA：Lineage 共享状态指令](/r/decision_71ba0494b93e)
+- [黑板（Blackboard）：Lineage 内 Agent 共用的读写消息板](/r/decision_ed2c1ed5c245)
 - [HATG ISA：Lineage 运行指令](/r/decision_68215b3a825b)
 - [HATG ISA：脚本运行（RunScript）](/r/decision_8b510cbd9c58)
 - [HATG ISA：Function Block、画布选区与指令](/r/decision_5b5653c3eaa5)
-- [HATG ISA：Family 内部机制指令](/r/decision_b77fde81e7a0)
+- [HATG ISA：通用门面、转交与 Family 组合](/r/decision_b77fde81e7a0)
 - [HATG ISA：模板与指令](/r/decision_b04cac4188bb)
 - [HATG ISA：公共讨论指令与帖子标记原子更新](/r/decision_3e063aac15b3)
 - [HATG ISA：组织与分工指令](/r/decision_6591e7793116)
@@ -55,7 +56,7 @@
 - [统一资源 ID、地址与解析协议](/r/decision_4a9ba5dfada6)
 - [Portal 内容中的 Resource Address 提取与鉴权引用](/r/decision_a4e5f03c8b9b)
 - [ResourceService 模块与运行架构](/r/decision_cf27d39e39cd)
-- [ResourceService 调用协议：查询、读取、变更与动作](/r/decision_b6e74d78f7b6)
+- [ResourceService 调用协议：查询、读取、变更与具名领域操作](/r/decision_b6e74d78f7b6)
 - [资源索引：摘要记录、查询与串行刷新](/r/decision_8dc6b3d03ca7)
 - [Portal 语义搜索：搜索记录、执行与页面交互](/r/decision_eb066fbea4ed)
 - [Repo 与 Article 的自动资源注册与失效 Repo 清理](/r/decision_36f46b395d8e)
@@ -184,7 +185,7 @@
 - [Portal 共享运行基础与 Dev 到 Release 的快速发布流程](/r/decision_08bb2d9141f9)
 - [Portal 运行维护：安装、检查、发布与恢复](/r/decision_ab9880dc4c9d)
 - [Portal Web 重启通知与服务恢复编排](/r/decision_37f98f8fcb4b)
-- [Portal Resource Backup 监控、触发与恢复边界](/r/decision_b06ae321a668)，含 Google Drive 备份指令 `RunGoogleDriveBackup` 的调用与验收步骤。
+- [Portal Resource Backup 监控、触发与恢复边界](/r/decision_b06ae321a668)，含既有备份 Lineage 通过 `RunScript` 执行 Google Drive 备份脚本的调用与验收步骤。
 - [Portal Test Case、Catalog 与运行证据协议](/r/decision_8273271b67b1)
 - [共享代码实例的回归与 TAU 验收](docs/testing.md)
 - [Portal Test 页面：测试总览、用例目录、运行与 TAU](/r/decision_f2a6a5dd4646)
