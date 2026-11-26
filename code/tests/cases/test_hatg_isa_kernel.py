@@ -11,6 +11,7 @@ version tokens, streaming, argument validation and routing to the owner.
 from __future__ import annotations
 
 import uuid
+from datetime import datetime, timezone
 from typing import Any
 
 import pytest
@@ -18,7 +19,7 @@ import pytest
 from management_common.portal_database import portal_database
 from management_portal.hatg import kernel as kernel_module, routing
 from management_portal.hatg.catalog import instruction_catalog
-from management_portal.hatg.contracts import InstructionCall, InstructionContext
+from management_portal.hatg.contracts import InstructionCall, InstructionContext, InstructionError
 from management_portal.hatg.kernel import InstructionKernel, OwnerBinding
 from management_portal.hatg.store import ExecutionStore
 
@@ -33,10 +34,13 @@ class FakeExecution:
     def __init__(self) -> None:
         self.calls: list[tuple[str, dict[str, Any]]] = []
         self.versions: dict[str, Any] = {}
+        self.failures: list[Exception] = []  # raised by the next calls, in order
 
     def handler(self, name: str):
         def run(invocation) -> dict[str, Any]:
             self.calls.append((name, dict(invocation.arguments)))
+            if self.failures:
+                raise self.failures.pop(0)
             return {"call": len(self.calls), "account_id": invocation.arguments.get("account_id", "")}
 
         return run
@@ -129,7 +133,12 @@ def test_expected_version_is_optional_and_compared_when_given(kernel, fake):
     # An object whose owner compares its own token is passed through.
     delegated = kernel.execute(scheduler_call(expected_version={"acct_two": "opaque"}), CONTEXT)
     assert delegated.status == "committed"
-    assert len(fake.calls) == 2
+    # A token naming an object other than the call's target is never compared:
+    # a version conflict must not reveal another object's version.
+    fake.versions["acct_other"] = 9
+    other = kernel.execute(scheduler_call(expected_version={"acct_other": 1}), CONTEXT)
+    assert other.status == "committed"
+    assert len(fake.calls) == 3
 
 
 def test_reads_run_without_execution_records(kernel, fake):
@@ -382,3 +391,87 @@ def test_an_interrupted_execution_is_reported_unknown_not_rerun(kernel, fake):
     assert retried.error["details"]["reason"] == "interrupted"
     again = kernel.execute(call, CONTEXT)
     assert again.error == retried.error and len(fake.calls) == 1
+
+
+def test_a_transient_failure_does_not_occupy_the_idempotency_key(kernel, fake):
+    """可重试且未提交的瞬时失败不占用幂等键：同键同内容重试会重新执行并成功"""
+    fake.failures.append(InstructionError("lineage.busy", "Lineage 忙", retryable=True))
+    call = scheduler_call(idempotency_key="transient")
+    first = kernel.execute(call, CONTEXT)
+    assert first.status == "failed" and first.error["retryable"] is True
+    second = kernel.execute(call, CONTEXT)
+    assert second.status == "committed" and not second.replayed
+    assert len(fake.calls) == 2
+    third = kernel.execute(call, CONTEXT)
+    assert third.replayed and len(fake.calls) == 2
+
+
+def test_a_terminal_failure_is_still_replayed_for_the_same_key(kernel, fake):
+    """终态失败（参数错误等）仍作为该键的结果保存并重放"""
+    fake.failures.append(InstructionError("instruction.invalid_arguments", "参数无效"))
+    call = scheduler_call(idempotency_key="terminal")
+    first = kernel.execute(call, CONTEXT)
+    again = kernel.execute(call, CONTEXT)
+    assert first.status == again.status == "failed" and again.replayed
+    assert len(fake.calls) == 1
+
+
+def test_a_handler_error_after_a_committed_domain_write_stays_projection_pending(kernel, fake):
+    """领域已提交、投影失败后处理函数又抛错：回执是 projection_pending，由维护补投影，而不是普通失败"""
+    from management_common.projection_receipts import project_committed
+
+    def fail_after_commit():
+        project_committed({"projection": "page"}, lambda: (_ for _ in ()).throw(RuntimeError("down")))
+        raise RuntimeError("late failure")
+
+    def handler(name):
+        def run(invocation):
+            fail_after_commit()
+        return run
+
+    binding = fake.binding()
+    binding.handlers = {name: handler(name) for name in binding.handlers}
+    pending = InstructionKernel(binding, store=kernel.store, authorize=lambda *args: None)
+    result = pending.execute(scheduler_call(idempotency_key="after-commit"), CONTEXT)
+    assert result.status == "failed"
+    assert result.error["code"] == "instruction.projection_pending"
+    assert result.error["commit_state"] == "committed"
+    assert [item["instruction_id"] for item in kernel.store.pending_projections()] == [result.instruction_id]
+
+
+def test_prune_continues_over_several_batches_and_frees_stale_recovery_holds(kernel, fake, monkeypatch):
+    """防重记录清理：积压超过一批时继续清理；长期无人确认的恢复占用在 30 天后释放，旧栅栏过期"""
+    from management_portal.hatg import store as store_module
+
+    monkeypatch.setattr(store_module, "PRUNE_BATCH_SIZE", 2)
+    for number in range(5):
+        kernel.execute(scheduler_call(idempotency_key=f"old-{number}"), CONTEXT)
+    kernel.store.database.write(lambda connection: connection.execute(
+        "UPDATE instruction_executions SET updated_at=now() - interval '40 days', recovery_key='held'"
+    ))
+    now = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    # The first sweep frees the holds nobody acknowledged; the records then expire in batches.
+    kernel.store._next_long_lived = 0.0  # the long-lived sweep already ran once on the first request
+    kernel.store.prune(now=now)
+    assert kernel.store.prune(now=now) == 5
+    with kernel.store.database.read() as connection:
+        assert connection.execute("SELECT count(*) FROM instruction_executions").fetchone()[0] == 0
+        assert connection.execute("SELECT count(*) FROM instruction_retry_guards").fetchone()[0] == 5
+
+
+def test_a_lost_connection_without_a_key_does_not_invite_a_retry():
+    """无幂等键的变更指令在连接中断后结果未知，不标记可重试；带键的仍可重试，只读不受影响"""
+    from management_portal.hatg.socket_rpc import _forbid_blind_retry
+
+    def lost() -> InstructionError:
+        return InstructionError("instruction.owner_unavailable", "断开", retryable=True, commit_state="unknown")
+
+    unkeyed = lost()
+    _forbid_blind_retry(scheduler_call(), unkeyed)
+    assert unkeyed.retryable is False and "hint" in unkeyed.details
+    keyed = lost()
+    _forbid_blind_retry(scheduler_call(idempotency_key="k"), keyed)
+    assert keyed.retryable is True
+    read = lost()
+    _forbid_blind_retry(InstructionCall.from_payload({"instruction": "ListProviders", "arguments": {}}), read)
+    assert read.retryable is True

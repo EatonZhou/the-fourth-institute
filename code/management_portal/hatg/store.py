@@ -25,6 +25,12 @@ from .contracts import InstructionCall, InstructionError
 
 RETENTION_DAYS = 7
 PRUNE_BATCH_SIZE = 128
+PRUNE_MAX_BATCHES = 8
+# A finished record still held by an Effect that never acknowledged it is freed
+# after this long; replay fences (digest only) outlive the recovery window by a year.
+RECOVERY_HOLD_DAYS = 30
+RETRY_GUARD_DAYS = 365
+LONG_LIVED_SWEEP_SECONDS = 3600
 RETRY_GUARDS = "instruction_retry_guards"
 # An executing record can be settled only after its live execution lock has
 # been released (including automatically when the owning process dies).
@@ -158,6 +164,7 @@ class ExecutionStore:
         self.database = database
         self._prune_lock = threading.Lock()
         self._next_prune = 0.0
+        self._next_long_lived = 0.0
         self._interrupted_cursor = ""
         if create:
             self.database.write(create_schema)
@@ -327,7 +334,7 @@ class ExecutionStore:
                     "AND status IN ('committed','failed') AND recovery_key='' "
                     "AND coalesce(error_json::jsonb ->> 'code','') <> 'instruction.projection_pending'")
 
-        def remove(connection: Any) -> int:
+        def remove(connection: Any) -> tuple[int, int]:
             rows = connection.execute(
                 f"SELECT instruction_id,caller,instruction,request_key FROM {TABLE} WHERE {eligible} "
                 "ORDER BY updated_at,instruction_id LIMIT %s", (cutoff_text, cutoff_text, PRUNE_BATCH_SIZE),
@@ -351,8 +358,50 @@ class ExecutionStore:
                                        "ON CONFLICT(request_digest) DO NOTHING",
                                        (_request_digest(row["caller"], row["instruction"], row["request_key"]), now))
                 count += 1
-            return count
-        return self.database.write(remove)
+            return count, len(rows)
+
+        # A full batch means more may be waiting: continue for a bounded number
+        # of batches so sustained writes cannot outrun the sweep.
+        total = 0
+        for _ in range(PRUNE_MAX_BATCHES):
+            removed, fetched = self.database.write(remove)
+            total += removed
+            if fetched < PRUNE_BATCH_SIZE:
+                break
+        self._prune_long_lived(now=now)
+        return total
+
+    def _prune_long_lived(self, *, now: str) -> None:
+        """Hourly: free recovery holds nobody acknowledged and expire old replay fences."""
+        if time.monotonic() < self._next_long_lived:
+            return
+        self._next_long_lived = time.monotonic() + LONG_LIVED_SWEEP_SECONDS
+        moment = datetime.fromisoformat(now.replace("Z", "+00:00")).astimezone(timezone.utc)
+        hold_cutoff = (moment - timedelta(days=RECOVERY_HOLD_DAYS)).isoformat()
+        guard_cutoff = (moment - timedelta(days=RETRY_GUARD_DAYS)).isoformat()
+
+        def sweep(connection: Any) -> None:
+            # A finished record whose Effect never acknowledged it (the activation
+            # died) must not stay forever; the ordinary sweep then expires it.
+            connection.execute(
+                f"UPDATE {TABLE} SET recovery_key='' WHERE recovery_key<>'' "
+                "AND status IN ('committed','failed') AND updated_at < %s::timestamptz "
+                "AND coalesce(error_json::jsonb ->> 'code','') <> 'instruction.projection_pending'",
+                (hold_cutoff,),
+            )
+            connection.execute(
+                f"DELETE FROM {RETRY_GUARDS} WHERE ctid IN ("
+                f"SELECT ctid FROM {RETRY_GUARDS} WHERE expired_at < %s::timestamptz LIMIT %s)",
+                (guard_cutoff, PRUNE_BATCH_SIZE * 8),
+            )
+
+        self.database.write(sweep)
+
+    def discard(self, instruction_id: str) -> None:
+        """Release an unfinished reservation whose failure committed nothing and may be retried."""
+        self.database.write(lambda connection: connection.execute(
+            f"DELETE FROM {TABLE} WHERE instruction_id=%s AND status='executing'", (instruction_id,),
+        ))
 
     def release_recovery(self, *, caller: str, recovery_key: str, instruction_ids: list[str]) -> int:
         if not recovery_key or not instruction_ids:

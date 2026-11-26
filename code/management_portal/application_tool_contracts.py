@@ -26,13 +26,16 @@ class ApplicationToolDeclaration:
         if not re.fullmatch(r"application:[a-z][a-z0-9_.-]*", self.ref):
             raise ValueError(f"Invalid application tool ref: {self.ref}")
         InstructionCall(self.name)
-        self.operation()
-
-    def operation(self):
-        return InstructionDeclaration(name=self.name, category="application", owner="web",
+        # Built and validated once: the kernel and the permission compiler read
+        # its attributes on every call.
+        object.__setattr__(self, "_operation", InstructionDeclaration(
+            name=self.name, category="application", owner="web",
             description=self.description, parameters=self.parameters, result=self.result,
             decides=self.decides, mutates=self.mutates, target=self.target,
-            one_of=self.one_of, any_of=self.any_of)
+            one_of=self.one_of, any_of=self.any_of))
+
+    def operation(self):
+        return self.__dict__["_operation"]
 
     def __getattr__(self, name):
         # The shared kernel and permission compiler use the same operation contract.

@@ -45,7 +45,7 @@ def test_version_lookup_failure_is_saved_for_replay(instruction_kernel):
     def missing(*_args):
         raise KeyError("missing")
     instruction_kernel.binding.version_of = missing
-    call = scheduler_call(idempotency_key="missing-version", expected_version={"missing": 1})
+    call = scheduler_call(idempotency_key="missing-version", expected_version={"acct_one": 1})
     first = instruction_kernel.execute(call, CONTEXT)
     again = instruction_kernel.execute(call, CONTEXT)
     assert first.error["code"] == again.error["code"] == "instruction.not_found"

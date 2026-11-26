@@ -300,12 +300,14 @@ class InstructionKernel:
             return
         if self.binding.version_of is None:
             return  # Objects without a token accept the control without comparison.
-        if isinstance(expected, Mapping):
-            pairs = list(expected.items())
-        else:
-            from .declarations import target_value
+        from .declarations import target_value
 
-            target = target_value(invocation.declaration, invocation.call.arguments)
+        target = target_value(invocation.declaration, invocation.call.arguments)
+        if isinstance(expected, Mapping):
+            # A token may only name the call's own target: any other key would
+            # turn a version conflict into a probe of unrelated objects.
+            pairs = [(key, token) for key, token in expected.items() if not target or str(key) == str(target)]
+        else:
             if not target:
                 return  # The handler may compare a domain-specific token itself.
             pairs = [(target, expected)]
@@ -399,10 +401,7 @@ class InstructionKernel:
         try:
             self._check_versions(invocation)
         except Exception as exc:  # noqa: BLE001 - token reads can fail like handlers
-            error = normalize_error(exc)
-            if store is not None:
-                store.finish(instruction_id, status="failed", now=now_iso(), error=error.to_dict())
-            return failed_result(instruction_id, call.instruction, error)
+            return self._settle_failure(instruction_id, call, normalize_error(exc))
         failures: list[dict[str, Any]] = []
         committed_failure: Exception | None = None
         try:
@@ -428,14 +427,17 @@ class InstructionKernel:
         except Exception as exc:  # noqa: BLE001
             error = normalize_error(exc)
             if failures:
-                error.details.update({
-                    "domain_committed": True,
-                    "projection_failures": copy.deepcopy(failures),
-                })
-                error.commit_state = "committed"
-            if store is not None:
-                store.finish(instruction_id, status="failed", now=now_iso(), error=error.to_dict())
-            return failed_result(instruction_id, call.instruction, error)
+                # The domain committed and its projections are pending even though
+                # the handler then failed: keep the receipt recoverable, as for a
+                # handler that reported its own pending projections.
+                error = self._projection_error(invocation, failures)
+                if store is not None:
+                    store.finish(
+                        instruction_id, status="committed", now=now_iso(), result=None,
+                        error=error.to_dict(),
+                    )
+                return failed_result(instruction_id, call.instruction, error)
+            return self._settle_failure(instruction_id, call, error)
         if failures:
             error = self._projection_error(invocation, failures)
             if store is not None:
@@ -447,6 +449,20 @@ class InstructionKernel:
         if store is not None:
             store.finish(instruction_id, status="committed", now=now_iso(), result=result)
         return InstructionResult(instruction_id, call.instruction, "committed", result=result)
+
+    def _settle_failure(self, instruction_id: str, call: InstructionCall, error: InstructionError) -> InstructionResult:
+        """Record a terminal failure; a transient one leaves its idempotency key free.
+
+        A retryable failure that committed nothing (for example ``lineage.busy``)
+        is not the key's outcome: the reservation is released so the same key and
+        content run again instead of replaying the failure (decision_898b8911a2ff).
+        """
+        if self.store is not None:
+            if error.retryable and error.commit_state == "not_committed":
+                self.store.discard(instruction_id)
+            else:
+                self.store.finish(instruction_id, status="failed", now=now_iso(), error=error.to_dict())
+        return failed_result(instruction_id, call.instruction, error)
 
     def _projection_error(self, invocation: Invocation, failures: list[dict[str, Any]]) -> InstructionError:
         retryable = bool(invocation.idempotency_key and self.binding.recover_projections)

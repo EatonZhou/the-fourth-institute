@@ -74,8 +74,8 @@ def web_service_socket() -> Path:
     A Web process serves its own deployment. The shared services have none and
     use the Web whose code they run: Dev when the instance has one.
     """
-    from management_common.instance_manifest import load
-    manifest = load()
+    from management_common.instance_manifest import current_instance
+    manifest = current_instance()  # cached until the manifest file changes
     deployment = str(os.getenv("PORTAL_DEPLOYMENT") or "").strip() or ("dev" if "dev" in manifest.deployments else "release")
     return manifest.deployment_runtime(deployment) / "web-service.sock"
 
@@ -186,6 +186,25 @@ def _decode(owner: str, raw: bytes, request_id: str) -> dict[str, Any]:
     return response
 
 
+def _forbid_blind_retry(call: InstructionCall, error: InstructionError) -> None:
+    """A state change without an idempotency key may have run: do not invite a retry.
+
+    The owner keeps executing after a lost connection or a timeout. Without a
+    key a repeat would run it twice, so the caller must read the target first.
+    """
+    if error.code != "instruction.owner_unavailable" or error.commit_state != "unknown" or call.idempotency_key:
+        return
+    from .catalog import declaration
+
+    try:
+        mutates = declaration(call.instruction).mutates
+    except InstructionError:
+        return
+    if mutates:
+        error.retryable = False
+        error.details.setdefault("hint", "未带幂等键的变更指令结果未知；先读取目标对象核对结果，再决定是否重新提交")
+
+
 def call_remote(
     owner: str, call: InstructionCall, context: InstructionContext, *, timeout: float | None = None,
     instruction_id: str = "",
@@ -236,6 +255,7 @@ def call_remote(
             raise _unavailable(owner, f"{owner} 返回的结果格式无效")
         return InstructionResult.from_payload(result)
     except InstructionError as exc:
+        _forbid_blind_retry(call, exc)
         return failed_result(instruction_id, call.instruction, exc)
 
 

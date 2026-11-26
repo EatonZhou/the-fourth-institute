@@ -135,7 +135,14 @@ def watch_trigger_path(inv: Invocation) -> Iterator[list[dict[str, Any]]]:
         result = _observe(inv, trigger_path_id=inv.argument("trigger_path_id"), limit=200)
         path = result["path"]
         revision = int(path["cursor"])
-        if revision > cursor:
+        if revision < cursor:
+            # The cursor is ahead of the path (a stale or foreign cursor): waiting
+            # for it would never deliver anything. Restart from the current state.
+            cursor = revision
+            last_yield = time.monotonic()
+            yield [{"cursor": cursor, "snapshot_required": True,
+                    "change": {"type": "trigger_path.updated", **result}}]
+        elif revision > cursor:
             cursor = revision
             last_yield = time.monotonic()
             yield [{"cursor": cursor, "change": {"type": "trigger_path.updated", **result}}]
