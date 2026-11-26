@@ -1,10 +1,28 @@
 """Exercise the production registry and both sides of a Resident session reset."""
 
+from dataclasses import replace
+
 import pytest
+
+from management_portal.execution.agent_data_store import AgentDataStore
+from management_portal.execution.agent_data_projection import AgentDataProjector
+from management_portal.execution.contracts import ExecutionRequest, SessionOptions
+from management_portal.execution.session_manager import SessionManager
 
 from management_portal.execution.provider_catalog import AGENT_PROVIDERS
 from management_portal.society_service import resident_execution_domain as residents
 from tests.cases.test_antigravity import agent, context, invocation, requests
+
+
+def bound_turn(agent_id, reset):
+    manager = SessionManager(agent_data=AgentDataStore())
+    binding_id = "resident:" + agent_id
+    manager.bind_session(binding_id, provider="antigravity", backend_session_id="previous-session", backend_route_id="one")
+    req = ExecutionRequest.new(actor="sample_admin", prompt="First input", service_type="agent_session",
+                               provider="antigravity", operation="turn", agent_id=agent_id,
+                               session=SessionOptions(mode="persistent", binding_id=binding_id, backend_route_id="one"),
+                               metadata={"antigravity_session_reset": reset})
+    return manager, req
 
 
 @pytest.mark.parametrize("native_database,owner,original_portal_only", [
@@ -31,7 +49,16 @@ def test_migrate_at_next_input(agent, monkeypatch, native_database, owner, origi
     reset = residents._antigravity_session_reset(record, "one", owner)
     call = invocation(agent, "First input", sid=old_id, owner=owner)
     call.request.metadata = {"antigravity_session_reset": reset}
+    manager, req = bound_turn(record["resident_id"], reset)
+    call.session = manager.prepare(req)
+    projector = AgentDataProjector(manager.agent_data)
+    projector.begin(req, call.session)
+    projector.observe_invocation(req.execution_id, call)
     result = backend.execute(call, context()[0])
+    projector.complete(execution_id=req.execution_id, backend_route_id="one",
+                       backend_session_id=result.backend_session_id, turn_id="t", response="done", usage={})
+    manager.complete(req, call.session, result.backend_session_id)
+    assert manager.prepare(replace(req, metadata={})).backend_session_id == result.backend_session_id
     frames = requests(agent)
     prompt = next(row["params"]["prompt"][0]["text"] for row in frames if row["method"] == "session/prompt")
     assert frames[1]["method"] == "session/new" and result.backend_session_id != old_id
@@ -46,10 +73,6 @@ def test_migrate_at_next_input(agent, monkeypatch, native_database, owner, origi
 
 
 def test_refuse_stale_reset_before_any_cli_call(agent):
-    call = invocation(agent, sid="bound")
-    call.request.metadata = {"antigravity_session_reset": {
-        "session_id": "previous", "route": "one",
-    }}
+    manager, req = bound_turn("resident_111111111111", {"session_id": "wrong", "route": "one"})
     with pytest.raises(ValueError, match="binding changed"):
-        AGENT_PROVIDERS["antigravity"].build_backend().execute(call, context()[0])
-    assert not (agent / "requests.jsonl").exists()
+        manager.prepare(req)

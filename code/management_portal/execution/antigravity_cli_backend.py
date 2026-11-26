@@ -337,13 +337,6 @@ class AntigravityCliBackend:
         requested_portal_only = not self.native_tools_allowed(request)
         portal_only = created_portal_only or requested_portal_only
         user_prompt = invocation.user_prompt
-        reset = (getattr(request, "metadata", {}) or {}).get("antigravity_session_reset")
-        if reset:
-            if (request.operation != "turn" or not sid or not isinstance(reset, dict)
-                    or reset.get("route") != route or reset.get("session_id") != sid):
-                raise ValueError("Antigravity session binding changed before reset")
-            sid = ""
-            portal_only = requested_portal_only
         prompt = prompt_content(user_prompt, request.input_media) if request.operation == "turn" else []
         # session/load restores the original agent. --agent only selects it at creation.
         if sid and portal_only and not created_portal_only:
