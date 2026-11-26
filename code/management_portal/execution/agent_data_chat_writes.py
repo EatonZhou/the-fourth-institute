@@ -114,9 +114,18 @@ def _append_chat_message(
             # Several captured Provider finals can share the canonical final
             # message ID. Deliver the selected content, never an arbitrary row.
             selected = answer_text(agent_id, canonical)
-            captured = next((row for row in candidates if answer_text(agent_id, chat_payload(
-                row["segment_id"], row["metadata_json"], contents[row["segment_id"]],
-            )) == selected), None)
+            trimmed_selected = selected.strip()
+            for row in candidates:
+                candidate = answer_text(agent_id, chat_payload(
+                    row["segment_id"], row["metadata_json"], contents[row["segment_id"]],
+                ))
+                if candidate == selected:
+                    captured = row
+                    break
+                # Capture trims surrounding whitespace, while the provider
+                # result used for delivery can still include it.
+                if captured is None and candidate.strip() == trimmed_selected:
+                    captured = row
             if captured is None:
                 raise ValueError("Captured message does not match the selected content")
     extras_id = str(existing["segment_id"]) if existing else (

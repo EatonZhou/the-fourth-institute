@@ -71,6 +71,35 @@ def _deliver_captured_message(store: AgentDataStore, agent_id: str, segment_id: 
     store.project_chat_message(agent_id, message)
 
 
+def test_chat_matches_captured_final_with_surrounding_whitespace():
+    store = AgentDataStore()
+    agent_id = "resident_aaaaaaaaaaaa"
+    request = _turn_request(agent_id)
+    session = _runtime_session(request, "whitespace-session")
+    projector = AgentDataProjector(store)
+    projector.begin(request, session)
+    projector.observe_invocation(request.execution_id, _invocation(request, session), [])
+    reply = "\n\nFirst line\n\nSecond line\n"
+    segment_id = projector.complete(
+        execution_id=request.execution_id, backend_session_id="whitespace-session",
+        backend_route_id="zero", turn_id="turn-whitespace", response=reply,
+    )
+    segment = store.segment(segment_id)
+    assert segment["content"] == reply.strip()
+    message = project_message(segment_id, segment["metadata"]["message"], segment["content"])
+    with pytest.raises(ValueError, match="Captured message does not match"):
+        store.project_chat_message(agent_id, {
+            **message, "content_parts": [{"type": "text", "text": "First line\nSecond line"}],
+        })
+    parts = [{"type": "text", "text": reply}]
+    delivered, changed = store.project_chat_message(agent_id, {**message, "content_parts": parts})
+    assert changed
+    assert delivered["segment_id"] == segment_id
+    assert delivered["content_parts"] == parts
+    _, changed = store.project_chat_message(agent_id, {**message, "content_parts": parts})
+    assert not changed
+
+
 @pytest.mark.parametrize("envelope", [False, True])
 @pytest.mark.parametrize("with_media", [False, True])
 def test_chat_projects_quoted_input_after_provider_composition(tmp_path, envelope, with_media):
