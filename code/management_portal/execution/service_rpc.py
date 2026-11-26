@@ -333,12 +333,13 @@ def reassign_queued_route(server: Any, params: dict[str, Any]) -> Any:
     execution_id = required(params, "execution_id")
     actor = required(params, "actor")
     backend_route_id = required(params, "backend_route_id")
-    return server.publish_change(server.scheduler.reassign_queued_route(
+    outcome = server.scheduler.reassign_queued_route(
         execution_id,
         actor=actor,
         backend_route_id=backend_route_id,
         performed_by=_performed_by(params, actor),
-    ))
+    )
+    return outcome if outcome.get("reassigned") is False else server.publish_change(outcome)
 
 
 def acknowledge_execution(server: Any, params: dict[str, Any]) -> Any:

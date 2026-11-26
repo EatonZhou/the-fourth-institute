@@ -158,10 +158,12 @@ class ResidentLifecycleOperations:
             'DELETE FROM resident_lifecycle_operations WHERE operation_id=%s', (operation_id,),
         ))
 
-    def pending(self, resident_id: str) -> bool:
+    def pending(self, resident_id: str, *, operation_id: str | None = None) -> bool:
+        condition = ' AND operation_id=%s' if operation_id is not None else ''
+        args = (resident_id, operation_id) if operation_id is not None else (resident_id,)
         with self.store.database.read() as connection:
             return connection.execute(
-                'SELECT 1 FROM resident_lifecycle_operations WHERE resident_id=%s', (resident_id,),
+                'SELECT 1 FROM resident_lifecycle_operations WHERE resident_id=%s' + condition, args,
             ).fetchone() is not None
 
     def cancel_transfers_for_deletion(self, resident_ids):

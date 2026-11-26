@@ -563,6 +563,7 @@ def get_session_restart(inv: Invocation) -> dict[str, Any]:
         "operation": restart.get("operation", "restart"),
         "phase": restart.get("phase", ""),
         "context_result": restart.get("context_result", ""),
+        **({"cleanup_pending": restart["cleanup_pending"]} if "cleanup_pending" in restart else {}),
         "actual_binding": result.get("actual_binding") or {},
     }
 

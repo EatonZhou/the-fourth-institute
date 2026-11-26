@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 68
+  number: 70
   created_at: "2026-09-28T10:45:00Z"
   created_by:
     user: "weihao"
     agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-11-05T02:13:47Z"
+  updated_at: "2026-11-26T03:02:04Z"
   updated_by:
     user: ""
     agent: "resident_83d75ad3a6c7"
@@ -87,6 +87,17 @@ links:
 表中“免检”是默认方案的显式分类（放在“免检”节点下，固定槽对 Portal 节点判定）；默认方案给全部 A 元素分类，没有分类的 A 元素只有 Portal 管理员能调用（见 decision_600ae27b0538）。写表项的要求按表项所在的方案区分：启用方案实例中的行按上表；其他方案实例中的行，调用者要能通过 UpdatePermissionScheme。查看主体的指令（GetEffectivePermissions、CheckPermission、ListTemporaryCredentials）都要求写明 `principal_id`，查看自己也写自己的 ID，不再有“省略即自己”（weihao 2026-10-18）；它们把 `principal_id` 当作 R 树上的这个 User 或 Resident 判定，处理器不再另问其他指令：默认方案中账号本人对自己的账号有 @admin，Project 中的 Resident 对本 Project 有 @admin，个人 AMA 中的 Resident 与所有者相同，所以查看自己总能通过。默认方案把每个 User 按分类放在 P 树的 Portal 管理员、一般用户或实习用户节点下，并把“共享”上的全部动作交给 Portal 管理员节点，所以方案管理等指令默认只有 Portal 管理员满足。
 
 表中只写默认方案的要求。ListPermissionSchemes 和 ActivatePermissionScheme 另有方案之外的 Portal 管理员保底（decision_b820faf42218 §3.1）：Portal 管理员调用时永远通过，不问启用的是哪套方案，与 UpdateExecutionSettings 只改 `permission_system_enabled` 时相同（见上文）。
+
+## 临时凭证回执
+
+AcceptUserAuthorization 的 credentials、CreateTemporaryCredential、UpdateTemporaryCredential、ListTemporaryCredentials 的 credentials，以及 DeliverMessage 的 temporary_credentials 使用同一生命周期说明：
+
+- `lifetime=task`：凭证绑定 `message_id` 的输入；该输入完成、失败或取消即失效。`expires_at=null` 表示结束时刻未知，不能解释为永不过期。默认接受用户授权属于此类，后台脚本不延长其生命周期。
+- `lifetime=duration`：按明确时长签发，`expires_at` 是计划到期的 Unix 秒。AcceptUserAuthorization 仅在用户明确授权时长时接受 expires_in_seconds；直接 CreateTemporaryCredential 未绑定消息且省略时长时仍默认一天。
+- `deadline_at`：两种凭证的最迟截止 Unix 秒。任务型凭证可在此前结束；按时长凭证的 deadline_at 与 expires_at 相等。续期不超过最初签发后七天，任务型凭证不能续期。
+- 撤回、交还或当前权限变化仍可使调用提前拒绝；回执不保证后续调用一定获权。任务结束自动删除、已撤回或到期后已清理的凭证再次调用 RevokeTemporaryCredential 返回 `instruction.not_found`。同一条已失效授权消息不能重签。
+
+这些字段说明签发当时的生命周期，不推测任务结束时间，也不改变持久表项的 expires_at 截止判定。
 
 ## 来源记录
 

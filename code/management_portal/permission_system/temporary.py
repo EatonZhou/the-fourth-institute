@@ -145,8 +145,16 @@ def message_credentials(engine: Engine, *, issuer: str, recipient: str, message_
 
 
 def credential(loan: Entry) -> dict[str, Any]:
+    """Describe a live grant without mistaking its storage deadline for task completion.
+
+    The engine's expires_at remains the hard cutoff for both kinds of grant.
+    A task can end earlier at an unknown time; a receipt cannot promise that
+    the grant will survive until that cutoff (or a later background call).
+    """
     value = {"credential_id": loan.entry_id, "principal_id": loan.p, "a": loan.a, "resource_id": loan.r,
-             "issued_by": loan.issued_by, "issued_at": loan.issued_at, "expires_at": loan.expires_at}
+             "issued_by": loan.issued_by, "issued_at": loan.issued_at,
+             "lifetime": "task" if loan.message_id else "duration",
+             "deadline_at": loan.expires_at, "expires_at": None if loan.message_id else loan.expires_at}
     if loan.message_id:
         value["message_id"] = loan.message_id
     return value

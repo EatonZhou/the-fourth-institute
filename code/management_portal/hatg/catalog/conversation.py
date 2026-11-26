@@ -85,7 +85,8 @@ DECLARATIONS = (
         P("sender_id", description="消息实际以谁的身份发出：调用者自己，或它所在 Family 的门面"),
         P("recipients", "array", "发给用户时的收件人", items={"type": "object"}),
         P("temporary_credentials", "array", "随消息签发的临时凭证：credential_id、principal_id、a、resource_id、issued_by、"
-          "issued_at、expires_at、message_id", items={"type": "object"}),
+          "issued_at、lifetime=task、message_id、deadline_at（最迟截止Unix秒）、expires_at=null（任务结束时刻未知）；"
+          "输入完成、失败或取消即失效，不保证后台调用持续有权", items={"type": "object"}),
     ), mutates=True, target="resident_id",
        one_of=(("resident_id",), ("user_id",))),
     _d("ForwardMessages", (On("target_resident_id", "resident", optional=True), On("target_chatroom_id", "chatroom", optional=True)), "把选中的若干条消息整理成一条新消息，投递给 Resident 或发到聊天室。", (
@@ -196,9 +197,12 @@ DECLARATIONS = (
     ), target="resident_id"),
     _d("ClearContext", ON_RESIDENT, "提交上下文重置并归档当前对话；后续输入待清理完成后从新的模型上下文开始，Resident 身份保持不变。此操作不保证删除 Provider 端保留的会话历史。", (
         R("resident_id", description="要清除上下文的 Resident"),
+        P("active_execution_policy", description="reject（默认）在任务排队或运行时拒绝；wait 允许当前轮结束，在下一条输入提交前清空，保留排队消息及原账号。", enum=("reject", "wait")),
     ), (
         R("cleanup_pending", "boolean", "归档对话与释放旧会话绑定已排队；新输入可排队等待清理，不表示 Provider 端历史已删除"),
-        R("operation_id", description="这次后续清理的生命周期操作 ID"),
+        R("operation_id", description="本次操作 ID。wait 返回等待回执 ID，立即清空返回清理生命周期 ID"),
+        P("restart_id", description="wait 的稳定等待回执 ID。GetSessionRestart 按 resident_id 查询；取消时传 resident_id 和此 ID，仍须有 ClearContext 管理权限"),
+        P("status", description="wait 受理返回 accepted；GetSessionRestart 返回等待、已清空、失败或取消的进度"),
     ), mutates=True, target="resident_id"),
     _d("AbsorbContext", (On("source_resident_id", "resident"), On("target_resident_id", "resident")), "让目标 Resident 吸收来源 Resident 在 Fork 之后的讨论和工作理解。", (
         R("source_resident_id", description="来源 Resident：吸收它在 Fork 之后的讨论和工作理解"),

@@ -90,6 +90,8 @@ def test_replay_keeps_one_batch_and_terminal_input_ends_it(delivery):
     second = conversation.deliver_message(delivery.inv)
     assert len(loans(delivery)) == 3
     assert first["temporary_credentials"] == second["temporary_credentials"]
+    assert all(c["lifetime"] == "task" and c["expires_at"] is None
+               and c["deadline_at"] > c["issued_at"] for c in first["temporary_credentials"])
     assert {entry["message_id"] for entry in loans(delivery)} == {delivery.message_id}
     assert all(delivery.permissions.holds(delivery.resident, item["a"], item["resource_id"]) for item in delivery.requests)
     delivery.repository.set_input_state(delivery.resident, delivery.message_id, "failed")

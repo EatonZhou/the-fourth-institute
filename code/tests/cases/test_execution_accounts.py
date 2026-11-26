@@ -475,6 +475,20 @@ def test_reroute_updates_native_options_with_route_before_dispatch(provider):
     assert saved["runtime_options"] == {"provider_profile": "beta", "model": "keep-model"}
     assert accounts.for_request(saved).route_id == "beta"
 
+    # A claimed request, including one later requeued for recovery, cannot move.
+    for status in ("claimed", "queued"):
+        with scheduler.changes.connect() as connection:
+            connection.execute(
+                "UPDATE executions SET status=%s, attempts=1 WHERE execution_id=%s",
+                (status, incoming.execution_id),
+            )
+            connection.commit()
+        result = scheduler.reassign_queued_route(
+            incoming.execution_id, actor="test-actor", backend_route_id="alpha",
+        )
+        assert result == {"execution_id": incoming.execution_id, "reassigned": False, "reason": "not_unstarted"}
+        assert scheduler.snapshot(incoming.execution_id)["request"]["session"]["backend_route_id"] == "beta"
+
 
 def test_public_account_rpcs_share_catalog_monitor_and_usage_schema():
     """公开账号 RPC 的解析、列表和用量共用同一账号目录与用量 schema"""

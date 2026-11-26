@@ -162,6 +162,68 @@ def _clear(resident_id: str, monkeypatch, *, expected_releases: int = 1) -> dict
     return resident_record_domain.find_resident(resident_id)
 
 
+@pytest.mark.parametrize("cancel", [False, True])
+def test_waiting_clear_preserves_next_input_and_reuses_receipt(future_creation_store, monkeypatch, cancel):
+    """Wait clears at a durable boundary; a cancelled wait never archives anything."""
+    from management_portal.society_service import resident_deferred_restart, resident_execution_work
+
+    record = resident_domain.register_resident(_new_session_payload("Waiting clear"), "sample_admin")
+    rid = record["resident_id"]
+    _append_conversation_turn(rid, 0)
+    job = {"execution_id": "execution-running", "user_message_id": "msg_original",
+           "submitted_at": "2026-11-26T00:00:00Z"}
+    monkeypatch.setattr(resident_execution_work, "read", lambda _: job)
+    monkeypatch.setattr(resident_execution_work, "clear", lambda *_: pytest.fail("the queued input must survive"))
+    monkeypatch.setattr("management_portal.society_service.resident_restart_handoff.advance", lambda _: False)
+    monkeypatch.setattr("management_portal.society_service.resident_execution_domain.resume_resident_execution", lambda _: None)
+    args = {"active_execution_policy": "wait", "idempotency_key": "wait-clear-test"}
+    receipt = resident_domain.reset_resident_context(rid, "sample_admin", **args)
+    assert receipt["phase"] == "waiting_current_execution"
+    assert resident_domain.reset_resident_context(rid, "sample_admin", **args) == receipt
+    waiting = resident_record_domain.find_resident(rid)
+    assert not waiting.get("context_reset_at")
+    assert waiting["intake_open"] is False
+    resident_deferred_restart.advance(waiting)
+    assert not resident_record_domain.find_resident(rid).get("context_reset_at")
+    job.clear()
+    job.update(execution_id="execution-next", user_message_id="msg_next",
+               queue=[{"message_id": "msg_later"}])
+    next_input = dict(job)
+    assert resident_deferred_restart.blocks_new_execution(waiting, job)
+    if cancel:
+        from management_portal import permission_system
+        allows = permission_system.allows
+        with monkeypatch.context() as restricted:
+            restricted.setattr(permission_system, "allows",
+                               lambda actor, name, args: name != "ClearContext" and allows(actor, name, args))
+            with pytest.raises(PermissionError, match="ClearContext"):
+                resident_domain.cancel_resident_session_restart(rid, "sample_admin", receipt["restart_id"])
+        resident_domain.cancel_resident_session_restart(rid, "sample_admin", receipt["restart_id"])
+    else:
+        # Reconcile from durable state after the previous execution has settled.
+        resident_deferred_restart.reconcile([waiting])
+    after = resident_record_domain.find_resident(rid)
+    assert after["intake_open"] is True
+    assert after.get("backend_route_id") == record.get("backend_route_id")
+    assert after["session_restart"]["restart_id"] == receipt["restart_id"]
+    assert after["session_restart"]["status"] == ("cancelled" if cancel else "completed")
+    assert bool(after.get("context_reset_at")) is (not cancel)
+    assert job == next_input
+    assert resident_deferred_restart.blocks_new_execution(after, job) is (not cancel)
+    if not cancel:
+        from management_portal.society_service import resident_execution_engine_domain, resident_restart_handoff
+        with pytest.raises(resident_restart_handoff.ExecutionHandedOff):
+            resident_execution_engine_domain.bind_or_resume_resident_execution(None, None, waiting, job)
+        monkeypatch.setattr(resident_session_backend_domain, "run_backend_session_operation", lambda **_: {})
+        cleanup = after["session_restart"]["cleanup_operation_id"]
+        assert resident_lifecycle_steps_domain.resume_resident_lifecycle_operation(cleanup)
+        assert not resident_deferred_restart.blocks_new_execution(after, job)
+        assert not get_agent_data_store().read_chat_messages(rid)
+        assert job == next_input
+        with pytest.raises(resident_restart_handoff.ExecutionHandedOff):
+            resident_execution_engine_domain.bind_or_resume_resident_execution(None, None, waiting, job)
+
+
 def test_a_cleared_resident_forks_with_an_empty_context(future_creation_store, monkeypatch) -> None:  # noqa: F811
     """已清空的 Resident Fork 出的上下文为空"""
     source = resident_domain.register_resident(_new_session_payload("Clear fork fixture"), "sample_admin")

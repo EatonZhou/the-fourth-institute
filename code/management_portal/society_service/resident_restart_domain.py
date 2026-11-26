@@ -296,6 +296,13 @@ def get_resident_restart_options(
 def _current_restart_view(record: Mapping[str, Any], binding: Mapping[str, Any]) -> dict[str, Any]:
     """Project consumption without rewriting the immutable selection receipt."""
     view = copy.deepcopy(record.get("session_restart") or {})
+    if view.get("operation") == "clear_context":
+        view.pop("context_before_clear", None)
+        if view.get("status") == "completed":
+            view["cleanup_pending"] = resident_record_domain.lifecycle_operations().pending(
+                resident_domain_common.record_resident_id(record), operation_id=view.get("cleanup_operation_id", ""),
+            )
+        return view
     if view.get("context_strategy") == "preserve" and view.get("context_result") == "pending_first_input":
         if view.get("context_reset_at", "") != str(record.get("context_reset_at") or ""):
             view.update(context_result="discarded", handoff_state="discarded")
@@ -713,21 +720,25 @@ def _settle_active_work(
             and target.source_provider == target.provider
             and bool(target.route)
             and bool(candidate_execution_id)
-            and str(current_job.get("status") or "") != "running"
         )
-        if not can_preserve_queued_execution:
-            from .resident_deferred_restart import schedule
-            return _ActiveWork(record, scheduled=schedule(
-                record, actor_id, body, source, intent, portal_reason=portal_reason,
-                model_operation=prepare_session and intent["context_strategy"] in {"compact", "visible"},
-            ))
-        execution_port.service().reassign_queued_route(
-            candidate_execution_id,
-            actor=resident_execution_work.request_actor(current_job),
-            backend_route_id=target.route,
-            performed_by=actor_id,
-        )
-        return _ActiveWork(record, reassigned_execution_id=candidate_execution_id)
+        if can_preserve_queued_execution:
+            outcome = execution_port.service().reassign_queued_route(
+                candidate_execution_id,
+                actor=resident_execution_work.request_actor(current_job),
+                backend_route_id=target.route,
+                performed_by=actor_id,
+            )
+            if outcome.get("execution_id") != candidate_execution_id:
+                raise RuntimeError("Execution account reassignment receipt is missing or mismatched")
+            if outcome.get("reassigned") is not False:
+                return _ActiveWork(record, reassigned_execution_id=candidate_execution_id)
+            if outcome.get("reason") != "not_unstarted":
+                raise RuntimeError("Execution account reassignment returned an unknown outcome")
+        from .resident_deferred_restart import schedule
+        return _ActiveWork(record, scheduled=schedule(
+            record, actor_id, body, source, intent, portal_reason=portal_reason,
+            model_operation=prepare_session and intent["context_strategy"] in {"compact", "visible"},
+        ))
     resident_execution_domain.request_resident_execution_cancellation(
         resident_id,
         actor_id,
@@ -761,6 +772,9 @@ def _check_unchanged_since_admission(
 ) -> None:
     """Under the Resident lock: the configuration, session and work the restart was admitted for still stand."""
 
+    from .resident_deferred_restart import waiting_to_clear
+    if waiting_to_clear(current):
+        raise ValueError("已有等待本轮结束的上下文清空")
     current_binding = resident_backend.session_record(current, expected_binding=restart.source_binding)
     if preservation.configuration_version(current) != restart.source_configuration:
         raise ValueError("Resident configuration changed before session preparation")
@@ -1146,11 +1160,17 @@ def _cancel_session_restart(
                 code="resident.session_restart_changed",
                 restart=state,
             )
+        if state.get("operation") == "clear_context":
+            from management_portal import permission_system
+            if not permission_system.allows(actor_id, "ClearContext", {"resident_id": resident_id}):
+                raise PermissionError("取消上下文清空需要 ClearContext 管理权限")
         from .resident_deferred_restart import cancel as cancel_deferred
         cancelled = cancel_deferred(current, expected_restart_id)
         if cancelled is not None:
+            cancelled.pop("context_before_clear", None)
             return cancelled
         if state.get("status") == "cancelled":
+            state.pop("context_before_clear", None)
             return state
         if state.get("status") not in {"accepted", "cancelling"}:
             raise ValueError("当前没有可取消的 Session 迁移")

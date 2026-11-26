@@ -109,6 +109,32 @@ def test_explicit_duration_survives_task_but_cannot_be_changed_by_replay(grants)
         accept(grants, expires_in_seconds=240)
 
 
+def test_task_deadline_is_enforced_even_without_terminal_cleanup(grants):
+    receipt = accept(grants, RESOURCES[:1])["credentials"][0]
+    with grants.store.read() as connection:
+        loan, = grants.store.entries(connection, where="entry_id=%s", parameters=(receipt["credential_id"],))
+    assert receipt["expires_at"] is None
+    assert loan.expires_at == receipt["deadline_at"]
+    assert loan.live(receipt["deadline_at"] - 0.001)
+    assert not loan.live(receipt["deadline_at"])
+
+
+def test_credential_schema_explains_task_and_duration_receipts():
+    from management_portal.hatg.catalog import declaration
+
+    create = {field.name: field for field in declaration("CreateTemporaryCredential").result}
+    assert create["expires_at"].type == "any"
+    assert "null" in create["expires_at"].description
+    assert create["deadline_at"].type == "number"
+    assert set(create["lifetime"].enum) == {"task", "duration"}
+    for name, field_name in [("AcceptUserAuthorization", "credentials"),
+                             ("ListTemporaryCredentials", "credentials"),
+                             ("DeliverMessage", "temporary_credentials")]:
+        field = next(f for f in declaration(name).result if f.name == field_name)
+        assert all(word in field.description for word in ("deadline_at", "null", "完成", "失败", "取消"))
+    assert "instruction.not_found" in declaration("RevokeTemporaryCredential").description
+
+
 def test_consumed_source_is_bound_to_primary_task_and_cannot_cross_tasks(grants):
     result = accept(grants, bound_input_message_id="msg_primary")
     assert all(c["message_id"] == "msg_primary" for c in result["credentials"])

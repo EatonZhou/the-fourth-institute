@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-10-16'
 version:
-  number: 91
+  number: 93
   created_at: "2026-10-16T09:28:31Z"
   created_by:
     user: "weihao"
     agent: "resident_0d928ae486ba"
-  updated_at: "2026-11-05T16:01:45Z"
+  updated_at: "2026-11-26T03:02:04Z"
   updated_by:
     user: ""
-    agent: "resident_2e9ea0072551"
+    agent: "resident_83d75ad3a6c7"
 importance: 9
 metaness: 3
 ai_generated: false
@@ -310,6 +310,8 @@ weihao 2026-10-18 定稿。5.1 至 5.3、5.5 与 5.6 已实现，第 3 节按实
 | 按时长 | 按 `expires_in_seconds` 签发，默认一天 | 到期；到期前签发者可以用 UpdateTemporaryCredential 续期 |
 
 - 两种方式都有 7 天的兜底上限：随任务的凭证在消息长时间未处理完时，最迟 7 天后失效；续期后的总时长也不超过从签发起 7 天。
+- 凭证回执区分生命周期和时间上限：`lifetime=task` 绑定 `message_id`，输入完成、失败或取消即失效；任务结束时刻未知，所以 `expires_at` 为 null。`lifetime=duration` 的 `expires_at` 是计划到期时间。两种回执的 `deadline_at` 都是最迟截止时间，不承诺此前持续有效。表项中的 `expires_at` 仍存储截止上限，供引擎判定，不能当作任务结束时间。
+- 回执不是后台工作持续获权的保证。签发者撤回、接收者交还或权限状态变化后仍须按当前权限判定。任务结束自动删除或已撤回的凭证再次撤销返回 not_found；按时长到期后已被清理的凭证同样如此。调用者不得据此重签或延长授权。
 - 随任务的凭证可能在事情真正做完前失效，例如 B 把后续工作安排到以后的轮次。这时 B 被拒绝，再向 A 申请或请 A 按时长签发；提前失效不会多给出权限。
 - **用户在对话中交出权限。** Resident 缺少用户持有的权限时，在提问卡片的问题中列出所需的 `{a, resource_id}`（decision_1e2eb869bc10）；用户点“同意交出这些权限”，浏览器以用户本人身份调用 DeliverMessage，把这些凭证随回答消息签发，凭证在 Resident 处理完这条回答时结束。Resident 不能凭消息文字替用户签发。回答带的凭证必须正好是所同意问题列出的权限，多给、少给或在别人的问题组上同意都被拒绝。2026-10-24 weihao 确定：用户的操作都应能在对话中完成，不再要求用户另行签发。
 

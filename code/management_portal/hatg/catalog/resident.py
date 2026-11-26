@@ -276,7 +276,7 @@ DECLARATIONS = (
     ), mutates=True, target="resident_id"),
     _d("RestartSession", ON_RESIDENT, "切换 Resident 后端或账号，复用完整 Fork 上下文继承；保存配置不调用模型，首条新消息交付历史。", (
         R("resident_id", description="要切换的 Resident"),
-        P("operation", description="switch_account切换账号并保留上下文；restart显式重新开始会话", enum=("switch_account", "restart")),
+        P("operation", description="switch_account 改选账号；restart 显式重建会话。两者都保留有效上下文；要从空上下文开始，另用 ClearContext", enum=("switch_account", "restart")),
         P("provider", description="目标 Provider；省略时保持当前 Provider", enum=(*PROVIDERS, "provider_api")),
         P("account_id", description="固定目标 Provider 账号；按额度自动选择时省略"),
         P("account_selection", description="原生后端账号策略：auto 按目标模型和额度选账号，不能同时指定 account_id；fixed 固定账号", enum=("auto", "fixed")),
@@ -291,7 +291,7 @@ DECLARATIONS = (
         P("active_execution_policy", description="有正在进行的轮次时：wait 等本轮结束再切换（默认），cancel 先取消它",
           enum=("wait", "cancel")),
     ), (
-        R("restart_id", description="这次重启的 ID，供 GetSessionRestart、CancelSessionRestart 使用"),
+        R("restart_id", description="本次重启 ID。GetSessionRestart 只按 resident_id 查询；CancelSessionRestart 传 resident_id 和此 ID"),
         R("status", description="当前进度"),
         P("operation_id", description="稳定操作ID；相同账号无操作时为空"),
         P("operation", description="switch_account 或 restart"),
@@ -299,20 +299,21 @@ DECLARATIONS = (
         P("context_result", description="pending_first_input 表示首条新消息时交接；unchanged 表示无变更；历史回执保留原值"),
         P("actual_binding", "object", "当前实际使用的绑定；失败时保留原绑定"),
     ), mutates=True, target="resident_id"),
-    _d("GetSessionRestart", ON_RESIDENT, "读取 Resident 最近一次会话重启的进度。", (R("resident_id", description="要查看的 Resident"),), (
-        P("restart_id", description="最近一次重启的 ID；从未重启时为空"),
+    _d("GetSessionRestart", ON_RESIDENT, "按 Resident 读取最近的会话重启、账号切换或等待清空上下文操作。", (R("resident_id", description="要查看的 Resident"),), (
+        P("restart_id", description="最近的会话操作 ID，用于核对回执或取消等待；无操作时为空"),
         R("status", description="accepted、cancelling、completed、failed 或 cancelled；从未重启时为 none"),
         P("source_session", "object", "原会话：provider、account_id、has_session、backend_session_id 等"),
         P("target_session", "object", "目标 {provider, account_id}；从未重启时为空"),
         P("operation_id", description="最近一次操作的稳定ID"),
-        P("operation", description="switch_account 或 restart"),
+        P("operation", description="switch_account、restart 或 clear_context"),
         P("phase", description="操作当前阶段"),
         P("context_result", description="当前上下文处理结果；没有观察时为空"),
         P("actual_binding", "object", "当前实际绑定，独立于操作原始source/target"),
+        P("cleanup_pending", "boolean", "已提交清空边界后仍在归档和释放旧会话时为 true"),
     ), target="resident_id"),
-    _d("CancelSessionRestart", ON_RESIDENT, "取消一次尚未完成的会话重启，保留原会话。", (
-        R("resident_id", description="正在重启会话的 Resident"),
-        R("restart_id", description="要取消的重启，取 RestartSession 返回的 restart_id"),
+    _d("CancelSessionRestart", ON_RESIDENT, "取消等待中的会话操作，保留原会话。取消等待清空仍须有 ClearContext 管理权限。", (
+        R("resident_id", description="会话操作所属 Resident"),
+        R("restart_id", description="取 RestartSession 或 ClearContext(wait) 返回的 restart_id"),
     ), (R("restart_id", description="被取消的重启"),
         R("status", description="cancelling 正在取消，或 cancelled 已取消"),), mutates=True, target="resident_id"),
     _d("BindWorkspace", ON_RESIDENT, "为 Resident 绑定一个已存在的工作目录。", (

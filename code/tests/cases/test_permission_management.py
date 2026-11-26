@@ -169,7 +169,9 @@ def test_temporary_credentials_are_rows_that_end_with_their_task_or_time(world, 
     with pytest.raises(PermissionError, match="处理中"):
         call("CreateTemporaryCredential", "alice", principal_id=resident, a="@admin", resource_id=LINEAGE, message_id="msg_done")
     task = call("CreateTemporaryCredential", "alice", principal_id=resident, a="@admin", resource_id=LINEAGE, message_id="msg_task")
-    assert task["message_id"] == "msg_task" and task["expires_at"] - task["issued_at"] == pytest.approx(7 * 24 * 3600, abs=5)
+    assert task["message_id"] == "msg_task" and task["lifetime"] == "task"
+    assert task["expires_at"] is None
+    assert task["deadline_at"] - task["issued_at"] == pytest.approx(7 * 24 * 3600, abs=5)
     assert world.holds(resident, "@admin", LINEAGE)
     with world.store.read() as connection:
         lent = world.store.entries(connection, where="issued_by = 'alice'")
@@ -186,6 +188,7 @@ def test_temporary_credentials_are_rows_that_end_with_their_task_or_time(world, 
         call("UpdateTemporaryCredential", "carol", credential_id=timed["credential_id"], expires_in_seconds=3600)
     renewed = call("UpdateTemporaryCredential", "alice", credential_id=timed["credential_id"], expires_in_seconds=7 * 24 * 3600)
     assert renewed["expires_at"] == pytest.approx(timed["issued_at"] + 7 * 24 * 3600, abs=1)
+    assert renewed["lifetime"] == "duration" and renewed["deadline_at"] == renewed["expires_at"]
     world.administrator("dave")
     for outsider in ("bob", "dave"):
         with pytest.raises(PermissionError, match="签发者或接收者"):

@@ -70,6 +70,39 @@ def test_manual_close_override_and_missing_owner_are_distinct(catalog, scheduler
     assert '确认' in items[1]['controls']['send_hint']
 
 
+@pytest.mark.parametrize('bound', [False, True])
+def test_waiting_restart_keeps_current_account_on_closed_gate(catalog, monkeypatch, bound):
+    """Closing intake for a pending switch must not hide the source account."""
+    from management_portal.society_service import resident_execution_gate
+
+    rid = populate(1, routes=[('codex', 'one')])[0]
+    store = resident_catalog.get_catalog().state_store
+    record = store.resident_record(rid)
+    if bound:
+        register_session(record, 'waiting-restart-source', backend_route_id='two')
+    record['intake_open'] = False
+    record['session_restart'] = {
+        'status': 'accepted', 'phase': 'waiting_current_execution',
+        'target': {'provider': 'codex', 'account_id': 'codex_one'},
+    }
+    store.put_resident_record(rid, record, commit_intake=True)
+    before = store.resident_record(rid)
+
+    def forbidden():
+        raise AssertionError('closed intake needs no Scheduler quota RPC')
+
+    monkeypatch.setattr(execution_port, 'service', forbidden)
+    snapshot = {'state': {'intake_state': 'closed', 'work_state': 'running'}}
+    projected = resident_execution_gate.project_states(
+        {rid: snapshot}, resident_records={rid: before})[rid]
+    assert projected['state']['execution_gate'] == {
+        'state': 'closed', 'reason': 'manual',
+        'account_id': 'codex_two' if bound else 'codex_one',
+    }
+    assert snapshot == {'state': {'intake_state': 'closed', 'work_state': 'running'}}
+    assert store.resident_record(rid) == before
+
+
 def test_quota_gate_rpc_and_read_access_batch(catalog, scheduler, monkeypatch):
     ids = populate(5, hidden=(4,), routes=[('codex', 'one')])
     scheduler.configure_capacity('codex:one', 8, 0, 0, actor=ACTOR, close_threshold={'value': 2, 'unit': '%'})

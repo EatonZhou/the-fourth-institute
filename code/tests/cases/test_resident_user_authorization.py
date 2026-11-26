@@ -76,6 +76,33 @@ def loans(active):
     return permission_system.manage("ListTemporaryCredentials", {"principal_id": active.resident}, actor="lender")["credentials"]
 
 
+@pytest.mark.parametrize("terminal", ["completed", "failed", "cancelled"])
+@pytest.mark.parametrize("seconds", [None, 120], ids=["task", "duration"])
+def test_authorization_receipt_reports_lifetime_without_predicting_task_end(active, terminal, seconds):
+    if seconds is not None:
+        active.arguments["expires_in_seconds"] = seconds
+    first = conversation.accept_user_authorization(active.inv)
+    credential = first["credentials"][0]
+    assert credential["lifetime"] == ("task" if seconds is None else "duration")
+    assert credential["deadline_at"] - credential["issued_at"] == pytest.approx(seconds or 604800)
+    assert credential["expires_at"] == (None if seconds is None else credential["deadline_at"])
+    if seconds is None:
+        assert credential["message_id"] == MESSAGE
+    else:
+        assert "message_id" not in credential
+    replay = conversation.accept_user_authorization(active.inv)
+    assert replay["credentials"] == first["credentials"]
+    assert loans(active) == [{**credential, "direction": "received"}]
+    active.repository.set_input_state(active.resident, MESSAGE, terminal)
+    assert active.permissions.holds(active.resident, REQUEST["a"], REQUEST["resource_id"]) == (seconds is not None)
+    if seconds is None:
+        assert loans(active) == []
+        with pytest.raises(KeyError):
+            permission_system.manage("RevokeTemporaryCredential", {"credential_id": credential["credential_id"]}, actor="lender")
+    else:
+        assert permission_system.manage("RevokeTemporaryCredential", {"credential_id": credential["credential_id"]}, actor="lender") == {"revoked": credential["credential_id"]}
+
+
 @pytest.mark.parametrize('active', ['weixin', 'telegram'], indirect=True)
 def test_channel_input_keeps_the_users_authorization(active):
     result = conversation.accept_user_authorization(active.inv)

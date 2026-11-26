@@ -883,7 +883,7 @@ def bind_or_resume_resident_execution(
     record: dict[str, Any],
     job: dict[str, Any],
 ) -> str:
-    from . import directory_execution_admission
+    from . import directory_execution_admission, resident_deferred_restart, resident_restart_handoff
     resident_id = resident_domain_common.record_resident_id(record)
     # Same ordering as directory mutations: Resident state, then admission.
     # Keep the guard through recording submission, including recovery/resume.
@@ -891,6 +891,11 @@ def bind_or_resume_resident_execution(
         current = resident_record_domain.find_resident(resident_id)
         if not current:
             raise RuntimeError('Resident disappeared before Execution submission')
+        if not resident_execution_work.submitted_execution_id(job) and (
+            resident_deferred_restart.blocks_new_execution(current, job)
+            or (current.get("context_reset_at") or "") != (record.get("context_reset_at") or "")
+        ):
+            raise resident_restart_handoff.ExecutionHandedOff()
         paths = (*resident_lifecycle_domain.resident_execution_paths(current, job),
                  getattr(request, 'cwd', ''))
         with directory_execution_admission.admit(paths):

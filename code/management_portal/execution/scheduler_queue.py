@@ -245,15 +245,13 @@ class ExecutionQueue:
             raise ValueError("backend route id is required")
         with self.changes.connect() as connection:
             row = connection.execute(
-                'SELECT actor, status, request_json FROM executions WHERE execution_id = %s FOR UPDATE',
+                'SELECT actor, status, request_json, attempts, owner_worker_id, cancel_requested, checkpoint_json '
+                'FROM executions WHERE execution_id = %s FOR UPDATE',
                 (execution_id,),
             ).fetchone()
             if row is None or str(row["actor"]) != actor:
                 connection.rollback()
                 raise KeyError(execution_id)
-            if str(row["status"]) != "queued":
-                connection.rollback()
-                raise ValueError("only queued executions can change account")
             request = json_object(row["request_json"])
             session = request.get("session") if isinstance(request.get("session"), dict) else {}
             if (
@@ -261,6 +259,10 @@ class ExecutionQueue:
             ):
                 connection.rollback()
                 raise ValueError("only queued agent executions can change account")
+            if (row["status"] != "queued" or row["attempts"] or row["owner_worker_id"]
+                    or row["cancel_requested"] or json_object(row["checkpoint_json"])):
+                connection.rollback()
+                return {"execution_id": execution_id, "reassigned": False, "reason": "not_unstarted"}
             previous_route_id = str(session.get("backend_route_id") or "")
             request = self.accounts.reroute(request, route_id)
             normalized = ExecutionRequest.from_payload(request).to_payload()

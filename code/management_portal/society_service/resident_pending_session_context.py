@@ -4,21 +4,28 @@ from collections.abc import Mapping
 from . import resident_backend
 
 
+def context_operation(record: Mapping) -> Mapping:
+    state = record.get("session_restart") or {}
+    if state.get("operation") == "clear_context":
+        return state.get("context_before_clear") or {}
+    return state
+
+
 def context_seed(record: Mapping, prompt: str, *, accepted: bool) -> dict:
     """Validate the handoff's lifetime before using or suppressing its material.
 
     The lifecycle owner replaces this record on each account selection. Delivery
     never clears it: a failed request must retain the same frozen material.
     """
-    pending = (record.get("session_restart") or {}).get("pending_handoff")
+    state = context_operation(record)
+    pending = state.get("pending_handoff")
     if not isinstance(pending, Mapping):
         raise ValueError("Pending session handoff is malformed")
     operation = pending.get("operation_id")
-    if not operation or operation != (record.get("session_restart") or {}).get("restart_id"):
+    if not operation or operation != state.get("restart_id"):
         raise ValueError("Pending session handoff operation has changed")
     # Read-only compatibility for an already committed pre-v2 handoff.
     # New requests cannot select these strategies; never regenerate its material.
-    state = record.get("session_restart") or {}
     legacy = (state.get("configuration_only") is True and state.get("status") == "completed"
               and pending.get("strategy") in {"compact", "visible"}
               and state.get("context_strategy") == pending.get("strategy"))

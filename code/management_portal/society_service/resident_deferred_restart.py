@@ -10,7 +10,23 @@ def pending(record):
     return (record.get("session_restart") or {}).get("deferred") or {}
 
 
-def schedule(record, actor, payload, source, intent, *, model_operation: bool, portal_reason=""):
+def waiting_to_clear(record):
+    state = record.get("session_restart") or {}
+    return state.get("operation") == "clear_context" and bool(pending(record))
+
+
+def blocks_new_execution(record, job):
+    """Let a submitted round settle while fencing any new submission."""
+    if resident_execution_work.submitted_execution_id(job):
+        return False
+    from . import resident_record_domain
+    return waiting_to_clear(record) or bool(
+        record.get("context_reset_at")
+        and resident_record_domain.lifecycle_operations().pending(record["resident_id"])
+    )
+
+
+def schedule(record, actor, payload, source, intent, *, model_operation: bool = False, portal_reason=""):
     from . import resident_domain_common, resident_input_queue_domain, resident_record_domain
     from .resident_session_preservation import request_signature, check_replay
     rid = record["resident_id"]
@@ -31,6 +47,11 @@ def schedule(record, actor, payload, source, intent, *, model_operation: bool, p
         state.update(operation=intent.get("operation", "restart"), operation_id=state["restart_id"],
                      request_signature=request_signature(payload), context_result="pending",
                      model_operation=model_operation)
+        if state["operation"] == "clear_context":
+            from .resident_pending_session_context import context_operation
+            previous_context = context_operation(current)
+            if previous_context.get("pending_handoff"):
+                state["context_before_clear"] = copy.deepcopy(previous_context)
         if portal_reason:
             state["reason"] = portal_reason
         def commit():
@@ -46,7 +67,7 @@ def schedule(record, actor, payload, source, intent, *, model_operation: bool, p
         return copy.deepcopy(state)
 
 
-def _release(record, pending):
+def release(record, pending):
     from . import resident_input_queue_domain, resident_record_domain
     def commit():
         from .resident_restart_handoff import restore_preparation
@@ -67,7 +88,7 @@ def cancel(record, restart_id):
         raise ValueError('排队执行正在交接，请在回执确认后取消迁移')
     state = {**state, "status": "cancelled", "phase": "cancelled", "context_result": "unchanged"}
     record["session_restart"] = state
-    _release(record, deferred)
+    release(record, deferred)
     return copy.deepcopy(state)
 
 
@@ -86,12 +107,12 @@ def advance(record):
         execute_key = deferred["payload"]["idempotency_key"]
         if (state.get("execution_request_id") or state.get("request_id")) == execute_key:
             if state.get("status") in {"completed", "cancelled", "failed"}:
-                _release(current, deferred)
+                release(current, deferred)
                 return False
             return True
         if state.get("request_id") != deferred.get("request_id"):
             # A newer human migration takes precedence.
-            _release(current, deferred)
+            release(current, deferred)
             return False
         job = resident_execution_work.read(current)
         needs_handoff = (resident_execution_work.is_active(job)
@@ -101,6 +122,9 @@ def advance(record):
         if not handoff_unstarted_input(current):
             return False  # claimed/running work still finishes on its original route
     try:
+        if state.get("operation") == "clear_context":
+            from .resident_management_domain import apply_deferred_context_clear
+            return apply_deferred_context_clear(rid, deferred["request_id"])
         receipt = resident_domain_port.restart_resident_session(
             rid, deferred["actor"], deferred["payload"], portal_reason=str(state.get("reason") or ""),
         )
@@ -110,14 +134,14 @@ def advance(record):
             if pending(current).get("request_id") != deferred["request_id"]:
                 return False
             current["session_restart"] = {**(current.get("session_restart") or {}), "status": "failed", "phase": "failed", "error": str(exc)}
-            _release(current, deferred)
+            release(current, deferred)
         return False
     with resident_record_domain.state_lock(rid):
         current = copy.deepcopy(resident_record_domain.find_resident(rid) or {})
         if pending(current).get("request_id") == deferred["request_id"]:
             current["session_restart"]["deferred"]["phase"] = "migrating"
             if receipt.get("status") in {"completed", "cancelled", "failed"}:
-                _release(current, deferred)
+                release(current, deferred)
             else:
                 resident_record_domain.save_resident_record(current)
     return receipt.get("status") == "accepted"

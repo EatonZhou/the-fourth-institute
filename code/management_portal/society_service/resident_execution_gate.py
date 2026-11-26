@@ -50,14 +50,14 @@ def project_states(snapshots, *, resident_records=None):
     for rid, snapshot in snapshots.items():
         if snapshot['state'].get('intake_state') == 'closed':
             gates[rid] = {'state': 'closed', 'reason': 'manual'}
-        elif not records.get(rid):
+        if not records.get(rid):
             # The identity can disappear between the state and catalog reads.
             # Never substitute the installation's default account for it.
-            gates[rid] = {'state': 'unknown', 'reason': 'account_unavailable'}
+            gates.setdefault(rid, {'state': 'unknown', 'reason': 'account_unavailable'})
         elif family_facade.is_facade(records[rid]):
             # A facade never submits model execution. Its retained backend is
             # not an admission gate; Family role health is projected separately.
-            gates[rid] = {'state': 'open', 'reason': ''}
+            gates.setdefault(rid, {'state': 'open', 'reason': ''})
         else:
             targets[rid] = records.get(rid, {})
     requests = {}
@@ -69,7 +69,13 @@ def project_states(snapshots, *, resident_records=None):
                 try:
                     account = resident_backend.account_id(record, binding=routes.get(binding, {}))
                 except (ValueError, KeyError):
-                    gates[rid] = {'state': 'unknown', 'reason': 'account_unavailable'}
+                    gates.setdefault(rid, {'state': 'unknown', 'reason': 'account_unavailable'})
+                    continue
+                if rid in gates:
+                    # Waiting for a session switch closes intake while the
+                    # current binding still runs. Its account remains visible;
+                    # the pending target is not the executing account.
+                    gates[rid]['account_id'] = account
                     continue
                 requests[binding] = account
         entries = list(requests.items())

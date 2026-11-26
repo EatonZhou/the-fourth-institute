@@ -575,6 +575,7 @@ def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> No
 def _claim_job(resident_id: str, continuation_id: str, claimed: _ContinuationJob) -> bool:
     """Read the continuation's Job and bind its backend; False when the continuation has nothing to run."""
 
+    from .resident_deferred_restart import blocks_new_execution
     with resident_record_domain.state_lock(resident_id):
         record = resident_record_domain.find_resident(resident_id) or {}
         if not record:
@@ -583,7 +584,7 @@ def _claim_job(resident_id: str, continuation_id: str, claimed: _ContinuationJob
         if (not resident_execution_work.matches_continuation(job, continuation_id)
                 or resident_execution_work.is_execution_held(job)):
             return False
-        if resident_restart_handoff.pending(record, job):
+        if resident_restart_handoff.pending(record, job) or blocks_new_execution(record, job):
             return False
         try:
             bind_before_execution(record, str(job.get("actor") or ""))
@@ -1179,7 +1180,8 @@ def _prepare_resident_continuation(
         resident_execution_work.is_active(job)
         and str(record.get("last_error") or "")
     )
-    if resident_restart_handoff.pending(record, job):
+    from .resident_deferred_restart import blocks_new_execution
+    if resident_restart_handoff.pending(record, job) or blocks_new_execution(record, job):
         return None
     if not resident_execution_work.continuation_needed(record, job):
         if clear_stale_error:
@@ -2032,8 +2034,9 @@ def _portable_context_execution(
     if _lineage_delivery_profile(job):
         # A fresh-context run does not use (or consume) the session's seed.
         return job
-    if ((record.get("session_restart") or {}).get("pending_handoff") or {}).get("strategy") in {"compact", "visible"}:
-        from . import resident_pending_session_context
+    from . import resident_pending_session_context
+    context_operation = resident_pending_session_context.context_operation(record)
+    if (context_operation.get("pending_handoff") or {}).get("strategy") in {"compact", "visible"}:
 
         # Selection is configuration-only. The first real input carries the
         # frozen, explicitly bounded handoff rather than rebuilding all trace.

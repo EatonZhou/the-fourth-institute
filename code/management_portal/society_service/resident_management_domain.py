@@ -7,8 +7,6 @@ from datetime import datetime, timezone
 from typing import Any, Callable, Mapping
 import copy
 import logging
-import re
-import secrets
 from management_common.actor_identity import canonical_actor_id
 from management_portal.portal_access_control import get_portal_access_store
 from . import (
@@ -113,53 +111,121 @@ def transition_resident_state(
     return dict(result)
 
 
-def reset_resident_context(resident_id: str, actor: str) -> dict:
-    """Commit a context reset and durably schedule its external cleanup."""
+def reset_resident_context(
+    resident_id: str, actor: str, *, active_execution_policy: str = "reject", idempotency_key: str = "",
+) -> dict:
+    """Reset now or admit a durable wait at the next input boundary."""
 
+    from . import resident_deferred_restart
+    from .resident_session_preservation import check_replay
     actor_id = canonical_actor_id(actor)
     if not actor_id:
         raise ValueError("需要登录后清空上下文")
+    if active_execution_policy not in {"reject", "wait"}:
+        raise ValueError("active_execution_policy 必须是 reject 或 wait")
+    payload = {"operation": "clear_context", "active_execution_policy": active_execution_policy,
+               "idempotency_key": idempotency_key}
     with resident_record_domain.state_lock(resident_id):
         record = resident_record_domain.find_resident(resident_id)
         if not record:
             raise KeyError("resident not found")
-        if resident_execution_work.is_active(resident_execution_work.read(record)):
-            raise ValueError("当前仍有任务正在排队或处理，停止或完成后再清空上下文")
-        operations = resident_record_domain.lifecycle_operations()
-        if operations.pending(resident_id):
+        state = record.get("session_restart") or {}
+        if idempotency_key and state.get("request_id") == idempotency_key:
+            if state.get("submitted_by") != actor_id:
+                raise ValueError("Session operation id refers to a different caller")
+            check_replay(state, payload)
+            receipt = _context_clear_receipt(state)
+            cleanup_id = receipt.get("cleanup_operation_id")
+            if cleanup_id:
+                receipt["cleanup_pending"] = resident_record_domain.lifecycle_operations().pending(
+                    resident_id, operation_id=cleanup_id,
+                )
+            return receipt
+        if resident_deferred_restart.pending(record) or resident_record_domain.lifecycle_operations().pending(resident_id):
             raise ValueError("Resident 生命周期操作正在完成，请稍后重试")
-        now = resident_domain_common.now_iso()
-        next_record = copy.deepcopy(record)
-        next_record.update({"session_state": "ready", "last_error": "", "updated_at": now})
-        # Provider sessions that ran before this time hold the cleared context:
-        # a restart or a Fork must not hand any of it to a new session.
-        next_record["context_reset_at"] = datetime.now(timezone.utc).isoformat(
-            timespec="milliseconds").replace("+00:00", "Z")
-        for key in (
-            "last_token_usage", "last_token_usage_at",
-            "last_runtime_error", "last_turn_usage", "last_turn_usage_at",
-            "last_model_context_window", "session_created_via",
-        ):
-            next_record.pop(key, None)
-        resident_record_domain.validated_resident_record_payload(next_record)
-        archive_stamp = re.sub(r"[^0-9A-Za-z]+", "", now) + "_" + secrets.token_hex(6)
-        repository = resident_conversation_stream.get_repository()
-        steps = [{
-            "kind": "context_archive", "resident_id": resident_id,
-            "archived_at": now, "message_ids": repository.context_reset_boundary(resident_id),
-            # The clear is also marked in the Resident's trace, after what it
-            # held now (nothing runs during a clear), whatever arrives later.
-            "reset_at": next_record["context_reset_at"], "actor": actor_id,
-            "trace_position": repository.agent_data.trace_length(resident_id),
-        }, resident_lifecycle_domain.resident_release_step(record, actor_id)]
-        def commit() -> str:
-            resident_record_domain.save_resident_record(next_record)
-            resident_execution_work.clear(record)
-            return operations.enqueue(resident_id, steps)
-        operation_id = resident_catalog.get_catalog().state_store.transaction(commit)
+        job = resident_execution_work.read(record)
+        if active_execution_policy == "wait":
+            binding = resident_backend.session_record(record)
+            provider = resident_backend.execution_backend(record)
+            route = str(binding.get("backend_route_id") or record.get("backend_route_id") or "")
+            result = resident_deferred_restart.schedule(
+                record, actor_id, payload, {"provider": provider, "account_id": route},
+                {"operation": "clear_context", "target_provider": provider, "target_account": route,
+                 "context_strategy": "clear", "active_execution_policy": "wait"},
+            )
+            return _context_clear_receipt(result)
+        if resident_execution_work.is_active(job):
+            raise ValueError("当前仍有任务正在排队或处理，停止或完成后再清空上下文")
+        operation_id = _commit_context_clear(record, actor_id, job)
     return resident_input_queue_domain.resident_operation_result(
         resident_id, reset=True, cleanup_pending=True, operation_id=operation_id,
     )
+
+
+def _context_clear_receipt(state: Mapping[str, Any]) -> dict[str, Any]:
+    return {key: copy.deepcopy(state[key]) for key in (
+        "resident_id", "operation", "operation_id", "restart_id", "status", "phase",
+        "context_result", "cleanup_operation_id", "reset",
+    ) if key in state}
+
+
+def apply_deferred_context_clear(resident_id: str, request_id: str) -> bool:
+    """Advance the authorized clear receipt under the same lock as submission."""
+
+    from . import resident_deferred_restart, resident_restart_handoff
+    with resident_record_domain.state_lock(resident_id):
+        record = resident_record_domain.find_resident(resident_id) or {}
+        deferred = resident_deferred_restart.pending(record)
+        if not resident_deferred_restart.waiting_to_clear(record) or deferred.get("request_id") != request_id:
+            return False
+        job = resident_execution_work.read(record)
+        if resident_execution_work.is_active(job) and not resident_restart_handoff.can_preserve(record, job):
+            return True
+        if resident_record_domain.lifecycle_operations().pending(resident_id):
+            return True
+        _commit_context_clear(record, deferred["actor"], job, deferred=deferred)
+    return False
+
+
+def _commit_context_clear(record: dict, actor: str, job: dict, *, deferred: dict | None = None) -> str:
+    from . import resident_deferred_restart
+    resident_id = record["resident_id"]
+    now = resident_domain_common.now_iso()
+    next_record = copy.deepcopy(record)
+    next_record.update({"session_state": "ready", "last_error": "", "updated_at": now})
+    # The boundary excludes the old Session and every pending memory handoff.
+    next_record["context_reset_at"] = datetime.now(timezone.utc).isoformat(
+        timespec="milliseconds").replace("+00:00", "Z")
+    for key in (
+        "last_token_usage", "last_token_usage_at",
+        "last_runtime_error", "last_turn_usage", "last_turn_usage_at",
+        "last_model_context_window", "session_created_via",
+    ):
+        next_record.pop(key, None)
+    resident_record_domain.validated_resident_record_payload(next_record)
+    repository = resident_conversation_stream.get_repository()
+    steps = [{
+        "kind": "context_archive", "resident_id": resident_id,
+        "archived_at": now, "message_ids": repository.context_reset_boundary(resident_id),
+        "reset_at": next_record["context_reset_at"], "actor": actor,
+        "trace_position": repository.agent_data.trace_length(resident_id),
+    }, resident_lifecycle_domain.resident_release_step(record, actor)]
+
+    def commit() -> str:
+        cleanup_id = resident_record_domain.lifecycle_operations().enqueue(resident_id, steps)
+        if not resident_execution_work.is_active(job) and not resident_execution_work.normalized_queue(job):
+            resident_execution_work.clear(record)
+        if deferred:
+            state = next_record["session_restart"]
+            state.update(status="completed", phase="completed", context_result="cleared", reset=True,
+                         cleanup_operation_id=cleanup_id, completed_at=now)
+            state.pop("context_before_clear", None)
+            resident_deferred_restart.release(next_record, deferred)
+        else:
+            resident_record_domain.save_resident_record(next_record)
+        return cleanup_id
+
+    return resident_catalog.get_catalog().state_store.transaction(commit)
 
 
 def rename_resident_title(
