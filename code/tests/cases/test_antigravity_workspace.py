@@ -106,7 +106,7 @@ def test_resident_session_creation_scope_survives_option_preparation(agent, turn
     assert "authorization_scope" not in prepared.request.runtime_options
     AntigravityBackend().execute(prepared, context()[0])
     frame = next(r for r in requests(agent) if r["method"] == "session/new")
-    assert frame["params"]["additionalDirectories"] == ([str(folder), str(shared), str(project)] if allowed else [])
+    assert frame["params"].get("additionalDirectories", []) == ([str(folder), str(shared), str(project)] if allowed else [])
 
 
 @pytest.mark.parametrize("condition", ["restricted", "disabled", "wrong_resident", "wrong_principal", "wrong_cwd",
@@ -130,9 +130,11 @@ def test_narrow_or_older_session_load(agent, turn, monkeypatch, condition):
         del call.request.metadata["filesystem_scope"]
     elif condition == "old_runtime":
         monkeypatch.setattr(accounts, "environment", lambda _: {"GEMINI_HOME": str(agent)})
+    if condition in {"restricted", "disabled", "old_runtime"}:
+        error = RuntimeError if condition == "old_runtime" else PermissionError
+        with pytest.raises(error):
+            AntigravityBackend().execute(call, context()[0])
+        return
     AntigravityBackend().execute(call, context()[0])
     frame = next(r for r in requests(agent) if r["method"] == "session/load")["params"]
-    if condition == "old_runtime":
-        assert "additionalDirectories" not in frame
-    else:
-        assert frame["additionalDirectories"] == []
+    assert "additionalDirectories" not in frame

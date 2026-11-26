@@ -1646,6 +1646,26 @@ def _build_resident_execution_request(record, job):
     return request
 
 
+def _antigravity_session_reset(record, route, native_tools):
+    """Identify the bound Antigravity session to replace at the next input."""
+    from management_portal import antigravity_accounts
+    from management_portal.execution import antigravity_cli
+
+    binding = resident_backend.session_record(record)
+    if not binding or binding.get("provider") != "antigravity":
+        return {}
+    session_id = binding["backend_session_id"]
+    row = antigravity_accounts.account_for_route(route or binding["backend_route_id"])
+    if row["route_id"] != binding["backend_route_id"]:
+        raise ValueError("Antigravity account changed during session migration")
+    account_id = row["account_id"]
+    if not antigravity_cli.needs_new_session(
+            antigravity_accounts.account_home("antigravity", account_id),
+            antigravity_accounts.account_runtime("antigravity", account_id), session_id, not native_tools):
+        return {}
+    return {"session_id": session_id, "route": row["route_id"]}
+
+
 def _build_resident_execution_request_unrestricted(
     record: dict[str, Any],
     job: dict[str, Any],
@@ -1768,6 +1788,11 @@ def _build_resident_execution_request_unrestricted(
     from management_portal.execution.input_variant_trace import trace
     trace('request_builder', business_ref=job.get('business_ref', '') or snapshot.get('business_ref', ''), role=exact_resident_id,
           prompt=str(job.get('raw_message') or job.get('message') or ''), spec=variants.get('input_variants'))
+    session_reset = {}
+    if backend == "antigravity" and not fresh_context and not job.get("fork_context_input"):
+        settings = runtime_options.get("runtime_settings") or {}
+        native_tools = is_owner and definition.runtime_adapter().native_options({}, settings)["native_tools_enabled"]
+        session_reset = _antigravity_session_reset(record, backend_route_id, native_tools)
     return build_agent_turn_request(
         actor=actor,
         agent_id=exact_resident_id,
@@ -1797,6 +1822,7 @@ def _build_resident_execution_request_unrestricted(
             "lineage_id": lineage_id,
             "filesystem_scope": copy.deepcopy(job.get("filesystem_scope") or {}),
             "fork_context_input": copy.deepcopy(job.get("fork_context_input") or {}),
+            **({"antigravity_session_reset": session_reset} if session_reset else {}),
             "execution_id": str(job.get("execution_id") or ""),
             "project_id": str(record.get("project_id") or ""),
 

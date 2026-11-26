@@ -243,11 +243,11 @@ def provider_binary(provider):
 
 def login_command(provider, *, status=False):
     if provider == "antigravity":
-        from management_portal.antigravity_runtime import command
-        native_command = command()  # Validate installation before creating a login session.
+        from management_portal.antigravity_runtime import verified_binary
+        verified_binary()  # Validate installation before creating a login session.
         if status:
             raise ValueError("Antigravity login status is queried over ACP")
-        return [sys.executable, str(Path(__file__).resolve().parents[2] / "scripts" / "antigravity_account.py"), *native_command]
+        return [sys.executable, str(Path(__file__).resolve().parents[2] / "scripts" / "antigravity_account.py")]
     binary = provider_binary(provider)
     if provider == "codex":
         return [binary, "login", "status" if status else "--device-auth"]

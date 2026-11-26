@@ -104,7 +104,8 @@ def read_subscription(route):
     """Read native account tier without creating or loading a model session."""
     from management_portal.execution.account_observation import cancel_resource
     row = account_for_route(route)
-    with AcpClient(command(), env=environment(row['account_id'])) as client, \
+    env = environment(row['account_id'])
+    with AcpClient(command(env), env=env) as client, \
             cancel_resource(lambda: client.close(timeout=1)):
         client.initialize()
         authenticated = client.call('authenticate', {'methodId': 'oauth-personal'})
@@ -113,7 +114,8 @@ def read_subscription(route):
 
 def logged_in(account_id):
     try:
-        with AcpClient(command(), env=environment(account_id)) as client:
+        env = environment(account_id)
+        with AcpClient(command(env), env=env) as client:
             client.initialize()
             client.call("authenticate", {"methodId": "oauth-personal"})
         return True
@@ -174,7 +176,8 @@ def observe_account(account_id):
     from management_portal.execution.account_observation import cancel_resource, check_cancelled, cancelled
     check_cancelled()
     try:
-        with AcpClient(command(), env=environment(account_id), on_update=update) as client, \
+        env = environment(account_id)
+        with AcpClient(command(env), env=env, on_update=update) as client, \
                 cancel_resource(lambda: client.close(timeout=1)):
             handshake = client.initialize()
             authenticated = client.call("authenticate", {"methodId": "oauth-personal"})
@@ -188,7 +191,7 @@ def observe_account(account_id):
                 except (OSError, ValueError):
                     prior = ""
                 params = {"cwd": str(account_home("antigravity", account_id)),
-                          "mcpServers": [], "_meta": {"antigravity": {"enabledTools": []}}}
+                          "mcpServers": []}
                 if prior:
                     params["sessionId"] = prior
                 result = client.call("session/load" if prior else "session/new", params)
@@ -288,7 +291,7 @@ def main():
     try:
         # LoginManager already supplied the isolated account and approved network route.
         import os
-        with AcpClient(sys.argv[1:] or command(), env=dict(os.environ), on_login_url=got_url) as client:
+        with AcpClient(command(os.environ), env=dict(os.environ), on_login_url=got_url) as client:
             client.initialize()
             client.call("authenticate", {"methodId": "oauth-personal"}, timeout=900)
     except Exception:

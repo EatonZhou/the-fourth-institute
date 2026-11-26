@@ -14,7 +14,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace
 from unittest import mock
-import zipfile
+import tarfile
 
 import pytest
 
@@ -31,9 +31,9 @@ FAKE = Path(__file__).with_name("fake_antigravity.py")
 
 @pytest.fixture
 def agent(monkeypatch, tmp_path):
-    from management_portal.execution import antigravity_backend as backend
-    monkeypatch.setattr(backend, "command", lambda: [sys.executable, str(FAKE)])
-    monkeypatch.setattr(accounts, "command", lambda: [sys.executable, str(FAKE)])
+    from management_portal.execution import antigravity_cli_backend as backend
+    monkeypatch.setattr(backend, "command", lambda env: [sys.executable, str(FAKE)])
+    monkeypatch.setattr(accounts, "command", lambda env: [sys.executable, str(FAKE)])
     monkeypatch.setattr(accounts, "account_for_route", lambda route: {"account_id": "antigravity_one", "route_id": "one"})
     monkeypatch.setattr(accounts, "account_home", lambda provider, account: tmp_path)
     monkeypatch.setattr(accounts, "account_runtime", lambda *args: tmp_path)
@@ -209,8 +209,8 @@ def test_orchestrator_selects_only_account_advertised_variants(agent, monkeypatc
     turn = invocation(agent)
     turn.request.runtime_options["model"] = selected["model"]
     assert AntigravityBackend().execute(turn, context()[0]).output["model"] == "native-planner-a"
-    configured = next(call for call in requests(agent) if call["method"] == "session/set_model")
-    assert configured["params"]["modelId"] == "native-planner-a"
+    configured = next(call for call in requests(agent) if call["method"] == "session/set_config_option")
+    assert configured["params"]["value"] == "native-planner-a"
 
 
 def test_first_account_check_discovers_and_verifies_the_native_default(agent, monkeypatch):
@@ -245,10 +245,10 @@ def test_first_account_check_discovers_and_verifies_the_native_default(agent, mo
                              request.prompt, "", False, True)
     result = AntigravityBackend().execute(prepare_invocation(turn), context()[0])
     calls = requests(agent)
-    assert [call["params"]["modelId"] for call in calls if call["method"] == "session/set_model"] == ["gemini-test"]
+    assert all(call["method"] != "session/set_config_option" for call in calls)  # CLI already selected the default.
     assert sum(call["method"] == "session/prompt" for call in calls) == 1
     native_session = next(call["params"] for call in calls if call["method"] == "session/new")
-    assert native_session["_meta"]["antigravity"]["enabledTools"] == []
+    assert native_session["cwd"] != request.cwd and native_session["mcpServers"] == []
     assert accounts.catalog("one")["default_model"] == "gemini-test"
 
     execution_id = receipt["execution_id"]
@@ -349,7 +349,7 @@ def test_turn_serves_portal_tools_and_reports_native_events_and_usage(agent):
     assert state["phase"] == "completed"
     created = next(r["params"] for r in requests(agent) if r["method"] == "session/new")
     assert created["_meta"]["antigravity"]["systemPrompt"] == {"append": "All Portal rules"}
-    assert "start_subagent" in created["_meta"]["antigravity"]["disabledTools"]
+    assert set(created["_meta"]["antigravity"]) == {"systemPrompt"}
 
 
 def test_resume_uses_native_history_without_replaying_it(agent):
@@ -436,28 +436,36 @@ def test_permissions_are_enforced_in_protocol_not_prompt(agent, sid, owner, sett
 
     turn = invocation(agent, "permission", owner=owner, sid=sid)
     turn.request.runtime_options = AntigravityOptions().native_options(turn.request.runtime_options, settings)
+    if sid and outcome == "cancelled":
+        with pytest.raises(PermissionError, match="输入未发送"):
+            AntigravityBackend().execute(turn, context()[0])
+        assert not (agent / "requests.jsonl").exists()
+        return
     result = AntigravityBackend().execute(turn, context()[0])
     assert result.output["message"] == outcome
     method = "session/load" if sid else "session/new"
     meta = next(r["params"]["_meta"]["antigravity"] for r in requests(agent) if r["method"] == method)
-    assert ("enabledTools" not in meta) if outcome == "selected" else meta["enabledTools"] == []
+    assert set(meta) == {"systemPrompt"}
 
 
-@pytest.mark.parametrize("sid", ["", "existing-session"])
 @pytest.mark.parametrize("prompt,allowed", [
-    ("permission-mcp", True),
-    ("permission-mcp-other", False),
-    ("permission-mcp-unoffered", False),
-    ("permission-mcp-title-only", False),
+    ("permission-mcp", True), ("permission-mcp-dispatch", True), ("permission-mcp-other", False),
+    ("permission-mcp-unoffered", False), ("permission-mcp-title-only", False),
     ("permission-mcp-wrong-session", False),
 ])
-def test_portal_only_permissions_allow_offered_mcp_dispatch(agent, sid, prompt, allowed):
+def test_portal_only_approves_only_offered_tools_on_new_and_load(agent, prompt, allowed):
     seen = []
     tool = HarnessTool("read_resource", "Read resource", {"type": "object"},
                        lambda args: seen.append(args) or "resource text")
-    result = AntigravityBackend().execute(invocation(agent, prompt, owner=False, sid=sid, tools=[tool]), context()[0])
-    assert result.output["message"] == ("selected:resource text" if allowed else "cancelled")
-    assert seen == ([{"id": "resource-one"}] if allowed else [])
+    backend = AntigravityBackend()
+    sid = ""
+    for _ in range(2):
+        result = backend.execute(invocation(agent, prompt, owner=False, sid=sid, tools=[tool]), context()[0])
+        sid = result.backend_session_id
+        assert result.output["message"] == ("selected:resource text" if allowed else "cancelled")
+    assert len(seen) == (2 if allowed else 0)
+    frames = [r["params"] for r in requests(agent) if r["method"] in {"session/load", "session/new"}]
+    assert all(frame["cwd"] != str(agent) and "additionalDirectories" not in frame for frame in frames)
 
 
 def test_cancel_delivers_native_cancel_and_suppresses_late_answer(agent):
@@ -603,7 +611,7 @@ def test_account_quota_uses_native_command_without_model_tools_or_resident_histo
     calls = requests(agent)
     assert [c["method"] for c in calls] == ["initialize", "authenticate", "session/new", "session/prompt"]
     assert calls[2]["params"]["mcpServers"] == []
-    assert calls[2]["params"]["_meta"]["antigravity"]["enabledTools"] == []
+    assert "_meta" not in calls[2]["params"]
     assert calls[3]["params"]["prompt"] == [{"type": "text", "text": "/usage"}]
 
 
@@ -683,8 +691,8 @@ def test_account_environment_and_login_parser_are_isolated(monkeypatch, tmp_path
     second = accounts.environment("antigravity_two")
     assert env["GEMINI_HOME"] == str(tmp_path / "antigravity_one")
     assert second["GEMINI_HOME"] == str(tmp_path / "antigravity_two")
-    expected_storage = "1" if platform == "darwin" else None
-    assert env.get("AGY_ACP_FORCE_FILE_STORAGE") == second.get("AGY_ACP_FORCE_FILE_STORAGE") == expected_storage
+    assert env["AGY_CLI_FORCE_FILE_TOKEN_STORAGE"] == second["AGY_CLI_FORCE_FILE_TOKEN_STORAGE"] == "1"
+    assert env["AGY_CLI_DISABLE_AUTO_UPDATE"] == "true"
     assert "GEMINI_API_KEY" not in env and "CLAUDE_CONFIG_DIR" not in env
     parser = login.LoginOutputParser("antigravity")
     _, url = parser.feed("https://accounts.google.com/o/oauth2/auth?state=123\n")
@@ -692,101 +700,58 @@ def test_account_environment_and_login_parser_are_isolated(monkeypatch, tmp_path
     assert login._session_result({"provider": "antigravity"}, {"state": "pending"})["requires_code_input"]
 
 
-@pytest.mark.parametrize(("platform", "target"), [
-    ("linux", "linux-x86_64"), ("win32", "windows-x86_64"),
-    ("darwin", "darwin-aarch64"), ("darwin", "darwin-x86_64"),
-])
-def test_installer_verifies_archive_before_activation(monkeypatch, tmp_path, platform, target):
-    from management_common import antigravity_platform
-
-    version = "1.5.2" if platform == "darwin" else "1.4.5"
-    data = io.BytesIO()
-    with zipfile.ZipFile(data, "w") as bundle:
-        bundle.writestr("agy_acp_server.par", b"test")
-    raw = data.getvalue()
-    item = {"archive": "https://dl.google.com/test.zip", "cmd": "./agy_acp_server.par", "sha256": hashlib.sha256(raw).hexdigest()}
-    monkeypatch.setattr(runtime, "manifest", lambda: {"version": version, "distribution": {"binary": {target: item}}})
-    monkeypatch.setattr(antigravity_platform, "identify_host", lambda: {"architecture": target.split("-", 1)[1]})
+@pytest.mark.parametrize("platform", ["linux", "darwin", "win32"])
+def test_installer_verifies_official_cli_before_activation(monkeypatch, tmp_path, platform):
+    payload = b"official executable"
+    archive = io.BytesIO()
+    if platform == "win32":
+        archive.write(payload)
+        url = "https://example.test/agy.exe"
+    else:
+        with tarfile.open(fileobj=archive, mode="w:gz") as bundle:
+            member = tarfile.TarInfo("antigravity")
+            member.size = len(payload)
+            bundle.addfile(member, io.BytesIO(payload))
+        url = "https://example.test/agy.tar.gz"
+    data = archive.getvalue()
+    release = {"url": url, "sha512": hashlib.sha512(data).hexdigest()}
+    monkeypatch.setattr(runtime, "distribution", lambda: release)
     monkeypatch.setattr(runtime.updates, "RUNTIMES", tmp_path)
-    monkeypatch.setattr(runtime, "urlopen", lambda *a, **k: io.BytesIO(raw))
+    monkeypatch.setattr(runtime, "urlopen", lambda *a, **k: io.BytesIO(data))
     monkeypatch.setattr(runtime.sys, "platform", platform)
-    monkeypatch.setenv("SystemRoot", r"C:\Windows")
-    monkeypatch.setenv("USERPROFILE", "operator-home-must-not-be-used")
-    monkeypatch.setenv("APPDATA", "operator-appdata-must-not-be-used")
-    monkeypatch.setenv("GEMINI_API_KEY", "must-not-leak")
-    if target == "darwin-aarch64":
-        from management_portal.execution.provider_preparation import PreparationError
-
-        def failed_download(*args, **kwargs):
-            raise TimeoutError("fixture connection stalled")
-
-        with monkeypatch.context() as offline:
-            offline.setattr(runtime, "urlopen", failed_download)
-            with pytest.raises(PreparationError) as failure:
-                runtime.AntigravityRuntime().stage((version,))
-            assert failure.value.public()["diagnostic"] == {
-                "phase": "download", "kind": "timeout", "rollback_failed": False,
-            }
-        with mock.patch("management_portal.antigravity_client.AcpClient") as client:
-            client.return_value.__enter__.return_value.initialize.side_effect = TimeoutError
-            with pytest.raises(PreparationError) as failure:
-                runtime.AntigravityRuntime().stage((version,))
-            assert failure.value.phase == "executable_validation"
-            assert not (tmp_path / f"antigravity-{version}" / ".portal-validated").exists()
-    with mock.patch("management_portal.antigravity_client.AcpClient") as client:
-        client.return_value.__enter__.return_value.initialize.return_value = {"agentInfo": {"version": version}}
-        provider = runtime.AntigravityRuntime()
-        monkeypatch.setattr(provider, "link", lambda: tmp_path / f"antigravity-{version}")
-        assert provider.available() == (version,)
-        root = provider.stage((version,))
-        assert (root / ".portal-validated").is_file()
-        assert provider.installed() == (version,)
-        env = client.call_args.kwargs["env"]
-        assert env["HOME"] == env["GEMINI_HOME"]
-        assert "GEMINI_API_KEY" not in env
-        assert env.get("AGY_ACP_FORCE_FILE_STORAGE") == ("1" if platform == "darwin" else None)
-        if platform == "win32":
-            assert env["SystemRoot"] == r"C:\Windows"
-            assert env["USERPROFILE"] == env["APPDATA"] == env["LOCALAPPDATA"] == env["GEMINI_HOME"]
-    (root / ".portal-validated").unlink()
-    item["sha256"] = "0" * 64
-    with pytest.raises(ValueError, match="checksum"):
-        runtime.AntigravityRuntime().stage((version,))
-    assert not (root / ".portal-validated").exists()
-
-
-def test_macos_cannot_launch_or_install_an_old_acp_without_isolated_storage(monkeypatch, tmp_path):
-    from management_portal.native_agent_transport import NativeAgentUnavailable
-
-    monkeypatch.setattr(runtime.sys, "platform", "darwin")
-    monkeypatch.setattr(runtime, "manifest", lambda: {"version": "1.4.5"})
-    (tmp_path / "distribution.json").write_text('{"version": "1.4.5", "cmd": "agy_acp_server.par"}')
-    (tmp_path / ".portal-validated").touch()
+    target = tmp_path / "antigravity-cli-1.5.18"
+    monkeypatch.setattr(runtime.AntigravityRuntime, "link", lambda self: target)
     provider = runtime.AntigravityRuntime()
-    monkeypatch.setattr(provider, "link", lambda: tmp_path)
+    with mock.patch("management_portal.antigravity_client.AcpClient") as client:
+        handshake = client.return_value.__enter__.return_value.initialize
+        handshake.return_value = {"agentInfo": {"version": "1.5.17"}}
+        with pytest.raises(runtime.updates.PreparationError):
+            provider.stage((runtime.VERSION,))
+        assert provider.installed() == ("0",)
+        handshake.return_value = {"agentInfo": {"version": runtime.VERSION}}
+        assert provider.stage(provider.available()) == target
+        assert client.call_args.args[0][1:3] == ["acp", "--process-per-session"]
+        assert "GEMINI_API_KEY" not in client.call_args.kwargs["env"]
+    assert provider.installed() == ("1.5.18",)
+    env = {"HOME": str(tmp_path), "GEMINI_HOME": str(tmp_path / "account")}
+    assert runtime.command(env) == [str(runtime.binary_path(target)), "acp", "--process-per-session",
+                                    "--gemini-dir", "account", "--app-data-dir", "antigravity-acp"]
+    runtime.binary_path(target).write_bytes(b"other build")
+    with pytest.raises(runtime.NativeAgentUnavailable):
+        runtime.command(env)
+    release["sha512"] = "0" * 128
+    with pytest.raises(ValueError, match="checksum"):
+        provider.stage((runtime.VERSION,))
 
-    assert provider.installed() == ("0",)
-    with pytest.raises(NativeAgentUnavailable, match="separate accounts"):
-        provider.available()
-    with pytest.raises(NativeAgentUnavailable, match="separate accounts"):
-        provider.stage(("1.4.5",))
-    with pytest.raises(NativeAgentUnavailable, match="separate accounts"):
-        runtime.command(tmp_path)
 
-
-def test_installer_rejects_archive_path_escape(monkeypatch, tmp_path):
-    data = io.BytesIO()
-    with zipfile.ZipFile(data, "w") as bundle:
-        bundle.writestr("../outside", b"untrusted")
-    raw = data.getvalue()
-    item = {"archive": "https://dl.google.com/test.zip", "cmd": "./agy_acp_server.par", "sha256": hashlib.sha256(raw).hexdigest()}
-    monkeypatch.setattr(runtime, "manifest", lambda: {"version": "1.4.5", "distribution": {"binary": {"linux-x86_64": item}}})
-    monkeypatch.setattr(runtime, "platform_key", lambda: "linux-x86_64")
-    monkeypatch.setattr(runtime.updates, "RUNTIMES", tmp_path)
-    monkeypatch.setattr(runtime, "urlopen", lambda *a, **k: io.BytesIO(raw))
-    with pytest.raises(ValueError, match="Unsafe path"):
-        runtime.AntigravityRuntime().stage(("1.4.5",))
-    assert not (tmp_path / "outside").exists()
+def test_legacy_installation_cannot_be_selected(monkeypatch, tmp_path):
+    monkeypatch.setattr(runtime.AntigravityRuntime, "link", lambda self: tmp_path)
+    (tmp_path / "distribution.json").write_text('{"version":"1.5.2","cmd":"agy_acp_server.par"}')
+    (tmp_path / ".portal-validated").touch()
+    with pytest.raises(runtime.NativeAgentUnavailable, match="1.5.18"):
+        runtime.command({})
+    with pytest.raises(ValueError, match="1.5.18"):
+        runtime.AntigravityRuntime().stage(("1.5.17",))
 
 
 def _varint(value):
@@ -838,7 +803,7 @@ def test_multi_step_turn_separates_turn_sum_from_context_window_usage(agent):
         conn.commit()
 
     # Pass start_idx=0 by intercepting _read_steps on the initial pre-prompt call only.
-    from management_portal.execution import antigravity_backend as backend_mod
+    from management_portal.execution import antigravity_cli_backend as backend_mod
     real_read = backend_mod._read_steps
     calls = []
     defread = lambda env, sid, after_idx=-1: (calls.append(after_idx), (0, []) if len(calls) == 1 else real_read(env, sid, after_idx))[1]
@@ -882,51 +847,15 @@ def test_pinned_cli_disables_its_updater_only_for_its_own_process(agent):
     backend = AntigravityBackend(client_factory=factory)
     request = invocation(agent).request
     env = {"GEMINI_HOME": str(agent)}
-    backend.open_client(request, "antigravity_one", env, cli_command=["agy", "acp"])
-    assert factory.call_args.kwargs["env"] == {**env, "AGY_CLI_DISABLE_AUTO_UPDATE": "true"}
-    backend.open_client(request, "antigravity_one", env)
-    assert factory.call_args.kwargs["env"] == {"GEMINI_HOME": str(agent)}
-
-
-def test_cli_rollout_follows_binding_and_permission_profile(tmp_path, monkeypatch):
-    root = tmp_path / runtime.CLI_CANARY
-    root.mkdir()
-    binary = root / "antigravity"
-    binary.write_bytes(b"verified-build")
-    monkeypatch.setattr(runtime, "CLI_DIGEST", hashlib.sha256(binary.read_bytes()).hexdigest())
-    env = {"HOME": "/home/user", "GEMINI_HOME": "/home/user/accounts/one"}
-    (root / "enabled").touch()
-    args = runtime.canary_command(root, "", True, env)
-    assert args == [str(binary), "acp", "--process-per-session", "--gemini-dir", "accounts/one", "--app-data-dir", "antigravity-acp"]
-    assert runtime.canary_command(root, "", False, env) is None
-    assert runtime.canary_command(root, "existing-session", True, env) is None
-    runtime.pin_cli_session(root, "cli-session")
-    (root / "enabled").unlink()
-    assert runtime.canary_command(root, "", True, env) is None
-    assert runtime.canary_command(root, "cli-session", True, env) == args
-    assert runtime.canary_command(root, "cli-session", False, env) is None
-    binary.write_bytes(b"changed")
-    with pytest.raises(runtime.NativeAgentUnavailable, match="verified"):
-        runtime.canary_command(root, "cli-session", True, env)
-
-
-def test_rollout_preserves_previous_build_and_standalone_bindings(tmp_path):
-    previous = tmp_path / runtime.PREVIOUS_CLI
-    current = tmp_path / runtime.CLI_CANARY
-    runtime.pin_cli_session(previous, "old-cli")
-    current.mkdir()
-    (current / "enabled").touch()
-    assert runtime.cli_binding_root(tmp_path, "") == current
-    assert runtime.cli_binding_root(tmp_path, "old-cli") == previous
-    assert runtime.canary_command(current, "standalone", True, {}) is None
-    assert runtime.canary_command(current, "", False, {}) is None
+    backend.open_client(request.cwd, env)
+    assert factory.call_args.kwargs["env"]["AGY_CLI_DISABLE_AUTO_UPDATE"] == "true"
+    assert "AGY_CLI_DISABLE_AUTO_UPDATE" not in env
 
 
 @pytest.mark.parametrize("session_id", ["", "existing-cli-session"])
 def test_cli_1518_session_uses_cached_login_and_advertised_options(agent, monkeypatch, session_id):
-    from management_portal.execution import antigravity_backend as backend
+    from management_portal.execution import antigravity_cli_backend as backend
 
-    monkeypatch.setattr(backend, "canary_command", lambda *args: [sys.executable, str(FAKE)])
     monkeypatch.setattr(accounts, "environment", lambda account: {
         "GEMINI_HOME": str(agent), "FAKE_ORCHESTRATOR_MODEL": "other-model",
     })
@@ -944,10 +873,9 @@ def test_cli_1518_session_uses_cached_login_and_advertised_options(agent, monkey
 
 @pytest.mark.parametrize("advertised,new_checkpoint", [(False, False), (True, False), (True, True)])
 def test_compact_requires_advertisement_and_new_native_summary(agent, monkeypatch, advertised, new_checkpoint):
-    from management_portal.execution import antigravity_backend as backend
+    from management_portal.execution import antigravity_cli_backend as backend
     from management_portal.execution.native_session_compaction import NativeCompaction, summary_history
 
-    monkeypatch.setattr(backend, "canary_command", lambda *args: [sys.executable, str(FAKE)])
     if advertised:
         monkeypatch.setattr(accounts, "environment", lambda account: {"GEMINI_HOME": str(agent), "FAKE_COMPACT": "1"})
     sid = "compact-session"
@@ -973,28 +901,9 @@ def test_compact_requires_advertisement_and_new_native_summary(agent, monkeypatc
     assert prompts == ([[{"type": "text", "text": "/compact"}]] if advertised else [])
 
 
-def test_standalone_session_cannot_compact(agent):
-    request = invocation(agent, sid="standalone")
+def test_unbound_session_cannot_compact(agent):
+    request = invocation(agent)
     request.request.operation = "compact"
     with pytest.raises(ValueError, match="existing Antigravity CLI session"):
         AntigravityBackend().execute(request, context()[0])
     assert not (agent / "requests.jsonl").exists()
-
-def test_existing_account_history_upgrades_on_load_and_preserves_restricted_turns(tmp_path, monkeypatch):
-    current = tmp_path / runtime.CLI_CANARY
-    current.mkdir()
-    binary = current / "antigravity"
-    binary.write_bytes(b"tested")
-    monkeypatch.setattr(runtime, "CLI_DIGEST", hashlib.sha256(binary.read_bytes()).hexdigest())
-    (current / "enabled").touch()
-    env = {"HOME": str(tmp_path), "GEMINI_HOME": str(tmp_path / "account")}
-    histories = Path(env["GEMINI_HOME"]) / "antigravity-acp" / "conversations"
-    histories.mkdir(parents=True)
-    runtime.pin_cli_session(tmp_path / runtime.PREVIOUS_CLI, "old-cli")
-    for sid in ("standalone", "old-cli"):
-        (histories / f"{sid}.db").touch()
-        root = runtime.cli_binding_root(tmp_path, sid, env["GEMINI_HOME"])
-        assert root == current
-        assert runtime.canary_command(root, sid, True, env)[0] == str(binary)
-        assert runtime.canary_command(root, sid, False, env) is None
-    assert runtime.canary_command(current, "missing", True, env) is None

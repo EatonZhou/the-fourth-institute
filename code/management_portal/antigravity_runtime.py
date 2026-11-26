@@ -1,64 +1,62 @@
-"""Install Google's official ACP distribution from the ACP registry, with its checksum."""
+"""Stage Google's pinned CLI using the SHA-512 from its official bootstrap manifests."""
 from __future__ import annotations
 
 import hashlib
 import json
 import os
 from pathlib import Path
-import stat
+import shutil
 import sys
+import tarfile
 import tempfile
-from urllib.parse import urlsplit
 from urllib.request import urlopen
-import zipfile
-from packaging.version import Version
 
-from management_portal.execution import provider_updates as updates
 from management_common.antigravity_platform import platform_key
-from management_common.file_permissions import atomic_write_private_bytes
+from management_portal.execution import provider_updates as updates
 from management_portal.native_agent_transport import NativeAgentUnavailable
 
-REGISTRY = "https://raw.githubusercontent.com/agentclientprotocol/registry/main/antigravity-acp/agent.json"
-MACOS_FILE_STORAGE_MINIMUM_VERSION = Version("1.5.2")
+VERSION = "1.5.18"
+MANIFEST = Path(__file__).with_name("antigravity_cli_1_5_18.json")
 
 
-def credential_environment() -> dict[str, str]:
-    """Use per-account GEMINI_HOME files instead of the shared macOS Keychain."""
-    return {"AGY_ACP_FORCE_FILE_STORAGE": "1"} if sys.platform == "darwin" else {}
+def credential_environment():
+    return {"AGY_CLI_FORCE_FILE_TOKEN_STORAGE": "1", "AGY_CLI_DISABLE_AUTO_UPDATE": "true"}
 
 
-def _supports_credential_storage(version: str) -> bool:
-    return sys.platform != "darwin" or Version(version) >= MACOS_FILE_STORAGE_MINIMUM_VERSION
+def distribution():
+    system, arch = platform_key().split("-")
+    target = f"{system}_{'amd64' if arch == 'x86_64' else 'arm64'}"
+    if system == "linux" and list(Path("/lib").glob("libc.musl-*.so.1")):
+        target += "_musl"
+    return json.loads(MANIFEST.read_text())[target]
 
 
-def _require_credential_storage(version: str) -> None:
-    if not _supports_credential_storage(version):
-        raise NativeAgentUnavailable(
-            f"Antigravity ACP {MACOS_FILE_STORAGE_MINIMUM_VERSION} or newer is required for separate accounts on macOS"
-        )
+def binary_path(root):
+    return root / ("agy.exe" if sys.platform == "win32" else "agy")
 
 
-def manifest():
-    with urlopen(REGISTRY, timeout=60) as response:
-        value = json.load(response)
-    if value.get("id") != "antigravity-acp":
-        raise ValueError("Unexpected ACP distribution")
-    return value
+def _digest(path):
+    with path.open("rb") as stream:
+        return hashlib.file_digest(stream, "sha256").hexdigest()
+
+
+def _cli_args(binary, env):
+    # CLI resolves gemini-dir from the profile home. Keep the native conversation store.
+    directory = os.path.relpath(env["GEMINI_HOME"], env["HOME"])
+    return [str(binary), "acp", "--process-per-session", "--gemini-dir", directory,
+            "--app-data-dir", "antigravity-acp"]
 
 
 class AntigravityRuntime(updates.ProviderRuntime):
     def available(self):
-        platform_key()
-        version = manifest()["version"]
-        _require_credential_storage(version)
-        return (version,)
+        distribution()
+        return (VERSION,)
+
+    def supports_versions(self, versions):
+        return tuple(versions) == (VERSION,)
 
     def installed(self):
-        path = self.link() / "distribution.json"
-        if not path.is_file() or not (path.parent / ".portal-validated").is_file():
-            return ("0",)
-        version = json.loads(path.read_text())["version"]
-        return (version,) if _supports_credential_storage(version) else ("0",)
+        return (VERSION,) if self._record(self.link()) else ("0",)
 
     def prerequisites_available(self):
         platform_key()
@@ -67,142 +65,75 @@ class AntigravityRuntime(updates.ProviderRuntime):
     def link(self):
         return updates.provider_entry("antigravity_runtime_current")
 
+    @staticmethod
+    def _record(root):
+        try:
+            value = json.loads((root / "distribution.json").read_text())
+            if (value.get("version") == VERSION and value.get("sha512") == distribution()["sha512"]
+                    and binary_path(root).is_file() and (root / ".portal-validated").is_file()):
+                return value
+        except (OSError, ValueError, AttributeError):
+            pass
+        return {}
+
     def stage(self, versions):
-        with updates.phase("download"):
-            value = manifest()
-        Version(value["version"])
-        _require_credential_storage(value["version"])
-        with updates.phase("download"):
-            if tuple(versions) != (value["version"],):
-                raise RuntimeError("Antigravity registry changed; check the available version again")
-            item = value["distribution"]["binary"][platform_key()]
-        if Path(item["cmd"]).is_absolute() or ".." in Path(item["cmd"]).parts:
-            raise ValueError("Unsafe Antigravity executable path")
-        url = urlsplit(item["archive"])
-        if url.scheme != "https" or url.hostname != "dl.google.com":
-            raise ValueError("Antigravity must be downloaded from Google's distribution host")
-        root = updates.RUNTIMES / f"antigravity-{value['version']}"
-        if (root / ".portal-validated").is_file():
+        if not self.supports_versions(versions):
+            raise ValueError(f"Antigravity provider requires CLI {VERSION}")
+        item = distribution()
+        root = updates.RUNTIMES / f"antigravity-cli-{VERSION}"
+        existing = self._record(root)
+        if existing and _digest(binary_path(root)) == existing.get("binary_sha256"):
             return root
         root.mkdir(parents=True, exist_ok=True)
-        with tempfile.TemporaryFile() as archive:
-            digest = hashlib.sha256()
-            with updates.phase("download"):
-                with urlopen(item["archive"], timeout=120) as response:
-                    while chunk := response.read(1024 * 1024):
-                        digest.update(chunk)
-                        archive.write(chunk)
-            if digest.hexdigest() != item["sha256"]:
-                raise ValueError("Antigravity archive checksum mismatch")
-            archive.seek(0)
-            with zipfile.ZipFile(archive) as bundle:
-                for member in bundle.infolist():
-                    target = root / member.filename
-                    if not target.resolve().is_relative_to(root.resolve()) or stat.S_ISLNK(member.external_attr >> 16):
-                        raise ValueError("Unsafe path in Antigravity archive")
-                bundle.extractall(root)
-        for name in (item["cmd"], "localharness_external"):
-            path = root / name
-            if path.is_file():
-                path.chmod(path.stat().st_mode | 0o500)
-        record = {"version": value["version"], "cmd": item["cmd"], "args": item.get("args", []),
-                  "sha256": item["sha256"]}
-        (root / "distribution.json").write_text(json.dumps(record) + "\n")
-        # Handshake verifies the executable and framing without login or an AI call.
-        from management_portal.antigravity_client import AcpClient
-        with tempfile.TemporaryDirectory() as scratch:
+        with tempfile.TemporaryDirectory(dir=root) as scratch:
+            stage = Path(scratch)
+            binary = binary_path(stage)
+            with tempfile.TemporaryFile() as archive:
+                with updates.phase("download"), urlopen(item["url"], timeout=120) as response:
+                    digest = hashlib.sha512()
+                    while block := response.read(1024 * 1024):
+                        digest.update(block)
+                        archive.write(block)
+                if digest.hexdigest() != item["sha512"]:
+                    raise ValueError("Antigravity CLI download checksum mismatch")
+                archive.seek(0)
+                with binary.open("wb") as output:
+                    if item["url"].endswith(".tar.gz"):
+                        with tarfile.open(fileobj=archive, mode="r:gz") as bundle:
+                            member = bundle.getmember("antigravity")
+                            if not member.isfile():
+                                raise ValueError("Expected a regular Antigravity executable")
+                            with bundle.extractfile(member) as source:
+                                shutil.copyfileobj(source, output)
+                    else:
+                        shutil.copyfileobj(archive, output)
+            binary.chmod(0o755)
+            from management_portal.antigravity_client import AcpClient
             env = {"PATH": os.environ.get("PATH", os.defpath), "HOME": scratch, "GEMINI_HOME": scratch,
                    **credential_environment()}
             if sys.platform == "win32":
-                # The native binary needs a Windows user profile even for the
-                # credential-free initialize handshake. Keep every profile
-                # directory in scratch; never inherit an operator's login.
-                allowed = {"SYSTEMROOT": "SystemRoot", "WINDIR": "WINDIR", "COMSPEC": "COMSPEC",
-                           "PATHEXT": "PATHEXT", "TEMP": "TEMP", "TMP": "TMP"}
-                env.update({allowed[key.upper()]: item for key, item in os.environ.items()
-                            if key.upper() in allowed})
-                env.update(USERPROFILE=scratch, APPDATA=scratch, LOCALAPPDATA=scratch)
-            with updates.phase("executable_validation"):
-                with AcpClient(command(root), env=env) as client:
-                    info = client.initialize()
-                    if info.get("agentInfo", {}).get("version") != value["version"]:
-                        raise RuntimeError("Antigravity staged version mismatch")
-        (root / ".portal-validated").write_text(value["version"] + "\n")
+                env.update({k: os.environ[k] for k in ("SystemRoot", "WINDIR", "COMSPEC", "PATHEXT") if k in os.environ})
+                env.update(USERPROFILE=scratch, APPDATA=scratch, LOCALAPPDATA=scratch, TEMP=scratch, TMP=scratch)
+            with updates.phase("executable_validation"), AcpClient(_cli_args(binary, env), env=env, cwd=scratch) as client:
+                if client.initialize().get("agentInfo", {}).get("version") != VERSION:
+                    raise RuntimeError("Antigravity CLI handshake version mismatch")
+            record = {"version": VERSION, "sha512": item["sha512"], "binary_sha256": _digest(binary)}
+            (stage / "distribution.json").write_text(json.dumps(record) + "\n")
+            (stage / ".portal-validated").write_text(VERSION + "\n")
+            for file in (binary, stage / "distribution.json", stage / ".portal-validated"):
+                file.replace(root / file.name)
         return root
 
 
-def command(root: Path | None = None):
-    root = root or AntigravityRuntime().link()
-    path = root / "distribution.json"
-    if not path.is_file():
-        raise NativeAgentUnavailable("Antigravity ACP is not installed; prepare the Provider runtime first")
-    value = json.loads(path.read_text())
-    _require_credential_storage(value["version"])
-    return [str(root / value["cmd"]), *value.get("args", []), "--logtostderr"]
-
-# Linux x64 build verified with Portal's authenticated HTTP ToolServer.
-CLI_CANARY = "cli-1.5.18"
-CLI_DIGEST = "7c96ad8c944c1a8d195ca34d2041a3d74d5166c96662b52183b748a3c455d52f"
-PREVIOUS_CLI = "cli-1.5.17"
-PREVIOUS_DIGEST = "f3f384bd2c15a74a036ebc3b0a2f48695cc6e56523ba0f9524fb6e4c4adb3baa"
+def verified_binary():
+    runtime = AntigravityRuntime()
+    root = runtime.link().resolve()
+    record = runtime._record(root)
+    binary = binary_path(root)
+    if not record or _digest(binary) != record.get("binary_sha256"):
+        raise NativeAgentUnavailable(f"Prepare the verified Antigravity CLI {VERSION} runtime")
+    return binary
 
 
-def cli_session_marker(root: Path, session_id: str) -> Path:
-    return root / "sessions" / hashlib.sha256(session_id.encode()).hexdigest()
-
-
-def _can_upgrade(root: Path, session_id: str, home) -> bool:
-    if root.name != CLI_CANARY or not (root / "enabled").is_file():
-        return False
-    if not session_id:
-        return True
-    if not home or Path(session_id).name != session_id or session_id in {".", ".."}:
-        return False
-    return (Path(home) / "antigravity-acp" / "conversations" / f"{session_id}.db").is_file()
-
-
-def cli_binding_root(account_root: Path, session_id: str, home=None) -> Path:
-    current = account_root / CLI_CANARY
-    if _can_upgrade(current, session_id, home):
-        return current
-    for root in (current, account_root / PREVIOUS_CLI):
-        marker = cli_session_marker(root, session_id) if session_id else root / "enabled"
-        if marker.is_file():
-            return root
-    return current
-
-
-def has_cli_binding(account_id: str, session_id: str) -> bool:
-    from management_portal.execution.account_hosting import account_home
-    from management_common.provider_account_paths import account_runtime
-
-    if not account_id or not session_id:
-        return False
-    account = account_runtime("antigravity", account_id)
-    root = cli_binding_root(account, session_id)
-    if cli_session_marker(root, session_id).is_file():
-        return True
-    if not (account / CLI_CANARY / "enabled").is_file():
-        return False
-    return _can_upgrade(account / CLI_CANARY, session_id, account_home("antigravity", account_id))
-
-
-def canary_command(root: Path, session_id: str, native: bool, env: dict):
-    """Select the executable for this turn; both executables load the same account history."""
-    if not native:
-        return None
-    marker = cli_session_marker(root, session_id) if session_id else root / "enabled"
-    if not marker.is_file() and not _can_upgrade(root, session_id, env.get("GEMINI_HOME")):
-        return None
-    binary = root / "antigravity"
-    with binary.open("rb") as stream:
-        if hashlib.file_digest(stream, "sha256").hexdigest() != (PREVIOUS_DIGEST if root.name == PREVIOUS_CLI else CLI_DIGEST):
-            raise NativeAgentUnavailable("Antigravity CLI differs from the verified HTTP MCP build")
-    home = Path(env["HOME"])
-    gemini = Path(env["GEMINI_HOME"]).relative_to(home)
-    flags = ["--process-per-session"] if root.name == CLI_CANARY else []
-    return [str(binary), "acp", *flags, "--gemini-dir", str(gemini), "--app-data-dir", "antigravity-acp"]
-
-
-def pin_cli_session(root: Path, session_id: str):
-    atomic_write_private_bytes(cli_session_marker(root, session_id), root.name.encode())
+def command(env):
+    return _cli_args(verified_binary(), env)

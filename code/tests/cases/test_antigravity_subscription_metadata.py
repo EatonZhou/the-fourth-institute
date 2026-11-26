@@ -38,7 +38,7 @@ def test_daily_tier_reads_native_auth_without_session_or_usage(monkeypatch):
     client.call.return_value = metadata()
     monkeypatch.setattr(accounts, 'AcpClient', lambda *args, **kwargs: client)
     monkeypatch.setattr(accounts, 'account_for_route', lambda route: {'account_id': 'one'})
-    monkeypatch.setattr(accounts, 'command', lambda: ['native'])
+    monkeypatch.setattr(accounts, 'command', lambda env: ['native'])
     monkeypatch.setattr(accounts, 'environment', lambda _: {})
     result = accounts.read_subscription('route')
     assert result['source'] == 'acp.authenticate'

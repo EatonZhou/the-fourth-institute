@@ -1,22 +1,63 @@
 """Portal session setup for Antigravity CLI 1.5.18 (agy acp).
 
-CLI contract: https://antigravity.google/docs/ide/extensions/acp
+CLI contract: https://antigravity.google/docs/cli/acp/
 Provider-specific extensions must be advertised by the selected executable.
 """
+import hashlib
+from pathlib import Path
+
 from .antigravity_workspace import additional_directories
 from .backend_contracts import full_system_context
 
 
-def open_session(client, invocation, capabilities, servers, session_id):
+PORTAL_AGENT = "portal-tools-only"
+
+
+def policy_marker(account_root, session_id):
+    return account_root / "portal-only-sessions" / hashlib.sha256(session_id.encode()).hexdigest()
+
+
+def session_marker(account_root, session_id):
+    return account_root / "cli-1518-sessions" / hashlib.sha256(session_id.encode()).hexdigest()
+
+
+def needs_new_session(gemini_home, account_root, session_id, portal_only):
+    if not session_id or Path(session_id).name != session_id or session_id in {".", ".."}:
+        raise ValueError("Invalid Antigravity session ID")
+    database = Path(gemini_home) / "antigravity-acp" / "conversations" / f"{session_id}.db"
+    return (not session_marker(account_root, session_id).is_file() or not database.is_file()
+            or policy_marker(account_root, session_id).is_file() != portal_only)
+
+
+def write_portal_agent(cwd):
+    agents = Path(cwd) / ".agents" / "agents"
+    agents.mkdir(parents=True)
+    (agents / f"{PORTAL_AGENT}.md").write_text(
+        "---\nname: portal-tools-only\ndescription: Use Portal tools for this conversation\n"
+        "mainAgent: true\nsubagent: false\ntools: []\n---\n"
+        "Use the tools supplied by Portal for this session.\n", encoding="utf-8"
+    )
+
+
+def is_offered_portal_call(call, offered):
+    # 1.5.18 reports either the qualified component name or its MCP dispatcher.
+    if call.get("kind") == "other" and call.get("name") in {f"mcp_portal_{name}" for name in offered}:
+        return True
+    args = call.get("args")
+    return (call.get("name") == "call_mcp_tool" and isinstance(args, dict)
+            and args.get("ServerName") == "portal" and args.get("ToolName") in offered)
+
+
+def open_session(client, invocation, capabilities, servers, session_id, *, cwd, portal_only):
     """Build the agy acp request from its initialize response."""
-    params = {"cwd": invocation.request.cwd, "mcpServers": servers}
+    params = {"cwd": cwd, "mcpServers": servers}
     context = full_system_context(invocation)
     extensions = (capabilities.get("_meta") or {}).get("antigravity") or {}
     if context:
         if (extensions.get("systemPrompt") or {}).get("append") is not True:
             raise RuntimeError("Antigravity CLI did not advertise Portal system instructions")
         params["_meta"] = {"antigravity": {"systemPrompt": {"append": context}}}
-    roots = additional_directories(invocation.request)
+    roots = [] if portal_only else additional_directories(invocation.request)
     if roots:
         if "additionalDirectories" not in (capabilities.get("sessionCapabilities") or {}):
             raise RuntimeError("Antigravity CLI did not advertise additional workspace directories")

@@ -54,14 +54,16 @@ def prompt(identifier, params):
         tool_call = {}
         requested_sid = sid
         if text.startswith("permission-mcp"):
-            tool_call = {"title": "portal:read_resource", "_meta": {
-                "mcp": {"server": "portal", "tool": "read_resource"}, "is_mcp_tool_call": True}}
-            if text == "permission-mcp-other":
-                tool_call["_meta"]["mcp"]["server"] = "other"
+            tool_call = {"title": "Run mcp_portal_read_resource", "kind": "other", "name": "mcp_portal_read_resource"}
+            if text == "permission-mcp-dispatch":
+                tool_call = {"kind": "execute", "name": "call_mcp_tool",
+                             "args": {"ServerName": "portal", "ToolName": "read_resource"}}
+            elif text == "permission-mcp-other":
+                tool_call["name"] = "mcp_other_read_resource"
             elif text == "permission-mcp-unoffered":
-                tool_call["_meta"]["mcp"]["tool"] = "unoffered"
+                tool_call["name"] = "mcp_portal_unoffered"
             elif text == "permission-mcp-title-only":
-                tool_call.pop("_meta")
+                tool_call.pop("name")
             elif text == "permission-mcp-wrong-session":
                 requested_sid = "another-session"
         send({"id": "permission-1", "method": "session/request_permission", "params": {
@@ -135,7 +137,7 @@ for line in sys.stdin:
     with (root / "requests.jsonl").open("a") as log:
         log.write(json.dumps({"method": method, "params": params}) + "\n")
     if method == "initialize":
-        result = {"protocolVersion": 1, "agentInfo": {"version": "1.4.5"},
+        result = {"protocolVersion": 1, "agentInfo": {"version": "1.5.18"},
                   "agentCapabilities": {"loadSession": True, "mcpCapabilities": {"http": True},
                                         "promptCapabilities": {"image": not bool(os.environ.get("FAKE_NO_IMAGES"))}}}
         if os.environ.get("FAKE_ADDITIONAL_DIRECTORIES"):

@@ -264,7 +264,7 @@ AGENT_PROVIDERS = {
                       ("model", "permissions"), "management_portal.antigravity_accounts",
                       media=True,
                       account_adapter="AntigravityAccounts",
-                      adapter="management_portal.execution.antigravity_backend.AntigravityBackend",
+                      adapter="management_portal.execution.antigravity_cli_backend.AntigravityCliBackend",
                       options_adapter="management_portal.execution.antigravity_backend.AntigravityOptions",
                       initial_instructions_transport="system_instructions", system_context_every_turn=True,
                       harness=frozenset({PORTAL_TOOLS, NATIVE_TOOL_EVENTS, CONTEXT_USAGE_EVENTS}),

@@ -77,10 +77,8 @@ def project_session(value: object, actor: str = "") -> dict[str, Any]:
         "runtime_settings": copy.deepcopy(_dict(source.get("runtime_settings"))),
         "slash_commands": slash_commands.slash_command_catalog(backend=backend),
     }
-    if backend == "antigravity":
-        from .antigravity_runtime import has_cli_binding
-        if not has_cli_binding(account_id, str(provider_session.get("id") or "")):
-            composer["slash_commands"] = [entry for entry in composer["slash_commands"] if entry["command"] != "/compact"]
+    if backend == "antigravity" and not provider_session.get("id"):
+        composer["slash_commands"] = [entry for entry in composer["slash_commands"] if entry["command"] != "/compact"]
     actions: dict[str, Any] = {}
     if can_send:
         actions["send"] = {
