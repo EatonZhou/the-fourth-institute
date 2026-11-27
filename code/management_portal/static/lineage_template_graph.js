@@ -368,6 +368,14 @@
       labelLayer:root.querySelector('.hatgEdgeLabels'),nodeLayer:root.querySelector('.hatgNodes'),
       worldWidth:1280,worldHeight:900,scaleExtent:[.01,10],nodeContent,
       portsForNode:node=>window.PortalLineageProgram.portsForNode(node)});
+    controller.render({nodes:graph.nodes,edges:graph.edges,layoutInteractive:false,selectionEnabled:false});
+    root.dataset.anchor=geometry.slot;
+    root.querySelectorAll('[data-node-id]').forEach(element=>{
+      element.classList.add('templatePlacementNode');
+      element.classList.toggle('is-template-binding',bindingIds.has(element.dataset.nodeId));
+    });
+    const anchorNode = geometry.slot && root.querySelector(`[data-node-id="${CSS.escape(geometry.slot)}"]`);
+    const worldWidth = Number(root.dataset.worldWidth), worldHeight = Number(root.dataset.worldHeight);
     let lastEvent=null,destroyed=false;
     const observer=new MutationObserver(()=>{if(lastEvent&&!destroyed)onViewportChange(lastEvent);});
     observer.observe(view.root.querySelector('.hatgWorld'),{attributes:true,attributeFilter:['style']});
@@ -382,15 +390,16 @@
       const resident=candidate && view.residents?.().find(row=>row.id===candidate && row.accessible!==false);
       const bounds=resident ? hit.getBoundingClientRect() : null;
       const target=resident ? view.controller.screenToPosition(bounds.left+bounds.width/2,bounds.top+bounds.height/2) : anchor;
-      const nodes=graph.nodes.map(node=>({...node,x:target.x+node.x-geometry.anchor.x,y:target.y+node.y-geometry.anchor.y}));
-      controller.render({nodes,edges:graph.edges,layoutInteractive:false,selectionEnabled:false});
-      controller.setTransform(view.controller.getTransform(),{duration:0});
-      root.dataset.anchor=geometry.slot;root.dataset.boundResident=resident?.id || '';
-      root.querySelectorAll('[data-node-id]').forEach(element=>{
-        element.classList.add('templatePlacementNode');
-        element.classList.toggle('is-template-binding',bindingIds.has(element.dataset.nodeId));
-      });
-      root.querySelector(`[data-node-id="${CSS.escape(geometry.slot)}"]`)?.classList.toggle('templateDropTarget',!!resident);
+      // Translation preserves the shape of every route. Keep the rendered
+      // graph and move its world with the pointer at the host camera's scale.
+      const camera = view.controller.getTransform();
+      controller.setTransform({
+        x: camera.x + (target.x - geometry.anchor.x) * worldWidth * camera.k / 100,
+        y: camera.y + (target.y - geometry.anchor.y) * worldHeight * camera.k / 100,
+        k: camera.k,
+      }, {duration:0});
+      root.dataset.boundResident=resident?.id || '';
+      if (anchorNode) anchorNode.classList.toggle('templateDropTarget', !!resident);
       return {x:target.x,y:target.y,hit:resident ? hit : null,
         event:{clientX:event.clientX+28,clientY:event.clientY+28,target:resident ? hit : view.root}};
     }

@@ -31,6 +31,7 @@
           this.schedule();
         };
         this.deferRetry = () => {
+          if (this.disposed) return;
           this.retryAfter = Date.now() + 5000;
           if (!this.retryTimer) this.retryTimer = window.setTimeout(() => {
             this.retryTimer = 0;

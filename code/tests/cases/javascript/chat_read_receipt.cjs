@@ -173,11 +173,19 @@ const shown = (cursor, unread = true) => ({ cursor, viewer_state: { unread } });
     await frame();
     assert.equal(reads.length, 12, 'five seconds later it tries again');
 
-    observer.destroy();
+    answer = deferred();
     observer.update(shown(13));
+    await frame();
+    assert.equal(reads.length, 13, 'the next receipt is in flight');
+    const timersBeforeDestroy = retryTimers.length;
+    observer.destroy();
+    answer.resolve(null);
+    answer = null;
+    observer.update(shown(14));
     w.document.dispatchEvent(new w.Event('visibilitychange'));
     await frame();
-    assert.equal(reads.length, 12, 'a destroyed observer sends nothing');
+    assert.equal(retryTimers.length, timersBeforeDestroy, 'a late response cannot re-arm a destroyed observer');
+    assert.equal(reads.length, 13, 'a destroyed observer sends nothing');
     assert.equal(storeListeners.size, 0, 'and stops listening to the store');
   } finally {
     observer.destroy();

@@ -108,10 +108,18 @@
     function unsupported(item) {
       return `${t(item.title)} · ${t('请拖到支持的目标')}：${item.targets.map(kind => targetLabels()[kind]).join(' / ')}`;
     }
+    let dropTarget = null;
+    function highlightDropTarget(next) {
+      if (dropTarget === next) return;
+      dropTarget?.classList.remove('templateDropTarget');
+      next?.classList.add('templateDropTarget');
+      dropTarget = next;
+    }
+
     function clearDrop() {
       dropHint.hidden = true;
       canvas?.classList.remove('templateDropAllowed', 'templateDropForbidden');
-      canvas?.querySelectorAll('.templateDropTarget').forEach(node => node.classList.remove('templateDropTarget'));
+      highlightDropTarget(null);
     }
     function clearPreview() {preview?.destroy();preview=null;previewId='';lastPointer=null;}
     function cancelPlacement() {
@@ -128,7 +136,6 @@
       return openEditor(id);
     }
     function showTarget(event, item) {
-      clearDrop();
       lastPointer={clientX:event.clientX,clientY:event.clientY,target:event.target};
       let body=item.kind==='structure' ? item.body : projections.get(item.template_id);
       if(!body && ['familize','family_duty','role'].includes(item.kind) && !projections.has(item.template_id)) {
@@ -149,10 +156,11 @@
       const needsBinding=!config.isComposition && body?.roles?.some(row=>row.from==='target');
       const supported = (!needsBinding || !!target.resident_ids?.length)
         && (config.acceptTemplate ? config.acceptTemplate(item, target) : item.targets.includes(target.kind));
-      canvas.classList.add(supported ? 'templateDropAllowed' : 'templateDropForbidden');
-      const highlighted=placement ? placement.hit : event.target.closest('.hatgNode');
-      highlighted?.classList.add('templateDropTarget');
-      dropHint.textContent = supported ? `${t('施加到')} ${targetLabels()[target.kind]}` : `⊘ ${unsupported(item)}`;
+      canvas.classList.toggle('templateDropAllowed', supported);
+      canvas.classList.toggle('templateDropForbidden', !supported);
+      highlightDropTarget(placement ? placement.hit : event.target.closest('.hatgNode'));
+      const hint = supported ? `${t('施加到')} ${targetLabels()[target.kind]}` : `⊘ ${unsupported(item)}`;
+      if (dropHint.textContent !== hint) dropHint.textContent = hint;
       dropHint.dataset.allowed = String(supported);
       dropHint.style.left = `${Math.max(0, Math.min(event.clientX + 18, window.innerWidth - 300))}px`;
       dropHint.style.top = `${Math.max(0, Math.min(event.clientY + 76, window.innerHeight - 70))}px`;

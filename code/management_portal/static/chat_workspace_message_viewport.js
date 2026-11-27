@@ -87,6 +87,10 @@
     };
     const captureWorkbenchViewport = () => {
       if (!messageViewportMeasurable()) return null;
+      if (state.messageTailFollowIntent) {
+        workbenchAnchorKey = "";
+        return { followTail: true, scrollTop: els.messages.scrollTop };
+      }
       const viewportBox = els.messages.getBoundingClientRect();
       const rows = [...els.messages.querySelectorAll("[data-message-key]")]
         .filter(row => row.dataset.messageKey !== "__scroll_anchor__");

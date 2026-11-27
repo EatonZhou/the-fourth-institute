@@ -397,14 +397,17 @@
       const elements = [...viewport.querySelectorAll('.messageList > [data-message-key]')];
       const liveRows = new Set(elements);
       for (const node of observedRows) if (!liveRows.has(node)) { resize.unobserve(node); observedRows.delete(node); }
+      const humanRows = state.messages.filter(human);
+      const keys = new Set([...humanRows, ...search].map(keyFor));
       coords = new Map();
       for (const node of elements) {
         if (!observedRows.has(node)) { observedRows.add(node); resize.observe(node); }
+        const key = node.dataset.messageKey;
+        if (!keys.has(key) || node.hidden) continue;
         const rect = node.getBoundingClientRect();
-        sizes.set(node, { width: rect.width, height: rect.height });
-        if (!node.hidden && rect.height) coords.set(node.dataset.messageKey, rect.top - bounds.top + top);
+        if (rect.height) coords.set(key, rect.top - bounds.top + top);
       }
-      rows = state.messages.filter(human).map(item => ({ item, key: keyFor(item), y: coords.get(keyFor(item)) }))
+      rows = humanRows.map(item => ({ item, key: keyFor(item), y: coords.get(keyFor(item)) }))
         .filter(row => row.y !== undefined).sort((a, b) => a.y - b.y);
       const hit = matchMedia('(pointer: coarse)').matches ? 44 : 26;
       const available = Math.max(0, height - hit);
@@ -582,7 +585,7 @@
       const range = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
       scrollTo(Math.max(0, Math.min(range, dragging.top + (event.clientY - dragging.y) * range / Math.max(1, scroll.clientHeight - thumb.offsetHeight))));
     });
-    on(window, 'pointerup', event => { if (!marks.contains(event.target)) activation = null; cancelPress(); dragging = null; rail.classList.remove('is-dragging'); });
+    on(window, 'pointerup', event => { if (!(event.target instanceof Node) || !marks.contains(event.target)) activation = null; cancelPress(); dragging = null; rail.classList.remove('is-dragging'); });
     on(window, 'pointercancel', () => { activation = null; cancelPress(); dragging = null; rail.classList.remove('is-dragging'); });
     on(thumb, 'pointerdown', event => {
       if (event.button !== 0) return; event.preventDefault(); closePreview(); cancelPress();
@@ -639,7 +642,7 @@
         const box = entry.borderBoxSize?.[0];
         const next = { width: box?.inlineSize ?? entry.contentRect.width, height: box?.blockSize ?? entry.contentRect.height };
         const previous = sizes.get(entry.target); sizes.set(entry.target, next);
-        if (previous && (previous.width !== next.width || previous.height !== next.height)) changed = true;
+        if (!previous || previous.width !== next.width || previous.height !== next.height) changed = true;
       }
       if (changed) invalidate();
     });
@@ -662,7 +665,13 @@
     }) : null;
     intersection?.observe(wrapper); updateObservation();
     return { requestFor, toggle, isFollowed: key => flags.has(requestFor(key)), updateProgress,
-      connectionLost: lost, setSearch: items => { search = Array.isArray(items) ? items : []; searchDirty = true; schedule(); },
+      connectionLost: lost,
+      setSearch(items) {
+        search = Array.isArray(items) ? items : [];
+        searchDirty = true;
+        if (search.some(item => !coords.has(keyFor(item)))) invalidate();
+        else schedule();
+      },
       refresh: invalidate,
       setPresented(value) { if (presented === !!value) return; presented = !!value; lost(); updateObservation(); if (visible()) void refresh(); },
       destroy() { disposed = true; navigation++; cancelAnimationFrame(frame); cancelPress(); closePreview(); mutation.disconnect(); resize.disconnect(); intersection?.disconnect(); cleanups.forEach(fn => fn()); wrapper.before(viewport); wrapper.remove(); },

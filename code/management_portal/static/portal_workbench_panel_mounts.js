@@ -59,19 +59,21 @@
       }
     }
 
-    function panelFrameIn(layoutRoot, panelId) {
-      // Panel IDs are local to a Workbench. A nested Workbench can contain a
-      // frame with the same ID, but never owns this instance's Panel root.
-      return [...layoutRoot.querySelectorAll(
-        `[data-portal-workbench-panel-frame="${CSS.escape(panelId)}"]`,
-      )].find(frame => frame.closest("[data-portal-workbench-id]") === root) || null;
+    function panelFramesIn(layoutRoot) {
+      const frames = new Map();
+      for (const frame of layoutRoot.querySelectorAll("[data-portal-workbench-panel-frame]")) {
+        // A nested Workbench owns its own Panel IDs.
+        if (frame.closest("[data-portal-workbench-id]") !== root) continue;
+        const panelId = frame.dataset.portalWorkbenchPanelFrame;
+        if (!frames.has(panelId)) frames.set(panelId, frame);
+      }
+      return frames;
     }
 
-    function reconcilePanelMounts(layoutRoot) {
+    function reconcilePanelMounts(frames) {
       let complete = true;
       descriptors.forEach(descriptor => {
-        const frame = panelFrameIn(layoutRoot, descriptor.id);
-        if (!mountPanelElement(frame || parking, descriptor.element)) complete = false;
+        if (!mountPanelElement(frames.get(descriptor.id) || parking, descriptor.element)) complete = false;
       });
       return complete;
     }
@@ -121,7 +123,7 @@
     }
 
     return {
-      mountPanelElement, panelFrameIn, reconcilePanelMounts, refreshPanelFrame, renderPanelFrame, restorePanelMounts,
+      mountPanelElement, panelFramesIn, reconcilePanelMounts, refreshPanelFrame, renderPanelFrame, restorePanelMounts,
     };
   }
 

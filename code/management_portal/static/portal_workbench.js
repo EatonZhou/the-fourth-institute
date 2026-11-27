@@ -1026,7 +1026,7 @@
     });
 
     const {
-      mountPanelElement, panelFrameIn, reconcilePanelMounts, refreshPanelFrame, renderPanelFrame, restorePanelMounts,
+      mountPanelElement, panelFramesIn, reconcilePanelMounts, refreshPanelFrame, renderPanelFrame, restorePanelMounts,
     } = workbenchPart("PortalWorkbenchPanelMounts").createPanelMounts({ descriptors, parking, root, shellState });
 
     const {
@@ -1055,7 +1055,7 @@
 
     const { announceBeforeLayout, announceChange, render } = workbenchPart("PortalWorkbenchRender").createRender({
       canvas, clone, customizeButton, customizeLabel, descriptors, executeCommand, findNode, findPanel, id,
-      lastOpenTargetByType, mobileSwitcher, mountPanelElement, options, panelFrameIn, persist, placements,
+      lastOpenTargetByType, mobileSwitcher, mountPanelElement, options, panelFramesIn, persist, placements,
       reconcilePanelMounts, reconcilePanelVisibility, refreshNode, renderHiddenRail, renderMenu, renderNode,
       restorePanelMounts, root, shellState, stage, syncLayoutLock, toolbar, topologyOf,
     });

@@ -9,7 +9,7 @@
 
   const DEPENDENCIES = Object.freeze([
     "canvas", "clone", "customizeButton", "customizeLabel", "descriptors", "executeCommand", "findNode", "findPanel",
-    "id", "lastOpenTargetByType", "mobileSwitcher", "mountPanelElement", "options", "panelFrameIn", "persist",
+    "id", "lastOpenTargetByType", "mobileSwitcher", "mountPanelElement", "options", "panelFramesIn", "persist",
     "placements", "reconcilePanelMounts", "reconcilePanelVisibility", "refreshNode", "renderHiddenRail", "renderMenu",
     "renderNode", "restorePanelMounts", "root", "shellState", "stage", "syncLayoutLock", "toolbar", "topologyOf",
   ]);
@@ -19,7 +19,7 @@
     if (missing.length) throw new Error(`PortalWorkbenchRender is missing: ${missing.join(", ")}`);
     const {
       canvas, clone, customizeButton, customizeLabel, descriptors, executeCommand, findNode, findPanel, id,
-      lastOpenTargetByType, mobileSwitcher, mountPanelElement, options, panelFrameIn, persist, placements,
+      lastOpenTargetByType, mobileSwitcher, mountPanelElement, options, panelFramesIn, persist, placements,
       reconcilePanelMounts, reconcilePanelVisibility, refreshNode, renderHiddenRail, renderMenu, renderNode,
       restorePanelMounts, root, shellState, stage, syncLayoutLock, toolbar, topologyOf,
     } = dependencies;
@@ -130,7 +130,8 @@
       mounts.forEach(([parent, element]) => {
         if (parent.isConnected && !mountPanelElement(parent, element)) mountComplete = false;
       });
-      mountComplete = reconcilePanelMounts(layoutRoot) && mountComplete;
+      const frames = panelFramesIn(layoutRoot);
+      mountComplete = reconcilePanelMounts(frames) && mountComplete;
       if (!mountComplete) {
         const restored = restorePanelMounts(originalParents);
         if (restored && layoutRoot && !previousRoots.includes(layoutRoot)) layoutRoot.remove();
@@ -149,7 +150,7 @@
         return false;
       }
       descriptors.forEach(descriptor => {
-        const frame = panelFrameIn(layoutRoot, descriptor.id);
+        const frame = frames.get(descriptor.id);
         descriptor.element.hidden = !frame || frame.hidden;
       });
       previousRoots.forEach(previous => { if (previous !== layoutRoot) previous.remove(); });
