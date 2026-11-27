@@ -201,9 +201,10 @@ def definition_root(text, platform):
     return environment.get('PORTAL_INSTANCE_ROOT')
 
 
-def _claude_network_dropins(instance, component, directory, properties):
-    """Recognize the two host-routing definitions used by Claude service updates."""
-    if component != 'claude-code' and not component.startswith(('claude-account@', 'antigravity-account@')):
+def _provider_network_dropins(instance, component, directory, properties):
+    """Recognize the two managed host-routing definitions on provider services."""
+    if component not in {'claude-code', 'kimi-code'} and not component.startswith((
+            'claude-account@', 'kimi-account@', 'antigravity-account@')):
         return False
     if properties.get('NeedDaemonReload') != 'no':
         return False
@@ -231,7 +232,10 @@ def _claude_network_dropins(instance, component, directory, properties):
     return True
 
 
-def verify_definitions(instance, *, exact=True, selected_components=None, claude_network_dropins=False):
+def verify_definitions(instance, *, exact=True, selected_components=None, provider_network_dropins=False,
+                       claude_network_dropins=False):
+    # Existing provider processes can still call the earlier keyword during a rolling update.
+    provider_network_dropins = provider_network_dropins or claude_network_dropins
     platform = platform_name()
     native = adapter()
     directory = definition_directory(instance)
@@ -257,7 +261,7 @@ def verify_definitions(instance, *, exact=True, selected_components=None, claude
                                  '--property=FragmentPath,DropInPaths,NeedDaemonReload', check=True)
             properties = dict(line.split('=', 1) for line in result.stdout.splitlines() if '=' in line)
             foreign_dropins = properties.get('DropInPaths') and not (
-                claude_network_dropins and _claude_network_dropins(instance, component, directory, properties))
+                provider_network_dropins and _provider_network_dropins(instance, component, directory, properties))
             if properties.get('FragmentPath') != str(path) or foreign_dropins:
                 raise ValueError('Loaded instance service has a different definition or overrides: ' + name)
         elif platform == 'macos':

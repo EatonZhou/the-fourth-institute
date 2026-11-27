@@ -270,6 +270,28 @@ def test_claude_update_with_host_routing_overrides(control):
             units.install_claude_backend(app_server_only=True)
 
 
+@pytest.mark.skipif(not sys.platform.startswith("linux"), reason="systemd service contract")
+@pytest.mark.parametrize("component", ["kimi-code", "kimi-account@fixture"])
+def test_kimi_update_accepts_exact_host_routing_override(control, component):
+    from scripts import instance_services
+    instance, _ = instance_services.register_component(units._instance().root, component, listener_bind="127.0.0.1")
+    target = units._definition_path(instance, component)
+    override = target.parent / (target.name + ".d") / "50-provider-egress.conf"
+    override.parent.mkdir(mode=0o700)
+    override.write_text("[Service]\nEnvironment=TFI_PROVIDER_EGRESS=tunnel\n")
+    override.chmod(0o600)
+    control.service.dropins = str(override)
+    def inspect():
+        if component == "kimi-code":
+            units.provider_runtime_services("portal-kimi-code.service")
+        else:
+            units.kimi_account_service("fixture", action="start")
+    inspect()
+    override.write_text("[Service]\nEnvironment=TFI_PROVIDER_EGRESS=unexpected\n")
+    with pytest.raises(ValueError, match="overrides"):
+        inspect()
+
+
 def test_foreign_dropin_rejected_before_new_start(control):
     target = units.install_claude_backend(app_server_only=True)
     before = target.read_bytes()

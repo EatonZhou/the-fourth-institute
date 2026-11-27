@@ -62,7 +62,7 @@ def provider_runtime_services(unit: str) -> tuple[str, ...]:
     if component not in instance.document['services']['components']:
         return ()
     instance_services.verify_definitions(instance, exact=False, selected_components=(component,),
-                                         claude_network_dropins=component == 'claude-code')
+                                         provider_network_dropins=True)
     if not _definition_path(instance, component).exists():
         return ()
     name = instance_services.unit_name(instance, component)
@@ -75,7 +75,7 @@ def claude_account_services():
     components = [name for name in instance.document['services']['components']
                   if name.startswith('claude-account@')]
     if components:
-        instance_services.verify_definitions(instance, exact=False, selected_components=components, claude_network_dropins=True)
+        instance_services.verify_definitions(instance, exact=False, selected_components=components, provider_network_dropins=True)
     control = instance_services.controller(instance)
     names = [instance_services.unit_name(instance, component) for component in components]
     return tuple(name for name in names if control.status(name)['active'] == 'active')
@@ -145,7 +145,7 @@ def _account_service(kind: str, account_id: str, *, action: str) -> dict[str, An
     elif component not in instance.document['services']['components']:
         return {'active': 'inactive', 'pid': 0}
     instance_services.verify_definitions(instance, exact=False, selected_components=(component,),
-                                         claude_network_dropins=kind in {'antigravity-account', 'claude-account'})
+                                         provider_network_dropins=True)
     name = instance_services.unit_name(instance, component)
     control = instance_services.controller(instance)
     if action == 'start':
