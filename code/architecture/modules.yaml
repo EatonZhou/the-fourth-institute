@@ -1330,7 +1330,7 @@ modules:
   - id: "delivery.backup"
     title: "备份服务连接器"
     parent: "web"
-    responsibility: "把页面备份请求和定时任务绑定到 Lineage Event/Effect，由 RunScript 调用共享备份服务并投影状态；备份执行、锁和凭据由外部服务持有，恢复在 Portal 外执行。"
+    responsibility: "投影历史备份状态、运行记录与恢复指南；旧本地 Restic 生产流程和云复制入口已下线，恢复在 Portal 外执行。"
     instruction_owners: []
     code_paths:
       - "management_portal/resource_backup_backend.py"
