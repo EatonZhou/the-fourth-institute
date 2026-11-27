@@ -127,13 +127,13 @@
   max-width: 70ch;
 }
 .progressRegion .pActions .portalButton {
-  border: 0;
-  padding: 5px 0;
+  padding: 6px 14px;
+  max-width: 100%;
+  text-align: center;
   color: var(--accent);
 }
-.progressRegion .pActions .portalButton:first-child {
-  border-bottom: 1px solid var(--accent);
-  border-radius: 0;
+.progressRegion .pActions .portalButton:hover {
+  border-color: var(--accent);
 }
 .progressRegion .pDetails {
   margin-top: 12px;

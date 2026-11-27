@@ -1211,14 +1211,7 @@
       callPanelLifecycle(descriptor, "setContext", runtimeContext.context, runtimeContext);
     });
 
-    customizeButton.addEventListener("click", () => menu.hidden ? openMenu() : closeMenu());
     lockButton.addEventListener("click", event => executeCommand("workbench.toggle-layout-lock", event, "workbench-toolbar"));
-    menu.addEventListener("keydown", event => {
-      if (event.key !== "Escape") return;
-      event.preventDefault();
-      closeMenu();
-      customizeButton.focus();
-    });
     const initialized = render("initialize");
     window.addEventListener("pagehide", persist);
     if (!options.store) window.addEventListener("portal:identity-changed", restoreIdentityLayout);

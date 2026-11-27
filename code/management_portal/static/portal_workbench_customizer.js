@@ -20,7 +20,14 @@
       id, isLayoutLocked, menu, openResource, options, panelPackages, persist, savedWorkspaces, shellState,
     } = dependencies;
 
-    let outsidePointerHandler = null;
+    const preview = customizeButton.closest(".portalNavTop")
+      ? global.PortalUIPrimitives.bindMenuPreview(customizeButton, menu, openMenu, closeMenu)
+      : null;
+    customizeButton.addEventListener("click", () => {
+      if (preview) preview.toggle();
+      else if (menu.hidden) openMenu();
+      else closeMenu();
+    });
     const accountLayouts = options.store ? null : global.PortalWorkbenchStorage.createSavedLayouts({
       id, savedWorkspaces, shellState, persist, clone,
     });
@@ -186,27 +193,41 @@
       hiddenRail.hidden = !hiddenRail.childElementCount;
     }
 
-    function openMenu() {
+    function dismissOutside(event) {
+      if (!menu.contains(event.target) && !customizeButton.contains(event.target)) closeMenu();
+    }
+
+    function dismissOnEscape(event) {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      const restoreFocus = menu.contains(document.activeElement);
+      event.preventDefault();
+      closeMenu();
+      if (restoreFocus) customizeButton.focus();
+    }
+
+    function openMenu({ focus = true } = {}) {
       if (isLayoutLocked()) return false;
-      menu.hidden = false;
-      customizeButton.setAttribute("aria-expanded", "true");
-      renderMenu();
-      if (accountLayouts) void updateSavedLayouts(() => accountLayouts.refresh());
-      outsidePointerHandler = event => {
-        if (menu.contains(event.target) || customizeButton.contains(event.target)) return;
-        closeMenu();
-      };
-      document.addEventListener("pointerdown", outsidePointerHandler, true);
-      requestAnimationFrame(() => menu.querySelector("input, button")?.focus());
+      if (menu.hidden) {
+        menu.hidden = false;
+        customizeButton.setAttribute("aria-expanded", "true");
+        renderMenu();
+        if (accountLayouts) void updateSavedLayouts(() => accountLayouts.refresh());
+        document.addEventListener("pointerdown", dismissOutside, true);
+        document.addEventListener("keydown", dismissOnEscape);
+      }
+      if (focus) requestAnimationFrame(() => {
+        if (!menu.hidden) menu.querySelector("input, button")?.focus();
+      });
     }
 
     function closeMenu() {
+      preview?.reset();
       menu.hidden = true;
       const editorOptions = menu.querySelector(".portalWorkbenchEditorOptions");
       if (editorOptions) editorOptions.open = false;
       customizeButton.setAttribute("aria-expanded", "false");
-      if (outsidePointerHandler) document.removeEventListener("pointerdown", outsidePointerHandler, true);
-      outsidePointerHandler = null;
+      document.removeEventListener("pointerdown", dismissOutside, true);
+      document.removeEventListener("keydown", dismissOnEscape);
     }
 
     return {

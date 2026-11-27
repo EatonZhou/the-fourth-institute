@@ -667,11 +667,49 @@
       set disabled(value) { root.disabled = !!value; }};
   }
 
+  // Mouse previews share the same trigger and panel as click/touch activation.
+  // Crossing the gap or interacting with a focused form keeps the preview open.
+  function bindMenuPreview(trigger, panel, open, close) {
+    let preview = false;
+    let timer;
+    const cancel = () => clearTimeout(timer);
+    const reset = () => { cancel(); preview = false; };
+    const leave = () => {
+      cancel();
+      if (!preview) return;
+      timer = setTimeout(() => {
+        if (!trigger.matches(":hover") && !panel.matches(":hover") && !panel.contains(document.activeElement)) close();
+      }, 140);
+    };
+    trigger.addEventListener("pointerenter", event => {
+      if (event.pointerType !== "mouse") return;
+      cancel();
+      if (panel.hidden) {
+        open({ focus: false });
+        preview = !panel.hidden;
+      }
+    });
+    trigger.addEventListener("pointerleave", leave);
+    panel.addEventListener("pointerenter", cancel);
+    panel.addEventListener("pointerleave", leave);
+    panel.addEventListener("focusout", leave);
+    return {
+      reset,
+      toggle() {
+        const show = preview || panel.hidden;
+        reset();
+        if (show) open();
+        else close();
+      },
+    };
+  }
+
   const api = Object.freeze({
     ICONS,
     ICON_ALIASES,
     STATUS_TONES,
     asyncStateHtml,
+    bindMenuPreview,
     buttonHtml,
     escapeHtml,
     createIcon,
