@@ -1,4 +1,5 @@
 """Process ownership: native POSIX trees and Windows API contract failures."""
+import errno
 import os
 from pathlib import Path
 import signal
@@ -6,6 +7,7 @@ import subprocess
 import sys
 import time
 from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
 
@@ -28,6 +30,26 @@ def tree_command(path, *, exit_parent=False):
               "p=Path(" + repr(str(path)) + ");\nwhile not p.exists(): time.sleep(.01)\n" +
               ("print('done', flush=True)" if exit_parent else "time.sleep(60)"))
     return [sys.executable, "-c", parent]
+
+
+@pytest.mark.parametrize("group_members,alive", [
+    ("934 S\n", False),
+    ("934 S\n921 Z\n", False),
+    ("934 S\n921 S\n", True),
+])
+def test_macos_group_probe_checks_members_after_eperm(monkeypatch, group_members, alive):
+    from management_common import _process_posix as posix
+
+    monkeypatch.setattr(posix.sys, "platform", "darwin")
+    probe = Mock(side_effect=PermissionError(errno.EPERM, "Operation not permitted"))
+    monkeypatch.setattr(posix.os, "killpg", probe, raising=False)
+    listing = Mock(return_value=subprocess.CompletedProcess([], 0, stdout=group_members))
+    monkeypatch.setattr(posix.subprocess, "run", listing)
+
+    assert posix._group_alive(921) is alive
+    probe.assert_called_once_with(921, 0)
+    listing.assert_called_once_with(["ps", "-axo", "pgid=,stat="], capture_output=True,
+                                    text=True, check=True, timeout=15)
 
 
 @pytest.mark.skipif(sys.platform not in {"linux", "darwin"}, reason="POSIX native test")
