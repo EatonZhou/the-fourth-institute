@@ -262,6 +262,7 @@
       options.onWorkspaceApplied?.(Object.freeze({
         id: String(workspace.id || ""),
         name: shellState.activeWorkspaceName,
+        ...(workspace.hostState !== undefined ? { hostState: clone(workspace.hostState) } : {}),
       }), shellState.controller);
       return true;
     }

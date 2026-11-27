@@ -61,6 +61,19 @@ test('legacy layouts migrate once; local live layout is not sent; failed migrati
   await b.service.remove('workspace-old');await a.service.refresh();assert.deepEqual(a.saved,{});
 });
 
+test('nested host layout state survives account round trips without sharing mutable objects',async()=>{
+  const server=new Map(), a=device(server), b=device(server);
+  const workspace={...preset('nested'),hostState:{workbenches:{overview:{layout:{type:'stack',tabs:['news']},hidden:['notice-board'],collapsed:[]}}}};
+  await a.service.save(workspace);
+  const expected=clone(workspace.hostState);
+  workspace.hostState.workbenches.overview.hidden.length=0;
+  await b.service.refresh();
+  assert.deepEqual(b.saved['workspace-nested'].hostState,expected);
+  b.saved['workspace-nested'].hostState.workbenches.overview.hidden.length=0;
+  await b.service.refresh();
+  assert.deepEqual(b.saved['workspace-nested'].hostState,expected);
+});
+
 test('failed saves/deletes/loads never claim success or erase the local list',async()=>{
   const a=device(new Map());await a.service.save(preset('kept'));
   a.hooks.put=()=>{throw new Error('offline');};

@@ -326,6 +326,15 @@
         const root = resolveRoot(panel.source, document);
         if (root) panelVisibility.set(root, false);
       }));
+      // Capture ownership before mounting moves Panels into workbench stages.
+      // Hidden Panels still belong to this composition and must be saved too.
+      const descendants = new Map(definitions.map(definition => [definition.id,
+        definitions.filter(target => target !== definition && definition.panels.some(panel => {
+          const source = resolveRoot(panel.source, document);
+          const targetRoot = resolveRoot(target.root, document);
+          return source && targetRoot && source.contains(targetRoot);
+        })).map(target => target.id),
+      ]));
       const initialWorkspaces = Object.assign({}, ...definitions.map(definition => (
         (definition.presets || []).find(preset => preset.id === definition.defaultPreset)?.workbenches || {}
       )));
@@ -365,9 +374,26 @@
           showSingleTabHeader: definition.showSingleTabHeader,
           autoHideTabHeader: definition.autoHideTabHeader,
           insets: { top: 0, right: 0, bottom: 0, left: 0 },
+          captureWorkspaceState() {
+            const workbenches = {};
+            for (const workbenchId of descendants.get(definition.id)) {
+              const target = controllers.find(item => item.id === workbenchId);
+              if (!target) continue;
+              const state = target.getState();
+              workbenches[workbenchId] = {
+                name: state.activeWorkspaceName,
+                layout: state.layout,
+                hidden: state.hidden,
+                collapsed: state.collapsed,
+              };
+            }
+            return Object.keys(workbenches).length ? { workbenches } : undefined;
+          },
           onWorkspaceApplied(workspace) {
             const preset = (definition.presets || []).find(item => String(item.id) === workspace.id);
-            Object.entries(preset?.workbenches || {}).forEach(([workbenchId, targetWorkspace]) => {
+            const nested = workspace.hostState?.workbenches || preset?.workbenches || {};
+            Object.entries(nested).forEach(([workbenchId, targetWorkspace]) => {
+              if (workspace.hostState?.workbenches && !descendants.get(definition.id).includes(workbenchId)) return;
               const target = controllers.find(item => item.id === workbenchId);
               if (target && target.id !== definition.id) target.applyWorkspace(targetWorkspace);
             });

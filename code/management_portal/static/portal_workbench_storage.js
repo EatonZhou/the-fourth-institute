@@ -45,6 +45,7 @@
     const fields = workspace => ({
       id: workspace.id, name: workspace.name, layout: clone(workspace.layout),
       hidden: [...(workspace.hidden || [])], collapsed: [...(workspace.collapsed || [])],
+      ...(workspace.hostState !== undefined ? { hostState: clone(workspace.hostState) } : {}),
     });
     function check(user) {
       if (shellState.destroyed || !user || global.PortalIdentity.username() !== user

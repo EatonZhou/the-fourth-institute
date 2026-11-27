@@ -145,6 +145,10 @@
         if (!name) return;
         const workspaceId = `workspace-${global.PortalUIPrimitives.randomUUID()}`;
         const workspace = { id: workspaceId, name, layout: clone(shellState.model), hidden: [...shellState.hidden], collapsed: [...shellState.collapsed] };
+        // The host owns any composed layout state; transport it without
+        // including the workbench's Panel contents or live resource state.
+        const hostState = options.captureWorkspaceState?.();
+        if (hostState !== undefined) workspace.hostState = clone(hostState);
         if (accountLayouts) {
           void updateSavedLayouts(async () => {
             await accountLayouts.save(workspace);
