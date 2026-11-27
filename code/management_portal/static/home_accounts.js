@@ -66,9 +66,9 @@
         ["limit7d", window.PortalI18n.t("每周")],
       ] : account.provider === "antigravity" ? [
         ["Gemini Models/Five Hour Limit Remaining", window.PortalI18n.t("5 小时")],
-        ["Gemini Models/Weekly Limit Remaining", "weekly"],
-        ["Claude and GPT models/Five Hour Limit Remaining", window.PortalI18n.t("其他") + " 5h"],
-        ["Claude and GPT models/Weekly Limit Remaining", window.PortalI18n.t("其他") + " weekly"],
+        ["Gemini Models/Weekly Limit Remaining", window.PortalI18n.t("每周")],
+        ["Claude and GPT models/Five Hour Limit Remaining", window.PortalI18n.t("其他") + " · " + window.PortalI18n.t("5 小时")],
+        ["Claude and GPT models/Weekly Limit Remaining", window.PortalI18n.t("其他") + " · " + window.PortalI18n.t("每周")],
         ["Gemini 4 Argon/Gemini 4 Argon Weekly Limit", "Argon"],
       ] : null;
       // Keep the shared rolling windows compact. Omitted exhausted limits are

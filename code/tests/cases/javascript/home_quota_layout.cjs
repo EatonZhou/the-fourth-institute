@@ -46,7 +46,7 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
     `});
     for(const id of ['claude_one','antigravity_one','kimi-code']) {
       const row=page.locator('[data-account-limit-account="'+id+'"]');
-      assert.deepEqual(await row.locator('.agent-status-window-name').allTextContents(),id==='antigravity_one'?['5 小时','weekly','其他 5h','其他 weekly','Argon']:['5 小时','每周']);
+      assert.deepEqual(await row.locator('.agent-status-window-name').allTextContents(),id==='antigravity_one'?['5 小时','每周','其他 · 5 小时','其他 · 每周','Argon']:['5 小时','每周']);
     }
     assert.deepEqual(await page.locator('[data-account-api] .agent-status-balance-value').allTextContents(),['123.45 CNY','0 USD','52.12 USD*','—','100000 CNY','—']);
     assert.equal(await page.locator('[data-account-api=deepseek] .agent-status-balance-coins i').count(),12);
@@ -63,7 +63,7 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
     });
     assert.match(await notice.innerText(),/其他额度已耗尽/);
     assert.match(await notice.getAttribute('title'),/Claude and GPT models.*剩余 0%.*采样于.*预计重置/);
-    assert.deepEqual(await antigravity.locator('.agent-status-window-name').allTextContents(),['5 小时','weekly','其他 5h','其他 weekly','Argon']);
+    assert.deepEqual(await antigravity.locator('.agent-status-window-name').allTextContents(),['5 小时','每周','其他 · 5 小时','其他 · 每周','Argon']);
     assert.deepEqual(await antigravity.locator('.agent-status-limit-meta').allTextContents(),['90%','100%','—','—','100%']);
     const argon=antigravity.locator('[data-account-quota-window="Gemini 4 Argon/Gemini 4 Argon Weekly Limit"]');
     assert.match(await argon.getAttribute('title'),/Gemini 4 Argon Weekly Limit/);
@@ -178,10 +178,18 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
     });
     for (const initialRender of [false,true]) {
       if (initialRender) await page.evaluate(()=>document.querySelector('main > div').innerHTML=accountRows(data.accounts));
-      assert.deepEqual(await antigravity.locator('.agent-status-window-name').allTextContents(),['5 小时','weekly','其他 5h','其他 weekly']);
+      assert.deepEqual(await antigravity.locator('.agent-status-window-name').allTextContents(),['5 小时','每周','其他 · 5 小时','其他 · 每周']);
       assert.deepEqual(await antigravity.locator('.agent-status-limit-meta').allTextContents(),['—','99%*','100%','100%']);
       assert.deepEqual(await antigravity.locator('[data-account-quota-window]').evaluateAll(bars=>bars.map(bar=>bar.dataset.accountQuotaWindow)),['Gemini Models/Five Hour Limit Remaining','Gemini Models/Weekly Limit Remaining','Claude and GPT models/Five Hour Limit Remaining','Claude and GPT models/Weekly Limit Remaining']);
     }
+    await page.addScriptTag({path:path.join(root,'management_portal/static/portal_translations.js')});
+    await page.evaluate(()=>{
+      window.PortalI18n.t=key=>window.__PORTAL_TRANSLATIONS__[key]?.en || key;
+      refreshAccountQuotaWindows();
+    });
+    assert.deepEqual(await antigravity.locator('.agent-status-window-name').allTextContents(),
+      ['5 hours','Weekly','Other · 5 hours','Other · Weekly']);
+    await page.evaluate(()=>{window.PortalI18n.t=key=>key;refreshAccountQuotaWindows();});
     assert.match(await page.locator('[data-account-credits] dd').innerText(),/44.?904[.,]19/);
     for(const width of [1440,390,320]) {
       await page.setViewportSize({width,height:900});
