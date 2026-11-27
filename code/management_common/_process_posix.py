@@ -174,10 +174,17 @@ def process_alive(pid):
 
 
 def _group_alive(pgid):
+    signal_denied = False
     try:
         os.killpg(pgid, 0)
     except ProcessLookupError:
         return False
+    except PermissionError:
+        if sys.platform != "darwin":
+            raise
+        # macOS can refuse the probe during process exit. Check the group
+        # membership before treating that refusal as a cleanup failure.
+        signal_denied = True
     # killpg(0) includes zombies. Do not report a dead group as an active tree
     # while waiting for an external reaper (notably container PID 1).
     if sys.platform == "linux":
@@ -200,7 +207,9 @@ def _group_alive(pgid):
                             check=True, timeout=15)
     states = [parts[1] for line in result.stdout.splitlines()
               if len(parts := line.split()) >= 2 and int(parts[0]) == pgid]
-    return not states or any(not state.startswith('Z') for state in states)
+    if not states:
+        return not signal_denied
+    return any(not state.startswith('Z') for state in states)
 
 
 def process_tree_alive(process, *, tree_id=None):
