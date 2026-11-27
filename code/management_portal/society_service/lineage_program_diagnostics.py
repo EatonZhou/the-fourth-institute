@@ -63,6 +63,7 @@ DISPATCH_PAYLOAD_FIELDS = frozenset({
     "trigger_path_id", "route_path", "event_source_id", "source_event_id", "runtime_event_depth", "wire_id",
 })
 EVENT_PAYLOAD_FIELDS = {
+    "provider.validation_timed_out": frozenset({"sequence", "provider", "candidate", "stage", "limit_seconds", "expired_at"}),
     "portal.release_published": frozenset({"sequence", "publication_id", "commit", "previous_commit", "completed_at", "source"}),
     "script.finished": frozenset({"script_run_id", "status", "exit_code", "outputs", "path", "duration_seconds"}),
     "resident.work_finished": frozenset({"message_id", "execution_id"}),

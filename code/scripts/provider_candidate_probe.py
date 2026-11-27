@@ -72,10 +72,11 @@ def codex(root, model):
             options["threadId"] = model.previous_id
         thread = request("thread/resume" if model.previous_id else "thread/start", options)["thread"]["id"]
         check(bool(thread), "thread identity")
-        with stalled_request(model):
-            interrupted = request("turn/start", {"threadId": thread, "input": [{"type": "text", "text": "Wait"}]})
-            check(model.request_started.wait(10), "Codex cancel targets active request")
-            request("turn/interrupt", {"threadId": thread, "turnId": interrupted["turn"]["id"]})
+        if model.previous_id:
+            with stalled_request(model):
+                interrupted = request("turn/start", {"threadId": thread, "input": [{"type": "text", "text": "Wait"}]})
+                check(model.request_started.wait(10), "Codex cancel targets active request")
+                request("turn/interrupt", {"threadId": thread, "turnId": interrupted["turn"]["id"]})
         result = request("turn/start", {"threadId": thread, "input": [{"type": "text", "text": "Hello"}]})
         turn = result["turn"]["id"]
         messages, calls = [], []
@@ -99,7 +100,7 @@ def codex(root, model):
         check(model.answer in messages, "Codex terminal message")
         request("thread/read", {"threadId": "invalid"}, error=True)
         check(request("thread/read", {"threadId": thread})["thread"]["id"] == thread, "thread/read")
-        if (binary.resolve().parent / "PORTAL_SESSION_CONTROLS").is_file():
+        if model.previous_id and (binary.resolve().parent / "PORTAL_SESSION_CONTROLS").is_file():
             request("thread/name/set", {"threadId": thread, "name": "Portal probe"})
             request("thread/archive", {"threadId": thread})
             check(request("thread/unarchive", {"threadId": thread})["thread"]["id"] == thread, "Codex unarchive")
@@ -134,12 +135,13 @@ async def claude(root, model):
         check(any(server["name"] == "portal" and server["status"] == "connected"
                   for server in status["mcpServers"]), "Portal MCP registration")
         await client.set_permission_mode("default")
-        with stalled_request(model):
-            await client.query("Wait")
-            check(await asyncio.to_thread(model.request_started.wait, 10), "Claude cancel targets active request")
-            await client.interrupt()
-            async for _ in client.receive_response():
-                pass
+        if model.previous_id:
+            with stalled_request(model):
+                await client.query("Wait")
+                check(await asyncio.to_thread(model.request_started.wait, 10), "Claude cancel targets active request")
+                await client.interrupt()
+                async for _ in client.receive_response():
+                    pass
         await client.query("Call the receipt tool.")
         from claude_agent_sdk import ResultMessage
         results = [msg async for msg in client.receive_response() if isinstance(msg, ResultMessage)]
@@ -213,15 +215,17 @@ def antigravity(root):
                     {"type": "text", "text": message}]}, timeout=90)
                 check(result["stopReason"] == "end_turn", "ACP terminal reply")
                 return "".join(text)
+            message = "Call receipt once and return its exact value."
             if saved:
-                check(saved["answer"] in prompt("Return the previous test receipt. Do not call tools."),
-                      "ACP resumed context")
-            check(receipt in prompt("Call receipt once and return its exact value."), "ACP tool output")
-            check(calls == ["receipt"], "ACP tool callback")
-            before = _latest_checkpoint(env, sid)
-            prompt("/compact")
-            after = _latest_checkpoint(env, sid)
-            check(after and (not before or before.ref != after.ref), "ACP compact checkpoint")
+                message += " Also return the receipt from the previous turn."
+            answer = prompt(message)
+            check(receipt in answer and calls == ["receipt"], "ACP tool round trip")
+            if saved:
+                check(saved["answer"] in answer, "ACP resumed context")
+                before = _latest_checkpoint(env, sid)
+                prompt("/compact")
+                after = _latest_checkpoint(env, sid)
+                check(after and (not before or before.ref != after.ref), "ACP compact checkpoint")
             record.write_text(json.dumps({"session": sid, "answer": receipt}))
 
 
@@ -282,20 +286,21 @@ def opencode_session(root, model, tools):
         history = request("GET", "/session/" + session + "/message")
         check(isinstance(history, list) and bool(history) == bool(model.previous_id), "session history")
         check(isinstance(request("GET", "/session/status"), dict), "session/status")
-        with stalled_request(model):
-            data = {"model": {"providerID": "probe", "modelID": "probe"},
-                    "parts": [{"type": "text", "text": "Wait"}]}
-            url = Request(origin + f"/session/{session}/prompt_async", data=json.dumps(data).encode(),
-                          headers={"Content-Type": "application/json"})
-            with urlopen(url, timeout=10) as response:
-                check(response.status in {200, 204}, "OpenCode prompt accepted")
-            check(model.request_started.wait(10), "OpenCode cancel targets active request")
-            check(request("POST", f"/session/{session}/abort") is True, "OpenCode abort")
+        if model.previous_id:
+            with stalled_request(model):
+                data = {"model": {"providerID": "probe", "modelID": "probe"},
+                        "parts": [{"type": "text", "text": "Wait"}]}
+                url = Request(origin + f"/session/{session}/prompt_async", data=json.dumps(data).encode(),
+                              headers={"Content-Type": "application/json"})
+                with urlopen(url, timeout=10) as response:
+                    check(response.status in {200, 204}, "OpenCode prompt accepted")
+                check(model.request_started.wait(10), "OpenCode cancel targets active request")
+                check(request("POST", f"/session/{session}/abort") is True, "OpenCode abort")
         response = request("POST", f"/session/{session}/message", {
             "model": {"providerID": "probe", "modelID": "probe"},
             "parts": [{"type": "text", "text": "Hello"}]})
         check(any(part.get("text") == model.answer for part in response["parts"]), "OpenCode response")
-        if (root / "PORTAL_SESSION_CONTROLS").is_file():
+        if model.previous_id and (root / "PORTAL_SESSION_CONTROLS").is_file():
             child = request("POST", f"/session/{session}/fork", {})["id"]
             messages = request("GET", f"/session/{child}/message")
             # A fork into another Resident must survive import into its separate database.
@@ -339,34 +344,35 @@ def kimi_session(root, model):
     with http_server(npm_binary(root, "kimi"), ["web", "--no-open", "--dangerous-bypass-auth",
                                                 "--host", "127.0.0.1"], "/api/v1/sessions") as origin:
         client = runtime_client(root, origin + "/api/v1", home=os.environ["KIMI_CODE_HOME"])
-        sid = client.create_session(cwd=os.getcwd(), title="Restricted SDK check", tools=[], model="kimi-k3")["id"]
-        check(bool(sid) and bool(client.get_status(sid)), "session created")
-        client.update_session_profile(sid, tools=[], model="kimi-k3")
-        client.require_deny_all_tools(sid)
-        check(bool(client.get_status(sid)), "session status")
-        with stalled_request(model):
-            submitted = client._request("POST", f"sessions/{sid}/prompts", {
-                "content": [{"type": "text", "text": "Wait"}], "model": "kimi-k3",
-                "permission_mode": "manual", "deny_all_tools": True})
-            check(bool(submitted["prompt_id"]), "Kimi prompt accepted")
-            check(model.request_started.wait(10), "Kimi cancel targets active request")
-            # The first sample follows the WebSocket ACK. Abort at that point
-            # so the probe requires a native wakeup even with no attached Worker.
-            samples = []
-            def busy():
-                value = _server_busy(client)
-                if not samples:
-                    check(value, "Kimi native work is active")
-                    client.abort_session(sid)
-                samples.append(value)
-                return value
-            check(wait_for_idle(client.base_url, busy, time.monotonic() + 12), "Kimi native idle event")
-        result = client.run_turn(session_id=sid, prompt="Hello", permission_mode="manual",
-                                 deny_all_tools=True, model="kimi-k3")
-        check(result.session_id == sid and result.response == model.answer, "Kimi turn result")
-        check(bool(result.tool_policy_receipt), "Kimi deny-all receipt")
-        check(model.paths[0].read_text() == model.receipts[0], "Kimi deny-all suppressed tools")
-        # Kimi fixes deny-all for the lifetime of a restricted session.
+        if model.previous_id:
+            sid = client.create_session(cwd=os.getcwd(), title="Restricted SDK check", tools=[], model="kimi-k3")["id"]
+            check(bool(sid) and bool(client.get_status(sid)), "session created")
+            client.update_session_profile(sid, tools=[], model="kimi-k3")
+            client.require_deny_all_tools(sid)
+            check(bool(client.get_status(sid)), "session status")
+            with stalled_request(model):
+                submitted = client._request("POST", f"sessions/{sid}/prompts", {
+                    "content": [{"type": "text", "text": "Wait"}], "model": "kimi-k3",
+                    "permission_mode": "manual", "deny_all_tools": True})
+                check(bool(submitted["prompt_id"]), "Kimi prompt accepted")
+                check(model.request_started.wait(10), "Kimi cancel targets active request")
+                # The first sample follows the WebSocket ACK. Abort at that point
+                # so the probe requires a native wakeup even with no attached Worker.
+                samples = []
+                def busy():
+                    value = _server_busy(client)
+                    if not samples:
+                        check(value, "Kimi native work is active")
+                        client.abort_session(sid)
+                    samples.append(value)
+                    return value
+                check(wait_for_idle(client.base_url, busy, time.monotonic() + 12), "Kimi native idle event")
+            result = client.run_turn(session_id=sid, prompt="Hello", permission_mode="manual",
+                                     deny_all_tools=True, model="kimi-k3")
+            check(result.session_id == sid and result.response == model.answer, "Kimi turn result")
+            check(bool(result.tool_policy_receipt), "Kimi deny-all receipt")
+            check(model.paths[0].read_text() == model.receipts[0], "Kimi deny-all suppressed tools")
+            # Kimi fixes deny-all for the lifetime of a restricted session.
         sid = model.previous_id or client.create_session(cwd=os.getcwd(), title="SDK tools", model="kimi-k3")["id"]
         names = [tool["name"] for tool in client.session_tools(sid) if tool["name"].endswith("receipt")]
         check(len(names) == 1, "Kimi MCP catalog")
@@ -405,22 +411,23 @@ def dsh(root, model):
                       model="deepseek-v4-flash", provider_profile="fixture", effort="", cwd=os.getcwd(),
                       is_owner=True, permission_profile="owner", resident_environment={},
                       allow_subagents=False, tools=catalog, system_prompt_append="")
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            with stalled_request(model):
-                cancel_id = params["turn_id"] + "-cancel"
-                pending = executor.submit(transport._request, "turn/run", {**params, "turn_id": cancel_id})
-                check(model.request_started.wait(10), "DSH cancel targets active request")
-                check(client.interrupt("", sid, turn_id=cancel_id)["interrupted"], "DSH interrupt")
-            try:
-                pending.result(timeout=15)
-            except NativeAgentError:
-                pass
-            else:
-                raise ValueError("interrupted DSH turn completed normally")
+        if model.previous_id:
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                with stalled_request(model):
+                    cancel_id = params["turn_id"] + "-cancel"
+                    pending = executor.submit(transport._request, "turn/run", {**params, "turn_id": cancel_id})
+                    check(model.request_started.wait(10), "DSH cancel targets active request")
+                    check(client.interrupt("", sid, turn_id=cancel_id)["interrupted"], "DSH interrupt")
+                try:
+                    pending.result(timeout=15)
+                except NativeAgentError:
+                    pass
+                else:
+                    raise ValueError("interrupted DSH turn completed normally")
         result = transport._request("turn/run", params, event_callback=events.append, tool_callback=dispatch)
         check(result["response"] == model.answer and sorted(calls) == [0, 1], "DSH tool round trip")
         check(sum(event["method"] == "turn/completed" for event in events) == 1, "DSH terminal event")
-        if (root / "PORTAL_SESSION_CONTROLS").is_file():
+        if model.previous_id and (root / "PORTAL_SESSION_CONTROLS").is_file():
             def goal(argument):
                 return transport._request("session/goal", {**params, "argument": argument})["goal"]
             check(goal("fixture objective")["objective"] == "fixture objective", "DSH create goal")

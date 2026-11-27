@@ -50,6 +50,7 @@ class Facts:
     resident_activity: dict[str, Any] | None = None
     message_arrivals: dict[tuple[str, str], dict[str, Any]] = field(default_factory=dict)
     release_publications: dict[str, dict[str, Any]] = field(default_factory=dict)
+    validation_timeouts: dict[str, dict[str, Any]] = field(default_factory=dict)
     graph_state: dict[str, Any] | None = None
     context_pressures: dict[str, dict[str, Any]] = field(default_factory=dict)
     blackboard_entries: dict[str, dict[str, Any]] = field(default_factory=dict)
@@ -205,17 +206,18 @@ def _recent_resident_inputs(lineage_id: str) -> list[dict[str, Any]]:
     return [item for item in items if not settled.get(str(item.get("trigger_path_id") or ""), False)]
 
 
-def _release_published(scan: Scan, source: Source) -> None:
-    """A Portal release was published since the source's last recognized publication."""
+def _ordered_fact(scan: Scan, source: Source) -> None:
     if source.exhausted:
         return
-    scan.wake(datetime.now(timezone.utc) + timedelta(seconds=lineage_release_events.POLL_SECONDS))
-    batch = scan.facts.release_publications.get(source.id)
+    timeout = source.event_type == 'provider.validation_timed_out'
+    if not timeout:
+        scan.wake(datetime.now(timezone.utc) + timedelta(seconds=lineage_release_events.POLL_SECONDS))
+    batch = (scan.facts.validation_timeouts if timeout else scan.facts.release_publications).get(source.id)
     if batch is None:
         return
     if batch["baseline"] is not None:
-        signature = lineage_release_events.value(batch["baseline"])
-        observed = scan.observe(source, lineage_release_events.LOCATOR, signature, signature)
+        signature = lineage_release_events.value(batch["baseline"], "timeout" if timeout else "publication")
+        observed = scan.observe(source, source.event_type if timeout else lineage_release_events.LOCATOR, signature, signature)
         scan.baseline_count += int(observed["status"] == "baseline")
     elif scan.runtime_state(source).get("state_signature") == batch["previous"]:
         scan.pending.extend(lineage_release_events.pending(
@@ -847,7 +849,8 @@ def _time_reached(scan: Scan, source: Source) -> None:
 
 # The system Event types a reconciliation pass observes, and who observes each.
 OBSERVERS: dict[str, Callable[[Scan, Source], None]] = {
-    lineage_release_events.EVENT: _release_published,
+    lineage_release_events.EVENT: _ordered_fact,
+    "provider.validation_timed_out": _ordered_fact,
     "file.changed": _file_changed,
     "residents.all_finished": _residents_all_finished,
     lineage_message_events.MESSAGE_RECEIVED_EVENT: _message_received,

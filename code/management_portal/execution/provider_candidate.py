@@ -1,17 +1,25 @@
 """Run the staged provider's wire contract in a disposable account before activation."""
 from pathlib import Path
+import logging
 import os
 import shutil
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 
 from management_common.process_runtime import run_process
 from .provider_preparation import PreparationError, phase
 
 
+ACCEPTANCE_SECONDS = 90
+LOGGER = logging.getLogger(__name__)
+
+
 class CandidateCheckError(PreparationError):
     descriptions = {
+        "deadline": "候选版本达到验收总时限，等待排查。",
         "test_profile": "请为更新服务配置已登录的 Antigravity 专用测试账号目录 AGY_TEST_PROFILE。",
         "baseline": "当前 SDK 未能完成测试会话的创建。",
         "candidate": "候选 SDK 未通过接口或会话接续检查。",
@@ -29,6 +37,41 @@ class CandidateCheckError(PreparationError):
 
 
 def validate(provider, root, active):
+    """Both processes share one deadline; notify even while a process tree is being reaped."""
+    from management_common import provider_validation_timeouts
+    from management_portal.society_service import get_society_service
+
+    deadline = time.monotonic() + ACCEPTANCE_SECONDS
+    stage = "setup"
+
+    def set_stage(value):
+        nonlocal stage
+        if time.monotonic() >= deadline:
+            raise CandidateCheckError("deadline", TimeoutError())
+        stage = value
+
+    def notify():
+        try:
+            provider_validation_timeouts.record(provider, root.name, stage, ACCEPTANCE_SECONDS)
+            get_society_service().lineage.wake_provider_validation_observers()
+        except Exception:
+            LOGGER.exception("Could not report acceptance timeout for %s %s (%s)", provider, root.name, stage)
+
+    alarm = threading.Timer(max(0, deadline - time.monotonic()), notify)
+    # A one-shot CLI must finish recording the event even when its test has ended.
+    alarm.daemon = False
+    alarm.start()
+    try:
+        _validate(provider, root, active, deadline, set_stage)
+    finally:
+        if time.monotonic() >= deadline:
+            # Leave the alarm armed. The acceptance caller does not wait for
+            # message delivery, and a slow cleanup cannot suppress the event.
+            raise CandidateCheckError("deadline", TimeoutError())
+        alarm.cancel()
+
+
+def _validate(provider, root, active, deadline, set_stage):
     from .provider_updates import ROOT, venv_python
 
     with phase("interface_validation"), tempfile.TemporaryDirectory(prefix="tfi-probe-") as home:
@@ -68,6 +111,8 @@ def validate(provider, root, active):
                 # A first-time install can bootstrap the CLI before account enrollment.
                 versions = [root]
         for index, version in enumerate(versions):
+            check = "baseline" if index == 0 and len(versions) > 1 else "candidate"
+            set_stage(check)
             interpreter = sys.executable
             if provider == "claude":
                 from .provider_updates import ClaudeRuntime
@@ -76,8 +121,7 @@ def validate(provider, root, active):
             command = [str(interpreter), str(ROOT / "scripts/provider_candidate_probe.py"),
                        provider, str(version.resolve(strict=True))]
             try:
-                run_process(command, env=env, cwd=work, timeout=240 if provider == "antigravity" else 120,
+                run_process(command, env=env, cwd=work, timeout=max(0, deadline - time.monotonic()),
                             check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             except (OSError, subprocess.SubprocessError) as exc:
-                check = "baseline" if index == 0 and len(versions) > 1 else "candidate"
                 raise CandidateCheckError(check, exc) from exc

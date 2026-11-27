@@ -154,6 +154,7 @@ def _read_facts(
         # the Lineage graph lock like the other Resident facts.
         message_arrivals=lineage_message_events.prefetch_message_arrivals(lineage_id, message_sources, actor_id),
         release_publications=lineage_release_events.prefetch(lineage_id, plan),
+        validation_timeouts=lineage_release_events.prefetch(lineage_id, plan, event='provider.validation_timed_out'),
         # Blackboard entries are read outside the Lineage graph lock too.
         blackboard_entries=lineage_blackboard_events.prefetch(lineage_id, plan),
         # Graph State owns its own lock and persistence contract; this is its

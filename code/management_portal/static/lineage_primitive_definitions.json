@@ -749,6 +749,12 @@
         "required": true
       }
     },
+    "provider.validation_timed_out": {
+      "category": "graph_control",
+      "title": "Provider 验收超时",
+      "description": "候选版本达到验收总时限，提交给负责排查的 Resident。",
+      "fields": []
+    },
     "portal.release_published": {
       "category": "graph_control",
       "title": "Portal 发布完成",

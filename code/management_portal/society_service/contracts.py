@@ -138,6 +138,8 @@ DOMAIN_OPERATIONS = {
         """),
     ),
     "lineage": _catalog(
+        (Operation("write", "lineage", implementation="management_portal.society_service.lineage_domain"),
+         "wake_provider_validation_observers"),
         (Operation('read', 'lineage', in_process=True, implementation='management_portal.society_service.isa.definition'), """
             describe_lineage_change_permissions
         """),

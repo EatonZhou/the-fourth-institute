@@ -765,3 +765,36 @@ def test_claude_account_migration_waits_and_routes_only_after_health(monkeypatch
     healthy[0] = True
     assert updates.activate_pending_provider(key, route, None)["status"] == "activated"
     assert clients.shared_client(route).socket_path == dedicated
+
+
+def test_probe_deadline_wakes_review_while_timed_out_probe_is_being_reaped(monkeypatch, tmp_path):
+    import threading
+    import time
+    from management_common import provider_validation_timeouts as facts
+    from management_portal import society_service
+    from management_portal.execution import provider_candidate as probe
+
+    reported, noticed = [], threading.Event()
+    source, target = tmp_path / "old", tmp_path / "new"
+    source.mkdir()
+    target.mkdir()
+    budgets = []
+
+    def run(command, *, timeout, **kwargs):
+        budgets.append(timeout)
+        if len(budgets) == 1:
+            time.sleep(.025)
+            return
+        assert noticed.wait(2)
+        raise subprocess.TimeoutExpired(command, timeout)
+
+    monkeypatch.setattr(facts, "record", lambda *args: reported.append(args))
+    monkeypatch.setattr(society_service, "get_society_service", lambda: SimpleNamespace(
+        lineage=SimpleNamespace(wake_provider_validation_observers=noticed.set)))
+    monkeypatch.setattr(probe, "ACCEPTANCE_SECONDS", .15)
+    monkeypatch.setattr(probe, "run_process", run)
+    with pytest.raises(probe.CandidateCheckError) as error:
+        probe.validate("codex", target, source)
+    assert error.value.public()["diagnostic"]["kind"] == "timeout"
+    assert reported == [("codex", "new", "candidate", .15)]
+    assert 0 < budgets[1] < budgets[0] <= .15

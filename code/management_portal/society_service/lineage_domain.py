@@ -739,3 +739,14 @@ def _program_event_authority() -> lineage_program_event_dispatch.ProgramEventAut
 
 def _program_control_authority() -> lineage_program_backlog.ProgramControlAuthority:
     return lineage_program_services.control_authority(sys.modules[__name__])
+
+
+def wake_provider_validation_observers():
+    """Notify subscribed graphs after the timeout fact commits, including busy Residents."""
+    from management_common.provider_validation_timeouts import EVENT
+    from . import changes, graph_storage
+    from .state_store import get_lineage_data_store
+    with get_lineage_data_store().database.read() as connection:
+        subscribers = graph_storage.observation_lineage_ids(connection, {EVENT})
+    for lineage_id in subscribers:
+        changes.lineage_changed(lineage_id, runtime=True)

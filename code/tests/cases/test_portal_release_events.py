@@ -128,3 +128,27 @@ def test_publication_policy_changes_fence_delivery_without_resetting_progress():
         assert contracts._program_event_source_contract_fingerprint(old) != contracts._program_event_source_contract_fingerprint(new)
     with pytest.raises(ValueError, match='misfire_policy'):
         definition('skip')
+
+
+def test_validation_timeout_emits_once_without_a_timer(primitive_store, monkeypatch):
+    from management_common import provider_validation_timeouts as timeouts
+    support.install_registered_lineage_members(monkeypatch)
+    current = support.create_lineage_with_resident_members({
+        'title': 'provider acceptance', 'nodes': [_worker(WORK_A)],
+        'program': {'components': [{'id': 'event_source_timeout', 'kind': 'event_source',
+                                   'config': {'event_type': timeouts.EVENT}}], 'wires': []}}, ACTOR)
+    lineage = current['lineage_id']
+    def reconcile():
+        return lineage_domain.reconcile_lineage_system_events(lineage, ACTOR)
+    assert not reconcile()['next_wake_at']
+    calls = []
+    from management_portal.society_service import changes
+    monkeypatch.setattr(changes, 'lineage_changed', lambda key, *, runtime: calls.append((key, runtime)))
+    timeouts.record('kimi', '2.5.3-2', 'candidate', 90)
+    lineage_domain.wake_provider_validation_observers()
+    assert calls == [(lineage, True)]
+    result = reconcile()
+    event, = [item['event'] for item in result['events']]
+    assert event['payload']['stage'] == 'candidate' and event['payload']['limit_seconds'] == 90
+    assert event['payload']['candidate'] == '2.5.3-2'
+    assert not result['next_wake_at'] and not reconcile()['events']
