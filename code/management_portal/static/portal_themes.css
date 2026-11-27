@@ -1305,12 +1305,29 @@ html:root[data-portal-theme="liquid-glass"] .messageBubble {
 }
 
 html:root[data-portal-theme="liquid-glass"] .messageItem.liveRuntime {
-  border-radius: 6px 14px 14px 6px;
-  border: 1px solid rgba(0, 0, 0, .06);
-  background: #ffffff;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--lg-card-border);
+  background: linear-gradient(172deg, #ffffff, #fafbfc);
   box-shadow:
-    inset 3px 0 0 color-mix(in srgb, var(--accent) 85%, transparent),
-    0 1px 3px rgba(0, 0, 0, .04);
+    inset 0 1px 0 var(--lg-specular-top),
+    inset 0 -1px 1px var(--lg-rim-shade),
+    0 2px 6px rgba(0, 0, 0, .035);
+}
+
+html:root[data-portal-theme="liquid-glass"] .messageItem.liveRuntime > .messageHead {
+  gap: 8px 12px;
+  margin-bottom: 0;
+}
+
+html:root[data-portal-theme="liquid-glass"] .messageItem.liveRuntime .messageRuntimeDetails {
+  margin-top: 10px;
+  padding-top: 10px;
+}
+
+html:root[data-portal-theme="liquid-glass"] .messageItem.liveRuntime .familyRequestAction:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* Crisp Apple hairline dividers */
@@ -1441,6 +1458,23 @@ html:root[data-portal-theme="liquid-glass"] .portalButton:where(:not([role="swit
 html:root[data-portal-theme="liquid-glass"] .portalButton:is([role="switch"], .is-quiet, [data-variant="quiet"]):focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* The news editions and Pulse ranges share concentric pill corners. */
+html:root[data-portal-theme="liquid-glass"] .pulse-tabs {
+  padding: 3px;
+  border-radius: var(--lg-radius-pill);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, .035);
+}
+
+html:root[data-portal-theme="liquid-glass"] .pulse-tabs > .pulse-tab {
+  border-radius: var(--lg-radius-pill);
+}
+
+html:root[data-portal-theme="liquid-glass"] .pulse-tabs > .portalButton.pulse-tab:is(.active, [aria-selected="true"]) {
+  background: var(--lg-surface-pill-active);
+  color: var(--text);
+  box-shadow: inset 0 1px 0 var(--lg-specular-top), 0 1px 3px rgba(0, 0, 0, .08);
 }
 
 /* Home widgets: specular glass filter pills, clean white inset KPI cards & recessed progress tracks */
@@ -1837,6 +1871,12 @@ html:root[data-portal-theme="liquid-glass"] .portalMailboxAlert {
 
 /* Liquid Glass optical backdrop layer (Tier 1 Chromium bevel + Tier 2 Safari/Firefox glass) */
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html:root[data-portal-theme="liquid-glass"] .messageItem.liveRuntime {
+    background: var(--lg-surface-panel-glass);
+    -webkit-backdrop-filter: var(--lg-blur-panel-glass);
+    backdrop-filter: var(--lg-blur-panel-glass);
+  }
+
   html:root[data-portal-theme="liquid-glass"] .portalWorkbenchStack:not(:has(.homeNestedWorkbench)) {
     background:
       radial-gradient(ellipse 66% 6px at 28% 0%, var(--lg-specular-top), transparent),
@@ -1980,6 +2020,24 @@ html:root[data-portal-theme="liquid-glass"] .portalMailboxAlert {
 
 /* Tier 3: Accessibility & reduced transparency / high contrast fallbacks */
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more), (forced-colors: active) {
+  html:root[data-portal-theme="liquid-glass"] .messageItem.liveRuntime {
+    background: var(--panel);
+    border-color: var(--border-strong);
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  html:root[data-portal-theme="liquid-glass"] .pulse-tabs {
+    box-shadow: none;
+  }
+
+  html:root[data-portal-theme="liquid-glass"] .pulse-tabs > .portalButton.pulse-tab:is(.active, [aria-selected="true"]) {
+    background: var(--panel);
+    border-color: currentColor;
+    box-shadow: none;
+  }
+
   html:root[data-portal-theme="liquid-glass"] .homeDialogueDivider::after {
     background: CanvasText;
     box-shadow: none;
