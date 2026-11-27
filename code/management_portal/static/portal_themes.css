@@ -1141,6 +1141,21 @@ html:root[data-portal-theme="liquid-glass"] :is(
   background: var(--lg-tint-hover);
 }
 
+/* Nested action fills follow the outer glass curve minus its border and
+   padding; the old 4–6px button corners leave square patches on hover. */
+html:root[data-portal-theme="liquid-glass"] .chatSelectionContextAction > button {
+  border-radius: calc(var(--lg-radius-popover) - 4px);
+}
+
+html:root[data-portal-theme="liquid-glass"] :is(
+  .selectionMenu,
+  .portalPreviewZoomControls,
+  .portalMessageMenuPanel,
+  .portalMessageSubmenuPanel
+) button {
+  border-radius: calc(var(--lg-radius-popover) - 5px);
+}
+
 /* Prevent glass-on-glass inside secondary navigation popover */
 html:root[data-portal-theme="liquid-glass"] .portalSecondaryNavPopover {
   border-radius: var(--lg-radius-pill);
