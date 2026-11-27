@@ -528,7 +528,7 @@
       targetY = box.y;
       targetW = box.w;
       targetH = box.h;
-      if (!initialized || immediate || !visible) {
+      if (!initialized || immediate || !visible || isReducedMotion()) {
         curX = box.x;
         curY = box.y;
         curW = box.w;
@@ -629,26 +629,42 @@
 
       navController = new AbortController();
       const passiveOpts = { passive: true, signal: navController.signal };
+      const eventLink = event => {
+        const link = event.target.closest?.(".portalModuleLink[data-module-link]");
+        return link?.parentElement === nav ? link : null;
+      };
 
       nav.addEventListener("pointerover", event => {
-        const link = event.target.closest?.(".portalModuleLink[data-module-link]");
-        if (!link || !nav.contains(link)) return;
-        hoveredLink = link;
-        const box = measureLink(link);
-        if (box) setTargetBox(box, false);
+        if (dragging || (event.buttons & 1)) return;
+        hoveredLink = eventLink(event);
+        syncRestingTarget(false);
       }, passiveOpts);
 
       nav.addEventListener("pointermove", event => {
-        const isHeldDrag = Boolean(event.buttons & 1);
-        if (isHeldDrag && !dragging) setDraggingState(true);
-        else if (!isHeldDrag && dragging && !pressed) setDraggingState(false);
-        handlePointerAtX(event.clientX, isHeldDrag);
+        // Free movement belongs only to a drag begun on a navigation link.
+        // Empty space and a held pointer entering from elsewhere are not links.
+        if (pressed && (event.buttons & 1)) {
+          setDraggingState(true);
+          handlePointerAtX(event.clientX, true);
+          return;
+        }
+        if (!(event.buttons & 1)) {
+          pressed = false;
+          setDraggingState(false);
+        }
+        hoveredLink = (event.buttons & 1) ? null : eventLink(event);
+        syncRestingTarget(false);
       }, passiveOpts);
 
       nav.addEventListener("pointerdown", event => {
         if (!event.isPrimary || event.button !== 0) return;
+        hoveredLink = eventLink(event);
+        if (!hoveredLink) {
+          syncRestingTarget(false);
+          return;
+        }
         pressed = true;
-        handlePointerAtX(event.clientX, false);
+        syncRestingTarget(false);
         wake();
       }, passiveOpts);
 
@@ -657,14 +673,15 @@
         if (!dragging) syncRestingTarget(false);
       }, passiveOpts);
 
-      nav.addEventListener("dragstart", () => {
+      nav.addEventListener("dragstart", event => {
+        if (!eventLink(event)) return;
         setDraggingState(true);
         pressed = true;
         wake();
       }, passiveOpts);
 
       nav.addEventListener("dragover", event => {
-        if (!dragging) setDraggingState(true);
+        if (!dragging) return;
         handlePointerAtX(event.clientX, true);
       }, passiveOpts);
 
@@ -677,10 +694,13 @@
       };
       nav.addEventListener("drop", finishDrag, passiveOpts);
       nav.addEventListener("dragend", finishDrag, passiveOpts);
-      window.addEventListener("pointerup", () => {
+      window.addEventListener("pointerup", event => {
         if (!pressed && !dragging) return;
         pressed = false;
         setDraggingState(false);
+        const hit = document.elementFromPoint(event.clientX, event.clientY);
+        hoveredLink = hit ? eventLink({ target: hit }) : null;
+        syncRestingTarget(false);
         wake();
       }, passiveOpts);
       window.addEventListener("pointercancel", finishDrag, passiveOpts);
