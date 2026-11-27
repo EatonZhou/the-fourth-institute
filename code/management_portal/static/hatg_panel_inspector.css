@@ -945,6 +945,60 @@ body:has(.hatgPrimitiveCard.dragging) .programInspectorPanel {
   resize: vertical;
 }
 
+[data-blackboard-entries] > .programInspectorActions:first-child {
+  justify-content: space-between;
+  align-items: center;
+}
+[data-blackboard-entries] > .programInspectorActions:first-child > strong {
+  color: var(--text);
+  font-size: 10px;
+}
+.programBoardList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 7px;
+}
+.programBoardList > li {
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--panel-2) 62%, var(--panel));
+  padding: 8px 9px;
+  color: var(--text);
+  font: 9px/1.45 var(--portal-font);
+}
+.programBoardList > li > small {
+  color: var(--muted);
+  font-size: 7.5px;
+  font-weight: 760;
+  letter-spacing: .025em;
+}
+.programBoardList > li > div { white-space: pre-wrap; overflow-wrap: anywhere; }
+.programBoardList > li > button {
+  justify-self: end;
+  min-height: 24px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--muted);
+  padding: 3px 8px;
+  font: 760 8px/1 var(--portal-font);
+  cursor: pointer;
+}
+.programBoardList > li > button:hover,
+.programBoardList > li > button:focus-visible {
+  border-color: color-mix(in srgb, var(--program-inspector-tone) 58%, var(--border));
+  color: var(--program-inspector-tone);
+  outline: none;
+}
+.programBoardList > .programBoardEmpty {
+  border-style: dashed;
+  background: none;
+  color: var(--muted);
+}
 .programInspectorActions {
   display: flex;
   justify-content: flex-end;

@@ -78,6 +78,8 @@
       if (emit) emit.hidden = eventType !== "manual.triggered";
     }
 
+    const blackboardView = new Map();
+
     function renderProgramInspector({ panel = $id("programInspectorPanel"), objectId = state.selectedProgramObjectId, onClose = null, onSaved = null } = {}) {
       if (!panel) return;
       const component = objectId ? displayProgramComponentById(objectId) : null;
@@ -221,33 +223,46 @@
         </form>
         <section class="programInspectorForm" data-blackboard-entries aria-label="黑板条目">
           <div class="programInspectorActions" data-portal-inbox-avoid><strong>条目</strong><button type="button" data-blackboard-refresh>刷新</button></div>
-          <ol class="programInspectorList" data-blackboard-list></ol>
+          <ol class="programBoardList" data-blackboard-list></ol>
           <label><span>写入条目（以你的身份）</span><textarea name="entry_text" rows="3" maxlength="16384"${readonly ? " disabled" : ""}></textarea></label>
           <label><span>kind（可空）</span><input name="entry_kind" maxlength="32"${readonly ? " disabled" : ""}></label>
           <div class="programInspectorActions" data-portal-inbox-avoid><button type="button" data-blackboard-write${readonly ? " disabled" : ""}>写入</button></div>
         </section>`;
         const lineageId = state.lineage?.lineage_id || "";
         const list = panel.querySelector("[data-blackboard-list]");
+        // The inspector is rebuilt on every Lineage refresh; keep the last entry list and the unsent
+        // draft per board so a rebuild repaints at once instead of blanking and refetching.
+        const view = blackboardView.get(component.id) || { html: "", text: "", kind: "" };
+        blackboardView.set(component.id, view);
+        const textArea = panel.querySelector('[name="entry_text"]');
+        const kindInput = panel.querySelector('[name="entry_kind"]');
+        if (textArea) textArea.value = view.text;
+        if (kindInput) kindInput.value = view.kind;
+        textArea?.addEventListener("input", () => { view.text = textArea.value; });
+        kindInput?.addEventListener("input", () => { view.kind = kindInput.value; });
+        if (list && view.html) list.innerHTML = view.html;
         const loadEntries = async () => {
           const result = await societyService.listBoardEntries({ lineage_id: lineageId, board_id: component.id });
           if (!list || !panel.contains(list)) return;
           const entries = result?.entries || [];
-          list.innerHTML = entries.length
+          const html = entries.length
             ? entries.map(entry => window.PortalI18n.html`<li data-seq="${esc(entry.seq)}"><small>#${esc(entry.seq)} · ${esc(entry.author_id)} · ${esc(formatDate(entry.created_at))}${entry.kind ? ` · ${esc(entry.kind)}` : ""}${entry.retracted ? " · 已撤回" : ""}</small>
               <div>${entry.retracted ? "（已撤回）" : esc(entry.text)}</div>${entry.retracted || readonly ? "" : `<button type="button" data-blackboard-retract="${esc(entry.entry_id)}">撤回</button>`}</li>`).join("")
-            : "<li>还没有条目。</li>";
+            : '<li class="programBoardEmpty">还没有条目。</li>';
+          view.html = html;
+          if (list.innerHTML !== html) list.innerHTML = html;
         };
         panel.querySelector("[data-blackboard-refresh]")?.addEventListener("click", () => loadEntries().catch(error => toast(error.message || String(error), "error")));
         panel.querySelector("[data-blackboard-write]")?.addEventListener("click", async () => {
-          const textArea = panel.querySelector('[name="entry_text"]');
           const text = String(textArea?.value || "").trim();
           if (!text) return;
           try {
             await societyService.createBoardEntry({
               lineage_id: lineageId, board_id: component.id, text,
-              kind: String(panel.querySelector('[name="entry_kind"]')?.value || "").trim() || undefined,
+              kind: String(kindInput?.value || "").trim() || undefined,
             });
             if (textArea) textArea.value = "";
+            view.text = "";
             await loadEntries();
           } catch (error) {
             toast(error.message || String(error), "error");
