@@ -33,6 +33,7 @@ class ClaudeCodeTurnResult:
 
 from management_portal.native_agent_transport import NativeAgentClient
 from management_portal.execution.native_options import ClaudeOptions
+from management_portal.resident_shell_environment import resident_identity_environment
 
 
 class ClaudeCodeClient(NativeAgentClient):
@@ -45,8 +46,23 @@ class ClaudeCodeClient(NativeAgentClient):
     def health(self) -> dict[str, Any]:
         return self._request("health", response_timeout=9.0)
 
+    def _resident_environment(self, value: dict[str, str] | None) -> dict[str, str]:
+        environment = resident_identity_environment(value)
+        identity = {
+            key: environment[key]
+            for key in ("PORTAL_RESIDENT_ID", "PORTAL_LINEAGE_ID")
+            if key in environment
+        }
+        if environment == identity:
+            return environment
+        # During a rolling upgrade, each socket can serve a different revision.
+        # Workspace aliases were added in Portal adapter revision 3.
+        components = self.health().get("component_versions") or {}
+        return environment if int(components.get("revision", 0)) >= 3 else identity
 
     def session_command(self, command, params):
+        if "resident_environment" in params:
+            params = {**params, "resident_environment": self._resident_environment(params["resident_environment"])}
         return self._request("session/" + command, params, response_timeout=60)
 
     def account_usage(self, provider_profile: str, *, force_refresh: bool = False, native_refresh: bool = True) -> dict[str, Any]:
@@ -109,7 +125,7 @@ class ClaudeCodeClient(NativeAgentClient):
                 "add_dirs": add_dirs or [],
                 "turn_id": turn_id,
                 "tools": tools or [],
-                "resident_environment": resident_environment or {},
+                "resident_environment": self._resident_environment(resident_environment),
                 "inherit_portal_database": inherit_portal_database,
                 "input_media": input_media or [],
                 "auto_compact_window_tokens": int(auto_compact_window_tokens or 0),
@@ -184,7 +200,7 @@ class ClaudeCodeClient(NativeAgentClient):
             "permission_profile": str(permission_profile or ""),
             "permission_mode": str(permission_mode or ClaudeOptions().native_permission_mode({})),
             "add_dirs": add_dirs or [],
-            "resident_environment": resident_environment or {},
+            "resident_environment": self._resident_environment(resident_environment),
             "inherit_portal_database": inherit_portal_database,
             "auto_compact_window_tokens": int(auto_compact_window_tokens or 0),
             "request_id": request_id,

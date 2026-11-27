@@ -127,8 +127,24 @@ async def claude(root, model):
     bridge.dispatch = dispatch
     os.environ.update(ANTHROPIC_BASE_URL=model.url, ANTHROPIC_API_KEY="fixture",
                       CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC="1", CLAUDE_CODE_DISABLE_1M_CONTEXT="1")
+    cli_env = {}
+    if model.previous_id:
+        # Exercise the receiving daemon's environment contract on the candidate.
+        # The old daemon only seeds the session and may predate workspace fields.
+        from management_portal import claude_code_daemon as daemon
+        check(Path(daemon.__file__).resolve().is_relative_to(root.resolve()), "packaged Claude daemon")
+        workspace = os.getcwd()
+        resident_env = {
+            "PORTAL_RESIDENT_ID": "resident_aabbccddeeff", "PORTAL_LINEAGE_ID": "lineage_aabbccddeeff",
+            "PORTAL_RESIDENT_WORKSPACE": workspace, "PORTAL_LINEAGE_WORKSPACE": workspace,
+            "PORTAL_PROJECT_WORKSPACE": workspace, "PORTAL_WORKSPACE_AABBCCDDEEFF": workspace,
+        }
+        check(daemon.resident_identity_fingerprint(resident_env) == resident_env, "Claude session environment")
+        cli_env = daemon._cli_environment({"resident_environment": resident_env}, {},
+                                           Path(os.environ["CLAUDE_CONFIG_DIR"]), 0)
+        check(all(cli_env.get(k) == v for k, v in resident_env.items()), "Claude CLI workspace environment")
     options = ClaudeAgentOptions(cwd=os.getcwd(), resume=model.previous_id or None, setting_sources=[], permission_mode="default",
-                                 mcp_servers=bridge.servers, allowed_tools=bridge.allowed_tools)
+                                 mcp_servers=bridge.servers, allowed_tools=bridge.allowed_tools, env=cli_env)
     async with ClaudeSDKClient(options) as client:
         info = await client.get_server_info()
         check(isinstance(info, dict) and bool(info), "SDK initialization")

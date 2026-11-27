@@ -212,3 +212,32 @@ def test_claude_permission_mode_reaches_native_daemon_request(monkeypatch, mode)
                     is_owner=False, **({} if mode is None else {"permission_mode": mode}))
     assert captured["method"] == "turn/run"
     assert captured["payload"]["permission_mode"] == (mode or "bypassPermissions")
+
+
+@pytest.mark.parametrize("revision", [1, 2, 3])
+def test_claude_workspace_environment_during_account_rollout(monkeypatch, revision):
+    from management_portal.claude_code_client import ClaudeCodeClient
+
+    client = ClaudeCodeClient()
+    identity = {"PORTAL_RESIDENT_ID": "resident_111111111111", "PORTAL_LINEAGE_ID": "lineage_222222222222"}
+    environment = {**identity, "PORTAL_WORKSPACE_AABBCCDDEEFF": "/work", "PORTAL_RESIDENT_WORKSPACE": "/work"}
+    expected = environment if revision >= 3 else identity
+    requests = []
+
+    def request(method, payload=None, **kwargs):
+        if method == "health":
+            return {"component_versions": {"revision": revision}}
+        requests.append((method, payload["resident_environment"]))
+        return {}
+
+    monkeypatch.setattr(client, "_request", request)
+    options = dict(session_key="key", session_id="", cwd="/work", config_dir="/config",
+                   provider_profile="test", model="test-model", is_owner=False, resident_environment=environment)
+    client.run_turn(prompt="hello", **options)
+    client.compact_session(**options)
+    client.session_command("file-checkpoint", options)
+    assert requests == [(method, expected) for method in ("turn/run", "session/compact", "session/file-checkpoint")]
+    assert options["resident_environment"] == environment
+    with pytest.raises(ValueError, match="Unexpected Resident environment field"):
+        client.run_turn(prompt="hello", **{**options, "resident_environment": {**environment, "UNEXPECTED": "x"}})
+    assert len(requests) == 3

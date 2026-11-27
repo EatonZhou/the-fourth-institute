@@ -42,9 +42,18 @@ def resident_identity_environment(value: Mapping[str, Any] | None) -> dict[str, 
     identity = {str(key): str(item) for key, item in dict(value or {}).items()}
     fields = ("PORTAL_RESIDENT_ID", "PORTAL_LINEAGE_ID")
     allowed = set(fields)
+    workspace_fields = {
+        key for key in identity
+        if re.fullmatch(r"PORTAL_(?:WORKSPACE_[0-9A-F]{12}|(?:RESIDENT|LINEAGE|PROJECT)_WORKSPACE)", key)
+    }
+    allowed.update(workspace_fields)
     if set(identity) - allowed:
         raise ValueError("Unexpected Resident environment field")
     mirrored: dict[str, str] = {}
+    for key in workspace_fields:
+        if not Path(identity[key]).is_absolute() or not identity.get("PORTAL_RESIDENT_ID"):
+            raise ValueError("Workspace environment requires an absolute path and Resident identity")
+        mirrored[key] = identity[key]
     for key, prefix in (
         ("PORTAL_RESIDENT_ID", "resident"),
         ("PORTAL_LINEAGE_ID", "lineage"),
