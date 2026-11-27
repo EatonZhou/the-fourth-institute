@@ -42,6 +42,27 @@ class KimiLiveStream:
                        if isinstance(self.error, UnsupportedKimiProtocol) else "Kimi live subscription failed")
             raise ConnectionError(message) from self.error
 
+    def _subscribe(self, transport):
+        hello = {"subscriptions": [self.session_id], "client_id": "tfi-portal"}
+        if self.cursor:
+            hello["cursors"] = {self.session_id: dict(self.cursor)}
+        transport.send_text(json.dumps({"type": "client_hello", "id": "portal-subscribe", "payload": hello}))
+
+    def _accept(self, frame, payload):
+        if 'accepted_subscriptions' not in payload:
+            raise UnsupportedKimiProtocol("Native server does not acknowledge raw-event subscriptions")
+        if frame.get("code", 0) != 0 or self.session_id not in payload.get("accepted_subscriptions", []):
+            raise ConnectionError("Kimi session subscription was rejected")
+
+    def _enqueue(self, frame):
+        if not frame.get("volatile"):
+            seq = int(frame.get("seq") or 0)
+            epoch = str(frame.get("epoch") or "")
+            if epoch == self.cursor.get("epoch") and seq <= self.cursor.get("seq", -1):
+                return
+            self.cursor = {"epoch": epoch, "seq": seq}
+        self.frames.put(frame)
+
     def _run(self) -> None:
         connected = False
         gap_reported = False
@@ -57,10 +78,7 @@ class KimiLiveStream:
                     sock.close()
                     raise
                 self.transport = transport
-                hello = {"subscriptions": [self.session_id], "client_id": "tfi-portal"}
-                if self.cursor:
-                    hello["cursors"] = {self.session_id: dict(self.cursor)}
-                transport.send_text(json.dumps({"type": "client_hello", "id": "portal-subscribe", "payload": hello}))
+                self._subscribe(transport)
                 while not self.stop.is_set():
                     frame = json.loads(transport.recv_text())
                     if not isinstance(frame, dict):
@@ -78,10 +96,7 @@ class KimiLiveStream:
                         continue
                     if typ == "ack" and frame.get("id") == "portal-subscribe":
                         payload = frame.get("payload") or {}
-                        if 'accepted_subscriptions' not in payload:
-                            raise UnsupportedKimiProtocol("Native server does not acknowledge raw-event subscriptions")
-                        if frame.get("code", 0) != 0 or self.session_id not in payload.get("accepted_subscriptions", []):
-                            raise ConnectionError("Kimi session subscription was rejected")
+                        self._accept(frame, payload)
                         self.ready.set()
                         connected = True
                         gap_reported = False
@@ -93,13 +108,7 @@ class KimiLiveStream:
                         continue
                     if frame.get("session_id") != self.session_id:
                         continue
-                    if not frame.get("volatile"):
-                        seq = int(frame.get("seq") or 0)
-                        epoch = str(frame.get("epoch") or "")
-                        if epoch == self.cursor.get("epoch") and seq <= self.cursor.get("seq", -1):
-                            continue
-                        self.cursor = {"epoch": epoch, "seq": seq}
-                    self.frames.put(frame)
+                    self._enqueue(frame)
             except (OSError, EOFError, ValueError) as error:
                 if not connected:
                     self.error = error

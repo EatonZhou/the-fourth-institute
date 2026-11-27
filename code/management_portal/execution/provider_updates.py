@@ -444,13 +444,12 @@ class ClaudeRuntime(ProviderRuntime):
         return provider_entry("claude_app_server_current")
 
 class KimiRuntime(ProviderRuntime):
-    # 2.5 replaces raw live events and snapshot APIs with transcript protocol
-    # v2. This adapter owns the v1 contract; install its newest compatible
-    # release until the v2 adapter is implemented and validated.
+    # Automatic updates stay on the deployed series. The transcript client for
+    # 2.5.3 can be staged explicitly; standalone subagent stop differs.
     VERSION_RANGE = "~2.4.0"
 
     def supports_versions(self, versions):
-        return all(Version(value) < Version("2.5.0") for value in versions)
+        return all(value == "2.5.3" or Version(value) < Version("2.5.0") for value in versions)
 
     def account_processes(self):
         from management_portal.kimi_account_runtime import running_accounts
@@ -486,13 +485,13 @@ class KimiRuntime(ProviderRuntime):
 
     def version_label(self, versions, *, installed=False):
         base = super().version_label(versions)
-        if base == "2.4.1" and (not installed or self.installation_current(versions)):
+        if base in {"2.4.1", "2.5.3"} and (not installed or self.installation_current(versions)):
             return base + "-1"
         return base
 
     def installation_current(self, versions):
         from .kimi_runtime_patch import verified
-        return versions != ("2.4.1",) or verified(self.link())
+        return versions not in {("2.4.1",), ("2.5.3",)} or verified(self.link())
 
     def activation_ready(self, root):
         from .kimi_runtime_patch import PATCH_ID
@@ -509,7 +508,7 @@ class KimiRuntime(ProviderRuntime):
         self.prepare_prerequisites()
         (version,) = versions
         root = RUNTIMES / f"kimi-code-{version}"
-        native_policy_revision = version == "2.4.1"
+        native_policy_revision = version in {"2.4.1", "2.5.3"}
         if native_policy_revision:
             from .kimi_runtime_patch import PATCH_ID
             root = RUNTIMES / f"kimi-code-{version}-{PATCH_ID}"

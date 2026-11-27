@@ -96,3 +96,10 @@ Resident 的 `allow_subagents` 决定是否提供 Agent 与 AgentSwarm。工具�
 每轮结束或失败后的清理阶段，适配器从原生记录读取模型请求用量，逐条写入公共账本。某条用量事件发出失败时记日志并继续处理其余请求。公共基类负责读取失败的处理与日志，Provider 只负责原生格式解析；不以会话累计值推算本轮消费。
 
 实现入口是 `execution/kimi_backend.py`、`kimi_code_client.py`、`kimi_live_events.py`、`kimi_code_server.py`、`kimi_portal_tools.py`、`kimi_tool_gateway.py` 和 `execution/provider_turn_usage.py`。用量、压缩和上下文继承的公共规则见 decision_b1ab45c4b3ec；运行时安装见 decision_e587fe1c472e。
+
+
+## Kimi Code 2.5.3 候选版本
+
+`2.5.3-1` 使用 Kimi 的 `subscribe_v2` 接收变化通知，从带 agent ID 的 transcript 读取原生 turn、step 和 frame。Portal 按 triggerPromptId 定位已受理输入，按 frame ID 发布内容，重连后可补读当前输入。审批与问题使用 interactions 接口，纯文本执行仍要求原生禁用工具回执。创建会话的上游接口忽略初始指令字段，本轮需要注入的上下文随输入交付。
+
+常规账号的 2.4.x 自动更新与 2.5.3 候选准备独立。2.5.3 适配器能观察子任务关联的会话记录；单独停止子任务返回 unsupported_by_provider。整轮取消走独立接口。

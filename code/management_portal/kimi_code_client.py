@@ -258,6 +258,10 @@ class KimiCodeClient:
         data = self._request("GET", f"sessions/{quote(session_id, safe='')}/snapshot", timeout=30.0)
         return data if isinstance(data, dict) else {}
 
+    def _sequence_before_prompt(self, session_id):
+        snapshot = self.get_snapshot(session_id)
+        return _safe_nonnegative_int(snapshot.get("as_of_seq"))
+
     def get_status(self, session_id: str) -> dict[str, Any]:
         data = self._request("GET", f"sessions/{quote(session_id, safe='')}/status", timeout=15.0)
         return data if isinstance(data, dict) else {}
@@ -592,11 +596,7 @@ class KimiCodeClient:
             model=model,
         )
         before_usage = profile.get("usage") if isinstance(profile.get("usage"), dict) else {}
-        before_snapshot = self.get_snapshot(session_id)
-        try:
-            before_seq = int(before_snapshot.get("as_of_seq") or 0)
-        except (TypeError, ValueError):
-            before_seq = 0
+        before_seq = self._sequence_before_prompt(session_id)
         submitted = self._request(
             "POST",
             f"sessions/{quote(session_id, safe='')}/prompts",
@@ -857,17 +857,35 @@ class KimiCodeClient:
             live_stream.close()
 
 
+def runtime_client(runtime_root, *args, **kwargs):
+    """Select the wire client for the executable serving this account or probe."""
+    from .execution.kimi_runtime_patch import package_directory
+
+    manifest = package_directory(runtime_root) / "package.json"
+    if manifest.is_file():
+        version = json.loads(manifest.read_text(encoding="utf-8"))["version"]
+        if version == "2.5.3":
+            from .kimi_transcript_client import KimiTranscriptClient
+            return KimiTranscriptClient(*args, **kwargs)
+    return KimiCodeClient(*args, **kwargs)
+
+
 _CLIENT: KimiCodeClient | None = None
+_CLIENT_ROOT: Path | None = None
 _CLIENT_LOCK = threading.Lock()
 
 
 def shared_client() -> KimiCodeClient:
-    global _CLIENT
+    from management_common.code_environment import provider_entry
+    global _CLIENT, _CLIENT_ROOT
     with _CLIENT_LOCK:
-        if _CLIENT is None:
-            _CLIENT = KimiCodeClient(
+        root = provider_entry("kimi_runtime_current").resolve()
+        if _CLIENT is None or _CLIENT_ROOT != root:
+            _CLIENT = runtime_client(
+                root,
                 default_base_url(),
                 float(settings().get("poll_seconds", DEFAULT_POLL_SECONDS)),
                 DEFAULT_HOME / "server" / "events",
             )
+            _CLIENT_ROOT = root
         return _CLIENT

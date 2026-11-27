@@ -307,7 +307,7 @@ def kimi(root, model):
 
 def kimi_session(root, model):
     from management_portal.execution.provider_updates import npm_binary
-    from management_portal.kimi_code_client import KimiCodeClient
+    from management_portal.kimi_code_client import runtime_client
     from management_portal.kimi_code_server import DEFAULT_CONFIG_TEMPLATE
     template = DEFAULT_CONFIG_TEMPLATE.read_text().replace("__PORTAL_KIMI_DEFAULT_MODEL__", '"kimi-k3"')
     template = template.replace("__PORTAL_KIMI_API_KEY__", '"probe"').replace(
@@ -315,9 +315,9 @@ def kimi_session(root, model):
     Path(os.environ["KIMI_CODE_HOME"], "config.toml").write_text(template)
     with http_server(npm_binary(root, "kimi"), ["web", "--no-open", "--dangerous-bypass-auth",
                                                 "--host", "127.0.0.1"], "/api/v1/sessions") as origin:
-        client = KimiCodeClient(origin + "/api/v1", home=os.environ["KIMI_CODE_HOME"])
+        client = runtime_client(root, origin + "/api/v1", home=os.environ["KIMI_CODE_HOME"])
         sid = client.create_session(cwd=os.getcwd(), title="Restricted SDK check", tools=[], model="kimi-k3")["id"]
-        check(bool(sid) and bool(client.get_snapshot(sid)), "session snapshot")
+        check(bool(sid) and bool(client.get_status(sid)), "session created")
         client.update_session_profile(sid, tools=[], model="kimi-k3")
         client.require_deny_all_tools(sid)
         check(bool(client.get_status(sid)), "session status")

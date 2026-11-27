@@ -43,8 +43,9 @@ def control(account):
 
 
 def _client(target, port):
-    from .kimi_code_client import KimiCodeClient
-    return KimiCodeClient(f"http://127.0.0.1:{port}/api/v1", events_root=target / "server" / "events", home=target)
+    from .kimi_code_client import runtime_client
+    from management_common.code_environment import provider_entry
+    return runtime_client(provider_entry("kimi_runtime_current"), f"http://127.0.0.1:{port}/api/v1", events_root=target / "server" / "events", home=target)
 
 
 def _subscription_tools(account, client):
