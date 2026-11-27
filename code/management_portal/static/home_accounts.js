@@ -72,22 +72,15 @@
       // Keep the shared rolling windows compact. Omitted exhausted limits are
       // reported separately so these bars do not imply every model is available.
       if (!summary) return windows;
-      const preferred = summary.flatMap(([id, label]) => {
+      return summary.flatMap(([id, label]) => {
         const quotaWindow = windows.find(item => item.id === id);
-        return quotaWindow ? [{...quotaWindow, full_label: quotaWindow.label, label}] : [];
-      });
-      if (account.provider !== "antigravity" || preferred.some(item =>
-        item.id.startsWith("Gemini Models/") && !accountQuotaWindowIsStale(item) && Number.isFinite(item.remaining_percent))) {
-        return preferred;
-      }
-      const current = windows.filter(item => !accountQuotaWindowIsStale(item));
-      return (current.length ? current : windows).map(item => {
-        const [group, period] = String(item.id || "").split("/");
-        const shortPeriod = period === "Five Hour Limit Remaining" ? window.PortalI18n.t("5 小时")
-          : period === "Weekly Limit Remaining" ? window.PortalI18n.t("每周") : "";
-        if (!shortPeriod) return preferred.find(entry => entry.id === item.id) || item;
-        const groupLabel = group === "Claude and GPT models" ? "Claude/GPT" : group;
-        return {...item, full_label: item.label, label: `${groupLabel} · ${shortPeriod}`};
+        if (quotaWindow) return [{...quotaWindow, full_label: quotaWindow.label || id, label}];
+        // A partial report can contain only partner-model quotas. Keep the
+        // two Gemini positions identifiable even when their readings are absent.
+        if (windows.length && id.startsWith("Gemini Models/")) {
+          return [{id, label, full_label: id, remaining_percent: null}];
+        }
+        return [];
       });
     }
 
@@ -271,7 +264,7 @@
         const weekly = minutes ? minutes === 7 * 24 * 60 : [
           "seven_day", "limit7d", "Gemini Models/Weekly Limit Remaining",
           "Gemini 4 Argon/Gemini 4 Argon Weekly Limit",
-        ].includes(w.id) || (account.provider === "antigravity" && w.id?.endsWith("/Weekly Limit Remaining"));
+        ].includes(w.id);
         return weekly && w.resets_at > Date.now() / 1000;
       }).map(w => w.resets_at);
       const refreshLabel = authenticationFailed ? window.PortalI18n.t("请重新登录该账号") : account.balance && !windows.length ? (account.balance.updated_at ? window.PortalI18n.text`更新 ${formatDateTime(account.balance.updated_at)}` : account.balance.status === "loading" ? window.PortalI18n.t("正在刷新余额…") : "") : exhausted ? recovery > Date.now() ? window.PortalI18n.text`预计恢复 ${formatDateTime(recovery)}` : window.PortalI18n.t("等待额度恢复确认") : account.refreshing ? window.PortalI18n.t("正在刷新用量…") : account.error ? window.PortalI18n.t("用量刷新失败")

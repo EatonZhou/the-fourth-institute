@@ -178,8 +178,9 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
     });
     for (const initialRender of [false,true]) {
       if (initialRender) await page.evaluate(()=>document.querySelector('main > div').innerHTML=accountRows(data.accounts));
-      assert.deepEqual(await antigravity.locator('.agent-status-window-name').allTextContents(),['Claude/GPT · 5 小时','Claude/GPT · 每周']);
-      assert.deepEqual(await antigravity.locator('[role="meter"]').evaluateAll(bars=>bars.map(bar=>bar.getAttribute('aria-valuenow'))),['100','100']);
+      assert.deepEqual(await antigravity.locator('.agent-status-window-name').allTextContents(),['5 小时','每周']);
+      assert.deepEqual(await antigravity.locator('.agent-status-limit-meta').allTextContents(),['—','99%*']);
+      assert.deepEqual(await antigravity.locator('[data-account-quota-window]').evaluateAll(bars=>bars.map(bar=>bar.dataset.accountQuotaWindow)),['Gemini Models/Five Hour Limit Remaining','Gemini Models/Weekly Limit Remaining']);
     }
     assert.match(await page.locator('[data-account-credits] dd').innerText(),/44.?904[.,]19/);
     for(const width of [1440,390,320]) {
