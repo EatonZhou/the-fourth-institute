@@ -231,12 +231,10 @@ def _normalize_link_path(raw_path: str) -> Path:
     path = Path(value).expanduser()
     if not path.is_absolute():
         raise ValueError("link path must be absolute")
-    current = Path(path.anchor)
-    for part in path.parts[1:]:
-        current /= part
-        if filesystem_path(current).is_symlink():
-            raise ValueError("symlink preview is not supported")
-    return logical_path(filesystem_path(path).resolve(strict=False))
+    try:
+        return logical_path(filesystem_path(path).resolve(strict=False))
+    except RuntimeError as exc:
+        raise ValueError("cannot resolve preview path") from exc
 
 
 def _authorize_link_path(path: Path, actor: str) -> _LinkFileAuthorization:
@@ -268,8 +266,8 @@ def _resolve_authorized_link_file_path(
     authorization = _authorize_link_path(path, actor)
     if not filesystem_path(path).exists():
         raise FileNotFoundError("file not found")
-    if filesystem_path(path).is_symlink():
-        raise ValueError("symlink preview is not supported")
+    if logical_path(filesystem_path(path).resolve(strict=True)) != path:
+        raise PermissionError("preview target changed during authorization")
     return path, authorization
 
 

@@ -25,7 +25,7 @@ def _resident_owning(workspace: Path) -> None:
 
 
 def test_workspace_link_requires_actor_bound_workspace_contracts(monkeypatch, tmp_path, subtests, isolated_portal_case):
-    """Workspace 文件链接按调用者对路径所属 Workspace 的 ReadResource / UpdateWorkspaceFile 判定可读或可写，拒绝符号链接"""
+    """Workspace 文件链接按调用者对路径所属 Workspace 的 ReadResource / UpdateWorkspaceFile 判定可读或可写，符号链接按真实目标鉴权"""
     with subtests.test(contract='test_workspace_link_requires_actor_bound_workspace'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
             tmp_path = case_path
@@ -63,19 +63,32 @@ def test_workspace_link_requires_actor_bound_workspace_contracts(monkeypatch, tm
             assert preview['content'] == 'before'
             # Saving needs a Workspace address; this root is in no registered Workspace.
             assert preview['file_address'] == '' and preview['allows'] == {'UpdateWorkspaceFile': False}
-    with subtests.test(contract='test_workspace_link_rejects_symlink_identity_before_resolution'), isolated_portal_case() as case_path:
+    with subtests.test(contract='test_workspace_link_authorizes_resolved_target'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
             tmp_path = case_path
             workspace = tmp_path / 'workspace'
             workspace.mkdir()
             target = workspace / 'target.txt'
             target.write_text('target', encoding='utf-8')
+            alias = tmp_path / 'alias'
+            alias.symlink_to(workspace, target_is_directory=True)
             link = workspace / 'link.txt'
             link.symlink_to(target)
             _resident_owning(workspace)
-            monkeypatch.setattr(resident_workspace_domain, 'resolve_resident_identity', lambda resident_id, _actor: {'resident_id': resident_id})
-            with pytest.raises(ValueError, match='symlink'):
-                workspace_domain.resolve_workspace_link_file_path(str(link), actor='owner')
+            monkeypatch.setattr('management_portal.permission_system.permitted', lambda actor, instruction, parameter, ids, **_options: [
+                (item, actor == 'reader' and instruction == 'ReadResource' and item == 'workspace_5ec000000001') for item in ids])
+            for spelling in (link, alias / 'link.txt'):
+                assert workspace_domain.resolve_workspace_link_file_path(str(spelling), actor='reader') == target
+                preview = workspace_domain.get_workspace_link_file(str(spelling), 'reader')
+                assert preview['content'] == 'target' and preview['file_address'] == ''
+                with pytest.raises(PermissionError):
+                    workspace_domain.get_workspace_link_file(str(spelling), 'stranger')
+            outside = tmp_path / 'unregistered.txt'
+            outside.touch()
+            outgoing = workspace / 'outgoing'
+            outgoing.symlink_to(outside)
+            with pytest.raises(PermissionError):
+                workspace_domain.resolve_workspace_link_file_path(str(outgoing), actor='reader')
 
 
 def test_an_absolute_path_belongs_to_the_deepest_workspace_or_shared_folder_holding_it(isolated_portal_case, monkeypatch):
