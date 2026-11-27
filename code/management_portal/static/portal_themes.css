@@ -870,6 +870,53 @@ html:root[data-portal-theme="liquid-glass"] .portalWorkbenchSplitHandle {
   flex: 0 0 10px;
 }
 
+/* A quiet seam and a short glass grip, with the full-height drag target intact. */
+html:root[data-portal-theme="liquid-glass"] .homeDialogueConversation {
+  border-right: 0;
+}
+
+html:root[data-portal-theme="liquid-glass"] .homeDialogueDivider {
+  position: relative;
+  border: 0;
+  background: transparent;
+  outline: none;
+}
+
+html:root[data-portal-theme="liquid-glass"] .homeDialogueDivider::before,
+html:root[data-portal-theme="liquid-glass"] .homeDialogueDivider::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  border-radius: var(--lg-radius-pill);
+  pointer-events: none;
+}
+
+html:root[data-portal-theme="liquid-glass"] .homeDialogueDivider::before {
+  top: 16px;
+  bottom: 16px;
+  width: 1px;
+  transform: translateX(-50%);
+  background: linear-gradient(transparent, rgba(24, 24, 27, .08) 20%, rgba(24, 24, 27, .08) 80%, transparent);
+}
+
+html:root[data-portal-theme="liquid-glass"] .homeDialogueDivider::after {
+  top: 50%;
+  width: 3px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+  background: rgba(24, 24, 27, .24);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .8);
+}
+
+html:root[data-portal-theme="liquid-glass"] .homeDialogueDivider:is(:hover, :active, :focus-visible)::after {
+  background: var(--accent);
+}
+
+html:root[data-portal-theme="liquid-glass"] .homeDialogueDivider:focus-visible::after {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 html:root[data-portal-theme="liquid-glass"] .portalWorkbenchStage.is-layout-locked .portalWorkbenchSplitHandle::after {
   background: transparent;
 }
@@ -1933,6 +1980,11 @@ html:root[data-portal-theme="liquid-glass"] .portalMailboxAlert {
 
 /* Tier 3: Accessibility & reduced transparency / high contrast fallbacks */
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more), (forced-colors: active) {
+  html:root[data-portal-theme="liquid-glass"] .homeDialogueDivider::after {
+    background: CanvasText;
+    box-shadow: none;
+  }
+
   html:root[data-portal-theme="liquid-glass"] .portalWorkbenchStage.has-tab-toolbar > .portalWorkbenchToolbar :is(
     .portalWorkbenchHiddenPanelButton,
     .portalWorkbenchCustomizeButton,
