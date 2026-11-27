@@ -154,6 +154,9 @@ class ProviderRuntime:
     """
 
     services: tuple[str, ...] = ()
+    # A second Portal build of the same official backend gets a numbered edition.
+    # Keep historical entries so running builds retain their identity after rollback.
+    release_editions: dict[str, int] = {}
 
     @property
     def unit_files(self) -> tuple[str, ...]:
@@ -176,6 +179,28 @@ class ProviderRuntime:
     def link(self) -> Path:
         raise NotImplementedError
 
+    def version_label(self, versions, *, installed=False):
+        """Public release identity, independently of package-manager inputs."""
+        official = versions[0] if versions else ""
+        if official not in self.release_editions:
+            return official
+        if installed:
+            selected = self.link().resolve()
+            for root in (selected, *selected.parents):
+                if root.parent == RUNTIMES.resolve():
+                    marker = root / "PROVIDER_EDITION"
+                    edition = int(marker.read_text()) if marker.is_file() else 0
+                    break
+            else:
+                edition = 0
+        else:
+            edition = self.release_editions[official]
+        return f"{official}-{edition}" if edition else official
+
+    def mark_edition(self, root, official):
+        if official in self.release_editions:
+            (root / "PROVIDER_EDITION").write_text(str(self.release_editions[official]) + "\n")
+
     def prerequisites_available(self) -> bool:
         return True
 
@@ -193,7 +218,7 @@ class ProviderRuntime:
 
     def installation_current(self, versions):
         """Whether the installed upstream versions include required local revisions."""
-        return True
+        return self.version_label(versions, installed=True) == self.version_label(versions)
 
     def activation_ready(self, root):
         return True
@@ -253,13 +278,14 @@ class CodexRuntime(ProviderRuntime):
 
     def installed(self) -> tuple[str, ...]:
         if sys.platform == "win32":
-            return (linked_version(self.link(), "codex-cli-"),)
+            marker = self.link() / ".portal-validated"
+            return (marker.read_text().strip() if marker.is_file() else linked_version(self.link(), "codex-cli-"),)
         return (codex_cli_version(run_command(str(self.link()), "--version", timeout=45)),)
 
     @diagnosed("dependency_install")
     def stage(self, versions: tuple[str, ...]) -> Path:
         (version,) = versions
-        root = RUNTIMES / f"codex-cli-{version}"
+        root = RUNTIMES / f"codex-cli-{self.version_label(versions)}"
         binary = npm_binary(root, "codex")
         marker = root / ".portal-validated"
         if not marker.is_file() or not binary.is_file():
@@ -270,6 +296,7 @@ class CodexRuntime(ProviderRuntime):
             if Version(codex_cli_version(run_command(str(binary), "--version", timeout=60))) != Version(version):
                 raise RuntimeError("Codex staged version mismatch")
             run_command(str(binary), "app-server", "--help", timeout=60)
+        self.mark_edition(root, version)
         marker.write_text(version + "\n")
         return root
 
@@ -330,24 +357,72 @@ class ClaudeRuntime(ProviderRuntime):
         return provider_runtime_services(self.unit_files[0]) + claude_account_services()
 
     def available(self) -> tuple[str, ...]:
-        return (pypi_version("claude-agent-sdk"),)
+        from management_portal.claude_runtime import PROVIDER_REVISION
+        sdk = pypi_version("claude-agent-sdk")
+        installed = self.installed()
+        if len(installed) == 3 and installed[0] == sdk:
+            cli = installed[1]
+        else:
+            # Anthropic pins the bundled CLI in each official SDK release tag.
+            with urlopen(f"https://raw.githubusercontent.com/anthropics/claude-agent-sdk-python/"
+                         f"v{Version(sdk)}/src/claude_agent_sdk/_cli_version.py", timeout=30) as response:
+                match = re.search(r'^__cli_version__ = "(\d+\.\d+\.\d+)"$', response.read(4096).decode(), re.M)
+            if not match:
+                raise ValueError("Missing bundled Claude Code version in the SDK release")
+            cli = match[1]
+        return sdk, cli, str(PROVIDER_REVISION)
+
+    def version_label(self, versions, *, installed=False):
+        from management_portal.claude_runtime import provider_version
+        if len(versions) != 3:
+            return super().version_label(versions)
+        return provider_version(versions[1], int(versions[2]))
+
+    def selected_sdk(self, package):
+        from management_portal.claude_runtime import release_sdk
+        return release_sdk(package, provider_entry("claude_runtime_current"))
 
     def installed(self) -> tuple[str, ...]:
-        root = self.link()
-        found = _claude_sdk(venv_python(root))
-        return (found[1] if found else "0",)
+        package = self.link().resolve()
+        if not (package / "SDK_DIRECTORY").is_file():
+            return ("0",)
+        components = json.loads((package / "COMPONENTS.json").read_text())
+        versions = (components["agent_sdk"], components["claude_code"], str(components["revision"]))
+        found = _claude_sdk(venv_python(self.selected_sdk(package)))
+        if found and versions[0] == found[1] and self.version_label(versions) == (package / "VERSION").read_text().strip():
+            return versions
+        return ("0",)
 
     @diagnosed("dependency_install")
-    def stage(self, versions: tuple[str, ...], *, root: Path | None = None) -> Path:
-        (version,) = versions
-        root = root or RUNTIMES / f"claude-agent-sdk-{version}"
-        binary = venv_python(root)
-        marker = root / ".portal-validated"
+    def stage(self, versions: tuple[str, ...]) -> Path:
+        from management_portal.claude_runtime import PROVIDER_REVISION
+        from scripts.claude_app_server_package import stage_release
+        sdk, cli, revision = versions
+        if revision != str(PROVIDER_REVISION):
+            raise ValueError("Unknown Claude provider revision")
+        version = self.version_label(versions)
+        release = RUNTIMES / f"claude-provider-{version}"
+        selected = self.selected_sdk(release if release.exists() else self.link())
+        root = RUNTIMES / f"claude-agent-sdk-{sdk}-r{revision}"
+        found = _claude_sdk(venv_python(selected))
+        if found and found[1] == sdk and (selected / ".portal-validated").is_file():
+            if (selected / ".portal-validated").read_text() == "\n".join(self.requirements(sdk)) + "\n":
+                return stage_release(ROOT, RUNTIMES, found[0], sdk, expected_cli=cli)
+        self.stage_sdk(sdk, root)
+        return stage_release(ROOT, RUNTIMES, root, sdk, expected_cli=cli)
+
+    @staticmethod
+    def requirements(version):
         extras = [line.strip() for line in (ROOT / "requirements-claude-code.txt").read_text().splitlines()
                   if line.strip() and not line.startswith("#")
                   and not line.strip().startswith(("claude-agent-sdk==", "claude-agent-sdk>=", "claude-agent-sdk "))
                   and line.strip() != "claude-agent-sdk"]
-        requirements = [f"claude-agent-sdk=={version}", *extras]
+        return [f"claude-agent-sdk=={version}", *extras]
+
+    def stage_sdk(self, version: str, root: Path) -> Path:
+        binary = venv_python(root)
+        marker = root / ".portal-validated"
+        requirements = self.requirements(version)
         # The marker names every installed requirement, so a dependency the
         # daemon gains is installed into an existing runtime as well.
         validated = "\n".join(requirements) + "\n"
@@ -366,7 +441,7 @@ class ClaudeRuntime(ProviderRuntime):
         return self.activation_link()
 
     def activation_link(self) -> Path:
-        return provider_entry("claude_runtime_current")
+        return provider_entry("claude_app_server_current")
 
 class KimiRuntime(ProviderRuntime):
     # 2.5 replaces raw live events and snapshot APIs with transcript protocol
@@ -408,6 +483,12 @@ class KimiRuntime(ProviderRuntime):
         if not link.exists():
             return ("0",)
         return (run_command(str(npm_binary(link, "kimi")), "--version", timeout=60),)
+
+    def version_label(self, versions, *, installed=False):
+        base = super().version_label(versions)
+        if base == "2.4.1" and (not installed or self.installation_current(versions)):
+            return base + "-1"
+        return base
 
     def installation_current(self, versions):
         from .kimi_runtime_patch import verified
@@ -467,8 +548,37 @@ class DshRuntime(ProviderRuntime):
         except (OSError, KeyError, ValueError):
             return ("0",) * len(self.PACKAGES)
 
+    def version_label(self, versions, *, installed=False):
+        if len(versions) != 2 or versions[0] == versions[1]:
+            return super().version_label(versions)
+        official, llm = versions
+        # Reserve the bare official number for the upstream matched pair. A
+        # staged variant carries its assigned edition across restarts/rollback.
+        editions = {}
+        legacy = set()
+        for root in RUNTIMES.glob(f"dsh-runtime-{official}-*"):
+            if not (root / ".portal-validated").is_file():
+                continue
+            dependencies = json.loads((root / "package.json").read_text())["dependencies"]
+            if dependencies[self.PACKAGES[0]] != official or dependencies[self.PACKAGES[1]] == official:
+                continue
+            secondary = dependencies[self.PACKAGES[1]]
+            marker = root / "PROVIDER_EDITION"
+            if marker.is_file():
+                editions[secondary] = int(marker.read_text())
+            else:
+                legacy.add(secondary)
+        for secondary in sorted(legacy, key=Version):
+            edition = 1
+            while edition in editions.values():
+                edition += 1
+            editions[secondary] = edition
+        edition = editions.get(llm, max(editions.values(), default=0) + 1)
+        return f"{official}-{edition}"
+
     def stage(self, versions: tuple[str, ...]) -> Path:
         version, llm = versions
+        label = self.version_label(versions)
         root = RUNTIMES / f"dsh-runtime-{version}-{llm}"
         root.mkdir(parents=True, exist_ok=True)
         marker = root / ".portal-validated"
@@ -499,6 +609,8 @@ class DshRuntime(ProviderRuntime):
             run_command("npm", "install", "--prefix", str(root), "--omit=dev", "--no-audit", "--no-fund", timeout=3600)
         run_command("node", "--check", str(root / "bridge.mjs"), timeout=60)
         run_command("node", "--input-type=module", "-e", "const m=await import(process.argv[1]); if(typeof m.apply !== 'function') process.exit(1)", (root / "bridge.mjs").as_uri(), timeout=90)
+        if version != llm:
+            (root / "PROVIDER_EDITION").write_text(label.rsplit("-", 1)[1] + "\n")
         marker.write_text(expected_marker + "\n")
         return root
 
@@ -515,7 +627,7 @@ def runtimes() -> dict[str, ProviderRuntime]:
 
 
 def _newer(available: tuple[str, ...], installed: tuple[str, ...]) -> bool:
-    return any(Version(new) > Version(old) for new, old in zip(available, installed, strict=True))
+    return installed == ("0",) or any(Version(new) > Version(old) for new, old in zip(available, installed, strict=True))
 
 
 def _link(path: Path, target: Path) -> None:
@@ -590,6 +702,13 @@ def _active_executions(provider: str) -> int:
 @diagnosed("service_activation")
 def _activate(provider: str, runtime: ProviderRuntime, root: Path, *, prepare=False) -> bool:
     from .provider_candidate import validate
+    if provider == "claude" and root.name.startswith("claude-agent-sdk-"):
+        # Pending updates recorded by the SDK-only updater before migration.
+        from scripts.claude_app_server_package import stage_release
+        found = _claude_sdk(venv_python(root))
+        if not found:
+            raise ValueError("Incomplete pending Claude SDK")
+        root = stage_release(ROOT, RUNTIMES, *found)
     validate(provider, root, runtime.activation_link())
     return _activate_verified(provider, runtime, root, prepare=prepare)
 
@@ -714,8 +833,9 @@ def _update_state():
         yield state, save
 
 
-def _version_observation(installed, available):
-    return {"installed_version": " ".join(installed), "available_version": " ".join(available),
+def _version_observation(runtime, installed, available):
+    return {"version_format": 2, "installed_version": runtime.version_label(installed, installed=True),
+            "available_version": runtime.version_label(available),
             "checked_at": datetime.now(timezone.utc).isoformat(), "check_error": ""}
 
 
@@ -724,11 +844,11 @@ def _observe_versions(item):
     installed = ()
     try:
         installed = runtime.installed()
-        return provider, _version_observation(installed, runtime.available())
+        return provider, _version_observation(runtime, installed, runtime.available())
     except Exception as exc:
         # Package managers may include environment or URL details in exceptions.
         # A version observation only exposes the error category.
-        return provider, {**_version_observation(installed, ()), "check_error": type(exc).__name__}
+        return provider, {**_version_observation(runtime, installed, ()), "check_error": type(exc).__name__}
 
 
 def provider_runtime_status(*, refresh=False):
@@ -753,8 +873,10 @@ def provider_runtime_status(*, refresh=False):
     result = {}
     for provider, runtime in declared.items():
         observed = (state.get("observations") or {}).get(provider) or {}
+        if provider in {"claude", "kimi", "dsh"} and observed.get("version_format") != 2:
+            observed = {}
         try:
-            installed = " ".join(runtime.installed())
+            installed = runtime.version_label(runtime.installed(), installed=True)
         except Exception:
             LOGGER.warning("Installed version of %s unreadable; showing the last observation", provider, exc_info=True)
             installed = observed.get("installed_version", "")
@@ -901,8 +1023,9 @@ def run_update_pass() -> dict[str, object]:
                 with phase("download"):
                     available = runtime.available()
                 installed = runtime.installed()
-                state.setdefault("observations", {})[provider] = _version_observation(installed, available)
-                result["checked"][provider] = {"installed": " ".join(installed), "available": " ".join(available)}
+                state.setdefault("observations", {})[provider] = _version_observation(runtime, installed, available)
+                result["checked"][provider] = {"installed": runtime.version_label(installed, installed=True),
+                                               "available": runtime.version_label(available)}
                 if (not _newer(available, installed) and runtime.supports_versions(installed)
                         and runtime.installation_current(installed)):
                     if pending.pop(provider, None) is not None:

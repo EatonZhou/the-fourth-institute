@@ -4,6 +4,7 @@
 """
 
 import os
+import json
 import subprocess
 import sys
 from types import SimpleNamespace
@@ -53,23 +54,37 @@ def sdk(tmp_path):
 
 def test_host_programs_are_not_provider_runtimes(isolated):
     assert updates.CodexRuntime().link() == isolated / "codex"
-    assert updates.ClaudeRuntime().link() == isolated / "claude-agent-sdk-current"
+    assert updates.ClaudeRuntime().link() == isolated / "claude-app-server-current"
     assert updates.ClaudeRuntime().installed() == ("0",)
     assert not updates._runtime_installed(updates.ClaudeRuntime())
 
 
 def test_activated_claude_is_read_from_its_package(isolated, sdk):
-    current = isolated / "claude-agent-sdk-current"
-    current.symlink_to(sdk, target_is_directory=True)
+    from management_portal.claude_runtime import provider_version
+
+    selected_sdk = isolated / "test-sdk"
+    sdk.rename(selected_sdk)
+    package = isolated / "claude-provider-test"
+    package.mkdir()
+    (package / "COMPONENTS.json").write_text(json.dumps(dict(agent_sdk="0.2.174", claude_code="2.1.288", revision=1)))
+    (package / "VERSION").write_text(provider_version("2.1.288"))
+    (package / "SDK_DIRECTORY").write_text(selected_sdk.name)
     runtime = updates.ClaudeRuntime()
-    assert runtime.link() == runtime.activation_link() == current
-    # The installed version comes from the package, not a directory name.
-    assert runtime.installed() == ("0.2.174",)
+    runtime.activation_link().symlink_to(package, target_is_directory=True)
+    assert runtime.installed() == ("0.2.174", "2.1.288", "1")
+    (package / "VERSION").write_text(provider_version("0.2.189"))
+    assert runtime.installed() == ("0",)
 
 
 @pytest.mark.parametrize("defect", ["sdk", "daemon_dependency", "bundled_cli"])
 def test_incomplete_sdk_is_not_reported_installed(isolated, sdk, defect):
-    (isolated / "claude-agent-sdk-current").symlink_to(sdk, target_is_directory=True)
+    sdk = sdk.rename(isolated / "fixture-sdk")
+    package = isolated / "claude-provider-fixture"
+    package.mkdir()
+    (package / "SDK_DIRECTORY").write_text(sdk.name)
+    (package / "VERSION").write_text("2.1.288-1")
+    (package / "COMPONENTS.json").write_text(json.dumps(dict(agent_sdk="0.2.174", claude_code="2.1.288", revision=1)))
+    updates.ClaudeRuntime().link().symlink_to(package, target_is_directory=True)
     site = next((sdk / "lib").glob("python*/site-packages"))
     target = {"sdk": site / "claude_agent_sdk/__init__.py",
               "daemon_dependency": site / "psycopg_pool.py",
@@ -100,7 +115,7 @@ def test_claude_activation_failure_rolls_back_the_code_owned_link(isolated, monk
     monkeypatch.setattr(updates, "_service_control", lambda: SimpleNamespace(restart=restart))
     from management_portal.execution.provider_preparation import PreparationError
     with pytest.raises(PreparationError, match="服务启用失败") as failure:
-        updates._activate("claude", runtime, staged)
+        updates._activate_verified("claude", runtime, staged)
     # The public error names only the phase; the service failure stays chained.
     assert failure.value.phase == "service_activation"
     assert "failed to start" in str(failure.value.__cause__)

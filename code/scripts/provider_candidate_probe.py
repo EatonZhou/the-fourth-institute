@@ -103,6 +103,7 @@ def codex(root, model):
 
 
 async def claude(root, model):
+    sys.path.insert(0, str(root))
     from claude_agent_sdk import ClaudeSDKClient, ClaudeAgentOptions
     from management_portal.claude_tool_bridge import ClaudeToolBridge
     bridge = ClaudeToolBridge([RECEIPT])

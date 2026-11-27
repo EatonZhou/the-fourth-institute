@@ -62,6 +62,8 @@ def _app_server_version() -> str:
 
 
 APP_SERVER_VERSION = _app_server_version()
+_components_file = Path(__file__).resolve().parents[1] / "COMPONENTS.json"
+PROVIDER_COMPONENTS = json.loads(_components_file.read_text()) if _components_file.is_file() else {}
 # A deployment may explicitly configure a fallback, but fresh installations
 # have no account/route until onboarding. Requests normally select their route.
 DEFAULT_PROVIDER_PROFILE = ""
@@ -1937,6 +1939,8 @@ class ClaudeCodeDaemon:
             "health_scope": "runtime",
             "runtime_ready": True,
             "backend": "claude",
+            "provider_version": APP_SERVER_VERSION,
+            "component_versions": PROVIDER_COMPONENTS,
             "app_server_version": APP_SERVER_VERSION,
             "protocol_version": APP_SERVER_PROTOCOL_VERSION,
             "capabilities": {"harness_tools": True, "resident_environment": True, "account_usage": True, "input_media": True, "auto_compact_window": True, "turn_steer": True, "session_compact": True, "turn_reattach": True, "turn_continue": True, "subagent_switch": True},

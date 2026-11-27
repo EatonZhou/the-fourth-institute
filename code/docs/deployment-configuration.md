@@ -50,12 +50,14 @@ Provider 程序属于代码层，安装在实例所运行代码旁的 `dependenc
 | 入口 | 用途 |
 | --- | --- |
 | `codex`（Windows 为 `codex-cli-current`） | 所有 Codex 账号共用的程序入口 |
-| `claude-agent-sdk-current` | Claude Agent SDK 虚拟环境入口 |
-| `claude-app-server-current` | Portal Claude daemon 代码包入口 |
+| `claude-agent-sdk-current` | 旧版 Claude 安装的 SDK 入口，供迁移复用 |
+| `claude-app-server-current` | Claude provider 整包入口。版本格式为 Claude Code 官方 CLI 版本加 `-修订号`。每个包固定 Portal 适配代码、SDK 目录和随 SDK 分发的 Claude Code CLI，更新和回退共用此入口。同一 CLI 下升级 SDK 或修改 Portal 适配代码时递增 `PROVIDER_REVISION`。包内 `COMPONENTS.json` 记录 SDK 及实际 CLI 版本。 |
 | `kimi-code-current` | Kimi Code 程序包入口 |
 | `dsh-runtime-current` | DSH 依赖与桥接运行时入口 |
 | `opencode-current` | OpenCode 程序包入口 |
 | `antigravity-current` | Antigravity 程序包入口 |
+
+Provider 管理页和更新结果均使用整包版本。Codex、Antigravity、OpenCode 和原版 Kimi 使用官方后台版本，Kimi 的 2.4.1 权限补丁版为 `2.4.1-1`。DSH 与 dsh-llm 同版时显示 DSH 官方号，异版组合按安装时分配的 `-1`、`-2` 等修订号区分，修订号保存在版本包中，回退时沿用原号。
 
 入口保留最后一级软链接；服务定义引用入口而不是某个版本。启动方和更新器使用同一入口。更新器先由 Resident owner 登记在途原输入的恢复意图，随后切换入口、重启账号服务并验证就绪；不等待长任务或队列排空，不需要用户授权。服务切换期间用随更新进程退出而释放的 PostgreSQL 锁暂缓新认领，已有执行中断后在原会话继续，自动恢复耗尽的原输入由 Society coordinator 接续；已完成或已取消的输入不重放。更新失败回退原入口和同一组服务。不在主机 PATH 中查找 Provider 程序。更新器重试切换时启动的瞬态作业 `<前缀>-provider-activation` 属于实例：停止实例时一并停止，停止前核对它是瞬态单元且环境选择的是本实例。
 

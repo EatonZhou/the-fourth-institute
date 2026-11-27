@@ -25,7 +25,7 @@ def test_provider_programs_and_update_state_have_distinct_owners(tmp_path):
     paths = json.loads(process.stdout)
     programs = code.parent / 'dependencies/providers'
     entries = paths.pop('entries')
-    for name, entry in {'codex': 'codex', 'claude': 'claude-agent-sdk-current', 'kimi': 'kimi-code-current', 'dsh': 'dsh-runtime-current'}.items():
+    for name, entry in {'codex': 'codex', 'claude': 'claude-app-server-current', 'kimi': 'kimi-code-current', 'dsh': 'dsh-runtime-current'}.items():
         assert entries[name] == [str(programs / entry)] * 2
     assert paths == {'dsh': str(programs / 'dsh-runtime-current'),
                      'kimi': str(programs / 'kimi-code-current/bin/kimi'),

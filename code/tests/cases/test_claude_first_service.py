@@ -70,7 +70,7 @@ def control(monkeypatch, tmp_path):
     (installed_sdk / 'bin/python').write_text('SDK remains unmodified')
     sdk = runtimes / 'claude-agent-sdk-current'
     sdk.symlink_to(installed_sdk, target_is_directory=True)
-    monkeypatch.setattr(updates.ClaudeRuntime, 'installed', lambda self: ('0.2.174',))
+    monkeypatch.setattr(updates, '_claude_sdk', lambda _: (installed_sdk, '0.2.174'))
     install = Mock(side_effect=AssertionError("must reuse SDK without downloading"))
     monkeypatch.setattr(updates.ClaudeRuntime, "stage", install)
     monkeypatch.setattr(updates.ClaudeRuntime, "available", install)
@@ -93,7 +93,7 @@ def control(monkeypatch, tmp_path):
             # Only the SDK's package import probe is external to this fixture.
             assert Path(args[0]).resolve() == (sdk / "bin/python").resolve()
             assert "claude_code_daemon" in " ".join(args)
-        return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
+        return subprocess.CompletedProcess(args, 0, stdout="2.1.288 (Claude Code)" if args[0] != "systemctl" else "", stderr="")
 
     monkeypatch.setattr(units.subprocess, "run", run)
     yield state
@@ -294,7 +294,7 @@ def test_same_package_version_cannot_be_overwritten(control):
 
 
 def test_missing_sdk_only_mode_does_not_download(control, monkeypatch):
-    monkeypatch.setattr(updates.ClaudeRuntime, "installed", lambda self: ("0",))
+    monkeypatch.setattr(updates, "_claude_sdk", lambda _: None)
     with pytest.raises(RuntimeError, match="SDK runtime is missing"):
         units.install_claude_backend(app_server_only=True)
     control.install.assert_not_called()
@@ -302,15 +302,15 @@ def test_missing_sdk_only_mode_does_not_download(control, monkeypatch):
 
 
 def test_standard_install_stages_only_missing_sdk(control, monkeypatch):
-    monkeypatch.setattr(updates.ClaudeRuntime, "installed", lambda self: ("0",))
-    monkeypatch.setattr(updates.ClaudeRuntime, "available", lambda self: ("0.2.174",))
-    staged_sdk = control.sdk.resolve()
-    staged = Mock(return_value=staged_sdk)
+    monkeypatch.setattr(updates, "_claude_sdk", lambda _: None)
+    monkeypatch.setattr(updates.ClaudeRuntime, "available", lambda self: ("0.2.174", "2.1.288", "1"))
+    release = updates.RUNTIMES / "claude-provider-2.1.288-1"
+    release.mkdir()
+    staged = Mock(return_value=release)
     monkeypatch.setattr(updates.ClaudeRuntime, "stage", staged)
     target = units.install_claude_backend()
-    staged.assert_called_once_with(("0.2.174",))
-    link = updates.RUNTIMES / "claude-agent-sdk-current"
-    assert link.resolve() == staged_sdk
+    staged.assert_called_once_with(("0.2.174", "2.1.288", "1"))
+    assert updates.ClaudeRuntime().link().resolve() == release
     assert "management_portal.service_runtime" in target.read_text()
 
 
@@ -336,11 +336,17 @@ def test_start_failure_is_retryable_and_does_not_queue(control, check, monkeypat
 def test_real_import_package_is_repeatable_after_install_failure(control, monkeypatch, first_unit_failure):
     from scripts import claude_app_server_package
 
-    def build(source, destination):
+    def build(source, destination, version):
         module = destination / "management_portal"
         module.mkdir(parents=True)
         (module / "__init__.py").write_text("")
-        version = (source / "management_portal/claude_app_server_version.txt").read_text().strip()
+        (destination / "VERSION").write_text(version)
+        (module / "claude_runtime.py").write_text(
+            "from pathlib import Path\ndef native_cli_path(): return Path(__file__).resolve().parents[1] / 'fake-cli'")
+        cli = destination / "fake-cli"
+        cli.write_text("#!/bin/sh\necho '2.1.288 (Claude Code)'\n")
+        cli.chmod(0o755)
+        (destination / "claude_agent_sdk.py").write_text("__version__ = '0.2.174'")
         (module / "claude_code_daemon.py").write_text(
             f"APP_SERVER_VERSION = {version!r}\nAPP_SERVER_PROTOCOL_VERSION = 1\n")
 

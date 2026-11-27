@@ -104,9 +104,10 @@ class AntigravityRuntime(updates.ProviderRuntime):
         item = distribution() if version == VERSION else latest_distribution()
         if item.get("version", version) != version:
             raise ValueError("Antigravity release manifest changed during preparation")
-        root = updates.RUNTIMES / f"antigravity-cli-{version}"
+        root = updates.RUNTIMES / f"antigravity-cli-{self.version_label(versions)}"
         existing = self._record(root)
         if existing.get("version") == version and existing["sha512"] == item["sha512"] and _digest(binary_path(root)) == existing.get("binary_sha256"):
+            self.mark_edition(root, version)
             return root
         root.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory(dir=root) as scratch:
@@ -150,6 +151,7 @@ class AntigravityRuntime(updates.ProviderRuntime):
             (stage / ".portal-validated").write_text(version + "\n")
             for file in (binary, stage / "distribution.json", stage / ".portal-validated"):
                 file.replace(root / file.name)
+            self.mark_edition(root, version)
         return root
 
 

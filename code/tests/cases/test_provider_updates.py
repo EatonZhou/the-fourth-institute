@@ -17,7 +17,7 @@ from management_portal.execution import provider_updates as updates
 
 
 INSTALLED = {
-    updates.CodexRuntime: ("0.159.2",), updates.ClaudeRuntime: ("0.2.162",),
+    updates.CodexRuntime: ("0.159.2",), updates.ClaudeRuntime: ("0.2.162", "2.1.288", "1"),
     updates.KimiRuntime: ("2.1.1",), updates.DshRuntime: ("0.2.0-rc.2", "0.2.0-rc.2"),
 }
 
@@ -504,7 +504,7 @@ def test_claude_runtime_installs_a_requirement_the_daemon_gains(monkeypatch, tmp
                     if line.strip() and not line.startswith("#")]
     assert "psycopg-pool" in requirements
     for _ in range(2):
-        assert updates.ClaudeRuntime().stage(("0.2.162",), root=root) == root
+        assert updates.ClaudeRuntime().stage_sdk("0.2.162", root) == root
     staged = ["claude-agent-sdk==0.2.162", *(line for line in requirements if line != "claude-agent-sdk")]
     assert installs == [tuple(staged)]
     assert (root / ".portal-validated").read_text().splitlines() == staged
@@ -686,3 +686,34 @@ def test_watcher_finishes_on_interface_failure(monkeypatch):
     monkeypatch.setattr(script, "activate_pending_once", lambda: result)
     monkeypatch.setattr(script.time, "sleep", lambda _: pytest.fail("retry on next update pass"))
     assert script._watch_pending() == 1
+
+
+def test_public_versions_follow_native_backend_and_preserve_build_editions(monkeypatch, tmp_path):
+    from management_portal.execution import kimi_runtime_patch
+    monkeypatch.setattr(updates, "RUNTIMES", tmp_path)
+    for runtime in (updates.CodexRuntime(), updates.ProviderRuntime()):
+        assert runtime.version_label(("1.0.0-rc.5",)) == "1.0.0-rc.5"
+    assert updates.ClaudeRuntime().version_label(("0.2.189", "2.1.332", "1")) == "2.1.332-1"
+    codex = updates.CodexRuntime()
+    monkeypatch.setattr(codex, "release_editions", {"1.0.0-rc.5": 2})
+    bundle = tmp_path / "codex-cli-1.0.0-rc.5-2"
+    bundle.mkdir()
+    monkeypatch.setattr(codex, "link", lambda: bundle / "portal-codex")
+    assert not codex.installation_current(("1.0.0-rc.5",))
+    codex.mark_edition(bundle, "1.0.0-rc.5")
+    assert codex.installation_current(("1.0.0-rc.5",))
+    assert codex.version_label(("1.0.0-rc.5",), installed=True) == "1.0.0-rc.5-2"
+    kimi = updates.KimiRuntime()
+    monkeypatch.setattr(kimi_runtime_patch, "verified", lambda _: False)
+    assert kimi.version_label(("2.4.1",), installed=True) == "2.4.1"
+    assert kimi.version_label(("2.4.1",)) == "2.4.1-1"
+    dsh = updates.DshRuntime()
+    assert dsh.version_label(("1.0", "1.0")) == "1.0"
+    assert dsh.version_label(("1.0", "1.1")) == "1.0-1"
+    release = tmp_path / "dsh-runtime-1.0-1.1"
+    release.mkdir()
+    (release / ".portal-validated").touch()
+    (release / "package.json").write_text(json.dumps({"dependencies": dict(zip(dsh.PACKAGES, ("1.0", "1.1")))}))
+    (release / "PROVIDER_EDITION").write_text("1")
+    assert dsh.version_label(("1.0", "1.2")) == "1.0-2"
+    assert dsh.version_label(("1.0", "1.1"), installed=True) == "1.0-1"

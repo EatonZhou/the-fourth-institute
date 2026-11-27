@@ -119,11 +119,19 @@ def component_command(instance: InstanceManifest, component: str) -> tuple[list[
         return [str(code_environment.native_binary(code, 'nats')), '-a', '127.0.0.1', '-p', str(instance.document['network']['nats_port'])], env
     if (component in {'claude', 'claude-code'} or component.startswith('claude-account@')):
         runtime = code_environment.provider_entry('claude_runtime_current', instance)
+        from management_portal.claude_runtime import release_sdk
+        package = code_environment.provider_entry('claude_app_server_current', instance).resolve()
+        runtime = release_sdk(package, runtime)
         executable = runtime / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
-        package = code_environment.provider_entry('claude_app_server_current', instance)
         if not executable.is_file() or not (package / 'management_portal/claude_code_daemon.py').is_file():
             raise FileNotFoundError('Prepare the Claude SDK and app-server package before startup')
         command = [str(executable), '-m', 'management_portal.claude_code_daemon']
+        if (package / 'SDK_DIRECTORY').is_file():
+            # Bind module lookup and interpreter to the same immutable selection.
+            command = [str(executable), '-I', '-B', '-c',
+                       "import runpy,sys; sys.path.insert(0,sys.argv.pop(1)); "
+                       "runpy.run_module('management_portal.claude_code_daemon',run_name='__main__')",
+                       str(package)]
         if component.startswith('claude-account@'):
             from management_portal.claude_code_client import account_socket
             route = component.partition('@')[2]

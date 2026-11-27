@@ -68,7 +68,11 @@ def validate(provider, root, active):
                 # A first-time install can bootstrap the CLI before account enrollment.
                 versions = [root]
         for index, version in enumerate(versions):
-            interpreter = venv_python(version) if provider == "claude" else sys.executable
+            interpreter = sys.executable
+            if provider == "claude":
+                from .provider_updates import ClaudeRuntime
+                sdk = ClaudeRuntime().selected_sdk(version)
+                interpreter = venv_python(sdk)
             command = [str(interpreter), str(ROOT / "scripts/provider_candidate_probe.py"),
                        provider, str(version.resolve(strict=True))]
             try:

@@ -51,20 +51,21 @@ def installed_claude_sdk(monkeypatch):
     service definitions; SDK execution belongs to the adapter's own tests.
     """
     from management_portal.execution import provider_updates as updates
-    from scripts import portal_service_units as units
+    from scripts import claude_app_server_package
 
-    monkeypatch.setattr(updates.ClaudeRuntime, 'installed', lambda _: ('fixture-sdk',))
+    sdk = updates.RUNTIMES / 'claude-agent-sdk-0.2.174'
+    sdk.mkdir(exist_ok=True)
+    monkeypatch.setattr(updates, '_claude_sdk', lambda _: (sdk, '0.2.174'))
 
     def validate(command, **kwargs):
-        runtime = updates.ClaudeRuntime().link()
-        assert command[0] == str(updates.venv_python(runtime))
+        assert command[0] == str(updates.venv_python(sdk))
         assert command[1:4] == ['-I', '-B', '-c']
         candidate = Path(command[-1])
         assert (candidate / 'management_portal/claude_code_daemon.py').is_file()
         assert (candidate / 'VERSION').read_text().strip() == command[-2]
-        return subprocess.CompletedProcess(command, 0, stdout='')
+        return subprocess.CompletedProcess(command, 0, stdout='2.1.288 (Claude Code)')
 
-    monkeypatch.setattr(units, 'subprocess', SimpleNamespace(run=validate, PIPE=subprocess.PIPE, STDOUT=subprocess.STDOUT))
+    monkeypatch.setattr(claude_app_server_package, 'subprocess', SimpleNamespace(run=validate, PIPE=subprocess.PIPE, STDOUT=subprocess.STDOUT))
 
 
 class FakeControl:

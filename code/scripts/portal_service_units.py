@@ -10,10 +10,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
-import hashlib
 import os
-import re
-import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -163,51 +160,23 @@ def install_claude_unit(runtime: Path, package: Path) -> Path:
 
 def _install_claude_backend(*, app_server_only: bool) -> Path:
     from management_portal.execution import provider_updates as updates
-    from scripts.claude_app_server_package import build_package
+    from scripts.claude_app_server_package import stage_release
 
     instance = _instance()
     provider_runtime_services("portal-claude-code.service")
     runtime = updates.ClaudeRuntime()
-    runtime_root, versions = runtime.link(), runtime.installed()
-    staged = False
-    if versions == ("0",):
-        if app_server_only:
-            raise RuntimeError("Claude Agent SDK runtime is missing")
-        versions = runtime.available()
-        runtime_root = runtime.stage(versions)
-        staged = True
-    version = (SOURCE_ROOT / "management_portal/claude_app_server_version.txt").read_text().strip()
-    if not re.fullmatch(r"[0-9A-Za-z][0-9A-Za-z._-]{0,63}", version):
-        raise ValueError("Invalid Claude app-server version")
-    # The package and its current link belong to the same code-owned directory.
-    package = code_environment.provider_directory(instance) / f"claude-app-server-{version}"
-    current = provider_entry("claude_app_server_current", instance)
-    package.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix=".claude-app-server-", dir=package.parent) as temporary:
-        candidate = Path(temporary) / "package"
-        build_package(SOURCE_ROOT, candidate)
-        subprocess.run([str(updates.venv_python(runtime_root)), "-I", "-B", "-c",
-                        "import sys; sys.path.insert(0, sys.argv[2]); "
-                        "from management_portal import claude_code_daemon as daemon; "
-                        "assert daemon.APP_SERVER_VERSION == sys.argv[1]; "
-                        "assert daemon.APP_SERVER_PROTOCOL_VERSION == 1",
-                        version, str(candidate)], check=True, timeout=30,
-                       env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
-                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-        if package.exists():
-            def digest(root):
-                return {str(p.relative_to(root)): hashlib.sha256(p.read_bytes()).hexdigest()
-                        for p in root.rglob("*") if p.is_file()}
-            if digest(candidate) != digest(package):
-                raise ValueError("Refusing to replace immutable Claude app-server runtime; bump APP_SERVER_VERSION")
-        else:
-            candidate.replace(package)
-    if staged:
-        current_sdk = runtime.activation_link()
-        updates._link(current_sdk, runtime_root)
-        runtime_root = current_sdk
-    updates._link(current, package)
-    return install_claude_unit(runtime_root, current)
+    current = runtime.activation_link()
+    sdk = runtime.selected_sdk(current)
+    found = updates._claude_sdk(updates.venv_python(sdk))
+    if found:
+        root = stage_release(SOURCE_ROOT, current.parent, *found)
+    elif app_server_only:
+        raise RuntimeError("Claude Agent SDK runtime is missing")
+    else:
+        root = runtime.stage(runtime.available())
+    unit = install_claude_unit(provider_entry("claude_runtime_current", instance), current)
+    updates._link(current, root)
+    return unit
 
 
 def install_claude_backend(*, app_server_only: bool = False) -> Path:

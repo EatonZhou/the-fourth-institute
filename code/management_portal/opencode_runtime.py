@@ -40,11 +40,12 @@ class OpenCodeRuntime(ProviderRuntime):
         return (updates.npm_version(self.PACKAGE, "latest"),)
 
     def installed(self) -> tuple[str, ...]:
-        return (updates.linked_version(self.link(), "opencode-"),)
+        marker = self.link() / ".portal-validated"
+        return (marker.read_text().strip() if marker.is_file() else updates.linked_version(self.link(), "opencode-"),)
 
     def stage(self, versions: tuple[str, ...]) -> Path:
         (version,) = versions
-        root = updates.RUNTIMES / f"opencode-{version}"
+        root = updates.RUNTIMES / f"opencode-{self.version_label(versions)}"
         binary = updates.npm_binary(root, "opencode")
         marker = root / ".portal-validated"
         if not marker.is_file():
@@ -68,6 +69,7 @@ class OpenCodeRuntime(ProviderRuntime):
                 # OpenCode lists a service's models only when it has a key; listing sends no request.
                 staged[service.name] = agent_models(binary, service.name, {**env, service.key_variable: "listing-only"})
         (root / "models.json").write_text(json.dumps(staged, indent=1) + "\n")
+        self.mark_edition(root, version)
         marker.write_text(version + "\n")
         return root
 
