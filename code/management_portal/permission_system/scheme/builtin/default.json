@@ -1063,11 +1063,11 @@
     },
     "UpdateUserStatus": {
       "a": "@admin",
-      "r": "@portal"
+      "r": "@shared"
     },
     "UpdateUserCategory": {
       "a": "@admin",
-      "r": "@portal"
+      "r": "@shared"
     },
     "ApplyLineageChanges:update_wire": {
       "a": "@contributor"
@@ -1131,15 +1131,15 @@
       "r": "@portal"
     },
     "CreateWorkspace:fixed": {
-      "a": "@free",
-      "r": "@portal"
+      "a": "@admin",
+      "r": "@shared"
     },
     "CreateWorkspace:owner_id": {
       "a": "@contributor"
     },
     "RegisterWorkspace:fixed": {
-      "a": "@free",
-      "r": "@portal"
+      "a": "@admin",
+      "r": "@shared"
     },
     "RegisterWorkspace:owner_id": {
       "a": "@contributor"

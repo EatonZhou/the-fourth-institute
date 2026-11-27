@@ -82,14 +82,14 @@ def family(delivery_resident, monkeypatch):
 
 
 def _reassign(family, request, member, actor="sample_admin", reason="这是 steward 设计，应交给 family 设计"):
-    return run("RelayFamilyMessage", {"resident_id": family["facade"], "message_id": request, "member_id": member,
-                                      "reassign": True, "reason": reason}, actor=actor)
+    return run("RelayMessage", {"resident_id": family["facade"], "message_id": request, "member_id": member,
+                                "reassign": True, "reason": reason}, actor=actor)
 
 
 def test_a_reassigned_request_moves_to_the_named_member_and_leaves_a_correction(family):
     """改派把门面请求交给指定成员，并留下改派纠正
 
-    RelayFamilyMessage reassign=true 撤回原成员还在排队的副本，以原发送者把请求交给新成员；门面的转交记录指向新成员并保留改派来源；改派纠正写入 family_corrections_<门面>，并以 info 告诉 steward。
+    RelayMessage reassign=true 撤回原成员还在排队的副本，以原发送者把请求交给新成员；门面的转交记录指向新成员并保留改派来源；改派纠正写入 family_corrections_<门面>，并以 info 告诉 steward。
     """
     facade, wrong, right = family["facade"], family["wrong"], family["right"]
     request = family["ask"]("steward 的行动逻辑可以再优化")

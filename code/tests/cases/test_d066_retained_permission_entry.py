@@ -72,7 +72,8 @@ def test_normal_cold_owner_retains_exact_row_and_audits_without_expanding_rights
     after = snapshot(store)
     assert any(row["scheme_id"] == "custom" and row["a_node"] == "RelayMessage:relay"
                for row in after["scheme_entries"])
-    assert store.basis()["instructions"]["UpdateUserStatus"] == {"a": "@admin", "r": "@portal"}
+    assert store.basis()["instructions"]["UpdateUserStatus"] == {"a": "@admin", "r": "@shared"}
+    assert store.basis()["instructions"]["UpdateUserCategory"] == {"a": "@admin", "r": "@shared"}
     assert implementation.schemes.compiled("default").unmapped() == []
     history = next(row for row in after["scheme_migration_history"]
                    if row["migration_id"] == migration.MIGRATION)

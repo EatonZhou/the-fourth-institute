@@ -87,12 +87,17 @@ def test_administrators_always_turn_the_switch_and_activate_schemes(permissions,
     with pytest.raises(InstructionError):
         permission_system.authorize_instruction(catalog["UpdateExecutionSettings"], {"harness_retention_days": 7}, alice)
     assert not permission_system.allows("alice", "GetExecutionSettings")
-    # The settings handler asks the same question.
-    monkeypatch.setattr(system_workflows, "_switch_permission_system", lambda enabled, actor: ({"enabled": enabled}, None))
-    assert system_workflows.set_permission_system_enabled(SimpleNamespace(
-        caller="alice", arguments=dict(SWITCH), argument=SWITCH.get)) == {"settings": {"enabled": False}}
-    with pytest.raises(InstructionError):
-        system_workflows.set_permission_system_enabled(SimpleNamespace(caller="bob", arguments=dict(SWITCH), argument=SWITCH.get))
+    # The three settings instructions are judged once, at the entry, by the declaration and the scheme;
+    # a non-administrator never reaches a handler, and the handlers ask nothing themselves.
+    for name, arguments in (("GetExecutionSettings", {}), ("UpdateExecutionSettings", {"harness_retention_days": 7}),
+                            ("SetPermissionSystemEnabled", SWITCH)):
+        with pytest.raises(InstructionError):
+            permission_system.authorize_instruction(catalog[name], arguments, bob)
+    with monkeypatch.context() as handlers:
+        handlers.setattr(permission_system, "allows", lambda *args, **kwargs: pytest.fail("a handler asked the permission system"))
+        handlers.setattr(system_workflows, "_switch_permission_system", lambda enabled, actor: ({"enabled": enabled}, None))
+        assert system_workflows.set_permission_system_enabled(SimpleNamespace(
+            caller="bob", arguments=dict(SWITCH), argument=SWITCH.get)) == {"settings": {"enabled": False}}
     # The scheme editor's activate button.
     editor = permission_system.manage("GetPermissionSystem", {}, actor="alice")
     assert editor["allows"]["ActivatePermissionScheme"] is True

@@ -246,8 +246,9 @@ def unregister_tree(roots=(), *, connection, actor, workspace_ids=(), owner_ids=
             f'SELECT * FROM {workspace.table} WHERE workspace_id=ANY(%s) '
             'AND deleted_at IS NULL ORDER BY workspace_id FOR UPDATE',
             ([row['workspace_id'] for row in selected_rows],)).fetchall()
-        # An ownership-only handoff may finish outside the directory queue.
-        # Refuse a changed selection rather than retire its previous owner view.
+        # Ownership handoffs take the directory queue, so none finishes after the
+        # closure was read. Refuse a selection changed by a writer that bypassed
+        # the queue rather than retire its previous owner view.
         def ownership_snapshot(items):
             return {(row['workspace_id'], row['path'], row['owner_id']) for row in items}
         if ownership_snapshot(rows) != ownership_snapshot(selected_rows):

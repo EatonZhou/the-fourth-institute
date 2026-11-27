@@ -184,19 +184,20 @@ def local_login_environment(provider, account_id):
         env['BROWSER'] = subprocess.list2cmdline([env.get('COMSPEC', 'cmd.exe'), '/d', '/c', 'exit', '0'])
     else:
         env['BROWSER'] = '/bin/true'
-    home = account_home(provider, account_id)
-    home_key = {"codex": "CODEX_HOME", "claude": "CLAUDE_CONFIG_DIR", "antigravity": "GEMINI_HOME"}[provider]
-    env[home_key] = str(home)
-    if provider == 'antigravity':
-        from management_portal.antigravity_runtime import credential_environment
-        env.update(credential_environment())
-        # This login launches our Python ACP wrapper before the vendor
-        # executable. Its imports resolve runtime paths from the selected
-        # instance; this non-secret identity is required even in a fully
-        # filtered child environment. Never inherit the service environment.
-        from management_common.instance_manifest import current_instance
-        env['PORTAL_INSTANCE_ROOT'] = str(current_instance().root)
+    profile = _login_profile(provider)
+    if not profile.home_env:
+        raise ValueError("Provider does not support subscription login")
+    env[profile.home_env] = str(account_home(provider, account_id))
+    if profile.environment_hook:
+        env.update(profile.hook("environment")())
     return env
+
+
+def _login_profile(provider):
+    profile = login_profile(provider)
+    if profile is None:
+        raise ValueError("Provider does not support subscription login")
+    return profile
 
 
 login_environment = local_login_environment
@@ -204,30 +205,21 @@ login_environment = local_login_environment
 
 def provider_binary(provider):
     """The installed CLI that logs a Provider account in."""
-    if provider not in {"codex", "claude"}:
+    profile = _login_profile(provider)
+    if not profile.runtime_binary_hook:
         raise ValueError("Provider does not support subscription login")
     from management_common.site_config import read_site_config
     from management_common.portal_paths import resolve_directory
     configured = read_site_config().get("deployment", {}).get("providers", {}).get(f"{provider}_binary")
-    # Codex logs in with the program its app-server runs; that link already
-    # reuses a Codex found on PATH.
+    # A Provider without a PATH lookup logs in with the program its own
+    # runtime runs; that link already reuses one found on PATH.
     binary = (str(resolve_directory(configured)) if configured
-              else None if provider == "codex" else shutil.which(provider))
-    if binary and provider == "codex" and sys.platform == "win32" and Path(binary).is_dir():
+              else shutil.which(provider) if profile.path_lookup else None)
+    if binary and profile.npm_package and sys.platform == "win32" and Path(binary).is_dir():
         from .provider_updates import npm_binary
-        binary = str(npm_binary(Path(binary), "codex"))
+        binary = str(npm_binary(Path(binary), profile.npm_package))
     if not binary:
-        from .provider_updates import CodexRuntime, ClaudeRuntime
-        if provider == "codex":
-            candidate = CodexRuntime().link()
-            if sys.platform == "win32":
-                from .provider_updates import npm_binary
-                candidate = npm_binary(candidate, "codex")
-        else:
-            root = ClaudeRuntime().link()
-            candidates = [*root.glob("lib/python*/site-packages/claude_agent_sdk/_bundled/claude"),
-                          root / "Lib/site-packages/claude_agent_sdk/_bundled/claude.exe"]
-            candidate = next((path for path in candidates if path.is_file()), None)
+        candidate = profile.hook("runtime_binary")()
         if candidate and candidate.is_file() and os.access(candidate, os.X_OK):
             binary = str(candidate)
     if configured and (not Path(binary).is_file() or not os.access(binary, os.X_OK)):

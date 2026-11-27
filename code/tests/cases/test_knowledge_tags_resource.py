@@ -26,7 +26,7 @@ PROJECT = {"id": "Demo", "status": "active"}
 
 @pytest.fixture
 def legacy():
-    raw = {"schema_version": 999, "status_vocab": ["active"], "tag_vocab": TAGS, "projects": [PROJECT]}
+    raw = {"schema_version": 1, "status_vocab": ["active"], "tag_vocab": TAGS, "projects": [PROJECT]}
     put_registry_document(project_registry.COLLECTION, project_registry.DOCUMENT_ID, raw)
     project_registry.reset_cache_for_tests()
     return copy.deepcopy(raw)

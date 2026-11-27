@@ -459,6 +459,8 @@ def _set_user_category(inv: Invocation, username: str, category: Any) -> bool:
     if not user.get("configured") or user.get("status") == "deleted":
         raise not_found(f"用户不存在：{username}")
     if category == permission_system.user_category(username):
+        # A same-value request still answers to the version the caller expects.
+        _access().require_revision(_user_token(inv))
         return False
     with _administrator_change(inv.caller, username, expected_revision=_user_token(inv), category=category):
         changed = permission_system.set_user_category(username, category, actor=inv.caller)
@@ -550,8 +552,8 @@ def update_user(inv: Invocation) -> dict[str, Any]:
                 "expected_revision": expected,
             })
             user = result.get("user") or {}
-        elif has_avatar:
-            # An avatar lives in its own store: the token is only checked, under the account lock.
+        else:
+            # An avatar lives in its own store, and an empty change writes nothing: the token is only checked, under the account lock.
             _access().require_revision(expected)
     result = dict(user or {"username": username, **_access().user(username)})
     if has_avatar:

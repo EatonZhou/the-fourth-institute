@@ -12,6 +12,31 @@ READ_RUN = (
     R('lineage_id', description='脚本运行所属的 Lineage'),
     R('script_run_id', description='RunScript 返回的运行 ID'),
 )
+# The run record GetScriptRun returns (the stored fields minus service-private ones).
+RUN_RECORD = (
+    R('script_run_id', description='脚本运行 ID'),
+    R('lineage_id', description='脚本运行所属的 Lineage'),
+    R('status', description='running、succeeded、failed、timed_out、cancelled 或 lost'),
+    R('path', description='脚本文件的绝对路径'),
+    R('runtime', description='解释器：python、javascript 或 bash'),
+    R('cwd', description='运行时的工作目录'),
+    R('sha256', description='启动时脚本内容的 SHA-256'),
+    R('argv', 'array', '命令行参数'),
+    R('arguments', 'object', '交给脚本的 JSON 输入'),
+    R('caller_id', description='启动运行的调用者'),
+    R('effect_id', description='启动运行的 Effect；不是 Effect 启动时为空'),
+    R('trigger_path_id', description='所属 Trigger Path；不在 Run 中启动时为空'),
+    R('started_at', description='运行开始时间'),
+    R('finished_at', description='运行结束时间；运行中为空'),
+    R('duration_seconds', 'number', '运行用时（秒）；运行中为 0'),
+    P('exit_code', 'integer', '脚本退出码；运行中或没有退出码时为空'),
+    R('error_code', description='失败原因的错误码，没有错误时为空'),
+    R('outputs', 'object', '脚本通过 set_output 写出的输出字段'),
+    R('stderr_tail', description='标准错误末尾最多 8 KB'),
+    R('artifacts', 'array', '已登记的产物，每项含 name、size、mime_type'),
+    P('timeout_seconds', 'integer', '运行时限；没有设置时省略'),
+    P('exclusive_key', description='启动时给出的互斥键'),
+)
 READ_RANGE = (
     P('offset', 'integer', '起始字节偏移，默认 0', minimum=0),
     P('limit', 'integer', '最多读取的字节数，默认 65536', minimum=1, maximum=65536),
@@ -42,7 +67,7 @@ DECLARATIONS = (
         R('started_at', description='运行开始时间')), mutates=True),
     _d('GetScriptRun', ON_LINEAGE, '读取脚本运行状态、输出字段与产物清单。', (
         R('lineage_id', description='脚本运行所属的 Lineage'), R('script_run_id', description='RunScript 返回的运行 ID'),
-    )),
+    ), RUN_RECORD),
     _d('ListScriptRuns', ON_LINEAGE, '按 Lineage、Effect、状态或脚本文件查询脚本运行。', (
         R('lineage_id', description='要查询的 Lineage'), P('effect_id', description='只列出这个 Effect 启动的运行'),
         P('status', description='只列出这种状态：running、succeeded、failed、timed_out、cancelled 或 lost'),

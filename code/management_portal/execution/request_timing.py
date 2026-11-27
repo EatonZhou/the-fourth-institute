@@ -11,14 +11,6 @@ from .service_settings import ExecutionSettings
 LOGGER = logging.getLogger(__name__)
 
 
-class RequestTimingModule:
-    def __init__(self, settings=None):
-        self.settings = settings if settings is not None else ExecutionSettings()
-
-    def configure(self, enabled):
-        return self.settings.update(enabled)
-
-
 def observed_timing(value):
     """Consume a small copy at persistence time, never on the transport path."""
     if not isinstance(value, dict) or not value:

@@ -155,25 +155,26 @@ def test_default_scheme_rules(store, default):
     administration = engine.decide("bob", [("UpdatePermissionScheme", "@shared")])[0]
     assert administration.allowed and administration.permit.p == "@portal_admins"
     assert not engine.decide("alice", [("UpdatePermissionScheme", "@shared")])[0].allowed
-    assert all(decision.allowed for decision in engine.decide("someone", [("GetPortalStatus", "@shared"), ("SetMailboxItemRead", "@portal")]))
+    assert all(decision.allowed for decision in engine.decide("someone", [("GetPortalStatus", "@shared"), ("UpdateMailboxItem", "@portal")]))
 
 
 def test_everyone_may_message_shared_residents(store, default):
     """默认方案允许所有主体给共享区的 Resident 发消息
 
     发消息的指令挂在 A 树“给 Resident 发消息”节点下，全员对“共享”有这一动作：不相干的 User 和其他 Lineage 的 Resident
-    可以投递、转发和回答请求，但不因此得到 contributor；个人空间里的对象不受这条规则覆盖。
+    可以投递、转发和回答请求，但不因此得到 contributor；这条规则覆盖包括个人 AMA 在内的所有 Resident，修改设置等动作仍不放行个人空间里的对象。
     """
     build(default, store, portal_facts(), interns=["bob"])
     engine = engine_for(default, store)
-    for element in ("DeliverMessage:resident_id", "DeliverMessage:user_id", "ForwardMessages:target_resident_id",
+    for element in ("DeliverMessage", "DeliverUserMessage", "ForwardMessagesToResident",
                     "AnswerResidentRequest"):
         assert default.trees["A"].nodes[element].parent == "@message"
-    assert engine.decide("bob", [("DeliverMessage:resident_id", OTHER)])[0].allowed
-    assert engine.decide(RESIDENT, [("ForwardMessages:target_resident_id", OTHER)])[0].allowed
+    assert engine.decide("bob", [("DeliverMessage", OTHER)])[0].allowed
+    assert engine.decide(RESIDENT, [("ForwardMessagesToResident", OTHER)])[0].allowed
     assert not engine.decide("bob", [("UpdateResidentSettings", OTHER)])[0].allowed
     assert levels(engine, default, "bob", OTHER) == "viewer"
-    assert not engine.decide("bob", [("DeliverMessage", "personal_space:alice")])[0].allowed
+    assert engine.decide("bob", [("DeliverMessage", "personal_space:alice")])[0].allowed
+    assert not engine.decide("bob", [("UpdateResidentSettings", "personal_space:alice")])[0].allowed
 
 
 def test_incremental_sync_moves_subtrees_and_rules(store, default):
@@ -581,18 +582,18 @@ def test_compiler_reports_each_error_with_its_path():
     assert any(path.startswith("trees.R.nodes[") for path in _errors(labelled))
 
     no_node = copy.deepcopy(base)
-    no_node["instructions"]["DeliverMessage:resident_id"]["a"] = "@nowhere"
-    assert "instructions.DeliverMessage:resident_id.a" in _errors(no_node)
+    no_node["instructions"]["DeliverMessage"]["a"] = "@nowhere"
+    assert "instructions.DeliverMessage.a" in _errors(no_node)
 
     deleted = copy.deepcopy(base)
     deleted["levels"] = {"viewer": "@viewer", "contributor": "@contributor", "admin": "@admin"}
-    deleted["instructions"]["DeliverMessage:resident_id"] = {"level": "contributor"}
+    deleted["instructions"]["DeliverMessage"] = {"level": "contributor"}
     # What a slot judges belongs to the declaration: the old per-instruction slot lists no longer compile.
     deleted["instructions"]["GetLineage"] = [{"argument": "lineage_id", "a": "@viewer", "types": ["lineage"]}]
     deleted["instructions"]["GetResident"] = {"a": "@viewer", "types": ["resident"]}
     deleted["instructions"]["UpdateLineage:lineage_id"] = {"a": "@contributor", "r": "@shared"}
     deleted["instructions"]["CreateUser"] = {"a": "@admin", "r": "@nowhere"}
-    assert {"levels", "instructions.DeliverMessage:resident_id", "instructions.GetLineage", "instructions.GetResident",
+    assert {"levels", "instructions.DeliverMessage", "instructions.GetLineage", "instructions.GetResident",
             "instructions.UpdateLineage:lineage_id.r", "instructions.CreateUser.r"} <= set(_errors(deleted))
 
     under_rule = copy.deepcopy(base)
@@ -627,7 +628,7 @@ def test_compiler_reports_each_error_with_its_path():
 
     with pytest.raises(SchemeError) as raised:
         compile_scheme(base, instructions={"GetLineage": (On("lineage_id", "lineage"),)})
-    assert "instructions.ApplyLineageChanges" in {item["path"] for item in raised.value.errors}
+    assert "instructions.ApplyLineageChanges:create_component" in {item["path"] for item in raised.value.errors}
 
 
 def test_builtin_schemes_compile_against_the_catalog():
@@ -641,11 +642,14 @@ def test_builtin_schemes_compile_against_the_catalog():
     assert "@unmapped" not in default.trees["A"].nodes
     assert default.trees["A"].default_parent == "@admin"
     assert default.describe("ApplyLineageChanges") == {"required": True, "requirements": [
-        {"element": "ApplyLineageChanges", "argument": "lineage_id", "a": "@contributor", "types": ["lineage"]}]}
+        {"element": "ApplyLineageChanges:" + name, "argument": name, "a": "@admin" if name == "delete_resident.resident_id" else "@contributor",
+         "types": ["resident" if name == "delete_resident.resident_id" else "lineage"], "optional": True}
+        for name in ("create_component", "update_component", "delete_component", "create_wire", "update_wire", "delete_wire",
+                     "update_duty", "delete_resident.lineage_id", "delete_resident.resident_id", "lineage_id")]}
     assert default.describe("GetPortalStatus") == {"required": True, "requirements": [
         {"element": "GetPortalStatus", "a": "@viewer", "resource": "@shared"}]}
-    assert default.describe("SetMailboxItemRead") == {"required": True, "requirements": [
-        {"element": "SetMailboxItemRead", "a": "@free", "resource": "@portal"}]}
+    assert default.describe("UpdateMailboxItem") == {"required": True, "requirements": [
+        {"element": "UpdateMailboxItem", "a": "@free", "resource": "@portal"}]}
     unclassified = copy.deepcopy(documents["default"])
     del unclassified["instructions"]["CreateTemplate:@public"]
     described = compile_scheme(unclassified).describe("CreateTemplate")
@@ -695,11 +699,11 @@ def test_project_admin_and_shared_administration_boundaries(store):
     assert not allowed(OTHER, "RunScript", {"lineage_id": LINEAGE}) and not allowed("bob", "RunScript", {"lineage_id": LINEAGE})
     with pytest.raises(ValueError):
         requests(scheme, "RunScript", {})
-    assert allowed("bob", "SetMailboxItemRead") and allowed(RESIDENT, "GetInstructionSchema")
+    assert allowed("bob", "UpdateMailboxItem") and allowed(RESIDENT, "GetInstructionSchema")
     assert allowed("bob", "GetPortalStatus") and allowed(RESIDENT, "GetResident", {"resident_id": OTHER})
     assert levels(engine, scheme, RESIDENT, PROJECT) == "admin"
-    assert allowed(RESIDENT, "MaintainFamilyRoleAvailability", {"lineage_id": LINEAGE})
-    assert not allowed(OTHER, "MaintainFamilyRoleAvailability", {"lineage_id": LINEAGE})
+    assert allowed(RESIDENT, "UpdateFamily", {"lineage_id": LINEAGE})
+    assert not allowed(OTHER, "UpdateFamily", {"lineage_id": LINEAGE})
     assert not allowed(RESIDENT, "PublishRelease") and not allowed(RESIDENT, "UpdateModelApi")
     assert allowed("alice", "PublishRelease")
     assert allowed(RESIDENT, "DeleteFamily", {"lineage_id": LINEAGE}) and not allowed("bob", "DeleteFamily", {"lineage_id": LINEAGE})
@@ -855,7 +859,7 @@ def test_a_via_slot_judges_the_object_its_saved_record_names():
     assert asked("UpdatePermissionEntry", {"entry_id": "entry_aaaaaaaaaaaa", "r": PROJECT}) == [
         ("UpdatePermissionEntry:entry_id", LINEAGE), ("UpdatePermissionEntry:r", PROJECT)]
     assert asked("DeletePermissionEntry", {"entry_ids": ["entry_aaaaaaaaaaaa", "entry_bbbbbbbbbbbb"]}) == [
-        ("DeletePermissionEntry:entry_ids", LINEAGE), ("DeletePermissionEntry:entry_ids", "@shared")]
+        ("DeletePermissionEntry", LINEAGE), ("DeletePermissionEntry", "@shared")]
     with pytest.raises(RecordNotFound):
         asked("DeletePermissionEntry", {"entry_ids": ["entry_aaaaaaaaaaaa", "entry_cccccccccccc"]})
     assert asked("GetInstructionExecution", {"instruction_id": "inst_l_1"}) == [

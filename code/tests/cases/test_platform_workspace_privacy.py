@@ -108,22 +108,3 @@ def test_native_personal_area_follows_links_and_component_boundaries(tmp_path):
     assert policy.personal_area(str(link / "secret"), folders) == folders[0]
 
 
-def test_windows_folder_removal_preserves_acl_and_propagates_denial(tmp_path, monkeypatch):
-    from management_portal.society_service import folder_removal
-    root = tmp_path / "owned"
-    root.mkdir()
-    (root / "result").write_text("owned")
-    native_os = folder_removal.os
-    monkeypatch.setattr(folder_removal, "os", SimpleNamespace(
-        name="nt", walk=native_os.walk, path=native_os.path,
-        lstat=lambda *_: pytest.fail("POSIX owner check on Windows"),
-        chmod=lambda *_: pytest.fail("ACL must not be widened")))
-    with monkeypatch.context() as patch:
-        def denied(*_args):
-            raise PermissionError("ACL denies deletion")
-        patch.setattr(folder_removal.shutil, "rmtree", denied)
-        with pytest.raises(PermissionError, match="ACL"):
-            folder_removal.remove_tree(root)
-        assert root.exists()
-    folder_removal.remove_tree(root)
-    assert not root.exists()

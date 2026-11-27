@@ -2,8 +2,11 @@
 from __future__ import annotations
 
 import threading
+from functools import cache
+from importlib.util import find_spec
 from typing import Any, Iterable
 
+from management_common.distribution_features import included_features
 from management_common.portal_database import portal_database
 from management_common.resource_identity import get_resource_type_registry
 from .errors import ResourceOperationError
@@ -15,8 +18,28 @@ class ResourceTypeError(ResourceOperationError):
 
 
 def deployed_units() -> frozenset[str]:
-    # decision_15aab18c0ab3's deployment selection will own this boundary.
-    return frozenset(str(d['unit']) for d in get_resource_type_registry().declarations.values())
+    """Units this package ships: every provider module of the unit is present.
+
+    A package that leaves a feature out leaves out its provider modules, so the
+    unit's types are not installed. A missing provider of ``core`` or of a unit
+    the package lists as included is a broken installation and fails loudly.
+    """
+    declarations = get_resource_type_registry().declarations.values()
+    return _shipped_units(tuple(sorted((str(d['unit']), str(d['provider'])) for d in declarations)),
+                          tuple(included_features() or ()))
+
+
+@cache
+def _shipped_units(providers: tuple[tuple[str, str], ...], included: tuple[str, ...]) -> frozenset[str]:
+    units = {unit for unit, _provider in providers}
+    for unit, provider in providers:
+        module = provider.partition(':')[0]
+        if not module or unit not in units or find_spec(module) is not None:
+            continue
+        if unit == 'core' or unit in included:
+            raise ModuleNotFoundError(f'resource provider {module!r} of unit {unit!r} is missing', name=module)
+        units.discard(unit)
+    return frozenset(units)
 
 
 class ResourceTypeStateStore:

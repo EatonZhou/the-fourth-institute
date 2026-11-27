@@ -1044,6 +1044,31 @@ def test_update_lineage_project_move_needs_target_project_admin_and_login_result
     assert api.allows("bob", "GetProviderAccountLogin", {"account_id": "account_a"})
 
 
+@pytest.mark.parametrize("name", ["CreateWorkspace", "RegisterWorkspace"])
+def test_workspace_registration_needs_shared_admin_even_without_an_owner(permissions, name):
+    """省略 owner_id 不再免检：目录登记注销时会清理文件，固定槽要求对“共享”有 @admin"""
+    from management_portal import permission_system as api
+    permissions.users("alice", category="intern")
+    arguments = {"path": "/tmp/tt/ws", "operation_id": "op-one"}
+    assert not api.allows("alice", name, arguments)
+    permissions.grant("alice", "@shared", a="@admin")
+    assert api.allows("alice", name, arguments)
+
+
+@pytest.mark.parametrize("name, arguments", [
+    ("UpdateUserStatus", {"user_id": "bob", "status": "disabled"}),
+    ("UpdateUserCategory", {"user_id": "bob", "category": "intern"}),
+])
+def test_user_status_and_category_are_decided_on_shared_for_portal_administrators(permissions, name, arguments):
+    """Portal 管理员对“共享”有 @admin，因此默认方案放行改普通成员；其他 User 不放行，也不能改自己"""
+    from management_portal import permission_system as api
+    permissions.users("alice", "bob", "root")
+    permissions.administrator("root")
+    assert api.allows("root", name, arguments)
+    assert not api.allows("alice", name, arguments)
+    assert not api.allows("bob", name, arguments)
+
+
 def test_check_modes_temp_projection_and_entry_array(permissions):
     from management_portal.permission_system.management import Management
     from management_portal.permission_system import schemes

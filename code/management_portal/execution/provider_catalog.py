@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from importlib import import_module
 from typing import Any
 
-from .provider_account_operations import AccountOperation
+from .provider_account_operations import AccountOperation, LoginProfile
 
 from .harness_capabilities import (
     ACTIVE_TURN_INPUT,
@@ -130,6 +130,25 @@ class AgentProvider:
     # Final policy belongs to the Backend (local_file_read.assess_local_file_read).
     local_file_read: bool = False
     account_operations: dict[str, AccountOperation] = field(default_factory=dict)
+    # How the Provider's login program is run and read (``account_login``).
+    login: LoginProfile | None = None
+    # ``() -> bool``: whether this host can run the Provider's subscription accounts; none means always.
+    platform_hook: str = ""
+    # ``(account, accounts) -> dict``: reads the account's subscription tier; none means it reports none.
+    subscription_profile_hook: str = ""
+    # The request metadata key that carries a replacement of the bound session
+    # (``{"session_id", "route"}``): the next turn starts on a fresh session
+    # and the binding is replaced when it succeeds.
+    session_reset_key: str = ""
+    # The account check discovers the model during the check instead of
+    # naming one, and runs with ``check_permission_preset``.
+    check_discovers_model: bool = False
+    check_permission_preset: str = ""
+
+    def supports_platform(self) -> bool:
+        if not self.platform_hook:
+            return True
+        return bool(self._adapter_class(self.platform_hook, "")())
 
     @property
     def api_upstream_protocols(self):
@@ -286,6 +305,17 @@ AGENT_PROVIDERS = {
                           NATIVE_LOGIN, authorization_kind="callback_url",
                           authorization_hint="使用 Google 登录后，若浏览器无法打开 localhost，请粘贴地址栏中的完整回调 URL。",
                       )},
+                      login=LoginProfile(
+                          home_env="GEMINI_HOME", hosts=("accounts.google.com",),
+                          command_hook="management_portal.antigravity_accounts.login_command",
+                          environment_hook="management_portal.antigravity_accounts.login_environment",
+                          logged_in_hook="management_portal.antigravity_accounts.logged_in",
+                          error_hook="management_portal.antigravity_accounts.login_error",
+                      ),
+                      platform_hook="management_common.antigravity_platform.supports_account_isolation",
+                      subscription_profile_hook="management_portal.antigravity_accounts.read_subscription_profile",
+                      session_reset_key="antigravity_session_reset",
+                      check_discovers_model=True, check_permission_preset="default",
                       system_instructions_place="ACP session 的 systemPrompt.append，恢复时完整替换",
                       credential_globs=(".gemini*",),
                       runtime_updater="management_portal.antigravity_runtime.AntigravityRuntime"),
@@ -297,6 +327,14 @@ AGENT_PROVIDERS = {
                       system_context_survives_compaction=True,
                       system_instructions_place="thread 的开发者指令，原生压缩后仍保留",
                       credential_globs=(".codex*",), runtime_updater="CodexRuntime",
+                      login=LoginProfile(
+                          home_env="CODEX_HOME", hosts=("auth.openai.com", "chatgpt.com"),
+                          login_args=("login", "--device-auth"), status_args=("login", "status"),
+                          device_code=True, npm_package="codex",
+                          runtime_binary_hook="management_portal.execution.account_login.codex_runtime_binary",
+                          after_login_hook="management_portal.execution.account_login.reload_codex_after_login",
+                      ),
+                      subscription_profile_hook="management_portal.execution.subscription_profile.read_codex_profile",
                       account_operations={
                           "login": AccountOperation(NATIVE_LOGIN),
                           "configuration": AccountOperation(
@@ -326,6 +364,14 @@ AGENT_PROVIDERS = {
                       subagents_by_default=True, upstream="anthropic", api_protocol="anthropic_messages", api_protocol_conversion=True,
                       system_instructions_place="系统提示，每次进程启动都带；关闭以外的时机效果相同",
                       credential_globs=(".claude*",), runtime_updater="ClaudeRuntime",
+                      login=LoginProfile(
+                          home_env="CLAUDE_CONFIG_DIR",
+                          hosts=("claude.ai", "claude.com", "console.anthropic.com", "platform.claude.com"),
+                          login_args=("auth", "login", "--claudeai"), status_args=("auth", "status", "--json"),
+                          status_json=True, path_lookup=True,
+                          runtime_binary_hook="management_portal.execution.account_login.claude_runtime_binary",
+                      ),
+                      subscription_profile_hook="management_portal.execution.subscription_profile.read_claude_profile",
                       account_operations={"login": AccountOperation(NATIVE_LOGIN, authorization_kind="authorization_code")},
                       # Claude Code starts turns by itself (task notifications, messages).
                       self_started_usage="management_portal.execution.unattributed_usage.record_self_started_claude_usage"),
@@ -345,6 +391,8 @@ AGENT_PROVIDERS = {
                           schema=KIMI_LOGIN_SCHEMA,
                       )},
                       system_instructions_place="新 session 的系统提示；之后到期时附在本轮消息前",
+                      login=LoginProfile(logged_in_hook="management_portal.execution.kimi_account_login.logged_in"),
+                      subscription_profile_hook="management_portal.execution.subscription_profile.read_kimi_profile",
                       credential_globs=(".kimi*",),
                       credential_paths_provider="management_portal.kimi_code_client.credential_paths",
                       runtime_updater="KimiRuntime"),

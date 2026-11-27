@@ -18,7 +18,7 @@ from .lineage_program_vocabulary import DEFAULT_EVENT_UNAVAILABLE_POLICY
 
 
 MAX_PENDING_EVENTS_PER_WIRE = 100
-PENDING_EVENT_DISPATCH_LEASE_SECONDS = 360
+PENDING_EVENT_DISPATCH_LEASE_SECONDS = 120
 
 
 def refresh_owner_recovery_holds(lineage_id: str) -> None:

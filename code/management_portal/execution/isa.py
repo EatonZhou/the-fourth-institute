@@ -683,15 +683,9 @@ def update_backend_role(inv):
 
 
 def get_execution_settings(inv: Invocation) -> dict[str, Any]:
-    from management_portal import permission_system
-    if not permission_system.allows(inv.caller, "GetExecutionSettings"):
-        raise InstructionError("instruction.forbidden", "无权查看执行设置")
-    params = {"actor": inv.caller}
-    if _SERVER is not None:
-        settings = _SERVER.dispatch("settings.get", params)
-    else:
-        settings = _client().settings(actor=inv.caller)
-    return {"settings": settings}
+    from .service_settings import ExecutionSettings
+
+    return {"settings": ExecutionSettings().get()}
 
 
 def _accounts_snapshot(refresh: bool, *, account_facts=None) -> dict[str, Any]:

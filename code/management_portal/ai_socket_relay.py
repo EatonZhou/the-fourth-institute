@@ -23,8 +23,9 @@ DEFAULT_PORT = 18484
 DEFAULT_ALLOWED_IPS = "127.0.0.1,::1"
 DEFAULT_MAX_BYTES = 4 * 1024 * 1024
 DEFAULT_MAX_CONCURRENT = 16
-DEFAULT_TIMEOUT_SECONDS = 360.0
-DEFAULT_READ_TIMEOUT_SECONDS = 90.0
+DEFAULT_TIMEOUT_SECONDS = 120.0
+DEFAULT_READ_TIMEOUT_SECONDS = 30.0
+QUEUE_MARGIN_SECONDS = 30.0
 
 
 class RelayFrameError(ValueError):
@@ -166,7 +167,7 @@ def _forward_chat_completion(provider: str, payload: dict[str, Any]) -> tuple[in
     service = ExecutionService()
     submitted = service.submit(request)
     result = service.wait(submitted["execution_id"], actor=request.actor,
-                          timeout_seconds=timeout * (retries + 1) + 90)
+                          timeout_seconds=timeout * (retries + 1) + QUEUE_MARGIN_SECONDS)
     if result.get("status") != "completed":
         raise RuntimeError("AI relay execution did not complete")
     output = (result.get("result") or {}).get("output") or {}

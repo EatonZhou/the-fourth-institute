@@ -36,7 +36,7 @@ LAYERS = (
     # Contracts, configuration, identities, locks and value rules.
     """
     allocator_memory application_target_configuration changes config contracts domain_ports effect_artifacts errors memory_profile
-    family_definition folder_removal identity_contract invariant_locks lineage_effect_syntax
+    family_definition identity_contract invariant_locks lineage_effect_syntax
     lineage_execution_authority lineage_member_projection lineage_placement lineage_values
     principal_hierarchy project_folders read_snapshot resident_access_scope resident_backend resident_capability_materials
     resident_context resident_context.embedder resident_context.evidence resident_context.summary_layers

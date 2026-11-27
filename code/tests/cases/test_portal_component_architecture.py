@@ -314,7 +314,9 @@ def test_page_styles_do_not_reach_into_shared_component_internals_contracts(subt
 def test_global_navigation_has_one_shared_host_and_style_owner():
     """全局导航只由共享站点头渲染和定义样式，页面 CSS 不改写导航内部"""
     violations: list[str] = []
-    page_styles = [path for path in STATIC.glob('*.css') if path.name not in PORTAL_COMPONENTS_STYLES]
+    # The theme provider skins the shared navigation per theme; it is not a page.
+    page_styles = [path for path in STATIC.glob('*.css')
+                   if path.name not in (*PORTAL_COMPONENTS_STYLES, 'portal_themes.css')]
     for path in page_styles:
         for line_number, selector in _navigation_selectors(path.read_text(encoding='utf-8')):
             violations.append(f'{path.relative_to(ROOT)}:{line_number}: {selector}')

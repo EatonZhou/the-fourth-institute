@@ -239,12 +239,6 @@ class ExecutionService:
     def health(self) -> ExecutionServiceHealth:
         return cast(ExecutionServiceHealth, self.client.health())
 
-    def settings(self, *, actor: str) -> dict[str, Any]:
-        return self.client.request("settings.get", {"actor": actor})
-
-    def configure_settings(self, enabled: bool, *, actor: str) -> dict[str, Any]:
-        return self.client.request("settings.update", {"actor": actor, "model_request_timing_enabled": enabled})
-
     def runtime_catalog(self, account_id: str = "", *, backend: str = "", include_backends: bool = False) -> dict[str, Any]:
         result = self.client.request("runtime.catalog", {"account_id": account_id, "backend": backend, "include_backends": include_backends})
         return result if isinstance(result, dict) else {}
@@ -745,7 +739,6 @@ class ExecutionServiceServer(LocalServiceSocketMixin, socketserver.ThreadingTCPS
         build_id: str = "",
         preparation: ExecutionPreparation | None = None,
         agent_data: AgentDataStore | None = None,
-        request_timing: Any = None,
         maintenance_interval_seconds: float = (
             EXECUTION_MAINTENANCE_INTERVAL_SECONDS
         ),
@@ -760,8 +753,6 @@ class ExecutionServiceServer(LocalServiceSocketMixin, socketserver.ThreadingTCPS
         if self.endpoint.is_unix:
             self.socket_path.unlink(missing_ok=True)
         self.scheduler = scheduler
-        from .request_timing import RequestTimingModule
-        self.request_timing = request_timing if request_timing is not None else RequestTimingModule()
         self.agent_data = agent_data or get_agent_data_store()
         self.preparation = preparation or ExecutionPreparation(
             session_manager=SessionManager(agent_data=self.agent_data), accounts=scheduler.accounts,

@@ -202,32 +202,9 @@ def relay_message(inv: Invocation) -> dict[str, Any]:
 def _forwarded_item(caller: str, item: Any) -> dict[str, Any]:
     """One selected message, read with the caller's own permission."""
 
-    if not isinstance(item, dict):
-        raise invalid("messages 的每一项必须包含 resident_id 与 message_id")
-    from management_portal import portal_features
+    from .. import message_forwarding
 
-    for _feature, source in portal_features.contributions("conversation.forwarding"):
-        if item.get(source.FORWARD_FIELD):
-            # A Chatroom message (decision_a6bebf4ac283), read as a member of that Chatroom.
-            return source.forward_source(caller, item.get(source.FORWARD_FIELD), item.get("message_id"))
-    resident_id = str(item.get("resident_id") or "").strip().lower()
-    message_id = str(item.get("message_id") or "").strip()
-    if not resident_id or not message_id:
-        raise invalid("messages 的每一项必须包含 resident_id 与 message_id")
-    message = protocol().get_resident_message(resident_id, caller, message_id)
-    if not message:
-        raise not_found(f"消息不存在：{message_id}")
-    text = "\n\n".join(
-        str(part.get("text") or "")
-        for part in message.get("content_parts") or []
-        if isinstance(part, dict) and part.get("type") == "text" and part.get("text")
-    )
-    return {
-        "role": str(message.get("role") or ""),
-        "author": str(message.get("author_id") or ""),
-        "title": str(message.get("title") or ""),
-        "content": text,
-    }
+    return message_forwarding.read_sources(caller, [item])[0]
 
 
 def _forwarded_items(inv: Invocation) -> list[dict[str, Any]]:

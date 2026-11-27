@@ -2,17 +2,13 @@
 from typing import Any
 
 from management_portal.execution.service_settings import RETENTION_DAYS, ExecutionSettings
-from management_portal.hatg.contracts import InstructionError, invalid
+from management_portal.hatg.contracts import invalid
 from management_portal.hatg.kernel import Invocation
 
 from .. import component_runtime, system_workflow_switches
 
 
 def update_execution_settings(inv: Invocation) -> dict:
-    from management_portal import permission_system
-
-    if not permission_system.allows(inv.caller, "UpdateExecutionSettings", inv.arguments):
-        raise InstructionError("instruction.forbidden", "无权修改执行设置")
     changes = {field: inv.argument(field) for _option, field in system_workflow_switches.WORKFLOW_FIELDS.values()
                if field in inv.arguments}
     retention = {name: inv.argument(name) for name in RETENTION_DAYS if name in inv.arguments}
@@ -33,10 +29,6 @@ def update_execution_settings(inv: Invocation) -> dict:
 
 
 def set_permission_system_enabled(inv: Invocation) -> dict:
-    from management_portal import permission_system
-
-    if not permission_system.allows(inv.caller, "SetPermissionSystemEnabled", inv.arguments):
-        raise InstructionError("instruction.forbidden", "无权切换权限系统")
     enabled = inv.argument("enabled")
     if type(enabled) is not bool:
         raise invalid("enabled 必须是布尔值")

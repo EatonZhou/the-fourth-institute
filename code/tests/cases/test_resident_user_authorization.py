@@ -73,7 +73,7 @@ def save(active):
 
 
 def loans(active):
-    return permission_system.manage("ListTemporaryCredentials", {"principal_id": active.resident}, actor="lender")["credentials"]
+    return permission_system.manage("GetEffectivePermissions", {"principal_id": active.resident}, actor="lender")["temporary"]
 
 
 @pytest.mark.parametrize("terminal", ["completed", "failed", "cancelled"])

@@ -1,9 +1,8 @@
 """Authored program wires accept only the current binding kinds and ports."""
 import pytest
 
-from management_portal.hatg.catalog.lineage_definition import WIRE_KINDS
 from management_portal.society_service import (
-    graph_storage, lineage_program, lineage_program_vocabulary,
+    blackboard_storage, graph_storage, lineage_program, lineage_program_vocabulary,
 )
 from tests.cases.test_family_familize import lineage, future_creation_store, resident  # noqa: F401
 
@@ -13,7 +12,7 @@ def test_binding_contract_rejects_deleted_edges_and_reference_ports(lineage):
     a = resident(lineage, "Subject")
     nodes = [{"id": a}]
     event = {"id": "event_source_observer", "kind": "event_source", "config": {"event_type": "resident.work_finished"}}
-    assert set(WIRE_KINDS) == set(graph_storage.WIRE_TYPES) == lineage_program_vocabulary.PROGRAM_WIRE_KINDS
+    assert set(graph_storage.WIRE_TYPES) | {blackboard_storage.ATTACH_KIND} == lineage_program_vocabulary.PROGRAM_WIRE_KINDS
     for wire in (
         {"kind": "inspect", "source": a, "target": a},
         {"kind": "watch", "source": a, "target": event["id"]},

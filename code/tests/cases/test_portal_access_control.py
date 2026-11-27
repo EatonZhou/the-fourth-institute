@@ -560,3 +560,27 @@ def test_user_record_writes_compare_the_account_revision_in_their_transaction(is
         with pytest.raises(InstructionError):
             web_isa.revoke_user_sessions(inv)
         assert store.session_version("engineer") == before + 1
+
+
+def test_same_category_request_still_compares_the_account_revision(isolated_portal_case) -> None:
+    """分类没有变化的 UpdateUserCategory 也比较调用者给出的账号修订号，过期令牌以 AccessVersionConflict 失败"""
+    from types import SimpleNamespace
+
+    from management_portal import web_isa
+    from management_portal.portal_access_control import AccessVersionConflict
+
+    with isolated_portal_case():
+        store = PortalAccessStore()
+        store.upsert_user("CASE-A", actor="CASE-A")
+        store.upsert_user("engineer", actor="CASE-A")
+        stale = store._revision()
+        store.upsert_user("engineer", actor="CASE-A", display_name="Changed")
+        current = store._revision()
+        arguments = {"user_id": "engineer"}.get
+        with pytest.raises(AccessVersionConflict):
+            web_isa._set_user_category(
+                SimpleNamespace(caller="CASE-A", argument=arguments, expected_version_for=lambda _id: stale),
+                "engineer", "member")
+        assert web_isa._set_user_category(
+            SimpleNamespace(caller="CASE-A", argument=arguments, expected_version_for=lambda _id: current),
+            "engineer", "member") is False

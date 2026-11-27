@@ -115,8 +115,13 @@ def _portal_society_service() -> object:
     return get_society_service()
 
 
-def load_registry(actor: str = "", resident_id: str | None = None) -> dict:
-    """Read the deployed declaration catalog through the caller's ISA identity."""
+def hatg_caller(actor: str = "", resident_id: str | None = None):
+    """``call(instruction, arguments)`` executing as the caller's ISA identity.
+
+    A Resident (injected or ``--resident-id``) uses the Resident bearer
+    transport; otherwise the named Portal User acts. Neither falls back to the
+    other, and the caller's environment is not rewritten.
+    """
     portal_root = str(DEFAULT_PORTAL_ROOT)
     if portal_root not in sys.path:
         sys.path.insert(0, portal_root)
@@ -129,17 +134,20 @@ def load_registry(actor: str = "", resident_id: str | None = None) -> dict:
         raise RuntimeError("--resident-id 与 Portal 注入的 Resident 身份不一致")
     if injected is not None or requested is not None:
         from scripts.resident_hatg_instruction import _resident_id, execute
-        # Keep the shared ID validator and Resident bearer transport; do not
-        # rewrite the caller's environment or fall back to a human identity.
-        payload = execute(_resident_id(injected if injected is not None else requested), {
-            "instruction": "ListResourceTypes", "arguments": {},
+        identity = _resident_id(injected if injected is not None else requested)
+        return lambda instruction, arguments: execute(identity, {
+            "instruction": instruction, "arguments": arguments,
         })["result"]
-    else:
-        from management_portal import isa_client
-        caller = str(actor or read_product_env("PORTAL_RESOURCE_ID_ACTOR") or "").strip()
-        if not caller:
-            raise RuntimeError("类型目录需要调用身份：Portal Resident 环境、--resident-id 或 --actor <portal-user>")
-        payload = isa_client.call(caller, "ListResourceTypes", {}, entry="cli")
+    from management_portal import isa_client
+    caller = str(actor or read_product_env("PORTAL_RESOURCE_ID_ACTOR") or "").strip()
+    if not caller:
+        raise RuntimeError("类型目录需要调用身份：Portal Resident 环境、--resident-id 或 --actor <portal-user>")
+    return lambda instruction, arguments: isa_client.call(caller, instruction, arguments, entry="cli")
+
+
+def load_registry(actor: str = "", resident_id: str | None = None) -> dict:
+    """Read the deployed declaration catalog through the caller's ISA identity."""
+    payload = hatg_caller(actor, resident_id)("ListResourceTypes", {})
     registry = dict(payload["registry"])
     exceptions = registry.get("id_exceptions") or {}
     registry["types"] = {item["type"]: dict(item) for item in payload["types"] if item["type"] not in exceptions}
@@ -295,28 +303,51 @@ def command_scan_repo(args: argparse.Namespace, registry: dict) -> int:
             for root in record.get("roots") or []
             if isinstance(root, dict) and root.get("path")
         )
-    _print(
-        repo_backend.scan_and_sync_repo_registry(
-            args.roots or None,
-            excluded_roots=sorted(excluded_roots),
-            apply=args.apply,
-        )
+    report = repo_backend.scan_and_sync_repo_registry(
+        args.roots or None,
+        excluded_roots=sorted(excluded_roots),
     )
-    return 0
+    return _finish_scan(args, report, "repo", "checkouts", lambda path, record: record.get("project_ids") or ["@public"])
 
 
 def command_scan_article(args: argparse.Namespace, registry: dict) -> int:
     del registry
-    _portal_backends()
+    repo_backend = _portal_backends()[0]
     from management_portal import article_registration
 
-    _print(
-        article_registration.scan_and_sync_article_registry(
-            args.roots or None,
-            apply=args.apply,
-        )
-    )
-    return 0
+    report = article_registration.scan_and_sync_article_registry(args.roots or None)
+    return _finish_scan(args, report, "article", "roots", lambda path, record: repo_backend.project_ids_for_path(path))
+
+
+def _caller_actor(args: argparse.Namespace) -> str:
+    return getattr(args, "actor", "") or args.registry_actor
+
+
+def _finish_scan(args: argparse.Namespace, report: dict, resource_type: str, locations: str, projects_of) -> int:
+    """Print a scan; with ``--apply`` the found directories are registered as the caller.
+
+    The scan itself only reads. Registration is the ``RegisterResource``
+    instruction, so the caller's permissions, ResourceService validation, the
+    resource index and the directory locks apply as for any other registration.
+    """
+    report["applied"] = bool(args.apply)
+    registrations: list[dict[str, str]] = []
+    if args.apply:
+        call = hatg_caller(_caller_actor(args), args.resident_id)
+        for record in [*report["created"], *report["updated"]]:
+            for item in record.get(locations) or []:
+                path = str(item.get("path") or "")
+                if not path or not item.get("present"):
+                    continue
+                fields = {"path": path, "project_ids": projects_of(path, record)}
+                try:
+                    result = call("RegisterResource", {"resource_type": resource_type, "fields": fields})
+                    registrations.append({"path": path, "resource_id": str(result["resource_id"])})
+                except Exception as exc:
+                    registrations.append({"path": path, "error": str(exc)[:1000]})
+    report["registrations"] = registrations
+    _print(report)
+    return 2 if any("error" in item for item in registrations) else 0
 
 
 RESIDENT_ID_RE = re.compile(r"^resident_[0-9a-f]{12}$")
@@ -966,34 +997,25 @@ def command_scan_system(args: argparse.Namespace, registry: dict) -> int:
 
 def command_register_repo(args: argparse.Namespace, registry: dict) -> int:
     del registry
-    repo_backend, article_backend, _paper_resources, _search_backend = _portal_backends()
-    if article_backend.is_article_storage_path(args.path):
-        raise AddressError(
-            "Article storage uses article_* and cannot be registered as repo_*"
-        )
-    _print(
-        repo_backend.register_repo_checkout(
-            args.path,
-            project_ids=args.project_id,
-            repo_id=args.repo_id,
-        )
-    )
+    repo_backend = _portal_backends()[0]
+    projects = args.project_id or repo_backend.project_ids_for_path(args.path) or ["@public"]
+    _print(_register(args, "repo", {"path": args.path, "project_ids": projects}))
     return 0
 
 
 def command_register_article(args: argparse.Namespace, registry: dict) -> int:
     del registry
-    _portal_backends()
-    from management_portal import article_registration
-
-    _print(
-        article_registration.register_article(
-            args.path,
-            project_ids=args.project_id,
-            article_id=args.article_id,
-        )
-    )
+    repo_backend = _portal_backends()[0]
+    projects = args.project_id or repo_backend.project_ids_for_path(args.path)
+    _print(_register(args, "article", {"path": args.path, "project_ids": projects}))
     return 0
+
+
+def _register(args: argparse.Namespace, resource_type: str, fields: dict) -> dict:
+    """Register one directory with ``RegisterResource`` as the caller."""
+    return hatg_caller(_caller_actor(args), args.resident_id)(
+        "RegisterResource", {"resource_type": resource_type, "fields": fields},
+    )["resource"]
 
 
 def command_resolve(args: argparse.Namespace, registry: dict) -> int:
@@ -1154,13 +1176,11 @@ def build_parser() -> argparse.ArgumentParser:
     register_repo = register_types.add_parser("repo", help="register one Git checkout")
     register_repo.add_argument("path")
     register_repo.add_argument("--project-id", action="append", default=[])
-    register_repo.add_argument("--repo-id", default="")
     register_repo.set_defaults(handler=command_register_repo)
 
     register_article = register_types.add_parser("article", help="register one Article root")
     register_article.add_argument("path")
     register_article.add_argument("--project-id", action="append", default=[])
-    register_article.add_argument("--article-id", default="")
     register_article.set_defaults(handler=command_register_article)
 
     resolve_parser = commands.add_parser(
@@ -1208,7 +1228,7 @@ def main() -> int:
             args.projects_root = str(DEFAULT_PROJECTS_ROOT)
         if hasattr(args, "paper_root") and args.paper_root is None and hasattr(args, "projects_root"):
             args.paper_root = str(DEFAULT_PAPER_ROOT)
-        registry = load_registry(getattr(args, "actor", "") or args.registry_actor, args.resident_id)
+        registry = load_registry(_caller_actor(args), args.resident_id)
         return args.handler(args, registry)
     except (RuntimeError, OSError, json.JSONDecodeError, KeyError, ValueError, ImportError) as exc:
         _print({"error": str(exc)})

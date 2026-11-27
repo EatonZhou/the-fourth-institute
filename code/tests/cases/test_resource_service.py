@@ -20,7 +20,6 @@ from management_portal.resources.collaboration_registry import (
     CollaborationDescriptorStore,
 )
 from management_portal.resources.schema import normalize_resource_attributes
-from management_portal.resources.providers import install_action_providers
 
 
 def test_feature_authoritative_record_is_read_before_index_and_authorized(monkeypatch):
@@ -702,17 +701,6 @@ def test_nested_reference_presents_the_resolved_child_not_its_indexed_root_contr
         assert reference['summary'] == 'Event Source · resident.work_finished'
         assert reference['url'].endswith('&program_item=event_source_111111111111')
         assert reference['facets'] == ['lineage']
-    with subtests.test(contract='test_actions_are_not_gated_by_project_roles'), isolated_portal_case() as case_path:
-        tmp_path = case_path
-        skill_id = 'skill_0123456789ab'
-        access = PortalAccessStore()
-        access.upsert_user('reader', actor='CASE-A')
-        index = mock.Mock()
-        index.get_resource.return_value = {'resource_id': skill_id, 'resource_type': 'skill', 'title': 'Shared Skill', 'facets': ['knowledge', 'skill'], 'attributes': {'project_ids': ['Shared Skills'], 'read_scope': 'global'}}
-        service = ResourceService(index_provider=index)
-        service.register_action_provider('skill', {'content.read': lambda resource_id, _payload, **_context: {'resource_id': resource_id, 'read': True}, 'content.write': lambda resource_id, _payload, **_context: {'resource_id': resource_id, 'written': True}})
-        assert service.action(skill_id, 'content.read', {}, actor='reader') == {'resource_id': skill_id, 'read': True}
-        assert service.action(skill_id, 'content.write', {}, actor='reader') == {'resource_id': skill_id, 'written': True}
 
 
 def test_resolution_rejects_every_identity_alias_in_a_resource_record_contracts(subtests, isolated_portal_case):
@@ -742,12 +730,12 @@ def test_resolution_rejects_every_identity_alias_in_a_resource_record_contracts(
         assert index.adapter_layer._pending['paper'].full is True
         with pytest.raises(ValueError, match='does not match type'):
             service.notify_source_changed(resource_id='paper_0123456789ab', resource_type='search')
-    with subtests.test(contract='test_portal_device_credential_action_targets_effective_resource'), isolated_portal_case():
+    with subtests.test(contract='test_portal_device_credential_operation_targets_effective_resource'), isolated_portal_case():
         device_id = 'device_0123456789ab'
         parent_id = 'device_abcdef012345'
-        service = ResourceService(action_provider_loader=install_action_providers)
-        with mock.patch('management_portal.device_identity_backend.effective_ssh_access', return_value={'host': 'gpu-parent', 'via_resource_id': parent_id, 'credential_saved': False}), mock.patch('management_portal.device_identity_backend.save_device_ssh_password', return_value={'resource_id': parent_id, 'credential_saved': True}) as save_credential:
-            result = service.action(device_id, 'ssh.credential.save', {'password': 'secret'}, actor='alice')
+        service = ResourceService()
+        with mock.patch('management_portal.permission_system.allows', return_value=True), mock.patch('management_portal.device_identity_backend.effective_ssh_access', return_value={'host': 'gpu-parent', 'via_resource_id': parent_id, 'credential_saved': False}), mock.patch('management_portal.device_identity_backend.save_device_ssh_password', return_value={'resource_id': parent_id, 'credential_saved': True}) as save_credential:
+            result = service.update_device_ssh_credential(device_id, 'secret', actor='alice')
         assert result == {'resource_id': device_id, 'via_resource_id': parent_id, 'credential_saved': True}
         save_credential.assert_called_once_with(parent_id, 'secret')
     with subtests.test(contract='test_registration_projects_without_refresh_wait'), isolated_portal_case():
@@ -1109,68 +1097,15 @@ def test_resource_mutations_dispatch_by_type_and_notify_the_derived_index(tmp_pa
     assert failure["code"] == "instruction.invalid_arguments"
 
 
-def test_resource_actions_dispatch_by_resource_type() -> None:
-    """资源动作按类型分发，Project 动作以请求者身份确认类型和权限"""
+def test_resource_service_has_no_generic_action_entry() -> None:
+    """ResourceService 没有通用动作入口和动作提供器，专用操作是具名指令方法"""
     service = ResourceService()
-    calls: list[tuple[str, dict, str]] = []
 
-    def test_ssh(resource_id, payload, **context):
-        calls.append(
-            (
-                resource_id,
-                payload,
-                context["actor"],
-            )
-        )
-        return {
-            "resource_id": resource_id,
-            "via_resource_id": resource_id,
-            "reachable": True,
-        }
-
-    service.register_action_provider("device", {"ssh.test": test_ssh})
-    result = service.action(
-        "device_0123456789ab",
-        "ssh.test",
-        {"timeout_seconds": 5},
-        actor="alice",
-    )
-
-    assert result == {
-        "resource_id": "device_0123456789ab",
-        "via_resource_id": "device_0123456789ab",
-        "reachable": True,
-    }
-    assert calls == [
-        (
-            "device_0123456789ab",
-            {"timeout_seconds": 5},
-            "alice",
-        )
-    ]
-    with pytest.raises(
-        ValueError,
-        match="device resources do not support action terminal.start",
-    ):
-        service.action("device_0123456789ab", "terminal.start")
-    with pytest.raises(ValueError, match="invalid resource action"):
-        service.register_action_provider("device", {"SSH TEST": test_ssh})
-
-    # Project IDs are externally registered. Resolve their type under the
-    # requesting actor; an anonymous lookup can hide an otherwise visible ID.
-    read_summary = mock.Mock(return_value={"text": "Project summary"})
-    service.register_action_provider("project", {"summary.read": read_summary})
-    with mock.patch.object(service, "get") as get, mock.patch.object(service, "_require_mutation_actor"):
-        get.return_value = {"resource_id": "ACLink", "resource_type": "project"}
-        assert service.action("ACLink", "summary.read", actor="alice") == {"text": "Project summary"}
-        get.assert_called_once_with("ACLink", actor="alice")
-        read_summary.assert_called_once_with("ACLink", {}, actor="alice")
-        read_summary.reset_mock()
-        get.side_effect = PermissionError("project access revoked")
-        with pytest.raises(PermissionError, match="project access revoked"):
-            service.action("ACLink", "summary.read", actor="bob")
-        get.assert_called_with("ACLink", actor="bob")
-        read_summary.assert_not_called()
+    assert not hasattr(service, "action")
+    assert not hasattr(service, "register_action_provider")
+    for operation in ("check_device_ssh", "update_device_ssh_credential", "delete_device_ssh_credential",
+                      "run_device_command", "update_knowledge_file_name", "move_knowledge_items"):
+        assert callable(getattr(service, operation))
 
 
 def test_warm_waits_for_index_readiness(tmp_path, monkeypatch) -> None:

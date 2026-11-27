@@ -109,7 +109,8 @@ def test_unproven_or_unauthorized_corrections_keep_allocation_and_object(sample,
             record_allocation('Persistent')
     if reject == 'changed_root':
         with get_registry_store().writer(project_registry.COLLECTION) as writer:
-            writer.put(project_registry.COLLECTION, project_registry.DOCUMENT_ID, {'projects': []})
+            writer.put(project_registry.COLLECTION, project_registry.DOCUMENT_ID,
+                       {**project_registry.empty_registry(), 'projects': []})
     if reject == 'released':
         lifecycle.released(scope, wid)
     if reject != 'open':

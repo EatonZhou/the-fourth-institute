@@ -121,7 +121,7 @@ def classification(element, target, value):
         original = {"a": "@admin", "r": "@shared"} if element == "UpdateExecutionSettings" else {"a": "@admin"}
         if result != original:
             raise SchemeConflict(f"d066 {element} 有自定义分类，需方案 owner 明确目标与能力后迁移")
-        return {"a": "@admin", "r": "@portal"}
+        return {"a": "@admin", "r": "@portal" if target == "SetPermissionSystemEnabled" else "@shared"}
     return result
 
 

@@ -3,9 +3,7 @@ from types import SimpleNamespace
 import pytest
 from management_portal.execution import isa, request_timing
 from management_portal.execution.agent_data_output_capture import model_timing
-from management_portal.execution.service import ExecutionServiceServer
 from management_portal.execution.service_settings import ExecutionSettings
-from management_portal.hatg.contracts import InstructionError
 from management_portal.society_service.isa.system_workflows import update_execution_settings
 
 START = '2026-10-15T01:00:00+00:00'
@@ -14,18 +12,18 @@ FINISH = '2026-10-15T01:00:08+00:00'
 
 def test_switch_preserves_observed_completion_and_never_invents_dispatch():
     """关闭模型请求计时后只保留完成时间，不补造开始时间，重新开启后恢复"""
-    module = request_timing.RequestTimingModule()
+    settings = ExecutionSettings()
     value = {'started_at': START, 'finished_at': FINISH, 'content': 'never copied'}
     assert request_timing.observed_timing(value) == {'started_at': START, 'finished_at': FINISH}
     assert model_timing({}, FINISH) == {'started_at': '', 'finished_at': FINISH}
-    module.configure(False)
+    settings.update(False)
     assert ExecutionSettings().get() == {
         'model_request_timing_enabled': False, 'harness_recording_enabled': True,
         'harness_retention_days': 30, 'permission_system_enabled': True,
     }
     assert model_timing(value, FINISH) == {'started_at': '', 'finished_at': FINISH}
     assert value['started_at'] == START
-    module.configure(True)
+    settings.update(True)
     assert model_timing(value, FINISH) == {'started_at': START, 'finished_at': FINISH}
 
 
@@ -37,30 +35,20 @@ def test_setting_failure_drops_only_the_optional_observation(monkeypatch):
     assert model_timing({'started_at': START}, FINISH) == {'started_at': '', 'finished_at': FINISH}
 
 
-@pytest.mark.parametrize('admin', [False, True])
-def test_settings_require_admin_at_isa_and_rpc(monkeypatch, admin):
-    """读写执行设置在 ISA 和 RPC 两层都按 Get/UpdateExecutionSettings 判定
+def test_settings_are_judged_once_at_the_instruction_entry(monkeypatch):
+    """执行设置的读写只在指令入口按声明和方案判定一次：处理代码和 RPC 不再重检，也没有旧的 settings 方法
 
-    :design: decision_25eb93d803a4, decision_425e428410e0
+    :design: decision_25eb93d803a4, decision_4527448ad07f
     :design-point:
     """
-    module = request_timing.RequestTimingModule()
-    server = SimpleNamespace(request_timing=module)
-    server.dispatch = lambda method, params: ExecutionServiceServer.dispatch(server, method, params)
-    monkeypatch.setattr(isa, '_SERVER', server)
-    monkeypatch.setattr('management_portal.permission_system.allows', lambda actor, instruction, arguments=None: actor == 'admin' and admin)
-    inv = SimpleNamespace(caller='admin', arguments={'model_request_timing_enabled': False}, argument=lambda name: False)
-    if admin:
-        assert isa.get_execution_settings(inv)['settings']['model_request_timing_enabled'] is True
-        assert update_execution_settings(inv)['settings']['model_request_timing_enabled'] is False
-    else:
-        for handler in (isa.get_execution_settings, update_execution_settings):
-            with pytest.raises(InstructionError, match='无权'):
-                handler(inv)
-        for method in ('settings.get', 'settings.update'):
-            with pytest.raises(PermissionError, match='ExecutionSettings'):
-                server.dispatch(method, {'actor': 'admin', 'model_request_timing_enabled': False})
-        assert module.settings.get()['model_request_timing_enabled'] is True
+    from management_portal.execution.service_rpc import RPC_HANDLERS
+    monkeypatch.setattr('management_portal.permission_system.allows',
+                        lambda *args, **kwargs: pytest.fail('a settings handler asked the permission system'))
+    inv = SimpleNamespace(caller='anyone', arguments={'model_request_timing_enabled': False}, argument=lambda name: False)
+    assert isa.get_execution_settings(inv)['settings']['model_request_timing_enabled'] is True
+    assert update_execution_settings(inv)['settings']['model_request_timing_enabled'] is False
+    assert isa.get_execution_settings(inv)['settings']['model_request_timing_enabled'] is False
+    assert not {'settings.get', 'settings.update'} & set(RPC_HANDLERS)
 
 
 @pytest.mark.parametrize('value', ['false', 0, None])

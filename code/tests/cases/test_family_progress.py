@@ -23,7 +23,7 @@ def reports(team, monkeypatch):
     infos = []
     inputs = {"members": [{"resident_id": team.member, "summary": {"recent_results": ["已完成登录改进"]}}],
               "source_versions": {"roster": "one", team.member: "two"}}
-    monkeypatch.setattr(progress.work_summary, "get_family_summary_inputs", lambda *args: copy.deepcopy(inputs))
+    monkeypatch.setattr(progress.work_summary, "get_facade_summary_inputs", lambda *args: copy.deepcopy(inputs))
     monkeypatch.setattr(progress.work_summary, "maintenance_view", lambda *args: copy.deepcopy(doc))
     def update(actor, rid, *, summary, source_versions):
         assert actor == team.steward and rid == team.facade
@@ -171,7 +171,7 @@ def test_publication_updates_real_summary_without_infos_and_steward_can_notify_s
     ok("MaintainFamilyProgress", {"lineage_id": team.lineage, "family_id": team.family["family_id"], "every_turns": 1,
        "event": {"type": "resident.message_received", "payload": {"resident_id": team.facade, "message_id": mid}}},
        actor=team.steward)
-    materials = progress.work_summary.get_family_summary_inputs(team.steward, team.facade)
+    materials = progress.work_summary.get_facade_summary_inputs(team.steward, team.facade)
     args = {"lineage_id": team.lineage, "family_id": team.family["family_id"], "batch_id": "1",
             "report": "Family 已开始接收工作，成员成果摘要尚未齐全。", "summary": {"current_focus": "接收工作，等待成员成果摘要"},
             "source_versions": materials["source_versions"]}

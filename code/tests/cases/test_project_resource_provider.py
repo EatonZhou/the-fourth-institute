@@ -69,11 +69,31 @@ def test_resident_project_creation_preserves_accounts(
     assert (tmp_path / "Projects" / "NewProject" / "summary.md").is_file()
 
 
-@pytest.mark.parametrize("metadata", [{}, {"schema_version": 0}, {"schema_version": 999}, {"schema_version": None}])
-def test_project_registry_consumes_fields_and_preserves_version_metadata(metadata) -> None:
-    """已有登记按字段读取、投影及修改，不补写格式版本；CAS与回滚保持。"""
+@pytest.mark.parametrize("metadata", [{}, {"schema_version": 0}, {"schema_version": 999}, {"schema_version": None},
+                                      {"schema_version": True}, {"schema_version": "1"}])
+def test_project_registry_without_supported_version_is_unreadable_and_unchanged(metadata) -> None:
+    """登记缺少 schema_version 或版本不符时，读取与修改都报错，不补默认值、不改动存储。"""
+    raw = {**metadata, "projects": [{"id": "Kept", "status": "active"}],
+           "status_vocab": ["active", "paused"], "tag_vocab": []}
+    put_registry_document(project_registry.COLLECTION, project_registry.DOCUMENT_ID, raw)
+    store = project_registry.get_registry_store()
+    before_revision = project_registry.revision()
+    for read in (project.load_projects_payload, project_registry.load, project_registry.projects,
+                 project_registry.knowledge_tags_configuration, project_registry.projects_readonly):
+        with pytest.raises(RuntimeError, match="Unsupported Project registry format"):
+            read()
+    with pytest.raises(RuntimeError, match="Unsupported Project registry format"):
+        with project_registry.mutate():
+            pytest.fail("an unsupported registry must not be exposed for writing")
+    assert store.get(project_registry.COLLECTION, project_registry.DOCUMENT_ID) == raw
+    assert project_registry.revision() == before_revision
+
+
+def test_project_registry_consumes_fields_and_keeps_declared_version() -> None:
+    """已声明受支持版本的登记按字段读取、投影及修改；CAS与回滚保持。"""
     from management_portal.resource_index_registries import ProjectRegistryAdapter
 
+    metadata = {"schema_version": 1}
     raw = {**metadata, "projects": [{"id": "Kept", "status": "active"}],
            "status_vocab": ["active", "paused"], "tag_vocab": []}
     put_registry_document(project_registry.COLLECTION, project_registry.DOCUMENT_ID, raw)
@@ -113,11 +133,13 @@ def test_project_registry_consumes_fields_and_preserves_version_metadata(metadat
 
 @pytest.mark.parametrize("document, message", [
     ([], "must be an object"),
-    ({}, "projects must be an array"),
-    ({"projects": {}}, "projects must be an array"),
-    ({"projects": [None]}, "entries must be objects"),
-    ({"projects": [], "status_vocab": "active"}, "status_vocab must be an array"),
-    ({"projects": [], "tag_vocab": None}, "tag_vocab must be an array"),
+    ({}, "Unsupported Project registry format"),
+    ({"projects": []}, "Unsupported Project registry format"),
+    ({"schema_version": 1}, "projects must be an array"),
+    ({"schema_version": 1, "projects": {}}, "projects must be an array"),
+    ({"schema_version": 1, "projects": [None]}, "entries must be objects"),
+    ({"schema_version": 1, "projects": [], "status_vocab": "active"}, "status_vocab must be an array"),
+    ({"schema_version": 1, "projects": [], "tag_vocab": None}, "tag_vocab must be an array"),
 ])
 def test_project_registry_rejects_unreadable_fields(document, message):
     with pytest.raises(RuntimeError, match=message):
@@ -125,7 +147,7 @@ def test_project_registry_rejects_unreadable_fields(document, message):
 
 
 def test_project_registry_bad_projects_are_not_read_or_overwritten_as_empty():
-    raw = {"schema_version": 999, "projects": {}}
+    raw = {"schema_version": 1, "projects": {}}
     put_registry_document(project_registry.COLLECTION, project_registry.DOCUMENT_ID, raw)
     revision = project_registry.revision()
     with pytest.raises(RuntimeError, match="projects must be an array"):

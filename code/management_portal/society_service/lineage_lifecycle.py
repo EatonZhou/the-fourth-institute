@@ -318,6 +318,7 @@ def update_lineage_metadata(
         store = lineage_aggregate.lineage_catalog_store().state_store
         members = resident_catalog.get_catalog().for_lineage(lineage_id)
         directory_metadata(current.get('directory'), lineage_id)
+        _require_no_unfinished_work(lineage_id, members)
         source = _lineage_project_folder(lineage_id, previous_project_id)
         target = _lineage_project_folder(lineage_id, project_id)
 
@@ -332,6 +333,32 @@ def update_lineage_metadata(
             DirectoryMoveStore().move(source, target, owner_id=lineage_id, actor=actor_id,
                 terminate=terminate, database=store.database, update=update, dependencies=reconcile_dependencies)
         return _clone_json(lineage)
+
+
+def _require_no_unfinished_work(lineage_id: str, members: list[dict[str, Any]]) -> None:
+    """Refuse a Project change while the Lineage has queued, running or stopping work."""
+    from . import resident_execution_work
+    from .script_runs import store as script_store
+    from .state_store import get_lineage_data_store
+
+    works = get_lineage_data_store().resident_execution_records(
+        [str(member["resident_id"]) for member in members],
+    )
+    busy = any(
+        resident_execution_work.is_active(work) or resident_execution_work.public_waiting_queue(work)
+        for work in works.values()
+    )
+    after = ""
+    while not busy:
+        page = script_store.pending(after, limit=200)
+        busy = any(
+            run.get("lineage_id") == lineage_id and run.get("status") == "running" for run in page
+        )
+        if len(page) < 200:
+            break
+        after = page[-1]["script_run_id"]
+    if busy:
+        raise LineageConflictError("Lineage 还有排队、运行或正在停止的任务，不能修改 Project")
 
 
 def _lineage_with_metadata(

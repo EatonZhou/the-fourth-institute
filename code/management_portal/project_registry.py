@@ -49,8 +49,10 @@ def empty_registry() -> dict[str, Any]:
 def _normalized(document: Any) -> dict[str, Any]:
     if not isinstance(document, dict):
         raise RuntimeError("Project registry must be an object")
-    # The producer's version label does not select a different reader.
-    # Validate the fields we consume without changing that label.
+    # A registry without the supported version label is unreadable: it is
+    # reported, never filled with a default (decision_4648f7fa3295).
+    if type(document.get("schema_version")) is not int or document["schema_version"] != SCHEMA_VERSION:
+        raise RuntimeError(f"Unsupported Project registry format: schema_version must be {SCHEMA_VERSION}")
     payload = dict(document)
     for key in ("status_vocab", "tag_vocab", "projects"):
         if key not in payload and key != "projects":

@@ -60,23 +60,6 @@ def _performed_by(params: dict[str, Any], actor: str) -> str:
     return str(params.get("performed_by") or actor)
 
 
-def _authorize_settings(params: dict[str, Any], instruction: str) -> None:
-    from management_portal import permission_system
-
-    if not permission_system.allows(required(params, "actor"), instruction):
-        raise PermissionError(f"无权执行 {instruction}")
-
-
-def get_settings(server: Any, params: dict[str, Any]) -> Any:
-    _authorize_settings(params, "GetExecutionSettings")
-    return server.request_timing.settings.get()
-
-
-def update_settings(server: Any, params: dict[str, Any]) -> Any:
-    _authorize_settings(params, "UpdateExecutionSettings")
-    return server.request_timing.configure(params.get("model_request_timing_enabled"))
-
-
 def health(server: Any, params: dict[str, Any]) -> ExecutionServiceHealth:
     scheduler_health = server.scheduler.health()
     return {
@@ -585,8 +568,6 @@ def finish_execution(server: Any, params: dict[str, Any]) -> Any:
 
 
 RPC_HANDLERS: dict[str, RpcHandler] = {
-    "settings.get": get_settings,
-    "settings.update": update_settings,
     "health": health,
     "accounts.usage": account_usage,
     "accounts.list": list_accounts,
