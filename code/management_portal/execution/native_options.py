@@ -221,6 +221,30 @@ class CodexOptions(NativeOptions):
             options["agent_harness"] = dict(agent_harness)
         return options
 
+    @staticmethod
+    def workspace_write_policy(options: dict[str, Any], scope: object) -> dict[str, Any]:
+        """Codex's workspace tier writes only its cwd; add every Workspace the turn binds for writing.
+
+        The named ``:workspace`` profile cannot name extra roots, so the tier is
+        sent as the equivalent ``workspaceWrite`` policy with ``writableRoots``.
+        Read-only bindings stay readable: the policy reads the whole host.
+        """
+        permissions = str(options.get("permissions") or "")
+        sandbox = str(options.get("sandbox") or "")
+        if "sandbox_policy" in options or not (permissions == ":workspace" or (not permissions and sandbox == "workspace-write")):
+            return options
+        paths = scope.get("paths") if isinstance(scope, Mapping) else None
+        roots = list(dict.fromkeys(
+            row["path"] for row in paths or ()
+            if isinstance(row, Mapping) and row.get("source") == "workspace_binding" and row.get("access") == "write"
+            and isinstance(row.get("path"), str) and os.path.isabs(row["path"])
+        ))
+        if not roots:
+            return options
+        out = {key: value for key, value in options.items() if key not in {"permissions", "sandbox"}}
+        out["sandbox_policy"] = {"type": "workspaceWrite", "writableRoots": roots, "networkAccess": False}
+        return out
+
     # Codex's own handler (``codex_runtime_settings.handle_codex_native_command``) answers every one.
     slash_commands = frozenset(NATIVE_COMMANDS)
     permission_labels = {"ask": "Ask", "auto-review": "Auto-review", "full-access": "Full Access"}
@@ -263,7 +287,7 @@ class CodexOptions(NativeOptions):
         if "runtime_settings" not in raw:
             return invocation
         settings = raw.pop("runtime_settings")
-        raw.pop("authorization_scope", None)
+        scope = raw.pop("authorization_scope", None)
         environment = dict(raw.pop("resident_environment", {}))
         from .provider_catalog import AGENT_PROVIDERS
         options = {} if settings.get("inherit_session_runtime") else self.runtime_options(
@@ -272,6 +296,7 @@ class CodexOptions(NativeOptions):
             agent_harness=raw.get("agent_harness"),
         )
         options.update(raw)
+        options = self.workspace_write_policy(options, scope)
         if environment:
             overrides = options.setdefault("config_overrides", {})
             overrides["shell_environment_policy.set"] = {**overrides.get("shell_environment_policy.set", {}), **environment}

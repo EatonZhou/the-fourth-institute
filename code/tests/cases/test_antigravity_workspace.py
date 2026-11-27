@@ -75,14 +75,42 @@ def test_unsafe_or_unbound_paths_are_not_sent(agent, turn):
     assert frame["params"]["additionalDirectories"] == [str(shared)]
 
 
-def test_writable_parent_cannot_promote_read_only_binding(agent, turn):
+def test_writable_root_is_kept_when_a_read_only_binding_is_inside_it(agent, turn):
+    """受限档内含只读绑定的可写根仍作为 ACP 根，只读子目录随之可写"""
     call, scope, folder, shared, project, _ = turn
     restricted = project / "read-only"
     restricted.mkdir()
     scope["paths"].append({"path": str(restricted), "source": "workspace_binding", "access": "read"})
     AntigravityBackend().execute(call, context()[0])
     frame = next(r for r in requests(agent) if r["method"] == "session/new")
-    assert frame["params"]["additionalDirectories"] == [str(folder), str(shared)]
+    assert frame["params"]["additionalDirectories"] == [str(folder), str(shared), str(project)]
+
+
+def test_full_access_roots_cover_every_area_but_provider_state(agent, turn, monkeypatch):
+    """Full Access 的 ACP 根覆盖除 provider-state 外的全部实例区域和用户 home，不只限于绑定
+
+    :module: execution.providers
+    :design: decision_8b2fa224616b
+    """
+    from management_common.instance_manifest import AREAS, current_instance
+    from management_portal.execution.antigravity_workspace import additional_directories
+
+    call, *_ = turn
+    home = agent / "home"
+    home.mkdir()
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: home))
+    instance = current_instance()
+    for name in AREAS:
+        instance.area(name).mkdir(parents=True, exist_ok=True)
+    roots = additional_directories(call.request, full_access=True)
+    assert str(instance.area("provider-state")) not in roots
+    assert not any(Path(root).is_relative_to(instance.area("provider-state")) for root in roots)
+    expected = [instance.area(name) for name in AREAS if name != "provider-state"] + [home]
+    assert all(any(path.is_relative_to(root) for root in roots) for path in expected)
+    call.request.runtime_options["full_access"] = True
+    AntigravityBackend().execute(call, context()[0])
+    frame = next(r for r in requests(agent) if r["method"] == "session/new")
+    assert frame["params"]["additionalDirectories"] == roots
 
 
 @pytest.mark.parametrize("owner,identity,preset,allowed", [
@@ -107,7 +135,12 @@ def test_resident_session_creation_scope_survives_option_preparation(agent, turn
     assert "authorization_scope" not in prepared.request.runtime_options
     AntigravityBackend().execute(prepared, context()[0])
     frame = next(r for r in requests(agent) if r["method"] == "session/new")
-    assert frame["params"].get("additionalDirectories", []) == ([str(folder), str(shared), str(project)] if allowed else [])
+    from management_portal.execution.antigravity_workspace import additional_directories
+    # Full Access is not narrowed to the bindings.
+    expected = additional_directories(prepared.request, full_access=True) if allowed else []
+    assert frame["params"].get("additionalDirectories", []) == expected
+    if allowed:
+        assert str(folder) not in expected and any(folder.is_relative_to(root) for root in expected)
 
 
 @pytest.mark.parametrize("condition", ["restricted", "disabled", "wrong_resident", "wrong_principal", "wrong_cwd",

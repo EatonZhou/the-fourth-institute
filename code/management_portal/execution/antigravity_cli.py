@@ -61,7 +61,8 @@ def open_session(client, invocation, capabilities, servers, session_id, *, cwd, 
         if (extensions.get("systemPrompt") or {}).get("append") is not True:
             raise RuntimeError("Antigravity CLI did not advertise Portal system instructions")
         params["_meta"] = {"antigravity": {"systemPrompt": {"append": context}}}
-    roots = [] if portal_only else additional_directories(invocation.request)
+    full_access = invocation.request.runtime_options.get("full_access") is True
+    roots = [] if portal_only else additional_directories(invocation.request, full_access=full_access)
     if roots:
         if "additionalDirectories" not in (capabilities.get("sessionCapabilities") or {}):
             raise RuntimeError("Antigravity CLI did not advertise additional workspace directories")

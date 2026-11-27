@@ -158,6 +158,42 @@ def test_codex_a_mode_preserves_selected_native_permission_profile():
     assert "sandbox_policy" not in options
 
 
+@pytest.mark.parametrize("preset", ["ask", "auto-review", "full-access", "read-only"])
+def test_codex_workspace_tier_writes_every_writable_workspace_binding(preset):
+    """Codex 受限档可写该轮所有可写绑定的 Workspace，Full Access 与只读不被 Portal 改动
+
+    ask 与 auto-review 以 workspaceWrite 策略发送，writableRoots 为 filesystem_scope 中 access=write 的
+    Workspace 绑定；只读绑定不进 writableRoots（该策略可读全机）。Full Access 与只读会话保持原样。
+
+    :module: execution.providers
+    :design: decision_8b2fa224616b
+    """
+    from management_portal.execution.resident_runtime_settings import normalize_settings, read_only_runtime_settings
+
+    settings = (read_only_runtime_settings({}) if preset == "read-only"
+                else normalize_settings({"permission_preset": preset}))
+    scope = {"cwd": "/w/own", "paths": [
+        {"path": "/w/folder", "access": "write", "source": "resident_folder"},
+        {"path": "/w/own", "access": "write", "source": "resident_workspace"},
+        {"path": "/w/own", "access": "write", "source": "workspace_binding"},
+        {"path": "/w/lineage", "access": "write", "source": "workspace_binding"},
+        {"path": "/w/lineage", "access": "write", "source": "workspace_binding"},
+        {"path": "/w/reference", "access": "read", "source": "workspace_binding"},
+        {"path": "relative", "access": "write", "source": "workspace_binding"},
+    ]}
+    options = CodexOptions().prepare(_Invocation(_Request({"runtime_settings": settings, "authorization_scope": scope}))).request.runtime_options
+    assert "authorization_scope" not in options
+    if preset in {"ask", "auto-review"}:
+        assert "permissions" not in options and "sandbox" not in options
+        assert options["sandbox_policy"] == {"type": "workspaceWrite", "writableRoots": ["/w/own", "/w/lineage"], "networkAccess": False}
+        assert options["approval_policy"] == "on-request"
+        assert options.get("approvals_reviewer") == ("auto_review" if preset == "auto-review" else "user")
+    elif preset == "full-access":
+        assert "sandbox_policy" not in options and options["permissions"] == ":danger-full-access"
+    else:
+        assert "sandbox_policy" not in options and options["permissions"] == ":read-only"
+
+
 @pytest.mark.parametrize("mode", [None, "", "dontAsk", "bypassPermissions"])
 def test_claude_permission_mode_reaches_native_daemon_request(monkeypatch, mode):
     """claude 的权限模式原样传给原生守护进程，未指定时为 bypassPermissions"""

@@ -61,4 +61,6 @@ class AntigravityOptions(NativeOptions):
             # The settings store can express the Provider default as an empty
             # string. Unmapped custom permission settings still fail closed.
             preset = self.default_permission_preset
-        return {**options, "collaboration_mode": settings.get("collaboration_mode") or "default", "native_tools_enabled": preset == "full-access"}
+        # Full Access opens the widest ACP roots (antigravity_workspace); Portal does not narrow it to the bindings.
+        return {**options, "collaboration_mode": settings.get("collaboration_mode") or "default",
+                "native_tools_enabled": preset == "full-access", "full_access": preset == "full-access"}
