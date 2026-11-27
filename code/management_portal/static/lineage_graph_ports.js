@@ -6,7 +6,7 @@
   // Program ports: the ports of each node, where they sit on its card, the
   // wire draft a selected output port starts and which ports it may connect to.
 
-  const PROGRAM_WIRE_TYPES = new Set(["route", "target", "watch"]);
+  const PROGRAM_WIRE_TYPES = new Set(["route", "target", "watch", "attach"]);
   const PROGRAM_PORT_TYPES = new Set([
     ...PROGRAM_WIRE_TYPES,
     "invoke",

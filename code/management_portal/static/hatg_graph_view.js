@@ -299,7 +299,21 @@
       }
       return active;
     }
+    let validateWireTarget;
+
+    function wireTargetIsCompatible(source, target) {
+      if (!validateWireTarget) {
+        const program = currentProgram();
+        validateWireTarget = window.PortalLineageProgram.createConnectionValidator({
+          existingWires: program.wires,
+          nodes: [...(state.lineage?.nodes || []), ...program.components],
+        });
+      }
+      return validateWireTarget(source, target).ok;
+    }
+
     function renderGraph() {
+      validateWireTarget = null;
       if (renderFrontier()) return;
       const empty = $id("graphEmpty");
       const display = state.lineage;
@@ -482,13 +496,7 @@
         onWireDraftCancel: () => {
           cancelProgramWireDraft();
         },
-        isPortCompatible: (source, target) => Boolean(
-          window.PortalLineageProgram?.validateConnection?.(
-            source,
-            target,
-            { existingWires: currentProgram().wires, nodes: [...(state.lineage?.nodes || []), ...currentProgram().components] },
-          )?.ok
-        ),
+        isPortCompatible: wireTargetIsCompatible,
         onPrimitiveDrop: (kind, position) => {
           createProgramComponentFromDrop(kind, position).catch(() => {});
         },

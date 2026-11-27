@@ -13,6 +13,7 @@
   ]);
   const WIRE_TYPES = Object.freeze(["route", "target", "watch", "attach"]);
   const ATTACH_ACCESS = Object.freeze(["read", "write", "read_write"]);
+  const ATTACH_ACCESS_LABELS = Object.freeze({ read: "只读", write: "只写", read_write: "读写" });
   const ID_PREFIX = Object.freeze({
     event_source: "event_source",
     effect: "effect",
@@ -198,7 +199,10 @@
         id_prefix: ID_PREFIX.blackboard,
         default_title: "新黑板",
         default_config: { retention: { max_entries: 200, max_total_bytes: 1048576 } },
-        ports: [],
+        // Dragging from here onto a Resident attaches that Resident (the stored wire runs Resident -> board).
+        ports: [
+          { id: "members", type: "attach", direction: "out", label: window.PortalI18n.t("连接 Resident"), binding: "attach" },
+        ],
       },
     },
     resident_kinds: {
@@ -208,7 +212,6 @@
         ports: [
           { id: "invoke", type: "invoke", direction: "in", label: "Invoke" },
           { id: "output", type: "route", direction: "out", label: "输出" },
-          { id: "attach", type: "attach", direction: "out", label: window.PortalI18n.t("黑板"), binding: "attach" },
         ],
       },
     },
@@ -759,6 +762,9 @@
       type: normalized.type,
       wire_type: normalized.type,
       _program_wire: true,
+      ...(normalized.type === "attach" && !normalized.label
+        ? { display_label: ATTACH_ACCESS_LABELS[normalized.config.access] || "黑板" }
+        : {}),
     };
   }
 
@@ -852,7 +858,7 @@
       route: window.PortalI18n.t("从这里输出消息或事件，沿 Route 交给下游输入。"),
       target: window.PortalI18n.t("从这里为动作绑定作用对象；这条绑定只指定目标，不会启动目标节点。"),
       watch: window.PortalI18n.t("从这里指定事件要监听的对象；监听关系本身不会启动该对象。"),
-      attach: window.PortalI18n.t("从这里连到黑板；连线的 access 决定这个 Resident 能读还是能写，不触发执行。"),
+      attach: window.PortalI18n.t("从这里连到 Resident，让它使用这个黑板；连线的 access 决定它能读还是能写，不触发执行。"),
     };
     return direction === "out" ? text(outputHelp[type]) : "";
   }
@@ -945,7 +951,7 @@
       return [{ ...objectTarget, node_kind: subjectKind === "resident" ? "agent" : subjectKind }];
     }
     if (isRelation) return [];
-    if (source?.type === "attach") return kind === "blackboard" ? [objectTarget] : [];
+    if (source?.type === "attach") return kind === "agent" ? [objectTarget] : [];
     if (source?.type === "target") return [objectTarget];
     return portsForNode(item).filter(port => port.direction === "in");
   }
@@ -962,31 +968,70 @@
     };
   }
 
-  function connectionKey(wire) {
-    const normalized = normalizeWire(wire);
-    return [
-      normalized.type,
-      normalized.source,
-      normalized.source_port,
-      normalized.target,
-      normalized.target_port,
-    ].join("\u0000");
+  function connectionKey(type, source, sourcePort, target, targetPort) {
+    return [type, source, sourcePort, target, targetPort].join("\u0000");
   }
 
-  function validateConnection(sourceValue, targetValue, options = {}) {
+  // One connection draft checks many destinations against the same graph.
+  // Index endpoint facts once without copying wire delivery configuration.
+  function createConnectionValidator({ existingWires, nodes } = {}) {
+    let graph;
+    const readGraph = () => {
+      if (graph) return graph;
+      const connections = new Set();
+      const watchSources = new Set();
+      const effectEndpoints = new Set();
+      const wiresById = new Map();
+      const routes = new Map();
+      for (const value of list(existingWires)) {
+        const wire = object(value);
+        const type = text(wire.kind, "unknown");
+        const id = text(wire.id);
+        const source = text(wire.source);
+        const sourcePort = text(wire.source_port);
+        const target = text(wire.target);
+        connections.add(connectionKey(type, source, sourcePort, target, text(wire.target_port)));
+        if (!wiresById.has(id)) wiresById.set(id, { type, source });
+        if (type === "watch") watchSources.add(source);
+        if (type === "target") effectEndpoints.add(connectionKey(type, source, sourcePort, "", ""));
+        if (type === "route") {
+          if (!routes.has(source)) routes.set(source, new Set());
+          routes.get(source).add(target);
+        }
+      }
+      const operatorIds = new Set(list(nodes)
+        .filter(node => PACKET_OPERATOR_KINDS.includes(primitiveKind(node)))
+        .map(node => text(node?.id)));
+      graph = { connections, watchSources, effectEndpoints, wiresById, routes, operatorIds };
+      return graph;
+    };
+    return (source, target) => validateConnectionWithGraph(source, target, readGraph);
+  }
+
+  function validateConnection(source, target, options = {}) {
+    return createConnectionValidator(options)(source, target);
+  }
+
+  function validateConnectionWithGraph(sourceValue, targetValue, readGraph) {
     let source = normalizePort(sourceValue);
     let target = normalizePort(targetValue);
     if (source.direction === "in" && target.direction === "out") {
       [source, target] = [target, source];
     }
-    const existingWires = list(options.existingWires).map(normalizeWire);
+    if (source.type === "attach" && source.node_kind === "blackboard") {
+      // The board's handle is dragged onto a Resident; the wire itself runs Resident -> board.
+      [source, target] = [
+        { ...target, port_id: "attach", type: "attach", direction: "out" },
+        { ...source, port_id: "", type: "object", direction: "in" },
+      ];
+    }
     if (source.type === "watch") {
       const subjectKind = target.node_kind === "agent" ? "resident" : target.node_kind;
       if (!source.watch_contract?.allowed_kinds?.includes(subjectKind)) {
         return { ok: false, reason: "kind_mismatch", source, target };
       }
       if (subjectKind === "wire") {
-        const subject = existingWires.find(wire => wire.id === target.node_id);
+        const subject = readGraph().wiresById.get(target.node_id);
         if (!subject || !["route"].includes(subject.type)
 ) {
           return { ok: false, reason: "kind_mismatch", source, target };
@@ -996,7 +1041,7 @@
         }
       }
       if (!source.watch_contract.multiple
-          && existingWires.some(wire => wire.type === "watch" && wire.source === source.node_id)) {
+          && readGraph().watchSources.has(source.node_id)) {
         return { ok: false, reason: "watch_subject_occupied", source, target };
       }
     }
@@ -1038,22 +1083,7 @@
       && ["filter", "selector", "reducer"].includes(source.node_kind)
       && ["filter", "selector", "reducer"].includes(target.node_kind)
     ) {
-      const operatorIds = new Set(
-        list(options.nodes)
-          .filter(node => PACKET_OPERATOR_KINDS.includes(primitiveKind(node)))
-          .map(node => text(node?.id)),
-      );
-      operatorIds.add(source.node_id);
-      operatorIds.add(target.node_id);
-      const routes = new Map([...operatorIds].map(id => [id, new Set()]));
-      existingWires.forEach(wire => {
-        if (
-          wire.type === "route"
-          && operatorIds.has(wire.source)
-          && operatorIds.has(wire.target)
-        ) routes.get(wire.source).add(wire.target);
-      });
-      routes.get(source.node_id).add(target.node_id);
+      const { operatorIds, routes } = readGraph();
       const pending = [target.node_id];
       const seen = new Set();
       while (pending.length) {
@@ -1068,16 +1098,14 @@
         }
         if (seen.has(current)) continue;
         seen.add(current);
-        pending.push(...(routes.get(current) || []));
+        for (const next of routes.get(current) || []) {
+          if (next === source.node_id || operatorIds.has(next)) pending.push(next);
+        }
       }
     }
     if (
       source.type === "target"
-      && existingWires.some(wire => (
-          wire.type === "target"
-          && wire.source === source.node_id
-          && wire.source_port === source.port_id
-        ))
+      && readGraph().effectEndpoints.has(connectionKey(source.type, source.node_id, source.port_id, "", ""))
     ) {
       return {
         ok: false,
@@ -1086,17 +1114,8 @@
         target,
       };
     }
-    const draft = normalizeWire({
-      kind: source.type,
-      source: source.node_id,
-      source_port: source.port_id,
-      target: target.node_id,
-      target_port: target.port_id,
-    });
-    const duplicate = existingWires.some(
-      wire => connectionKey(wire) === connectionKey(draft)
-    );
-    if (duplicate) {
+    const key = connectionKey(source.type, source.node_id, source.port_id, target.node_id, target.port_id);
+    if (readGraph().connections.has(key)) {
       return { ok: false, reason: "duplicate", source, target, type: source.type };
     }
     return {
@@ -1174,6 +1193,7 @@
     connectionTargets,
     portKey,
     normalizePort,
+    createConnectionValidator,
     validateConnection,
     buildComponentCreateRequest,
     buildWireSaveRequest,

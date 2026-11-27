@@ -374,6 +374,10 @@
       controller.render({nodes,edges:graph.edges,layoutInteractive:false,selectionEnabled:false});
       controller.setTransform(view.controller.getTransform(),{duration:0});
       root.dataset.anchor=geometry.slot;root.dataset.boundResident=resident?.id || '';
+      root.querySelectorAll('[data-node-id]').forEach(element=>{
+        element.classList.add('templatePlacementNode');
+        element.classList.toggle('is-template-binding',!!nodes.find(node=>node.id===element.dataset.nodeId)?._template_binding);
+      });
       root.querySelector(`[data-node-id="${CSS.escape(geometry.slot)}"]`)?.classList.toggle('templateDropTarget',!!resident);
       return {x:target.x,y:target.y,hit:resident ? hit : null,
         event:{clientX:event.clientX+28,clientY:event.clientY+28,target:resident ? hit : view.root}};
@@ -388,6 +392,7 @@
     let selected = '';
     let wireDraft = null;
     let current = { nodes: [], edges: [], wires: [] };
+    let validateWireTarget;
     let hintTimer = null;
     const labels = roleLabels();
     root.classList.add('portalHatgOverlayComponent', 'templateGraph');
@@ -428,6 +433,7 @@
 
     function render() {
       current = project(body(), {workshop,groups:groups(),expanded:expanded(),scope:scope()});
+      validateWireTarget = program.createConnectionValidator({ existingWires: current.wires, nodes: current.nodes });
       states.textContent = edgeStateRules(body()) + (workshop ? slotRules(body()) : '');
       if (selected && !current.nodes.some(node => node.id === selected) && !current.edges.some(edge => edge.id === selected)) selected = '';
       controller.render({
@@ -581,7 +587,7 @@
       onNodeOpenMenu:node=>onOpenResident(node.id),
       portsForNode: node => program.portsForNode(node),
       connectionTargets: (source, item) => program.connectionTargets(source, item),
-      isPortCompatible: (source, target) => Boolean(program.validateConnection(source, target, { existingWires: current.wires, nodes: current.nodes })?.ok),
+      isPortCompatible: (source, target) => validateWireTarget(source, target).ok,
       onPortClick: port => connect(port),
       onWireDraftCancel: () => { wireDraft = null; hint(''); render(); },
       onPrimitiveDrop: (kind, position) => addComponent(kind, position),

@@ -59,6 +59,7 @@
   --hatg-program-route-color: #7654c7;
   --hatg-program-target-color: #c77d24;
   --hatg-program-watch-color: #6f7b8f;
+  --hatg-program-attach-color: #1c93a8;
 }
 
 .hatgPane {
@@ -345,6 +346,7 @@
 .programWireHint[data-wire-type="route"] { --program-wire-tone: var(--hatg-program-route-color); }
 .programWireHint[data-wire-type="target"] { --program-wire-tone: var(--hatg-program-target-color); }
 .programWireHint[data-wire-type="watch"] { --program-wire-tone: var(--hatg-program-watch-color); }
+.programWireHint[data-wire-type="attach"] { --program-wire-tone: var(--hatg-program-attach-color); }
 .programWireHint[data-mode="ready"] {
   --program-wire-tone: var(--accent);
   pointer-events: none;
@@ -573,4 +575,5 @@
 #programRouteArrow path { fill: var(--hatg-program-route-color); }
 #programTargetArrow path { fill: var(--hatg-program-target-color); }
 #programWatchArrow path { fill: var(--hatg-program-watch-color); }
+#programAttachArrow path { fill: var(--hatg-program-attach-color); }
 }

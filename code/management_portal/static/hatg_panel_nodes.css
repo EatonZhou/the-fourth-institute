@@ -367,6 +367,7 @@
 .hatgPort.invoke { --hatg-port-tone: var(--hatg-program-target-color); }
 .hatgPort.target { --hatg-port-tone: var(--hatg-program-target-color); }
 .hatgPort.watch { --hatg-port-tone: var(--hatg-program-watch-color); }
+.hatgPort.attach { --hatg-port-tone: var(--hatg-program-attach-color); }
 .hatgPort.in {
   --hatg-port-anchor-x: -100%;
   transform-origin: right center;
@@ -399,7 +400,7 @@
   outline-offset: 4px;
   cursor: crosshair;
 }
-.hatgPort.target, .hatgPort.watch { border-style: dashed; }
+.hatgPort.target, .hatgPort.watch, .hatgPort.attach { border-style: dashed; }
 .hatgPort[data-wire-draft-source="true"] {
   border-style: solid;
   background: var(--hatg-port-tone);

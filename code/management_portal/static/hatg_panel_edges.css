@@ -62,7 +62,8 @@
 
 .hatgEdge.route,
 .hatgEdge.target,
-.hatgEdge.watch {
+.hatgEdge.watch,
+.hatgEdge.attach {
   pointer-events: stroke;
   stroke-width: 2.2;
 }
@@ -82,6 +83,12 @@
   stroke: color-mix(in srgb, var(--hatg-program-watch-color) 82%, var(--muted));
   stroke-dasharray: 2 4;
   marker-end: url(#programWatchArrow);
+}
+
+.hatgEdge.attach {
+  stroke: color-mix(in srgb, var(--hatg-program-attach-color) 86%, var(--muted));
+  stroke-dasharray: 6 3;
+  marker-end: url(#programAttachArrow);
 }
 
 .hatgEdge[data-program-wire="true"][data-program-wire-muted="true"] { opacity: .16; }
@@ -191,6 +198,7 @@
 .edgeLabelBtn.packet { border-color: color-mix(in srgb, var(--hatg-program-route-color) 52%, var(--border)); color: var(--hatg-program-route-color); }
 .edgeLabelBtn.target { border-color: color-mix(in srgb, var(--hatg-program-target-color) 52%, var(--border)); color: var(--hatg-program-target-color); }
 .edgeLabelBtn.watch { border-color: color-mix(in srgb, var(--hatg-program-watch-color) 52%, var(--border)); color: var(--hatg-program-watch-color); border-style: dashed; }
+.edgeLabelBtn.attach { border-color: color-mix(in srgb, var(--hatg-program-attach-color) 52%, var(--border)); color: var(--hatg-program-attach-color); border-style: dashed; }
 .edgeLabelBtn:hover { border-color: var(--accent); color: var(--accent); }
 .edgeLabelBtn.selected { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent), 0 5px 14px color-mix(in srgb, #0b1020 16%, transparent); }
 }

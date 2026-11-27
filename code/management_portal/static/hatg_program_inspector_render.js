@@ -215,7 +215,7 @@
           ${programResourceAddressHtml("component", component.id)}
           <label><span>名称</span><input name="title" maxlength="120" value="${esc(component.title || "")}" required${readonly ? " disabled" : ""}></label>
           ${window.PortalLineageElementFields.blackboardFieldsHtml(config, readonly)}
-          <dl class="programInspectorLifecycle"><div><dt>已连接的 Resident</dt><dd>${attached.length ? attached.map(item => `${esc(item.source)}（${esc(item.config?.access || "read_write")}）`).join("、") : "尚无；从 Resident 的黑板端口连线到这里"}</dd></div></dl>
+          <dl class="programInspectorLifecycle"><div><dt>已连接的 Resident</dt><dd>${attached.length ? attached.map(item => `${esc(item.source)}（${esc(item.config?.access || "read_write")}）`).join("、") : "尚无；从黑板的“连接 Resident”端口拖到 Resident 上"}</dd></div></dl>
           <div class="programInspectorActions" data-portal-inbox-avoid>
             <button type="button" data-program-delete${readonly ? " disabled" : ""}>删除</button>
             <button type="submit" data-program-save${readonly ? " disabled" : ""}>保存黑板</button>

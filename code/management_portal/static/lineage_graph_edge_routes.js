@@ -101,6 +101,17 @@
       const targetNode = state.nodeMap.get(String(edge?.target || ""));
       if (!sourceNode) return null;
       const wireType = String(edge?.wire_type || edge?.type || "");
+      if (wireType === "attach") {
+        // A Resident is attached to a board by an object-level wire: card edge to card edge.
+        if (!targetNode) return null;
+        const from = nodePosition(sourceNode), to = nodePosition(targetNode);
+        const dx = to.x - from.x, dy = to.y - from.y;
+        const distance = Math.max(1, Math.hypot(dx, dy));
+        const startTrim = edgeTrimDistance(sourceNode, dx / distance, dy / distance, distance);
+        const endTrim = edgeTrimDistance(targetNode, -dx / distance, -dy / distance, distance);
+        return { x1: from.x + dx / distance * startTrim, y1: from.y + dy / distance * startTrim,
+          x2: to.x - dx / distance * endTrim, y2: to.y - dy / distance * endTrim };
+      }
       const sourcePort = portsForNode(sourceNode).find(port =>
         port.direction === "out" && port.type === wireType
         && port.port_id === String(edge.source_port || wireType));
