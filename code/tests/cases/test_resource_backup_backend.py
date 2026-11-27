@@ -108,7 +108,7 @@ def test_missing_status_returns_complete_setup_required_overview_contracts(tmp_p
         assert overview['active_run'] is None
         assert overview['recent_runs'] == []
         assert overview['coverage'] == []
-        assert overview['permissions'] == {'can_view': True, 'can_run': True, 'can_verify': True, 'can_cancel': True}
+        assert overview['permissions'] == {'can_view': True, 'can_run': False, 'can_verify': False, 'can_cancel': True}
         assert [item['id'] for item in overview['policy']['profiles']] == ['critical', 'content']
         assert overview['policy']['retention'] == {'hourly': 0, 'daily': 0, 'weekly': 0, 'monthly': 0}
         assert overview['policy']['verification']['modes'] == ['check', 'deep-check']
@@ -508,7 +508,7 @@ def test_backup_buttons_ask_the_instructions_they_call(tmp_path: Path, monkeypat
     monkeypatch.setattr(permission_system, "allows", allows)
     backend = ResourceBackupBackend(
         tmp_path,
-        workflow=FakeWorkflow(available=False),
+        workflow=FakeWorkflow(),
         clock=lambda: FIXED_NOW,
     )
 
@@ -535,3 +535,23 @@ def test_backup_acceptance_has_no_completion_or_run_record_side_effect(tmp_path,
     }
     assert workflow.started == ["critical"]
     assert list(tmp_path.rglob("*")) == before
+
+
+def test_retired_workflow_preserves_history_and_refuses_new_work(tmp_path):
+    class RetiredWorkflow(FakeWorkflow):
+        def schedule(self, actor):
+            return {"readable": True, "lineage_id": "lineage_111111111111", "actions": [], "timers": []}
+    workflow = RetiredWorkflow()
+    write_json(tmp_path / "state/status.json", {"schema": "tfi.agent_status.v1", "health": {
+        "status": "healthy", "last_success_at": "2026-07-30T06:00:00Z"}})
+    backend = make_backend(tmp_path, workflow)
+    overview = backend.get_overview("viewer")
+    assert overview["health"]["status"] == "degraded"
+    assert overview["permissions"]["can_run"] is False
+    assert overview["permissions"]["can_verify"] is False
+    assert overview["schedule"]["timers"] == []
+    for operation in (lambda: backend.request_backup("content", "viewer"),
+                      lambda: backend.request_verification("check", "viewer")):
+        with pytest.raises(ResourceBackupUnavailable):
+            operation()
+    assert workflow.started == []

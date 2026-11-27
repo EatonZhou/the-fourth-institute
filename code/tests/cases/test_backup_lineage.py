@@ -9,7 +9,6 @@ from management_portal.resource_backup_backend import ResourceBackupBackend, Res
 from management_portal.hatg.contracts import InstructionCall, InstructionContext
 from management_portal.society_service.isa import build_kernel
 from management_portal.society_service.script_runs import service
-from scripts import resource_backup_lineage as runner
 from tests.cases.test_isa_audit_g4 import make_lineage, registered_members
 from tests.cases.test_lineage_generic_primitives import primitive_store, ACTOR
 
@@ -21,11 +20,35 @@ def call(name, arguments):
     return result.raise_for_error()
 
 
+def _workflow_operations():
+    operations = []
+    for operation in backup_lineage.OPERATIONS:
+        effect = f"effect_{operation}"
+        operations.append({"op": "create", "kind": "component", "ref": effect, "value": {
+            "kind": "effect", "client_key": f"system:backup:{operation}:effect",
+            "config": {"script": 'run=$(RunScript path="/tmp/inert-test-backup.py" argv:=\'' + json.dumps([operation]) + '\' exclusive_key="resource-backup")'}}})
+        for role in ("manual", "timer"):
+            if role == "timer" and operation not in backup_lineage.SCHEDULES:
+                continue
+            event = f"event_{operation}_{role}"
+            config = {"event_type": "manual.triggered"}
+            if role == "timer":
+                config = {"event_type": "time.reached", "schedule_mode": "recurring",
+                          "recurrence_kind": "interval", "interval_seconds": 86400}
+            operations.extend([
+                {"op": "create", "kind": "component", "ref": event, "value": {
+                    "kind": "event_source", "client_key": f"system:backup:{operation}:{role}", "config": config}},
+                {"op": "create", "kind": "wire", "value": {"kind": "route", "source": "$ref:" + event,
+                    "source_port": "output", "target": "$ref:" + effect, "target_port": "invoke"}},
+            ])
+    return operations
+
+
 @pytest.fixture
 def workflow(primitive_store, monkeypatch):
     lid = make_lineage()["lineage_id"]
     monkeypatch.setattr(backup_lineage, "read_site_config", lambda: {"deployment": {"backup": {"lineage_id": lid}}})
-    call("ApplyLineageChanges", {"lineage_id": lid, "operations": backup_lineage.migration_operations()})
+    call("ApplyLineageChanges", {"lineage_id": lid, "operations": _workflow_operations()})
     bindings = backup_lineage.component_bindings(call("GetLineage", {"lineage_id": lid})["lineage"])
     controller = backup_lineage.BackupLineage(lambda name, args, actor: call(name, args))
     return lid, bindings, controller
@@ -86,36 +109,6 @@ def test_missing_binding_and_disconnected_graph_cannot_start(workflow, tmp_path)
     call("ApplyLineageChanges", {"lineage_id": lid, "operations": [{"op": "delete", "kind": "wire", "id": wire["id"]}]})
     with pytest.raises(ResourceBackupUnavailable):
         backend.request_backup("content", ACTOR)
-
-
-@pytest.mark.parametrize("operation", runner.OPERATIONS)
-def test_executor_fixed_commands_preserve_lock_outcome_without_secret_output(monkeypatch, tmp_path, operation):
-    """备份固定命令保留锁占用结果且隐藏敏感输出"""
-    invoked = []
-    def run(argv, **kwargs):
-        invoked.append((argv, kwargs))
-        return SimpleNamespace(returncode=0, stdout=json.dumps({
-            "status": "skipped_locked", "run_id": "backup1", "errors": ["secret-value"],
-            "outputs": ["/private/repository"],
-        }), stderr="secret-value")
-    monkeypatch.setattr(runner.subprocess, "run", run)
-    result = runner.run_operation(operation, service_root=tmp_path)
-    assert result["status"] == "skipped_locked" and result["succeeded"]
-    assert "secret-value" not in json.dumps(result)
-    assert "repository" not in json.dumps(result)
-    assert invoked[0][0][-len(runner.OPERATIONS[operation]):] == list(runner.OPERATIONS[operation])
-    assert invoked[0][1]["umask"] == 0o077
-
-
-def test_executor_rejects_arbitrary_operation_and_failed_output(monkeypatch, tmp_path):
-    """备份执行拒绝任意操作并标记命令失败；清单未登记备份程序时明确拒绝"""
-    monkeypatch.setattr(runner.subprocess, "run", lambda *a, **k: SimpleNamespace(returncode=1, stdout="secret", stderr="private"))
-    with pytest.raises(ValueError):
-        runner.run_operation("content; reboot")
-    with pytest.raises(ValueError, match="backup program"):
-        runner.run_operation("content")
-    result = runner.run_operation("content", service_root=tmp_path)
-    assert result["status"] == "failed" and not result["succeeded"]
 
 
 def test_web_actor_is_forwarded_to_isa(monkeypatch):

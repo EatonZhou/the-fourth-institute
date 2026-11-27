@@ -210,7 +210,7 @@ Portal 管理员永远可以开关权限系统（“执行设置”中的权限�
 
 几乎所有数据都在 PostgreSQL 中；另外还要备份实例的各区域（projects、lineages、skills、papers、uploads、features、provider-state，位置见“Portal 管理 → 数据目录”）、`secrets/`、清单 `instance.json` 和站点设置 `site.json`；`cache/`、`runtime/` 不需要备份。先导出数据库，再复制各区域。Portal 本身不执行备份，需要部署者另配备份程序（例如用 restic 定期备份数据库导出和上述目录）。配好备份服务后，“资源 → 备份”页面显示最近恢复点和自动计划，管理员可以在这里手动发起备份或校验，见设计条目 `decision_b06ae321a668`。
 
-Google Drive 异地备份使用本站备份 Lineage 中登记的 `google_drive_backup`。该脚本通过 `RunScript` 运行，`profile` 为 `critical`、`content` 或 `probe`，可选 `network_route`，并使用 `resource-backup` 互斥键。调用者须对该备份 Lineage 通过 `RunScript` 的权限校验。用返回的 `script_run_id` 查询运行结果。
+本地 Restic 备份生产流程已下线。历史状态、仓库、云端数据、密码引用和 Restic 恢复工具保留；当前不提供新备份、维护或云复制入口。新实现另行配置。
 
 ### 代码更新与发布
 

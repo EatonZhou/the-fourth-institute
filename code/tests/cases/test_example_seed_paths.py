@@ -185,7 +185,7 @@ class ExamplePaths(unittest.TestCase):
         from scripts.tfi_release_install import map_directories
         from pathlib import PureWindowsPath
 
-        names = {'update_paper_ccf_cache.py', 'resource_backup_lineage.py',
+        names = {'update_paper_ccf_cache.py',
                  'portal_capacity_alerts.py'}
         sql = (self.seed / self.manifest['engineering']['database']['path']).read_text(encoding='utf-8')
         found = set()

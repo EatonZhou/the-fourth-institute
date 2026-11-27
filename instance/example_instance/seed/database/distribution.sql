@@ -2306,27 +2306,27 @@ INSERT INTO "lineage"."event_source_progress" ("lineage_id","source_id","checkpo
 
 INSERT INTO "lineage"."event_source_progress" ("lineage_id","source_id","checkpoint_json") VALUES ('lineage_8794980b1bb7','event_source_84db862c2312','{"paused":true}');
 
-INSERT INTO "lineage"."event_source_progress" ("lineage_id","source_id","checkpoint_json") VALUES ('lineage_ed619225d417','event_source_0e879932e245','{"paused":true}');
 
-INSERT INTO "lineage"."event_source_progress" ("lineage_id","source_id","checkpoint_json") VALUES ('lineage_ed619225d417','event_source_98dea58cba5e','{"paused":true}');
 
-INSERT INTO "lineage"."event_source_progress" ("lineage_id","source_id","checkpoint_json") VALUES ('lineage_ed619225d417','event_source_f23e0aece3b6','{"paused":true}');
 
-INSERT INTO "lineage"."event_source_progress" ("lineage_id","source_id","checkpoint_json") VALUES ('lineage_ed619225d417','event_source_44d95a9fe32d','{"paused":true}');
 
-INSERT INTO "lineage"."event_source_progress" ("lineage_id","source_id","checkpoint_json") VALUES ('lineage_ed619225d417','event_source_e5107e99e557','{"paused":true}');
 
-INSERT INTO "lineage"."event_source_progress" ("lineage_id","source_id","checkpoint_json") VALUES ('lineage_ed619225d417','event_source_21b92e676ead','{"paused":true}');
 
-INSERT INTO "lineage"."event_source_progress" ("lineage_id","source_id","checkpoint_json") VALUES ('lineage_ed619225d417','event_source_8b3b4540d580','{"paused":true}');
 
-INSERT INTO "lineage"."event_source_progress" ("lineage_id","source_id","checkpoint_json") VALUES ('lineage_ed619225d417','event_source_7efd42b82ac0','{"paused":true}');
 
-INSERT INTO "lineage"."event_source_progress" ("lineage_id","source_id","checkpoint_json") VALUES ('lineage_ed619225d417','event_source_0a2a1ee57124','{"paused":true}');
 
-INSERT INTO "lineage"."event_source_progress" ("lineage_id","source_id","checkpoint_json") VALUES ('lineage_ed619225d417','event_source_418ff2d82ffe','{"paused":true}');
 
-INSERT INTO "lineage"."event_source_progress" ("lineage_id","source_id","checkpoint_json") VALUES ('lineage_ed619225d417','event_source_58034093ff0f','{"paused":true}');
+
+
+
+
+
+
+
+
+
+
+
 
 INSERT INTO "lineage"."event_source_progress" ("lineage_id","source_id","checkpoint_json") VALUES ('lineage_ed619225d417','event_source_6a15828b7c22','{"paused":true}');
 
@@ -2336,17 +2336,17 @@ INSERT INTO "lineage"."event_source_progress" ("lineage_id","source_id","checkpo
 
 INSERT INTO "lineage"."event_source_progress" ("lineage_id","source_id","checkpoint_json") VALUES ('lineage_ed619225d417','event_source_95f6bb2015ed','{"paused":true}');
 
-INSERT INTO "lineage"."event_source_progress" ("lineage_id","source_id","checkpoint_json") VALUES ('lineage_ed619225d417','event_source_c41d77f36bc8','{"paused":true}');
 
-INSERT INTO "lineage"."event_source_progress" ("lineage_id","source_id","checkpoint_json") VALUES ('lineage_ed619225d417','event_source_c198a0afeb8e','{"paused":true}');
 
-INSERT INTO "lineage"."event_source_progress" ("lineage_id","source_id","checkpoint_json") VALUES ('lineage_ed619225d417','event_source_dfb3199cf661','{"paused":true}');
 
-INSERT INTO "lineage"."event_source_progress" ("lineage_id","source_id","checkpoint_json") VALUES ('lineage_ed619225d417','event_source_ca589abe399b','{"paused":true}');
 
-INSERT INTO "lineage"."event_source_progress" ("lineage_id","source_id","checkpoint_json") VALUES ('lineage_ed619225d417','event_source_81ee746ce32c','{"paused":true}');
 
-INSERT INTO "lineage"."event_source_progress" ("lineage_id","source_id","checkpoint_json") VALUES ('lineage_ed619225d417','event_source_c61663df5659','{"paused":true}');
+
+
+
+
+
+
 
 INSERT INTO "lineage"."event_source_progress" ("lineage_id","source_id","checkpoint_json") VALUES ('lineage_ed619225d417','event_source_b904b83e97af','{"paused":true}');
 
@@ -4448,51 +4448,51 @@ INSERT INTO "lineage"."function_block_elements" ("function_block_id","element_id
 
 INSERT INTO "lineage"."function_block_elements" ("function_block_id","element_id","element_kind","element_key") VALUES ('fbi_a17162f73b15','effect_3f334147c456','component','notify_periodic_review_task');
 
-INSERT INTO "lineage"."function_block_elements" ("function_block_id","element_id","element_kind","element_key") VALUES ('fbi_9e8555341961','effect_9430163522ed','component',NULL);
 
-INSERT INTO "lineage"."function_block_elements" ("function_block_id","element_id","element_kind","element_key") VALUES ('fbi_9e8555341961','event_source_0e879932e245','component',NULL);
 
-INSERT INTO "lineage"."function_block_elements" ("function_block_id","element_id","element_kind","element_key") VALUES ('fbi_9e8555341961','effect_7e13e4076664','component',NULL);
 
-INSERT INTO "lineage"."function_block_elements" ("function_block_id","element_id","element_kind","element_key") VALUES ('fbi_9e8555341961','event_source_98dea58cba5e','component',NULL);
 
-INSERT INTO "lineage"."function_block_elements" ("function_block_id","element_id","element_kind","element_key") VALUES ('fbi_9e8555341961','event_source_f23e0aece3b6','component',NULL);
 
-INSERT INTO "lineage"."function_block_elements" ("function_block_id","element_id","element_kind","element_key") VALUES ('fbi_9e8555341961','effect_8caffe76f918','component',NULL);
 
-INSERT INTO "lineage"."function_block_elements" ("function_block_id","element_id","element_kind","element_key") VALUES ('fbi_9e8555341961','event_source_44d95a9fe32d','component',NULL);
 
-INSERT INTO "lineage"."function_block_elements" ("function_block_id","element_id","element_kind","element_key") VALUES ('fbi_9e8555341961','event_source_e5107e99e557','component',NULL);
 
-INSERT INTO "lineage"."function_block_elements" ("function_block_id","element_id","element_kind","element_key") VALUES ('fbi_9e8555341961','effect_b85ac31fc367','component',NULL);
 
-INSERT INTO "lineage"."function_block_elements" ("function_block_id","element_id","element_kind","element_key") VALUES ('fbi_9e8555341961','event_source_21b92e676ead','component',NULL);
 
-INSERT INTO "lineage"."function_block_elements" ("function_block_id","element_id","element_kind","element_key") VALUES ('fbi_9e8555341961','event_source_8b3b4540d580','component',NULL);
 
-INSERT INTO "lineage"."function_block_elements" ("function_block_id","element_id","element_kind","element_key") VALUES ('fbi_9e8555341961','effect_7312cbbe49b0','component',NULL);
 
-INSERT INTO "lineage"."function_block_elements" ("function_block_id","element_id","element_kind","element_key") VALUES ('fbi_9e8555341961','event_source_7efd42b82ac0','component',NULL);
 
-INSERT INTO "lineage"."function_block_elements" ("function_block_id","element_id","element_kind","element_key") VALUES ('fbi_9e8555341961','event_source_0a2a1ee57124','component',NULL);
 
-INSERT INTO "lineage"."function_block_elements" ("function_block_id","element_id","element_kind","element_key") VALUES ('fbi_9e8555341961','effect_9a56d36a3b0f','component',NULL);
 
-INSERT INTO "lineage"."function_block_elements" ("function_block_id","element_id","element_kind","element_key") VALUES ('fbi_9e8555341961','event_source_418ff2d82ffe','component',NULL);
 
-INSERT INTO "lineage"."function_block_elements" ("function_block_id","element_id","element_kind","element_key") VALUES ('fbi_9e8555341961','event_source_58034093ff0f','component',NULL);
 
-INSERT INTO "lineage"."function_block_elements" ("function_block_id","element_id","element_kind","element_key") VALUES ('fbi_89a691fe3feb','event_source_c41d77f36bc8','component',NULL);
 
-INSERT INTO "lineage"."function_block_elements" ("function_block_id","element_id","element_kind","element_key") VALUES ('fbi_89a691fe3feb','event_source_c198a0afeb8e','component',NULL);
 
-INSERT INTO "lineage"."function_block_elements" ("function_block_id","element_id","element_kind","element_key") VALUES ('fbi_89a691fe3feb','event_source_dfb3199cf661','component',NULL);
 
-INSERT INTO "lineage"."function_block_elements" ("function_block_id","element_id","element_kind","element_key") VALUES ('fbi_89a691fe3feb','event_source_ca589abe399b','component',NULL);
 
-INSERT INTO "lineage"."function_block_elements" ("function_block_id","element_id","element_kind","element_key") VALUES ('fbi_89a691fe3feb','event_source_81ee746ce32c','component',NULL);
 
-INSERT INTO "lineage"."function_block_elements" ("function_block_id","element_id","element_kind","element_key") VALUES ('fbi_89a691fe3feb','event_source_c61663df5659','component',NULL);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 INSERT INTO "lineage"."function_block_elements" ("function_block_id","element_id","element_kind","element_key") VALUES ('fbi_a6917cd9dc9c','event_source_b904b83e97af','component',NULL);
 
@@ -6192,7 +6192,7 @@ INSERT INTO "lineage"."function_blocks" ("function_block_id","lineage_id","title
 
 INSERT INTO "lineage"."function_blocks" ("function_block_id","lineage_id","title","template_id","x","y","created_at","created_by","updated_at","updated_by") VALUES ('fbi_1e9ad6e51304','lineage_ed619225d417','Provider Runtime 更新',NULL,24.02,43.56,'2026-10-15 18:27:39.037749+08:00'::timestamptz,'resident_2e9ea0072551','2026-10-15 18:27:39.037749+08:00'::timestamptz,'resident_2e9ea0072551');
 
-INSERT INTO "lineage"."function_blocks" ("function_block_id","lineage_id","title","template_id","x","y","created_at","created_by","updated_at","updated_by") VALUES ('fbi_9e8555341961','lineage_ed619225d417','资源备份',NULL,39.26,58.85,'2026-10-15 18:50:15.857473+08:00'::timestamptz,'resident_2e9ea0072551','2026-10-15 18:50:15.857473+08:00'::timestamptz,'resident_2e9ea0072551');
+
 
 INSERT INTO "lineage"."function_blocks" ("function_block_id","lineage_id","title","template_id","x","y","created_at","created_by","updated_at","updated_by") VALUES ('fbi_2aa064cd466e','lineage_ed619225d417','日志与测试证据保留',NULL,39.26,5.75,'2026-10-15 18:27:39.659721+08:00'::timestamptz,'resident_2e9ea0072551','2026-10-15 18:27:39.659721+08:00'::timestamptz,'resident_2e9ea0072551');
 
@@ -6370,7 +6370,7 @@ INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","conf
 
 INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('event_source_08bb7d3d0847','TAU 模块验收',NULL,'{"event_type":"manual.triggered","max_fires":null}',NULL);
 
-INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('event_source_98dea58cba5e','立即完整内容备份','system:backup:content:manual','{"event_type":"manual.triggered","max_fires":null}',NULL);
+
 
 INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('effect_c5042ad1031c','反投影 · 分析流程 · 执行',NULL, E'{"endpoints":["target"],"failure_recipients":[],"script":"DeliverMessage activation_policy=\\"enqueue_and_trigger\\" message=\\"分析页面行为和现有 Lineage，提出最小可审核增量。复用现有成员、Event、Effect 和历史；纯 UI 不进入图。只分析，不执行修改。\\" resident_id=\\"${endpoint.target}\\""}',NULL);
 
@@ -6378,9 +6378,9 @@ INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","conf
 
 INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('effect_eb74684b9c8b','生成投影页面 · 执行',NULL, E'{"endpoints":["target"],"failure_recipients":[],"script":"DeliverMessage activation_policy=\\"enqueue_and_trigger\\" message=\\"设计 Portal 业务内容片段。只交付页面草稿，不修改目标团队、不启动任务、不发布页面。\\" resident_id=\\"${endpoint.target}\\""}',NULL);
 
-INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('effect_8caffe76f918','仓库校验','system:backup:check:effect', E'{"endpoints":[],"failure_recipients":["tfi-exported-user"],"script":"run=$(RunScript path=\\"${code_root}/scripts/resource_backup_lineage.py\\" runtime=python argv:=''[\\"check\\"]'' exclusive_key=\\"resource-backup\\")\\noutput script_run_id=\\"${run.script_run_id}\\" status=\\"${run.status}\\""}',NULL);
 
-INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('event_source_44d95a9fe32d','立即仓库校验','system:backup:check:manual','{"event_type":"manual.triggered","max_fires":null}',NULL);
+
+
 
 INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('event_source_a36a76c7127f','Portal 回归基线（每日，未启用）',NULL,'{"calendar_frequency":"daily","calendar_time":"02:30:00","event_type":"time.reached","jitter_seconds":600,"max_fires":null,"misfire_policy":"coalesce_latest","overlap_policy":"drop","recurrence_kind":"calendar","schedule_mode":"recurring","timezone":"Asia/Hong_Kong"}',NULL);
 
@@ -6400,7 +6400,7 @@ INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","conf
 
 INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('event_source_3676f77ec2fb','成员或 steward 工作失败',NULL,'{"event_type":"resident.work_failed","max_fires":null}','resident_e8b66d1ae69d');
 
-INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('event_source_21b92e676ead','立即深度校验','system:backup:deep-check:manual','{"event_type":"manual.triggered","max_fires":null}',NULL);
+
 
 INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('event_source_572f115d47a5fe924c4c','Watchboard · Telepus','watchboard.resident_7fdebb465cdf.view','{"event_type":"manual.triggered","max_fires":null}',NULL);
 
@@ -6408,7 +6408,7 @@ INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","conf
 
 INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('event_source_e5af39a455a2','起草模块地图',NULL,'{"event_type":"manual.triggered","max_fires":null}','resident_e8b66d1ae69d');
 
-INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('effect_7312cbbe49b0','备份保留策略','system:backup:retention:effect', E'{"endpoints":[],"failure_recipients":["tfi-exported-user"],"script":"run=$(RunScript path=\\"${code_root}/scripts/resource_backup_lineage.py\\" runtime=python argv:=''[\\"retention\\"]'' exclusive_key=\\"resource-backup\\")\\noutput script_run_id=\\"${run.script_run_id}\\" status=\\"${run.status}\\""}',NULL);
+
 
 INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('event_source_89e1e42c79b3','每日进展摘要 · 上午',NULL,'{"calendar_frequency":"daily","calendar_time":"08:57:00","event_type":"time.reached","jitter_seconds":300,"max_fires":null,"misfire_policy":"coalesce_latest","overlap_policy":"drop","recurrence_kind":"calendar","schedule_mode":"recurring","timezone":"Asia/Hong_Kong"}','resident_e8b66d1ae69d');
 
@@ -6440,49 +6440,49 @@ INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","conf
 
 INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('event_source_e29d77f13f84','架构核对 · 发布完成',NULL,'{"event_type":"portal.release_published","max_fires":null,"misfire_policy":"coalesce_latest"}',NULL);
 
-INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('effect_7e13e4076664','完整内容备份','system:backup:content:effect', E'{"endpoints":[],"failure_recipients":["tfi-exported-user"],"script":"run=$(RunScript path=\\"${code_root}/scripts/resource_backup_lineage.py\\" runtime=python argv:=''[\\"content\\"]'' exclusive_key=\\"resource-backup\\")\\noutput script_run_id=\\"${run.script_run_id}\\" status=\\"${run.status}\\""}',NULL);
 
-INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('effect_9430163522ed','关键状态备份','system:backup:critical:effect', E'{"endpoints":[],"failure_recipients":["tfi-exported-user"],"script":"run=$(RunScript path=\\"${code_root}/scripts/resource_backup_lineage.py\\" runtime=python argv:=''[\\"critical\\"]'' exclusive_key=\\"resource-backup\\")\\noutput script_run_id=\\"${run.script_run_id}\\" status=\\"${run.status}\\""}',NULL);
+
+
 
 INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('event_source_04a00f062e61','起草演化图',NULL,'{"event_type":"manual.triggered","max_fires":null}','resident_e8b66d1ae69d');
 
-INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('effect_9a56d36a3b0f','备份空间回收','system:backup:prune:effect', E'{"endpoints":[],"failure_recipients":["tfi-exported-user"],"script":"run=$(RunScript path=\\"${code_root}/scripts/resource_backup_lineage.py\\" runtime=python argv:=''[\\"prune\\"]'' exclusive_key=\\"resource-backup\\")\\noutput script_run_id=\\"${run.script_run_id}\\" status=\\"${run.status}\\""}',NULL);
+
 
 INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('event_source_45995c1c37c3','运行回归',NULL,'{"event_type":"manual.triggered","max_fires":null}','resident_e8b66d1ae69d');
 
 INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('event_source_be10e8df7bec','TAU 模块验收',NULL,'{"event_type":"manual.triggered","max_fires":null}',NULL);
 
-INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('effect_b85ac31fc367','深度校验','system:backup:deep-check:effect', E'{"endpoints":[],"failure_recipients":["tfi-exported-user"],"script":"run=$(RunScript path=\\"${code_root}/scripts/resource_backup_lineage.py\\" runtime=python argv:=''[\\"deep-check\\"]'' exclusive_key=\\"resource-backup\\")\\noutput script_run_id=\\"${run.script_run_id}\\" status=\\"${run.status}\\""}',NULL);
 
-INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('event_source_0a2a1ee57124','定时备份保留策略','system:backup:retention:timer','{"calendar_frequency":"daily","calendar_time":"02:15:00","event_type":"time.reached","jitter_seconds":900,"max_fires":null,"misfire_policy":"coalesce_latest","overlap_policy":"drop","recurrence_kind":"calendar","schedule_mode":"recurring","timezone":"Asia/Hong_Kong"}',NULL);
 
-INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('event_source_0e879932e245','立即关键状态备份','system:backup:critical:manual','{"event_type":"manual.triggered","max_fires":null}',NULL);
 
-INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('event_source_418ff2d82ffe','立即备份空间回收','system:backup:prune:manual','{"event_type":"manual.triggered","max_fires":null}',NULL);
 
-INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('event_source_58034093ff0f','定时备份空间回收','system:backup:prune:timer','{"calendar_frequency":"weekly","calendar_time":"04:15:00","calendar_weekdays":["sun"],"event_type":"time.reached","jitter_seconds":1200,"max_fires":null,"misfire_policy":"coalesce_latest","overlap_policy":"drop","recurrence_kind":"calendar","schedule_mode":"recurring","timezone":"Asia/Hong_Kong"}',NULL);
 
-INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('event_source_7efd42b82ac0','立即备份保留策略','system:backup:retention:manual','{"event_type":"manual.triggered","max_fires":null}',NULL);
 
-INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('event_source_8b3b4540d580','定时深度校验','system:backup:deep-check:timer','{"calendar_frequency":"weekly","calendar_time":"05:30:00","calendar_weekdays":["sun"],"event_type":"time.reached","jitter_seconds":1200,"max_fires":null,"misfire_policy":"coalesce_latest","overlap_policy":"drop","recurrence_kind":"calendar","schedule_mode":"recurring","timezone":"Asia/Hong_Kong"}',NULL);
 
-INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('event_source_e5107e99e557','定时仓库校验','system:backup:check:timer','{"calendar_frequency":"daily","calendar_time":"03:05:00","event_type":"time.reached","jitter_seconds":900,"max_fires":null,"misfire_policy":"coalesce_latest","overlap_policy":"drop","recurrence_kind":"calendar","schedule_mode":"recurring","timezone":"Asia/Hong_Kong"}',NULL);
 
-INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('event_source_f23e0aece3b6','定时完整内容备份','system:backup:content:timer','{"calendar_frequency":"daily","calendar_time":"03:00:00","event_type":"time.reached","jitter_seconds":0,"max_fires":null,"misfire_policy":"skip","overlap_policy":"drop","recurrence_kind":"calendar","schedule_mode":"recurring","timezone":"Asia/Hong_Kong"}',NULL);
+
+
+
+
+
+
+
+
+
 
 INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('event_source_b4be8929ccee','研究点拓展 · 开展工作',NULL,'{"event_type":"manual.triggered","max_fires":1}',NULL);
 
-INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('event_source_c41d77f36bc8','备份 critical 调用失败','system:failures:backup-critical','{"event_type":"effect.failed","max_fires":null}',NULL);
 
-INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('event_source_c198a0afeb8e','备份 content 调用失败','system:failures:backup-content','{"event_type":"effect.failed","max_fires":null}',NULL);
 
-INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('event_source_dfb3199cf661','备份 check 调用失败','system:failures:backup-check','{"event_type":"effect.failed","max_fires":null}',NULL);
 
-INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('event_source_ca589abe399b','备份 deep-check 调用失败','system:failures:backup-deep-check','{"event_type":"effect.failed","max_fires":null}',NULL);
 
-INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('event_source_81ee746ce32c','备份 retention 调用失败','system:failures:backup-retention','{"event_type":"effect.failed","max_fires":null}',NULL);
 
-INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('event_source_c61663df5659','备份 prune 调用失败','system:failures:backup-prune','{"event_type":"effect.failed","max_fires":null}',NULL);
+
+
+
+
+
+
 
 INSERT INTO "lineage"."lineage_components" ("node_id","title","client_key","config_json","created_by_principal_id") VALUES ('event_source_7b9c7e60526f','身体记忆与局部学习 · 开展工作',NULL,'{"event_type":"manual.triggered","max_fires":1}',NULL);
 
@@ -8018,41 +8018,41 @@ INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","sourc
 
 INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('edge_instruction_fork_bde2521a0e4aeb77','lineage_8794980b1bb7','inheritance','resident_6b7d6cdae31c',NULL,'resident_2187915c509a',NULL,'压缩继承',NULL,NULL,NULL,NULL,NULL,'',NULL);
 
-INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('wire_2c6d9100222e','lineage_ed619225d417','watch','event_source_2f78b9e84171','watch','effect_9430163522ed',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 
-INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('wire_b789a8f83478','lineage_ed619225d417','watch','event_source_c41d77f36bc8','watch','effect_9430163522ed',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 
-INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('wire_d9ae2a7256df','lineage_ed619225d417','route','event_source_c41d77f36bc8','output','effect_e2907add40eb','invoke',NULL,NULL,'{"expires_after_seconds":0,"unavailable_policy":"drop"}',NULL,NULL,NULL,NULL,NULL);
 
-INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('wire_e4b091eda333','lineage_ed619225d417','watch','event_source_2f78b9e84171','watch','effect_7e13e4076664',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 
-INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('wire_f3f10aeae71a','lineage_ed619225d417','watch','event_source_c198a0afeb8e','watch','effect_7e13e4076664',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 
-INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('wire_d82e7ac40c09','lineage_ed619225d417','route','event_source_c198a0afeb8e','output','effect_e2907add40eb','invoke',NULL,NULL,'{"expires_after_seconds":0,"unavailable_policy":"drop"}',NULL,NULL,NULL,NULL,NULL);
 
-INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('wire_08a094838895','lineage_ed619225d417','watch','event_source_2f78b9e84171','watch','effect_8caffe76f918',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 
-INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('wire_a8af8c6b3be4','lineage_ed619225d417','watch','event_source_dfb3199cf661','watch','effect_8caffe76f918',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 
-INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('wire_e8d21958b655','lineage_ed619225d417','route','event_source_dfb3199cf661','output','effect_e2907add40eb','invoke',NULL,NULL,'{"expires_after_seconds":0,"unavailable_policy":"drop"}',NULL,NULL,NULL,NULL,NULL);
 
-INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('wire_87867ae4cb63','lineage_ed619225d417','watch','event_source_2f78b9e84171','watch','effect_b85ac31fc367',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 
-INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('wire_4ecb352c8f2e','lineage_ed619225d417','watch','event_source_ca589abe399b','watch','effect_b85ac31fc367',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 
-INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('wire_431317ea290c','lineage_ed619225d417','route','event_source_ca589abe399b','output','effect_e2907add40eb','invoke',NULL,NULL,'{"expires_after_seconds":0,"unavailable_policy":"drop"}',NULL,NULL,NULL,NULL,NULL);
 
-INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('wire_d533087a0233','lineage_ed619225d417','watch','event_source_2f78b9e84171','watch','effect_7312cbbe49b0',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 
-INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('wire_0d032d2b88f2','lineage_ed619225d417','watch','event_source_81ee746ce32c','watch','effect_7312cbbe49b0',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 
-INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('wire_825923267b58','lineage_ed619225d417','route','event_source_81ee746ce32c','output','effect_e2907add40eb','invoke',NULL,NULL,'{"expires_after_seconds":0,"unavailable_policy":"drop"}',NULL,NULL,NULL,NULL,NULL);
 
-INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('wire_eaaaa3373c44','lineage_ed619225d417','watch','event_source_2f78b9e84171','watch','effect_9a56d36a3b0f',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 
-INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('wire_42b7cf69d818','lineage_ed619225d417','watch','event_source_c61663df5659','watch','effect_9a56d36a3b0f',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 
-INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('wire_c92f1e32f780','lineage_ed619225d417','route','event_source_c61663df5659','output','effect_e2907add40eb','invoke',NULL,NULL,'{"expires_after_seconds":0,"unavailable_policy":"drop"}',NULL,NULL,NULL,NULL,NULL);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('wire_3c0f4ffe4562','lineage_8794980b1bb7','watch','event_source_d042b6d9b43d','watch','resident_2187915c509a',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 
@@ -8062,27 +8062,27 @@ INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","sourc
 
 INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('wire_258247678cc5','lineage_8794980b1bb7','watch','event_source_133274e85a3b','watch','resident_2187915c509a',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 
-INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('wire_278ede3c9649','lineage_ed619225d417','route','event_source_0e879932e245','output','effect_9430163522ed','invoke',NULL,NULL,'{"expires_after_seconds":0,"unavailable_policy":"drop"}',NULL,NULL,NULL,NULL,NULL);
 
-INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('wire_9715baa3e1e0','lineage_ed619225d417','route','event_source_98dea58cba5e','output','effect_7e13e4076664','invoke',NULL,NULL,'{"expires_after_seconds":0,"unavailable_policy":"drop"}',NULL,NULL,NULL,NULL,NULL);
 
-INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('wire_dccfe8950679','lineage_ed619225d417','route','event_source_f23e0aece3b6','output','effect_7e13e4076664','invoke',NULL,NULL,'{"expires_after_seconds":0,"unavailable_policy":"drop"}',NULL,NULL,NULL,NULL,NULL);
 
-INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('wire_f2cbcc42ca80','lineage_ed619225d417','route','event_source_44d95a9fe32d','output','effect_8caffe76f918','invoke',NULL,NULL,'{"expires_after_seconds":0,"unavailable_policy":"drop"}',NULL,NULL,NULL,NULL,NULL);
 
-INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('wire_13c4bc188e9c','lineage_ed619225d417','route','event_source_e5107e99e557','output','effect_8caffe76f918','invoke',NULL,NULL,'{"expires_after_seconds":0,"unavailable_policy":"drop"}',NULL,NULL,NULL,NULL,NULL);
 
-INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('wire_5f0348901c07','lineage_ed619225d417','route','event_source_21b92e676ead','output','effect_b85ac31fc367','invoke',NULL,NULL,'{"expires_after_seconds":0,"unavailable_policy":"drop"}',NULL,NULL,NULL,NULL,NULL);
 
-INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('wire_f38a3d8829fe','lineage_ed619225d417','route','event_source_8b3b4540d580','output','effect_b85ac31fc367','invoke',NULL,NULL,'{"expires_after_seconds":0,"unavailable_policy":"drop"}',NULL,NULL,NULL,NULL,NULL);
 
-INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('wire_1e6bc2b6d64d','lineage_ed619225d417','route','event_source_7efd42b82ac0','output','effect_7312cbbe49b0','invoke',NULL,NULL,'{"expires_after_seconds":0,"unavailable_policy":"drop"}',NULL,NULL,NULL,NULL,NULL);
 
-INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('wire_657219c35211','lineage_ed619225d417','route','event_source_0a2a1ee57124','output','effect_7312cbbe49b0','invoke',NULL,NULL,'{"expires_after_seconds":0,"unavailable_policy":"drop"}',NULL,NULL,NULL,NULL,NULL);
 
-INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('wire_f0faf34dfc16','lineage_ed619225d417','route','event_source_418ff2d82ffe','output','effect_9a56d36a3b0f','invoke',NULL,NULL,'{"expires_after_seconds":0,"unavailable_policy":"drop"}',NULL,NULL,NULL,NULL,NULL);
 
-INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('wire_5b9d0a65351f','lineage_ed619225d417','route','event_source_58034093ff0f','output','effect_9a56d36a3b0f','invoke',NULL,NULL,'{"expires_after_seconds":0,"unavailable_policy":"drop"}',NULL,NULL,NULL,NULL,NULL);
+
+
+
+
+
+
+
+
+
+
+
 
 INSERT INTO "lineage"."lineage_edges" ("edge_id","lineage_id","edge_type","source_node_id","source_port","target_node_id","target_port","label","client_key","config_json","revision_request_id","explanation","operation_contract_json","note","deleted_at") VALUES ('wire_45f3540ff5e0','lineage_ed619225d417','route','event_source_b904b83e97af','output','effect_ec0f91af1f16','invoke',NULL,'system:notice_classifier:invoke','{"expires_after_seconds":0,"include_envelope":false,"queue_limit":100,"unavailable_policy":"queue"}',NULL,NULL,NULL,NULL,NULL);
 
@@ -9406,17 +9406,17 @@ INSERT INTO "lineage"."lineage_layout_positions" ("lineage_id","object_id","x","
 
 INSERT INTO "lineage"."lineage_layout_positions" ("lineage_id","object_id","x","y") VALUES ('lineage_8794980b1bb7','event_source_84db862c2312',51.29,386.45);
 
-INSERT INTO "lineage"."lineage_layout_positions" ("lineage_id","object_id","x","y") VALUES ('lineage_ed619225d417','event_source_c41d77f36bc8', -59.4,50.0);
 
-INSERT INTO "lineage"."lineage_layout_positions" ("lineage_id","object_id","x","y") VALUES ('lineage_ed619225d417','event_source_c198a0afeb8e', -16.89, -11.6);
 
-INSERT INTO "lineage"."lineage_layout_positions" ("lineage_id","object_id","x","y") VALUES ('lineage_ed619225d417','event_source_dfb3199cf661', -16.89,112.82);
 
-INSERT INTO "lineage"."lineage_layout_positions" ("lineage_id","object_id","x","y") VALUES ('lineage_ed619225d417','event_source_ca589abe399b',0.15,112.82);
 
-INSERT INTO "lineage"."lineage_layout_positions" ("lineage_id","object_id","x","y") VALUES ('lineage_ed619225d417','event_source_81ee746ce32c', -29.86, -11.6);
 
-INSERT INTO "lineage"."lineage_layout_positions" ("lineage_id","object_id","x","y") VALUES ('lineage_ed619225d417','event_source_c61663df5659', -59.4,61.12);
+
+
+
+
+
+
 
 INSERT INTO "lineage"."lineage_layout_positions" ("lineage_id","object_id","x","y") VALUES ('lineage_75e3399f4877','resident_4702ee61167e',56.69, -11.6);
 
@@ -9532,39 +9532,39 @@ INSERT INTO "lineage"."lineage_layout_positions" ("lineage_id","object_id","x","
 
 INSERT INTO "lineage"."lineage_layout_positions" ("lineage_id","object_id","x","y") VALUES ('lineage_8794980b1bb7','resident_fe24707380c7',10.9,102.44);
 
-INSERT INTO "lineage"."lineage_layout_positions" ("lineage_id","object_id","x","y") VALUES ('lineage_ed619225d417','effect_9430163522ed', -16.89,50.0);
 
-INSERT INTO "lineage"."lineage_layout_positions" ("lineage_id","object_id","x","y") VALUES ('lineage_ed619225d417','event_source_0e879932e245', -16.89,61.12);
 
-INSERT INTO "lineage"."lineage_layout_positions" ("lineage_id","object_id","x","y") VALUES ('lineage_ed619225d417','effect_7e13e4076664', -16.89,38.88);
 
-INSERT INTO "lineage"."lineage_layout_positions" ("lineage_id","object_id","x","y") VALUES ('lineage_ed619225d417','event_source_98dea58cba5e', -16.89,27.76);
 
-INSERT INTO "lineage"."lineage_layout_positions" ("lineage_id","object_id","x","y") VALUES ('lineage_ed619225d417','event_source_f23e0aece3b6', -29.86,38.88);
 
-INSERT INTO "lineage"."lineage_layout_positions" ("lineage_id","object_id","x","y") VALUES ('lineage_ed619225d417','effect_8caffe76f918', -16.89,72.24);
 
-INSERT INTO "lineage"."lineage_layout_positions" ("lineage_id","object_id","x","y") VALUES ('lineage_ed619225d417','event_source_44d95a9fe32d', -16.89,83.36);
 
-INSERT INTO "lineage"."lineage_layout_positions" ("lineage_id","object_id","x","y") VALUES ('lineage_ed619225d417','event_source_e5107e99e557', -29.86,72.24);
 
-INSERT INTO "lineage"."lineage_layout_positions" ("lineage_id","object_id","x","y") VALUES ('lineage_ed619225d417','effect_b85ac31fc367',0.15,87.47);
 
-INSERT INTO "lineage"."lineage_layout_positions" ("lineage_id","object_id","x","y") VALUES ('lineage_ed619225d417','event_source_21b92e676ead',0.15,98.59);
 
-INSERT INTO "lineage"."lineage_layout_positions" ("lineage_id","object_id","x","y") VALUES ('lineage_ed619225d417','event_source_8b3b4540d580',13.12,87.47);
 
-INSERT INTO "lineage"."lineage_layout_positions" ("lineage_id","object_id","x","y") VALUES ('lineage_ed619225d417','effect_7312cbbe49b0', -16.89,16.64);
 
-INSERT INTO "lineage"."lineage_layout_positions" ("lineage_id","object_id","x","y") VALUES ('lineage_ed619225d417','event_source_7efd42b82ac0', -16.89,5.52);
 
-INSERT INTO "lineage"."lineage_layout_positions" ("lineage_id","object_id","x","y") VALUES ('lineage_ed619225d417','event_source_0a2a1ee57124', -29.86,16.64);
 
-INSERT INTO "lineage"."lineage_layout_positions" ("lineage_id","object_id","x","y") VALUES ('lineage_ed619225d417','effect_9a56d36a3b0f', -29.86,50.0);
 
-INSERT INTO "lineage"."lineage_layout_positions" ("lineage_id","object_id","x","y") VALUES ('lineage_ed619225d417','event_source_418ff2d82ffe', -29.86,61.12);
 
-INSERT INTO "lineage"."lineage_layout_positions" ("lineage_id","object_id","x","y") VALUES ('lineage_ed619225d417','event_source_58034093ff0f', -42.83,50.0);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 INSERT INTO "lineage"."lineage_layout_positions" ("lineage_id","object_id","x","y") VALUES ('lineage_ed619225d417','event_source_b904b83e97af', -10.01, -39.84);
 
@@ -11242,39 +11242,39 @@ INSERT INTO "lineage"."lineage_nodes" ("node_id","lineage_id","node_type","delet
 
 INSERT INTO "lineage"."lineage_nodes" ("node_id","lineage_id","node_type","deleted_at") VALUES ('fbi_89a691fe3feb','lineage_ed619225d417','function_block',NULL);
 
-INSERT INTO "lineage"."lineage_nodes" ("node_id","lineage_id","node_type","deleted_at") VALUES ('effect_9430163522ed','lineage_ed619225d417','effect',NULL);
 
-INSERT INTO "lineage"."lineage_nodes" ("node_id","lineage_id","node_type","deleted_at") VALUES ('event_source_0e879932e245','lineage_ed619225d417','event_source',NULL);
 
-INSERT INTO "lineage"."lineage_nodes" ("node_id","lineage_id","node_type","deleted_at") VALUES ('effect_7e13e4076664','lineage_ed619225d417','effect',NULL);
 
-INSERT INTO "lineage"."lineage_nodes" ("node_id","lineage_id","node_type","deleted_at") VALUES ('event_source_98dea58cba5e','lineage_ed619225d417','event_source',NULL);
 
-INSERT INTO "lineage"."lineage_nodes" ("node_id","lineage_id","node_type","deleted_at") VALUES ('event_source_f23e0aece3b6','lineage_ed619225d417','event_source',NULL);
 
-INSERT INTO "lineage"."lineage_nodes" ("node_id","lineage_id","node_type","deleted_at") VALUES ('effect_8caffe76f918','lineage_ed619225d417','effect',NULL);
 
-INSERT INTO "lineage"."lineage_nodes" ("node_id","lineage_id","node_type","deleted_at") VALUES ('event_source_44d95a9fe32d','lineage_ed619225d417','event_source',NULL);
 
-INSERT INTO "lineage"."lineage_nodes" ("node_id","lineage_id","node_type","deleted_at") VALUES ('event_source_e5107e99e557','lineage_ed619225d417','event_source',NULL);
 
-INSERT INTO "lineage"."lineage_nodes" ("node_id","lineage_id","node_type","deleted_at") VALUES ('effect_b85ac31fc367','lineage_ed619225d417','effect',NULL);
 
-INSERT INTO "lineage"."lineage_nodes" ("node_id","lineage_id","node_type","deleted_at") VALUES ('event_source_21b92e676ead','lineage_ed619225d417','event_source',NULL);
 
-INSERT INTO "lineage"."lineage_nodes" ("node_id","lineage_id","node_type","deleted_at") VALUES ('event_source_8b3b4540d580','lineage_ed619225d417','event_source',NULL);
 
-INSERT INTO "lineage"."lineage_nodes" ("node_id","lineage_id","node_type","deleted_at") VALUES ('effect_7312cbbe49b0','lineage_ed619225d417','effect',NULL);
 
-INSERT INTO "lineage"."lineage_nodes" ("node_id","lineage_id","node_type","deleted_at") VALUES ('event_source_7efd42b82ac0','lineage_ed619225d417','event_source',NULL);
 
-INSERT INTO "lineage"."lineage_nodes" ("node_id","lineage_id","node_type","deleted_at") VALUES ('event_source_0a2a1ee57124','lineage_ed619225d417','event_source',NULL);
 
-INSERT INTO "lineage"."lineage_nodes" ("node_id","lineage_id","node_type","deleted_at") VALUES ('effect_9a56d36a3b0f','lineage_ed619225d417','effect',NULL);
 
-INSERT INTO "lineage"."lineage_nodes" ("node_id","lineage_id","node_type","deleted_at") VALUES ('event_source_418ff2d82ffe','lineage_ed619225d417','event_source',NULL);
 
-INSERT INTO "lineage"."lineage_nodes" ("node_id","lineage_id","node_type","deleted_at") VALUES ('event_source_58034093ff0f','lineage_ed619225d417','event_source',NULL);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 INSERT INTO "lineage"."lineage_nodes" ("node_id","lineage_id","node_type","deleted_at") VALUES ('resident_e267c94e7252','lineage_ed619225d417','resident',NULL);
 
@@ -11288,19 +11288,19 @@ INSERT INTO "lineage"."lineage_nodes" ("node_id","lineage_id","node_type","delet
 
 INSERT INTO "lineage"."lineage_nodes" ("node_id","lineage_id","node_type","deleted_at") VALUES ('fbi_b0005359e41a','lineage_ed619225d417','function_block',NULL);
 
-INSERT INTO "lineage"."lineage_nodes" ("node_id","lineage_id","node_type","deleted_at") VALUES ('fbi_9e8555341961','lineage_ed619225d417','function_block',NULL);
 
-INSERT INTO "lineage"."lineage_nodes" ("node_id","lineage_id","node_type","deleted_at") VALUES ('event_source_c41d77f36bc8','lineage_ed619225d417','event_source',NULL);
 
-INSERT INTO "lineage"."lineage_nodes" ("node_id","lineage_id","node_type","deleted_at") VALUES ('event_source_c198a0afeb8e','lineage_ed619225d417','event_source',NULL);
 
-INSERT INTO "lineage"."lineage_nodes" ("node_id","lineage_id","node_type","deleted_at") VALUES ('event_source_dfb3199cf661','lineage_ed619225d417','event_source',NULL);
 
-INSERT INTO "lineage"."lineage_nodes" ("node_id","lineage_id","node_type","deleted_at") VALUES ('event_source_ca589abe399b','lineage_ed619225d417','event_source',NULL);
 
-INSERT INTO "lineage"."lineage_nodes" ("node_id","lineage_id","node_type","deleted_at") VALUES ('event_source_81ee746ce32c','lineage_ed619225d417','event_source',NULL);
 
-INSERT INTO "lineage"."lineage_nodes" ("node_id","lineage_id","node_type","deleted_at") VALUES ('event_source_c61663df5659','lineage_ed619225d417','event_source',NULL);
+
+
+
+
+
+
+
 
 INSERT INTO "lineage"."lineage_nodes" ("node_id","lineage_id","node_type","deleted_at") VALUES ('event_source_b904b83e97af','lineage_ed619225d417','event_source',NULL);
 

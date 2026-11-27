@@ -115,6 +115,13 @@ class ResourceBackupBackend:
             config_state=config_state,
             active_run=active_run,
         )
+        if schedule.get("readable") and not any(
+            item.get("configured", item.get("available"))
+            for item in schedule.get("actions", [])
+        ):
+            health.update(status="degraded", label="历史备份",
+                          summary="旧备份生产流程已下线，仅保留历史恢复资料。",
+                          message="旧备份生产流程已下线，仅保留历史恢复资料。")
         return {
             "schema": "tfi.resource-backup-overview.v1",
             "generated_at": self._clock().astimezone(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -129,7 +136,7 @@ class ResourceBackupBackend:
             "coverage": coverage,
             "active_run": active_run,
             "recent_runs": recent_runs,
-            "permissions": self._permissions(actor),
+            "permissions": self._permissions(actor, schedule=schedule),
             "schedule": schedule,
             "warnings": self._warnings(
                 health=health,
@@ -171,7 +178,7 @@ class ResourceBackupBackend:
             **receipt,
         }
 
-    def _permissions(self, actor: str) -> dict[str, bool]:
+    def _permissions(self, actor: str, *, schedule: dict | None = None) -> dict[str, bool]:
         """Buttons ask the instructions they call: TriggerEvent on the backup Lineage, CancelScriptRun for its runs."""
         from management_portal import permission_system
 
@@ -179,10 +186,12 @@ class ResourceBackupBackend:
         target = {"lineage_id": lineage_id(required=False)}
         configured = bool(target["lineage_id"])
         run = configured and permission_system.allows(actor_id, "TriggerEvent", target)
+        schedule = schedule if schedule is not None else self._schedule_status(actor)
+        available = {item["operation"] for item in schedule.get("actions", []) if item.get("available")}
         return {
             "can_view": bool(actor_id),
-            "can_run": run,
-            "can_verify": run,
+            "can_run": run and bool(available.intersection(BACKUP_OPERATIONS)),
+            "can_verify": run and bool(available.intersection(VERIFICATION_OPERATIONS)),
             "can_cancel": configured and permission_system.allows(actor_id, "CancelScriptRun", target),
         }
 

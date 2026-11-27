@@ -113,22 +113,6 @@ def test_malformed_targets_are_not_silently_disabled(configure, value):
             operation()
 
 
-def test_backup_script_path_round_trips_through_real_effect_parser(configure, tmp_path, monkeypatch):
-    from management_portal.society_service import lineage_effect_script as script
-    path = tmp_path / 'space "quote" ${literal} and \\backslash.py'
-    monkeypatch.setattr(backup_lineage, 'script_path', lambda: str(path))
-    operations = backup_lineage.migration_operations()
-    effect = next(op['value'] for op in operations if op['kind'] == 'component' and op['value']['kind'] == 'effect')
-    calls = []
-    def execute(request):
-        calls.append(request)
-        return script.CallResult(True, {'script_run_id': 'script_run_' + 'a' * 24, 'status': 'running'}, {})
-    result = script.Interpreter(script.parse(effect['config']['script']), {}, execute).run()
-    assert result.status == 'succeeded'
-    assert calls[0].arguments['path'] == str(path)
-    assert calls[0].arguments['argv'] == ['critical']
-
-
 def test_example_needs_no_live_binding_and_pulse_requires_registration(configure, tmp_path, monkeypatch):
     configure(development_projection={'repo_id': REPO})
     value = development.application_definition('1' * 40, example=True)

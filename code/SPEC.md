@@ -186,7 +186,7 @@
 - [Portal 共享运行基础与 Dev 到 Release 的快速发布流程](/r/decision_08bb2d9141f9)
 - [Portal 运行维护：安装、检查、发布与恢复](/r/decision_ab9880dc4c9d)
 - [Portal Web 重启通知与服务恢复编排](/r/decision_37f98f8fcb4b)
-- [Portal Resource Backup 监控、触发与恢复边界](/r/decision_b06ae321a668)，含既有备份 Lineage 通过 `RunScript` 执行 Google Drive 备份脚本的调用与验收步骤。
+- [Portal Resource Backup 监控与历史恢复边界](/r/decision_b06ae321a668)，保留历史恢复资料，旧生产流程已下线。
 - [Portal Test Case、Catalog 与运行证据协议](/r/decision_8273271b67b1)
 - [共享代码实例的回归与 TAU 验收](docs/testing.md)
 - [Portal Test 页面：测试总览、用例目录、运行与 TAU](/r/decision_f2a6a5dd4646)

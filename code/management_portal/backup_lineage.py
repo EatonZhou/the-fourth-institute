@@ -4,9 +4,6 @@ Bindings use the graph's existing client_key. Event/Effect runtime and Event
 definitions remain the sole authority for switches and schedules.
 """
 from __future__ import annotations
-from pathlib import Path
-from management_common.portal_paths import resolve_directory
-PORTAL_ROOT = Path(__file__).resolve().parents[1]
 from management_common.site_config import read_site_config
 import re
 
@@ -15,7 +12,6 @@ from typing import Any
 
 from management_portal.hatg import routing
 from management_portal.hatg.contracts import InstructionContext
-from management_portal.society_service.lineage_effect_script import literal_argument, quote
 
 
 BACKUP_OPERATIONS = ("critical", "content")
@@ -48,61 +44,6 @@ def lineage_id(*, required: bool = True) -> str:
     if required and not value:
         raise ValueError("deployment.backup.lineage_id is not configured")
     return value
-
-
-def script_path() -> str:
-    return str(PORTAL_ROOT / "scripts/resource_backup_lineage.py")
-
-
-def google_drive_script_path() -> str:
-    return str(PORTAL_ROOT / "scripts/google_drive_backup.py")
-
-
-def google_drive_arguments(arguments: dict) -> dict:
-    """The fixed Drive operation contract, shared by callers and the script."""
-    if not isinstance(arguments, dict) or set(arguments) - {"profile", "network_route"}:
-        raise ValueError("Google Drive backup accepts only profile and network_route")
-    if arguments.get("profile") not in ("critical", "content", "probe"):
-        raise ValueError("Google Drive backup profile must be critical, content or probe")
-    if "network_route" in arguments and arguments["network_route"] not in ("direct", "vps", "inherited"):
-        raise ValueError("Unknown Google Drive backup network route")
-    return dict(arguments)
-
-
-def google_drive_run_arguments(arguments: dict) -> dict:
-    return {"lineage_id": lineage_id(), "path": google_drive_script_path(), "runtime": "python",
-            "arguments": google_drive_arguments(arguments), "exclusive_key": "resource-backup"}
-
-
-def google_drive_operations(*, script: str | None = None) -> list[dict]:
-    """Fixed manual Drive entries for the existing backup Function Block.
-
-    The installer applies this draft once with a stable idempotency key and
-    joins created_ids to that block. Existing local schedules are untouched.
-    A seed exporter passes the final deployed absolute script path explicitly.
-    """
-    path = script or google_drive_script_path()
-    if not Path(path).is_absolute():
-        raise ValueError("Google Drive backup script path must be absolute")
-    operations = []
-    for profile, label in (("critical", "关键状态副本"), ("content", "完整内容副本"), ("probe", "传输恢复探针")):
-        ref = f"backup_drive_{profile}"
-        key = f"system:backup:drive-{profile}"
-        arguments = literal_argument("arguments", {"profile": profile})
-        operations.extend([
-            {"op": "create", "kind": "component", "ref": ref + "_effect", "value": {
-                "kind": "effect", "client_key": key + ":effect", "title": "Google Drive " + label,
-                "config": {"script": f'run=$(RunScript path={quote(path)} runtime=python '
-                    f'{arguments} exclusive_key="resource-backup")\n'
-                    'output script_run_id="${run.script_run_id}" status="${run.status}"', "endpoints": []}}},
-            {"op": "create", "kind": "component", "ref": ref + "_manual", "value": {
-                "kind": "event_source", "client_key": key + ":manual", "title": "立即 Google Drive " + label,
-                "config": {"event_type": "manual.triggered"}}},
-            {"op": "create", "kind": "wire", "value": {
-                "kind": "route", "client_key": key + ":manual:route", "source": "$ref:" + ref + "_manual",
-                "source_port": "output", "target": "$ref:" + ref + "_effect", "target_port": "invoke"}},
-        ])
-    return operations
 
 
 def restore_guide() -> dict[str, str]:
@@ -175,48 +116,6 @@ class BackupLineage:
 
     def trigger(self, event_source_id: str, actor: str) -> dict:
         return self._invoke("TriggerEvent", {"lineage_id": lineage_id(), "event_source_id": event_source_id}, actor)
-
-
-def migration_operations() -> list[dict]:
-    """Atomic graph draft. Apply once with a stable ISA idempotency key.
-
-    Functionalize all created_ids as '资源备份'. Stable client keys make the graph
-    itself the binding; no separate registry is installed. The caller
-    controls the cutover and must stop old timers before applying this draft.
-    """
-    operations = []
-    script_argument = quote(script_path())
-    for operation in OPERATIONS:
-        effect_ref = f"backup_{operation}_effect"
-        operations.append({"op": "create", "kind": "component", "ref": effect_ref, "value": {
-            "kind": "effect", "client_key": f"system:backup:{operation}:effect", "title": LABELS[operation], "config": {
-                "script": f'run=$(RunScript path={script_argument} runtime=python argv:=\'["{operation}"]\' exclusive_key="resource-backup")\n'
-                          'output script_run_id="${run.script_run_id}" status="${run.status}"',
-                "endpoints": [],
-            },
-        }})
-        for role in ("manual", "timer"):
-            if role == "timer" and operation not in SCHEDULES:
-                continue
-            ref = f"backup_{operation}_{role}"
-            config: dict[str, Any] = {"event_type": "manual.triggered"}
-            if role == "timer":
-                frequency, clock, jitter, misfire = SCHEDULES[operation]
-                config = {"event_type": "time.reached", "schedule_mode": "recurring", "recurrence_kind": "calendar",
-                          "calendar_frequency": frequency, "calendar_time": clock, "timezone": "Asia/Hong_Kong",
-                          "jitter_seconds": jitter, "misfire_policy": misfire, "overlap_policy": "drop"}
-                if frequency == "weekly":
-                    config["calendar_weekdays"] = "sun"
-            operations.append({"op": "create", "kind": "component", "ref": ref, "value": {
-                "kind": "event_source", "client_key": f"system:backup:{operation}:{role}",
-                "title": ("立即" if role == "manual" else "定时") + LABELS[operation], "config": config,
-            }})
-            operations.append({"op": "create", "kind": "wire", "value": {
-                "kind": "route", "client_key": f"system:backup:{operation}:{role}:route",
-                "source": f"$ref:{ref}", "source_port": "output",
-                "target": f"$ref:{effect_ref}", "target_port": "invoke",
-            }})
-    return operations
 
 
 def component_bindings(lineage: dict) -> dict:

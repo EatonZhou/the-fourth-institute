@@ -1340,8 +1340,6 @@ modules:
       - "management_portal/resource_backup.html"
       - "management_portal/http_resource_backup.py"
       - "management_portal/backup_lineage.py"
-      - "scripts/resource_backup_lineage.py"
-      - "scripts/google_drive_backup.py"
     designs:
       - "decision_b06ae321a668"
     layer: "entry"

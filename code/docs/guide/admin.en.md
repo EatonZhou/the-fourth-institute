@@ -177,7 +177,7 @@ Users revoke individual personal tokens with `RevokeUserAccessToken`. To invalid
 
 Back up PostgreSQL plus the instance's areas (projects, lineages, skills, papers, uploads, features, provider-state; their locations are listed under Portal Management → Data directories), `secrets/`, the manifest `instance.json` and the site settings `site.json`. `cache/` and `runtime/` need no backup. Export the database first, then copy the areas. Configure the deployment's backup service, for example Restic with database exports. Resource → Backup reports recovery points and schedules and provides authorized backup and verification controls. Protect backup keys separately and verify that recovery works. See the Portal Resource Backup design and installation procedures for the deployed configuration.
 
-Google Drive off-site backup uses the `google_drive_backup` script registered in the site's backup Lineage. `RunScript` requires permission on that Lineage. The script takes a `profile` of `critical`, `content`, or `probe`, accepts an optional `network_route`, and uses the `resource-backup` exclusion key. Use the returned `script_run_id` to look up the result.
+The local Restic backup production workflow is retired. Historical status, repositories, cloud data, password references, and Restic recovery tools remain available. New backups, scheduled maintenance, and cloud copying are unavailable until a replacement is configured.
 
 ### Code updates and releases
 
