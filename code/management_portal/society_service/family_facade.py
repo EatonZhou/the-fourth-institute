@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import copy
 import re
+from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import datetime, timezone
 from typing import Any, Mapping
 
@@ -46,10 +48,35 @@ def is_facade(record: Mapping[str, Any] | None) -> bool:
     return bool(record and not record.get("deleted_at") and relay_target_ids(record))
 
 
+_membership_projection: ContextVar[dict[str, list[str]] | None] = ContextVar("facade_membership_projection", default=None)
+
+
+@contextmanager
+def membership_projection(resident_ids):
+    """Share the canonical roster within one read-only status projection."""
+    rosters = _membership_projection.get()
+    token = None
+    if rosters is None:
+        rosters = {}
+        token = _membership_projection.set(rosters)
+    try:
+        missing = list(dict.fromkeys(resident_id for resident_id in resident_ids if resident_id not in rosters))
+        if missing:
+            with get_lineage_data_store().database.read() as connection:
+                rosters.update(facade_members.read_many(connection, missing))
+        yield
+    finally:
+        if token is not None:
+            _membership_projection.reset(token)
+
+
 def relay_target_ids(facade: Mapping[str, Any]) -> list[str]:
     facade_id = str(facade.get("resident_id") or "")
     if not facade_id:
         return []
+    rosters = _membership_projection.get()
+    if rosters is not None and facade_id in rosters:
+        return list(rosters[facade_id])
     with get_lineage_data_store().database.read() as connection:
         return facade_members.read(connection, facade_id)
 

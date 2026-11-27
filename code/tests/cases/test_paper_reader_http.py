@@ -1,5 +1,4 @@
 import json
-import shutil
 import subprocess
 import threading
 import pytest
@@ -9,6 +8,38 @@ from urllib.parse import urlsplit
 
 from management_portal.http_paper_reader import routes
 from management_portal.paper_reader_service import ReaderService
+
+
+def large_seekable_pdf():
+    # The final page's content is between two large streams. Neither stream is
+    # needed to render a page; fetching its body would show up in the byte count.
+    page_count = 12
+    page_ids = list(range(4, 4 + page_count))
+    content_ids = list(range(4 + page_count, 4 + 2 * page_count))
+    objects = [b'<< /Type /Catalog /Pages 2 0 R >>',
+               ('<< /Type /Pages /Kids [' + ' '.join(f'{i} 0 R' for i in page_ids)
+                + f'] /Count {page_count} >>').encode(),
+               b'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>']
+    for content_id in content_ids:
+        objects.append(f'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources '
+                       f'<< /Font << /F1 3 0 R >> >> /Contents {content_id} 0 R >>'.encode())
+    def stream(data):
+        return f'<< /Length {len(data)} >>\nstream\n'.encode() + data + b'\nendstream'
+    for page in range(1, page_count + 1):
+        objects.append(stream(f'BT /F1 18 Tf 60 700 Td (Range test page {page}) Tj ET'.encode()))
+    objects.extend([stream(b'x' * (4 * 1024**2))] * 2)
+    order = [*range(1, content_ids[-1]), len(objects) - 1, content_ids[-1], len(objects)]
+    data = bytearray(b'%PDF-1.7\n')
+    offsets = {}
+    for i in order:
+        offsets[i] = len(data)
+        data.extend(f'{i} 0 obj\n'.encode() + objects[i - 1] + b'\nendobj\n')
+    xref = len(data)
+    data.extend(f'xref\n0 {len(objects) + 1}\n0000000000 65535 f \n'.encode())
+    for i in range(1, len(objects) + 1):
+        data.extend(f'{offsets[i]:010} 00000 n \n'.encode())
+    data.extend(f'trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n'.encode())
+    return data
 
 
 def test_reader_http_request_validation():
@@ -42,10 +73,11 @@ def test_http_native_reader(tmp_path, monkeypatch, browser):
     bundle = tmp_path / 'bundle'; bundle.mkdir()
     source = bundle / 'paper.pdf'
     fixture = root / 'tests/cases/fixtures/paper-synthetic-means.pdf'
-    shutil.copyfile(fixture, source)
+    source.write_bytes(large_seekable_pdf())
     deleted = set()
+    revoked = set()
     def authorize(actor, paper):
-        if actor not in ('a', 'b') or paper != 'paper_fixture' or paper in deleted: raise PermissionError()
+        if actor not in ('a', 'b') or actor in revoked or paper != 'paper_fixture' or paper in deleted: raise PermissionError()
     service = ReaderService(locate=lambda paper: (bundle, source), authorize=authorize, deleted=lambda p: p in deleted)
     # Interrupt after immutable publication; the next explicit open must resume the intent.
     from management_portal.paper_reader_attachments import AttachmentOwner
@@ -74,6 +106,9 @@ def test_http_native_reader(tmp_path, monkeypatch, browser):
         def do_GET(self): self.dispatch()
         def dispatch(self):
             parsed = urlsplit(self.path)
+            if parsed.path == '/test/revoke':
+                revoked.add('a')
+                return respond(self, 200, {})
             if parsed.path == '/test/replace':
                 source.write_bytes(fixture.read_bytes() + b'\n% new version\n')
                 return respond(self, 200, {})
@@ -84,7 +119,7 @@ def test_http_native_reader(tmp_path, monkeypatch, browser):
                 self.send_response(200); self.send_header('Content-Type', 'text/html'); self.end_headers()
                 self.wfile.write(b'''<iframe id="frame" src="/upstream/reader.html" style="width:100%;height:900px"></iframe><script type="module">
 import {openHttpDocument} from '/http_transport.js';import {mountReader} from '/host.js';
-window.ready=true;window.openDocument=async()=>{window.transport=await openHttpDocument({paperId:'paper_fixture',principal:'a'});window.host=await mountReader(document.querySelector('iframe'),window.transport.options);};
+window.ready=true;window.openDocument=async()=>{window.transport=await openHttpDocument({paperId:'paper_fixture',principal:'a'});window.host=await mountReader(document.querySelector('iframe'),{...window.transport.options,status:message=>window.readerError=message});};
 </script>'''); return
             file = (static / parsed.path.lstrip('/')).resolve()
             if not file.is_relative_to(static) or not file.is_file(): self.send_error(404); return
@@ -94,6 +129,8 @@ window.ready=true;window.openDocument=async()=>{window.transport=await openHttpD
     try:
         result = subprocess.run(['node', str(root/'tests/cases/javascript/zotero_reader_http.cjs'), f'http://127.0.0.1:{server.server_port}', browser], capture_output=True, text=True, timeout=60)
         assert result.returncode == 0, result.stdout + result.stderr
+        print(result.stdout.strip())
+        revoked.clear()
         # Formal deletion ordering, with a failed first attempt recoverable by durable intent.
         service.prepare_delete('paper_fixture')
         from management_portal.paper_reader_annotations import Conflict

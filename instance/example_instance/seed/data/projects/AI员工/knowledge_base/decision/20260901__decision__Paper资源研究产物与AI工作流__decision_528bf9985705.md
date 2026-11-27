@@ -182,6 +182,14 @@ PDF 入库统一检查内容是否以 `%PDF` 文件头开始，上传、直接�
 
 Paper 页面按本文的用户与论文绑定规则解析 Paper Lineage 内的 Research Chat Resident，再组装研究上下文；Chat Workspace/Resident 协议拥有消息、会话和执行生命周期。Translate、Explain、Find Ref 和 Regist Ref 等选区问答复用当前用户的这个聊天 Resident，不新增功能团队或专用翻译成员。
 
+### 全屏阅读器的 PDF 读取
+
+全屏阅读使用 Zotero Reader，页内预览沿用 PDF.js。
+
+全屏阅读器的 `POST /paper/api/reader/open` 可用 `Prefer: return=minimal` 取得当前认证账号与固定的 Paper、附件 ID 和不可变版本。宿主并行读取该版本的个人批注与第一段 PDF，批注初始状态就绪后才开放编辑。PDF.js 通过 `GET /paper/api/reader/pdf` 按页面需要取段，服务端对有效范围返回 `206` 和 `Content-Range`，越界返回 `416`。兼容服务若对首段请求返回完整 `200`，宿主以该响应作为完整文档打开。
+
+每个 PDF 请求独立验证当前认证账号、expected principal、Paper 访问权和附件版本，响应使用 `private, no-store`。同次阅读的所有分段都绑定打开时的版本。替换附件后，仍有权限的用户可读取已保留的旧版本；权限撤销、版本不可用或后续分段与打开时的长度和范围不一致时，读取返回失败。批注继续绑定该账号与文档版本，替换后旧版本写入被拒绝，关闭仍需等待批注保存成功。
+
 ### 替换 PDF、只删 PDF 或删除 Paper
 
 - Paper contributor 可以补传或替换当前 PDF。成功后更新 manifest 的当前文件并刷新派生文本状态，Paper ID 和其他长期产物不变。

@@ -18,11 +18,17 @@ def _recipients(value: object) -> list[str]:
     if not isinstance(value, (list, tuple)):
         return []
     result: list[str] = []
+    seen: set[str] = set()
     for item in value:
         name = _text(item, 120)
-        if name and name.casefold() not in {existing.casefold() for existing in result}:
-            result.append(name)
-    return result[:200]
+        canonical = name.casefold()
+        if not canonical or canonical in seen:
+            continue
+        seen.add(canonical)
+        result.append(name)
+        if len(result) == 200:
+            break
+    return result
 
 
 def _normalize_notification(raw: object) -> dict[str, Any]:

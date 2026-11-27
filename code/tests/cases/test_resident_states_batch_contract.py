@@ -7,6 +7,7 @@ from management_portal.society_service import business_fact_views
 """State refresh reuses checked records and scans Chat user facts once."""
 from contextlib import contextmanager
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import nullcontext
 from types import SimpleNamespace
 
 import pytest
@@ -14,7 +15,7 @@ import pytest
 from management_portal.execution import agent_data_chat, agent_data_chat_activity, agent_data_chat_writes
 from management_portal.execution.agent_data_store import AgentDataStore, finish_conversation_summary
 from management_portal.society_service import (
-    family_activity, resident_access, resident_catalog, resident_conversation_stream,
+    family_activity, family_facade, resident_access, resident_catalog, resident_conversation_stream,
     resident_protocol,
 )
 from tests.cases.database_test_support import guard_queries
@@ -55,6 +56,34 @@ def test_state_batch_resolves_each_residents_backend_capabilities(monkeypatch, a
     assert items[1]['controls']['active_turn_input'] is True
 
 
+def test_membership_projection_reads_generic_facades_and_expires_between_requests(monkeypatch):
+    """状态读取沿权威转交表识别通用门面，下一次读取重新判断成员"""
+    facade_id, member_id = 'resident_111111111111', 'resident_222222222222'
+    records = [{'facade_id': facade_id, 'member_id': member_id}]
+    calls = []
+
+    def execute(statement, params):
+        calls.append(params[0])
+        assert 'facade_id=ANY(%s)' in statement
+        return SimpleNamespace(fetchall=lambda: list(records))
+
+    monkeypatch.setattr(family_facade, 'get_lineage_data_store', lambda: SimpleNamespace(
+        database=SimpleNamespace(read=lambda: nullcontext(SimpleNamespace(execute=execute))),
+    ))
+    facade, member = {'resident_id': facade_id}, {'resident_id': member_id}
+    ids = [facade_id, member_id]
+    with family_facade.membership_projection(ids):
+        assert family_facade.is_facade(facade)
+        assert not family_facade.is_facade(member)
+        family_facade.relay_target_ids(facade).clear()
+        assert family_facade.relay_target_ids(facade) == [member_id]
+        assert calls == [ids]
+    records.clear()
+    with family_facade.membership_projection(ids):
+        assert not family_facade.is_facade(facade)
+    assert calls == [ids, ids]
+
+
 @pytest.mark.parametrize('size', [1, 106])
 @pytest.mark.parametrize('read_method', ['get_resident_states', 'get_resident_list_states'])
 def test_state_batch_reuses_visible_records_for_family_and_controls(monkeypatch, size, read_method):
@@ -72,6 +101,16 @@ def test_state_batch_reuses_visible_records_for_family_and_controls(monkeypatch,
     records[staged] = {'resident_id': staged, 'lineage_id': 'lineage_111111111111', 'registration_state': 'resource_pending'}
     records[deleted] = {'resident_id': deleted, 'deleted_at': '2026-10-08T00:00:00Z'}
     reads, state_reads, access_reads, permission_reads = [], [], [], []
+    membership_reads = []
+
+    def read_memberships(statement, params):
+        assert 'FROM facade_members' in statement
+        membership_reads.append(params[0])
+        return SimpleNamespace(fetchall=lambda: [])
+
+    monkeypatch.setattr(family_facade, 'get_lineage_data_store', lambda: SimpleNamespace(
+        database=SimpleNamespace(read=lambda: nullcontext(SimpleNamespace(execute=read_memberships))),
+    ))
     monkeypatch.setattr(resident_access, 'actor_can_manage_residents',
                         lambda actor: permission_reads.append(actor) or True)
 
@@ -109,6 +148,7 @@ def test_state_batch_reuses_visible_records_for_family_and_controls(monkeypatch,
         monkeypatch.setattr(resident_protocol.resident_execution_gate, 'project_states', unused)
     result = getattr(resident_protocol, read_method)(wanted, 'CASE-A')['items']
     assert reads == [wanted[:-1]]
+    assert membership_reads == [ids]
     assert state_reads == [ids]
     assert permission_reads == ([] if compact else ['CASE-A'])
     assert access_reads == [('CASE-A', ['lineage_111111111111', 'lineage_222222222222'])]

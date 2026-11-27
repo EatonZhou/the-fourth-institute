@@ -10,7 +10,7 @@
 
   const DEPENDENCIES = Object.freeze([
     "$id", "activateLineageEdits", "bindLineageProjectionSubscription", "bindResidentStateCollection",
-    "clearGraphNodeSearch", "clearNodeSelection", "displayProgramComponentById",
+    "clearGraphNodeSearch", "clearNodeSelection", "commitLineage", "displayProgramComponentById",
     "displayProgramWireById", "functionBlockInstanceById", "lineageEditQueue", "loadHatgViewPreference", "loadWorkspaceGraphBindings",
     "nodeResidentId", "panelHost", "programFeature", "publishLocation", "renderControls",
     "renderLineageProjectOptions", "renderLineageSurface", "renderNodeProviderFields", "selectNode",
@@ -23,7 +23,7 @@
     if (missing.length) throw new Error(`PortalHatgPanelLineageLoading is missing: ${missing.join(", ")}`);
     const {
       $id, activateLineageEdits, bindLineageProjectionSubscription, bindResidentStateCollection,
-      clearGraphNodeSearch, clearNodeSelection, displayProgramComponentById, displayProgramWireById,
+      clearGraphNodeSearch, clearNodeSelection, commitLineage, displayProgramComponentById, displayProgramWireById,
       functionBlockInstanceById, lineageEditQueue, loadHatgViewPreference, loadWorkspaceGraphBindings, nodeResidentId, panelHost,
       programFeature, publishLocation, renderControls, renderLineageProjectOptions,
       renderLineageSurface, renderNodeProviderFields, selectNode, selectProgramObject, setSyncStatus,
@@ -141,8 +141,8 @@
       activateLineageEdits(lineageId);
       setSyncStatus("加载 HATG…", "saving");
       try {
-        const [lineage, personalView] = await Promise.all([
-          societyService.loadLineage(lineageId).catch(error => {
+        const [{lineage, references}, personalView] = await Promise.all([
+          societyService.loadLineageProjection(lineageId).catch(error => {
             if (sequence === state.detailSeq && Number(error?.status) === 404) {
               panelHost.hatgComponentOptions.emit?.("binding-unavailable");
             }
@@ -220,6 +220,17 @@
         publishLocation(lineageId);
         updateLineageSummary();
         renderLineageSurface();
+        references?.then(enriched => {
+          const current = state.lineage;
+          if (sequence !== state.detailSeq || current?.lineage_id !== lineageId
+            || current.revision !== lineage.revision || current.refresh_signature !== lineage.refresh_signature
+            || Object.hasOwn(current, "_reference_family_signature")) return;
+          const familyById = new Map(enriched.nodes.filter(node => Object.hasOwn(node, "_family_reference"))
+            .map(node => [node.id, node._family_reference]));
+          const nodes = current.nodes.map(node => familyById.has(node.id)
+            ? { ...node, _family_reference: familyById.get(node.id) } : node);
+          commitLineage({...current, nodes, _reference_family_signature: enriched._reference_family_signature}, {render: "changes"});
+        }).catch(error => console.warn("Lineage reference projection failed", error));
         if (restoredPersonalViewport) {
           window.requestAnimationFrame(() => {
             state.graphController?.setContext?.(lineage.lineage_id);

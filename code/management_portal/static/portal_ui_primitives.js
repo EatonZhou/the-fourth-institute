@@ -216,12 +216,18 @@
     return value && typeof value === "object" && !Array.isArray(value) ? value : {};
   }
 
-  // Lazy assets revalidate. A content digest belongs to one file and must never
-  // be copied from another script (nor reuse a legacy immutable release URL).
-  // http_static_files owns content identity; static-only releases need no new
-  // process build tag. Preload and loadAsset must use this same canonical URL.
+  let staticAssetVersions;
   function staticAssetUrl(path) {
-    return path;
+    const url = new URL(path, location.href);
+    if (url.origin !== location.origin || !url.pathname.startsWith("/static/")) return path;
+    if (!staticAssetVersions) {
+      const manifest = document.getElementById("portalStaticAssetVersions");
+      staticAssetVersions = manifest ? JSON.parse(manifest.textContent) : {};
+    }
+    const version = staticAssetVersions[url.pathname];
+    if (!version) return path;
+    url.searchParams.set("portal_v", version);
+    return url.pathname + url.search + url.hash;
   }
 
   // Lazily loaded scripts and stylesheets by file path. Every lazy loader of a

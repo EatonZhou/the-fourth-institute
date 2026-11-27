@@ -31,7 +31,7 @@ function harness(query = '?lineage=lineage_one&resident=resident_one&view=worksp
     renderLineageSurface, toast,
   });
   const loading = createHatgModule(context.PortalHatgPanelLineageLoading, 'createLineageLoading', {
-    state, $id: () => null, societyService: {loadLineage: async id => lineages[id]},
+    state, $id: () => null, societyService: {loadLineageProjection: async id => ({lineage: lineages[id], references: null})},
     loadHatgViewPreference: async () => ({expanded_family_facade_ids: []}),
     loadWorkspaceGraphBindings: results.loadWorkspaceGraphBindings,
     setWorkspaceViewLoading: graph.setWorkspaceViewLoading,

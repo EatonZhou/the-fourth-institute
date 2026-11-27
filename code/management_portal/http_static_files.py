@@ -7,6 +7,7 @@ from __future__ import annotations
 import gzip
 import hashlib
 from html import escape, unescape
+import json
 import re
 import threading
 from collections import OrderedDict
@@ -38,23 +39,64 @@ _STATIC_HTML_REFERENCE_RE = re.compile(
 )
 
 
+_HATG_LOADER = "/static/portal_hatg_loader.js"
+_HATG_ASSETS_RE = re.compile(rb"^  const ASSETS = (\[.*?^  \]);", re.MULTILINE | re.DOTALL)
+
+
 def _version_static_asset_urls(data: bytes) -> bytes:
+    # Capture the loader bytes at the same time as its document URL, so a
+    # static-only publication cannot slip a different dependency list in.
+    assets: dict[str, tuple[bytes, str]] = {}
+    retained = []
+
+    def asset(url_path: str) -> tuple[bytes, str] | None:
+        if url_path not in assets:
+            path = _static_fallback_file(url_path)
+            if path is None:
+                return None
+            try:
+                payload, _, version = _cached_static_payload(path, gzip_variant=False)
+            except OSError:
+                return None
+            retained.append((path, version, payload))
+            assets[url_path] = payload, version
+        return assets[url_path]
+
     def replace(match: re.Match[bytes]) -> bytes:
         url = urlparse(unescape(match.group(2).decode("utf-8")))
-        path = _static_fallback_file(url.path)
-        if path is None:
+        entry = asset(url.path)
+        if entry is None:
             return match.group(0)
-        try:
-            payload, _, version = _cached_static_payload(path, gzip_variant=False)
-        except OSError:
-            return match.group(0)
-        http_static_versions.remember(path, version, payload)
+        _, version = entry
         query = [(key, value) for key, value in parse_qsl(url.query, keep_blank_values=True) if key != "portal_v"]
         query.append(("portal_v", version))
         versioned = urlunparse(url._replace(query=urlencode(query)))
         return match.group(1) + escape(versioned, quote=True).encode("utf-8") + match.group(3)
 
-    return _STATIC_HTML_REFERENCE_RE.sub(replace, data)
+    def with_lazy_versions(document: bytes) -> bytes:
+        if _HATG_LOADER not in assets:
+            return document
+        head = re.search(rb"<head\b[^>]*>", document, re.IGNORECASE)
+        declared = _HATG_ASSETS_RE.search(assets[_HATG_LOADER][0])
+        if head is None or declared is None:
+            return document
+        try:
+            paths = json.loads(declared.group(1))
+        except ValueError:
+            return document
+        versions = {}
+        for path in paths:
+            entry = asset(path)
+            if entry is not None:
+                versions[path] = entry[1]
+        payload = json.dumps(versions, separators=(",", ":")).replace("<", "\\u003c").encode("ascii")
+        manifest = b'<script type="application/json" id="portalStaticAssetVersions">' + payload + b"</script>"
+        return document[:head.end()] + manifest + document[head.end():]
+
+    document = with_lazy_versions(_STATIC_HTML_REFERENCE_RE.sub(replace, data))
+    if retained:
+        http_static_versions.remember_many(retained)
+    return document
 
 
 def _static_cache_control(handler: SimpleHTTPRequestHandler, version: str) -> str:

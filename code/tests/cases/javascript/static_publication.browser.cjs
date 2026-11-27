@@ -9,9 +9,11 @@ const { url } = JSON.parse(fs.readFileSync(0, 'utf8'));
   try {
     const page = await browser.newPage();
     const errors = [];
-    page.on('pageerror', error => errors.push(error.message));
+    page.setDefaultTimeout(8000);
+    page.on('pageerror', error => { errors.push(error.message); console.error(error.message); });
     page.on('requestfailed', request => errors.push(request.url()));
-    for (const version of [1, 2]) {
+    for (const version of [1, 2, 2]) {
+      await page.goto("about:blank");
       await page.goto(url);
       await page.waitForFunction(() => window.PortalPageBoot?.status === 'ready');
       assert.equal(await page.locator('#workspace').innerText(), `ready version ${version}`);

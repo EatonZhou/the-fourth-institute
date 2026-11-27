@@ -30,45 +30,53 @@
     );
     const PLACEMENT = ["near_resident_id", "placement", "x", "y"];
 
-    function loadLineage(lineageId) {
+    async function loadReferenceFamilies(lineage, references) {
+      // A slow identity must not leave the other read slots idle. The parent
+      // only gains badges and navigation metadata, never child Function Blocks.
+      const families = new Map();
+      const remaining = references.values();
+      const worker = async () => {
+        for (const node of remaining) {
+          try {
+            const { resident } = await execute("GetResident", { resident_id: node.id });
+            if (resident?.resident_id !== node.id || resident.lineage_id !== node.home_lineage_id) continue;
+            const family = resident.family?.role === "facade" && resident.family.family_id
+              ? { family_id: resident.family.family_id, facade: node.id } : null;
+            families.set(node.id, family);
+          } catch { /* Missing or denied identity stays an unclassified reference. */ }
+        }
+      };
+      await Promise.all(Array.from({length: Math.min(8, references.length)}, worker));
+      return {
+        ...lineage,
+        nodes: lineage.nodes.map(node => families.has(node.id)
+          ? { ...node, _family_reference: families.get(node.id) } : node),
+        // The child can change without advancing the parent's authored revision.
+        _reference_family_signature: JSON.stringify([...families].sort(([a], [b]) => a.localeCompare(b))),
+      };
+    }
+
+    function lineageRead(lineageId) {
       const id = requiredLineageId(lineageId);
       if (reads.has(id)) return reads.get(id);
-      const read = Promise.resolve().then(() => execute("GetLineage", { lineage_id: id })).then(async result => {
+      const projection = Promise.resolve().then(() => execute("GetLineage", { lineage_id: id })).then(result => {
         const lineage = result?.lineage || {};
         if (lineage.revision !== undefined) revisions.set(id, lineage.revision);
-        // Project overviews contain references, not the child's Function Blocks.
-        // Resolve only the referenced Resident's public identity, keeping its
-        // Family in its owning Lineage and all reads under the current actor.
-        const references = (lineage.nodes || []).filter(node => node.hierarchy_reference
+        const candidates = (lineage.nodes || []).filter(node => node.hierarchy_reference
           && node.accessible !== false && node.home_lineage_id && node.home_lineage_id !== id);
-        if (!references.length) return lineage;
-        const families = new Map();
-        for (let offset = 0; offset < references.length; offset += 8) {
-          await Promise.all(references.slice(offset, offset + 8).map(async node => {
-            let family = null;
-            try {
-              const { resident } = await execute("GetResident", { resident_id: node.id });
-              if (resident?.resident_id === node.id && resident.lineage_id === node.home_lineage_id
-                && resident.family?.role === "facade" && resident.family.family_id) {
-                family = { family_id: resident.family.family_id, facade: node.id };
-              }
-            } catch { /* A missing child identity must not prevent opening the overview. */ }
-            families.set(node.id, family);
-          }));
-        }
-        return {
-          ...lineage,
-          nodes: lineage.nodes.map(node => families.has(node.id)
-            ? { ...node, _family_reference: families.get(node.id) } : node),
-          // Child Family changes need not change the parent's authored revision.
-          _reference_family_signature: JSON.stringify([...families].sort(([a], [b]) => a.localeCompare(b))),
-        };
+        const references = candidates.length ? loadReferenceFamilies(lineage, candidates) : null;
+        return { lineage, references };
       });
+      const complete = projection.then(({ lineage, references }) => references || lineage);
+      const read = { projection, complete };
       reads.set(id, read);
       const release = () => { if (reads.get(id) === read) reads.delete(id); };
-      read.then(release, release);
+      complete.then(release, release);
       return read;
     }
+
+    const loadLineage = lineageId => lineageRead(lineageId).complete;
+    const loadLineageProjection = lineageId => lineageRead(lineageId).projection;
 
     // Capture the precondition before dispatch. A conflict only refreshes reads;
     // it must never replay a config assembled from an older definition.
@@ -137,7 +145,7 @@
         try {
           if (deletedResidents.length) await options.onResidentsDeleted?.(deletedResidents);
           // A read started before the commit cannot acknowledge this write.
-          if (previousRead) await previousRead.catch(() => {});
+          if (previousRead) await previousRead.complete.catch(() => {});
           const lineage = reload && lineageId ? await loadLineage(lineageId) : undefined;
           return lineage ? { ...(result || {}), lineage } : (result || {});
         } catch (error) {
@@ -175,7 +183,7 @@
       listLineages() {
         return get("/lineage/api/lineages");
       },
-      loadLineage,
+      loadLineage, loadLineageProjection,
       mutate,
       async createLineage(payload = {}) {
         const creation = controls(payload, "lineage-create");

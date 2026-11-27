@@ -107,9 +107,10 @@ def test_retained_versions_are_bound_to_path_digest_and_retention(tmp_path, monk
 def test_version_cache_is_bounded_and_optional(tmp_path, monkeypatch):
     monkeypatch.setattr(versions, 'MAX_BYTES', 6)
     monkeypatch.setattr(versions, 'MAX_FILES', 2)
-    for i in range(4):
-        data = str(i).encode() * 3
-        versions.remember(tmp_path / str(i), 'sha256-' + hashlib.sha256(data).hexdigest(), data)
+    assets = [(tmp_path / str(i), str(i).encode() * 3) for i in range(4)]
+    versions.remember_many(
+        (path, 'sha256-' + hashlib.sha256(data).hexdigest(), data) for path, data in assets
+    )
     entries = list(versions._directory().glob('*.asset'))
     assert len(entries) == 2
     assert sum(p.stat().st_size for p in entries) <= 6
@@ -143,18 +144,27 @@ def test_browser_finishes_document_across_static_publication(tmp_path, monkeypat
     monkeypatch.setattr(http_instance, '_PORTAL_DEPLOYMENT', 'release')
     assets = tmp_path / 'static'
     assets.mkdir()
-    (assets / 'portal_theme.js').write_text('window.themeReady = true;')
+    (assets / 'portal_theme.js').write_text('window.PortalI18n = {t: value => value};')
+    primitives = Path(static.__file__).parent / 'static/portal_ui_primitives.js'
+    (assets / primitives.name).write_bytes(primitives.read_bytes())
 
     def release(version):
         (assets / 'dependency.js').write_text(f'window.dependency = {{ version: {version} }};')
-        (assets / 'entry.js').write_text(
+        (assets / 'portal_hatg_loader.js').write_text(
+            '(() => {\n  const ASSETS = [\n    "/static/dependency.js"\n  ];\n'
+            '  const link = document.createElement("link");'
+            '  link.rel = "preload"; link.as = "script";'
+            '  link.href = PortalUIPrimitives.staticAssetUrl(ASSETS[0]); document.head.append(link);'
+            '  PortalUIPrimitives.loadAsset(ASSETS[0]).then(() => {'
             f'if (dependency.version !== {version}) throw new Error("mixed versions");'
             'const root = document.getElementById("workspace");'
-            'root.textContent = "ready version " + dependency.version; PortalPageBoot.ready(root);')
+            'root.textContent = "ready version " + dependency.version; PortalPageBoot.ready(root);'
+            '});})();')
 
     release(1)
     statuses = []
     documents = []
+    dependency_requests = []
 
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_args):
@@ -168,7 +178,7 @@ def test_browser_finishes_document_across_static_publication(tmp_path, monkeypat
             if self.path == '/':
                 html = b'''<!doctype html><html><head><script src="/static/portal_theme.js"></script></head>
                 <body><main id="workspace" data-portal-boot-required="Workspace"></main>
-                <script src="/static/dependency.js"></script><script src="/static/entry.js"></script></body></html>'''
+                <script src="/static/portal_ui_primitives.js"></script><script src="/static/portal_hatg_loader.js"></script></body></html>'''
                 html = inject_page_bootstrap(static._version_static_asset_urls(html))
                 documents.append(html)
                 if len(documents) == 1:
@@ -181,6 +191,8 @@ def test_browser_finishes_document_across_static_publication(tmp_path, monkeypat
                 self.wfile.write(html)
             elif self.path.startswith('/static/'):
                 file = assets / Path(urlparse(self.path).path).name
+                if file.name == 'dependency.js':
+                    dependency_requests.append(self.path)
                 static._serve_static_file(self, file, 'application/javascript')
             else:
                 self.send_response(204)
@@ -194,7 +206,10 @@ def test_browser_finishes_document_across_static_publication(tmp_path, monkeypat
         result = subprocess.run(['node', str(script)], text=True, capture_output=True, timeout=45,
             input=json.dumps({'url': f'http://127.0.0.1:{server.server_port}/'}))
         assert result.returncode == 0, result.stdout + result.stderr
-        assert len(documents) == 2, 'no failed boot or automatic document reload'
+        assert len(documents) == 3, 'no failed boot or automatic document reload'
+        assert len(dependency_requests) == 2, 'the third document needs no dependency revalidation'
+        assert dependency_requests[0] != dependency_requests[1]
+        assert all('?portal_v=sha256-' in url for url in dependency_requests)
         assert all(s < 400 for s in statuses)
     finally:
         server.shutdown()

@@ -70,7 +70,8 @@ HTTP 路由将同一个已认证 actor 传给 Society、Resident、Workspace、�
 - **定义修改携带所读版本。** 客户端记录 `GetLineage.result.lineage.revision`；HATG 面板优先使用当前显示的定义版本。组件、连线和 Function Block 的整份配置编辑保留表单读取时的版本，即使保存排队或后台重读，也不把旧草稿配上新版本。`mutate` 把此版本放在调用顶层的 `expected_version`；迁移可按来源与目标 Lineage 传入已经读到的版本映射。未读到版本时不虚构版本。`CreateResident` 新建身份在服务端锁内追加，客户端默认不补定义版本；调用方显式提供 `expected_version` 时仍传递。准备、运行、运行状态及全局 Function Block 操作不使用定义版本前提，布局的 `layout_revision` 也不用于定义比较。
 - **冲突只刷新，不重放修改。** 定义操作返回 `instruction.conflict` 后，客户端重新读取相关 Lineage，保留错误码和版本细节，将新图交给页面并提示本次未保存。HATG Inspector 展示重新读取的配置；仍打开的 Function Block 编辑对话框保留原版本，须重新打开后编辑。重读失败时显示刷新失败，原冲突继续以 Promise 拒绝返回。任何冲突都不自动用新版本重试写入。
 - **每次修改都带幂等键。** 调用方在参数中提供 `idempotency_key` 时使用它；否则客户端为这次操作生成一个带操作前缀的随机键。页面因网络失败重试同一操作时沿用原键，服务端只执行一次。待投递调用的修改总是使用新键。
-- **只读操作直接返回指令结果。** `loadLineage` 读取 `GetLineage` 的 `lineage`；触发路径、组件运行状态、待投递项和跨 Lineage 迁移进度分别使用 `ListTriggerPaths` / `GetTriggerPath`、`GetComponentRuntime`、`ListPendingDeliveries` 与 `GetMoveOperation`。
+- **完整图读取等候引用显示信息。** `loadLineage` 等待 `GetLineage` 的 `lineage` 及可读引用的显示信息。 触发路径、组件运行状态、待投递项和跨 Lineage 迁移进度分别使用 `ListTriggerPaths` / `GetTriggerPath`、`GetComponentRuntime`、`ListPendingDeliveries` 与 `GetMoveOperation`。
+- **HATG 主图可先显示。** `loadLineageProjection` 用同一条 `GetLineage` 回执绘制基础图，保留其节点、连线和定义版本。可访问的跨 Lineage 节点先显示为普通引用，再用 `GetResident` 确认身份与归属后补充 Family 门面标记和导航信息。不可访问或补查未确认的引用保留基础显示。并发补查有界，晚到结果只补到仍匹配的图读取与定义版本，子 Family 的成员和 Function Block 仍展示于所属 Lineage。完整 `GetLineage` 指令契约沿用既有定义。
 - **缺少必需 ID 时不发出请求。** 需要 Lineage ID 的方法先去除首尾空白，为空时直接抛出 `TypeError`；`loadNodeMetadata` 同时要求 Lineage ID 与 Resident ID。
 - **画布坐标也是指令。** `updateLayout` 调用 `UpdateLineageLayout`：坐标以后写为准，不携带定义版本，也不重新读取整张图，响应里的 `layout_revision` 更新本地布局计数。`listLineages` 与 `loadNodeMetadata` 读取对应的页面接口。
 - **模型会话释放完成后使绑定显示失效。** `ClearContext` 的回执可能先于异步释放完成；释放成功后，服务端发布已有的 Resident 身份变更通知，页面使相关节点 metadata 失效并重新读取，移除旧会话标题。释放或绑定比较失败时不发布释放完成通知。后续会话绑定以实际的新会话 ID 为准；刷新保留聊天 DOM 与未发送草稿。

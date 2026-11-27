@@ -167,6 +167,10 @@
       }
 
       const heading = window.PortalI18n.html`<strong class="nodeTitle" title="${esc(node.title)}">${esc(node.title)}</strong>`;
+      if (node.hierarchy_reference && node._family_reference === undefined) {
+        return window.PortalI18n.html`<span class="nodeTopline" data-node-drag-handle title="${esc(dragTitle)}"><span class="nodeIdentity" data-resident-id="${esc(residentId)}" title="${esc(residentId)}">${esc(compactText(residentId, 18))}</span></span>
+        ${heading}<span class="nodeFooter"><span class="nodeTypePill">跨 Lineage 引用</span></span>`;
+      }
       const typeLabel = nodeIsDerived(node) ? "derived" : "resident";
       return window.PortalI18n.html`<span class="nodeTopline" data-node-drag-handle title="${esc(dragTitle)}"><span class="nodeIdentity" data-resident-id="${esc(residentId)}" title="${esc(residentId)}">${node._is_leader ? '<em class="nodeLeaderBadge">LEADER</em>' : ""}${esc(compactText(residentId, 18))}</span>${workStatus}${intakeStatus}</span>
       ${heading}

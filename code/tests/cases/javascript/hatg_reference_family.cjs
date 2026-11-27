@@ -62,9 +62,9 @@ test('failed or moved identity cannot fabricate a Family or prevent parent acces
   const failed = fixture(); failed.fail();
   const graph = await failed.client.loadLineage('project');
   assert.equal(graph.nodes.length, 4);
-  assert.equal(graph.nodes[1]._family_reference, null);
+  assert.equal(graph.nodes[1]._family_reference, undefined);
   const moved = fixture(); moved.move();
-  assert.equal((await moved.client.loadLineage('project')).nodes[1]._family_reference, null);
+  assert.equal((await moved.client.loadLineage('project')).nodes[1]._family_reference, undefined);
 });
 
 test('child definition signals refresh the parent, denied and unrelated children do not', () => {
@@ -81,4 +81,37 @@ test('child definition signals refresh the parent, denied and unrelated children
   assert.equal(matches({changed: {lineage: ['child']}}), true);
   assert.equal(matches({changed: {lineage: ['secret']}}), false);
   assert.equal(matches({changed: {lineage: ['elsewhere']}}), false);
+});
+
+test('base projection shares its read and a slow child does not block other slots', {timeout: 1000}, async () => {
+  const {context} = fixture();
+  const nodes = Array.from({length: 12}, (_, index) => ({
+    id: 'ref-' + index, hierarchy_reference: true, home_lineage_id: 'child',
+  }));
+  let releaseFirst, finishOtherSlots, baseReads = 0, active = 0, peak = 0;
+  const firstGate = new Promise(resolve => { releaseFirst = resolve; });
+  const otherSlotsDone = new Promise(resolve => { finishOtherSlots = resolve; });
+  const client = context.PortalSocietyService.createClient({execute: async (name, args) => {
+    if (name === 'GetLineage') {
+      baseReads += 1;
+      return {lineage: {...parent, nodes}};
+    }
+    active += 1;
+    peak = Math.max(peak, active);
+    if (args.resident_id === 'ref-0') await firstGate;
+    if (args.resident_id === 'ref-11') finishOtherSlots();
+    active -= 1;
+    return {resident: {resident_id: args.resident_id, lineage_id: 'child'}};
+  }});
+  const initial = client.loadLineageProjection('project');
+  const complete = client.loadLineage('project');
+  const {lineage, references} = await initial;
+  assert.equal(lineage.nodes[0]._family_reference, undefined);
+  await otherSlotsDone;
+  assert.equal(active, 1);
+  assert.ok(peak <= 8);
+  releaseFirst();
+  assert.equal(await complete, await references);
+  assert.equal(baseReads, 1);
+  assert.equal((await complete).nodes[0]._family_reference, null);
 });

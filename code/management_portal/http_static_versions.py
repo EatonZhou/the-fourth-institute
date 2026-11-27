@@ -6,6 +6,7 @@ Callers must resolve the original static path and apply its normal access policy
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Iterable
 from contextlib import suppress
 from pathlib import Path
 import re
@@ -25,14 +26,14 @@ def _directory() -> Path:
     return load().directory("cache") / "portal-static-versions"
 
 
-def _entry(path: Path, version: str) -> Path | None:
+def _entry(path: Path, version: str, *, directory: Path | None = None) -> Path | None:
     match = _DIGEST.fullmatch(version)
     if match is None:
         return None
     # Bind bytes to both their original path and their digest; Dev and Release
     # paths therefore cannot supply each other's scripts.
     owner = hashlib.sha256(str(path.resolve()).encode()).hexdigest()
-    return _directory() / (owner + "-" + match[1] + ".asset")
+    return (directory if directory is not None else _directory()) / (owner + "-" + match[1] + ".asset")
 
 
 def _prune(directory: Path, now: float) -> None:
@@ -59,34 +60,48 @@ def _prune(directory: Path, now: float) -> None:
         count -= 1
 
 
-def remember(path: Path, version: str, data: bytes) -> None:
-    """Capture before issuing the URL. Cache trouble must not break a page."""
+def _remember(directory: Path, now: float, path: Path, version: str, data: bytes) -> bool:
     temporary = None
     try:
-        entry = _entry(path, version)
+        entry = _entry(path, version, directory=directory)
         if entry is None or len(data) > MAX_BYTES:
-            return
-        now = time.time()
+            return False
         if entry.is_file():
-            # Refresh retention for recently issued documents, without writing
-            # or scanning the entire cache on every normal page request.
+            # Refresh retention without scanning the cache on every request.
             if now - entry.stat().st_mtime > 60:
                 entry.touch()
-                # Renewal adds no bytes or files. Admissions prune capacity;
-                # recall rejects expired entries without a directory scan.
-            return
+            return False
         entry.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.NamedTemporaryFile(dir=entry.parent, suffix=".tmp", delete=False) as stream:
             temporary = Path(stream.name)
             stream.write(data)
         temporary.replace(entry)
-        _prune(entry.parent, now)
+        return True
     except OSError:
-        pass
+        return False
     finally:
         if temporary is not None:
             with suppress(OSError):
                 temporary.unlink(missing_ok=True)
+
+
+def remember_many(assets: Iterable[tuple[Path, str, bytes]]) -> None:
+    """Capture the document's bytes before issuing URLs, pruning once per admission batch."""
+    try:
+        directory = _directory()
+        now = time.time()
+        admitted = False
+        for path, version, data in assets:
+            if _remember(directory, now, path, version, data):
+                admitted = True
+        if admitted:
+            _prune(directory, now)
+    except OSError:
+        pass
+
+
+def remember(path: Path, version: str, data: bytes) -> None:
+    remember_many(((path, version, data),))
 
 
 def recall(path: Path, version: str) -> bytes | None:

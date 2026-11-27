@@ -466,7 +466,7 @@
     loadLineagePageData, loadLineages, renderNoLineage, resumeDisplayedLineage, selectLineage,
   } = hatgModule("PortalHatgPanelLineageLoading").createLineageLoading({
     $id, activateLineageEdits, bindLineageProjectionSubscription, bindResidentStateCollection,
-    clearGraphNodeSearch, clearNodeSelection, displayProgramComponentById, displayProgramWireById,
+    clearGraphNodeSearch, clearNodeSelection, commitLineage, displayProgramComponentById, displayProgramWireById,
     functionBlockInstanceById, lineageEditQueue, loadHatgViewPreference, loadWorkspaceGraphBindings, nodeResidentId, panelHost,
     programFeature, publishLocation, renderControls, renderLineageProjectOptions, renderLineageSurface,
     renderNodeProviderFields, selectNode, selectProgramObject, setSyncStatus, setWorkspaceViewLoading,

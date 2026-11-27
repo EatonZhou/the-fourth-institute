@@ -1,5 +1,8 @@
 """Independent dual-auth Reader routes; installed only by explicit route assembly."""
+from dataclasses import replace
+from os import fstat
 from urllib.parse import parse_qs
+from management_portal.http_media_range import plan_media_response
 from management_portal.http_routes import RouteDefinition
 from management_portal.paper_reader_annotations import Conflict, MAX_BYTES
 
@@ -27,15 +30,23 @@ def routes(*, service, get_auth, authenticate, read_json, respond):
                     payload = {k: values[0] for k, values in parse_qs(parsed.query).items()}
                 if operation == 'open':
                     if set(payload) != {'paper_id'}: raise ValueError('only paper_id accepted')
-                    value = service.open(actor, payload['paper_id'])
+                    value = service.open(actor, payload['paper_id'],
+                                         include_annotations=request.headers.get('Prefer') != 'return=minimal')
                 elif operation == 'commit': value = service.commit(actor, payload)
                 elif operation == 'read': value = service.read(actor, payload)
                 else:
                     with service.pdf(actor, payload) as stream:
-                        # Versioned response; no cookie-independent cache reuse.
-                        request.send_response(200); request.send_header('Content-Type', 'application/pdf')
-                        request.send_header('Cache-Control', 'private, no-store'); request.end_headers()
-                        while chunk := stream.read(1024 * 1024): request.wfile.write(chunk)
+                        stat = fstat(stream.fileno())
+                        plan = plan_media_response(request, size=stat.st_size, mtime_ns=stat.st_mtime_ns)
+                        replace(plan, cache_control='private, no-store').send_headers(request, 'application/pdf')
+                        if plan.status in (200, 206):
+                            stream.seek(plan.start)
+                            remaining = plan.length
+                            while remaining:
+                                chunk = stream.read(min(remaining, 65536))
+                                if not chunk: break
+                                request.wfile.write(chunk)
+                                remaining -= len(chunk)
                     return
                 return respond(request, 200, value)
             except PermissionError: return respond(request, 403, {'error': 'Paper access denied'})

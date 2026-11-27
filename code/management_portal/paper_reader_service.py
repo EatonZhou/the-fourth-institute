@@ -50,9 +50,9 @@ class ReaderService:
         s = source.stat()
         return json.dumps([str(source.resolve()), s.st_dev, s.st_ino, s.st_size, s.st_mtime_ns, s.st_ctime_ns])
 
-    def open(self, actor, paper):
+    def open(self, actor, paper, *, include_annotations=True):
         with self.lock, self._lifecycle_gate(paper):
-            return self._open(actor, paper)
+            return self._open(actor, paper, include_annotations=include_annotations)
 
     @contextmanager
     def _lifecycle_gate(self, paper):
@@ -75,7 +75,7 @@ class ReaderService:
             if not self.has_data(paper): return unregister()
             return self.delete_with(paper, unregister)
 
-    def _open(self, actor, paper):
+    def _open(self, actor, paper, *, include_annotations):
         self.authorize(actor, paper)
         # POST open may release an abandoned gate only after authoritative recovery.
         self.recover_delete(paper)
@@ -106,7 +106,9 @@ class ReaderService:
                 with self.database.transaction(key=paper) as db:
                     db.execute('INSERT INTO reader_document_sources VALUES (%s,%s,%s) ON CONFLICT(paper_id) DO UPDATE SET signature=excluded.signature,operation_id=excluded.operation_id', (paper, signature, operation))
                     db.execute('DELETE FROM reader_open_intents WHERE paper_id=%s', (paper,))
-        return {**self.read(actor, asdict(document)), 'principal': actor}
+        descriptor = asdict(document)
+        snapshot = self.read(actor, descriptor) if include_annotations else {'document': descriptor}
+        return {**snapshot, 'principal': actor}
 
     def _annotations(self, actor, document):
         owner, _ = self._owner(actor, document['paper_id'])

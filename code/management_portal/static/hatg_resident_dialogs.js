@@ -211,7 +211,10 @@
 
     function openNodeSettingsModal(requestedNode = currentNode()) {
       const node = displayNodeById(requestedNode?.id) || requestedNode;
-      if (!node) return;
+      if (!node || node.accessible === false) return;
+      if (node.hierarchy_reference && node.home_lineage_id !== state.lineage?.lineage_id) {
+        return window.PortalNav.openResidentMenu({residentId: nodeResidentId(node)});
+      }
       return window.PortalNav.openResidentMenu({
         residentId: nodeResidentId(node), node: {...node, intake_state: nodeIntakeState(node)}, lineage: state.lineage,
         ...residentMenuHandlers(),

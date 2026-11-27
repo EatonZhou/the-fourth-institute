@@ -19,12 +19,15 @@ export function connectZotero({frame, paper, principal, status, ready, translate
   frame.addEventListener('load', resolveLoaded, {once: true});
   const start = (async () => {
     transport = await openHttpDocument({paperId: paper.id, principal});
-    await loaded;
+    if (disposed) return;
+    // The annotation snapshot and first PDF range can arrive while Zotero boots.
+    const [initial] = await Promise.all([transport.options.load(), loaded]);
     if (disposed) return;
     // Upstream's public TextSelectionPopup extension supplies only the selected
     // annotation text. No PDF text extraction or DOM tree walk is involved.
     frame.contentWindow.addEventListener('customEvent', selectionPopup);
-    host = await mountReader(frame, {...transport.options, status: message => {failed = true; status(message, true);}});
+    host = await mountReader(frame, {...transport.options, load: () => initial,
+      status: message => {failed = true; status(message, true);}});
     // Localize only the upstream empty annotation placeholder, never annotation
     // bodies or PDF text. Leave vendored assets and the save barrier untouched.
     const localizeEmptyAnnotations=()=>{

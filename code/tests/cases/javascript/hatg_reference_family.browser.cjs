@@ -70,6 +70,7 @@ async function run({route: extraRoute, beforeReady, afterReady} = {}) {
     assert.equal(await page.locator('#lineageLoadError').innerText(), '');
     const card = page.locator(`.hatgNode[data-node-id="${facadeId}"]`);
     await card.locator('.nodeTitle').waitFor({state: 'attached'});
+    await card.locator('.familyFacadeHeading').waitFor({state: 'attached'});
     assert.match(await card.innerText(), /FAMILY/);
     assert.match(await card.getAttribute('class'), /family/);
     assert.equal(await page.locator('.hatgNode').count(), 2, 'no child members imported into parent');
@@ -84,6 +85,7 @@ async function run({route: extraRoute, beforeReady, afterReady} = {}) {
     await page.evaluate(async lineageId => {window.opened = []; await panel.setTarget({lineageId});}, parentId);
     const disclosure = page.locator(`.hatgNodeDisclosureGroup[data-action-node-id="${facadeId}"] button`).first();
     assert.equal(await page.locator(`.hatgNodeDisclosureGroup[data-action-node-id="${facadeId}"] .hatgNodeDisclosureAction`).count(), 0);
+    await disclosure.waitFor({state: 'attached'});
     await disclosure.click();
     await page.waitForFunction(() => window.opened.length === 1);
     assert.equal((await page.evaluate(() => opened[0])).lineage_id, childId);
@@ -97,4 +99,39 @@ async function run({route: extraRoute, beforeReady, afterReady} = {}) {
   } finally {await browser.close();}
 }
 module.exports = {run, portal};
-if (require.main === module) run().catch(error => {console.error(error); process.exitCode = 1;});
+if (require.main === module) {
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  let referenceStarted = false;
+  let initialDrawMs;
+  const start = Date.now();
+  run({
+    async route(route) {
+      const body = route.request().postData() ? route.request().postDataJSON() : null;
+      if (body?.instruction === 'GetResident' && body.arguments.resident_id === facadeId) {
+        referenceStarted = true;
+        await gate;
+      }
+      return false;
+    },
+    async beforeReady(page) {
+      try {
+        const card = page.locator(`.hatgNode[data-node-id="${facadeId}"]`);
+        await card.locator('.nodeTitle').waitFor({state: 'attached'});
+        assert.equal(referenceStarted, true, 'the reference lookup is still held');
+        assert.match(await card.innerText(), /跨 Lineage 引用/);
+        assert.equal(await card.locator('.familyFacadeHeading').count(), 0);
+        await page.evaluate(() => {
+          window.PortalNav = {openResidentMenu: options => { window.requestedMenu = options; }};
+        });
+        await card.dispatchEvent('dblclick');
+        assert.deepEqual(await page.evaluate(() => requestedMenu), {residentId: facadeId},
+          'settings resolve the canonical Resident while its reference type is unknown');
+        initialDrawMs = Date.now() - start;
+      } finally {
+        release();
+      }
+    },
+  }).then(() => console.log(JSON.stringify({baseGraphDrawnBeforeReferenceResponse: true, fixtureElapsedMs: initialDrawMs})))
+    .catch(error => {console.error(error); process.exitCode = 1;});
+}

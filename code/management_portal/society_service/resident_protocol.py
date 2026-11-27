@@ -103,14 +103,15 @@ def _conversation_controls(
     active_message_id = str(state.get("active_message_id") or "")
     closed = state.get("intake_state") == "closed"
     from .domain_ports import resident_domain_port
-    if family_facade.is_facade(target.record):
+    facade = family_facade.is_facade(target.record)
+    if facade:
         from . import family_quota_projection
         quota_switch = {"targets": []} if closed or not allowed else family_quota_projection.quota_switch(target.record, actor)
     else:
         quota_switch = resident_domain_port.quota_switch_state(
             target.record, execution_gate=state.get("execution_gate") or {},
         )
-    if (closed or not allowed) and not family_facade.is_facade(target.record):
+    if (closed or not allowed) and not facade:
         quota_switch = {**quota_switch, "state": "unavailable", "reason": "manual" if closed else "forbidden", "message": ""}
     stop_allowed = allowed
     if target.record.get("personal_owner_id"):
@@ -552,7 +553,7 @@ def _read_resident_display_snapshots(
     snapshots = resident_conversation_stream.get_repository().state_snapshots(
         selected
     )
-    return family_activity.project_states({
+    display = {
         resident_id: {
             "resident_id": resident_id,
             "state": dict(snapshot["state"]),
@@ -562,7 +563,9 @@ def _read_resident_display_snapshots(
             ),
         }
         for resident_id, snapshot in snapshots.items()
-    }, resident_records=resident_records)
+    }
+    with family_facade.membership_projection(display):
+        return family_activity.project_states(display, resident_records=resident_records)
 
 
 def read_resident_states(
@@ -622,13 +625,14 @@ def get_resident_states(
     records = {record["resident_id"]: record for record in
                resident_access.visible_resident_records(requested, actor, "portal")}
     visible = list(records)
-    snapshots = read_resident_state_snapshots(visible, resident_records=records)
     allowed = resident_access.actor_can_manage_residents(actor) if visible else False
     # Read access is already checked above. Controls use canonical Resident
     # facts; resolving every full runtime target here repeats the same Lineage
     # reads once per member and makes large Chat/graph state refreshes slow.
     from management_portal import workflow_delivery_policy
-    with shared_account_configuration(), workflow_delivery_policy.projection_scope(visible):
+    with (family_facade.membership_projection(visible), shared_account_configuration(),
+          workflow_delivery_policy.projection_scope(visible)):
+        snapshots = read_resident_state_snapshots(visible, resident_records=records)
         result = {
             "items": [
                 _with_conversation_controls(

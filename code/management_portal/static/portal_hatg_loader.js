@@ -3,9 +3,10 @@
 
   if (window.PortalHatgLoader) return;
 
-  const D3_ASSET = "/static/vendor/d3/d3.v7.9.0.min.js";
+  // JSON array consumed by the HTTP document versioner from this exact loader.
   const ASSETS = [
-    D3_ASSET,
+    "/static/vendor/d3/d3.v7.9.0.min.js",
+    "/static/portal_resident_avatar.css",
     "/static/lineage_program.js",
     "/static/lineage_primitive_inspector.js",
     "/static/lineage_invocation_inspector.js",
@@ -83,8 +84,9 @@
     "/static/hatg_panel_template_shelf.js",
     "/static/hatg_panel_bindings.js",
     "/static/hatg_panel_mount.js",
-    "/static/hatg_panel.js",
+    "/static/hatg_panel.js"
   ];
+  const [D3_ASSET, AVATAR_STYLES] = ASSETS;
   let assetsPromise = null;
 
   function d3IsReady() {
@@ -94,13 +96,14 @@
   async function loadD3() {
     if (d3IsReady()) return Promise.resolve();
 
-    const response = await fetch(D3_ASSET, { credentials: "same-origin" });
+    const url = window.PortalUIPrimitives.staticAssetUrl(D3_ASSET);
+    const response = await fetch(url, { credentials: "same-origin" });
     if (!response.ok) {
       throw new Error(`无法加载 ${D3_ASSET}（HTTP ${response.status}）`);
     }
     const source = await response.text();
     const script = document.createElement("script");
-    const sourceUrl = new URL(D3_ASSET, location.href).href;
+    const sourceUrl = new URL(url, location.href).href;
     // D3 ships as UMD. Lexically hiding AMD/CommonJS keeps Monaco's loader
     // untouched while making this dependency deterministic for HATG.
     script.textContent = `(function (define, module, exports) {\n${source}\n}).call(window);\n//# sourceURL=${sourceUrl}`;
@@ -126,24 +129,27 @@
   // cold HATG fetched about 1.1 MB in ten serial round trips before it could
   // mount. Preloading lets the browser fetch them all while D3 is evaluated.
   function preloadAssets() {
+    const paths = new Set([...document.querySelectorAll("script[src], link[rel=stylesheet][href]")]
+      .map(tag => new URL(tag.src || tag.href).pathname));
+    const preloaded = new Set([...document.querySelectorAll("link[rel=preload]")].map(link => link.href));
     for (const src of ASSETS) {
-      if (src === D3_ASSET) continue;
+      if (src === D3_ASSET || paths.has(src)) continue;
       const href = new URL(window.PortalUIPrimitives.staticAssetUrl(src), location.href).href;
-      if ([...document.scripts].some(script => script.src && new URL(script.src).pathname === src)) continue;
-      if ([...document.querySelectorAll('link[rel="preload"]')].some(link => link.href === href)) continue;
+      if (preloaded.has(href)) continue;
       const link = document.createElement("link");
       link.rel = "preload";
-      link.as = "script";
+      link.as = src.endsWith(".css") ? "style" : "script";
       link.href = href;
       document.head.append(link);
+      preloaded.add(href);
     }
   }
 
   function loadAssets() {
     if (!assetsPromise) {
       preloadAssets();
-      void window.PortalUIPrimitives.loadAsset("/static/portal_resident_avatar.css").catch(() => {});
-      assetsPromise = ASSETS.reduce(
+      void window.PortalUIPrimitives.loadAsset(AVATAR_STYLES).catch(() => {});
+      assetsPromise = ASSETS.filter(src => src !== AVATAR_STYLES).reduce(
         (pending, src) => pending.then(() => loadAsset(src)),
         Promise.resolve(),
       ).then(() => {

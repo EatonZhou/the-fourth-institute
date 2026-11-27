@@ -41,6 +41,16 @@ def read(connection: Any, resident_id: str) -> list[str]:
     ).fetchall()]
 
 
+def read_many(connection: Any, resident_ids: list[str]) -> dict[str, list[str]]:
+    members: dict[str, list[str]] = {resident_id: [] for resident_id in resident_ids}
+    for row in connection.execute(
+        "SELECT facade_id, member_id FROM facade_members WHERE facade_id=ANY(%s) ORDER BY facade_id, member_id",
+        (resident_ids,),
+    ).fetchall():
+        members[row["facade_id"]].append(row["member_id"])
+    return members
+
+
 def normalize(resident_id: str, member_ids: list[str]) -> list[str]:
     facade_id = validate_id(resident_id, "resident").resource_id
     if not isinstance(member_ids, list):
