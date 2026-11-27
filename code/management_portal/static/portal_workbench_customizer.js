@@ -8,7 +8,7 @@
 
   const DEPENDENCIES = Object.freeze([
     "applyWorkspace", "clone", "customizeButton", "descriptors", "escapeHtml", "executeCommand", "factoryPresets",
-    "hiddenRail", "isLayoutLocked", "menu", "openResource", "options", "panelPackages", "persist", "savedWorkspaces",
+    "hiddenRail", "id", "isLayoutLocked", "menu", "openResource", "options", "panelPackages", "persist", "savedWorkspaces",
     "shellState",
   ]);
 
@@ -17,12 +17,36 @@
     if (missing.length) throw new Error(`PortalWorkbenchCustomizer is missing: ${missing.join(", ")}`);
     const {
       applyWorkspace, clone, customizeButton, descriptors, escapeHtml, executeCommand, factoryPresets, hiddenRail,
-      isLayoutLocked, menu, openResource, options, panelPackages, persist, savedWorkspaces, shellState,
+      id, isLayoutLocked, menu, openResource, options, panelPackages, persist, savedWorkspaces, shellState,
     } = dependencies;
 
     let outsidePointerHandler = null;
+    const accountLayouts = options.store ? null : global.PortalWorkbenchStorage.createSavedLayouts({
+      id, savedWorkspaces, shellState, persist, clone,
+    });
+    let savedBusy = false;
+    let savedError = "";
+
+    async function updateSavedLayouts(action) {
+      if (savedBusy || shellState.destroyed) return;
+      savedBusy = true;
+      savedError = "";
+      renderMenu();
+      try {
+        await action();
+      } catch (error) {
+        savedError = window.PortalI18n.text`布局同步失败：${error.message || error}`;
+      } finally {
+        savedBusy = false;
+        if (!shellState.destroyed) renderMenu();
+      }
+    }
 
     function renderMenu() {
+      const nameInput = menu.querySelector('.portalWorkbenchSaveForm input[name="name"]');
+      const draftName = nameInput?.value || "";
+      const editingName = nameInput === document.activeElement;
+      const selection = editingName ? [nameInput.selectionStart, nameInput.selectionEnd] : null;
       const editorOptionsOpen = Boolean(menu.querySelector(".portalWorkbenchEditorOptions")?.open);
       const presetRows = [...factoryPresets.values()].map(preset => window.PortalI18n.html`
         <button class="portalWorkbenchMenuRow" type="button" data-workbench-preset="${escapeHtml(preset.id)}">
@@ -33,7 +57,7 @@
           <button class="portalWorkbenchMenuRow" type="button" data-workbench-saved="${escapeHtml(workspaceId)}">
             <span data-portal-icon="star"></span><span>${escapeHtml(String(workspace.name || workspaceId))}</span>
           </button>
-          <button class="portalWorkbenchSavedDelete" type="button" data-workbench-delete="${escapeHtml(workspaceId)}" aria-label="删除 ${escapeHtml(String(workspace.name || workspaceId))}" data-portal-icon="trash"></button>
+          <button class="portalWorkbenchSavedDelete" type="button" data-workbench-delete="${escapeHtml(workspaceId)}" aria-label="删除 ${escapeHtml(String(workspace.name || workspaceId))}" data-portal-icon="trash" ${savedBusy ? "disabled" : ""}></button>
         </span>`).join("");
       const panelRows = [...descriptors.values()].filter(descriptor => !descriptor.closable && !descriptor.required && descriptor.canHide).map(descriptor => window.PortalI18n.html`
         <label class="portalWorkbenchPanelToggle${descriptor.required ? " is-required" : ""}">
@@ -57,9 +81,10 @@
         ${panelRows ? window.PortalI18n.html`<section><h3>面板</h3>${panelRows}</section>` : ""}
         ${presetRows ? window.PortalI18n.html`<section><h3>预设</h3><div class="portalWorkbenchPresets">${presetRows}</div></section>` : ""}
         ${savedRows ? window.PortalI18n.html`<section><h3>我的工作区</h3>${savedRows}</section>` : ""}
+        ${accountLayouts ? window.PortalI18n.html`<div role="status" data-workbench-sync-status>${escapeHtml(savedBusy ? "正在同步账户布局…" : savedError || "已命名布局随账户同步")}${savedError ? window.PortalI18n.html` <button type="button" class="portalButton is-compact" data-workbench-sync-retry>重试</button>` : ""}</div>` : ""}
         <form class="portalWorkbenchSaveForm">
           <label><span>保存当前布局</span><input class="portalControl" name="name" maxlength="60" placeholder="工作区名称" required /></label>
-          <button class="portalButton is-compact is-primary" type="submit">保存</button>
+          <button class="portalButton is-compact is-primary" type="submit" ${savedBusy ? "disabled" : ""}>保存</button>
         </form>
         <button class="portalButton is-compact portalWorkbenchReset" type="button" data-workbench-reset>恢复默认布局</button>
         ${editorRows ? window.PortalI18n.html`<details class="portalWorkbenchEditorOptions" ${editorOptionsOpen ? "open" : ""}><summary>新建编辑器</summary>${editorRows}</details>` : ""}`;
@@ -97,6 +122,10 @@
       });
       menu.querySelectorAll("[data-workbench-delete]").forEach(button => {
         button.addEventListener("click", () => {
+          if (accountLayouts) {
+            void updateSavedLayouts(() => accountLayouts.remove(button.dataset.workbenchDelete));
+            return;
+          }
           delete savedWorkspaces[button.dataset.workbenchDelete];
           persist();
           renderMenu();
@@ -104,10 +133,20 @@
       });
       menu.querySelector(".portalWorkbenchSaveForm")?.addEventListener("submit", event => {
         event.preventDefault();
+        if (savedBusy) return;
         const name = String(new FormData(event.currentTarget).get("name") || "").trim();
         if (!name) return;
-        const workspaceId = `workspace-${Date.now().toString(36)}`;
-        savedWorkspaces[workspaceId] = { id: workspaceId, name, layout: clone(shellState.model), hidden: [...shellState.hidden], collapsed: [...shellState.collapsed] };
+        const workspaceId = `workspace-${global.PortalUIPrimitives.randomUUID()}`;
+        const workspace = { id: workspaceId, name, layout: clone(shellState.model), hidden: [...shellState.hidden], collapsed: [...shellState.collapsed] };
+        if (accountLayouts) {
+          void updateSavedLayouts(async () => {
+            await accountLayouts.save(workspace);
+            const input = menu.querySelector('.portalWorkbenchSaveForm input[name="name"]');
+            if (input?.value === name) input.value = "";
+          });
+          return;
+        }
+        savedWorkspaces[workspaceId] = workspace;
         shellState.activeWorkspaceName = name;
         persist();
         renderMenu();
@@ -115,6 +154,17 @@
       menu.querySelector("[data-workbench-reset]")?.addEventListener("click", () => {
         executeCommand("workbench.reset-layout", null, "customizer");
       });
+      menu.querySelector("[data-workbench-sync-retry]")?.addEventListener("click", () => {
+        void updateSavedLayouts(() => accountLayouts.refresh());
+      });
+      const nextInput = menu.querySelector('.portalWorkbenchSaveForm input[name="name"]');
+      if (nextInput) {
+        nextInput.value = draftName;
+        if (editingName) {
+          nextInput.focus({ preventScroll: true });
+          nextInput.setSelectionRange(...selection);
+        }
+      }
       global.PortalUIPrimitives?.mountIcons?.(menu);
     }
 
@@ -141,6 +191,7 @@
       menu.hidden = false;
       customizeButton.setAttribute("aria-expanded", "true");
       renderMenu();
+      if (accountLayouts) void updateSavedLayouts(() => accountLayouts.refresh());
       outsidePointerHandler = event => {
         if (menu.contains(event.target) || customizeButton.contains(event.target)) return;
         closeMenu();

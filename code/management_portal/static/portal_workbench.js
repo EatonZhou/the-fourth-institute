@@ -1049,7 +1049,7 @@
       closeMenu, openMenu, renderHiddenRail, renderMenu,
     } = workbenchPart("PortalWorkbenchCustomizer").createCustomizer({
       applyWorkspace: (...args) => applyWorkspace(...args), clone, customizeButton, descriptors, escapeHtml,
-      executeCommand, factoryPresets, hiddenRail, isLayoutLocked, menu,
+      executeCommand, factoryPresets, hiddenRail, id, isLayoutLocked, menu,
       openResource: (...args) => openResource(...args), options, panelPackages, persist, savedWorkspaces, shellState,
     });
 
