@@ -1949,7 +1949,6 @@ html:root[data-portal-theme="liquid-glass"] .portalMailboxAlert {
     backdrop-filter: var(--liquid-glass-filter, blur(0px)) var(--lg-blur-bar);
   }
 
-  html:root[data-portal-theme="liquid-glass"] .portalAgentInbox::before,
   html:root[data-portal-theme="liquid-glass"] :is(
     .portalActivityRail,
     .portalWorkbenchPageLayout > .portalActivityRail,
@@ -2016,9 +2015,15 @@ html:root[data-portal-theme="liquid-glass"] .portalMailboxAlert {
     backdrop-filter: var(--lg-blur-popover);
   }
 
+  /* A compact dock needs a lighter veil than a full-width navigation bar:
+     preserve visible background detail instead of blurring it into white. */
   html:root[data-portal-theme="liquid-glass"] .portalAgentInbox::before {
-    -webkit-backdrop-filter: var(--lg-blur-bar);
-    backdrop-filter: var(--lg-blur-bar);
+    background:
+      radial-gradient(ellipse 76% 5px at 50% 0%, var(--lg-specular-top), transparent),
+      radial-gradient(ellipse 56% 4px at 50% 100%, var(--lg-specular-bottom), transparent),
+      linear-gradient(180deg, rgba(255, 255, 255, .32) 0%, rgba(246, 248, 252, .20) 54%, rgba(242, 245, 250, .24) 100%);
+    -webkit-backdrop-filter: blur(4px) saturate(140%);
+    backdrop-filter: blur(4px) saturate(140%);
   }
 
   /* Moving a live backdrop repaints the page underneath it. During a gesture
