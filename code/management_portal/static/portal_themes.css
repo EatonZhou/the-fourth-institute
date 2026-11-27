@@ -332,9 +332,6 @@ html:root[data-portal-theme="liquid-glass"] {
   --lg-card-shadow-hover:
     inset 0 1px 0 rgba(255, 255, 255, .86),
     0 3px 10px rgba(0, 0, 0, .045);
-  --lg-workbench-shadow:
-    0 2px 5px rgba(24, 24, 27, .065),
-    0 10px 24px rgba(24, 24, 27, .075);
 
   /* Floating Liquid Glass Bar & Specular Highlight Glass Button Tokens */
   --lg-surface-bar: linear-gradient(180deg, rgba(255, 255, 255, .58) 0%, rgba(246, 248, 252, .44) 54%, rgba(242, 245, 250, .50) 100%);
@@ -794,7 +791,7 @@ html:root[data-portal-theme="liquid-glass"] .portalWorkbench {
   --portal-workbench-stack-radius: var(--radius);
   --portal-workbench-stack-background: var(--lg-card-bg);
   --portal-workbench-stack-border: 1px solid var(--lg-card-border);
-  --portal-workbench-stack-shadow: var(--lg-workbench-shadow);
+  --portal-workbench-stack-shadow: none;
   --portal-workbench-panel-background: transparent;
   --portal-workbench-inset-background: transparent;
   --portal-workbench-split-handle-color: transparent;
@@ -824,7 +821,8 @@ html:root[data-portal-theme="liquid-glass"] .portalWorkbenchStack:not(:has(.home
   border: 1px solid var(--lg-frame-border);
   border-radius: var(--radius);
   background: var(--lg-card-bg);
-  box-shadow: var(--lg-workbench-shadow);
+  /* Keep depth inside the rounded rim: viewport clipping squares off outer shadows. */
+  box-shadow: none;
 }
 
 /* The rim sits above opaque documents/iframes as well as native content.
