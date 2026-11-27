@@ -481,7 +481,7 @@ done
 | Fork 一个 Resident | `ForkResident` | `source_resident_id` 来自 target 端点 |
 | 先 Fork 再派活 | `ForkResident`、`DeliverMessage` | 第二次调用的 `resident_id` 来自第一次调用的结果 |
 | 修改 Lineage | `ApplyLineageChanges` | 操作列表用 `${…}` 引用上游 Effect 输出，或本脚本中前面调用返回的对象 ID |
-| 写共享状态 | `UpdateSharedState`；带 `expected_value` 时只在当前值相等时写入 | 键为常量，值来自 Event、上游输出或前面的调用 |
+| 写共享状态 | `UpdateSharedState`；`expected_value` 控制比较并写入，`ttl_seconds` 控制单元存活期 | 键为常量，值来自 Event、上游输出或前面的调用 |
 | 通知用户 | `CreateNotification` | 标题与正文为常量或带变量的文字 |
 | 准备工作区交接 | `CreateWorkspaceHandoff`、`RunWorkspaceHandoff` | 来源与目标 Resident 来自两个 target 端点；第二次调用的 `handoff_id` 来自第一次调用的结果（创建对同一对 Resident 幂等） |
 | 触发手动 Event | `TriggerEvent` | `event_source_id` 指向 `manual.triggered` 事件源；`prompt`、`payload` 来自本次输入。其他类型的 Event 只由真实事实产生 |
@@ -492,7 +492,7 @@ done
 ### Graph State、Function Block、Seed 与 Workspace Handoff
 
 **Graph State：**
-- 最多 128 个 cell；单个 cell 最大 64 KiB；总量最大 512 KiB。
+- 每个 Lineage 最多 4096 个 cell，单值最大 64 KiB，合计最大 2 MiB。共享状态指令和容量契约见 decision_71ba0494b93e。
 - 使用独立的 revision，与图的 revision 无关。
 
 **Function Block：**
@@ -867,8 +867,8 @@ flowchart LR
 | `portal.release_published` | 已激活并通过健康验收的一次 Portal 发布 | `misfire_policy`（all 或 coalesce_latest） |
 | `manual.triggered` | 用户在 HATG 中手动触发 | 无 |
 | `lineage.changed` | 当前 Lineage 的版本变化 | 无 |
-| `state.changed` | 某个共享状态键的值实际改变，不论由谁写入 | `key` |
-| `state.condition_met` | 某个 Graph State cell 的条件从不成立变为成立；只读实时值，不创建快照 | `key`、`operator`、`expected_value`、`fire_on_initial_match`（可选） |
+| `state.changed` | 某个共享状态键的值实际改变或到期清除，不论由谁写入 | `key` |
+| `state.condition_met` | 某个 Graph State cell 的条件从不成立变为成立。到期清除按条件不成立处理 | `key`、`operator`、`expected_value`、`fire_on_initial_match`（可选） |
 | `budget.exhausted` | 所选 Event Source 达到最大触发次数 | `watch.subject` |
 | `event.delivery_failed` | 所选 Event Source 或它的一条 Event 连线投递失败 | `watch.subject` |
 | `event.delivery_expired` | 所选 Event Source 或它的一条 Event 连线上的排队事件过期 | `watch.subject` |

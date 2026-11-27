@@ -36,7 +36,7 @@ Lineage 共享状态指令读写一个 Lineage 在运行中保存的键值数据
 ## 操作的对象
 
 - **状态单元（cell）**：一个键和一个 JSON 值。每个 Lineage 最多 4096 个状态单元，单个值最大 64 KiB，全部值合计最大 2 MiB。
-- **变化计数**：共享状态有独立的变化计数（`revision`），每次实际改变值时加一，随 `state.changed` 事件记录。它与 Lineage 定义的变化计数分开，写状态不会改变 Lineage 定义。指令结果不返回它，也不接受它作为前提；需要“只在当前值符合预期时写入”时，给 `UpdateSharedState` 或 `DeleteSharedState` 带上 `expected_value`。
+- **变化计数**：共享状态有独立的变化计数（`revision`），每次实际改变值、删除单元或清除到期单元时加一，随 `state.changed` 事件记录。它与 Lineage 定义的变化计数分开，写状态不会改变 Lineage 定义。指令结果不返回它，也不接受它作为前提；需要“只在当前值符合预期时写入”时，给 `UpdateSharedState` 或 `DeleteSharedState` 带上 `expected_value`。
 
 共享状态在运行中的使用方式（`state.changed` 与 `state.condition_met` 事件源、调用共享状态指令的 Effect）见 decision_4adcc1ff2f2c，实现中这组数据称为 Graph State。
 
@@ -55,16 +55,18 @@ Lineage 共享状态指令读写一个 Lineage 在运行中保存的键值数据
 **读取一个 Lineage 的全部共享状态，或其中一个状态单元。**
 
 - 参数：`lineage_id`、`key`（可选，省略时读取全部）、`fields`（可选，只读取这个状态单元中的这些顶层字段，需要同时指定 `key`）。
-- 结果：`state` 为状态值，以 key 为键。指定 `key` 时另给出 `value`，即这个状态单元的值，不存在时为 null。Effect 脚本的变量路径只能写固定的段，按计算出的 key（例如 Family 的 `family_router_context_<门面>`，decision_44cf587c1721）读取时用 `value`。
+- 结果：`state` 为状态值，以 key 为键。指定 `key` 时另给出 `value`，即这个状态单元的值，不存在或已到期时为 null。到期单元也从全量状态中排除。Effect 脚本的变量路径只能写固定的段，按计算出的 key（例如 Family 的 `family_router_context_<门面>`，decision_44cf587c1721）读取时用 `value`。
 
 ### `UpdateSharedState`
 
 **写入一个状态单元；附带期望值时，只在当前值等于期望值时写入。**
 
-- 参数：`lineage_id`、`key`、`value`、`expected_value`（可选）。
-- 结果：键、当前值、原值、`matched` 和 `changed`。写入时当前值即新值；期望值不符时当前值是未改变的原值。
+- 参数：`lineage_id`、`key`、`value`、`expected_value`（可选）、`ttl_seconds`（可选，1 至 2147483647 的整数秒）。
+- 结果：键、当前值、原值、`matched` 和 `changed`。写入时当前值即新值；期望值不符时当前值是未改变的原值。当前单元有到期时间时另返回 UTC `expires_at`。
 - 写入与原值相同时不推进变化计数。
 - 期望值用于多个参与者竞争同一个状态时只让一方成功：不存在的状态单元按 null 比较，所以 `expected_value: null` 只在状态单元尚未设置（或值为 null）时写入。当前值不等于期望值时返回 `matched=false`，这属于正常结果，指令不会失败。没有期望值时 `matched` 恒为 true。
+
+匹配的写入按 `ttl_seconds` 从本次写入重新计时，省略则长期保存。即使值未变，计时仍按本次写入更新，`changed` 保持 false。期望值不符时沿用原期限。到期单元按缺失参加比较，在后续写入或定期维护时清除。清除推进变化计数并由 `state.changed` 观察，`state.condition_met` 将到期的单元视为条件不成立。
 
 ### `DeleteSharedState`
 
@@ -81,5 +83,5 @@ Lineage 共享状态指令读写一个 Lineage 在运行中保存的键值数据
 | 指令名 | arguments 参数名 |
 | --- | --- |
 | `GetSharedState` | `lineage_id`、`key`、`fields` |
-| `UpdateSharedState` | `lineage_id`、`key`、`value`、`expected_value` |
+| `UpdateSharedState` | `lineage_id`、`key`、`value`、`expected_value`、`ttl_seconds` |
 | `DeleteSharedState` | `lineage_id`、`key`、`expected_value` |

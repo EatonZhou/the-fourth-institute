@@ -268,3 +268,49 @@ def test_layout_is_saved_through_its_own_instruction_without_touching_the_defini
     too_many = run("UpdateLineageLayout", {"lineage_id": lineage, "positions": [{"object_id": member, "x": 0, "y": 0}] * 513},
                    key="layout-too-many")
     assert too_many.error["code"] == "instruction.invalid_arguments"
+
+def test_shared_state_ttl_is_folded_into_write_and_maintenance(lineage, monkeypatch):
+    from datetime import datetime, timedelta, timezone
+    from management_portal.society_service import lineage_domain, lineage_graph_state, state_store
+
+    now = datetime(2026, 11, 28, tzinfo=timezone.utc)
+    monkeypatch.setattr(lineage_graph_state, "_now", lambda: now)
+    repository = state_store.get_lineage_data_store().lineage_shared_state
+
+    def update(key, value, **extra):
+        return ok("UpdateSharedState", {"lineage_id": lineage, "key": key, "value": value, **extra})
+
+    first = update("short", 1, ttl_seconds=2)
+    assert first["changed"] and first["expires_at"] == (now + timedelta(seconds=2)).isoformat(timespec="microseconds")
+    permanent = update("permanent", 2)
+    assert "expires_at" not in permanent
+    invalid = run("UpdateSharedState", {"lineage_id": lineage, "key": "bad", "value": 0, "ttl_seconds": 0})
+    assert invalid.error["code"] == "instruction.invalid_arguments"
+
+    now += timedelta(seconds=1)
+    missed = update("short", 3, expected_value=0, ttl_seconds=10)
+    assert not missed["matched"] and missed["expires_at"] == first["expires_at"]
+    renewed = update("short", 1, expected_value=1, ttl_seconds=2)
+    assert renewed["matched"] and not renewed["changed"] and renewed["expires_at"] != first["expires_at"]
+
+    now += timedelta(seconds=2)
+    assert ok("GetSharedState", {"lineage_id": lineage, "key": "short"}) == {"state": {}, "value": None}
+    assert ok("GetSharedState", {"lineage_id": lineage}) == {"state": {"permanent": 2}}
+    assert "short" in repository.get(lineage)["cells"]
+
+    lineage_domain.poll_all_lineage_system_events()
+    after = repository.get(lineage)
+    assert after["cells"] == {"permanent": 2}
+    assert after["revision"] == 3
+    assert not after.get("expires_at")
+    lineage_domain.poll_all_lineage_system_events()
+    assert repository.get(lineage) == after
+
+    update("promoted", "keep", ttl_seconds=1)
+    assert not update("promoted", "keep")["changed"]
+    now += timedelta(seconds=1)
+    assert ok("GetSharedState", {"lineage_id": lineage, "key": "promoted"})["value"] == "keep"
+
+    update("reacquired", "original", ttl_seconds=1)
+    now += timedelta(seconds=1)
+    assert update("reacquired", "new", expected_value=None)["previous_value"] is None

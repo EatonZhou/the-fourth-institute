@@ -159,7 +159,7 @@ def _read_facts(
         blackboard_entries=lineage_blackboard_events.prefetch(lineage_id, plan),
         # Graph State owns its own lock and persistence contract; this is its
         # narrow live projection.
-        graph_state=lineage_graph_state.read_state(lineage_id) if state_condition_sources else None,
+        graph_state=lineage_graph_state.read_observable_state(lineage_id) if state_condition_sources else None,
         # Context usage is owned by the Resident execution subsystem. The
         # Event runtime consumes only its actor-scoped percentage projection.
         context_pressures=(

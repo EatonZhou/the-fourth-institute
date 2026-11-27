@@ -3482,3 +3482,48 @@ def test_pre_dispatch_reducer_failure_releases_generic_event_route_claim(
     )
     assert retried["delivered_count"] == 2, json.dumps(retried)
     assert sorted(sent) == sorted([WORK_A, REDUCER_EXECUTOR])
+
+def test_expired_shared_state_observed_once_without_matching_missing(primitive_store, monkeypatch):
+    from datetime import datetime, timedelta, timezone
+
+    now = datetime(2026, 11, 28, tzinfo=timezone.utc)
+    monkeypatch.setattr(lineage_graph_state, "_now", lambda: now)
+    sent = []
+    monkeypatch.setattr(lineage_test_support, "NODE_MESSAGE_SENDER",
+                        lambda node, *_: sent.append(node["id"]) or {"message_id": f"msg_state_{len(sent)}"})
+    changed, missing = "event_source_ttl_changed", "event_source_ttl_missing"
+    created = lineage_lifecycle.create_lineage({
+        "title": "Graph State expiry",
+        "nodes": [_worker(WORK_A), _worker(WORK_B)],
+        "program": {"components": [
+            {"id": changed, "kind": "event_source",
+             "config": {"event_type": "state.changed", "key": "marker"}},
+            {"id": missing, "kind": "event_source",
+             "config": {"event_type": "state.condition_met", "key": "marker", "operator": "missing"}},
+        ], "wires": [
+            {"id": "wire_ttl_changed", "kind": "route", "source": changed, "target": WORK_A},
+            {"id": "wire_ttl_missing", "kind": "route", "source": missing, "target": WORK_B},
+        ]},
+    }, ACTOR)
+    lineage_id = created["lineage_id"]
+
+    def poll():
+        return lineage_domain.reconcile_lineage_system_events(lineage_id, ACTOR)
+
+    lineage_graph_state.update_cell(lineage_id, "marker", True, ttl_seconds=1)
+    assert poll()["event_count"] == 0
+    now += timedelta(seconds=1)
+    assert poll()["event_count"] == 1
+    assert poll()["event_count"] == 0
+    assert sent == [WORK_A]
+    assert lineage_graph_state.read_state(lineage_id)["revision"] == 2
+
+    lineage_graph_state.update_cell(lineage_id, "marker", True)
+    assert poll()["event_count"] == 1
+    lineage_graph_state.update_cell(lineage_id, "marker", True, ttl_seconds=1)
+    now += timedelta(seconds=1)
+    lineage_graph_state.update_cell(lineage_id, "marker", True, expected_value=None)
+    assert poll()["event_count"] == 1  # The same-value replacement cannot hide expiry.
+    assert poll()["event_count"] == 0
+    lineage_graph_state.delete_cell(lineage_id, "marker")
+    assert poll()["event_count"] == 2  # Manual deletion retains the missing operator.

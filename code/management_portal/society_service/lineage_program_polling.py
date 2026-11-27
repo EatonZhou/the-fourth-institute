@@ -132,6 +132,18 @@ def poll_all_system_events(
             })
 
     errors = (KeyError, PermissionError, OSError, RuntimeError, ValueError)
+    if not recovery_only:
+        from . import lineage_graph_state
+
+        for lineage_id in lineage_graph_state.due_lineage_ids():
+            if shutdown_requested():
+                stopped = True
+                break
+            try:
+                lineage_graph_state.expire_due(lineage_id)
+            except errors as exc:
+                failure(lineage_id, exc)
+
     for lineage_id in recovery_lineage_ids(include_observations=not recovery_only):
         if shutdown_requested():
             stopped = True

@@ -168,6 +168,7 @@ def update_lineage_graph_state(
         lineage_id,
         payload.get("key"),
         payload.get("value"),
+        ttl_seconds=payload.get("ttl_seconds"),
         **guard,
     )
 

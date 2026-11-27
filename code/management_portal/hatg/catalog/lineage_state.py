@@ -21,11 +21,13 @@ DECLARATIONS = (
         R("key", description="状态单元名，1–160 字符，不含控制字符"),
         R("value", "any", "要写入的 JSON 值，不超过 64 KiB"),
         P("expected_value", "any", "写入前要求的当前值；省略时直接写入"),
+        P("ttl_seconds", "integer", "本次匹配写入后的存活秒数；省略时长期保存", minimum=1, maximum=2147483647),
     ), (
         R("key", description="被写入的状态单元"), R("value", "any", "写入后的当前值；期望值不符时是未改变的当前值"),
         R("previous_value", "any", "写入前的值；原来不存在时为 null"),
         R("matched", "boolean", "期望值是否相符；没有期望值时为 true"),
         R("changed", "boolean", "值是否真的改变；期望值不符或新值与原值相同时为 false"),
+        P("expires_at", description="当前单元的到期 UTC 时间，没有到期时间时省略"),
     ), mutates=True),
     _d("DeleteSharedState", "删除一个状态单元；可以附带期望值，只在当前值匹配时删除。", (
         R("lineage_id", description="共享状态所属的 Lineage"), R("key", description="要删除的状态单元"),

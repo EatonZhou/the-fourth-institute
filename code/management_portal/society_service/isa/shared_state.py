@@ -36,7 +36,7 @@ def _change(result: dict[str, Any]) -> dict[str, Any]:
 
 def update_shared_state(inv: Invocation) -> dict[str, Any]:
     return _change(domain().update_lineage_graph_state(
-        inv.argument("lineage_id"), _payload(inv, "key", "value", "expected_value"), inv.caller,
+        inv.argument("lineage_id"), _payload(inv, "key", "value", "expected_value", "ttl_seconds"), inv.caller,
     ))
 
 

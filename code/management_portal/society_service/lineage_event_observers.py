@@ -564,6 +564,9 @@ def _state_cell(scan: Scan, source: Source) -> ObservedValue | None:
         value = "present:" + hashlib.sha256(encoded.encode("utf-8")).hexdigest()[:32]
     else:
         value = "absent"
+    expiration = snapshot.get("expiration_observations", {}).get(key)
+    if expiration:
+        value = f'{value}:expiry:{expiration["revision"]}'
     return ObservedValue(value, {"key": key, "state_revision": max(0, int(snapshot.get("revision") or 0))}, key)
 
 
@@ -635,7 +638,8 @@ def _state_condition_met(scan: Scan, source: Source) -> None:
     expected_value = scan.ports.clone_json(source.config.get("expected_value"))
     fire_on_initial_match = bool(source.config.get("fire_on_initial_match"))
     cells = snapshot.get("cells") if isinstance(snapshot.get("cells"), dict) else {}
-    matched = _state_condition_matches(
+    expired = snapshot.get("expiration_observations", {}).get(state_key, {}).get("absent", False)
+    matched = not expired and _state_condition_matches(
         existed=state_key in cells, value=cells.get(state_key),
         operator=operator, expected_value=expected_value,
     )
