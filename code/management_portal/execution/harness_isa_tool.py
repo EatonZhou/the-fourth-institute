@@ -206,5 +206,21 @@ class ResidentIsaTool:
         if not caller:
             return invocation
         execution_id = str(getattr(request, "execution_id", "") or "")
-        prepared, _added, _reason = attach_harness_tools(invocation, (self.tool(caller, execution_id),))
+        tools = (self.tool(caller, execution_id),)
+        from .provider_catalog import AGENT_PROVIDERS
+        provider = AGENT_PROVIDERS.get(request.provider)
+        if provider and provider.session_environment_via_tool:
+            from management_portal.resident_shell_environment import resident_session_environment
+            environment = resident_session_environment(request.runtime_options.get("resident_environment"))
+            if environment.get("PORTAL_RESIDENT_ID"):
+                if environment["PORTAL_RESIDENT_ID"] != caller:
+                    raise ValueError("Session environment belongs to another Resident")
+                tools += (HarnessTool(
+                    name="get_session_environment",
+                    description="Read this Resident turn's Portal session variables and workspace paths.",
+                    input_schema={"type": "object", "properties": {}, "additionalProperties": False},
+                    handler=lambda _arguments: _dumps(environment),
+                    read_only=True,
+                ),)
+        prepared, _added, _reason = attach_harness_tools(invocation, tools)
         return prepared

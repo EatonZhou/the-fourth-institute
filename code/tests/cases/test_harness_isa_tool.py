@@ -172,3 +172,21 @@ def test_the_tool_is_attached_only_to_resident_turns_on_tool_capable_providers(p
     prepared = harness_isa_tool.ResidentIsaTool().prepare_invocation(Invocation(request))
     names = [tool.name for tool in prepared.harness_tools]
     assert names == (["hatg_instruction"] if attached else [])
+
+
+@pytest.mark.parametrize("provider", ["kimi", "antigravity"])
+def test_shared_provider_session_environments_are_execution_local(provider):
+    """共用账号进程的两轮交错调用，工具各自返回 Portal 为本轮提供的环境。"""
+    def prepare(resident, team):
+        fields = {"PORTAL_RESIDENT_ID": resident, "PORTAL_LINEAGE_ID": "lineage_abcdef123456",
+                  "PORTAL_CONTEXT_TEAM": team, "PORTAL_TEAM_WORKSPACE": "/test/共享 空间"}
+        request = SimpleNamespace(provider=provider, metadata={"resident_id": resident},
+                                  runtime_options={"resident_environment": fields})
+        prepared = harness_isa_tool.ResidentIsaTool().prepare_invocation(Invocation(request))
+        tool = next(t for t in prepared.harness_tools if t.name == "get_session_environment")
+        return fields, tool
+
+    first, read_first = prepare("resident_123456789abc", "一组")
+    second, read_second = prepare("resident_abcdef123456", "二组")
+    for expected, tool in ((second, read_second), (first, read_first)):
+        assert json.loads(tool.handler({})) == expected

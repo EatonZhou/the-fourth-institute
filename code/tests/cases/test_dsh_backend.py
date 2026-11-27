@@ -58,7 +58,8 @@ def test_neutral_settings_translate_at_adapter_boundary(provider, monkeypatch, t
     monkeypatch.setattr(claude_provider_catalog, "profile", lambda _: {"kind": "subscription_login", "provider": "claude", "config_dir": str(tmp_path / "target-login")})
     turn = invocation(provider, {"runtime_settings": {"model": "test-model", "reasoning_effort": "high"},
         "authorization_scope": {}, "is_owner": True,
-        "resident_environment": {"PORTAL_RESIDENT_ID": "resident_1b6a68df3ee1"}}, "target" if provider != "kimi" else "")
+        "resident_environment": {"PORTAL_RESIDENT_ID": "resident_1b6a68df3ee1",
+                                 "PORTAL_LINEAGE_ID": "lineage_123456789abc", "PORTAL_CONTEXT_TEAM": "一组"}}, "target" if provider != "kimi" else "")
     translated = prepare_invocation(turn).request.runtime_options
     assert "runtime_settings" not in translated
     assert translated["model"] == "test-model"
@@ -66,8 +67,21 @@ def test_neutral_settings_translate_at_adapter_boundary(provider, monkeypatch, t
     if provider == "claude":
         assert translated["config_dir"] == str(tmp_path / "target-login")
     if provider == "codex":
-        assert translated["config_overrides"]["shell_environment_policy.set"]["PORTAL_RESIDENT_ID"] == "resident_1b6a68df3ee1"
+        assert translated["config_overrides"]["shell_environment_policy.set"] == turn.request.runtime_options["resident_environment"]
+    else:
+        assert translated["resident_environment"]["PORTAL_CONTEXT_TEAM"] == "一组"
 
+
+
+@pytest.mark.parametrize("provider", tuple(AGENT_PROVIDERS))
+def test_resident_environment_reserves_process_settings_for_all_adapters(provider):
+    """各适配器在启动和路由选择前拒绝 Resident 传入的系统进程配置。"""
+    turn = invocation(provider, {"resident_environment": {
+        "PORTAL_RESIDENT_ID": "resident_123456789abc", "PORTAL_LINEAGE_ID": "lineage_abcdef123456",
+        "PATH": "/untrusted",
+    }}, "")
+    with pytest.raises(ValueError, match="Unexpected Resident environment field"):
+        prepare_invocation(turn)
 
 
 def test_dsh_is_independent_and_does_not_advertise_unimplemented_operations():
@@ -137,7 +151,10 @@ def test_a_dsh_session_has_the_file_search_todo_and_web_tools_of_the_other_provi
     """
     # Portal composes DSH's plugins itself; with the shell and file tools alone
     # its model had no file search, todo list or web, which every other Provider's has.
-    plugins, launched, _ = _launch(monkeypatch, tmp_path, {})
+    fields = {"PORTAL_RESIDENT_ID": "resident_123456789abc", "PORTAL_LINEAGE_ID": "lineage_123456789abc",
+              "PORTAL_CONTEXT_TEAM": "一组", "PORTAL_TEAM_WORKSPACE": str(tmp_path / "共享 空间")}
+    plugins, launched, _ = _launch(monkeypatch, tmp_path, {"resident_environment": fields})
+    assert all(launched[key] == value for key, value in fields.items())
     assert plugins["dsh-working-directory"]["config"]["defaultDirectory"] == str(tmp_path)
     assert {"dsh-tool-fs-search", "dsh-tool-todo", "dsh-tool-web", "dsh-web-search-deepseek", "dsh-web-fetch-http"} <= set(plugins)
     assert list(plugins).index("dsh-web") < list(plugins).index("dsh-tool-web")

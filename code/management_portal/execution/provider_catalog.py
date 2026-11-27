@@ -114,6 +114,8 @@ class AgentProvider:
     # it cannot add one, so a session started without a required tool needs
     # a new one (``session_tools``).
     session_tools_fixed: bool = False
+    # Shared native hosts expose Resident environment data through the turn's tool gateway.
+    session_environment_via_tool: bool = False
     # Where the Provider keeps Portal's system instructions, as the prompt
     # injection settings tell a user (``prompt_injection.placements``).
     system_instructions_place: str = "Provider 的系统位置"
@@ -342,6 +344,7 @@ AGENT_PROVIDERS = ProviderCatalog({
                       check_discovers_model=True, check_permission_preset="portal-tools-only",
                       system_instructions_place="ACP session 的 systemPrompt.append，恢复时完整替换",
                       credential_globs=(".gemini*",),
+                      session_environment_via_tool=True,
                       runtime_updater="management_portal.antigravity_runtime.AntigravityRuntime"),
         AgentProvider("codex", "Codex", frozenset({"create", "turn", "fork", "compact", "release"}),
                       ("model", "reasoning_effort", "service_tier", "permissions", "collaboration_mode"), media=True, local_file_read=True, active_turn_input=True, adapter="management_portal.execution.codex_backend.CodexBackend", account_adapter="CodexAccounts", options_adapter="CodexOptions", native_questions=True, session_commands=("rename", "archive", "unarchive"), native_review=True, native_goals=True, local_catalog=False, seeded_compaction=True,
@@ -418,6 +421,7 @@ AGENT_PROVIDERS = ProviderCatalog({
                       subscription_profile_hook="management_portal.execution.subscription_profile.read_kimi_profile",
                       credential_globs=(".kimi*",),
                       credential_paths_provider="management_portal.kimi_code_client.credential_paths",
+                      session_environment_via_tool=True,
                       runtime_updater="KimiRuntime"),
         AgentProvider("dsh", "DeepSeek Harness", frozenset({"turn", "fork", "compact", "release"}),
                       ("model", "reasoning_effort"), "management_portal.dsh_provider_catalog", "deepseek", adapter="management_portal.execution.dsh_backend.DshBackend", runtime_package="management_portal/dsh_runtime", resume_without_session=True,

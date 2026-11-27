@@ -92,7 +92,13 @@ def resident_session_environment(value: Mapping[str, str] | None) -> dict[str, s
 
 def resident_identity_fingerprint(value: Mapping[str, Any] | None) -> dict[str, str]:
     """Use the same canonical identity for processes and session fingerprints."""
-    return resident_identity_environment(value)
+    environment = resident_session_environment(value)
+    # Preserve fingerprints of existing native sessions. Extension fields have
+    # no legacy representation, so their order can be canonical from launch.
+    if any(key not in RESIDENT_IDENTITY_FIELDS and not LEGACY_WORKSPACE_FIELD.fullmatch(key)
+           for key in environment):
+        return dict(sorted(environment.items()))
+    return environment
 
 
 def resident_process_environment(params: Mapping[str, Any]) -> tuple[dict[str, str], dict[str, str]]:
@@ -105,13 +111,10 @@ def resident_process_environment(params: Mapping[str, Any]) -> tuple[dict[str, s
     """
 
     environment = {key: value for key, value in os.environ.items() if key in PROCESS_ENVIRONMENT_KEYS}
-    original_identity = dict(params.get("resident_environment") or {})
-    mirrored_identity = resident_identity_environment(original_identity)
-    environment.update(mirrored_identity)
+    identity = resident_identity_fingerprint(params.get("resident_environment"))
+    environment.update(identity)
     if params.get("inherit_portal_database"):
-        if not mirrored_identity.get("PORTAL_RESIDENT_ID"):
+        if not identity.get("PORTAL_RESIDENT_ID"):
             raise ValueError("Portal database environment requires Resident identity")
         environment.update(portal_database_environment(True))
-    # Session fingerprints and native processes use the same canonical fields.
-    identity = resident_identity_fingerprint(original_identity)
     return environment, identity

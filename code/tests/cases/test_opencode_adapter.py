@@ -258,13 +258,15 @@ def test_an_opencode_session_runs_in_the_residents_environment_and_portals_own_d
     :module: platform.core"""
     monkeypatch.setenv("PORTAL_DATABASE_URL", "postgresql://test-actor")
     identity = {"PORTAL_RESIDENT_ID": "resident_0123456789ab", "PORTAL_LINEAGE_ID": "lineage_0123456789ab"}
+    identity.update(PORTAL_CONTEXT_TEAM="一组", PORTAL_TEAM_WORKSPACE=str(opencode.state / "共享 空间"))
     result = _run_turn(opencode, "turn-env", "plain", resident_environment=identity, inherit_portal_database=True)
 
     assert result.response == "answer to: plain"
     (server,) = opencode.servers()
     # The Resident's shell tools reach the Portal database; its address is never written down.
     assert server["PORTAL_DATABASE_URL"] == "postgresql://test-actor"
-    assert server["PORTAL_RESIDENT_ID"] == "resident_0123456789ab"
+    for key in ("PORTAL_RESIDENT_ID", "PORTAL_CONTEXT_TEAM", "PORTAL_TEAM_WORKSPACE"):
+        assert server[key] == identity[key]
     launch = (opencode.state / result.session_id / "launch.json").read_text()
     assert "test-actor" not in launch and "environment" not in json.loads(launch)
     # OpenCode reads Portal's configuration directory, not the host user's, and keeps its data in the session.

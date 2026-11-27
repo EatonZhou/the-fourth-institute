@@ -11,6 +11,8 @@ import os
 from collections.abc import Mapping
 from typing import Any
 
+from management_portal.resident_shell_environment import resident_session_environment
+
 from .provider_catalog import NATIVE_COMMANDS
 
 
@@ -284,22 +286,26 @@ class CodexOptions(NativeOptions):
     def prepare(self, invocation):
         from . import codex_runtime_settings
         raw = dict(invocation.request.runtime_options)
+        environment = raw.pop("resident_environment", {})
         if "runtime_settings" not in raw:
-            return invocation
-        settings = raw.pop("runtime_settings")
-        scope = raw.pop("authorization_scope", None)
-        environment = dict(raw.pop("resident_environment", {}))
-        from .provider_catalog import AGENT_PROVIDERS
-        options = {} if settings.get("inherit_session_runtime") else self.runtime_options(
-            codex_runtime_settings.codex_cli_overrides(settings), default_sandbox="danger-full-access",
-            allow_subagents=raw.get("allow_subagents", AGENT_PROVIDERS["codex"].subagents_by_default),
-            agent_harness=raw.get("agent_harness"),
-        )
-        options.update(raw)
-        options = self.workspace_write_policy(options, scope)
+            if not environment:
+                return invocation
+            options = raw
+        else:
+            settings = raw.pop("runtime_settings")
+            scope = raw.pop("authorization_scope", None)
+            from .provider_catalog import AGENT_PROVIDERS
+            options = {} if settings.get("inherit_session_runtime") else self.runtime_options(
+                codex_runtime_settings.codex_cli_overrides(settings), default_sandbox="danger-full-access",
+                allow_subagents=raw.get("allow_subagents", AGENT_PROVIDERS["codex"].subagents_by_default),
+                agent_harness=raw.get("agent_harness"),
+            )
+            options.update(raw)
+            options = self.workspace_write_policy(options, scope)
         if environment:
-            overrides = options.setdefault("config_overrides", {})
+            overrides = dict(options.get("config_overrides") or {})
             overrides["shell_environment_policy.set"] = {**overrides.get("shell_environment_policy.set", {}), **environment}
+            options["config_overrides"] = overrides
         return replace(invocation, request=replace(invocation.request, runtime_options=options))
 
 
@@ -349,5 +355,10 @@ class KimiOptions(NativeOptions):
 
 def prepare_invocation(invocation):
     from . import provider_catalog
-    definition = provider_catalog.AGENT_PROVIDERS[invocation.request.provider]
+    request = invocation.request
+    if "resident_environment" in request.runtime_options:
+        environment = resident_session_environment(request.runtime_options["resident_environment"])
+        options = {**request.runtime_options, "resident_environment": environment}
+        invocation = replace(invocation, request=replace(request, runtime_options=options))
+    definition = provider_catalog.AGENT_PROVIDERS[request.provider]
     return definition.runtime_adapter().prepare(invocation)
