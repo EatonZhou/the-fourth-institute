@@ -8,8 +8,9 @@ import sys
 import threading
 import time
 from datetime import datetime, timezone
+from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
-from urllib.request import ProxyHandler, build_opener
+from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
 
 from management_common.file_permissions import atomic_write_private_bytes
 from management_portal.antigravity_client import AcpClient, AcpError, AuthenticationRequired
@@ -157,6 +158,54 @@ def quota_windows(report, observed_at):
     return windows
 
 
+class _NoQuotaRedirect(HTTPRedirectHandler):
+    def redirect_request(self, *args):
+        return None
+
+
+def _quota_summary(env, version):
+    """Read the same Cloud Code quota summary used by the signed-in CLI."""
+    token_file = Path(env["GEMINI_HOME"]) / "antigravity-acp" / "antigravity-oauth-token"
+    if not token_file.is_file():
+        return None
+    bearer = json.loads(token_file.read_bytes())["token"]["access_token"]
+    opener = build_opener(_NoQuotaRedirect())
+    headers = {"Content-Type": "application/json", "Authorization": "Bearer " + bearer,
+               "User-Agent": "antigravity/" + version}
+
+    def post(method, payload):
+        url = "https://daily-cloudcode-pa.googleapis.com/v1internal:" + method
+        request = Request(url, json.dumps(payload).encode(), headers)
+        with opener.open(request, timeout=8) as response:
+            return json.load(response)
+
+    # The scope for quota is the project Google assigns to this subscription.
+    account = post("loadCodeAssist", {"metadata": {"ideType": "ANTIGRAVITY"}})
+    project = account.get("cloudaicompanionProject")
+    if isinstance(project, dict):
+        project = project.get("id")
+    if not isinstance(project, str) or not project:
+        raise ValueError("Missing Antigravity subscription project")
+    return post("retrieveUserQuotaSummary", {"project": project})
+
+
+def _summary_windows(summary, observed_at):
+    from management_portal.execution.quota_reset_time import reset_epoch_seconds
+
+    windows = []
+    for group in summary.get("groups") or []:
+        name = group.get("displayName")
+        for bucket in group.get("buckets") or []:
+            label, fraction = bucket.get("displayName"), bucket.get("remainingFraction")
+            if not name or not label or type(fraction) not in (int, float) or not 0 <= fraction <= 1:
+                continue
+            windows.append({"id": f"{name}/{label}", "label": f"{name} · {label}", "quota_group": name,
+                            "remaining_percent": round(fraction * 100, 6),
+                            "resets_at": reset_epoch_seconds(bucket.get("resetTime")),
+                            "reset_time_precision_seconds": 1, "observed_at": observed_at, "stale": False})
+    return windows
+
+
 def observe_account(account_id):
     """Read native auth and quota without an LLM turn or a Resident session."""
     session_id, commands, chunks = "", {}, []
@@ -193,8 +242,15 @@ def observe_account(account_id):
                 params = {"cwd": str(account_home("antigravity", account_id)),
                           "mcpServers": []}
                 if prior:
-                    params["sessionId"] = prior
-                result = client.call("session/load" if prior else "session/new", params)
+                    try:
+                        result = client.call("session/load", {**params, "sessionId": prior})
+                    except AcpError as error:
+                        if error.code != -32002:  # ACP resource not found
+                            raise
+                        # The saved ID belongs only to the quota observer.
+                        prior = ""
+                if not prior:
+                    result = client.call("session/new", params)
                 # ACP load responses need not echo sessionId. The requested
                 # identity remains authoritative for a resumed quota session.
                 session_id = prior or result.get("sessionId", "")
@@ -214,21 +270,28 @@ def observe_account(account_id):
                         advertised.wait(timeout=.1)
                 check_cancelled()
                 if "usage" not in commands.get(session_id, set()):
-                    sample.update(error_code="quota_unsupported", error="当前 Antigravity 运行时未提供额度查询")
-                    return sample
-                result = client.call("session/prompt", {"sessionId": session_id,
-                    "prompt": [{"type": "text", "text": "/usage"}]}, timeout=30)
-                if result.get("stopReason") != "end_turn":
-                    raise ValueError("Incomplete quota response")
-                windows = quota_windows("".join(chunks), time.time())
+                    summary = _quota_summary(env, handshake.get("agentInfo", {}).get("version", ""))
+                    if summary is None:
+                        sample.update(error_code="quota_unsupported", error="当前 Antigravity 运行时未提供额度查询")
+                        return sample
+                    windows = _summary_windows(summary, time.time())
+                    source = "antigravity.retrieveUserQuotaSummary"
+                else:
+                    result = client.call("session/prompt", {"sessionId": session_id,
+                        "prompt": [{"type": "text", "text": "/usage"}]}, timeout=30)
+                    if result.get("stopReason") != "end_turn":
+                        raise ValueError("Incomplete quota response")
+                    windows = quota_windows("".join(chunks), time.time())
+                    source = "antigravity.acp/usage"
                 if not windows:
                     raise ValueError("No quota windows reported")
-                sample.update(status="ok", rate_limits=windows,
-                    refresh_cards={"status": "observed", "available_count": 0, "cards": [],
-                        "source": "antigravity.acp/usage", "basis": "native_field_absent_as_zero",
+                sample.update(status="ok", rate_limits=windows)
+                if source == "antigravity.acp/usage":
+                    sample["refresh_cards"] = {"status": "observed", "available_count": 0, "cards": [],
+                        "source": source, "basis": "native_field_absent_as_zero",
                         "observed_at": datetime.fromtimestamp(windows[0]['observed_at'], timezone.utc).isoformat(),
-                        "stale": False})
-            except (AcpError, TimeoutError, ValueError, KeyError):
+                        "stale": False}
+            except (AcpError, OSError, ValueError, KeyError):
                 # Quota failure is not evidence of logout. Raw native errors and
                 # the report must not cross the account-observation boundary.
                 sample.update(error_code="quota_unavailable", error="Antigravity 额度暂不可读取")

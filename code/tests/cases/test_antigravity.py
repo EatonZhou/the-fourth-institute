@@ -910,3 +910,46 @@ def test_unbound_session_cannot_compact(agent):
     with pytest.raises(ValueError, match="existing Antigravity CLI session"):
         AntigravityBackend().execute(request, context()[0])
     assert not (agent / "requests.jsonl").exists()
+
+
+def test_usage_observer_loads_registered_login_environment(monkeypatch, tmp_path):
+    from management_portal import antigravity_accounts
+    from management_portal.execution import account_login
+
+    monkeypatch.setattr(account_login, "account_home", lambda provider, account_id: tmp_path / account_id)
+    env = antigravity_accounts.environment("antigravity_one")
+    assert env["GEMINI_HOME"] == str(tmp_path / "antigravity_one")
+    assert env["AGY_CLI_FORCE_FILE_TOKEN_STORAGE"] == "1"
+    assert env["AGY_CLI_DISABLE_AUTO_UPDATE"] == "true"
+
+
+def test_quota_replaces_missing_observer_session(agent, monkeypatch):
+    assert accounts.observe_account("antigravity_one")["status"] == "ok"
+    original = accounts.AcpClient.call
+    loads = []
+
+    def call(client, method, params, **kwargs):
+        if method == "session/load":
+            loads.append(params["sessionId"])
+            if len(loads) == 1:
+                raise accounts.AcpError(-32002, "Resource not found")
+        return original(client, method, params, **kwargs)
+
+    monkeypatch.setattr(accounts.AcpClient, "call", call)
+    for _ in range(2):
+        assert accounts.observe_account("antigravity_one")["status"] == "ok"
+    assert len(loads) == 2
+    assert sum(row["method"] == "session/new" for row in requests(agent)) == 2
+
+
+def test_quota_summary_uses_reported_buckets_when_usage_is_absent(agent, monkeypatch):
+    monkeypatch.setattr(accounts, "environment", lambda _: {"GEMINI_HOME": str(agent), "FAKE_NO_USAGE": "1"})
+    summary = {"groups": [{"displayName": "Claude and GPT models", "buckets": [
+        {"displayName": "Weekly", "remainingFraction": 0.97, "resetTime": "2026-11-28T00:00:00Z"},
+        {"displayName": "Five Hour", "remainingFraction": 0}, {"displayName": "Unknown"}]}]}
+    monkeypatch.setattr(accounts, "_quota_summary", lambda env, version: summary)
+    sample = accounts.observe_account("antigravity_one")
+    assert sample["status"] == "ok" and sample["login_observation"] == "logged_in"
+    assert [w["remaining_percent"] for w in sample["rate_limits"]] == [97, 0]
+    assert sample["rate_limits"][1]["resets_at"] is None
+    assert all(call["method"] != "session/prompt" for call in requests(agent))

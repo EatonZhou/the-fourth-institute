@@ -308,7 +308,7 @@ AGENT_PROVIDERS = {
                       login=LoginProfile(
                           home_env="GEMINI_HOME", hosts=("accounts.google.com",),
                           command_hook="management_portal.antigravity_accounts.login_command",
-                          environment_hook="management_portal.antigravity_accounts.login_environment",
+                          environment_hook="management_portal.antigravity_runtime.credential_environment",
                           logged_in_hook="management_portal.antigravity_accounts.logged_in",
                           error_hook="management_portal.antigravity_accounts.login_error",
                       ),
