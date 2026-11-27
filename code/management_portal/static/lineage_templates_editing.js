@@ -69,10 +69,11 @@
       view.cleanups.push(() => { clearTimeout(editorState.timer); editorState.revision += 1; editorState.codeGeneration += 1; editorState.codeEditor?.destroy(); editorState.recipeMenu?.destroy(); editorState.graph?.destroy(); });
       const supported = templatesState.kinds.find(item => item.key === draft.kind)?.targets || (draft.kind === 'prompt' ? ['resident', 'selection'] : ['resident', 'selection', 'canvas']);
       view.content.innerHTML = editorHost ? `<section data-page="body"></section>
-        <details class="workshopInfo"><summary>${esc(t('模板信息'))}</summary>
+        <div class="portalDetailOverlay workshopInfoOverlay" hidden><section class="portalDetailSurface nodeSettingsSurface" role="dialog" aria-modal="true" aria-label="${esc(t('模板信息'))}">
+          <header class="portalDetailHeader"><strong>${esc(t('模板信息'))}</strong><button type="button" class="portalButton is-icon" data-close-template-info aria-label="${esc(t('关闭'))}">×</button></header><div class="portalDetailBody workshopInfoBody" data-template-info-fields>
           ${field({name: 'description', label: '说明'}, draft.description, 'data-meta="description"')}
           <section data-page="parameters"></section><section data-template-behavior></section>
-          <p data-preview-status role="status"></p></details>` : `<div class="templateMetadata">
+          <p data-preview-status role="status"></p></div></section></div>` : `<div class="templateMetadata">
           <label class="templateField templateTitle"><span>${esc(t('标题'))}</span><input data-meta="title" value="${esc(draft.title)}" required></label>
           <span class="templateKindBadge">${esc(draft.kind)}</span>
           <label class="templateField"><span>${esc(t('分组'))}</span><select data-meta="category">${optionsHtml(Object.entries(categories()).map(([value, label]) => ({ value, label })), draft.category)}</select></label>
@@ -86,6 +87,18 @@
       const bodyPage = view.root.querySelector('[data-page="body"]');
       const parametersPage = view.root.querySelector('[data-page="parameters"]');
       const status = view.root.querySelector('[data-preview-status]');
+      if (editorHost) {
+        const overlay = view.content.querySelector('.workshopInfoOverlay');
+        const title = view.root.querySelector('[data-meta="title"]'), home = title.parentNode, next = title.nextSibling;
+        const info = window.PortalUI.createDialogController({modal:overlay,escapeClose:true,backdropClose:true});
+        const returnTitle = () => home.insertBefore(title,next);
+        // Move the actual draft control, never copy it into a second form.
+        view.openInfo = () => {overlay.querySelector('[data-template-info-fields]').prepend(title); info.open();};
+        overlay.querySelector('[data-close-template-info]').onclick = () => info.close();
+        const observer = new MutationObserver(()=>{if(!overlay.classList.contains('open'))returnTitle();});
+        observer.observe(overlay,{attributes:true,attributeFilter:['class']});
+        view.cleanups.push(()=>{observer.disconnect();returnTitle();info.destroy();});
+      }
 
       const {
         disposeCode, mountCode, readDraft, schedulePreview, snapshot, restoreInputs,

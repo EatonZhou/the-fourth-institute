@@ -216,13 +216,15 @@
     listen(shelf, 'dblclick', event => {
       const tile = event.target.closest('[data-template-id]');
       if (!tile) return;
-      event.preventDefault(); if (!config.onSelectTemplate) void openInWorkshop(tile.dataset.templateId).catch(report);
+      event.preventDefault();
+      if (config.onTemplateInfo) void Promise.resolve(config.onTemplateInfo(tile.dataset.templateId)).catch(report);
+      else if (!config.onSelectTemplate) void openInWorkshop(tile.dataset.templateId).catch(report);
     });
     listen(shelf, 'keydown', event => {
       const tile = event.target.closest('[data-template-id]');
       if (!tile || !['Enter',' '].includes(event.key)) return;
       event.preventDefault(); event.stopPropagation();
-      if (config.onSelectTemplate) void Promise.resolve(config.onSelectTemplate(tile.dataset.templateId)).catch(report);
+      if (config.onSelectTemplate) void Promise.resolve(config.onSelectTemplate(tile.dataset.templateId)).then(()=>{if(event.shiftKey) return config.onTemplateInfo?.(tile.dataset.templateId);}).catch(report);
       else if (event.shiftKey) void openInWorkshop(tile.dataset.templateId).catch(report);
       else pickup(tile.dataset.templateId, event);
     });

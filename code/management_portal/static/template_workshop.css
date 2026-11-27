@@ -43,8 +43,18 @@
 .templateGraphNavigation { position:absolute; left:10px; top:10px; z-index:20; display:flex; align-items:center; gap:3px; max-width:calc(100% - 20px); padding:3px; border:1px solid var(--border); border-radius:var(--portal-radius-lg,10px); background:var(--panel); }
 .templateGraphNavigation output { min-width:42px; text-align:center; font-size:12px; }
 .templateGraphNavigation button { flex:none; }
-.workshopInfo { max-height:40%; overflow:auto; padding:6px 12px; border-top:1px solid var(--border); }
-.workshopInfo > summary { cursor:pointer; }
+.workshopInfoOverlay { position:absolute; inset:0; z-index:45; padding:12px; }
+.workshopInfoOverlay .portalDetailSurface { width:min(620px,100%); max-height:100%; }
+.workshopInfoOverlay [data-template-info-fields] { min-height:0; overflow:auto; }
+.workshopInfoBody { display:flex; flex-direction:column; gap:12px; }
+.workshopInfoBody > * { flex-shrink:0; min-width:0; max-width:100%; }
+.workshopInfoBody .templateField { display:flex; flex-direction:column; align-items:stretch; width:100%; }
+.workshopInfoBody :is(input,textarea) { width:100%; }
+.workshopInfoOverlay .portalDetailHeader { display:flex; flex-direction:row; flex-wrap:nowrap; align-items:center; justify-content:space-between; }
+.workshopInfoOverlay [data-meta="title"] { width:100%; }
+.templateDutySummary { position:absolute; z-index:40; padding:12px; overflow:auto; border:1px solid var(--border); border-radius:var(--portal-radius-lg,12px); background:var(--lg-surface-popover,var(--panel)); color:var(--text); box-shadow:0 8px 24px #0003; }
+.templateDutySummary li { margin:6px 0; white-space:normal; overflow-wrap:anywhere; }
+.templateDutySummary ol { padding-inline-start:22px; }
 .workshopAssistantDock { position:absolute; width:36px; height:36px; z-index:35; }
 .workshopAssistantDock>[data-workshop-assistant] { position:relative; z-index:2; touch-action:manipulation; border-radius:50%; width:36px; height:36px; background:var(--panel); box-shadow:0 3px 12px #0002; color:var(--accent); }
 .workshopChatColumn { position:absolute; z-index:1; min-width:0; min-height:0; border:1px solid var(--border); border-radius:var(--portal-radius-lg,12px); box-shadow:0 8px 30px #0003; background:var(--panel); display:flex; flex-direction:column; overflow:hidden; }

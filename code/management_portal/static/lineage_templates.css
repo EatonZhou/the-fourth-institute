@@ -191,8 +191,8 @@
   .templateResidentSettings { grid-template-columns: 1fr; }
   .templateForm .templateDialogFooter { padding: 12px; flex-wrap: wrap; }
 }
-/* The template graph marks its own binding cards; it never selects the shared node class. */
-:is(.templateGraph, .templatePlacementPreview) .is-template-binding[data-node-id] {
+/* External binding shape remains a circle at every semantic zoom level. */
+:is(.templateGraph .hatgCanvas, .templatePlacementPreview.hatgCanvas) [data-node-id][data-node-kind]:has(.templateBinding) {
   width:132px; min-height:132px; border:2px dashed var(--border); border-radius:50%;
   background:var(--lg-surface-panel-glass,var(--panel)); box-shadow:none;
 }

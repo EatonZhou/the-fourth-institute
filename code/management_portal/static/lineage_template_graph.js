@@ -318,6 +318,9 @@
     let visibleEdges=edges;
     if (scope) {
       const selected=new Set(scope), wanted=new Set(scope);
+      for(const [key,binding] of Object.entries(bindingRows)){
+        if(binding.uses?.some(use=>wanted.has(use.component)))selected.add(key);
+      }
       visibleEdges=edges.filter(edge=>wanted.has(edge.id) || wanted.has(edge.source)&&wanted.has(edge.target));
       for (const edge of visibleEdges) {selected.add(edge.source);selected.add(edge.target);}
       nodes=nodes.filter(node=>selected.has(node.id));
@@ -406,7 +409,7 @@
     return {move,destroy(){destroyed=true;observer.disconnect();controller.destroy();root.remove();}};
   }
 
-  function mount({ root, body, workshop = false, readOnly = false, groups = () => [], expanded = () => [], scope = () => null, onOpenResident = () => {}, isReadonly = () => false, onBeforeChange = () => {}, onChange = () => {}, onSelect = () => {} }) {
+  function mount({ root, body, workshop = false, readOnly = false, groups = () => [], expanded = () => [], scope = () => null, residentInfo = () => null, onOpenResident = () => {}, isReadonly = () => false, onBeforeChange = () => {}, onChange = () => {}, onSelect = () => {} }) {
     const program = window.PortalLineageProgram;
     const factory = window.PortalHatgGraph?.createGraph;
     if (!program || !factory) throw new Error(t('HATG 图形引擎未加载'));
@@ -443,6 +446,39 @@
         <p class="templateGraphHint" data-graph-hint role="status" hidden></p>
       </div>`;
     const canvas = root.querySelector('.hatgCanvas');
+    let summaryBindings=[],summaryResume='';
+    function bindDutySummary(element,node) {
+      const dutySummary=document.createElement('aside');
+      dutySummary.className='templateDutySummary';dutySummary.hidden=true;dutySummary.tabIndex=0;
+      dutySummary.dataset.residentSummary=node.id;
+      dutySummary.setAttribute('role','region');dutySummary.setAttribute('aria-label',t('模板职责清单'));root.append(dutySummary);
+      const hide=()=>{dutySummary.hidden=true;};
+      const show=()=>{
+        if(canvas.matches(':active'))return;
+        const meta=residentInfo(node.id) || residentContexts(body())[node.id] || node._template_menu;
+        dutySummary.innerHTML=`<strong>${esc(meta.title)}</strong><ol>${meta.duties.map(duty=>`<li>${esc(duty.title)}</li>`).join('')}</ol>${meta.duties.length?'':`<p>${esc(t('暂无职责'))}</p>`}<button type="button" class="portalButton is-compact" data-summary-menu>${esc(t('打开模板 Resident 菜单'))}</button>`;
+        dutySummary.querySelector('button').onclick=()=>{hide();onOpenResident(node.id);};
+        dutySummary.hidden=false;
+        const host=root.getBoundingClientRect(),anchor=element.getBoundingClientRect();
+        dutySummary.style.width=`${Math.max(0,Math.min(360,host.width-16))}px`;
+        dutySummary.style.maxHeight=`${Math.max(0,host.height-16)}px`;
+        const width=dutySummary.offsetWidth;
+        let x=anchor.right-host.left+8,y=Math.max(8,Math.min(anchor.top-host.top,host.height-dutySummary.offsetHeight-8));
+        if(x+width>host.width-8){
+          if(anchor.left-host.left-width-8>=8)x=anchor.left-host.left-width-8;
+          else {
+            x=Math.max(8,Math.min(anchor.left-host.left,host.width-width-8));
+            const below=host.bottom-anchor.bottom-16,above=anchor.top-host.top-16;
+            dutySummary.style.maxHeight=`${Math.max(0,Math.max(below,above))}px`;
+            y=below>=above?anchor.bottom-host.top+8:anchor.top-host.top-dutySummary.offsetHeight-8;
+          }
+        }
+        dutySummary.style.left=`${x}px`;dutySummary.style.top=`${y}px`;
+      };
+      const binding=window.PortalHatgPanelBindings.bindHoverPanel({trigger:element,panel:dutySummary,open:show,close:hide,isOpen:()=>!dutySummary.hidden});
+      summaryBindings.push({destroy(){binding.destroy();dutySummary.remove();}});
+      if(summaryResume===node.id)binding.open();
+    }
     const states = root.appendChild(document.createElement('style'));
     const hintNode = root.querySelector('[data-graph-hint]');
     const hint = message => {
@@ -454,6 +490,8 @@
 
 
     function render() {
+      summaryResume=root.querySelector('.templateDutySummary:not([hidden])')?.dataset.residentSummary || '';
+      summaryBindings.forEach(binding=>binding.destroy());summaryBindings=[];
       current = project(body(), {workshop,groups:groups(),expanded:expanded(),scope:scope()});
       currentNodesById = new Map(current.nodes.map(node => [node.id, node]));
       const selectedEdge = current.edges.some(edge => edge.id === selected);
@@ -469,9 +507,10 @@
       canvas.querySelectorAll('[data-node-id]').forEach(element=>{
         const node=currentNodesById.get(element.dataset.nodeId);
         element.classList.toggle('is-template-binding',!!node?._template_binding);
-        if(node?._template_menu){element.tabIndex=0;element.setAttribute('aria-label',`${node.title} · ${t('模板 Resident 菜单')}`);element.title=node._template_menu.duties.map(duty=>duty.title).join(' · ');}
+        if(node?._template_menu){element.tabIndex=0;element.setAttribute('aria-label',`${node.title} · ${t('模板 Resident 菜单')}`);element.removeAttribute('title');bindDutySummary(element,node);}
       });
       canvas.querySelectorAll('[data-node-open-menu]').forEach(button=>{button.dataset.templateResidentMenu=button.dataset.nodeOpenMenu;});
+      summaryResume='';
       root.dataset.graphEmpty = String(!current.nodes.length);
     }
 
@@ -607,7 +646,7 @@
       fitButton: root.querySelector('[data-graph-fit]'),
       fitOptions: {duration:0,maxScale:workshop ? 1 : 1.1},
       nodeContent,
-      nodeOpenMenu:node=>node._template_menu ? {label:t('打开模板 Resident 菜单'),title:node._template_menu.duties.map(duty=>duty.title).join(' · ')} : null,
+      nodeOpenMenu:node=>node._template_menu ? {label:t('打开模板 Resident 菜单')} : null,
       onNodeOpenMenu:node=>onOpenResident(node.id),
       portsForNode: node => program.portsForNode(node),
       connectionTargets: (source, item) => program.connectionTargets(source, item),
@@ -624,6 +663,7 @@
     });
 
     const abort = new AbortController();
+    const summaryResize=new ResizeObserver(()=>{root.querySelectorAll('.templateDutySummary').forEach(panel=>{panel.hidden=true;});});summaryResize.observe(root);
     root.addEventListener('click', event => {
       const chip = event.target.closest('[data-add-role], [data-add-component], [data-add-found]');
       if (!chip) return;
@@ -654,7 +694,7 @@
       selected: () => selected,
       fit: () => controller.fit({ duration: 0, maxScale: workshop ? 1 : 1.1 }),
       remove: key => { if (!isReadonly(key)) change(source => { removeElement(source, key); return ''; }); },
-      destroy() { clearTimeout(hintTimer); abort.abort(); controller.destroy(); root.replaceChildren(); },
+      destroy() { summaryResize.disconnect();summaryBindings.forEach(binding=>binding.destroy());clearTimeout(hintTimer); abort.abort(); controller.destroy(); root.replaceChildren(); },
     });
   }
 

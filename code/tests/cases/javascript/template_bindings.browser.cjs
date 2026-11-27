@@ -25,7 +25,10 @@ const {chromium}=require('../../../management_portal/test_framework/tau_runtime/
   await tile.click();await page.waitForTimeout(280);await page.mouse.move(point.x,point.y);
   const preview=graph.locator('.templatePlacementPreview');await page.waitForFunction(a=>document.querySelector('.templatePlacementPreview')?.dataset.boundResident===a,a);
   assert.equal(await preview.locator('.templateBinding[data-binding-key="members"]').count(),1);
-  assert.equal(await preview.locator('.hatgNode:has([data-binding-key="members"])').evaluate(node=>getComputedStyle(node).borderRadius),'50%');
+  const bindingStyle=await preview.locator('.hatgNode:has([data-binding-key="members"])').evaluate(node=>{
+   const rules=items=>[...items].flatMap(rule=>rule.selectorText&&rule.style?.borderRadius&&node.matches(rule.selectorText)?[{selector:rule.selectorText,radius:rule.style.borderRadius,priority:rule.style.getPropertyPriority('border-radius')}]:rule.cssRules?rules(rule.cssRules):[]);
+   return {radius:getComputedStyle(node).borderRadius,html:node.outerHTML.slice(0,360),rules:[...document.styleSheets].flatMap(sheet=>rules(sheet.cssRules))};
+  });assert.equal(bindingStyle.radius,'50%',JSON.stringify(bindingStyle));
   assert.equal(await preview.locator('.hatgNode:not(:has(.templateBinding))').count(),3);
   const expected=await preview.locator('[data-node-id="router_resident"]').boundingBox();
   await page.waitForTimeout(300);await page.screenshot({path:`${folder}/family-collection-anchor-highlight.png`});

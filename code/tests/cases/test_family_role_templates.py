@@ -40,7 +40,7 @@ def test_roles_are_real_single_resident_compositions_and_shared_delivery_is_sing
     assert next(e for e in parent['elements'] if e.get('key') == 'relay')['kind'] == 'wire'
     configured = family_tasks.configured(body, parent)
     assert {'route', 'recruit', 'route_review', 'review', 'recovery'} <= configured.keys()
-    assert 'GetFamilyRoutingContext' in configured['route']['guide']
+    assert 'GetRelayContext' in configured['route']['guide']
     assert not any('family_tasks' in p.get('arguments', {}) for w in body['program']['wires'] for p in w.get('config', {}).get('invoke_profiles', {}).values())
     assert run('DeleteFunctionBlock', {'lineage_id': lineage, 'function_block_id': roles[0]['id']}).error
 

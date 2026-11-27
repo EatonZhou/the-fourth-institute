@@ -48,7 +48,7 @@ const {chromium}=require('../../../management_portal/test_framework/tau_runtime/
   for(const view of ['list','json','graph']){await root.locator(`[data-structure-view="${view}"]`).click();await anchor();await clean();}
   await page.evaluate(()=>{const area=document.querySelector('#fixedAssistant [data-page="body"]'),probe=document.createElement('div');probe.id='fixedScrollProbe';probe.style.height='2000px';area.append(probe);area.scrollTop=500;});await anchor();
   await page.evaluate(()=>document.getElementById('fixedScrollProbe').remove());
-  await root.locator('.workshopInfo > summary').click();await anchor();await icon.hover();await contained();await icon.press('Escape');await root.locator('.workshopInfo > summary').click();await anchor();
+  await root.locator('[data-workshop-info]').click();assert.equal(await root.locator('.workshopInfoOverlay.open').isVisible(),true);await root.locator('[data-close-template-info]').click();await anchor();await icon.hover();await contained();await icon.press('Escape');
   await page.evaluate(()=>{const host=document.getElementById('fixedAssistant');host.style.inset='auto';host.style.left='40px';host.style.top='60px';host.style.width='600px';host.style.height='700px';});await anchor();
   await page.evaluate(()=>document.getElementById('fixedAssistant').style.display='none');await page.waitForTimeout(30);await page.evaluate(()=>document.getElementById('fixedAssistant').style.display='');await anchor();assert.equal(await icon.count(),1);
   await page.evaluate(()=>{const host=document.getElementById('fixedAssistant');host.style.position='relative';host.style.top='0';document.body.style.minHeight='2000px';document.documentElement.style.overflow='auto';window.scrollTo(0,200);});await anchor();

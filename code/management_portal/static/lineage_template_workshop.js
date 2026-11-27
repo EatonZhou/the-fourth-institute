@@ -17,13 +17,25 @@
     let removed = false;
     let documentRevision = 0;
     let navigation = 0, editVersion = 0;
+    let selection = null;
     let restoring = false, initialization = 'reset';
     const history = window.LineageTemplateWorkshopDraft.history(state => {
       root.querySelectorAll('[data-workshop-history]').forEach(button => {button.disabled = !state[button.dataset.workshopHistory] || !!runtime?.view.working;});
     });
-    async function openTemplate(id) {
+    function openTemplate(id) {
+      if(selection?.id===id && selection.pending)return selection.promise;
+      const attempt={id,pending:true};selection=attempt;
+      attempt.promise=selectTemplate(id).finally(()=>{attempt.pending=false;});
+      return attempt.promise;
+    }
+    async function openTemplateInfo(id) {
+      const attempt=selection;
+      const opened=attempt?.id===id ? await attempt.promise : id===runtime?.draft.template_id;
+      if(opened && selection===attempt && runtime?.draft.template_id===id && !abort.signal.aborted)runtime.view.openInfo();
+    }
+    async function selectTemplate(id) {
       if (runtime?.view.working) return;
-      if (id === runtime?.draft.template_id && !previewItem) return;
+      if (id === runtime?.draft.template_id && !previewItem) return true;
       const serial = ++navigation;
       if (dirty() && !await window.PortalUI.confirm({title:t('切换模板？'), message:t('当前模板有未保存的修改，切换后将放弃这些修改。'), confirmLabel:t('放弃修改并切换'), cancelLabel:t('继续编辑')})) return;
       if (serial !== navigation || abort.signal.aborted) return;
@@ -35,6 +47,7 @@
         templateId = result.template.template_id; storeId = ''; previewItem = null; removed = false;
         documentRevision += 1; error(null); templates.edit(result.template);
         onOpened?.(result.template);
+        return true;
       } catch (exception) { if (serial === navigation) error(exception); }
     }
     const abort = new AbortController();
@@ -93,6 +106,7 @@
         form = previous.cloneNode(false); previous.replaceWith(form);
         form.innerHTML = `<header class="workshopBar">
           <input data-meta="title" aria-label="${esc(t('模板标题'))}" value="${esc(source.title)}" required>
+          <button type="button" class="portalButton is-compact" data-workshop-info>${esc(t('模板信息'))}</button>
           <button type="button" class="portalButton is-icon" data-workshop-store data-portal-icon="archive" aria-label="${esc(t('模板商店'))}" title="${esc(t('模板商店'))}"></button>
           <nav class="workshopViewGroup" aria-label="${esc(t('视图'))}" ${source.kind === 'structure' ? '' : 'hidden'}>${[['graph','图'],['list','列表'],['json','JSON']].map(([key,label])=>`<button type="button" class="portalButton is-compact" data-structure-view="${key}" aria-pressed="${key==='graph'}">${esc(t(label))}</button>`).join('')}</nav>
           <div class="workshopHistoryGroup" role="group" aria-label="${esc(t('草稿历史'))}">${['undo','redo'].map(key=>`<button type="button" class="portalButton is-icon" data-workshop-history="${key}" data-portal-icon="${key}" aria-label="${esc(t(key==='undo'?'撤销':'重做'))}" title="${esc(t(key==='undo'?'撤销':'重做'))}" disabled></button>`).join('')}</div>
@@ -178,12 +192,14 @@
       toolboxItems:authoringItems,palette,isComposition:true,iconOnly:true,
       selectedTemplate:() => runtime?.draft.template_id, collapsible:true,
       onSelectTemplate:openTemplate,
+      onTemplateInfo:openTemplateInfo,
       acceptTemplate: item => runtime?.draft.kind === 'structure' && item.kind === 'structure',
       resolveTarget: event => ({kind:'canvas', ...runtime.editorState.graph.position(event)}),
       placementView:()=>runtime.editorState.graph.placementView(),
       applyTemplate:insertTemplate,
     });
     listen(root, 'click', async event => {
+      if (event.target.closest('[data-workshop-info]')) runtime.view.openInfo();
       if (event.target.closest('[data-workshop-store]')) {
         window.PortalTemplateStore.open({request:execute,lineageId,onOpenWorkshop:resource => onOpenWorkshop?.(resource)});
       }

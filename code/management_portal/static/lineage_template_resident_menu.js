@@ -19,7 +19,7 @@
     const editable=()=>!!metadata()?.editable && draft.kind==='role';
     const duties=()=>editable() ? draft.body.duties.map(row=>({...row,...metadata().duties.find(item=>item.key===row.key),...row})) : metadata()?.duties || [];
     const memories=()=>editable() ? draft.body.memories : metadata()?.memories || [];
-    const field=(label,value,attributes)=>`<label class="templateField"><span>${esc(t(label))}</span><textarea rows="4" aria-label="${esc(t(label))}" ${attributes}>${esc(value)}</textarea></label>`;
+    const field=(label,value,attributes)=>{label=label==='名称'?'一句话职责说明':label;return `<label class="templateField"><span>${esc(t(label))}</span><textarea rows="4" aria-label="${esc(t(label))}" ${attributes}>${esc(value)}</textarea></label>`;};
     function render() {
       try{readDraft();}catch(error){if(!editorState.invalidTemplateMenu)throw error;}
       const meta=metadata();if(!meta){dialog.close();return;}

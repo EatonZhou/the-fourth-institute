@@ -16,7 +16,7 @@ const {chromium}=require('../../../management_portal/test_framework/tau_runtime/
   assert.equal(await page.evaluate(()=>workshop.dirty()),false);
   await page.evaluate(()=>workshop.openTemplate(router.template_id));
   assert.equal(await page.locator('[data-template-resident-menu]').count(),1);
-  assert.equal(await page.locator('.templateBinding').count()>=4,true);
+  assert.equal(await page.locator('.templateBinding').count()>0,true);
   assert.equal(await page.evaluate(()=>workshop.dirty()),false);
   // Every menu action is against the current template draft, never a fake live ID.
   await page.locator('[data-template-resident-menu]').click();

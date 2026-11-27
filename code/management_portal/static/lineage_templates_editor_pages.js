@@ -116,7 +116,8 @@
       bodyPage.querySelector('[data-recipe-parameters]').addEventListener('click',()=>inspect(''));
       function openMenu(key){readDraft();inspector.hidden=true;inspector.innerHTML='';editorState.recipeMenu.open(key);}
       editorState.graph = window.LineageTemplateGraph.mount({root:bodyPage.querySelector('[data-template-graph]'), body:() => projection.body,
-        workshop:true, readOnly:true, expanded:()=>[...expanded],scope:()=>localScope, onSelect:inspect,onOpenResident:openMenu});
+        workshop:true, readOnly:true, expanded:()=>[...expanded],scope:()=>localScope, onSelect:inspect,onOpenResident:openMenu,
+        residentInfo:key=>{const meta=projection.body.presentation?.residents[key];return meta && {...meta,duties:draft.kind==='role'?draft.body.duties:meta.duties};}});
       const menu=window.LineageTemplateResidentMenu.create({root:bodyPage,draft,editorState,projection:()=>projection,readDraft,onChange:schedulePreview,onInspect:inspect,
         onSource:id=>editorState.openTemplate?.(id),onExpand:key=>{expanded.add(key);editorState.graph.render();editorState.graph.fit();},
         onLocalGraph:(key,duty)=>{localScope=[key,...(duty?.members || [])];inspector.hidden=true;inspector.innerHTML='';bodyPage.querySelector('[data-recipe-back]').hidden=false;bodyPage.querySelector('[data-recipe-breadcrumb]').textContent=`${projection.body.presentation.residents[key].title} / ${duty?.title || ''}`;editorState.graph.render();editorState.graph.fit();}});

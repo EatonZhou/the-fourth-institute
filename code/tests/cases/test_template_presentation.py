@@ -16,12 +16,52 @@ def test_role_menus_and_bindings_are_derived_from_the_source_without_runtime_ids
         assert {d['key'] for d in owner['duties']}=={d['key'] for d in source['body']['duties']}
         assert [m['prompt'] for m in owner['memories']]==[m['prompt'] for m in source['body']['memories']]
         assert owner['source']['template_id']==source['template_id']
-        assert {b['key'] for b in meta['bindings'].values()}==set(source['body']['bindings'])
-        assert all(b['direction'] in {'in','out','both'} for b in meta['bindings'].values())
+        assert {b['key'] for b in meta['bindings'].values()} <= set(source['body']['bindings'])
+        assert all(b['direction'] in {'in','out','both','reference'} and b['uses'] for b in meta['bindings'].values())
+        if source['body']['role_key']=='router':
+            assert not any(b['key']=='member_done' for b in meta['bindings'].values())
+        else:
+            assert any(b['key']=='member_done' for b in meta['bindings'].values())
         assert any(b['key']=='members' and b['cardinality']=='many' for b in meta['bindings'].values())
         assert set(meta['residents']).isdisjoint(meta['bindings'])
         assert not any(r['from']=='lineage_leader' for r in view['roles'])
         assert ok('GetTemplate',{'template_id':source['template_id']})['template']['body']==before
+
+
+def test_executable_references_ignore_prose_and_keep_unbound_collection_ports():
+    from management_portal.society_service.templates.presentation import references
+    value={'invoke_profiles':{'effect':{'arguments':{'members':{'value':['{{members}}']},
+        'family':{'value':'family.{{family}}.review'},'prompt':{'value':'{{unused}}'}}}},
+        'script':'echo {{unused_script}}', 'description':'{{unused_description}}'}
+    used=list(references(value))
+    assert {key for key,_ in used}=={'members','family'}
+    assert all('arguments' in path for _,path in used)
+    script={'script':'# ${arguments.member_done}\nNotify recipient="${arguments.steward}"'}
+    assert list(references(script))==[('steward_resident','config.script.arguments.steward')]
+
+
+def test_duty_sentences_are_editable_source_titles_and_events_keep_event_names(lineage):
+    from management_portal.society_service.templates import role_recipes
+    for source in [t for t in ok('ListTemplates')['templates'] if t['kind']=='role']:
+        assert {d['key']:d['title'] for d in source['body']['duties']}=={
+            key:title for key,title in role_recipes.DUTY_TITLES.items()
+            if key in {d['key'] for d in source['body']['duties']}}
+    router=role_recipes.definition('router')
+    assert router['duties'][0]['title']=='门面收到消息后，将消息路由到最合适的成员处'
+    assert next(c for c in ok('GetTemplate',{'template_id':builtins.template_id('family_role_router')})['template']['editor']['graph']['body']['components'] if c['key']=='facade_inbox')['title']=='门面收到消息'
+
+
+def test_custom_duty_sentence_is_not_rewritten_by_builtin_refresh(lineage):
+    source=ok('GetTemplate',{'template_id':builtins.template_id('family_role_router')})['template']
+    payload={key:deepcopy(source[key]) for key in ('title','kind','body','parameters','targets')}
+    payload['body']['duties'][0]['title']='自己的说明，保留我的表达'
+    own=ok('CreateTemplate',{'template':payload})['template']
+    ok('UpdateTemplate',{'template_id':source['template_id'],'template':payload})
+    listed={t['template_id']:t for t in ok('ListTemplates')['templates']}
+    for identity in (own['template_id'],source['template_id']):
+        assert listed[identity]['body']['duties'][0]['title']=='自己的说明，保留我的表达'
+        owner=ok('GetTemplate',{'template_id':identity})['template']['editor']['graph']['body']['presentation']['residents']['router_resident']
+        assert owner['duties'][0]['title']=='自己的说明，保留我的表达'
 
 
 def test_family_placement_uses_the_same_composed_graph_and_external_member_anchor(lineage,charters):

@@ -3,7 +3,30 @@
 No IDs here identify live Residents. The body remains the full primitive graph;
 the hierarchy only declares which owned nodes a Resident menu can unfold.
 """
+import re
+
 from . import structure_layout
+
+
+def references(value, path='config'):
+    """Executable references, never prose mentioning an identity."""
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if key == 'script' and isinstance(item, str):
+                # Family Effects can consume bound runtime arguments directly.
+                # Read formal argument expressions, not IDs in prompt prose.
+                executable='\n'.join(line for line in item.splitlines() if not line.lstrip().startswith('#'))
+                for name in re.findall(r'\$\{arguments\.(facade|router|steward|members|family_id|member_done)\}', executable):
+                    identity={'members':'member_resident','family_id':'family','member_done':'member_done'}.get(name,name+'_resident')
+                    yield identity, path + '.script.arguments.' + name
+            if key not in {'prompt', 'guide', 'family_tasks', 'script', 'description', 'title'}:
+                yield from references(item, path + '.' + key)
+    elif isinstance(value, list):
+        for item in value:
+            yield from references(item, path)
+    elif isinstance(value, str):
+        for key in re.findall(r'\{\{([a-zA-Z0-9_:.-]+)\}\}', value):
+            yield key, path
 
 
 def task_entries(body, block):
@@ -22,6 +45,23 @@ def annotate(projection, body, parent, roles, scopes, keys, *, source=None, role
     visible = {r['key'] for section in ('roles', 'components') for r in graph[section]}
     residents, bindings, owners = {}, {}, {}
     titles = {'facade': '门面', 'router': 'Router', 'steward': 'Steward'}
+    used = {}
+    for section in ('components', 'wires'):
+        for row in graph[section]:
+            for end in ('source', 'target'):
+                if end in row:
+                    used.setdefault(row[end], []).append({'component': row['key'], 'path': end})
+            for key, path in references(row.get('config', {})):
+                used.setdefault(key, []).append({'component': row['key'], 'path': path})
+    # Installation context is not itself a visible graph interface. Preserve
+    # only externally referenced Residents, including unbound collection slots.
+    graph['roles'] = [r for r in graph['roles'] if not role_key or r['key'] == role_key + '_resident' or r['key'] in used]
+    visible = {r['key'] for section in ('roles', 'components') for r in graph[section]}
+    for key in roles:
+        local = key + '_resident'
+        if local in used and local not in visible:
+            graph['roles'].append({'key': local, 'from': 'binding', 'title': titles.get(key, '成员集合') if key != 'member' else '成员集合'})
+            visible.add(local)
     for key, rid in roles.items():
         local = key + '_resident'
         if local not in visible:
@@ -81,24 +121,39 @@ def annotate(projection, body, parent, roles, scopes, keys, *, source=None, role
         bindings[local] = {'key': key, 'type': kind, 'direction': 'both', 'cardinality': cardinality, 'required': required}
 
     if role_key:
-        interface('binding_family', 'family', '所属 Family', 'family')
-        if 'facade_resident' not in visible:
-            interface('binding_facade', 'facade', 'Family 门面', 'resident')
-        if 'member_resident' not in visible:
-            interface('binding_members', 'members', '成员集合', 'resident', 'many', False)
-        peer = 'steward' if role_key == 'router' else 'router'
-        if peer + '_resident' not in visible:
-            interface('binding_peer', 'peer', titles[peer], 'resident')
-        shared = next((key for key in visible if key.endswith('member_done')), 'binding_member_done')
-        interface(shared, 'member_done', '共享完成事件', 'event_source')
+        from .. import family_roles
+        own_keys = {keys[e['id']] for scope in scopes for e in scope['elements'] if e['id'] in keys}
+        for row in graph['components']:
+            local = row['key']
+            if local in own_keys:
+                continue
+            other = family_roles.owner(local)
+            remote = 'facade' if local == 'facade_inbox' else other[0] if other and other[0] != role_key else None
+            if remote:
+                anchor = remote + '_resident'
+                if anchor not in visible:
+                    graph['roles'].append({'key': anchor, 'from': 'binding', 'title': titles[remote]})
+                    visible.add(anchor)
+                bindings[anchor] = {'key': 'peer' if remote in {'router', 'steward'} else remote,
+                    'type': 'resident', 'cardinality': 'one', 'required': True}
+                used.setdefault(anchor, []).append({'component': local, 'path': 'external primitive'})
+                owners[local] = anchor
+
+    if role_key:
+        if 'family' in used:
+            interface('binding_family', 'family', '所属 Family', 'family')
+            used['binding_family'] = used['family']
+        shared = next((key for key in visible if key.endswith('member_done') and key in used), None)
+        if shared:
+            interface(shared, 'member_done', '共享完成事件', 'event_source')
     if not duty:
         # Family-owned primitives remain one shared interface at organization
         # level. Their full graph is retained for the explicit expanded view.
         public = [r['key'] for r in graph['components'] if r['key'] not in owners and r['key'] not in bindings]
         if public:
             shared = 'binding_family' if role_key else 'binding_platform'
-            if not role_key:
-                interface(shared, 'platform', 'Family 公共接口', 'family')
+            interface(shared, 'family' if role_key else 'platform', 'Family 公共接口', 'family')
+            used.setdefault(shared, []).extend({'component': key, 'path': 'external primitive'} for key in public)
             owners.update({key: shared for key in public})
             for wire in graph['wires']:
                 if wire['key'] not in owners:
@@ -106,9 +161,10 @@ def annotate(projection, body, parent, roles, scopes, keys, *, source=None, role
     graph['presentation'] = {'level': 'duty' if duty else 'role' if role_key else 'organization',
                              'residents': residents, 'bindings': bindings, 'owners': owners}
     for local, binding in bindings.items():
-        incoming = any(w['target'] == local for w in graph['wires'])
-        outgoing = any(w['source'] == local for w in graph['wires'])
-        binding['direction'] = 'both' if incoming and outgoing else 'out' if outgoing else 'in'
+        binding['uses'] = used.get(local, [])
+        incoming = any(owners.get(w['target'], w['target']) == local for w in graph['wires'])
+        outgoing = any(owners.get(w['source'], w['source']) == local for w in graph['wires'])
+        binding['direction'] = 'both' if incoming and outgoing else 'out' if outgoing else 'in' if incoming else 'reference'
     for row in graph['roles']:
         if row['key'] in bindings and row['from'] != 'target':
             row['from'] = 'binding'
@@ -122,8 +178,8 @@ def annotate(projection, body, parent, roles, scopes, keys, *, source=None, role
         edges = [{**w, 'source': owner(w['source']), 'target': owner(w['target'])} for w in graph['wires']]
         compact = structure_layout.positions({'roles': [{'key': key} for key in top],
             'wires': [w for w in edges if w['source'] != w['target']]})
-        # Unconnected, explicitly declared interfaces are still visible. A
-        # compact grid avoids fitting a tall column of unused declarations.
+        # Explicit executable references can be visible without a wire. Their
+        # evidence stays a reference; never fabricate an event or connecting edge.
         if len(compact) > 4 and len({p['x'] for p in compact.values()}) == 1:
             compact = {key: {'x': 25 + (i // 3) * 30, 'y': 25 + (i % 3) * 25} for i, key in enumerate(top)}
         layout.update(compact)
