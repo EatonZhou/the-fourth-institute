@@ -42,7 +42,7 @@ from claude_agent_sdk import (
 )
 
 from management_common.product_environment import mirror_product_env
-from management_portal.resident_shell_environment import portal_database_environment, resident_identity_environment, resident_identity_fingerprint
+from management_portal.resident_shell_environment import portal_database_environment, resident_session_environment
 from management_portal.claude_tool_bridge import ClaudeToolBridge
 from management_portal.claude_account_usage import ClaudeAccountUsage
 from management_common.provider_subagent_runs import PROGRESS_METHOD, SubagentRuns
@@ -700,7 +700,7 @@ def _cli_environment(
     # Mask both inherited identity aliases, including for a human session.
     for key in ("PORTAL_RESIDENT_ID", "PORTAL_LINEAGE_ID"):
         mirror_product_env(env, key, "")
-    env.update(resident_identity_environment(params.get("resident_environment")))
+    env.update(resident_session_environment(params.get("resident_environment")))
     if params.get("inherit_portal_database"):
         if not env["PORTAL_RESIDENT_ID"]:
             raise ValueError("Portal database environment requires Resident identity")
@@ -1368,7 +1368,7 @@ class ClaudeCodeDaemon:
             tuple(str(item) for item in params.get("add_dirs") or []),
             json.dumps(params.get("tools") or [], sort_keys=True),
             # Bind the native session to the canonical Resident identity.
-            json.dumps(resident_identity_fingerprint(params.get("resident_environment")), sort_keys=True),
+            json.dumps(resident_session_environment(params.get("resident_environment")), sort_keys=True),
             _allows_subagents(params),
         )
 
@@ -1708,7 +1708,7 @@ class ClaudeCodeDaemon:
         cwd, config, route = handle.signature[:3]
         if cwd != params.get("cwd") or route != params.get("provider_profile"):
             raise ValueError("Claude session binding changed")
-        identity = resident_identity_fingerprint(params.get("resident_environment"))
+        identity = resident_session_environment(params.get("resident_environment"))
         if json.loads(handle.signature[11]) != identity:
             raise ValueError("Claude session identity changed")
         if handle.lock.locked() or handle.active_turn_id:
@@ -1979,7 +1979,8 @@ class ClaudeCodeDaemon:
             "component_versions": PROVIDER_COMPONENTS,
             "app_server_version": APP_SERVER_VERSION,
             "protocol_version": APP_SERVER_PROTOCOL_VERSION,
-            "capabilities": {"harness_tools": True, "resident_environment": True, "account_usage": True, "input_media": True, "auto_compact_window": True, "turn_steer": True, "session_compact": True, "turn_reattach": True, "turn_continue": True, "subagent_switch": True},
+            "capabilities": {"harness_tools": True, "resident_environment": True, "resident_session_environment": True,
+                             "account_usage": True, "input_media": True, "auto_compact_window": True, "turn_steer": True, "session_compact": True, "turn_reattach": True, "turn_continue": True, "subagent_switch": True},
             "provider_profile": self.default_profile,
             # Retain legacy keys, with null meaning untested rather than an
             # assertion that an account is authenticated or a route is broken.

@@ -138,8 +138,10 @@ async def claude(root, model):
             "PORTAL_RESIDENT_ID": "resident_aabbccddeeff", "PORTAL_LINEAGE_ID": "lineage_aabbccddeeff",
             "PORTAL_RESIDENT_WORKSPACE": workspace, "PORTAL_LINEAGE_WORKSPACE": workspace,
             "PORTAL_PROJECT_WORKSPACE": workspace, "PORTAL_WORKSPACE_AABBCCDDEEFF": workspace,
+            "PORTAL_CONTEXT_PROBE_LABEL": "candidate 交接", "PORTAL_TEAM_WORKSPACE": workspace,
         }
-        check(daemon.resident_identity_fingerprint(resident_env) == resident_env, "Claude session environment")
+        signature = daemon.ClaudeCodeDaemon._signature({"resident_environment": resident_env}, "")
+        check(json.dumps(resident_env, sort_keys=True) in signature, "Claude session environment")
         cli_env = daemon._cli_environment({"resident_environment": resident_env}, {},
                                            Path(os.environ["CLAUDE_CONFIG_DIR"]), 0)
         check(all(cli_env.get(k) == v for k, v in resident_env.items()), "Claude CLI workspace environment")

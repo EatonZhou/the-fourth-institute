@@ -218,6 +218,27 @@ def test_fork_still_excludes_database_from_process_environment(monkeypatch, tmp_
     assert env['PATH'] == '/test/bin'
 
 
+def test_claude_session_context_reaches_cli_and_participates_in_reuse(tmp_path):
+    fields = {**NEW, "PORTAL_CONTEXT_LABEL": "团队 A", "PORTAL_TEAM_WORKSPACE": str(tmp_path)}
+    params = {"resident_environment": fields}
+    cli = daemon._cli_environment(params, {}, tmp_path, 0)
+    assert {k: cli[k] for k in fields} == fields
+    signature = daemon.ClaudeCodeDaemon._signature(params, "test-model")
+    changed = {**fields, "PORTAL_CONTEXT_LABEL": "团队 B"}
+    assert daemon.ClaudeCodeDaemon._signature({"resident_environment": changed}, "test-model") != signature
+
+
+@pytest.mark.parametrize("fields", [
+    {**NEW, "CLAUDE_CONFIG_DIR": "/tmp/account"}, {**NEW, "PORTAL_DATABASE_URL": "value"},
+    {**NEW, "PATH": "/bin"}, {**NEW, "PORTAL_TEAM_WORKSPACE": "relative"},
+    {"PORTAL_CONTEXT_LABEL": "missing identity"}, {**NEW, "PORTAL_CONTEXT_LABEL": 123},
+    {**NEW, "PORTAL_CONTEXT_LABEL": "invalid\x00value"},
+])
+def test_claude_session_rejects_invalid_or_reserved_fields(fields, tmp_path):
+    with pytest.raises(ValueError):
+        daemon._cli_environment({"resident_environment": fields}, {}, tmp_path, 0)
+
+
 def test_relay_peer_filter_is_preserved():
     networks = relay._parse_allowed_networks('127.0.0.0/8')
     assert relay._peer_allowed('127.0.0.1', networks)

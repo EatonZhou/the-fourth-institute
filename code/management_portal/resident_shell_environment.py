@@ -37,23 +37,29 @@ def portal_database_environment(enabled: bool) -> dict[str, str]:
     return {"PORTAL_DATABASE_URL": portal_database_url()} if enabled else {}
 
 
-def resident_identity_environment(value: Mapping[str, Any] | None) -> dict[str, str]:
-    """Validate the canonical Resident and Lineage environment fields."""
-    identity = {str(key): str(item) for key, item in dict(value or {}).items()}
-    fields = ("PORTAL_RESIDENT_ID", "PORTAL_LINEAGE_ID")
-    allowed = set(fields)
-    workspace_fields = {
-        key for key in identity
-        if re.fullmatch(r"PORTAL_(?:WORKSPACE_[0-9A-F]{12}|(?:RESIDENT|LINEAGE|PROJECT)_WORKSPACE)", key)
-    }
-    allowed.update(workspace_fields)
-    if set(identity) - allowed:
-        raise ValueError("Unexpected Resident environment field")
+RESIDENT_IDENTITY_FIELDS = ("PORTAL_RESIDENT_ID", "PORTAL_LINEAGE_ID")
+# Fixed wire contract understood by older native adapters.
+LEGACY_WORKSPACE_FIELD = re.compile(r"PORTAL_(?:WORKSPACE_[0-9A-F]{12}|(?:RESIDENT|LINEAGE|PROJECT)_WORKSPACE)")
+SESSION_WORKSPACE_FIELD = re.compile(r"PORTAL_(?:WORKSPACE_[0-9A-F]{12}|[A-Z][A-Z0-9_]*_WORKSPACE)")
+
+
+def _resident_environment(identity: Mapping[str, str], *, extensible: bool) -> dict[str, str]:
     mirrored: dict[str, str] = {}
-    for key in workspace_fields:
-        if not Path(identity[key]).is_absolute() or not identity.get("PORTAL_RESIDENT_ID"):
-            raise ValueError("Workspace environment requires an absolute path and Resident identity")
-        mirrored[key] = identity[key]
+    workspace_field = SESSION_WORKSPACE_FIELD if extensible else LEGACY_WORKSPACE_FIELD
+    for key, item in identity.items():
+        if not isinstance(key, str) or not isinstance(item, str) or "\x00" in item:
+            raise ValueError("Invalid Resident environment entry")
+        if key in RESIDENT_IDENTITY_FIELDS:
+            continue
+        if workspace_field.fullmatch(key):
+            if not Path(item).is_absolute() or not identity.get("PORTAL_RESIDENT_ID"):
+                raise ValueError("Workspace environment requires an absolute path and Resident identity")
+        elif extensible and re.fullmatch(r"PORTAL_CONTEXT_[A-Z][A-Z0-9_]*", key):
+            if not identity.get("PORTAL_RESIDENT_ID"):
+                raise ValueError("Session context requires Resident identity")
+        else:
+            raise ValueError("Unexpected Resident environment field")
+        mirrored[key] = item
     for key, prefix in (
         ("PORTAL_RESIDENT_ID", "resident"),
         ("PORTAL_LINEAGE_ID", "lineage"),
@@ -66,6 +72,22 @@ def resident_identity_environment(value: Mapping[str, Any] | None) -> dict[str, 
     if bool(mirrored.get("PORTAL_RESIDENT_ID")) != bool(mirrored.get("PORTAL_LINEAGE_ID")):
         raise ValueError("Resident CLI identity must include both IDs")
     return mirrored
+
+
+def resident_identity_environment(value: Mapping[str, Any] | None) -> dict[str, str]:
+    """Validate the original native identity and workspace contract."""
+    return _resident_environment({str(k): str(v) for k, v in dict(value or {}).items()}, extensible=False)
+
+
+def resident_session_environment(value: Mapping[str, str] | None) -> dict[str, str]:
+    """Portal owns session data under PORTAL_CONTEXT_* and absolute workspace aliases.
+
+    This namespace is for application data only. Provider login, process settings
+    and Portal credentials are supplied by their respective owners.
+    """
+    if value is not None and not isinstance(value, Mapping):
+        raise ValueError("Resident session environment must be a mapping")
+    return _resident_environment(value or {}, extensible=True)
 
 
 def resident_identity_fingerprint(value: Mapping[str, Any] | None) -> dict[str, str]:

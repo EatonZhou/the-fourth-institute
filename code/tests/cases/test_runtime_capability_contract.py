@@ -214,19 +214,21 @@ def test_claude_permission_mode_reaches_native_daemon_request(monkeypatch, mode)
     assert captured["payload"]["permission_mode"] == (mode or "bypassPermissions")
 
 
-@pytest.mark.parametrize("revision", [1, 2, 3])
+@pytest.mark.parametrize("revision", [1, 2, 3, 4])
 def test_claude_workspace_environment_during_account_rollout(monkeypatch, revision):
     from management_portal.claude_code_client import ClaudeCodeClient
 
     client = ClaudeCodeClient()
     identity = {"PORTAL_RESIDENT_ID": "resident_111111111111", "PORTAL_LINEAGE_ID": "lineage_222222222222"}
-    environment = {**identity, "PORTAL_WORKSPACE_AABBCCDDEEFF": "/work", "PORTAL_RESIDENT_WORKSPACE": "/work"}
-    expected = environment if revision >= 3 else identity
+    original = {**identity, "PORTAL_WORKSPACE_AABBCCDDEEFF": "/work", "PORTAL_RESIDENT_WORKSPACE": "/work"}
+    environment = {**original, "PORTAL_TEAM_WORKSPACE": "/work/团队 A", "PORTAL_CONTEXT_VIEW": "review"}
+    expected = {1: identity, 2: identity, 3: original, 4: environment}[revision]
     requests = []
 
     def request(method, payload=None, **kwargs):
         if method == "health":
-            return {"component_versions": {"revision": revision}}
+            return {"component_versions": {"revision": revision},
+                    "capabilities": {"resident_session_environment": revision == 4}}
         requests.append((method, payload["resident_environment"]))
         return {}
 

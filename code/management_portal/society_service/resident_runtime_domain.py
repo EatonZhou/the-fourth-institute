@@ -21,6 +21,7 @@ PORTAL_ROOT = Path(__file__).resolve().parents[2]
 from management_common.product_environment import mirror_product_env
 from management_portal.execution.accounts import default_execution_accounts
 from management_portal.execution.provider_catalog import AGENT_PROVIDERS
+from management_portal.resident_shell_environment import resident_session_environment
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 import copy
@@ -206,7 +207,22 @@ def resident_cli_environment(record: dict[str, Any]) -> dict[str, str]:
     environment: dict[str, str] = {}
     mirror_product_env(environment, "PORTAL_RESIDENT_ID", resident_id)
     mirror_product_env(environment, "PORTAL_LINEAGE_ID", resident_lineage.lineage_id(record))
-    return environment
+    own = record.get("owned_workspace") or {}
+    for binding in [own, *(record.get("workspace_bindings") or [])]:
+        wid = binding.get("workspace_id")
+        path = binding.get("path")
+        if not path or not identity_contract.is_valid_id(wid, "workspace"):
+            continue
+        environment["PORTAL_" + wid.upper()] = str(path)
+        if binding is own:
+            environment["PORTAL_RESIDENT_WORKSPACE"] = str(path)
+        elif Path(path) == Path(record["workspace_path"]) / "workspace":
+            environment["PORTAL_LINEAGE_WORKSPACE"] = str(path)
+        elif record.get("project_id"):
+            from . import project_folders
+            if Path(path) == project_folders.project_root_for_id(record["project_id"]) / "workspace":
+                environment["PORTAL_PROJECT_WORKSPACE"] = str(path)
+    return resident_session_environment(environment)
 
 
 def resident_runtime_identity_block(record: dict[str, Any]) -> str:

@@ -33,7 +33,9 @@ class ClaudeCodeTurnResult:
 
 from management_portal.native_agent_transport import NativeAgentClient
 from management_portal.execution.native_options import ClaudeOptions
-from management_portal.resident_shell_environment import resident_identity_environment
+from management_portal.resident_shell_environment import (
+    LEGACY_WORKSPACE_FIELD, RESIDENT_IDENTITY_FIELDS, resident_session_environment,
+)
 
 
 class ClaudeCodeClient(NativeAgentClient):
@@ -47,18 +49,23 @@ class ClaudeCodeClient(NativeAgentClient):
         return self._request("health", response_timeout=9.0)
 
     def _resident_environment(self, value: dict[str, str] | None) -> dict[str, str]:
-        environment = resident_identity_environment(value)
+        environment = resident_session_environment(value)
         identity = {
             key: environment[key]
-            for key in ("PORTAL_RESIDENT_ID", "PORTAL_LINEAGE_ID")
+            for key in RESIDENT_IDENTITY_FIELDS
             if key in environment
         }
         if environment == identity:
             return environment
-        # During a rolling upgrade, each socket can serve a different revision.
-        # Workspace aliases were added in Portal adapter revision 3.
-        components = self.health().get("component_versions") or {}
-        return environment if int(components.get("revision", 0)) >= 3 else identity
+        health = self.health()
+        if (health.get("capabilities") or {}).get("resident_session_environment"):
+            return environment
+        # Older account sockets predate capability negotiation. Revision 3
+        # understands just the original workspace fields alongside the IDs.
+        components = health.get("component_versions") or {}
+        if int(components.get("revision") or 0) >= 3:
+            identity.update((k, v) for k, v in environment.items() if LEGACY_WORKSPACE_FIELD.fullmatch(k))
+        return identity
 
     def session_command(self, command, params):
         if "resident_environment" in params:
