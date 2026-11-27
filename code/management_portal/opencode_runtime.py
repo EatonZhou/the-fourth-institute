@@ -35,6 +35,7 @@ def agent_models(binary: Path, service: str, env: dict[str, str] | None = None, 
 
 class OpenCodeRuntime(ProviderRuntime):
     PACKAGE = "opencode-ai"
+    release_editions = {"1.19.6": 1}
 
     def available(self) -> tuple[str, ...]:
         return (updates.npm_version(self.PACKAGE, "latest"),)

@@ -68,9 +68,16 @@ class ChatHandler(BaseHTTPRequestHandler):
         self.send_header("Connection", "close")
         self.end_headers()
         chunk = {"id": "chat", "object": "chat.completion.chunk", "created": 0, "model": body.get("model")}
-        for choice, extra in (({"index": 0, "delta": {"role": "assistant", "content": "NATIVE_OPENCODE_OK"},
+        names = [tool["function"]["name"] for tool in body.get("tools", []) if tool.get("type") == "function"]
+        probe = next((name for name in names if name.endswith("_probe")), None)
+        delta, finish = {"role": "assistant", "content": "NATIVE_OPENCODE_OK"}, "stop"
+        if probe and not any(message["role"] == "tool" for message in body["messages"]):
+            delta, finish = {"role": "assistant", "tool_calls": [
+                {"index": 0, "id": "call_native", "type": "function",
+                 "function": {"name": probe, "arguments": json.dumps({"id": "native"})}}]}, "tool_calls"
+        for choice, extra in (({"index": 0, "delta": delta,
                                 "finish_reason": None}, {}),
-                              ({"index": 0, "delta": {}, "finish_reason": "stop"}, {"usage": usage})):
+                              ({"index": 0, "delta": {}, "finish_reason": finish}, {"usage": usage})):
             self.wfile.write(f"data: {json.dumps({**chunk, 'choices': [choice], **extra})}\n\n".encode())
         self.wfile.write(b"data: [DONE]\n\n")
         self.wfile.flush()
@@ -104,12 +111,20 @@ def test_an_opencode_api_route_runs_on_the_real_opencode_with_its_key_kept_out_o
     work = tmp_path / "work"
     work.mkdir()
     client = opencode_client.OpenCodeClient()
+    received = []
+
+    def answer(call):
+        received.append((call["tool"], call["arguments"], call["call_id"]))
+        return {"content": [{"type": "text", "text": "native tool received"}]}
+
     try:
         result = client.run_turn(
             session_key="k", session_id="", prompt="Say hello.", cwd=str(work), provider_profile="gateway-opencode",
             model="gpt-test", effort="", is_owner=True, permission_profile="owner", system_prompt_append="rules",
-            turn_id="turn-native", tools=[], resident_environment={}, inherit_portal_database=False,
-            allow_subagents=False, event_callback=lambda event: None, tool_callback=None)
+            turn_id="turn-native", tools=[{"name": "probe", "description": "Probe this session",
+                "inputSchema": {"type": "object", "properties": {"id": {"type": "string"}}, "required": ["id"]}}],
+            resident_environment={}, inherit_portal_database=False,
+            allow_subagents=False, event_callback=lambda event: None, tool_callback=answer)
     finally:
         for root in (tmp_path / "state").glob("opencode-*"):
             try:
@@ -118,6 +133,7 @@ def test_an_opencode_api_route_runs_on_the_real_opencode_with_its_key_kept_out_o
                 pass
         server.shutdown()
         shutil.rmtree(sockets, ignore_errors=True)
+    assert received == [("probe", {"id": "native"}, "call_native")]
     assert "NATIVE_OPENCODE_OK" in result.response
     calls = [request for request in server.requests if request["method"] == "POST"]
     assert calls and {(call["path"], call["authorization"], call["team"]) for call in calls} == {

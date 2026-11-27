@@ -15,6 +15,7 @@ from __future__ import annotations
 import base64
 import copy
 import itertools
+import hmac
 import json
 import os
 import sys
@@ -25,12 +26,12 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 LOG = sys.argv[1]
 CONFIG = json.loads(os.environ["OPENCODE_CONFIG_CONTENT"])
-MCP = CONFIG["mcp"]["portal"]
+MCP = dict(CONFIG.get("mcp", {}))
 AUTH = "Basic " + base64.b64encode(f"opencode:{os.environ['OPENCODE_SERVER_PASSWORD']}".encode()).decode()
 LOCK = threading.Condition()
 EVENTS: list[dict] = []
 SESSIONS: dict[str, dict] = {}
-TOOLS: list[dict] = []
+TOOLS = {}
 FAILED: set[str] = set()
 COUNTER = itertools.count(1)
 TOKENS = {"total": 175, "input": 100, "output": 20, "reasoning": 5, "cache": {"read": 50, "write": 0}}
@@ -51,17 +52,17 @@ def ident(prefix: str) -> str:
     return f"{prefix}_{next(COUNTER):06d}"
 
 
-def mcp(method: str, params: dict | None = None) -> dict:
+def mcp(name, method: str, params: dict | None = None) -> dict:
     body = {"jsonrpc": "2.0", "id": next(COUNTER), "method": method, "params": params or {}}
-    request = urllib.request.Request(MCP["url"], data=json.dumps(body).encode(), method="POST",
-                                     headers={"content-type": "application/json", **MCP["headers"]})
+    request = urllib.request.Request(MCP[name]["url"], data=json.dumps(body).encode(), method="POST",
+                                     headers={"content-type": "application/json", **MCP[name]["headers"]})
     with urllib.request.urlopen(request, timeout=60) as response:
         return json.loads(response.read())["result"]
 
 
-def connect() -> None:
-    mcp("initialize", {"protocolVersion": "2025-03-26"})
-    TOOLS[:] = mcp("tools/list")["tools"]
+def connect(name) -> None:
+    mcp(name, "initialize", {"protocolVersion": "2025-03-26"})
+    TOOLS[name] = mcp(name, "tools/list")["tools"]
 
 
 def message(session: str, role: str, **info) -> dict:
@@ -91,7 +92,7 @@ def tool(entry: dict, name: str, arguments: dict, run, metadata: dict | None = N
     piece = part(entry, type="tool", callID=call, tool=name, state={"status": "pending", "input": {}})
     part(entry, id=piece["id"], type="tool", callID=call, tool=name,
          state={"status": "running", "input": arguments, "metadata": metadata or {}})
-    output, failed = run()
+    output, failed = run(call) if name.startswith(("ptl", "portal_")) else run()
     state = {"status": "error", "input": arguments, "error": output} if failed else {
         "status": "completed", "input": arguments, "output": output, "metadata": metadata or {}}
     part(entry, id=piece["id"], type="tool", callID=call, tool=name, state=state)
@@ -114,11 +115,18 @@ def run(session: str, body: dict) -> None:
     message(session, "user")
     emit("session.status", sessionID=session, status={"type": "busy"})
     try:
-        if "tool" in text and TOOLS:
-            def portal():
-                result = mcp("tools/call", {"name": TOOLS[0]["name"], "arguments": {"id": "r1"}})
+        name = next((key[:-2] for key in body.get("tools", {}) if key.startswith("ptl") and key.endswith("_*")), "portal")
+        if "tool" in text and TOOLS.get(name):
+            tool_name = TOOLS[name][0]["name"]
+            def portal(call):
+                arguments = {"id": "r1"}
+                if name != "portal":
+                    message = json.dumps([name + "_" + tool_name, session, call], separators=(",", ":")).encode()
+                    proof = hmac.digest(os.environ["OPENCODE_SERVER_PASSWORD"].encode(), message, "sha256").hex()
+                    arguments["__portal_origin"] = {"sessionID": session, "callID": call, "proof": proof}
+                result = mcp(name, "tools/call", {"name": tool_name, "arguments": arguments})
                 return "".join(item.get("text", "") for item in result["content"]), result.get("isError", False)
-            step(session, model, lambda entry: tool(entry, "portal_" + TOOLS[0]["name"], {"id": "r1"}, portal),
+            step(session, model, lambda entry: tool(entry, name + "_" + tool_name, {"id": "r1"}, portal),
                  "tool-calls")
         if "bash" in text:
             step(session, model, lambda entry: tool(entry, "bash", {"command": "ls"}, lambda: ("notes.txt\n", False)),
@@ -129,7 +137,7 @@ def run(session: str, body: dict) -> None:
                 lambda: ("Edit applied successfully.", False)), "tool-calls")
         if "subagent" in text:
             child = ident("ses")
-            SESSIONS[child] = {"messages": [], "queue": []}
+            SESSIONS[child] = {"parent": session, "messages": [], "queue": []}
 
             def delegate():
                 emit("session.created", sessionID=child, info={"id": child, "parentID": session})
@@ -143,7 +151,7 @@ def run(session: str, body: dict) -> None:
                 delegate, metadata={"sessionId": child}), "tool-calls")
         if "watch" in text:
             child = ident("ses")
-            SESSIONS[child] = {"messages": [], "queue": [], "busy": True, "aborted": False}
+            SESSIONS[child] = {"parent": session, "messages": [], "queue": [], "busy": True, "aborted": False}
             late = []
 
             def watch():
@@ -254,6 +262,9 @@ class Handler(BaseHTTPRequestHandler):
             self.reply({key: ({'type':'retry','attempt':1,'message':state['retry_message']}
                              if state.get('retry_message') else {"type": "busy"})
                         for key, state in SESSIONS.items() if state.get("busy")})
+        elif path.startswith("/session/") and path.split("/")[-1] in SESSIONS:
+            sid = path.split("/")[-1]
+            self.reply({"id": sid, "parentID": SESSIONS[sid].get("parent")})
         elif path == "/config/providers":
             self.reply({"providers": [{"id": "opencode", "models": {"free-model": {"limit": {"context": 200000}}}}]})
         else:
@@ -279,9 +290,13 @@ class Handler(BaseHTTPRequestHandler):
             SESSIONS[session] = {"messages": [], "queue": [], "busy": False, "aborted": False}
             emit("session.created", sessionID=session, info={"id": session})
             return self.reply({"id": session})
+        if path == "/mcp":
+            MCP[body["name"]] = body["config"]
+            connect(body["name"])
+            return self.reply({body["name"]: {"status": "connected"}})
         if segments[0] == "mcp":
             if segments[2] == "connect":
-                connect()
+                connect(segments[1])
             return self.reply(True)
         session = segments[1]
         state = SESSIONS[session]
@@ -315,7 +330,8 @@ def main() -> None:
             "config": {key: CONFIG.get(key) for key in ("provider", "enabled_providers", "small_model")}}) + "\n")
     server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
     server.daemon_threads = True
-    threading.Thread(target=connect, daemon=True).start()
+    if "portal" in MCP:
+        threading.Thread(target=connect, args=("portal",), daemon=True).start()
     print(f"opencode server listening on http://127.0.0.1:{server.server_address[1]}", flush=True)
     server.serve_forever()
 

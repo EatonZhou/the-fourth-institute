@@ -1,7 +1,7 @@
 """Portal execution adapter for the official Antigravity CLI 1.5.18 ACP server."""
 from __future__ import annotations
 
-from contextlib import ExitStack, contextmanager
+from contextlib import ExitStack, contextmanager, suppress
 import re
 import tempfile
 import threading
@@ -9,10 +9,10 @@ import threading
 from management_common.file_permissions import atomic_write_private_bytes
 from management_common.provider_turn_artifacts import ToolEditArtifacts
 from management_portal import antigravity_accounts as accounts
-from management_portal.antigravity_client import AcpClient, AcpTransportError, ToolServer
-from management_portal.antigravity_runtime import command, credential_environment, supported_version
+from management_portal.antigravity_client import AcpError, AcpTransportError, ToolServer
+from management_portal.antigravity_runtime import supported_version
+from management_portal.antigravity_account_host import connect_account
 from management_portal.antigravity_input_media import prompt_content
-from management_portal.resident_shell_environment import resident_process_environment
 from . import antigravity_cli
 from .backend_contracts import BackendResult
 from .context_seed import realize_portable_seed
@@ -248,19 +248,10 @@ class AntigravityCliBackend:
     _active = {}
     _lock = threading.Lock()
 
-    def __init__(self, client_factory=AcpClient):
-        self.client_factory = client_factory
-
-    def open_client(self, cwd, env, *, portal_only=False, **callbacks):
-        args = command(env)
-        if portal_only:
-            args += ["--include-default-customizations=false", "--agent", antigravity_cli.PORTAL_AGENT]
-        return self.client_factory(args, env={**env, **credential_environment()}, cwd=cwd, **callbacks)
-
     @contextmanager
     def session(self, invocation, env, account, catalog, dispatch, previous_id,
                 portal_only, on_update, on_request):
-        """Own the process, MCP endpoint and agent definition for one ACP connection."""
+        """Lease an account connection with a private MCP endpoint for this execution."""
         request = invocation.request
         with ExitStack() as resources:
             cwd = request.cwd
@@ -271,13 +262,15 @@ class AntigravityCliBackend:
             if catalog:
                 server = resources.enter_context(ToolServer(catalog, dispatch))
                 servers.append(server.descriptor())
-            client = resources.enter_context(self.open_client(cwd, env, portal_only=portal_only,
+            client = resources.enter_context(connect_account(account["account_id"], portal_only=portal_only,
                                                                 on_update=on_update, on_request=on_request))
             welcome = client.initialize()
             version = welcome.get("agentInfo", {}).get("version")
             if not supported_version(version):
                 raise RuntimeError("Unsupported Antigravity CLI handshake version")
             capabilities = welcome.get("agentCapabilities") or {}
+            if "close" not in (capabilities.get("sessionCapabilities") or {}):
+                raise RuntimeError("Antigravity CLI lacks session/close for shared ACP execution")
             if request.input_media and not capabilities.get("promptCapabilities", {}).get("image"):
                 raise ValueError("Antigravity ACP runtime does not support image input")
             if not capabilities.get("loadSession") or (servers and not capabilities.get("mcpCapabilities", {}).get("http")):
@@ -289,6 +282,10 @@ class AntigravityCliBackend:
                 raise RuntimeError("Antigravity returned no session ID")
             if previous_id and previous_id != session_id:
                 raise RuntimeError("Antigravity resumed a different session")
+            def release():
+                with suppress(AcpError, OSError, TimeoutError):
+                    client.call("session/close", {"sessionId": session_id}, timeout=10)
+            resources.callback(release)
             if not previous_id:
                 account_root = accounts.account_runtime(self.provider_id, account["account_id"])
                 if portal_only:
@@ -326,8 +323,7 @@ class AntigravityCliBackend:
                 raise ProviderOutcomeUnknown("Antigravity input delivery is uncertain after disconnection; refusing to replay it")
         row = accounts.account_for_route(route)
         route = row["route_id"]
-        env, _ = resident_process_environment(options)
-        env.update(accounts.environment(row["account_id"]))
+        env = accounts.environment(row["account_id"])
         catalog, dispatch = ([], None) if compact else prepare_tools(invocation, context)
         offered_tools = {tool["name"] for tool in catalog}
         if not compact:

@@ -203,7 +203,7 @@ def definition_root(text, platform):
 
 def _claude_network_dropins(instance, component, directory, properties):
     """Recognize the two host-routing definitions used by Claude service updates."""
-    if component != 'claude-code' and not component.startswith('claude-account@'):
+    if component != 'claude-code' and not component.startswith(('claude-account@', 'antigravity-account@')):
         return False
     if properties.get('NeedDaemonReload') != 'no':
         return False

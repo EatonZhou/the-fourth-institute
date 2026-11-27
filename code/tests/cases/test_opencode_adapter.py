@@ -206,7 +206,7 @@ def test_an_opencode_turn_serves_its_portal_tools_and_reports_its_own_tool_calls
     # The model, the Portal rules and the subagent switch went with the prompt.
     (prompt,) = [entry for entry in opencode.prompts() if entry["kind"] == "prompt"]
     assert prompt["model"] == {"providerID": "opencode", "modelID": "free-model"}
-    assert prompt["system"] == "Portal rules" and prompt["tools"] == {"task": True}
+    assert prompt["system"] == "Portal rules" and prompt["tools"]["task"] is True
 
 
 def _run_turn(opencode, turn_id: str, prompt: str, **params):
@@ -216,6 +216,40 @@ def _run_turn(opencode, turn_id: str, prompt: str, **params):
         "system_prompt_append": "rules", "turn_id": turn_id, "tools": [], "resident_environment": {},
         "inherit_portal_database": False, "allow_subagents": True, "event_callback": lambda event: None,
         "tool_callback": None, **params})
+
+
+def test_account_reuses_server_for_concurrent_sessions_and_partitions_shell_scope(opencode):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+
+    barrier = Barrier(2)
+    def run(label):
+        calls = []
+        def receive(call):
+            barrier.wait(timeout=8)
+            calls.append(call)
+            return {"content": [{"type": "text", "text": label}]}
+        result = _run_turn(opencode, label, "tool " + label, tools=[{
+            "name": "probe_" + label, "inputSchema": {"type": "object"}}], tool_callback=receive)
+        assert [call["tool"] for call in calls] == ["probe_" + label]
+        return result.session_id
+    with ThreadPoolExecutor(2) as pool:
+        ids = list(pool.map(run, ("first", "second")))
+    assert len(set(ids)) == 2 and len(opencode.servers()) == 1
+    _run_turn(opencode, "third", "plain", resident_environment={
+        "PORTAL_RESIDENT_ID":"resident_0123456789ab", "PORTAL_LINEAGE_ID":"lineage_0123456789ab"})
+    assert len(opencode.servers()) == 2
+
+
+def test_idle_session_reopens_on_a_new_account_generation(opencode):
+    session_id = _run_turn(opencode, "generation", "plain").session_id
+    transport = opencode.client._transport(session_id)
+    before = transport._request("health")
+    opencode.monkeypatch.setattr(opencode_provider_catalog, "version", lambda: "next")
+    transport = opencode.client._start(session_id, {"cwd": opencode.cwd, "provider_profile": ROUTE})
+    after = transport._request("health")
+    assert after["version"] == "next" and after["generation"] != before["generation"]
+    assert len(opencode.servers()) == 2
 
 
 def test_an_opencode_session_runs_in_the_residents_environment_and_portals_own_directories(opencode, monkeypatch):
@@ -235,7 +269,7 @@ def test_an_opencode_session_runs_in_the_residents_environment_and_portals_own_d
     assert "test-actor" not in launch and "environment" not in json.loads(launch)
     # OpenCode reads Portal's configuration directory, not the host user's, and keeps its data in the session.
     assert server["XDG_CONFIG_HOME"] == str(opencode.runtime / "config")
-    session_root = opencode.state / result.session_id
+    session_root = Path(json.loads(launch)["account_state"])
     assert all(Path(server[key]).is_relative_to(session_root) for key in ("XDG_DATA_HOME", "XDG_STATE_HOME", "OPENCODE_DB"))
     # A malformed identity starts nothing.
     with pytest.raises(ValueError, match="both IDs"):
@@ -349,7 +383,7 @@ def test_an_opencode_turn_takes_send_now_while_it_runs(opencode) -> None:
     assert outcome["result"].response == "answer to: slow work +also this"
     # Input during the turn keeps the turn's model, rules and switches: OpenCode takes them from the newest message.
     (steer,) = [entry for entry in opencode.prompts() if entry["kind"] == "steer"]
-    assert steer["model"]["modelID"] == "free-model" and steer["system"] == "rules" and steer["tools"] == {"task": True}
+    assert steer["model"]["modelID"] == "free-model" and steer["system"] == "rules" and steer["tools"]["task"] is True
     # A turn that is no longer running takes no input.
     assert backend.deliver_turn_input(session_key="k", session_id=session, turn_id="turn-slow",
                                       items=[{"type": "text", "text": "late"}], control_id="c2") == (False, "no_active_turn")
@@ -386,7 +420,7 @@ def test_opencode_subagents_follow_the_residents_setting(opencode) -> None:
     for allowed in (False, True):
         OpenCodeBackend().execute(_invocation(opencode, f"plain {allowed}", options={"allow_subagents": allowed},
                                               execution_id=f"execution-{allowed}"), _context())
-    assert [entry["tools"] for entry in opencode.prompts()] == [{"task": False}, {"task": True}]
+    assert [entry["tools"]["task"] for entry in opencode.prompts()] == [False, True]
 
 
 def test_an_opencode_subagents_steps_reach_the_worker_under_its_call_and_end_in_its_card(opencode) -> None:

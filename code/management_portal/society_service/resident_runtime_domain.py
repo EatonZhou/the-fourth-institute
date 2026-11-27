@@ -224,10 +224,19 @@ def resident_runtime_identity_block(record: dict[str, Any]) -> str:
             "需要文件内容或命令结果时，说明需要什么，不要写出假装已经执行的命令或结果。\n"
         )
     else:
-        how = (
-            "调用 Portal HATG ISA 指令时，使用 hatg_instruction 工具；没有该工具或在脚本中批量调用时，"
-            f"使用命令行客户端 {PORTAL_ROOT / 'scripts' / 'resident_hatg_instruction.py'}，"
-            f"在子命令前传入 --resident-id {identity['PORTAL_RESIDENT_ID']}。\n"
+        if resident_backend.execution_backend(record) == "antigravity":
+            instruction_tool = (
+                "以当前 Resident 身份操作 Portal 时使用本轮 hatg_instruction；"
+                "需要身份的命令或批量调用，用 RunScript 运行工作区脚本，通过其 Portal 客户端调用指令。"
+                "普通文件操作和不依赖身份的终端命令可用 Google 原生工具。\n"
+            )
+        else:
+            instruction_tool = (
+                "调用 Portal HATG ISA 指令时，使用 hatg_instruction 工具；没有该工具或在脚本中批量调用时，"
+                f"使用命令行客户端 {PORTAL_ROOT / 'scripts' / 'resident_hatg_instruction.py'}，"
+                f"在子命令前传入 --resident-id {identity['PORTAL_RESIDENT_ID']}。\n"
+            )
+        how = instruction_tool + (
             "不得使用消息发送者、owner 或历史上下文中其他 Resident 的身份；"
             "服务端按当前 Resident 检查权限。\n"
             f"开始任务前，先用 ReadResource 读取 {identity['PORTAL_LINEAGE_ID']}/file/LINEAGE.md；"

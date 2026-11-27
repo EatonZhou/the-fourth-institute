@@ -1,8 +1,8 @@
 """OpenCode process lifecycle at the Provider boundary. No Portal database access.
 
 Each Portal session of an OpenCode Resident has one bridge process
-(``opencode_bridge``) on its own Unix socket; the bridge runs OpenCode's
-server in the session's working directory.  ``OpenCodeClient`` starts the
+(``opencode_bridge``) on its own Unix socket; the bridge attaches to the native HTTP server
+for the account and shell authority, with the session's working directory.  ``OpenCodeClient`` starts the
 bridge when the session has none and speaks the native agent protocol to it.
 """
 from __future__ import annotations
@@ -162,11 +162,6 @@ class OpenCodeClient:
         root = STATE / session_id
         root.mkdir(exist_ok=True, mode=0o700)
         with (root / "launch.lock").open("a+") as lock, lock_stream(lock):
-            try:
-                transport._request("health", response_timeout=3)
-                return transport
-            except NativeAgentUnavailable:
-                pass
             binary = opencode_provider_catalog.binary()
             if not binary.is_file():
                 raise OpenCodeStartupError("OpenCode runtime missing; install a validated shared OpenCode runtime",
@@ -184,13 +179,40 @@ class OpenCodeClient:
                 "cwd": params["cwd"], "route": route, "service": service,
                 # A custom route's provider definition holds no key (``api_key``).
                 "provider": opencode_provider_catalog.provider_config(route),
-                "binary": str(binary),
+                "binary": str(binary.parent.resolve() / binary.name),
                 "config_home": str(opencode_provider_catalog.config_home()),
+                "inherit_portal_database": bool(params.get("inherit_portal_database")),
                 "version": opencode_provider_catalog.version(),
                 "identity_fingerprint": hashlib.sha256(
                     json.dumps(identity, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest(),
             }
+            # Existing session databases stay at their original location. New native
+            # sessions share storage only within the account and inherited shell authority.
+            scope = digest(json.dumps([route, identity, config["inherit_portal_database"]], sort_keys=True))
+            generation = digest(json.dumps([scope, config["binary"], config["version"], config["provider"],
+                                            digest(key or ""), BRIDGE.stat().st_mtime_ns], sort_keys=True))
+            config["generation"] = generation
+            if not (root / "opencode.db").exists():
+                config.update(account_state=str(STATE / "accounts" / scope),
+                              account_socket=str(SOCKETS / ("a" + generation + ".sock")))
             launch = root / "launch.json"
+            if launch.is_file():
+                previous = json.loads(launch.read_text())
+                if any(previous.get(key) != config[key] for key in ("route", "identity_fingerprint", "cwd")):
+                    raise ValueError("OpenCode session account, shell identity or directory changed")
+                if "inherit_portal_database" in previous and previous["inherit_portal_database"] != config["inherit_portal_database"]:
+                    raise ValueError("OpenCode session shell authority changed")
+            try:
+                health = transport._request("health", response_timeout=3)
+                if health.get("generation") == generation:
+                    return transport
+                # A Worker may be reattaching to a submitted turn in the old generation.
+                status = transport._request("session/status", {"session_id": session_id}, response_timeout=10)
+                if status.get("active") or (status.get("native_status") or {}).get("type") in {"busy", "retry"}:
+                    return transport
+                self._close_transport(transport, session_id)
+            except NativeAgentUnavailable:
+                pass
             temporary = root / f".launch.{os.getpid()}.tmp"
             temporary.write_text(json.dumps(config))
             os.chmod(temporary, 0o600)
@@ -268,7 +290,7 @@ class OpenCodeClient:
         """Have OpenCode summarize the session's history now (its /compact)."""
 
         params["model"], params["effort"] = self._settings(params)
-        request = {key: params[key] for key in ("cwd", "provider_profile", "model", "resident_environment") if key in params}
+        request = {key: params[key] for key in ("cwd", "provider_profile", "model", "resident_environment", "inherit_portal_database") if key in params}
         return self._start(session_id, params)._request(
             "session/compact", {**request, "session_id": session_id}, response_timeout=COMPACT_TIMEOUT_SECONDS)
 
@@ -314,19 +336,22 @@ class OpenCodeClient:
         if not (STATE / session_id).is_dir():
             return {"closed": True}
         with (STATE / session_id / "launch.lock").open("a+") as lock, lock_stream(lock):
-            transport = self._transport(session_id)
-            try:
-                result = transport._request("session/close", {"session_id": session_id}, response_timeout=30)
-                deadline = time.monotonic() + 45
-                while time.monotonic() < deadline:
-                    time.sleep(0.05)
-                    try:
-                        transport._request("health", response_timeout=3)
-                    except NativeAgentUnavailable:
-                        return result
-                raise RuntimeError("OpenCode native release has not completed")
-            except NativeAgentUnavailable:
-                return {"closed": True}
+            return self._close_transport(self._transport(session_id), session_id)
+
+    @staticmethod
+    def _close_transport(transport, session_id):
+        try:
+            result = transport._request("session/close", {"session_id": session_id}, response_timeout=30)
+            deadline = time.monotonic() + 45
+            while time.monotonic() < deadline:
+                time.sleep(0.05)
+                try:
+                    transport._request("health", response_timeout=3)
+                except NativeAgentUnavailable:
+                    return result
+            raise RuntimeError("OpenCode native release has not completed")
+        except NativeAgentUnavailable:
+            return {"closed": True}
 
 
 def shared_client() -> OpenCodeClient:

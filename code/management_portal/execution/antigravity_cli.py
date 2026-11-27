@@ -6,6 +6,8 @@ Provider-specific extensions must be advertised by the selected executable.
 import hashlib
 from pathlib import Path
 
+from management_common.file_permissions import atomic_write_private_bytes
+
 from .antigravity_workspace import additional_directories
 from .backend_contracts import full_system_context
 
@@ -31,12 +33,14 @@ def needs_new_session(gemini_home, account_root, session_id, portal_only):
 
 def write_portal_agent(cwd):
     agents = Path(cwd) / ".agents" / "agents"
-    agents.mkdir(parents=True)
-    (agents / f"{PORTAL_AGENT}.md").write_text(
+    path = agents / f"{PORTAL_AGENT}.md"
+    content = (
         "---\nname: portal-tools-only\ndescription: Use Portal tools for this conversation\n"
         "mainAgent: true\nsubagent: false\ntools: []\n---\n"
-        "Use the tools supplied by Portal for this session.\n", encoding="utf-8"
-    )
+        "Use the tools supplied by Portal for this session.\n"
+    ).encode()
+    if not path.is_file() or path.read_bytes() != content:
+        atomic_write_private_bytes(path, content)
 
 
 def is_offered_portal_call(call, offered):

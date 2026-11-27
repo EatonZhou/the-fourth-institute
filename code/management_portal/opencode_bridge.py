@@ -1,8 +1,8 @@
 """Portal's control bridge for one OpenCode session (the OpenCode Adapter's agent side).
 
-``OpenCodeClient`` starts one bridge per Portal session.  The bridge runs
-OpenCode's headless server (``opencode serve``) in the session's working
-directory and speaks Portal's native agent protocol on a Unix socket: a turn
+``OpenCodeClient`` starts one bridge per Portal session.  The bridge leases an account-scoped
+headless server (``opencode serve``), scopes HTTP requests to its workspace
+and speaks Portal's native agent protocol on a Unix socket: a turn
 (``turn/run``) with its events and Portal tool calls, input during the turn
 (``turn/steer``), interrupts, compaction and release.
 
@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import hmac
 import http.client
 import json
 import os
@@ -29,6 +30,7 @@ import subprocess
 import sys
 import threading
 import time
+from urllib.parse import quote
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -90,9 +92,9 @@ class BridgeError(RuntimeError):
 
 
 class OpenCodeServer:
-    """The ``opencode serve`` process of this session and its HTTP API."""
+    """The native HTTP server owned by an account host or a legacy session."""
 
-    def __init__(self, config: dict, mcp_url: str, mcp_token: str) -> None:
+    def __init__(self, config: dict, mcp_url: str = "", mcp_token: str = "") -> None:
         self.password = secrets.token_hex(24)
         self.auth = "Basic " + base64.b64encode(f"opencode:{self.password}".encode()).decode()
         settings = {
@@ -104,9 +106,13 @@ class OpenCodeServer:
             # A Portal turn has no one to answer OpenCode's questions; the
             # execution is a full-access one (``OpenCodeClient.run_turn``).
             "permission": {"*": "allow", "external_directory": "allow", "doom_loop": "allow"},
-            "mcp": {MCP_SERVER: {"type": "remote", "url": mcp_url, "oauth": False,
-                                 "headers": {"Authorization": f"Bearer {mcp_token}"}}},
         }
+        self.directory = ""
+        if mcp_url:
+            settings["mcp"] = {MCP_SERVER: {"type": "remote", "url": mcp_url, "oauth": False,
+                                            "headers": {"Authorization": f"Bearer {mcp_token}"}}}
+        else:
+            settings["plugin"] = [Path(__file__).with_name("opencode_session_tools.mjs").resolve().as_uri()]
         provider = config.get("provider") or {}
         if provider:
             # A custom route's Model API is the session's only provider, titles included.
@@ -169,6 +175,7 @@ class OpenCodeServer:
         try:
             payload = None if body is None else json.dumps(body).encode()
             connection.request(method, path, body=payload, headers={
+                "x-opencode-directory": quote(self.directory, safe="/"),
                 "authorization": self.auth, "content-type": "application/json"})
             response = connection.getresponse()
             raw = response.read()
@@ -182,7 +189,7 @@ class OpenCodeServer:
         """OpenCode's event stream; ends when the connection drops."""
 
         connection = http.client.HTTPConnection(self.host, self.port, timeout=None)
-        connection.request("GET", "/event", headers={"authorization": self.auth, "accept": "text/event-stream"})
+        connection.request("GET", "/event", headers={"x-opencode-directory": quote(self.directory, safe="/"), "authorization": self.auth, "accept": "text/event-stream"})
         response = connection.getresponse()
         for raw in response:
             line = raw.decode(errors="replace").strip()
@@ -194,6 +201,29 @@ class OpenCodeServer:
 
     def stop(self) -> None:
         terminate_process_tree(self.process, timeout=30)
+
+
+class AccountSession(OpenCodeServer):
+    """Directory-scoped HTTP connection to the shared account server."""
+
+    def __init__(self, config):
+        from management_portal.opencode_account import lease
+        self.connection, address = lease(config)
+        self.host, self.port, self.auth = address["host"], address["port"], address["auth"]
+        self.proof_key = base64.b64decode(self.auth.removeprefix("Basic ")).split(b":", 1)[1]
+        self.directory = str(Path(config["cwd"]).resolve())
+        self.service = str(config.get("service") or "opencode")
+        threading.Thread(target=self._watch_account, daemon=True).start()
+
+    def _watch_account(self):
+        # The bridge cannot reattach a possibly submitted prompt to a dead generation.
+        try:
+            self.connection.recv(1)
+        finally:
+            os._exit(1)
+
+    def stop(self):
+        self.connection.close()
 
 
 class Turn:
@@ -277,6 +307,7 @@ class Bridge:
         self.start_lock = threading.Lock()
         self.compacting = False
         self.pending: dict[str, dict] = {}
+        self.session_owners = {}
         self.roles: dict[str, str] = {}
         self.message_sessions: dict[str, str] = {}
         self.tool_parts: dict[str, dict] = {}
@@ -289,7 +320,11 @@ class Bridge:
         self.mcp = ThreadingHTTPServer(("127.0.0.1", 0), self._mcp_handler())
         self.mcp.daemon_threads = True
         threading.Thread(target=self.mcp.serve_forever, daemon=True).start()
-        self.server = OpenCodeServer(config, f"http://127.0.0.1:{self.mcp.server_address[1]}/mcp", self.mcp_token)
+        self.mcp_url = f"http://127.0.0.1:{self.mcp.server_address[1]}/mcp"
+        self.shared = bool(config.get("account_socket"))
+        self.mcp_name = MCP_SERVER
+        self.server = (AccountSession(config) if self.shared else
+                       OpenCodeServer(config, self.mcp_url, self.mcp_token))
         self.version = str(config.get("version") or "")
         self.context_window = 0
         self.context_model = ""
@@ -321,12 +356,31 @@ class Bridge:
         """OpenCode lists an MCP server's tools when it connects: a changed set reconnects it."""
 
         key = fingerprint(tools)
+        if self.shared:
+            self.mcp_name = "ptl" + fingerprint(self.opencode_session)[:12]
         if key == self.tools_key:
             return
         self.tools = [dict(tool) for tool in tools]
+        if self.shared:
+            status = self.server.request("POST", "/mcp", {"name": self.mcp_name, "config": {
+                "type": "remote", "url": self.mcp_url, "oauth": False,
+                "headers": {"Authorization": f"Bearer {self.mcp_token}"}}})
+            if (status.get(self.mcp_name) or {}).get("status") != "connected":
+                raise BridgeError("OpenCode could not connect to this session's Portal tools")
+        else:
+            self.server.request("POST", f"/mcp/{MCP_SERVER}/disconnect")
+            self.server.request("POST", f"/mcp/{MCP_SERVER}/connect")
         self.tools_key = key
-        self.server.request("POST", f"/mcp/{MCP_SERVER}/disconnect")
-        self.server.request("POST", f"/mcp/{MCP_SERVER}/connect")
+
+    def owns_session(self, session):
+        seen = set()
+        while isinstance(session, str) and session and session not in seen:
+            if session == self.opencode_session:
+                return True
+            seen.add(session)
+            info = self.server.request("GET", "/session/" + quote(session, safe=""))
+            session = (info or {}).get("parentID")
+        return False
 
     def _mcp_handler(self):
         bridge = self
@@ -410,7 +464,20 @@ class Bridge:
     def call_tool(self, name: str, arguments: dict) -> dict:
         if name not in {tool["name"] for tool in self.tools}:
             raise BridgeError(f"Unknown Portal tool {name}")
-        call_id = self._call_id(name, arguments)
+        if self.shared:
+            origin = arguments.pop("__portal_origin", {})
+            if not isinstance(origin, dict):
+                raise BridgeError("Missing OpenCode tool origin")
+            session, call_id, proof = (origin.get(field) for field in ("sessionID", "callID", "proof"))
+            if not all(isinstance(field, str) and field for field in (session, call_id, proof)):
+                raise BridgeError("Invalid OpenCode tool origin")
+            message = json.dumps([self.mcp_name + "_" + name, session, call_id],
+                                 ensure_ascii=False, separators=(",", ":")).encode()
+            expected = hmac.digest(self.server.proof_key, message, "sha256").hex()
+            if not hmac.compare_digest(expected, proof) or not self.owns_session(session):
+                raise BridgeError("Portal tool call has no matching OpenCode session")
+        else:
+            call_id = self._call_id(name, arguments)
         done = threading.Event()
         call = {"call_id": call_id, "tool": name, "arguments": arguments}
         entry = {"call": call, "done": done, "result": None}
@@ -443,7 +510,7 @@ class Bridge:
     # -- events ------------------------------------------------------------
 
     def _follow_events(self) -> None:
-        while self.server.process.poll() is None:
+        while self.shared or self.server.process.poll() is None:
             try:
                 for event in self.server.events():
                     self.on_event(event)
@@ -466,6 +533,19 @@ class Bridge:
             turn = self.current
             ours = self.opencode_session
             session = str(props.get("sessionID") or (props.get("info") or {}).get("sessionID") or "")
+            if self.shared:
+                info = props.get("info") or {}
+                if kind == "session.created" and info.get("id"):
+                    parent = info.get("parentID")
+                    self.session_owners[info["id"]] = bool(parent and (parent == ours or self.session_owners.get(parent)))
+                session = session or (props.get("part") or {}).get("sessionID") or info.get("id")
+                if not session or not ours or turn is None:
+                    return
+                if session != ours:
+                    if session not in self.session_owners:
+                        self.session_owners[session] = self.owns_session(session)
+                    if not self.session_owners[session]:
+                        return
             if turn is not None and session == ours:
                 turn.event_counts[kind] = turn.event_counts.get(kind, 0) + 1
             if kind == "message.updated":
@@ -554,7 +634,7 @@ class Bridge:
     @staticmethod
     def _arguments(value) -> dict:
         arguments = value if isinstance(value, dict) else {}
-        return {ARGUMENT_NAMES.get(key, key): item for key, item in arguments.items()}
+        return {ARGUMENT_NAMES.get(key, key): item for key, item in arguments.items() if key != "__portal_origin"}
 
     def translate(self, turn: Turn, part: dict, session: str, *, child: bool = False) -> list[dict]:
         """The common item events of one OpenCode part (an assistant's text, reasoning or tool call)."""
@@ -580,7 +660,7 @@ class Bridge:
         status = str(state.get("status") or "")
         call = str(part.get("callID") or part.get("id"))
         name = str(part.get("tool") or "")
-        name = name[len(TOOL_PREFIX):] if name.startswith(TOOL_PREFIX) else name
+        name = name.removeprefix(self.mcp_name + "_")
         item = {"id": call, "type": "dynamicToolCall", "tool": name, "arguments": self._arguments(state.get("input"))}
         events = []
         if status in {"running", "completed", "error"} and call not in turn.items_started:
@@ -670,6 +750,8 @@ class Bridge:
         if params.get("cwd") != self.config["cwd"] or params.get("provider_profile") != self.config["route"]:
             raise BridgeError("Session route/cwd changes require migration")
         identity = dict(sorted((params.get("resident_environment") or {}).items()))
+        if "inherit_portal_database" in self.config and bool(params.get("inherit_portal_database")) != self.config["inherit_portal_database"]:
+            raise BridgeError("Session shell authority changes require migration")
         if fingerprint(identity) != self.config["identity_fingerprint"]:
             raise BridgeError("Resident identity mismatch")
 
@@ -740,6 +822,8 @@ class Bridge:
         self.ensure_tools(list(params.get("tools") or []))
         body = {"model": self.model(params), "parts": [{"type": "text", "text": text}],
                 "tools": {SUBAGENT_TOOL: params.get("allow_subagents") is not False}}
+        if self.shared:
+            body["tools"].update({"ptl*": False, self.mcp_name + "_*": True})
         if params.get("system_prompt_append"):
             body["system"] = str(params["system_prompt_append"])
         if params.get("effort"):
@@ -1014,6 +1098,11 @@ class Bridge:
         return {"closed": True}
 
     def shutdown(self) -> None:
+        if self.shared and self.tools and self.mcp_name != MCP_SERVER:
+            try:
+                self.server.request("POST", f"/mcp/{self.mcp_name}/disconnect", timeout=3)
+            except (OSError, BridgeError):
+                pass
         self.server.stop()
         if getattr(self, "_listener", None) is not None:
             self._listener.close()
@@ -1026,6 +1115,7 @@ class Bridge:
         self.last_used = time.monotonic()
         if method == "health":
             return {"ready": True, "protocol": PROTOCOL, "version": self.version,
+                    "generation": self.config.get("generation"),
                     "capabilities": {"turn_steer": True, "session_compact": True, "turn_reattach": True,
                                      "turn_continue": True}}
         if method == 'session/status':

@@ -32,13 +32,17 @@ FAKE = Path(__file__).with_name("fake_antigravity.py")
 @pytest.fixture
 def agent(monkeypatch, tmp_path):
     from management_portal.execution import antigravity_cli_backend as backend
-    monkeypatch.setattr(backend, "command", lambda env: [sys.executable, str(FAKE)])
+    def fake_connection(account_id, *, portal_only=False, **callbacks):
+        args = [sys.executable, str(FAKE)]
+        if portal_only:
+            args += ["--include-default-customizations=false", "--agent", "portal-tools-only"]
+        return AcpClient(args, env=accounts.environment(account_id), **callbacks)
+    monkeypatch.setattr(backend, "connect_account", fake_connection)
     monkeypatch.setattr(accounts, "command", lambda env: [sys.executable, str(FAKE)])
     monkeypatch.setattr(accounts, "account_for_route", lambda route: {"account_id": "antigravity_one", "route_id": "one"})
     monkeypatch.setattr(accounts, "account_home", lambda provider, account: tmp_path)
     monkeypatch.setattr(accounts, "account_runtime", lambda *args: tmp_path)
     monkeypatch.setattr(accounts, "environment", lambda account: {"GEMINI_HOME": str(tmp_path)})
-    monkeypatch.setattr(backend, "resident_process_environment", lambda options: ({}, {}))
     return tmp_path
 
 
@@ -722,9 +726,9 @@ def test_installer_verifies_official_cli_before_activation(monkeypatch, tmp_path
     monkeypatch.setattr(runtime.updates, "RUNTIMES", tmp_path)
     monkeypatch.setattr(runtime, "urlopen", lambda *a, **k: io.BytesIO(data))
     monkeypatch.setattr(runtime.sys, "platform", platform)
-    target = tmp_path / f"antigravity-cli-{version}"
-    monkeypatch.setattr(runtime.AntigravityRuntime, "link", lambda self: target)
     provider = runtime.AntigravityRuntime()
+    target = tmp_path / f"antigravity-cli-{provider.version_label((version,))}"
+    monkeypatch.setattr(runtime.AntigravityRuntime, "link", lambda self: target)
     with mock.patch("management_portal.antigravity_client.AcpClient") as client:
         handshake = client.return_value.__enter__.return_value.initialize
         handshake.return_value = {"agentInfo": {"version": "1.5.17"}}
@@ -732,6 +736,9 @@ def test_installer_verifies_official_cli_before_activation(monkeypatch, tmp_path
             provider.stage((version,))
         assert provider.installed() == ("0",)
         handshake.return_value = {"agentInfo": {"version": version}, "agentCapabilities": {"loadSession": True, "mcpCapabilities": {"http": True}}}
+        with pytest.raises(runtime.updates.PreparationError):
+            provider.stage((version,))
+        handshake.return_value["agentCapabilities"]["sessionCapabilities"] = {"close": {}}
         assert provider.stage(provider.available()) == target
         assert client.call_args.args[0][1:3] == ["acp", "--process-per-session"]
         assert "GEMINI_API_KEY" not in client.call_args.kwargs["env"]
@@ -845,16 +852,6 @@ def test_multi_step_turn_separates_turn_sum_from_context_window_usage(agent):
     assert contract["model_context_window"] == 1000
 
 
-def test_pinned_cli_disables_its_updater_only_for_its_own_process(agent):
-    factory = mock.Mock()
-    backend = AntigravityBackend(client_factory=factory)
-    request = invocation(agent).request
-    env = {"GEMINI_HOME": str(agent)}
-    backend.open_client(request.cwd, env)
-    assert factory.call_args.kwargs["env"]["AGY_CLI_DISABLE_AUTO_UPDATE"] == "true"
-    assert "AGY_CLI_DISABLE_AUTO_UPDATE" not in env
-
-
 @pytest.mark.parametrize("session_id", ["", "existing-cli-session"])
 def test_cli_1518_session_uses_cached_login_and_advertised_options(agent, monkeypatch, session_id):
     from management_portal.execution import antigravity_cli_backend as backend
@@ -868,7 +865,7 @@ def test_cli_1518_session_uses_cached_login_and_advertised_options(agent, monkey
     result = AntigravityBackend().execute(inv, context()[0])
     rows = requests(agent)
     assert [r["method"] for r in rows] == [
-        "initialize", "session/load" if session_id else "session/new", "session/set_config_option",
+        "initialize", "session/load" if session_id else "session/new", "session/set_config_option", "session/close",
     ]
     assert rows[1]["params"]["_meta"] == {"antigravity": {"systemPrompt": {"append": "All Portal rules"}}}
     assert rows[2]["params"] == {"sessionId": result.backend_session_id, "configId": "model", "value": "other-model"}

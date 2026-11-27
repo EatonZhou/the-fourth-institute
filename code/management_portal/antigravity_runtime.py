@@ -1,6 +1,7 @@
 """Stage Google’s CLI using its platform-specific official release manifest."""
 from __future__ import annotations
 
+from functools import lru_cache
 import hashlib
 import json
 import os
@@ -69,6 +70,8 @@ def _cli_args(binary, env):
 
 
 class AntigravityRuntime(updates.ProviderRuntime):
+    release_editions = {VERSION: 1}
+
     def available(self):
         return (latest_distribution()["version"],)
 
@@ -144,7 +147,8 @@ class AntigravityRuntime(updates.ProviderRuntime):
                 if welcome.get("agentInfo", {}).get("version") != version:
                     raise RuntimeError("Antigravity CLI handshake version mismatch")
                 capabilities = welcome.get("agentCapabilities") or {}
-                if not capabilities.get("loadSession") or not capabilities.get("mcpCapabilities", {}).get("http"):
+                if (not capabilities.get("loadSession") or not capabilities.get("mcpCapabilities", {}).get("http")
+                        or "close" not in (capabilities.get("sessionCapabilities") or {})):
                     raise RuntimeError("Antigravity CLI lacks required session/MCP capabilities")
             record = {"version": version, "sha512": item["sha512"], "binary_sha256": _digest(binary)}
             (stage / "distribution.json").write_text(json.dumps(record) + "\n")
@@ -155,12 +159,21 @@ class AntigravityRuntime(updates.ProviderRuntime):
         return root
 
 
+@lru_cache(maxsize=4)
+def _installed_digest(binary, file_identity):
+    """Reuse verification of an unchanged installed binary across account connections."""
+    return _digest(binary)
+
+
 def verified_binary():
     runtime = AntigravityRuntime()
     root = runtime.link().resolve()
     record = runtime._record(root)
     binary = binary_path(root)
-    if not record or _digest(binary) != record.get("binary_sha256"):
+    if record:
+        stat = binary.stat()
+        identity = (stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns)
+    if not record or _installed_digest(binary, identity) != record.get("binary_sha256"):
         raise NativeAgentUnavailable(f"Prepare the verified Antigravity CLI {VERSION} runtime")
     return binary
 

@@ -138,10 +138,10 @@ for line in sys.stdin:
         log.write(json.dumps({"method": method, "params": params}) + "\n")
     if method == "initialize":
         result = {"protocolVersion": 1, "agentInfo": {"version": "1.5.18"},
-                  "agentCapabilities": {"loadSession": True, "mcpCapabilities": {"http": True},
+                  "agentCapabilities": {"sessionCapabilities": {"close": {}}, "loadSession": True, "mcpCapabilities": {"http": True},
                                         "promptCapabilities": {"image": not bool(os.environ.get("FAKE_NO_IMAGES"))}}}
         if os.environ.get("FAKE_ADDITIONAL_DIRECTORIES"):
-            result["agentCapabilities"]["sessionCapabilities"] = {"additionalDirectories": {}}
+            result["agentCapabilities"]["sessionCapabilities"]["additionalDirectories"] = {}
         result["agentCapabilities"]["_meta"] = {"antigravity": {"systemPrompt": {"append": True}}}
     elif method == "authenticate":
         if os.environ.get("FAKE_LOGIN"):
