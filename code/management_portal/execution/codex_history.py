@@ -129,6 +129,37 @@ def _portable_reasoning(item: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _tool_observation(segment: Mapping[str, Any]) -> dict[str, Any] | None:
+    """Replay the retained transcript index as an observation, never a tool call.
+
+    Early provider_transcript imports retained only this index, not arguments
+    or results. Its name is not a canonical tool_name and cannot justify
+    inventing a function_call/output pair. Preserve every recorded field and
+    make the missing evidence explicit without changing the stored Segment.
+    """
+    content = segment.get("content")
+    metadata = segment.get("metadata") or {}
+    if not (
+        segment.get("segment_type") == "tool"
+        and segment.get("status") == "observed"
+        and metadata.get("source") == "provider_transcript"
+        and metadata.get("kind") == "tool"
+        and isinstance(content, Mapping)
+        and content.get("kind") == "tool"
+        and all(isinstance(content.get(key), str) and content[key].strip()
+                for key in ("id", "name", "call_id"))
+        and set(content) <= {"id", "kind", "name", "namespace", "call_id", "turn_id",
+                             "created_at", "event_line", "segment_ordinal"}
+    ):
+        return None
+    return {
+        "type": "message", "role": "assistant", "phase": "commentary",
+        "content": [{"type": "output_text", "text":
+            "[Historical tool observation: arguments and outcome were not recorded]\n"
+            + _json(dict(content))}],
+    }
+
+
 def response_items_from_segments(segments: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
     """Preserve a selected window's order, media and native compaction items."""
     items: list[dict[str, Any]] = []
@@ -153,6 +184,10 @@ def response_items_from_segments(segments: Sequence[Mapping[str, Any]]) -> list[
             items.append(copy.deepcopy(dict(content)))
             continue
         if kind == "tool":
+            observation = _tool_observation(segment)
+            if observation is not None:
+                items.append(observation)
+                continue
             if not isinstance(content, Mapping):
                 raise ValueError("unsupported non-structured historical tool")
             name = str(content.get("tool_name") or "").strip()
