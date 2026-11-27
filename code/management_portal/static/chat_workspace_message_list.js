@@ -582,7 +582,7 @@
       const toolbar = document.createElement("div");
       toolbar.className = "chatSelectionContextAction";
       toolbar.hidden = true;
-      toolbar.innerHTML = window.PortalI18n.html`<button type="button" data-portal-icon="plus" aria-label="${escapeHtml(options.label || window.PortalI18n.t("添加到上下文"))}"><span>${escapeHtml(options.label || window.PortalI18n.t("添加到上下文"))}</span></button>`;
+      toolbar.innerHTML = window.PortalI18n.html`<button type="button" data-portal-icon="plus" data-portal-tooltip-opt-out="1" aria-label="${escapeHtml(options.label || window.PortalI18n.t("添加到上下文"))}"><span>${escapeHtml(options.label || window.PortalI18n.t("添加到上下文"))}</span></button>`;
       document.body.appendChild(toolbar);
       let candidate = null;
       let selectionFrame = 0;
