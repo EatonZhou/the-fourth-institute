@@ -786,6 +786,52 @@ html:root[data-portal-theme="liquid-glass"] .portalActivityRailItemsAction::befo
   }
 }
 
+/* Embedded Home toolbars use the same glass controls as the site header. */
+html:root[data-portal-theme="liquid-glass"] .portalWorkbenchStage.has-tab-toolbar > .portalWorkbenchToolbar {
+  background: transparent;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalWorkbenchStage.has-tab-toolbar > .portalWorkbenchToolbar .portalWorkbenchHiddenRail {
+  padding-block: 3px;
+  margin-block: -3px;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalWorkbenchStage.has-tab-toolbar > .portalWorkbenchToolbar :is(
+  .portalWorkbenchHiddenPanelButton,
+  .portalWorkbenchCustomizeButton,
+  .portalWorkbenchLockButton
+) {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  min-height: 26px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--lg-radius-pill);
+  background: var(--lg-btn-glass-bg);
+  color: var(--text);
+  box-shadow: var(--lg-btn-glass-shadow);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalWorkbenchStage.has-tab-toolbar > .portalWorkbenchToolbar :is(
+  .portalWorkbenchHiddenPanelButton,
+  .portalWorkbenchCustomizeButton,
+  .portalWorkbenchLockButton
+):is(:hover, :focus-visible, [aria-pressed="true"], [aria-expanded="true"]):where(:not(:disabled, [aria-disabled="true"])) {
+  background: var(--lg-btn-glass-hover);
+  color: var(--accent-2);
+  box-shadow: var(--lg-btn-glass-hover-shadow);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalWorkbenchStage.has-tab-toolbar > .portalWorkbenchToolbar :is(
+  .portalWorkbenchHiddenPanelButton,
+  .portalWorkbenchCustomizeButton,
+  .portalWorkbenchLockButton
+):is(:focus-visible, [aria-pressed="true"], [aria-expanded="true"]) {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+
 /* Main workbench surfaces float above the canvas; their content stays crisp. */
 html:root[data-portal-theme="liquid-glass"] .portalWorkbench {
   --portal-workbench-stack-radius: var(--radius);
@@ -1854,6 +1900,16 @@ html:root[data-portal-theme="liquid-glass"] .portalMailboxAlert {
 
 /* Tier 3: Accessibility & reduced transparency / high contrast fallbacks */
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more), (forced-colors: active) {
+  html:root[data-portal-theme="liquid-glass"] .portalWorkbenchStage.has-tab-toolbar > .portalWorkbenchToolbar :is(
+    .portalWorkbenchHiddenPanelButton,
+    .portalWorkbenchCustomizeButton,
+    .portalWorkbenchLockButton
+  ):is(button, :hover, :focus-visible, [aria-pressed="true"], [aria-expanded="true"]) {
+    border-color: var(--border-strong);
+    background: var(--panel);
+    box-shadow: none;
+  }
+
   html:root[data-portal-theme="liquid-glass"] :is(
     .portalWorkbenchTabs,
     .portalWorkbenchStage.show-single-tab-header .portalWorkbenchStack:not(.is-collapsed) > .portalWorkbenchTabs,
