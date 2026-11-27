@@ -58,8 +58,10 @@ def resident_deliverable_to_actor(record: dict[str, Any], actor: str) -> bool:
     return resident_visible_to_actor(record, actor)
 
 
-RESIDENT_ACTIONS = ("DeliverMessage", "UpdateResidentSettings", "SetIntakeOpen", "RestartSession",
-                    "CancelInput", "UpdateResident", "ApplyLineageChanges", "ForkResident")
+RESIDENT_ACTIONS = (
+    "DeliverMessage", "UpdateResidentSettings", "UpdateResidentReporting", "SetIntakeOpen",
+    "RestartSession", "CancelInput", "UpdateResident", "ApplyLineageChanges", "ForkResident",
+)
 
 
 def resident_allows(record: dict[str, Any], actor: str) -> dict[str, bool]:

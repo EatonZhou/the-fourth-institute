@@ -12,7 +12,9 @@
     const reads = new Set(), discovered = new Map(), discoveries = new Map();
     const dirty = () => !!draft && JSON.stringify(draft) !== baseline;
     const current = epoch => !destroyed && epoch === generation;
-    const editable = () => !!data?.resident?.can_edit && !!draft && !loading && !saving;
+    const runtimeTarget = () => data?.resident?.runtime_settings_access === "available"
+      ? data.resident.runtime_settings_resident_id : "";
+    const editable = () => !!runtimeTarget() && !!data?.resident?.can_edit && !!draft && !loading && !saving;
     const node = (tag, text, className) => {
       const el = document.createElement(tag);
       if (text !== undefined) el.textContent = t(text);
@@ -123,6 +125,9 @@
         row.append(controls, applicationState("tools", item.ref)); content.append(row);
       }
       if (!data?.applications?.length) content.append(node("p", "当前没有可显示的应用工具。"));
+      if (runtimeTarget() && runtimeTarget() !== selected) {
+        content.prepend(node("p", window.PortalI18n.text`工具设置属于 ${runtimeTarget()}`, "paneNote"));
+      }
       content.append(node("h3", "自定义 MCP 工具"));
       const refs = new Set([...(draft?.mcp || []).map(item => item.ref), ...discovered.keys()]);
       for (const ref of refs) {
@@ -158,7 +163,7 @@
       const latest = () => current(epoch) && discoveries.get(ref) === controller;
       notice("正在发现工具…");
       try {
-        const result = await window.PortalAPI.post("/api/tool-settings/discover", {resident_id: selected, ref}, {signal: controller.signal});
+        const result = await window.PortalAPI.post("/api/tool-settings/discover", {resident_id: runtimeTarget(), ref}, {signal: controller.signal});
         if (!latest()) return;
         discovered.set(result.ref, result); render(); notice("工具目录已加载。勾选工具后保存才会注册。");
       } catch (error) { if (latest()) notice(error.message); }
@@ -166,13 +171,14 @@
     }
     async function saveDraft() {
       if (!editable() || !dirty()) return;
-      const epoch = generation, id = selected, snapshot = clone(draft);
+      const epoch = generation, id = runtimeTarget(), sourceId = selected, snapshot = clone(draft);
       saving = true; render(); notice("正在保存…");
       try {
         // Writes complete even if the panel is destroyed. Never cancel a submitted CAS.
         const result = await window.PortalAPI.request("/api/tool-settings", {method: "PUT", body: {resident_id: id, expected_revision: data.resident.settings_revision, capability_config: snapshot}});
         window.PortalResidentProjection?.invalidate?.(id);
         window.PortalResidentRuntimeController?.invalidate?.(id);
+        if (sourceId !== id) window.PortalResidentProjection?.invalidate?.(sourceId);
         if (!current(epoch)) return;
         draft = clone(result.settings?.capability_config || snapshot); baseline = JSON.stringify(draft);
         data.resident.settings_revision = result.settings_revision; data.resident.application = result.application;

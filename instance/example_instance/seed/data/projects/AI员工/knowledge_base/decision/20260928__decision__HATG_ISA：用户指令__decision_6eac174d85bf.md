@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 44
+  number: 47
   created_at: "2026-09-28T12:30:00Z"
   created_by:
     user: "weihao"
     agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-11-14T10:43:17Z"
+  updated_at: "2026-11-27T15:48:17Z"
   updated_by:
     user: ""
-    agent: "resident_60ae6d0cdf74"
+    agent: "resident_6199a7a36480"
 importance: 8
 metaness: 2
 ai_generated: false
@@ -75,8 +75,8 @@ Project 角色和系统能力及其 ISA 已删除；资源授权见 decision_222
 | `CreateUserAccessToken` | 是 | 为一位 User 创建个人访问凭据 | 对 `user_id` 有 @admin |
 | `ListUserAccessTokens` | 否 | 列出一位 User 的个人访问凭据 | 对 `user_id` 有 @admin |
 | `RevokeUserAccessToken` | 是 | 撤销当前 User 个人访问凭据 | 免检 |
-| `UpdateUserStatus` | 是 | 由 Portal 管理员启用或停用用户；停用时撤销其会话。变更管理员账号保留本人和最后一位启用管理员保护。 | 对“Portal”有 @admin |
-| `UpdateUserCategory` | 是 | 由 Portal 管理员修改用户分类；管理员名单变更在同一账号事务内校验，不能取消本人的管理员身份，并保留一位启用中的管理员。 | 对“Portal”有 @admin |
+| `UpdateUserStatus` | 是 | 由 Portal 管理员启用或停用用户；停用时撤销其会话。变更管理员账号保留本人和最后一位启用管理员保护。 | 对“共享”有 @admin |
+| `UpdateUserCategory` | 是 | 由 Portal 管理员修改用户分类；管理员名单变更在同一账号事务内校验，不能取消本人的管理员身份，并保留一位启用中的管理员。 | 对“共享”有 @admin |
 | `SetUserNavigationFavorite` | 是 | 为一位 User 收藏或取消收藏一个 Project、Lineage 或 Resident。 | 对 `user_id` 有 @admin |
 
 ## 指令说明

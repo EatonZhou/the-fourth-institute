@@ -307,6 +307,23 @@ class ResidentRecords:
             return resident_storage.read_execution_settings(connection, resident_id)
         return self.database.write(write)
 
+    def write_resident_reporting(self, resident_id: str, settings: Mapping[str, Any]) -> None:
+        def write(connection: Any) -> None:
+            row = connection.execute(
+                "SELECT 1 FROM residents WHERE resident_id=%s AND deleted_at IS NULL FOR UPDATE",
+                (resident_id,),
+            ).fetchone()
+            if row is None:
+                raise KeyError(resident_id)
+            updated = connection.execute(
+                "UPDATE resident_execution_configuration SET reporting_json=%s WHERE resident_id=%s RETURNING resident_id",
+                (json_column(settings), resident_id),
+            ).fetchone()
+            if updated is None:
+                raise KeyError(resident_id)
+
+        self.database.write(write)
+
     def remove_residents(self, tombstones: Iterable[Mapping[str, Any]]) -> list[str]:
         """Retain identity permanently; repeat deletion preserves the first facts.
 

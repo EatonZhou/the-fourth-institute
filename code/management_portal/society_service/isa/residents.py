@@ -418,17 +418,30 @@ def get_resident_text_input_snapshot(inv: Invocation) -> dict[str, Any]:
     return text_only_input_snapshot(inv.argument('resident_id'), inv.caller, text=text)
 
 
-def get_resident_settings(inv: Invocation) -> dict[str, Any]:
-    resident_id = inv.argument("resident_id")
-    result = protocol().get_resident_runtime_settings(resident_id, inv.caller)
+def _runtime_settings_result(result: dict[str, Any]) -> dict[str, Any]:
     settings = result["runtime_settings"]
-    # The same settings object UpdateResidentSettings accepts and returns.
+    revision = result.get("settings_revision", "")
     return {"settings": settings, "prompt_injection": _prompt_injection_view(settings),
-            "settings_revision": result.get("settings_revision", ""),
+            "runtime_settings_resident_id": result["runtime_settings_resident_id"],
+            "runtime_settings_revision": revision,
+            "settings_revision": revision,
             "application": result.get("application", {}),
             "quota_switch": result.get("quota_switch", {}),
+            "runtime_settings_access": result.get("runtime_settings_access", "available")}
+
+
+def get_resident_settings(inv: Invocation) -> dict[str, Any]:
+    result = protocol().get_resident_runtime_settings(inv.argument("resident_id"), inv.caller)
+    return {**_runtime_settings_result(result), "reporting": result["reporting"],
             "reporting_effective": result["reporting_effective"],
-            "runtime_settings_access": result["runtime_settings_access"]}
+            "reporting_revision": result["reporting_revision"]}
+
+
+def update_resident_reporting(inv: Invocation) -> dict[str, Any]:
+    from .. import resident_reporting
+
+    return resident_reporting.update(inv.argument("resident_id"), inv.caller, inv.argument("reporting"),
+                                     expected_revision=inv.argument("expected_revision"))
 
 
 def _prompt_injection_change(resident_id: str, caller: str, change: Any) -> dict[str, Any]:
@@ -440,7 +453,13 @@ def _prompt_injection_change(resident_id: str, caller: str, change: Any) -> dict
     unknown = sorted(set(change) - {"preset", "parts"})
     if unknown:
         raise invalid("changes.prompt_injection 不接受字段：" + "、".join(unknown), unknown_fields=unknown)
-    current = protocol().get_resident_runtime_settings(resident_id, caller)["runtime_settings"]
+    from .. import resident_execution_domain as execution
+    from .. import resident_record_domain as records
+
+    with records.state_lock(resident_id):
+        record = records.resolve_resident_runtime_target(resident_id, caller, require_visible=True).record
+        execution.require_runtime_settings_target(record)
+        current = execution.read_resident_runtime_settings(resident_id, caller)["runtime_settings"]
     try:
         return prompt_injection.apply_changes(
             current.get("prompt_injection"), preset=str(change.get("preset") or ""), parts=change.get("parts"),
@@ -463,15 +482,8 @@ def update_resident_settings(inv: Invocation) -> dict[str, Any]:
     if inv.argument("expected_revision") is not None:
         payload["expected_revision"] = inv.argument("expected_revision")
     result = protocol().update_resident_runtime_settings(resident_id, inv.caller, payload)
-    settings = result["runtime_settings"]
-    next_turn = result["next_turn_fields"]
-    return {"settings": settings, "next_turn_fields": list(next_turn),
-            "prompt_injection": _prompt_injection_view(dict(settings)),
-            "settings_revision": result.get("settings_revision", ""),
-            "application": result.get("application", {}),
-            "quota_switch": result.get("quota_switch", {}),
-            "reporting_effective": result["reporting_effective"],
-            "runtime_settings_access": result["runtime_settings_access"]}
+    return {**_runtime_settings_result({**result, "runtime_settings_resident_id": resident_id}),
+            "next_turn_fields": list(result["next_turn_fields"])}
 
 
 def _readable_settings(inv: Invocation) -> tuple[str, dict[str, Any]]:
@@ -644,6 +656,7 @@ HANDLERS = {
     "ReleaseResidentSummaryJob": release_resident_summary_job,
     "GetResidentSettings": get_resident_settings,
     "UpdateResidentSettings": update_resident_settings,
+    "UpdateResidentReporting": update_resident_reporting,
     "GetPromptInjectionPreview": preview_prompt_injection,
     "RestartSession": restart_session,
     "GetSessionRestart": get_session_restart,

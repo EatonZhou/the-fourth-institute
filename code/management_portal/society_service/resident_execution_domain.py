@@ -95,13 +95,38 @@ def read_resident_runtime_settings(
         }
 
 
-def prepare_resident_runtime_settings_change(resident_id: str, actor: str = "", payload: object = None) -> Callable[[], dict]:
-    """Validate outside the mutation lock; return a reauthorized CAS commit.
+def settings_router_id(record: dict) -> str:
+    from . import family_familize, lineage_aggregate
 
-    The settings facade may enlist the commit in its reporting transaction.
-    No caller receives or mutates the captured validation snapshot.
-    """
+    lineage = lineage_aggregate.read_lineage_state(record["lineage_id"])
+    return family_familize.router_of_facade(lineage, record["resident_id"])
+
+
+def require_runtime_settings_target(record: dict) -> None:
+    from management_portal.hatg.contracts import invalid
+    from . import family_facade
+
+    if family_facade.is_facade(record):
+        router = settings_router_id(record)
+        message = ("请用 Family Router 的 ID 修改运行设置" if router
+                   else "该 Family 门面没有登记运行设置的 Router")
+        raise invalid(message, runtime_settings_resident_id=router)
+
+
+def _require_runtime_settings_writer(record: dict, actor: str) -> None:
+    from management_portal import permission_system
     from . import resident_access
+
+    if (not resident_access.can_manage_resident(record, actor, operation="UpdateResidentSettings")
+            or not permission_system.allows(actor, "UpdateResidentSettings", {"resident_id": record["resident_id"]})):
+        raise manage_refusal(record)
+    require_runtime_settings_target(record)
+    if not resident_access.has_resident_workspace_authority(record, actor):
+        raise manage_refusal(record)
+
+
+def prepare_resident_runtime_settings_change(resident_id: str, actor: str = "", payload: object = None) -> Callable[[], dict]:
+    """Validate outside the mutation lock and reauthorize at the CAS commit."""
     actor_id = canonical_actor_id(actor)
     if not actor_id:
         raise ValueError("需要登录后修改 runtime 设置")
@@ -117,6 +142,8 @@ def prepare_resident_runtime_settings_change(resident_id: str, actor: str = "", 
         raw_changes = dict(data["runtime_settings"])
     else:
         raw_changes = data
+    if "reporting" in raw_changes:
+        raise ValueError("UpdateResidentReporting 修改汇报设置")
     requested_route = raw_changes.pop("backend_route_id", None)
     if requested_route is not None and (not isinstance(requested_route, str) or not requested_route.strip()):
         raise ValueError("backend_route_id must name an enabled Model API account")
@@ -134,8 +161,7 @@ def prepare_resident_runtime_settings_change(resident_id: str, actor: str = "", 
             require_visible=True,
         )
         record = target.record
-        if not resident_access.has_resident_workspace_authority(record, actor_id):
-            raise manage_refusal(record)
+        _require_runtime_settings_writer(record, actor_id)
         validation_record = copy.deepcopy(record)
         validation_current = resident_runtime_domain.read_resident_runtime_settings(record)
         if expected_revision is not None and expected_revision != resident_runtime_domain.resident_settings_revision(record, validation_current):
@@ -166,8 +192,7 @@ def prepare_resident_runtime_settings_change(resident_id: str, actor: str = "", 
                 require_visible=True,
             )
             record = target.record
-            if not resident_access.has_resident_workspace_authority(record, actor_id):
-                raise manage_refusal(record)
+            _require_runtime_settings_writer(record, actor_id)
             current = resident_runtime_domain.read_resident_runtime_settings(record)
             if expected_revision is not None and expected_revision != resident_runtime_domain.resident_settings_revision(record, current):
                 raise LineageConflictError("Resident settings revision changed during Provider validation",

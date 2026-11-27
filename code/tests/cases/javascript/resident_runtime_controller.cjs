@@ -5,7 +5,7 @@ const listeners={},window={addEventListener:(n,f)=>listeners[n]=f,PortalI18n:{t:
 vm.runInNewContext(fs.readFileSync(src,'utf8'),{window,console,JSON,Map,Set,Promise,Error});
 const calls=[],settings={a:{model:'m',prompt_context:{history:{enabled:true}}},b:{model:'m'}},permissions={a:{edit:true,restart:true},b:{edit:true,restart:true}},watch={};let pending,hold;let runtime,restart;
 const detail=id=>({resident:{resident_id:id,backend:'codex'},allows:{RestartSession:permissions[id].restart},execution_account:{account_id:'acct'},chat_workspace:{actions:permissions[id].edit?{runtime_settings:{instruction:'UpdateResidentSettings'}}:{}}});
-const service={projection:async({residentId:id})=>{calls.push(['projection',id]);if(hold)await hold;return detail(id)},runtimeSettings:async id=>{calls.push(['read',id]);return {settings:settings[id]}},runtimeCatalog:async()=>({models:['m'],default_model:'m'}),updateRuntimeSettings:async(id,changes)=>{calls.push(['save',id,changes]);settings[id]={...settings[id],...changes};return {settings:settings[id]}},sessionRestartOptions:async id=>({resident_id:id,accounts:{},source:{provider:'codex'}}),observeSessionRestart:(id,fn)=>{watch[id]=fn;return()=>delete watch[id]},restartSession:async values=>{calls.push(['restart',values]);return {status:'accepted'}},cancelSessionRestart:async values=>calls.push(['cancel',values])};
+const service={projection:async({residentId:id})=>{calls.push(['projection',id]);if(hold)await hold;return detail(id)},runtimeSettings:async id=>{calls.push(['read',id]);return {settings:settings[id],runtime_settings_access:"available",runtime_settings_resident_id:id,runtime_settings_revision:"rev-1"}},runtimeCatalog:async()=>({models:['m'],default_model:'m'}),updateRuntimeSettings:async(id,changes)=>{calls.push(['save',id,changes]);settings[id]={...settings[id],...changes};return {settings:settings[id],runtime_settings_access:"available",runtime_settings_resident_id:id,runtime_settings_revision:"rev-1"}},sessionRestartOptions:async id=>({resident_id:id,accounts:{},source:{provider:'codex'}}),observeSessionRestart:(id,fn)=>{watch[id]=fn;return()=>delete watch[id]},restartSession:async values=>{calls.push(['restart',values]);return {status:'accepted'}},cancelSessionRestart:async values=>calls.push(['cancel',values])};
 const dialogs={settings:options=>({open:(...a)=>runtime={args:a,options},close:()=>options.onClose(),destroy(){}}),restart:options=>({open:(...a)=>{restart={args:a,options};runtime={args:[a[0].runtime_settings,a[0].onSave,{residentId:a[0].resident_id}],options};},close:()=>options.onClose(),destroy(){}})};
 const ctrl=window.PortalResidentRuntimeController.create({service,dialogs});
 async function runtimeSubmissionRegressions() {
@@ -48,12 +48,12 @@ async function runtimeSubmissionRegressions() {
     let callback, observer, dialogOptions, readHook;
     const testService = {
       projection: async () => {const hook = readHook; readHook = null; await hook?.(); return structuredClone(current);},
-      runtimeSettings: async () => ({settings: {model: 'm'}}),
+      runtimeSettings: async id => ({settings: {model: 'm'}, runtime_settings_access: 'available', runtime_settings_resident_id: id, runtime_settings_revision: 'rev-1'}),
       runtimeCatalog: async () => ({models: ['m', 'm2']}),
       sessionRestartOptions: async () => ({source: {provider: 'codex', account_id: 'four', has_session: true}}),
       observeSessionRestart: (_id, fn) => {observer = fn; return () => {};},
       restartSession: async payload => {submitted.push(payload); return {status: 'accepted'};},
-      updateRuntimeSettings: async (id, changes) => {submitted.push({resident_id: id, changes}); return {settings: changes};},
+      updateRuntimeSettings: async (id, changes) => {submitted.push({resident_id: id, changes}); return {settings: changes, runtime_settings_revision: "rev-2"};},
     };
     const dialog = options => {
       dialogOptions = options;
@@ -134,7 +134,7 @@ async function migrationProgressRegressions() {
     const runHook = at => {if (hook?.at === at) {const fn = hook.run; hook = null; fn();}};
     const testService = {
       projection: async () => {reads++; runHook('during projection'); return structuredClone(current);},
-      runtimeSettings: async () => ({settings: {model: 'm'}}), runtimeCatalog: async () => ({models: ['m']}),
+      runtimeSettings: async id => ({settings: {model: 'm'}, runtime_settings_access: 'available', runtime_settings_resident_id: id, runtime_settings_revision: 'rev-1'}), runtimeCatalog: async () => ({models: ['m']}),
       observeSessionRestart: (_id, fn) => {observer = fn; return () => {};},
       sessionRestartOptions: async () => {
         runHook('during options');
@@ -143,7 +143,7 @@ async function migrationProgressRegressions() {
       },
       restartSession: async payload => {mutations.push(['restart', payload]); return {status: 'accepted'};},
       cancelSessionRestart: async payload => {mutations.push(['cancel', payload]); return {status: 'cancelling'};},
-      updateRuntimeSettings: async (id, changes) => {mutations.push(['settings', {id, changes}]); return {settings: changes};},
+      updateRuntimeSettings: async (id, changes) => {mutations.push(['settings', {id, changes}]); return {settings: changes, runtime_settings_revision: "rev-2"};},
     };
     const dialog = value => {options = value; return {
       open: (...values) => {opened++; args = values;}, close: () => value.onClose(), destroy() {},
@@ -246,8 +246,8 @@ if (process.argv.includes('--progress')) {
     let value={model:'m'},revision=3,release,entered;
     const gate=new Promise(resolve=>release=resolve),started=new Promise(resolve=>entered=resolve),writes=[];
     const s={projection:async()=>({resident:{backend:'codex'},execution_account:{account_id:'acct'},allows:{UpdateResidentSettings:true},chat_workspace:{actions:{runtime_settings:true}}}),
-      runtimeSettings:async()=>({settings:value,settings_revision:revision}),runtimeCatalog:async()=>({}),
-      updateRuntimeSettings:async(id,changes,key,expected)=>{writes.push({id,changes,key,revision:expected});entered();await gate;value={...value,...changes};return{settings:value,settings_revision:++revision};}};
+      runtimeSettings:async id=>({settings:value,runtime_settings_access:"available",runtime_settings_resident_id:id,runtime_settings_revision:revision}),runtimeCatalog:async()=>({}),
+      updateRuntimeSettings:async(id,changes,key,expected)=>{writes.push({id,changes,key,revision:expected});entered();await gate;value={...value,...changes};return{settings:value,runtime_settings_revision:++revision};}};
     const c=w.PortalResidentRuntimeController.create({service:s}),left=c.bind('a'),right=c.bind('a');
     await Promise.all([left.load(),right.load()]);
     const first=left.saveSettings({model:'m2'});await started;
@@ -270,7 +270,7 @@ if (process.argv.includes('--progress')) {
   }
   console.log('unknown save identity, conflicting retry, committed readback and changed account guards passed');
 })().catch(e => {console.error(e); process.exitCode=1});
-} else {
+} else if (!process.argv.includes("--split-target")) {
 (async()=>{
 let viewA,viewB;const a=ctrl.bind('a',{onState:s=>viewA=s}),b=ctrl.bind('a',{onState:s=>viewB=s});
 await Promise.all([a.load(),b.load()]);assert.equal(calls.filter(c=>c[0]==='read').length,1);
@@ -284,6 +284,52 @@ const d=ctrl.bind('a');hold=new Promise(r=>pending=r);const opening=d.openSettin
 a.destroy();c.destroy();console.log('shared cache/delta/object settings/cross-entry/permission/restart-only/migration/stale close passed');
 await runtimeSubmissionRegressions();
 await migrationProgressRegressions();
+await splitSettingsTargetRegressions();
 })().catch(e=>{console.error(e);process.exitCode=1});
 
+}
+
+async function splitSettingsTargetRegressions() {
+  const calls = [];
+  const w = {addEventListener() {}, PortalI18n: {t: value => value},
+    PortalUIPrimitives: {randomUUID: () => 'split-write'}};
+  vm.runInNewContext(fs.readFileSync(process.env.RUNTIME_CONTROLLER_SOURCE || src, 'utf8'), {window: w});
+  let router = 'resident_router', readOnly = false, revision = 'runtime-rev1';
+  const service = {
+    projection: async ({residentId}) => ({
+      resident: {resident_id: residentId, backend: 'codex', family: {role: residentId === 'resident_facade' ? 'facade' : 'router'}},
+      execution_account: {account_id: 'acct'},
+      allows: {UpdateResidentSettings: residentId !== 'resident_facade' && !readOnly, UpdateResidentReporting: residentId === 'resident_facade'},
+      chat_workspace: {actions: {runtime_settings: residentId !== 'resident_facade'}},
+    }),
+    runtimeSettings: async () => ({settings: {model: 'm'}, reporting_revision: 'report-only-rev',
+      runtime_settings_access: 'available', runtime_settings_resident_id: router, runtime_settings_revision: revision}),
+    runtimeCatalog: async ({residentId}) => {calls.push(['catalog', residentId]); return {};},
+    updateRuntimeSettings: async (target, changes, key, expected) => {
+      calls.push(['write', target, {...changes}, key, expected]); revision = 'runtime-rev2';
+      return {settings: changes, runtime_settings_revision: revision};
+    },
+  };
+  let save;
+  const controller = w.PortalResidentRuntimeController.create({service, dialogs: {
+    settings: () => ({open(_initial, submit) {save = submit;}, destroy() {}}),
+  }});
+  const facade = controller.bind('resident_facade');
+  await facade.openSettings();
+  assert.equal(facade.state().canEdit, true);
+  await save({model: 'm2'});
+  assert.deepEqual(calls[0], ['catalog', 'resident_router']);
+  assert.deepEqual(calls[1], ['write', 'resident_router', {model: 'm2'}, 'split-write', 'runtime-rev1']);
+  router = 'resident_new_router';
+  await assert.rejects(() => save({model: 'm3'}), /变更/);
+  assert.equal(calls.filter(([kind]) => kind === 'write').length, 1);
+  await facade.load();
+  readOnly = true;
+  await assert.rejects(() => facade.openSettings(), /无权限/);
+  facade.destroy();
+  console.log('PASS explicit Router target, independent runtime CAS, changed target and revoked Router permission');
+}
+
+if (process.argv.includes('--split-target')) {
+  splitSettingsTargetRegressions().catch(error => {console.error(error); process.exitCode = 1;});
 }

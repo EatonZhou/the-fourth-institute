@@ -215,8 +215,8 @@
         <section id="nodeMenuExtensions" aria-label="扩展" hidden></section>
         <section id="nodeMenuReporting" aria-label="汇报设置"></section>
         <div id="nodeMenuFamilySettings" hidden></div>
+        <section id="nodeMenuRuntime" aria-label="运行设置"><p>正在读取运行设置…</p></section>
         <form id="nodeSettingsForm" class="nodeSettingsForm">
-          <div id="nodeMenuRuntime"><p>正在读取运行设置…</p></div>
           <div class="residentMenuSession"><span>Session ID</span><code id="nodeMenuSessionId" role="status">读取中…</code><button class="portalButton is-icon is-quiet" id="nodeMenuCopySession" type="button" aria-label="复制 Session ID" title="复制当前后端会话的完整 Session ID" data-portal-icon="copy" disabled></button></div>
           <section id="nodeMenuAvatar" aria-label="Resident avatar"></section>
         </form>
@@ -308,7 +308,7 @@
     });
 
     const { loadNodeMenuRuntime, renderNodeMenuSession } = menuPart("PortalResidentMenuRuntime").createRuntime({
-      $id, esc, menuState, nodeMenuNotice, renderFamilySettings,
+      $id, changed, esc, menuState, nodeMenuNotice, renderFamilySettings,
     });
 
     menuPart("PortalResidentMenuEvents").createEvents({

@@ -240,17 +240,11 @@ def create_role(ctx, role, roles, near=""):
     }
     account = chosen.get("account") or role.get("account", "")
     title = str(_render(role.get("title") or ctx.title, ctx, roles))
-    rendered_settings = _render(settings, ctx, roles)
-    follow_up_settings = rendered_settings
-    if role["from"] == "new":
-        # Creation accepts Execution settings only. Reporting belongs to the
-        # Resident and is configured through its authorized settings owner.
-        runtime_settings = dict(rendered_settings)
-        follow_up_settings = {}
-        if "reporting" in runtime_settings:
-            from .. import resident_reporting
+    from .. import resident_reporting
 
-            follow_up_settings["reporting"] = resident_reporting.normalize(runtime_settings.pop("reporting"))
+    runtime_settings = dict(_render(settings, ctx, roles))
+    policy = resident_reporting.normalize(runtime_settings.pop("reporting")) if "reporting" in runtime_settings else None
+    if role["from"] == "new":
         payload = {
             "title": title,
             "backend": provider,
@@ -282,13 +276,15 @@ def create_role(ctx, role, roles, near=""):
             payload["backend_route_id"] = account
         created = lineage_branches().fork_lineage_resident(ctx.lineage_id, payload, ctx.actor)
         resident_id = created["created_resident"]["id"]
-    if follow_up_settings:
+    follow_up_runtime = runtime_settings if role["from"] != "new" else {}
+    if follow_up_runtime or policy is not None:
         try:
-            resident_protocol.update_resident_runtime_settings(
-                resident_id,
-                ctx.actor,
-                {"runtime_settings": follow_up_settings},
-            )
+            if follow_up_runtime:
+                resident_protocol.update_resident_runtime_settings(
+                    resident_id, ctx.actor, {"runtime_settings": follow_up_runtime},
+                )
+            if policy is not None:
+                resident_reporting.update(resident_id, ctx.actor, policy)
         except Exception:
             lineage_graph_edits().commit_lineage_edit(
                 ctx.lineage_id,
@@ -934,9 +930,13 @@ def from_selection(lineage_id, element_ids, actor, existing=False):
             continue
         key = f"resident_{len(roles) + 1}"
         record = resident_protocol.get_resident(identity, actor)
-        settings = resident_protocol.get_resident_runtime_settings(identity, actor)[
-            "runtime_settings"
-        ]
+        configuration = resident_protocol.get_resident_runtime_settings(identity, actor)
+        settings = {
+            key: deepcopy(value)
+            for key, value in configuration["runtime_settings"].items()
+            if key in SETTINGS_FIELDS and key != "backend_route_id"
+        }
+        settings["reporting"] = deepcopy(configuration["reporting"])
         roles.append(
             {
                 "key": key,
@@ -944,11 +944,7 @@ def from_selection(lineage_id, element_ids, actor, existing=False):
                 "title": node.get("title") or key,
                 "provider": record.get("provider") or "codex",
                 "account": record.get("account") or "",
-                "settings": {
-                    key: deepcopy(value)
-                    for key, value in settings.items()
-                    if key in SETTINGS_FIELDS and key != "backend_route_id"
-                },
+                "settings": settings,
             }
         )
         keys[identity] = key

@@ -15681,8 +15681,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：Lineage_定义指令__decision_4637ca4a69e2.md",
-      "sha256": "f9e4cf6c7f0ff2ec4d038fc573106e8f048e9f193206bac92500333d5d5f1e9c",
-      "size": 26479
+      "sha256": "401e60c58622610dda62b124f27001160a2bcc22799a2215caa850aac8c28dad",
+      "size": 26550
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：Lineage_运行指令__decision_68215b3a825b.md",
@@ -15696,8 +15696,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：Resident_指令__decision_d19b9909a674.md",
-      "sha256": "e1ac93e85ffbb28efd4b21fb5ddb23628138674312293be6f49a5401dc3a4dc7",
-      "size": 42441
+      "sha256": "593ec385b6188aeb900c7c07901250f84018fec94fab0a00aae99cdf63a3a4bf",
+      "size": 44268
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：公共讨论指令__decision_3e063aac15b3.md",
@@ -15711,8 +15711,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：指令集自描述指令__decision_aa4fdbac8364.md",
-      "sha256": "2beb39a65d35f17eaf7212aa8adcf4d76c9130b0ee99149b7ef5dba19e07f07d",
-      "size": 6338
+      "sha256": "2de9e07ad1116dac02a0e46620c775f93380191d70935f27485d521f38885fb3",
+      "size": 6815
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：权限指令__decision_22227d0ad075.md",
@@ -15721,7 +15721,7 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：用户指令__decision_6eac174d85bf.md",
-      "sha256": "008cafbed2be5e3063cf903bd806d43d1a0b950cd80a2405d296017196d59a9c",
+      "sha256": "cb12146b8251d62e0d272f0ca3700d2746fb373bf81c966454b0bf17511ae85e",
       "size": 19891
     },
     {
@@ -15731,13 +15731,13 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：资源指令__decision_ad3e21094f14.md",
-      "sha256": "f3ecd9827e147388d6a699c760099e4316c8cf6815481a3cd8f608e730b5d4f3",
-      "size": 39594
+      "sha256": "5e039bd0462efefa6c95bbc29f365091d1d0e045f6376dacf5fb509f80114da2",
+      "size": 39743
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：运行环境指令__decision_4527448ad07f.md",
-      "sha256": "3b773dd4b2c1f325f131d96d6156bf13aabfa73969fc41684f9936d0714b750c",
-      "size": 40896
+      "sha256": "0e618d4b8a0877e52ba9c4eaffef94e4f69adc513a0d6bb90dec5bc8320bad4c",
+      "size": 41009
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260930__decision__DeepSeek_Harness_Provider_的会话接入__decision_276105b5d67b.md",

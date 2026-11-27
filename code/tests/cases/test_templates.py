@@ -492,9 +492,8 @@ def test_from_selection_copies_resident_settings_and_rewrites_references(lineage
 
     source = resident(lineage, "Source")
     policy = {"initiative": "low", "quality": "high"}
-    ok('UpdateResidentSettings', {'resident_id': source, 'changes': {
-        'reporting': policy, 'collaboration_mode': 'plan',
-    }})
+    ok('UpdateResidentReporting', {'resident_id': source, 'reporting': policy})
+    ok('UpdateResidentSettings', {'resident_id': source, 'changes': {'collaboration_mode': 'plan'}})
     component = ok(
         "ApplyLineageChanges",
         {
@@ -542,16 +541,16 @@ def test_from_selection_copies_resident_settings_and_rewrites_references(lineage
     assert source not in copied["config"]["script"]
     copied_settings = ok('GetResidentSettings', {
         'resident_id': applied['created']['resident_ids'][0],
-    })['settings']
+    })
     assert copied_settings['reporting'] == policy
-    assert copied_settings['collaboration_mode'] == 'plan'
+    assert copied_settings['settings']['collaboration_mode'] == 'plan'
 
 
 
 
 def test_selection_template_cleans_new_role_when_reporting_update_is_denied(lineage, monkeypatch):
     """汇报设置保存被拒时保留原错误并清理新角色，不留下半成品。"""
-    from management_portal.society_service import resident_protocol, templates
+    from management_portal.society_service import resident_reporting, templates
 
     source = resident(lineage, "Original")
     template = ok('CreateTemplate', {
@@ -562,11 +561,11 @@ def test_selection_template_cleans_new_role_when_reporting_update_is_denied(line
 
     def deny(identity, actor, payload):
         assert actor == ACTOR
-        assert set(payload['runtime_settings']) == {'reporting'}
+        assert set(payload) == {'initiative', 'quality'}
         attempted.append(identity)
         raise PermissionError('reporting settings denied')
 
-    monkeypatch.setattr(resident_protocol, 'update_resident_runtime_settings', deny)
+    monkeypatch.setattr(resident_reporting, 'update', deny)
     with pytest.raises(PermissionError, match='reporting settings denied'):
         templates.apply(lineage, template['template_id'], {'kind': 'canvas'}, ACTOR)
     assert len(attempted) == 1 and attempted[0] not in before

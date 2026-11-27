@@ -68,7 +68,7 @@ def authoring_case(personal, workspace, monkeypatch, tmp_path):
     calls, provisions = [], []
 
     def set_policy(initiative):
-        resident_reporting.update(author, 'newcomer', {'reporting': {'initiative': initiative, 'quality': 'medium'}})
+        resident_reporting.update(author, 'newcomer', {'initiative': initiative, 'quality': 'medium'})
 
     set_policy('off')
 

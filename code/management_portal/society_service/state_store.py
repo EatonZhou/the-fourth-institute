@@ -563,6 +563,9 @@ class LineageDataStore:
     def read_resident_execution_settings(self, resident_id: str) -> dict[str, Any] | None:
         return self.residents.read_resident_execution_settings(resident_id)
 
+    def write_resident_reporting(self, resident_id: str, reporting: Mapping[str, Any]) -> None:
+        self.residents.write_resident_reporting(resident_id, reporting)
+
     def write_resident_execution_settings(self, resident_id: str, settings: Mapping[str, Any]) -> dict[str, Any]:
         return self.residents.write_resident_execution_settings(resident_id, settings)
 

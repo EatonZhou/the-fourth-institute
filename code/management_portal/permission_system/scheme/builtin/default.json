@@ -993,6 +993,9 @@
     "UpdateResident": {
       "a": "@contributor"
     },
+    "UpdateResidentReporting": {
+      "a": "@contributor"
+    },
     "UpdateResidentSettings": {
       "a": "@contributor"
     },

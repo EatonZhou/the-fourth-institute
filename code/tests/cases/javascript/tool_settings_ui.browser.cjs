@@ -18,7 +18,7 @@ const source = path.join(root, 'management_portal/static/portal_tool_settings.js
       window.PortalResidentProjection = {invalidate: id => invalidations.push(['projection', id])};
       window.PortalResidentRuntimeController = {invalidate: id => invalidations.push(['runtime', id])};
       window.config = {schema: 'tfi.resident-capabilities.v1', skills: [{ref: 'skill_hidden', enabled: true, required: false}], tools: [{ref: 'builtin:hidden', enabled: true, required: true}], mcp: [{ref: 'article_connection/file/mcp.json', enabled: false, required: false, tools: ['legacy']}]};
-      const response = id => ({schema: 'tfi.tool-settings.v1', applications: [{ref: 'application:paper2', name: 'Paper2', description: '<img src=x onerror=alert(1)>', input_schema: {type: 'object'}}], ...(id ? {resident: {resident_id: id, title: id, can_edit: id !== 'readonly', settings_revision: 'rev1', capability_config: structuredClone(config)}} : {})});
+      const response = id => ({schema: 'tfi.tool-settings.v1', applications: [{ref: 'application:paper2', name: 'Paper2', description: '<img src=x onerror=alert(1)>', input_schema: {type: 'object'}}], ...(id ? {resident: {resident_id: id, runtime_settings_resident_id: id === 'editable' ? 'router' : id, runtime_settings_access: 'available', title: id, can_edit: id !== 'readonly', settings_revision: 'rev1', capability_config: structuredClone(config)}} : {})});
       window.PortalAPI = {
         get: async (url, options) => {
           calls.push(['get', url]); const id = url.includes('?') ? decodeURIComponent(url.split('=')[1]) : '';
@@ -139,7 +139,7 @@ const source = path.join(root, 'management_portal/static/portal_tool_settings.js
     assert.match(await page.locator('#host > strong').textContent(), /editable/);
     await page.getByRole('button', {name: '保存工具设置'}).click();
     const first = await page.evaluate(() => calls.filter(c => c[0] === 'save').at(-1)[1]);
-    assert.equal(first.resident_id, 'editable'); assert.equal(first.expected_revision, 'rev1');
+    assert.equal(first.resident_id, 'router'); assert.equal(first.expected_revision, 'rev1');
     assert.deepEqual(first.capability_config.skills, [{ref: 'skill_hidden', enabled: true, required: false}]);
     assert.deepEqual(first.capability_config.tools[0], {ref: 'builtin:hidden', enabled: true, required: true});
     assert.deepEqual(first.capability_config.mcp[0].tools, ['legacy']);
@@ -148,6 +148,7 @@ const source = path.join(root, 'management_portal/static/portal_tool_settings.js
     await page.getByRole('button', {name: '发现工具', exact: true}).click();
     assert.equal(await page.evaluate(() => panel.hasUnsavedChanges()), false);
     await page.getByLabel('custom.read', {exact: true}).check();
+    assert.equal(await page.evaluate(() => calls.find(([kind]) => kind === 'discover')[1].resident_id), 'router');
     await page.evaluate(() => {window.conflict = true;});
     await page.getByRole('button', {name: '保存工具设置'}).click();
     await page.getByRole('status').filter({hasText: '草稿已保留'}).waitFor();
@@ -164,7 +165,7 @@ const source = path.join(root, 'management_portal/static/portal_tool_settings.js
     await page.getByRole('button', {name: '保存工具设置'}).click();
     await page.waitForFunction(() => !!window.resolveSave);
     await page.evaluate(() => {panel.destroy(); resolveSave();});
-    await page.waitForFunction(() => invalidations.length === 6);
+    await page.waitForFunction(() => invalidations.length === 9);
     assert.equal(await page.locator('#host').textContent(), '');
     await select('slow');
     await select('fast');

@@ -213,8 +213,14 @@ def test_familize_hands_leadership_and_wires_to_the_facade_and_unfamilize_return
     fork = run("ForkResident", {"lineage_id": lineage, "source_resident_id": facade})
     assert fork.error["code"] == "instruction.conflict"
 
-    # The facade never runs: its settings are its Router Resident's own.
-    ok("UpdateResidentSettings", {"resident_id": facade, "changes": {"model": "gpt-5.6-sol"}}, key="router-model")
+    # Read through the facade, then explicitly target the Router to save.
+    refused = run("UpdateResidentSettings", {"resident_id": facade, "changes": {"model": "gpt-5.6-sol"}})
+    assert refused.error["code"] == "instruction.invalid_arguments"
+    assert refused.error["details"]["runtime_settings_resident_id"] == router
+    facade_settings = ok("GetResidentSettings", {"resident_id": facade})
+    assert facade_settings["runtime_settings_resident_id"] == router
+    ok("UpdateResidentSettings", {"resident_id": router, "changes": {"model": "gpt-5.6-sol"},
+                                  "expected_revision": facade_settings["runtime_settings_revision"]}, key="router-model")
     assert ok("GetResidentSettings", {"resident_id": router})["settings"]["model"] == "gpt-5.6-sol"
     assert ok("GetResidentSettings", {"resident_id": facade})["settings"]["model"] == "gpt-5.6-sol"
     block = next(item for item in graph(lineage)["function_blocks"]

@@ -478,8 +478,14 @@
       updateRuntimeSettings(residentId, changes, idempotencyKey, expectedRevision) {
         return execute("UpdateResidentSettings", {
           resident_id: required(residentId, "resident_id"), changes,
-          ...(expectedRevision == null ? {} : {expected_revision: expectedRevision}),
+          expected_revision: required(expectedRevision, "runtime_settings_revision"),
         }, { idempotencyKey: idempotencyKey || newKey("resident-settings") });
+      },
+      updateReporting(residentId, reporting, idempotencyKey, expectedRevision) {
+        return execute("UpdateResidentReporting", {
+          resident_id: required(residentId, "resident_id"), reporting,
+          expected_revision: required(expectedRevision, "reporting_revision"),
+        }, { idempotencyKey: idempotencyKey || newKey("resident-reporting") });
       },
       snapshot(residentId, { historyLimit = 200 } = {}) {
         return execute("GetConversation", {

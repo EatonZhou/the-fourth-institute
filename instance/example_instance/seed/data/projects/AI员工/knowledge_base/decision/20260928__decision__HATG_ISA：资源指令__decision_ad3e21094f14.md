@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 53
+  number: 64
   created_at: "2026-09-28T10:45:00Z"
   created_by:
     user: "weihao"
     agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-11-25T15:34:34Z"
+  updated_at: "2026-11-26T14:57:34Z"
   updated_by:
     user: ""
-    agent: "resident_83d75ad3a6c7"
+    agent: "resident_60ae6d0cdf74"
 importance: 8
 metaness: 2
 ai_generated: false
@@ -60,8 +60,8 @@ links:
 | `GetResourceType` | 否 | 读取一个资源类型是否可以登记、修改和撤销登记。 | 对“共享”有 @viewer |
 | `SetResourceTypeEnabled` | 是 | 启用或停用一个资源类型，可选信封版本前提 | 对“共享”有 @admin |
 | `RegisterResource` | 是 | 登记一个新资源 | 对新对象的所属位置有 @contributor |
-| `CreateWorkspace` | 是 | 在空位置创建 Workspace | 固定槽免检；给出 `owner_id` 时对该所属对象有 @contributor |
-| `RegisterWorkspace` | 是 | 将现成目录接入为新的 Workspace | 固定槽免检；给出 `owner_id` 时对该所属对象有 @contributor |
+| `CreateWorkspace` | 是 | 在空位置创建 Workspace | 固定槽要求对“共享”有 @admin；给出 `owner_id` 时对该所属对象有 @contributor |
+| `RegisterWorkspace` | 是 | 将现成目录接入为新的 Workspace | 固定槽要求对“共享”有 @admin；给出 `owner_id` 时对该所属对象有 @contributor |
 | `GetDirectoryCleanup` | 否 | 读取对象的目录文件清理进度 | 固定槽免检；领域只向原操作调用者或有对象读取权限的调用者返回清理记录 |
 | `UpdateResource` | 是 | 修改资源的正文或元数据 | 对 `resource_id` 有 @contributor |
 | `UnregisterResource` | 是 | 撤销资源登记 | 对 `resource_id` 有 @admin |
@@ -182,7 +182,7 @@ links:
 
 两条指令的结果都包含 `workspace_id`（稳定的新对象 ID）与 `resource`（Workspace 资源记录）。CreateWorkspace 的来源为 `origin=created`，RegisterWorkspace 为 `origin=adopted`。来源由操作决定，不能由调用者另传 `origin` 改写。`owner_id` 只决定目录随谁删除，不授予权限，也不建立 Resident 绑定；省略它不会把调用者隐式设为所属对象。
 
-声明包含固定判定槽和可选的 `owner_id` 判定槽，后者只接受 Resident、Lineage、Project。默认方案将固定槽设为免检，给出所属对象时要求对该对象有 contributor；所属对象必须存在且未删除。Workspace 登记后的权限继续按当前权限方案及 decision_8838269736d3 判断。
+声明包含固定判定槽和可选的 `owner_id` 判定槽，后者只接受 Resident、Lineage、Project。默认方案要求固定槽对“共享”有 admin（目录登记在注销时按归属清理文件，不对所有调用者开放），给出所属对象时另要求对该对象有 contributor；所属对象必须存在且未删除。Workspace 登记后的权限继续按当前权限方案及 decision_8838269736d3 判断。
 
 `operation_id` 在认证调用者作用域内保存创建身份和进度。同一调用者以相同操作 ID 和相同参数重试，沿用原 Workspace ID 与目录；改用不同路径、归属、标题或创建/接入方式时拒绝。同一请求的传输重试仍遵循 ISA 信封 `idempotency_key` 规则，业务操作 ID 不替代信封键。
 

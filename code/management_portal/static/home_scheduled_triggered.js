@@ -163,7 +163,7 @@
         <section class="scheduled-triggered-detail-section"><div class="scheduled-triggered-detail-title">Event 来源</div>${sources.length ? sources.map(source => scheduledTriggeredSourceHtml(item, source)).join("") : window.PortalI18n.html`<div class="scheduled-triggered-subtle">此 Resident 当前没有连接的时间或文件 Event；运行状态仍来自所属 Lineage。</div>`}</section>
         <section class="scheduled-triggered-detail-section"><div class="scheduled-triggered-detail-title">任务说明</div>${(item.tasks || []).length ? item.tasks.map(task => scheduledTriggeredTaskHtml(item, task)).join("") : window.PortalI18n.html`<div class="scheduled-triggered-subtle">连线上没有写任务说明。</div>`}</section>
         <section class="scheduled-triggered-detail-section"><div class="scheduled-triggered-detail-title">运行与设置</div>${isEffect ? window.PortalI18n.html`<div class="scheduled-triggered-subtle">最近脚本文件 ${esc(item.last_run?.path || window.PortalI18n.t("尚无记录"))}</div>` : window.PortalI18n.html`<div class="scheduled-triggered-subtle">Provider ${esc(item.resident?.provider || window.PortalI18n.t("未知"))} · 账号 ${esc(item.resident?.account || window.PortalI18n.t("默认"))}${item.settings?.model ? window.PortalI18n.text` · 模型 ${esc(item.settings.model)}` : ""}${item.settings?.reasoning_effort ? window.PortalI18n.text` · 推理 ${esc(item.settings.reasoning_effort)}` : ""}</div>
-          ${scheduledTriggeredAllows(item, "UpdateResidentSettings") ? window.PortalI18n.html`<div class="scheduled-triggered-actions" data-scheduled-triggered-settings><label>模型<input type="text" data-scheduled-triggered-setting="model" value="${esc(item.settings?.model || "")}"></label><label>推理强度<input type="text" data-scheduled-triggered-setting="reasoning_effort" value="${esc(item.settings?.reasoning_effort || "")}"></label><button type="button" class="scheduled-triggered-action" data-scheduled-triggered-action="update_settings" data-scheduled-triggered-row-id="${residentId}">修改模型</button></div>` : ""}`}
+          ${item.resident_id ? window.PortalI18n.html`<button type="button" class="scheduled-triggered-action" data-scheduled-triggered-action="open_settings" data-scheduled-triggered-row-id="${residentId}">运行设置</button>` : ""}`}
           <div class="scheduled-triggered-subtle">最近运行 ${esc(isEffect ? scheduledTriggeredScriptStatus(item.last_run?.status) : item.last_run?.status || window.PortalI18n.t("无记录"))}${item.last_run?.started_at ? window.PortalI18n.text` · 开始 ${esc(displayDateTime(item.last_run.started_at) || item.last_run.started_at)}` : ""}${item.last_run?.finished_at ? window.PortalI18n.text` · 结束 ${esc(displayDateTime(item.last_run.finished_at) || item.last_run.finished_at)}` : ""}${Number(item.consecutive_failures) ? window.PortalI18n.text` · 连续失败 ${esc(item.consecutive_failures)} 次` : ""}</div>
           ${(item.recent_runs || []).slice(1).map(run => window.PortalI18n.html`<div class="scheduled-triggered-subtle">${esc(run.script_run_id || run.trigger_path_id)} · ${esc(isEffect ? scheduledTriggeredScriptStatus(run.status) : run.status)}${run.started_at ? ` · ${esc(displayDateTime(run.started_at) || run.started_at)}` : ""}</div>`).join("")}
           ${(item.diagnostics || []).map(entry => window.PortalI18n.html`<div class="${String(entry.severity || entry.level || "").toLowerCase() === "error" ? "agent-status-error" : "scheduled-triggered-subtle"}">${esc(entry.message || entry.code || "")}</div>`).join("")}
@@ -201,7 +201,6 @@
         row: input.closest("[data-scheduled-triggered-row]").dataset.scheduledTriggeredRow,
         source: input.closest("[data-scheduled-triggered-source]")?.dataset.scheduledTriggeredSource,
         field: input.dataset.scheduledTriggeredScheduleField,
-        setting: input.dataset.scheduledTriggeredSetting,
         value: input.value, focused: input === document.activeElement,
         start: input.selectionStart, end: input.selectionEnd,
       }));
@@ -230,9 +229,7 @@
       for (const draft of drafts) {
         const row = node.querySelector(`[data-scheduled-triggered-row="${CSS.escape(draft.row)}"]`);
         const container = draft.source ? row?.querySelector(`[data-scheduled-triggered-source="${CSS.escape(draft.source)}"]`) : row;
-        const input = container?.querySelector(draft.field
-          ? `[data-scheduled-triggered-schedule-field="${CSS.escape(draft.field)}"]`
-          : `[data-scheduled-triggered-setting="${CSS.escape(draft.setting)}"]`);
+        const input = container?.querySelector(`[data-scheduled-triggered-schedule-field="${CSS.escape(draft.field)}"]`);
         if (!input) continue;
         input.value = draft.value;
         if (draft.focused) {
@@ -245,7 +242,7 @@
     async function controlScheduledTriggered(button) {
       const rowId = button?.getAttribute?.("data-scheduled-triggered-row-id") || "";
       const action = button?.getAttribute?.("data-scheduled-triggered-action") || "";
-      const supported = ["pause_schedule", "resume_schedule", "update_schedule", "run_once", "cancel_run", "cancel_script", "update_settings"];
+      const supported = ["pause_schedule", "resume_schedule", "update_schedule", "run_once", "cancel_run", "cancel_script", "open_settings"];
       if (!rowId || !supported.includes(action)) return;
       const item = (currentAgentStatusData()?.scheduled_triggered?.items || []).find(entry => scheduledTriggeredItemId(entry) === rowId);
       if (!item) return;
@@ -270,18 +267,13 @@
         if (!source) return;
         instruction = "SetComponentPaused";
         argumentsPayload = {lineage_id: item.lineage_id, component_id: sourceId, paused: action === "pause_schedule"};
-      } else if (action === "update_settings") {
-        const changes = {};
-        for (const input of button.closest("[data-scheduled-triggered-settings]")?.querySelectorAll("[data-scheduled-triggered-setting]") || []) {
-          const value = input.value.trim();
-          if (value) changes[input.getAttribute("data-scheduled-triggered-setting")] = value;
-        }
-        if (!Object.keys(changes).length) {
-          window.PortalUI.toast(window.PortalI18n.t("请填写模型或推理强度"), "error");
-          return;
-        }
-        instruction = "UpdateResidentSettings";
-        argumentsPayload = {resident_id: item.resident_id, changes};
+      } else if (action === "open_settings") {
+        if (!item.resident_id) return;
+        await window.PortalNav.openResidentMenu({
+          residentId: item.resident_id,
+          onChanged: () => loadScheduledTriggeredStatus(currentAgentStatusData(), undefined, true, {afterMutation: true}),
+        });
+        return;
       } else if (action === "update_schedule" && source) {
         const config = {...source.config};
         const container = button.closest("[data-scheduled-triggered-source]");

@@ -81,8 +81,8 @@ const server=http.createServer((req,res)=>{
         instructionCalls.push({name,args});
         if(name==='GetResidentSettings') {
           if(window.reportingDenied)throw Object.assign(new Error('no_permit'),{status:403});
-          if(window.reportingMissing)return {settings:{},settings_revision:'legacy-fixture'};
-          return {settings:{reporting:window.reportingPolicy||{initiative:'off',quality:'medium'}},settings_revision:'policy-fixture'};
+          if(window.reportingMissing)return {reporting_revision:'legacy-fixture'};
+          return {reporting:window.reportingPolicy||{initiative:'off',quality:'medium'},reporting_revision:'policy-fixture'};
         }
         if(name==='ListInputHistory')return {entries:[]};
         if(name==='CheckPermission')return {allowed:true};
@@ -342,7 +342,7 @@ const server=http.createServer((req,res)=>{
     check('missing effective policy is unavailable rather than a fabricated default',await page.evaluate(async()=>{
       window.reportingMissing=true;
       const context=await chatOptions.submissionContext({resident_id:'resident_0123456789ab'});
-      window.reportingMissing=false;return [context.reporting_read,context.settings_revision,context.reporting];
+      window.reportingMissing=false;return [context.reporting_read,context.reporting_revision,context.reporting];
     }),['unavailable','legacy-fixture',null]);
     check('quality changes retain the same message generation identity',await page.evaluate(async()=>{
       const origin={residentId:'resident_0123456789ab',messageId:'msg_0123456789abcdef',fenceIndex:0};
@@ -362,9 +362,9 @@ const server=http.createServer((req,res)=>{
       const first=options.submissionContext({resident_id:'resident_0123456789ab'});
       const second=options.submissionContext({resident_id:'resident_0123456789ab'});
       const before=issued.slice();
-      calls[1]({settings:{reporting:{initiative:'high',quality:'high'}},settings_revision:'new'});
+      calls[1]({reporting:{initiative:'high',quality:'high'},reporting_revision:'new'});
       const secondContext=await second;
-      calls[0]({settings:{reporting:{initiative:'off',quality:'medium'}},settings_revision:'old'});
+      calls[0]({reporting:{initiative:'off',quality:'medium'},reporting_revision:'old'});
       const firstContext=await first;
       const nonce=context=>JSON.parse(context.context_text.split('示例结构：')[1].split('\n')[0]).request_id;
       const result=before.length===2&&nonce(firstContext)===before[0]&&nonce(secondContext)===before[1];

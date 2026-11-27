@@ -29,9 +29,7 @@ def no_provision(monkeypatch):
 
 
 def high_policy(record):
-    resident_reporting.update(record["resident_id"], "CASE-A", {
-        "runtime_settings": {"reporting": {"initiative": "off", "quality": "high"}},
-    })
+    resident_reporting.update(record["resident_id"], "CASE-A", {"initiative": "off", "quality": "high"})
 
 
 @pytest.mark.parametrize("text", [
@@ -73,7 +71,7 @@ def test_settings_reads_conversation_and_preview_do_not_create_members(resident_
     high_policy(resident_record)
     rid = resident_record["resident_id"]
     settings = resident_protocol.get_resident_runtime_settings(rid, "CASE-A")
-    assert settings["runtime_settings"]["reporting"]["quality"] == "high"
+    assert settings["reporting"]["quality"] == "high"
     snapshot = resident_protocol.get_resident_conversation_snapshot(rid, "CASE-A")
     assert isinstance(snapshot, dict)
     for turn in ("first", "later", "after_compaction"):

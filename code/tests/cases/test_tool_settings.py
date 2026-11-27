@@ -26,6 +26,7 @@ def setup(monkeypatch):
         assert call.arguments['resident_id'] == RID
         if call.instruction == 'GetResidentSettings':
             result = {'settings': deepcopy(state['settings']), 'settings_revision': state['revision'],
+                      'runtime_settings_resident_id': RID, 'runtime_settings_access': 'available',
                       'application': {'state': 'next_turn'}}
         else:
             assert call.instruction == 'UpdateResidentSettings'
@@ -52,7 +53,8 @@ def test_catalog_is_passive_and_resident_view_never_opens_mcp(setup, monkeypatch
     client, state, calls = setup
     from management_portal.execution import resident_mcp
     monkeypatch.setattr(resident_mcp, 'discover_mcp_directory', lambda *a, **k: pytest.fail('passive view opened MCP'))
-    assert len(client.get('/api/tool-settings').json()['applications']) == 14
+    from management_portal.application_tools import list_tools
+    assert client.get('/api/tool-settings').json()['applications'] == list_tools('alice')['tools']
     assert calls == []
     view = client.get('/api/tool-settings', params={'resident_id': RID}).json()
     assert view['resident']['capability_config'] == CONFIG
@@ -112,6 +114,30 @@ def test_authentication_origin_arguments_and_safe_discovery_errors(setup, monkey
     assert client.post('/api/tool-settings/discover', json=payload).status_code == 403
     monkeypatch.setattr(asgi, '_instruction_principal', lambda request: ('', ''))
     assert client.get('/api/tool-settings').status_code == 401
+
+
+@pytest.mark.parametrize('runtime_id', ['resident_abcdef123456', ''])
+def test_facade_tool_view_names_runtime_target_and_never_discovers_as_facade(monkeypatch, runtime_id):
+    permission_targets = []
+    stored = {'settings': {'capability_config': deepcopy(CONFIG)} if runtime_id else {},
+              'settings_revision': 'router-r1' if runtime_id else '',
+              'runtime_settings_resident_id': runtime_id,
+              'runtime_settings_access': 'available' if runtime_id else 'unavailable'}
+    monkeypatch.setattr(tool_settings, '_call', lambda *a: stored)
+    monkeypatch.setattr(tool_settings, '_can_edit',
+                        lambda caller, rid: permission_targets.append(rid) or True)
+    from management_portal import application_tools
+    monkeypatch.setattr(application_tools, 'list_tools', lambda caller: {'tools': []})
+    context = InstructionContext(caller='alice', entry='web')
+    view = tool_settings.view(context, RID)['resident']
+    assert view['resident_id'] == RID
+    assert view['runtime_settings_resident_id'] == runtime_id
+    assert view['can_edit'] == bool(runtime_id)
+    assert permission_targets == ([runtime_id] if runtime_id else [])
+    with pytest.raises(InstructionError) as error:
+        tool_settings.discover(context, {'resident_id': RID, 'ref': 'file_123456789abc'})
+    assert error.value.code == 'instruction.invalid_arguments'
+    assert error.value.details['runtime_settings_resident_id'] == runtime_id
 
 
 def test_lazy_tool_panel_has_a_public_static_route():

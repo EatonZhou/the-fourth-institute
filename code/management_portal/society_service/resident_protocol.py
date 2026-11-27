@@ -1845,5 +1845,5 @@ def update_resident_runtime_settings(
     actor: str,
     payload: object = None,
 ) -> dict[str, Any]:
-    from . import resident_reporting
-    return resident_reporting.update(resident_id, actor, payload)
+    from . import resident_execution_domain
+    return resident_execution_domain.change_resident_runtime_settings(resident_id, actor, payload)

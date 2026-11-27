@@ -608,8 +608,8 @@ def test_runtime_settings_provider_catalog_validation_runs_outside_resident_lock
     assert result["runtime_settings"]["service_tier"] == "priority"
 
 
-def test_reporting_and_runtime_settings_reject_a_change_during_catalog_validation(resident_record, monkeypatch):
-    """锁外校验期间配置变化时，整次修改拒绝，汇报策略也不部分提交。"""
+def test_runtime_settings_reject_a_change_during_catalog_validation(resident_record, monkeypatch):
+    """锁外校验期间运行配置变化时拒绝修改。"""
     from management_portal.society_service.errors import LineageConflictError
     from management_portal.society_service import resident_reporting
     rid = str(resident_record["resident_id"])
@@ -624,14 +624,13 @@ def test_reporting_and_runtime_settings_reject_a_change_during_catalog_validatio
         return dict(updates)
 
     monkeypatch.setattr(resident_runtime_domain, "validate_backend_runtime_updates", validate)
-    with pytest.raises(LineageConflictError, match="changed during validation"):
+    with pytest.raises(LineageConflictError, match="changed during Provider validation"):
         resident_protocol.update_resident_runtime_settings(rid, "CASE-A", {
             "expected_revision": before["settings_revision"],
-            "runtime_settings": {"collaboration_mode": "plan",
-                                 "reporting": {"initiative": "high", "quality": "low"}},
+            "runtime_settings": {"collaboration_mode": "plan"},
         })
     after = resident_reporting.read(rid, "CASE-A")
-    assert after["runtime_settings"]["reporting"] == before["runtime_settings"]["reporting"]
+    assert after["reporting"] == before["reporting"]
     assert after["runtime_settings"]["collaboration_mode"] == before["runtime_settings"]["collaboration_mode"]
     assert after["runtime_settings"]["service_tier"] == "priority"
 

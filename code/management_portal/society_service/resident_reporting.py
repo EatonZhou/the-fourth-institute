@@ -25,101 +25,74 @@ def _authorized(resident_id: str, actor: str, operation: str = "GetResidentSetti
     return record
 
 
-def _runtime_target(record: dict, actor: str) -> str:
-    from . import family_facade, family_familize, lineage_aggregate, resident_access
-    identity = record["resident_id"]
-    if not family_facade.is_facade(record):
-        return identity
-    lineage = lineage_aggregate.read_lineage_state(record["lineage_id"])
-    router = family_familize.router_of_facade(lineage, identity)
-    target = records.find_resident(router) if router else None
-    from management_portal import permission_system
-    if (not target or not resident_access.resident_visible_to_actor(target, actor)
-            or not permission_system.allows(actor, "GetResidentSettings", {"resident_id": router})
-            or not resident_access.has_resident_workspace_authority(target, actor)):
-        return ""
-    return router
+def _policy_projection(record: dict) -> dict:
+    from .resident_reporting_policy import policy_for_record
+
+    policy = policy_for_record(record)
+    selected = {key: policy[key] for key in DEFAULT}
+    digest = json.dumps([record["resident_id"], selected, policy["configured"]], sort_keys=True)
+    return {
+        "reporting": selected,
+        "reporting_effective": policy,
+        "reporting_revision": hashlib.sha256(digest.encode()).hexdigest(),
+    }
 
 
-def read(resident_id: str, actor: str) -> dict:
-    from . import resident_execution_domain as execution
-    with records.state_lock(resident_id):
-        record = _authorized(resident_id, actor)
-        target = _runtime_target(record, actor)
-        result = execution.read_resident_runtime_settings(target, actor) if target else {
-            "runtime_settings": {}, "application": {}, "settings_revision": "",
-        }
-        policy = effective(resident_id)
-        selected = {key: policy[key] for key in DEFAULT}
-        result["runtime_settings"] = {**result["runtime_settings"], "reporting": selected}
-        result["runtime_settings_access"] = "available" if target else "unavailable"
-        result["reporting_effective"] = policy
-        digest = json.dumps([result["settings_revision"], selected, bool(record.get("reporting"))], sort_keys=True)
-        result["settings_revision"] = hashlib.sha256(digest.encode()).hexdigest()
-        result["application"] = {**result["application"],
-            "schema": "tfi.resident-application.v1", "settings_revision": result["settings_revision"],
-            "items": [*result["application"].get("items", []), {
+def _application(resident_id: str, application: dict) -> dict:
+    return {**application, "schema": "tfi.resident-application.v1",
+            "items": [*application.get("items", []), {
                 "path": "reporting", "status": "next_turn", "delivery": "unknown",
                 "reason": "configured_for_future_input_without_delivery_observation",
                 "source_resident_id": resident_id,
             }]}
-        return result
 
 
-def update(resident_id: str, actor: str, payload: dict) -> dict:
-    from . import resident_catalog, resident_execution_domain as execution
+def read(resident_id: str, actor: str) -> dict:
+    from management_portal import permission_system
+    from . import family_facade, resident_access, resident_catalog, resident_execution_domain as execution
+
+    with records.state_lock(resident_id):
+        record = _authorized(resident_id, actor)
+        reporting = _policy_projection(record)
+        target_id = execution.settings_router_id(record) if family_facade.is_facade(record) else resident_id
+
+    result = {"runtime_settings": {}, "application": {}, "settings_revision": "",
+              "runtime_settings_access": "unavailable", "runtime_settings_resident_id": ""}
+    if target_id:
+        with records.state_lock(target_id):
+            target = records.find_resident(target_id)
+            if (target and not target.get("deleted_at")
+                    and resident_access.resident_visible_to_actor(target, actor)
+                    and permission_system.allows(actor, "GetResidentSettings", {"resident_id": target_id})
+                    and resident_access.has_resident_workspace_authority(target, actor)
+                    and resident_catalog.registration_ready(target)):
+                result = execution.read_resident_runtime_settings(target_id, actor)
+                result["runtime_settings_resident_id"] = target_id
+                result["runtime_settings_access"] = "available"
+    result.update(reporting, runtime_settings_revision=result["settings_revision"])
+    result["application"] = _application(resident_id, result["application"])
+    return result
+
+
+def update(resident_id: str, actor: str, reporting: dict, *, expected_revision: str | None = None) -> dict:
+    from . import changes, resident_catalog
     from .errors import LineageConflictError
-    if not isinstance(payload, dict):
-        raise ValueError("settings payload must be an object")
-    if "runtime_settings" in payload and (
-            set(payload) - {"runtime_settings", "expected_revision"}
-            or not isinstance(payload["runtime_settings"], dict)):
-        raise ValueError("runtime_settings envelope must contain an object and no extra fields")
-    changes = dict(payload.get("runtime_settings", payload))
-    expected = payload.get("expected_revision")
-    if "expected_revision" in payload and (not isinstance(expected, str) or not expected):
-        raise ValueError("expected_revision must be a nonempty settings revision")
-    changes.pop("expected_revision", None)
-    if not changes:
-        raise ValueError("runtime_settings required")
-    policy = normalize(changes.pop("reporting")) if "reporting" in changes else None
-    with records.state_lock(resident_id):
-        record = _authorized(resident_id, actor, "UpdateResidentSettings")
-        before = read(resident_id, actor)
-        if expected is not None and expected != before["settings_revision"]:
-            raise LineageConflictError("Resident settings revision changed", resource="resident_runtime_settings")
-        target = _runtime_target(record, actor)
-        if changes and not target:
-            raise PermissionError("无权修改 Router 的运行设置")
-        if changes:
-            from management_portal import permission_system
-            if not permission_system.allows(actor, "UpdateResidentSettings", {"resident_id": target}):
-                raise PermissionError("无权修改该执行 Resident 的运行设置")
-        before_revision = before["settings_revision"]
 
-    # Catalog validation may perform RPC; it precedes the short CAS commit.
-    prepared = execution.prepare_resident_runtime_settings_change(target, actor, {"runtime_settings": changes}) if changes else None
+    policy = normalize(reporting)
+    if expected_revision is not None and (not isinstance(expected_revision, str) or not expected_revision):
+        raise ValueError("expected_revision must be a nonempty reporting revision")
     with records.state_lock(resident_id):
-        record = _authorized(resident_id, actor, "UpdateResidentSettings")
-        if read(resident_id, actor)["settings_revision"] != before_revision or _runtime_target(record, actor) != target:
-            raise LineageConflictError("Resident settings changed during validation", resource="resident_runtime_settings")
-        changed = policy is not None and (not record.get("reporting") or policy != configured(record))
-        def commit():
-            next_fields = []
-            if changes:
-                saved = prepared()
-                next_fields.extend(saved.get("next_turn_fields", []))
-            if changed:
-                fresh = records.find_resident(resident_id)
-                fresh["reporting"] = policy
-                records.save_resident_record(fresh, commit_configuration=True)
-                next_fields.append("reporting")
-            result = read(resident_id, actor)
-            result["next_turn_fields"] = next_fields
-            result["active_turn_fields"] = []
-            result["active_turn_settings_update"] = {"requested": False, "status": "next_turn" if next_fields else "unchanged"}
-            return result
-        return resident_catalog.get_catalog().state_store.transaction(commit)
+        record = _authorized(resident_id, actor, "UpdateResidentReporting")
+        result = _policy_projection(record)
+        if expected_revision is not None and expected_revision != result["reporting_revision"]:
+            raise LineageConflictError("Resident reporting revision changed", resource="resident_reporting")
+        changed = not result["reporting_effective"]["configured"] or policy != result["reporting"]
+        if changed:
+            resident_catalog.get_catalog().state_store.write_resident_reporting(resident_id, policy)
+            changes.resident_changed(resident_id, scope="runtime")
+            result = _policy_projection({**record, "reporting": policy})
+        return {**result, "resident_id": resident_id, "next_turn_fields": ["reporting"] if changed else [],
+                "application": _application(resident_id, {"reporting_revision": result["reporting_revision"]})}
 
 
 def install_schema(connection: Any) -> dict:

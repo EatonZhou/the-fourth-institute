@@ -8,14 +8,14 @@
   // Family settings instead).
 
   const DEPENDENCIES = Object.freeze([
-    "$id", "esc", "menuState", "nodeMenuNotice", "renderFamilySettings",
+    "$id", "changed", "esc", "menuState", "nodeMenuNotice", "renderFamilySettings",
   ]);
 
   function createRuntime(dependencies) {
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalResidentMenuRuntime is missing: ${missing.join(", ")}`);
     const {
-      $id, esc, menuState, nodeMenuNotice, renderFamilySettings,
+      $id, changed, esc, menuState, nodeMenuNotice, renderFamilySettings,
     } = dependencies;
 
     function renderNodeMenuSession(context, {detail, error}) {
@@ -24,7 +24,6 @@
         const backend = String(detail?.resident?.backend || "").trim();
         if (backend && backend !== context.node.backend) {
           context.node = {...context.node, backend};
-          void loadNodeMenuRuntime();
         }
         context.sessionId = String(detail?.provider_session?.id || "").trim();
         $id("nodeMenuSessionId").textContent = context.sessionId || window.PortalI18n.t("尚未创建");
@@ -51,7 +50,7 @@
       const context = menuState.nodeMenuContext;
       if (!context) return;
       void loadNodeMenuReporting(context);
-      if (context.family) { renderFamilySettings(context); return; }
+      if (context.family) renderFamilySettings(context);
       // The menu shows the same runtime panel as the dialog, in place: the
       // account and the parameters on one page, then the quota switch.
       const root = $id("nodeMenuRuntime");
@@ -78,8 +77,14 @@
               || (!view.canEdit && !view.canRestart);
             const extras = context.runtimeExtras;
             extras.replaceChildren();
+            if (view.runtimeSettingsResidentId && view.runtimeSettingsResidentId !== context.residentId) {
+              const target = document.createElement("p");
+              target.className = "paneNote";
+              target.textContent = window.PortalI18n.text`运行设置属于 ${view.runtimeSettingsResidentId}`;
+              extras.append(target);
+            }
             const quotaSwitch = view.quotaSwitch;
-            const facade = context.node?.family?.role === "facade" || view.detail?.resident?.family?.role === "facade"
+            const facade = context.family || context.node?.family?.role === "facade" || view.detail?.resident?.family?.role === "facade"
               || !!view.detail?.family_facade?.family_id;
             if (facade) {
               const note = document.createElement("p");
@@ -113,7 +118,12 @@
               note.textContent = window.PortalI18n.t(source); extras.append(note);
             }
           },
-          onChanged: () => { if (menuState.nodeMenuContext === context) void loadNodeMenuSession({force: true}); },
+          onChanged: () => {
+            if (menuState.nodeMenuContext !== context) return;
+            void loadNodeMenuSession({force: true});
+            void changed({type: "settings", residentId: context.residentId, lineageId: context.lineageId})
+              .catch(error => { if (menuState.nodeMenuContext === context) nodeMenuNotice(error.message); });
+          },
           // A saved change or a finished switch closes the panel; show it again
           // with the values now in effect.
           onClose: () => { void mountPanel(); },
@@ -137,10 +147,10 @@
           window.PortalResidentService.projection({residentId: context.residentId}),
         ]);
         if (menuState.nodeMenuContext !== context) return;
-        const reporting = result.settings?.reporting;
-        if (!reporting || result.settings_revision == null) throw new Error(window.PortalI18n.t("汇报设置暂不可用，请重试。"));
-        const canEdit = detail.allows?.UpdateResidentSettings ?? Boolean(detail.chat_workspace?.actions?.runtime_settings);
-        context.reportingRevision = result.settings_revision;
+        const reporting = result.reporting;
+        if (!reporting || !result.reporting_revision) throw new Error(window.PortalI18n.t("汇报设置暂不可用，请重试。"));
+        const canEdit = detail.allows?.UpdateResidentReporting === true;
+        context.reportingRevision = result.reporting_revision;
         context.reportingCommitted = false;
         const choice = (name, value, label, accessibleLabel = label) => `<label class="residentReportingChoice">
           <input type="radio" name="${name}" value="${value}" ${accessibleLabel !== label ? `aria-label="${esc(window.PortalI18n.t(accessibleLabel))}"` : ""} ${canEdit ? "" : "disabled"}>
@@ -206,16 +216,16 @@
           try {
             const latest = await window.PortalResidentService.runtimeSettings(context.residentId);
             if (!current()) return;
-            if (!latest.settings?.reporting || latest.settings_revision == null) throw new Error(window.PortalI18n.t("汇报设置暂不可用，请重试。"));
+            if (!latest.reporting || !latest.reporting_revision) throw new Error(window.PortalI18n.t("汇报设置暂不可用，请重试。"));
             const names = {off: "不开启", low: "低", medium: "中", high: "高"};
-            note.textContent = window.PortalI18n.text`当前已保存：主动性 ${window.PortalI18n.t(names[latest.settings.reporting.initiative])}；质量 ${window.PortalI18n.t(names[latest.settings.reporting.quality])}。请核对后选择。`;
+            note.textContent = window.PortalI18n.text`当前已保存：主动性 ${window.PortalI18n.t(names[latest.reporting.initiative])}；质量 ${window.PortalI18n.t(names[latest.reporting.quality])}。请核对后选择。`;
             const choose = (label, apply) => {
               const button = document.createElement("button");
               button.type = "button"; button.className = "portalButton is-compact";
               button.textContent = window.PortalI18n.t(label);
               button.onclick = () => {
                 if (!current() || context.reportingSaving) return;
-                context.reportingRevision = latest.settings_revision;
+                context.reportingRevision = latest.reporting_revision;
                 context.reportingConflict = false;
                 conflictRoot.replaceChildren(); conflictRoot.hidden = true;
                 apply();
@@ -223,8 +233,8 @@
               conflictRoot.append(button);
             };
             choose("加载最新设置，替换当前编辑", () => {
-              form.elements.initiative.value = latest.settings.reporting.initiative;
-              form.elements.quality.value = latest.settings.reporting.quality;
+              form.elements.initiative.value = latest.reporting.initiative;
+              form.elements.quality.value = latest.reporting.quality;
               form.querySelector("[data-reporting-status]").textContent = window.PortalI18n.t("已加载当前保存的设置。");
             });
             choose("保留当前编辑，按最新版本重试保存", () => form.requestSubmit());
@@ -246,7 +256,6 @@
           status.textContent = window.PortalI18n.t("正在保存…");
           context.reportingSaving = true;
           context.saving = true;
-          $id("nodeMenuRuntime").inert = true;
           form.querySelectorAll("input, button").forEach(control => { control.disabled = true; });
           try {
             if (!context.reportingCommitted) {
@@ -255,25 +264,26 @@
                 throw new Error(window.PortalI18n.t("上次保存结果待确认，请先重试原设置。"));
               }
               context.reportingPending ||= {signature, key: window.PortalUIPrimitives.randomUUID()};
-              await window.PortalResidentService.updateRuntimeSettings(context.residentId,
-                {reporting: selected}, context.reportingPending.key, context.reportingRevision);
+              await window.PortalResidentService.updateReporting(context.residentId,
+                selected, context.reportingPending.key, context.reportingRevision);
               context.reportingCommitted = true;
               context.reportingPending = null;
             }
             const saved = await window.PortalResidentService.runtimeSettings(context.residentId);
             if (menuState.nodeMenuContext !== context) return;
-            context.reportingRevision = saved.settings_revision;
-            form.elements.initiative.value = saved.settings.reporting.initiative;
-            form.elements.quality.value = saved.settings.reporting.quality;
+            context.reportingRevision = saved.reporting_revision;
+            form.elements.initiative.value = saved.reporting.initiative;
+            form.elements.quality.value = saved.reporting.quality;
             context.reportingCommitted = false;
             window.PortalResidentProjection?.invalidate?.(context.residentId);
             status.textContent = window.PortalI18n.t("汇报设置已保存。");
           } catch (error) {
-            if (Number(error.status) >= 400 && Number(error.status) < 500 && Number(error.status) !== 408) context.reportingPending = null;
+            const conflict = Number(error.status) === 409 || ["instruction.version_conflict", "instruction.conflict"].includes(error.code);
+            if (conflict || (Number(error.status) >= 400 && Number(error.status) < 500 && Number(error.status) !== 408)) context.reportingPending = null;
             if (menuState.nodeMenuContext === context) status.textContent = context.reportingCommitted
               ? window.PortalI18n.t("设置已提交，暂时无法确认结果，请重试读取。")
               : context.reportingPending ? window.PortalI18n.t("保存结果待确认，请重试原设置。") : window.PortalI18n.text`汇报设置未保存：${error.message}`;
-            if (!context.reportingCommitted && (Number(error.status) === 409 || error.code === "instruction.version_conflict" || error.code === "instruction.conflict")) {
+            if (!context.reportingCommitted && conflict) {
               context.reportingConflict = true;
               await refreshConflict();
             }
@@ -283,7 +293,6 @@
             context.reportingSaving = false;
             context.saving = Boolean(context.runtimeSaving);
             if (menuState.nodeMenuContext === context) {
-              $id("nodeMenuRuntime").inert = false;
               form.querySelectorAll("input, button").forEach(control => {
                 control.disabled = Boolean(context.reportingCommitted || context.reportingPending) && control.tagName === "INPUT";
               });

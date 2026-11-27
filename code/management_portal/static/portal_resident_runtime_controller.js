@@ -14,6 +14,9 @@
     detail?.provider_session?.provider, detail?.provider_session?.account_id]);
   const mayEdit = detail => !!detail?.chat_workspace?.actions?.runtime_settings
     && detail?.allows?.UpdateResidentSettings !== false;
+  const settingsOwner = result => result.runtime_settings_access === "available"
+    && result.runtime_settings_revision ? result.runtime_settings_resident_id || "" : "";
+  const canEditSettings = entry => Boolean(entry.runtimeSettingsResidentId && mayEdit(entry.runtimeDetail));
   const denied = () => new Error(window.PortalI18n.t("无权限"));
   const stale = () => new Error(window.PortalI18n.t("成员的 Backend 或账号已变更，请重新打开设置。"));
 
@@ -32,12 +35,15 @@
       },
     };
     const state = e => ({ residentId: e.id, detail: e.detail, settings: e.settings, catalog: e.catalog,
-      settings_revision: e.settingsRevision, application: e.application, quotaSwitch: e.quotaSwitch,
-      canEdit: mayEdit(e.detail), canRestart: e.detail?.allows?.RestartSession === true,
+      runtimeSettingsResidentId: e.runtimeSettingsResidentId, settings_revision: e.settingsRevision, application: e.application, quotaSwitch: e.quotaSwitch,
+      canEdit: canEditSettings(e), canRestart: e.detail?.allows?.RestartSession === true,
       loading: !!e.loading, busy: !!e.saving || !!e.opening, restart: e.restart, error: e.error });
     const notify = e => e.bindings.forEach(b => b.adapters.onState?.(state(e)));
     const changed = (e, result) => {
       window.PortalResidentProjection?.invalidate?.(e.id);
+      if (e.runtimeSettingsResidentId && e.runtimeSettingsResidentId !== e.id) {
+        window.PortalResidentProjection?.invalidate?.(e.runtimeSettingsResidentId);
+      }
       e.bindings.forEach(b => b.adapters.onChanged?.({ ...result, resident_id: e.id }));
     };
     const invalidate = id => {
@@ -62,13 +68,21 @@
       const revision = e.revision;
       e.loading = (async () => {
         const detail = await service().projection({ residentId: e.id });
-        const [result, catalog] = mayEdit(detail) ? await Promise.all([
-          service().runtimeSettings(e.id), service().runtimeCatalog({ residentId: e.id }),
-        ]) : [{ settings: detail.runtime_settings || {} }, null];
+        const facade = detail?.resident?.family?.role === "facade" || !!detail?.family_facade?.family_id;
+        const result = mayEdit(detail) || facade ? await service().runtimeSettings(e.id).catch(error => {
+          if (Number(error.status) === 403 || error.code === "instruction.forbidden") return {};
+          throw error;
+        }) : {};
+        const runtimeId = settingsOwner(result);
+        const runtimeDetail = runtimeId === e.id ? detail
+          : runtimeId ? await service().projection({ residentId: runtimeId }) : null;
+        const catalog = runtimeId && mayEdit(runtimeDetail) ? await service().runtimeCatalog({ residentId: runtimeId }) : null;
         if (e.revision !== revision) return;
-        e.detail = detail; e.settings = clone(result.settings || result.runtime_settings || {});
-        if (e.pendingSave && Object.entries(e.pendingSave.changes).every(([k, v]) => equal(v, e.settings[k]))) e.pendingSave = null;
-        e.settingsRevision = result.settings_revision; e.application = result.application; e.quotaSwitch = result.quota_switch;
+        e.detail = detail; e.runtimeDetail = runtimeDetail; e.runtimeSettingsResidentId = runtimeId;
+        e.settings = clone(runtimeId ? result.settings || {} : {});
+        if (e.pendingSave && e.pendingSave.residentId === runtimeId
+          && Object.entries(e.pendingSave.changes).every(([k, v]) => equal(v, e.settings[k]))) e.pendingSave = null;
+        e.settingsRevision = result.runtime_settings_revision; e.application = result.application; e.quotaSwitch = result.quota_switch;
         e.catalog = catalog; e.valid = true; e.error = "";
         if (e.bindings.size) observe(e);
       })();
@@ -80,8 +94,8 @@
     }
     const onChange = event => {
       const d = event.detail || {};
-      for (const id of entries.keys()) {
-        const scopes = d.resident_changes?.[id] || [];
+      for (const [id, entry] of entries) {
+        const scopes = [...(d.resident_changes?.[id] || []), ...(d.resident_changes?.[entry.runtimeSettingsResidentId] || [])];
         if (d.snapshot_required || scopes.some(s => ["runtime", "identity", "session_restart"].includes(s))) invalidate(id);
       }
     };
@@ -108,40 +122,48 @@
         // projection below validates the actual route and current permission.
         if (!live(token) || identity !== identityRevision || (!allowActive && active(e.restart))) throw stale();
       };
-      const freshDetail = async (token, identity, route, operation = "settings") => {
+      const freshDetail = async (token, identity, route, operation = "settings", target = id) => {
         const allowActive = operation === "cancel";
         check(token, identity, allowActive);
-        const detail = await service().projection({ residentId: id });
+        const [detail, current] = await Promise.all([
+          service().projection({ residentId: target }),
+          operation === "settings" && target !== id ? service().runtimeSettings(id) : null,
+        ]);
         check(token, identity, allowActive);
-        if (routeKey(detail) !== route) { invalidate(id); throw stale(); }
+        if (routeKey(detail) !== route || (current && settingsOwner(current) !== target)) {
+          invalidate(id); throw stale();
+        }
         if (operation === "settings" ? !mayEdit(detail) : detail?.allows?.RestartSession !== true) {
           invalidate(id); throw denied();
         }
       };
-      async function save(selected, initial, token, identity, route, version) {
+      async function save(selected, initial, token, identity, version) {
         check(token, identity);
         const changes = Object.fromEntries(Object.entries(selected).filter(([k, v]) => !equal(v, initial[k])));
         if (!Object.keys(changes).length) return { settings: e.settings };
         if (e.saving) {
-          if (equal(changes, e.savingChanges)) return e.saving;
+          if (version.residentId === e.savingChanges.residentId && equal(changes, e.savingChanges.changes)) return e.saving;
           throw new Error(window.PortalI18n.t("正在保存其他设置，请等待完成后重试。"));
         }
-        e.savingChanges = clone(changes);
+        e.savingChanges = { residentId: version.residentId, changes: clone(changes) };
         e.saving = (async () => {
-          await freshDetail(token, identity, route);
-          if (e.pendingSave && !equal(changes, e.pendingSave.changes)) throw stale();
-          e.pendingSave ||= { changes: clone(changes), key: window.PortalUIPrimitives.randomUUID(), revision: version.revision };
+          const {residentId: target, route, revision} = version;
+          if (!target || !revision) throw denied();
+          await freshDetail(token, identity, route, "settings", target);
+          if (e.pendingSave && (e.pendingSave.residentId !== target || !equal(changes, e.pendingSave.changes))) throw stale();
+          e.pendingSave ||= { residentId: target, changes: clone(changes), key: window.PortalUIPrimitives.randomUUID(), revision };
           try {
-            const result = await service().updateRuntimeSettings(id, changes, e.pendingSave.key, e.pendingSave.revision);
+            const result = await service().updateRuntimeSettings(target, changes, e.pendingSave.key, e.pendingSave.revision);
             e.pendingSave = null;
-            version.revision = result.settings_revision;
+            version.revision = result.runtime_settings_revision;
             invalidate(id); await load(e).catch(() => {}); changed(e, result);
             if (Object.hasOwn(changes, "auto_switch_on_quota") && Object.keys(changes).length === 1) {
               window.PortalUI.toast(window.PortalI18n.t("额度自动切换设置已保存。"));
             } else window.PortalChatWorkspace?.notifyRuntimeSettingsSaved?.(result);
             return result;
           } catch (error) {
-            if (Number(error.status) >= 400 && Number(error.status) < 500 && Number(error.status) !== 408) e.pendingSave = null;
+            if (error.code === "instruction.conflict"
+              || (Number(error.status) >= 400 && Number(error.status) < 500 && Number(error.status) !== 408)) e.pendingSave = null;
             throw error;
           }
         })();
@@ -150,7 +172,8 @@
       }
       function present(kind, token, focusTarget, config, container) {
         const identity = identityRevision, route = routeKey(e.detail);
-        const version = {revision: e.settingsRevision};
+        const version = {residentId: e.runtimeSettingsResidentId, revision: e.settingsRevision,
+          route: routeKey(e.runtimeDetail)};
         const onClose = () => {
           b.generation++;
           if (e.presentation === b) e.presentation = null;
@@ -162,9 +185,9 @@
         if (kind !== "inline") { e.presentation = b; adapters.onOpen?.(); }
         if (kind === "settings") {
           const initial = clone(e.settings);
-          b.dialog.open(initial, selected => save(selected, initial, token, identity, route, version), {
-            catalog: e.catalog, residentId: id, residentSettings: initial, application: e.application,
-            accountId: e.detail.execution_account?.account_id,
+          b.dialog.open(initial, selected => save(selected, initial, token, identity, version), {
+            catalog: e.catalog, residentId: version.residentId, residentSettings: initial, application: e.application,
+            accountId: e.runtimeDetail?.execution_account?.account_id,
             title: window.PortalI18n.t("运行设置"),
             hint: window.PortalI18n.t("保存不会重启 Session，设置从下一轮生效。"),
           });
@@ -174,8 +197,8 @@
           b.dialog.open({ ...config, runtime_settings: initial, runtime_catalog: e.catalog,
             settings_revision: e.settingsRevision, application: e.application,
             resident_id: id, choose_runtime_settings: true,
-            onSave: mayEdit(e.detail) ? async selected => {
-              const result = await save(selected, initial, token, identity, route, version);
+            onSave: canEditSettings(e) ? async selected => {
+              const result = await save(selected, initial, token, identity, version);
               Object.assign(initial, result?.settings || selected);
               return result;
             } : null,
@@ -213,9 +236,9 @@
           if (container) {
             // In place, the panel shows the account only when this viewer may switch it.
             const canRestart = e.detail?.allows?.RestartSession === true;
-            if (!canRestart && !mayEdit(e.detail)) throw denied();
+            if (!canRestart && !canEditSettings(e)) throw denied();
             const config = canRestart ? await service().sessionRestartOptions(id)
-              : { source: { provider: e.detail?.resident?.backend, account_id: e.detail?.execution_account?.account_id } };
+              : { source: { provider: e.runtimeDetail?.resident?.backend, account_id: e.runtimeDetail?.execution_account?.account_id } };
             if (!live(token) || identity !== identityRevision) return;
             present("inline", token, null, config, container);
             return;
@@ -223,7 +246,7 @@
           if (kind === "restart" && e.detail?.allows?.RestartSession !== true) throw denied();
           const initialView = kind === "settings" ? "parameters" : "switch_account";
           kind = e.detail?.allows?.RestartSession === true ? "restart" : "settings";
-          if (kind === "settings" && !mayEdit(e.detail)) throw denied();
+          if (kind === "settings" && !canEditSettings(e)) throw denied();
           if (kind === "restart" && e.detail?.allows?.RestartSession !== true) throw denied();
           const config = kind === "restart" ? {...await service().sessionRestartOptions(id), initial_view: initialView} : null;
           if (!live(token) || identity !== identityRevision) return;
@@ -248,9 +271,9 @@
         async saveSettings(changes) {
           if (b.disposed || e.opening) throw stale();
           await load(e);
-          if (!mayEdit(e.detail)) throw denied();
+          if (!canEditSettings(e)) throw denied();
           return save(changes, clone(e.settings), b.generation, identityRevision,
-            routeKey(e.detail), {revision: e.settingsRevision});
+            {residentId: e.runtimeSettingsResidentId, revision: e.settingsRevision, route: routeKey(e.runtimeDetail)});
         },
         close, destroy() {
           if (b.disposed) return;

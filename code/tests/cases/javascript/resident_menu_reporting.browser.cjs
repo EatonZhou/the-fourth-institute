@@ -38,20 +38,23 @@ const evidence = process.env.REPORTING_MENU_EVIDENCE;
       window.calls = []; window.reject = false; window.readOnly = false; window.failRead = false;
       let reporting = { initiative: 'medium', quality: 'high' }, revision = 7;
       window.PortalResidentService = {
-        projection: async () => ({ allows: { UpdateResidentSettings: !readOnly } }),
+        projection: async () => ({ allows: { UpdateResidentReporting: !readOnly, UpdateResidentSettings: false } }),
         runtimeSettings: async () => {
           if (failRead) throw Error('read offline');
-          return { settings: { reporting }, settings_revision: revision };
+          return { reporting, reporting_revision: revision };
         },
-        updateRuntimeSettings: async (id, changes, key, expected) => {
-          calls.push({ id, changes, key, expected });
+        updateReporting: async (id, policy, key, expected) => {
+          calls.push({ id, changes: { reporting: policy }, key, expected });
           if (reject) throw Object.assign(Error('保存失败，请重试'), { status: 403 });
           if (expected !== revision) throw Error('Unexpected revision');
-          reporting = { ...changes.reporting }; revision++;
+          reporting = { ...policy }; revision++;
         },
       };
-      window.menuState = { nodeMenuContext: { residentId: 'resident_fixture', family: {} } };
-      window.runtime = PortalResidentMenuRuntime.createRuntime({
+      window.PortalResidentRuntimeController = { bind: () => ({ mount: async () => {
+        throw Error('Router runtime access denied');
+      } }) };
+      window.menuState = { nodeMenuContext: { residentId: 'resident_facade', node: {}, family: {} } };
+      window.runtime = PortalResidentMenuRuntime.createRuntime({changed: async () => {},
         $id: id => document.getElementById(id), esc: PortalUIPrimitives.escapeHtml,
         menuState, nodeMenuNotice() {}, renderFamilySettings() {},
       });
@@ -65,7 +68,7 @@ const evidence = process.env.REPORTING_MENU_EVIDENCE;
       await page.evaluate(async language => {
         if (PortalI18n.locale() === language) return;
         PortalI18n.apply(language);
-        menuState.nodeMenuContext = { residentId: 'resident_fixture', family: {} };
+        menuState.nodeMenuContext = { residentId: 'resident_facade', node: {}, family: {} };
         await runtime.loadNodeMenuRuntime();
       }, language);
       await page.locator('.residentMenuReportingForm input').first().waitFor();
@@ -118,7 +121,7 @@ const evidence = process.env.REPORTING_MENU_EVIDENCE;
     }
     await page.evaluate(async () => {
       PortalI18n.apply('zh-CN');
-      menuState.nodeMenuContext = { residentId: 'resident_fixture', family: {} };
+      menuState.nodeMenuContext = { residentId: 'resident_facade', node: {}, family: {} };
       await runtime.loadNodeMenuRuntime();
     });
     await page.locator('.residentMenuReportingForm input').first().waitFor();
@@ -141,7 +144,9 @@ const evidence = process.env.REPORTING_MENU_EVIDENCE;
     assert.ok(await page.locator('[name=initiative][value=high]').isChecked(), 'native keyboard navigation');
     await page.waitForFunction(() => calls.length === 1 && document.querySelector('[data-reporting-status]').textContent.includes('已保存'));
     assert.deepEqual(await page.evaluate(() => calls[0].changes), { reporting: { initiative: 'high', quality: 'high' } });
+    assert.equal(await page.evaluate(() => calls[0].id), 'resident_facade');
     assert.equal(await page.evaluate(() => calls[0].expected), 7);
+    assert.match(await page.locator('#nodeMenuRuntime').textContent(), /Router runtime access denied/);
     await page.locator('[name=quality][value=low]').check();
     await page.waitForFunction(() => calls.length === 2 && document.querySelector('[data-reporting-status]').textContent.includes('已保存'));
     assert.deepEqual(await page.evaluate(() => calls[1].changes), { reporting: { initiative: 'high', quality: 'low' } });

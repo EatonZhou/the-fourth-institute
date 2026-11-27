@@ -26,15 +26,15 @@ links:
   - decision_898b8911a2ff
   - thinking_ca8f397a47de
 version:
-  number: 77
+  number: 89
   created_at: "2026-09-28T10:45:00Z"
   created_by:
     user: "weihao"
     agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-11-19T08:46:57Z"
+  updated_at: "2026-11-27T15:39:08Z"
   updated_by:
     user: ""
-    agent: "resident_60ae6d0cdf74"
+    agent: "resident_6199a7a36480"
 metaness: 2
 ---
 # HATG ISA：Resident 指令
@@ -73,7 +73,8 @@ Resident 是可以跨多次模型会话持续存在的 Agent 身份。系统中�
 | `ReleaseResidentSummaryJob` | 是 | 放弃一份已认领的摘要并说明原因 | 免检 |
 | `GetResidentSettings` | 否 | 读取运行设置与 Prompt 注入设置 | 对 `resident_id` 有 @viewer |
 | `GetResidentTextInputSnapshot` | 否 | 读取显式 fresh 文本的当前配置和完整系统 parts 版本，不提交模型 | 对 `resident_id` 有 @viewer |
-| `UpdateResidentSettings` | 是 | 修改运行设置，包括 Prompt 注入 | 对 `resident_id` 有 @contributor |
+| `UpdateResidentSettings` | 是 | 修改目标自身的运行设置，包括 Prompt 注入；门面需显式改用 Router | 对 `resident_id` 有 @contributor |
+| `UpdateResidentReporting` | 是 | 修改目标自身的汇报策略，支持门面与普通成员 | 对 `resident_id` 有 @contributor |
 | `GetPromptInjectionPreview` | 否 | 预览一轮实际带上的注入内容 | 对 `resident_id` 有 @viewer |
 | `GetResidentInitialization` | 否 | 读取既有初始化状态与执行身份 | 对 `resident_id` 有 @viewer |
 | `RetryResidentInitialization` | 是 | 恢复初始化并保留原队列 | 对 `resident_id` 有 @contributor |
@@ -157,7 +158,7 @@ Resident 是可以跨多次模型会话持续存在的 Agent 身份。系统中�
 
 **批量读取 Resident 的累计摘要；搜索、路由、工作查看和摘要维护读的是同一份内容。**
 
-- 参数：`resident_ids`，一次最多 128 个；可用 `fields` 选择返回的摘要字段；`include_maintenance` 为真时附带维护所需的信息。
+- 参数：`resident_ids`，不限个数；可用 `fields` 选择返回的摘要字段；`include_maintenance` 为真时附带维护所需的信息。
 - 结果：`summaries` 与 `unavailable_resident_ids`。每份摘要包含 Resident ID、名称、所属 Lineage、摘要内容（当前重点、进行中的线程、长期经验、近期成果、主要负责、辅助经验、负责的组件、分支差异、适合与不适合接收的任务）、尚未完成的请求、更新时间，以及摘要是否过期。
 - `include_maintenance` 时每项另有内容版本 `revision`、汇总来源 `source_versions`、漏写的输入 `missing_message_ids`、待归纳的覆盖输入 `pending_message_ids` 和维护者 `writer_id`；尚无摘要但调用者能看到的 Resident 也返回一项，`revision` 为 0。`revision` 只表示内容版本，不是写入指令的参数。
 - `include_maintenance=true` 时，`summaries[i].reminder` 可选，存在时包含 `message_id` 和 `content_parts`。负责摘要维护的 Effect 将 `reminder` 原样作为 `DeliverMessage.message` 交给该项对应的 Resident，指定 `business_ref=duty/work-summary-reminder` 和 `activation_policy=attach_to_next`。Society 先登记输入 `completed` 终态对应的漏写事实，再让 Effect 观察该终态。提醒由 Effect 投递，核心只提供事实和待投递内容。
@@ -232,12 +233,15 @@ active_threads 承载未决承诺、阻塞与重要约束。归纳遗漏的旧�
 
 ### `GetResidentSettings`
 
-**读取 Resident 当前的运行设置和 Prompt 注入设置。**
+**读取 Resident 当前可见的运行设置、Prompt 注入设置和自身汇报策略。**
 
 - 参数：`resident_id`。
 - 结果：
   - `settings`：当前运行设置。页面设置面板读取的是同一份设置；其中 `prompt_injection` 是保存的原值（`{preset}` 或自定义时的 `{preset: custom, parts}`）。
-  - `settings_revision`：当前设置版本，保存时作为 `UpdateResidentSettings` 的 `expected_revision`。
+  - `runtime_settings_resident_id`：实际运行设置对象。普通 Resident 为自身，门面为其 Router；调用者没有 Router 查看权限或不存在 Router 时为空。
+  - `settings_revision` 与 `runtime_settings_revision`：同一运行配置版本，保存时将实际运行对象及此版本传给 `UpdateResidentSettings`；版本不受汇报策略变化影响。
+  - `reporting`、`reporting_effective` 与 `reporting_revision`：请求对象自身的汇报策略、生效来源和独立版本，用于 `UpdateResidentReporting`。门面汇报版本与 Router 运行版本不可混用。
+  - `runtime_settings_access`：`available` 或 `unavailable`。不可查看运行设置时，`settings`、`quota_switch` 为空对象，运行目标与版本为空，`prompt_injection.state=unavailable`；自身汇报仍按请求对象的 viewer 权限读取。
   - `application`：逐项配置的生效时机与实际交付观察；未观察到不等于缺失。
   - `prompt_injection`：Prompt 注入的读法。`preset`、`preset_label` 为当前预设；`presets` 为可选的预设；`parts` 为六个类别，每项给出 `id`、`label`、`description`、当前时机 `choice`、可选时机 `choices`，以及它在当前 Provider 中的位置 `placement`。位置由 Provider 决定，不能修改。各类别、时机和预设的含义见 decision_ef1d6c925955。
 
@@ -249,18 +253,26 @@ active_threads 承载未决承诺、阻塞与重要约束。归纳遗漏的旧�
 
 **修改 Resident 的运行设置。**
 
-- 参数：`resident_id`、`expected_revision`（可选，读取时得到的 `settings_revision`）、`changes`。`changes` 只接受以下字段：`model`、`reasoning_effort`、`service_tier`、`permission_preset`、`prompt_injection`、`allow_subagents`、`agent_harness`、`capability_config`、`collaboration_mode`、`prompt_context`、`backend_options` 、`reporting` 和仅供 Model API 使用的 `backend_route_id`。模型相关字段取值由目标 Provider 校验，汇报策略由 Society 校验。
+- 参数：`resident_id`、`expected_revision`（可选，读取时得到的 `settings_revision`）、`changes`。`changes` 只接受以下字段：`model`、`reasoning_effort`、`service_tier`、`permission_preset`、`prompt_injection`、`allow_subagents`、`agent_harness`、`capability_config`、`collaboration_mode`、`prompt_context`、`backend_options` 和仅供 Model API 使用的 `backend_route_id`。模型相关字段取值由目标 Provider 校验。`changes.reporting` 不属于运行设置，直接拒绝。
 - `changes.prompt_injection` 给出 `preset`（`standard`、`full`、`minimal`、`pure`、`custom`）、`parts`（要改的类别及其时机），至少一项：
   - 只给 `preset` 时，设置换成这个预设。
   - 给了 `parts` 时，在所给预设上修改；没给预设时，在当前设置上修改。结果记为自定义；与某个预设完全相同时，记为该预设。
   - 非法的类别或时机直接报错。下一轮生效。
-- 结果：保存后的设置、新的 `settings_revision`、`application`（逐项生效状态，不表示后端已接受）、`next_turn_fields`（从下一轮才生效的字段），以及与 `GetResidentSettings` 相同的 `prompt_injection` 读法。
+- 结果：保存后的设置、实际运行对象 `runtime_settings_resident_id`、等值的 `settings_revision` 与 `runtime_settings_revision`、`application`（逐项生效状态，不表示后端已接受）、`next_turn_fields`（从下一轮才生效的字段），以及与 `GetResidentSettings` 相同的 `prompt_injection` 读法。结果不含汇报策略。
 - 修改设置不会中断当前工作。`collaboration_mode` 只适用于 Codex，取值 `default` 或 `plan`，从下一轮开始生效。重复保存相同的值不产生变化。
 - 设置按版本条件保存：`expected_revision` 与当前 `settings_revision` 不一致时拒绝，调用者重新读取并合并后再提交；省略只为兼容旧调用，页面保存总是携带已读版本。版本覆盖完整运行配置，规则见 decision_8b2fa224616b。
 - 这条指令不改变 Lineage 定义。原生后端切换 Provider 或账号需要迁移模型会话，使用 `RestartSession`。Model API 无原生会话，允许通过 `changes.backend_route_id` 选择登记的 API 账号，并与模型、上下文及协议参数在同一事务中保存；失败时全部回滚，从下一轮生效。账号只存放在 Resident 配置中，不复制到运行设置。
 - Model API 的 `prompt_context` 可配置系统提示、预设消息及 `history: {enabled, max_tokens}`；`backend_options` 保存协议参数、超时和重试。新建文本类 Resident 默认携带历史，新建 Jev 默认关闭；已有记录缺少历史设置时保持关闭。Settings 的能力展示、历史选择与 Jev 题型规则见 decision_6c2f91a7d84e。
-- 目标是 Family 门面时，模型、Prompt 与 Harness 等运行设置仍来自 Router，按 Router 的相应权限读取和修改；汇报策略 `reporting` 属于门面自身，按门面的 viewer/contributor 权限读写。仅有门面权限时仍可读写汇报策略，结果 `settings` 仅含可读字段，`runtime_settings_access=unavailable`、`prompt_injection.state=unavailable`，不暴露或猜测 Router 参数。
-- `reporting` 是完整对象 `{initiative, quality}`：主动性为 `off|low|medium|high`，质量为 `low|medium|high`，缺省 `off/medium`；未知键、缺键、非法枚举拒绝。`reporting_effective` 给出策略、`state`、`source_resident_id`、`source`、`configured` 与 `application=next_input`；`configured=false` 表示默认，不能称为用户已配置。显式保存默认值同样形成配置事实。版本校验覆盖可读运行设置、策略及是否已配置。
+- 目标是 Family 门面时拒绝运行设置修改，返回 `instruction.invalid_arguments`，并通过 `details.runtime_settings_resident_id` 指出实际 Router（不存在时为空）。这不授予 Router 权限，不写入门面或 Router，也不自动重定向。调用者应明确选用该 Router，再按 Router 的 contributor 权限提交运行设置。
+
+### `UpdateResidentReporting`
+
+**只修改指定 Resident 自身的汇报策略。** 门面与普通成员使用相同指令，鉴权与写入对象均为传入的 `resident_id`。
+
+- 参数：`resident_id`、完整的 `reporting` 对象、可选 `expected_revision`（`GetResidentSettings.reporting_revision`）。默认方案要求目标 contributor；不要求门面 Router 的查看或修改权限。
+- `reporting` 是完整对象 `{initiative, quality}`：主动性为 `off|low|medium|high`，质量为 `low|medium|high`，缺省 `off/medium`；未知键、缺键、非法枚举拒绝。
+- 结果为 `resident_id`、`reporting`、`reporting_effective`、`reporting_revision`、`application` 与 `next_turn_fields`。有效策略给出 `state`、`source_resident_id`、`source`、`configured` 与 `application=next_input`；`configured=false` 表示默认。显式保存默认值同样形成配置事实。
+- 独立版本覆盖策略及是否已配置。过期提交返回 `instruction.conflict`；运行配置变化不改变这个版本。页面分别保存汇报与运行设置，各携带对应对象和已读版本；若一项成功、另一项失败，准确显示各项结果并保留失败项的草稿。
 - `application.items` 的 `reporting` 项记录 `next_turn` 与未知交付观察；保存不重启会话、不调用模型、不生成报告或发起审查。每条适用的新主输入或追加输入从可信转交链取得源门面策略；直接成员输入使用自身策略，已送达输入不被改写。主动性 off 保留正常答复、业务交付及用户明确要求的汇报；高主动性仍由 Resident 判断价值。质量与独立检查规则见 decision_b12782e7f490、decision_e3ced6d30f6b。
 
 ### `GetPromptInjectionPreview`
@@ -373,6 +385,7 @@ active_threads 承载未决承诺、阻塞与重要约束。归纳遗漏的旧�
 | `GetResidentSettings` | `resident_id` |
 | `GetResidentTextInputSnapshot` | `resident_id`、`text` |
 | `UpdateResidentSettings` | `resident_id`、`expected_revision`、`changes` |
+| `UpdateResidentReporting` | `resident_id`、`reporting`、`expected_revision` |
 | `GetPromptInjectionPreview` | `resident_id`、`turn` |
 | `GetResidentInitialization` | `resident_id` |
 | `RetryResidentInitialization` | `resident_id`、`expected_initialization_id`、`credits_consent` |

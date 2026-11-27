@@ -376,15 +376,15 @@
       // earlier send cannot become the newest presentation request on return.
       const requestId = state.issue(residentId, (lastDetail?.snapshot?.messages || []).map(m => m.message_id || m.id));
       submissionRequests.set(submittedTarget, requestId);
-      let reporting = null, reportingRead = "unavailable", settingsRevision = "", reportingError = "";
+      let reporting = null, reportingRead = "unavailable", reportingRevision = "", reportingError = "";
       try {
         const result = await window.PortalInstructionClient.execute("GetResidentSettings", { resident_id: residentId });
-        const value = result.settings?.reporting;
+        const value = result.reporting;
         if (value && ["off", "low", "medium", "high"].includes(value.initiative) && ["low", "medium", "high"].includes(value.quality)) {
           reporting = { initiative: value.initiative, quality: value.quality }; reportingRead = "verified";
-        } else if (result.settings && value === undefined) reportingError = "missing_reporting_settings";
+        } else if (value === undefined) reportingError = "missing_reporting_settings";
         else reportingError = "invalid_reporting_settings";
-        settingsRevision = result.settings_revision || "";
+        reportingRevision = result.reporting_revision || "";
       } catch (error) {
         // Preserve failure without embedding raw server messages or credentials
         // into the conversation. Ordinary chat remains usable.
@@ -394,7 +394,7 @@
       const protocol = { protocol: "portal-home-display/v1", request_id: requestId, version: 1, action: "open", view: "report", quality: reporting?.quality, target: { kind: "report", id: "<正式登记返回的report_ID>", revision: 1 } };
       // Reporting policy is materialized by the Resident prompt owner. This
       // host contributes navigation context, never a competing policy prompt.
-      return { reporting, reporting_read: reportingRead, settings_revision: settingsRevision,
+      return { reporting, reporting_read: reportingRead, reporting_revision: reportingRevision,
         ...(reportingError ? { reporting_error: reportingError } : {}), context_text: [
         "当前入口是 Home 对话与展示。提交时读取的汇报设置快照：" + JSON.stringify(reporting) + "；读取状态：" + reportingRead + "。生成规则与质量要求由标准 Resident Prompt 注入提供；本入口不改变规则。",
         "展示协议只导航已存在且可读的目标，不授予权限。实际创作通过正式作者入口完成；解释包创作合同见当前 Portal 同源 /static/home_explanation_authoring.md。",

@@ -7,7 +7,8 @@
     "fixture_adjustments": [
       "Removed retired upload deletion instruction; browser uses its file endpoint.",
       "Applied the three ISA reduction Plans to this historical teaching catalogue.",
-      "Applied the approved D066 v2 catalogue delta to this historical teaching catalogue."
+      "Applied the approved D066 v2 catalogue delta to this historical teaching catalogue.",
+      "Applied plan_1e95f54595a4 stage 1: separate Resident reporting and runtime settings."
     ]
   },
   "catalog": {
@@ -252,6 +253,7 @@
         "instruction": "CreateResident",
         "category": "resident",
         "category_title": "Resident",
+        "discovery_group": "general",
         "owner": "lineage",
         "owner_title": "SocietyService",
         "description": "创建一个新的 Resident 身份，并把它作为节点加入指定 Lineage。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
@@ -384,9 +386,10 @@
         "instruction": "GetResidentSettings",
         "category": "resident",
         "category_title": "Resident",
+        "discovery_group": "general",
         "owner": "lineage",
         "owner_title": "SocietyService",
-        "description": "读取 Resident 当前的运行设置；Family 门面不运行，读到的是它的 Router Resident 的设置。",
+        "description": "读取目标 Resident 的汇报策略和独立版本。Family 门面的运行设置仅在可读取 Router 时返回。",
         "mutates": false,
         "streaming": false
       },
@@ -394,9 +397,21 @@
         "instruction": "UpdateResidentSettings",
         "category": "resident",
         "category_title": "Resident",
+        "discovery_group": "general",
         "owner": "lineage",
         "owner_title": "SocietyService",
-        "description": "修改 Resident 的运行设置；对 Family 门面修改的是它的 Router Resident 的设置。",
+        "description": "修改明确指定的 Resident 的运行设置。Family 门面请改用其 Router ID。",
+        "mutates": true,
+        "streaming": false
+      },
+      {
+        "instruction": "UpdateResidentReporting",
+        "category": "resident",
+        "category_title": "Resident",
+        "discovery_group": "general",
+        "owner": "lineage",
+        "owner_title": "SocietyService",
+        "description": "修改指定 Resident 自身的汇报策略，从下一次输入生效。",
         "mutates": true,
         "streaming": false
       },
@@ -3616,6 +3631,7 @@
         "instruction": "CreateResident",
         "category": "resident",
         "category_title": "Resident",
+        "discovery_group": "general",
         "owner": "lineage",
         "owner_title": "SocietyService",
         "description": "创建一个新的 Resident 身份，并把它作为节点加入指定 Lineage。 可选 expected_version 使用 GetLineage.result.lineage.revision；仅在本次调用对各 Lineage 的首次定义提交短事务内比较，后续提交不重复比较；外部工作不在该事务内。不一致返回 instruction.conflict，error.details.current_version 为当前 revision。跨 Lineage 可传以 Lineage ID 为键的版本映射；未传时按提交时合并处理。RunWorkspaceHandoff 不使用 Lineage revision 前提；未写定义时不比较。",
@@ -3626,7 +3642,7 @@
             "name": "lineage_id",
             "type": "string",
             "required": true,
-            "description": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
+            "description": "新 Resident 加入的 Lineage"
           },
           {
             "name": "title",
@@ -3638,8 +3654,9 @@
             "name": "provider",
             "type": "string",
             "required": false,
-            "description": "执行后端；provider_api 使用 account 指定已登记的模型 API",
+            "description": "执行后端；provider_api 使用 account_id 指定已登记的模型 API",
             "enum": [
+              "antigravity",
               "codex",
               "claude",
               "kimi",
@@ -3649,16 +3666,22 @@
             ]
           },
           {
-            "name": "account",
+            "name": "account_id",
             "type": "string",
             "required": false,
             "description": "账号路线；省略时 Resident 调用者继承自己的账号，其他调用者使用系统默认账号"
           },
           {
+            "name": "backend_role",
+            "type": "string",
+            "required": false,
+            "description": "创建时解析的 Backend 角色；未映射时回退 default"
+          },
+          {
             "name": "settings",
             "type": "object",
             "required": false,
-            "description": "初始运行设置",
+            "description": "初始运行设置；汇报创建后通过 UpdateResidentReporting 修改",
             "properties": {
               "model": {
                 "type": "string"
@@ -3678,10 +3701,110 @@
               },
               "prompt_injection": {
                 "type": "object",
-                "description": "Prompt 注入：{preset} 或 {preset: custom, parts}，见 GetPromptInjection"
+                "description": "Prompt 注入：选一个预设，或改单个类别的时机（在所给预设或当前设置上修改，结果记为自定义；与某个预设完全相同时记为该预设）。下一轮生效",
+                "properties": {
+                  "preset": {
+                    "type": "string",
+                    "enum": [
+                      "standard",
+                      "full",
+                      "minimal",
+                      "pure",
+                      "custom"
+                    ],
+                    "description": "预设"
+                  },
+                  "parts": {
+                    "type": "object",
+                    "description": "要改的类别及其时机",
+                    "properties": {
+                      "core_rules": {
+                        "type": "string",
+                        "enum": [
+                          "off",
+                          "session_start",
+                          "session_start_and_after_compaction",
+                          "every_turn"
+                        ],
+                        "description": "Portal 核心规则：Portal 核心 Skill 与 Resident 角色规则、提问卡片规范、子 agent 许可"
+                      },
+                      "resident_md": {
+                        "type": "string",
+                        "enum": [
+                          "off",
+                          "session_start",
+                          "session_start_and_after_compaction",
+                          "every_turn"
+                        ],
+                        "description": "resident.md：Resident 的长期身份说明"
+                      },
+                      "runtime_identity": {
+                        "type": "string",
+                        "enum": [
+                          "off",
+                          "session_start",
+                          "session_start_and_after_compaction",
+                          "every_turn"
+                        ],
+                        "description": "运行身份：resident_id、lineage_id 与以本 Resident 身份调用 HATG ISA 的说明"
+                      },
+                      "authorization_context": {
+                        "type": "string",
+                        "enum": [
+                          "off",
+                          "session_start",
+                          "session_start_and_after_compaction",
+                          "every_turn"
+                        ],
+                        "description": "授权上下文：本轮执行者、消息来源与工作目录参考"
+                      },
+                      "message_envelope": {
+                        "type": "string",
+                        "enum": [
+                          "off",
+                          "every_turn"
+                        ],
+                        "description": "附加消息上下文：会话说明以及从正文识别的资源引用。普通消息保留 <user-message> 正文边界"
+                      },
+                      "turn_skills": {
+                        "type": "string",
+                        "enum": [
+                          "off",
+                          "list",
+                          "with_rules"
+                        ],
+                        "description": "任务 Skill 清单：某条消息额外要求读取的 Skill"
+                      }
+                    }
+                  }
+                }
               },
               "allow_subagents": {
                 "type": "boolean"
+              },
+              "account_selection": {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "fixed"
+                ],
+                "description": "账号选择策略：auto 自动选择，fixed 固定当前账号；保存策略不立即切换已有 Session"
+              },
+              "quota_switch_strategy": {
+                "type": "string",
+                "enum": [
+                  "legacy",
+                  "same_provider_model"
+                ],
+                "description": "额度恢复策略；缺省legacy保持旧语义，same_provider_model显式同Provider/model最高余量；不授予账号权限、不自动启用切换"
+              },
+              "auto_switch_on_quota": {
+                "type": "boolean",
+                "description": "额度不足时自动切换；true默认保留既有站点/Family排序；仅显式quota_switch_strategy=same_provider_model选择同Provider/model最高新鲜余量；false禁止额度自动切换"
+              },
+              "capability_config": {
+                "type": "object",
+                "description": "tfi.resident-capabilities.v1：tools/mcp/skills声明引用及enabled/required；MCP另有精确tools列表。保存不调用模型或重建会话"
               },
               "agent_harness": {
                 "type": "object"
@@ -3761,6 +3884,12 @@
             "type": "string",
             "required": false,
             "description": "新 Resident 加入的 Family；没有加入时省略"
+          },
+          {
+            "name": "backend_role_fallback",
+            "type": "object",
+            "required": false,
+            "description": "角色未映射时的 requested 与 used"
           }
         ],
         "target": "lineage_id"
@@ -4448,9 +4577,10 @@
         "instruction": "GetResidentSettings",
         "category": "resident",
         "category_title": "Resident",
+        "discovery_group": "general",
         "owner": "lineage",
         "owner_title": "SocietyService",
-        "description": "读取 Resident 当前的运行设置；Family 门面不运行，读到的是它的 Router Resident 的设置。",
+        "description": "读取目标 Resident 的汇报策略和独立版本。Family 门面的运行设置仅在可读取 Router 时返回。",
         "mutates": false,
         "streaming": false,
         "parameters": [
@@ -4458,15 +4588,96 @@
             "name": "resident_id",
             "type": "string",
             "required": true,
-            "description": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
+            "description": "要读取设置的 Resident"
           }
         ],
         "result": [
+          {
+            "name": "reporting",
+            "type": "object",
+            "required": true,
+            "description": "该 Resident 的汇报策略",
+            "properties": {
+              "initiative": {
+                "type": "string",
+                "enum": [
+                  "off",
+                  "low",
+                  "medium",
+                  "high"
+                ],
+                "description": "主动汇报级别"
+              },
+              "quality": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ],
+                "description": "汇报质量级别"
+              }
+            }
+          },
+          {
+            "name": "reporting_effective",
+            "type": "object",
+            "required": true,
+            "description": "汇报策略、来源及下一次输入生效信息"
+          },
+          {
+            "name": "reporting_revision",
+            "type": "string",
+            "required": true,
+            "description": "当前汇报版本，供 UpdateResidentReporting 比对"
+          },
+          {
+            "name": "runtime_settings_access",
+            "type": "string",
+            "required": true,
+            "description": "available 或 unavailable；不可读时运行设置为空"
+          },
+          {
+            "name": "runtime_settings_resident_id",
+            "type": "string",
+            "required": true,
+            "description": "实际运行设置目标；不可读时为空"
+          },
+          {
+            "name": "runtime_settings_revision",
+            "type": "string",
+            "required": true,
+            "description": "当前运行版本；不可读时为空"
+          },
+          {
+            "name": "settings_revision",
+            "type": "string",
+            "required": true,
+            "description": "与 runtime_settings_revision 相同"
+          },
           {
             "name": "settings",
             "type": "object",
             "required": true,
             "description": "当前运行设置"
+          },
+          {
+            "name": "quota_switch",
+            "type": "object",
+            "required": true,
+            "description": "额度切换的有效策略与只读状态"
+          },
+          {
+            "name": "application",
+            "type": "object",
+            "required": true,
+            "description": "逐项配置生效时机与交付观察"
+          },
+          {
+            "name": "prompt_injection",
+            "type": "object",
+            "required": true,
+            "description": "Prompt 注入的读法：preset 当前预设（custom 为自定义）、preset_label、presets 可选预设 {id, label}、parts 每个类别 {id, label, description, choice, choices, placement}；placement 由 Provider 决定"
           }
         ],
         "target": "resident_id"
@@ -4475,9 +4686,10 @@
         "instruction": "UpdateResidentSettings",
         "category": "resident",
         "category_title": "Resident",
+        "discovery_group": "general",
         "owner": "lineage",
         "owner_title": "SocietyService",
-        "description": "修改 Resident 的运行设置；对 Family 门面修改的是它的 Router Resident 的设置。",
+        "description": "修改明确指定的 Resident 的运行设置。Family 门面请改用其 Router ID。",
         "mutates": true,
         "streaming": false,
         "parameters": [
@@ -4485,13 +4697,19 @@
             "name": "resident_id",
             "type": "string",
             "required": true,
-            "description": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
+            "description": "要修改运行设置的实际 Resident"
+          },
+          {
+            "name": "expected_revision",
+            "type": "string",
+            "required": false,
+            "description": "读取时的 runtime_settings_revision，过期时拒绝保存"
           },
           {
             "name": "changes",
             "type": "object",
             "required": true,
-            "description": "只接受 model、reasoning_effort、service_tier、permission_preset、prompt_injection、allow_subagents、agent_harness、collaboration_mode、prompt_context、backend_options、backend_route_id（仅 Model API）",
+            "description": "要修改的运行参数",
             "properties": {
               "model": {
                 "type": "string"
@@ -4511,10 +4729,110 @@
               },
               "prompt_injection": {
                 "type": "object",
-                "description": "Prompt 注入：{preset} 或 {preset: custom, parts}，见 GetPromptInjection"
+                "description": "Prompt 注入：选一个预设，或改单个类别的时机（在所给预设或当前设置上修改，结果记为自定义；与某个预设完全相同时记为该预设）。下一轮生效",
+                "properties": {
+                  "preset": {
+                    "type": "string",
+                    "enum": [
+                      "standard",
+                      "full",
+                      "minimal",
+                      "pure",
+                      "custom"
+                    ],
+                    "description": "预设"
+                  },
+                  "parts": {
+                    "type": "object",
+                    "description": "要改的类别及其时机",
+                    "properties": {
+                      "core_rules": {
+                        "type": "string",
+                        "enum": [
+                          "off",
+                          "session_start",
+                          "session_start_and_after_compaction",
+                          "every_turn"
+                        ],
+                        "description": "Portal 核心规则：Portal 核心 Skill 与 Resident 角色规则、提问卡片规范、子 agent 许可"
+                      },
+                      "resident_md": {
+                        "type": "string",
+                        "enum": [
+                          "off",
+                          "session_start",
+                          "session_start_and_after_compaction",
+                          "every_turn"
+                        ],
+                        "description": "resident.md：Resident 的长期身份说明"
+                      },
+                      "runtime_identity": {
+                        "type": "string",
+                        "enum": [
+                          "off",
+                          "session_start",
+                          "session_start_and_after_compaction",
+                          "every_turn"
+                        ],
+                        "description": "运行身份：resident_id、lineage_id 与以本 Resident 身份调用 HATG ISA 的说明"
+                      },
+                      "authorization_context": {
+                        "type": "string",
+                        "enum": [
+                          "off",
+                          "session_start",
+                          "session_start_and_after_compaction",
+                          "every_turn"
+                        ],
+                        "description": "授权上下文：本轮执行者、消息来源与工作目录参考"
+                      },
+                      "message_envelope": {
+                        "type": "string",
+                        "enum": [
+                          "off",
+                          "every_turn"
+                        ],
+                        "description": "附加消息上下文：会话说明以及从正文识别的资源引用。普通消息保留 <user-message> 正文边界"
+                      },
+                      "turn_skills": {
+                        "type": "string",
+                        "enum": [
+                          "off",
+                          "list",
+                          "with_rules"
+                        ],
+                        "description": "任务 Skill 清单：某条消息额外要求读取的 Skill"
+                      }
+                    }
+                  }
+                }
               },
               "allow_subagents": {
                 "type": "boolean"
+              },
+              "account_selection": {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "fixed"
+                ],
+                "description": "账号选择策略：auto 自动选择，fixed 固定当前账号；保存策略不立即切换已有 Session"
+              },
+              "quota_switch_strategy": {
+                "type": "string",
+                "enum": [
+                  "legacy",
+                  "same_provider_model"
+                ],
+                "description": "额度恢复策略；缺省legacy保持旧语义，same_provider_model显式同Provider/model最高余量；不授予账号权限、不自动启用切换"
+              },
+              "auto_switch_on_quota": {
+                "type": "boolean",
+                "description": "额度不足时自动切换；true默认保留既有站点/Family排序；仅显式quota_switch_strategy=same_provider_model选择同Provider/model最高新鲜余量；false禁止额度自动切换"
+              },
+              "capability_config": {
+                "type": "object",
+                "description": "tfi.resident-capabilities.v1：tools/mcp/skills声明引用及enabled/required；MCP另有精确tools列表。保存不调用模型或重建会话"
               },
               "agent_harness": {
                 "type": "object"
@@ -4539,16 +4857,58 @@
         ],
         "result": [
           {
+            "name": "runtime_settings_access",
+            "type": "string",
+            "required": true,
+            "description": "运行参数是否可读"
+          },
+          {
+            "name": "runtime_settings_resident_id",
+            "type": "string",
+            "required": true,
+            "description": "实际修改运行设置的 Resident"
+          },
+          {
+            "name": "runtime_settings_revision",
+            "type": "string",
+            "required": true,
+            "description": "保存后的运行版本"
+          },
+          {
+            "name": "settings_revision",
+            "type": "string",
+            "required": true,
+            "description": "与 runtime_settings_revision 相同"
+          },
+          {
             "name": "settings",
             "type": "object",
             "required": true,
-            "description": "保存后的设置"
+            "description": "保存后的运行设置"
+          },
+          {
+            "name": "quota_switch",
+            "type": "object",
+            "required": true,
+            "description": "额度切换的有效策略与只读状态"
+          },
+          {
+            "name": "application",
+            "type": "object",
+            "required": true,
+            "description": "逐项生效状态与交付观察"
           },
           {
             "name": "next_turn_fields",
             "type": "array",
             "required": true,
             "description": "从下一轮才生效的字段"
+          },
+          {
+            "name": "prompt_injection",
+            "type": "object",
+            "required": true,
+            "description": "Prompt 注入的读法：preset 当前预设（custom 为自定义）、preset_label、presets 可选预设 {id, label}、parts 每个类别 {id, label, description, choice, choices, placement}；placement 由 Provider 决定"
           }
         ],
         "target": "resident_id"
@@ -16967,6 +17327,118 @@
           }
         ],
         "target": "resource_id"
+      },
+      "UpdateResidentReporting": {
+        "instruction": "UpdateResidentReporting",
+        "category": "resident",
+        "category_title": "Resident",
+        "discovery_group": "general",
+        "owner": "lineage",
+        "owner_title": "SocietyService",
+        "description": "修改指定 Resident 自身的汇报策略，从下一次输入生效。",
+        "mutates": true,
+        "streaming": false,
+        "parameters": [
+          {
+            "name": "resident_id",
+            "type": "string",
+            "required": true,
+            "description": "要修改汇报策略的 Resident，门面可直接指定自身"
+          },
+          {
+            "name": "reporting",
+            "type": "object",
+            "required": true,
+            "description": "完整汇报策略，必须提供 initiative 和 quality",
+            "properties": {
+              "initiative": {
+                "type": "string",
+                "enum": [
+                  "off",
+                  "low",
+                  "medium",
+                  "high"
+                ],
+                "description": "主动汇报级别"
+              },
+              "quality": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ],
+                "description": "汇报质量级别"
+              }
+            }
+          },
+          {
+            "name": "expected_revision",
+            "type": "string",
+            "required": false,
+            "description": "读取时的 reporting_revision，过期时拒绝保存"
+          }
+        ],
+        "result": [
+          {
+            "name": "resident_id",
+            "type": "string",
+            "required": true,
+            "description": "实际保存汇报策略的 Resident"
+          },
+          {
+            "name": "reporting",
+            "type": "object",
+            "required": true,
+            "description": "保存后的汇报策略",
+            "properties": {
+              "initiative": {
+                "type": "string",
+                "enum": [
+                  "off",
+                  "low",
+                  "medium",
+                  "high"
+                ],
+                "description": "主动汇报级别"
+              },
+              "quality": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ],
+                "description": "汇报质量级别"
+              }
+            }
+          },
+          {
+            "name": "reporting_effective",
+            "type": "object",
+            "required": true,
+            "description": "汇报策略、来源及下一次输入生效信息"
+          },
+          {
+            "name": "reporting_revision",
+            "type": "string",
+            "required": true,
+            "description": "保存后的汇报版本"
+          },
+          {
+            "name": "application",
+            "type": "object",
+            "required": true,
+            "description": "汇报策略的生效时机与交付观察"
+          },
+          {
+            "name": "next_turn_fields",
+            "type": "array",
+            "required": true,
+            "description": "本次修改中下一次输入生效的字段"
+          }
+        ],
+        "target": "resident_id"
       }
     }
   }

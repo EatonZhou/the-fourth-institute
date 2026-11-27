@@ -43,7 +43,7 @@ def test_existing_residents_and_conversation_work_without_optional_column_or_met
         assert detail.status == "committed", detail.error
         settings = instruction(team,"GetResidentSettings",{"resident_id":rid})
         assert settings.status == "committed", settings.error
-        assert settings.result["settings"]["reporting"] == {"initiative":"off","quality":"medium"}
+        assert settings.result["reporting"] == {"initiative":"off","quality":"medium"}
         ordinary = instruction(team,"UpdateResidentSettings",{
             "resident_id":rid,"changes":{"allow_subagents":True}})
         assert ordinary.status == "committed", ordinary.error
@@ -53,7 +53,7 @@ def test_existing_residents_and_conversation_work_without_optional_column_or_met
         # Optional configuration can be read without upgrading. An explicit
         # write still has its real local column requirement and never claims success.
         with pytest.raises(UndefinedColumn, match="reporting_json"):
-            resident_reporting.update(rid, ACTOR, {"reporting":{"initiative":"high","quality":"high"}})
+            resident_reporting.update(rid, ACTOR, {"initiative":"high","quality":"high"})
         assert instruction(team,"GetConversation",{"resident_id":rid,"input_message_id":mid}).status == "committed"
     finally:
         with db.transaction() as c:

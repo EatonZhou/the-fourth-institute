@@ -55,7 +55,13 @@ def effective(resident_id: str, message_id: str = "") -> dict:
     record = records.find_resident(source)
     if not record:
         return {"state": "unknown", "source_resident_id": source}
-    return {**configured(record), "state": "known", "source_resident_id": source,
+    return policy_for_record(record)
+
+
+def policy_for_record(record: dict) -> dict:
+    from . import family_facade
+
+    return {**configured(record), "state": "known", "source_resident_id": record["resident_id"],
             "source": "family_facade" if family_facade.is_facade(record) else "resident",
             "configured": bool(record.get("reporting")),
             "application": "next_input"}

@@ -14,27 +14,39 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       const url = new URL(route.request().url());
       if (url.hostname !== 'quota.fixture.invalid') return route.abort();
       if (url.pathname.startsWith('/static/')) return route.fulfill({body: fs.readFileSync(path.join(root, url.pathname.slice(8))), contentType: url.pathname.endsWith('.css') ? 'text/css' : 'text/javascript'});
-      return route.fulfill({contentType: 'text/html', body: '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><body><span id="nodeMenuSessionId"></span><button id="nodeMenuCopySession"></button><div id="nodeMenuRuntime"></div><section id="chat"><div class="chatHeadText"><span id="status"></span></div><button id="refresh">Session</button><div id="composer"><button data-workspace-runtime-settings-open><span class="composerRuntimeLabel"></span></button></div></section></body></html>'});
+      return route.fulfill({contentType: 'text/html', body: '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><body><span id="nodeMenuSessionId"></span><button id="nodeMenuCopySession"></button><div id="nodeMenuReporting"></div><div id="nodeMenuRuntime"></div><section id="chat"><div class="chatHeadText"><span id="status"></span></div><button id="refresh">Session</button><div id="composer"><button data-workspace-runtime-settings-open><span class="composerRuntimeLabel"></span></button></div></section></body></html>'});
     });
     await page.goto('http://quota.fixture.invalid');
     for (const file of [...PORTAL_COMPONENTS_STYLES, 'portal_design_system', 'portal_themes', 'portal_resident_menu']) await page.addStyleTag({url: '/static/' + file + '.css'});
     for (const file of ['portal_text', 'portal_state', 'portal_translations', 'portal_i18n', 'portal_ui_primitives', 'portal_overlay', 'portal_ui', 'portal_model_api_settings', 'chat_workspace_runtime_settings', 'portal_resident_runtime_controller', 'portal_resident_menu_runtime', 'chat_workspace_runtime_controls', 'chat_workspace_resident_workspace']) await page.addScriptTag({url: '/static/' + file + '.js'});
     await page.evaluate(() => {
-      const catalog = {models: ['m'], default_model: 'm', efforts_by_model: {}, service_tiers_by_model: {}, runtime_capabilities: {settings: ['model']}};
+      PortalI18n.apply('zh-CN');
+      const catalog = {models: ['m', 'm2'], default_model: 'm', efforts_by_model: {}, service_tiers_by_model: {}, runtime_capabilities: {settings: ['model']}};
       const contextOptions = [{id: 'preserve', enabled: true, description: '摘要重组'}];
       let settings = {model: 'm'}, revision = 'r0';
+      let reporting = {initiative: 'off', quality: 'medium'}, reportingRevision = 'report-0';
+      window.failRuntime = false;
+      window.reportingWrites = [];
       window.saves = []; window.switches = []; window.toasts = []; window.canEdit = true; window.canSwitch = true; window.optionTargets = []; window.currentResident = "fixture";
       PortalUI.toast = message => toasts.push(message);
-      const detail = () => ({resident: {backend: 'codex'}, family_facade: {}, execution_account: {account_id: 'one'}, chat_workspace: {actions: {runtime_settings: {}}}, allows: {UpdateResidentSettings: canEdit, RestartSession: canSwitch}});
+      const detail = () => ({resident: {backend: 'codex'}, family_facade: {}, execution_account: {account_id: 'one'}, chat_workspace: {actions: {runtime_settings: {}}}, allows: {UpdateResidentSettings: canEdit, UpdateResidentReporting: true, RestartSession: canSwitch}});
       window.PortalResidentProjection = {load: async () => detail(), invalidate() {}};
-      const read = () => ({settings: {...settings}, settings_revision: revision, quota_switch: {auto_switch_on_quota: settings.auto_switch_on_quota ?? false}});
+      const read = id => ({settings: {...settings}, reporting, reporting_revision: reportingRevision,
+        runtime_settings_access: 'available',
+        runtime_settings_resident_id: id, runtime_settings_revision: revision, quota_switch: {auto_switch_on_quota: settings.auto_switch_on_quota ?? false}});
       window.PortalResidentService = {
-        projection: async () => detail(), runtimeSettings: async () => read(), runtimeCatalog: async () => catalog,
+        projection: async () => detail(), runtimeSettings: async id => read(id), runtimeCatalog: async () => catalog,
         runtimeAccounts: async () => ({accounts: []}), observeSessionRestart: () => () => {},
+        updateReporting: async (id, changes, _key, expected) => {
+          if (expected !== reportingRevision) throw Error('stale reporting revision');
+          reportingWrites.push({id, changes, expected});
+          reporting = {...changes}; reportingRevision += '1';
+        },
         updateRuntimeSettings: async (id, changes, key, expected) => {
+          if (failRuntime) throw Object.assign(Error('runtime fixture conflict'), {code: 'instruction.conflict', status: 409});
           if (!canEdit) throw new Error('无权限');
           if (expected !== revision) throw new Error('stale revision');
-          saves.push({id, changes, key, expected}); settings = {...settings, ...changes}; revision += '1'; return read();
+          saves.push({id, changes, key, expected}); settings = {...settings, ...changes}; revision += '1'; return read(id);
         },
         sessionRestartOptions: async id => { optionTargets.push(id); if (window.holdOptions) await new Promise(resolve => window.releaseOptions = resolve); return ({resident_id: id, source: {provider: 'codex', account_id: 'one', has_session: true},
           providers: [{id: 'codex', label: 'Codex'}, {id: 'claude', label: 'Claude'}],
@@ -44,7 +56,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       const api = PortalChatWorkspaceRuntimeSettings.createRuntimeSettings({escapeHtml: PortalUIPrimitives.escapeHtml});
       window.PortalChatWorkspace = api;
       const context = window.menuContext = {residentId: 'fixture', node: {backend: 'codex'}};
-      const menu = PortalResidentMenuRuntime.createRuntime({$id: id => document.getElementById(id), esc: PortalUIPrimitives.escapeHtml, menuState: {nodeMenuContext: context}, nodeMenuNotice: text => toasts.push(text), renderFamilySettings() {}});
+      const menu = PortalResidentMenuRuntime.createRuntime({changed: async () => {},$id: id => document.getElementById(id), esc: PortalUIPrimitives.escapeHtml, menuState: {nodeMenuContext: context}, nodeMenuNotice: text => toasts.push(text), renderFamilySettings() {}});
       window.reloadMenu = () => menu.loadNodeMenuRuntime();
       window.state = {contract: {actions: {session_restart: {instruction: 'RestartSession'}}, composer: {}}};
       window.controls = PortalChatWorkspaceRuntimeControls.createRuntimeControls({contractResidentId: () => currentResident, createSessionRestartProgress: api.createSessionRestartProgress,
@@ -76,6 +88,24 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     await toggle.click();
     await page.waitForFunction(() => saves.length === 2 && !document.querySelector('[data-menu-quota-switch]').disabled);
     assert.deepEqual(await page.evaluate(() => saves[1].changes), {auto_switch_on_quota: false});
+    const runtimeModel = page.locator('#nodeMenuRuntime [data-runtime-setting="model"]:visible');
+    await runtimeModel.selectOption('m2');
+    await page.evaluate(() => { failRuntime = true; });
+    await page.locator('#nodeMenuReporting [name=quality][value=high]').check();
+    await page.waitForFunction(() => document.querySelector('[data-reporting-status]').textContent.includes('已保存')).catch(async error => {
+      error.message += ' / reporting: ' + await page.locator('[data-reporting-status]').textContent();
+      throw error;
+    });
+    await page.locator('#nodeMenuRuntime [data-session-restart-submit]').click();
+    await page.waitForFunction(() => toasts.some(text => /runtime fixture conflict/.test(text)));
+    assert.equal(await runtimeModel.inputValue(), 'm2', 'the failed runtime draft remains editable');
+    assert.match(await page.locator('[data-reporting-status]').textContent(), /汇报设置已保存/);
+    assert.deepEqual(await page.evaluate(() => reportingWrites), [
+      {id: 'fixture', changes: {initiative: 'off', quality: 'high'}, expected: 'report-0'},
+    ]);
+    assert.equal(await page.evaluate(() => saves.length), 2);
+    await page.evaluate(() => { failRuntime = false; return reloadMenu(); });
+
     await page.evaluate(() => quota({state: 'disabled', reason: 'auto_switch_disabled', message: '额度不足，请手动选择'}));
     assert.equal(await page.locator('.portalSessionRestartOverlay').count(), 0, 'viewing existing history does not pop a card');
     await page.evaluate(() => residentWorkspace.quotaSubmitted('message1'));

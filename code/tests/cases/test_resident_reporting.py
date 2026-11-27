@@ -26,29 +26,33 @@ def test_invalid_policy_is_rejected(value):
 def test_default_roundtrip_cas_and_no_model_operation(resident_record, monkeypatch):
     rid = resident_record["resident_id"]
     before = resident_protocol.get_resident_runtime_settings(rid, "CASE-A")
-    assert before["runtime_settings"]["reporting"] == {"initiative":"off","quality":"medium"}
+    assert before["reporting"] == {"initiative": "off", "quality": "medium"}
+    assert "reporting" not in before["runtime_settings"]
     assert before["reporting_effective"]["configured"] is False
-    before = reporting.update(rid, "CASE-A", {"expected_revision":before["settings_revision"],
-        "runtime_settings":{"reporting":dict(reporting.DEFAULT)}})
-    assert before["reporting_effective"]["configured"] is True
+    configured = reporting.update(rid, "CASE-A", dict(reporting.DEFAULT),
+                                  expected_revision=before["reporting_revision"])
+    assert configured["reporting_effective"]["configured"] is True
+    assert configured["reporting_revision"] != before["reporting_revision"]
     from management_portal.society_service import resident_execution_domain as engine
-    monkeypatch.setattr(engine, "change_resident_runtime_settings", lambda *_a, **_k: pytest.fail("no Provider update"))
-    policy = {"initiative":"high","quality":"high"}
-    saved = resident_protocol.update_resident_runtime_settings(rid, "CASE-A", {
-        "runtime_settings":{"reporting":policy}, "expected_revision":before["settings_revision"]})
-    assert saved["runtime_settings"]["reporting"] == policy
+    def no_runtime(*_args, **_kwargs):
+        pytest.fail("Reporting must neither read nor write runtime settings")
+    monkeypatch.setattr(engine, "read_resident_runtime_settings", no_runtime)
+    monkeypatch.setattr(engine, "change_resident_runtime_settings", no_runtime)
+    policy = {"initiative": "high", "quality": "high"}
+    saved = reporting.update(rid, "CASE-A", policy, expected_revision=configured["reporting_revision"])
+    assert saved["reporting"] == policy
     assert saved["reporting_effective"]["configured"] is True
+    assert saved["reporting_effective"]["application"] == "next_input"
     assert saved["next_turn_fields"] == ["reporting"]
-    assert saved["application"]["settings_revision"] == saved["settings_revision"]
+    assert saved["application"]["reporting_revision"] == saved["reporting_revision"]
     application = next(item for item in saved["application"]["items"] if item["path"] == "reporting")
     assert application["status"] == "next_turn" and application["delivery"] == "unknown"
     assert records.find_resident(rid)["reporting"] == policy
     with pytest.raises(LineageConflictError):
-        resident_protocol.update_resident_runtime_settings(rid, "CASE-A", {
-            "runtime_settings":{"reporting":policy}, "expected_revision":before["settings_revision"]})
-    same = resident_protocol.update_resident_runtime_settings(rid, "CASE-A", {
-        "runtime_settings":{"reporting":policy}, "expected_revision":saved["settings_revision"]})
+        reporting.update(rid, "CASE-A", policy, expected_revision=configured["reporting_revision"])
+    same = reporting.update(rid, "CASE-A", policy, expected_revision=saved["reporting_revision"])
     assert same["next_turn_fields"] == []
+    assert same["reporting_revision"] == saved["reporting_revision"]
 
 
 def test_each_later_input_and_scoped_input_receives_current_policy(resident_record, monkeypatch):
@@ -60,7 +64,7 @@ def test_each_later_input_and_scoped_input_receives_current_policy(resident_reco
     first = prompts.build_resident_prompt(resident_record, job)
     assert "<reporting-policy>" not in first
     assert "原始输入" in first
-    reporting.update(rid, "CASE-A", {"runtime_settings":{"reporting":{"initiative":"high","quality":"high"}}})
+    reporting.update(rid, "CASE-A", {"initiative":"high","quality":"high"})
     later = prompts.build_resident_prompt(resident_record, job)
     assert '"initiative": "high"' in later and "绝不每轮固定生成" in later
     assert "独立 Resident" in later and "取消时停止" in later
@@ -70,7 +74,7 @@ def test_each_later_input_and_scoped_input_receives_current_policy(resident_reco
     assert "已委托的高质量解释即使采用简洁文字" in later
     assert "简单事实可直接简答" in later and "这一分类不取消上述已委托成果的质量要求" in later
     assert "--quality" in later and "--previous-review-id" in later
-    reporting.update(rid, "CASE-A", {"runtime_settings":{"reporting":{"initiative":"off","quality":"low"}}})
+    reporting.update(rid, "CASE-A", {"initiative":"off","quality":"low"})
     lowered = _running_turn_prompt(resident_record, job)["actual_sent_prompt"]
     assert "<reporting-policy>" not in lowered
     assert "汇报使用清晰的 Markdown" not in lowered
@@ -80,20 +84,23 @@ def test_each_later_input_and_scoped_input_receives_current_policy(resident_reco
 def test_facade_only_permissions_and_actual_relay_member(team, monkeypatch):
     from tests.cases.family_test_support import set_role
     from tests.cases.test_cross_owner_storage_integration import ACTOR
-    from management_portal.society_service import resident_conversation_stream
+    from management_portal.society_service import facade_members, resident_catalog, resident_conversation_stream
     facade, member = team.source["resident_id"], team.target["resident_id"]
     set_role(facade, family_id="fbi_reporting", actor=ACTOR)
     set_role(member, family_id="fbi_reporting", role="member", actor=ACTOR)
+    resident_catalog.get_catalog().state_store.database.write(
+        lambda connection: facade_members.replace(connection, facade, [member]))
     # The caller has no independent access to any possible Router settings.
     original = resident_access.has_resident_workspace_authority
     monkeypatch.setattr(resident_access, "has_resident_workspace_authority",
         lambda record, actor: record["resident_id"] == facade and original(record, actor))
     before = instruction(team, "GetResidentSettings", {"resident_id":facade})
     assert before.status == "committed", before.error
-    assert before.result["settings"] == {"reporting":{"initiative":"off","quality":"medium"}}
-    changed = instruction(team, "UpdateResidentSettings", {"resident_id":facade,
-        "expected_revision":before.result["settings_revision"],
-        "changes":{"reporting":{"initiative":"medium","quality":"high"}}})
+    assert before.result["settings"] == {}
+    assert before.result["reporting"] == {"initiative":"off","quality":"medium"}
+    changed = instruction(team, "UpdateResidentReporting", {"resident_id":facade,
+        "expected_revision":before.result["reporting_revision"],
+        "reporting":{"initiative":"medium","quality":"high"}})
     assert changed.status == "committed", changed.error
     repo = resident_conversation_stream.get_repository()
     root, leaf = "msg_" + "a" * 32, "msg_" + "b" * 32
@@ -117,7 +124,7 @@ def test_facade_only_permissions_and_actual_relay_member(team, monkeypatch):
     appended = _running_turn_prompt(records.find_resident(member), {
         "user_message_id":leaf,"raw_message":"解释一个新问题"})["actual_sent_prompt"]
     assert appended.split("</reporting-policy>")[0] == materialized.split("</reporting-policy>")[0]
-    reporting.update(facade, ACTOR, {"reporting": {"initiative": "off", "quality": "low"}})
+    reporting.update(facade, ACTOR, {"initiative": "off", "quality": "low"})
     member_record = records.find_resident(member)
     member_record["reporting"] = {"initiative": "high", "quality": "high"}
     records.save_resident_record(member_record, commit_configuration=True)
@@ -134,7 +141,7 @@ def test_non_home_prompt_links_existing_authoring_entry_for_concise_high_artifac
     from scripts.build_explanation_package import build
 
     rid = resident_record["resident_id"]
-    reporting.update(rid, "CASE-A", {"runtime_settings":{"reporting":{"initiative":"high","quality":"high"}}})
+    reporting.update(rid, "CASE-A", {"initiative":"high","quality":"high"})
     text = prompts.build_resident_prompt(resident_record, {"message":"完成之前委托的解释"})
     policy = json.loads(text.split("<reporting-policy>\n", 1)[1].split("\n", 1)[0])
     assert policy["initiative"] == "high" and policy["quality"] == "high"
@@ -162,14 +169,43 @@ def test_unknown_source_is_explicit(monkeypatch):
     assert prompts.reporting_instructions({"resident_id":"resident_missing"}, {}).parts == ()
 
 
-def test_policy_and_execution_settings_share_cas(resident_record):
+def test_reporting_and_runtime_revisions_are_independent(resident_record):
+    from tests.cases.isa_test_support import run
+
     rid = resident_record["resident_id"]
     before = reporting.read(rid, "CASE-A")
-    result = reporting.update(rid, "CASE-A", {"expected_revision":before["settings_revision"],
-        "runtime_settings":{"allow_subagents":True,"reporting":{"initiative":"low","quality":"low"}}})
-    assert result["runtime_settings"]["allow_subagents"] is True
-    assert result["runtime_settings"]["reporting"]["initiative"] == "low"
-    assert set(result["next_turn_fields"]) == {"allow_subagents","reporting"}
+    policy = {"initiative": "low", "quality": "low"}
+
+    saved = run("UpdateResidentReporting", {"resident_id": rid, "reporting": policy,
+        "expected_revision": before["reporting_revision"]}, actor="CASE-A")
+    assert saved.status == "committed", saved.error
+    assert saved.result["reporting"] == policy
+    assert "settings" not in saved.result
+    assert "settings_revision" not in saved.result
+
+    runtime = run("UpdateResidentSettings", {"resident_id": rid,
+        "expected_revision": before["settings_revision"],
+        "changes": {"allow_subagents": True}}, actor="CASE-A")
+    assert runtime.status == "committed", runtime.error
+    assert runtime.result["runtime_settings_resident_id"] == rid
+    assert runtime.result["runtime_settings_revision"] == runtime.result["settings_revision"]
+    assert runtime.result["settings_revision"] != before["settings_revision"]
+    assert "reporting_effective" not in runtime.result
+
+    mixed = run("UpdateResidentSettings", {"resident_id": rid,
+        "changes": {"allow_subagents": False, "reporting": dict(reporting.DEFAULT)}}, actor="CASE-A")
+    assert mixed.error["code"] == "instruction.invalid_arguments"
+    stale_runtime = run("UpdateResidentSettings", {"resident_id": rid,
+        "expected_revision": before["settings_revision"],
+        "changes": {"allow_subagents": False}}, actor="CASE-A")
+    assert stale_runtime.error["code"] == "instruction.conflict"
+
+    after = reporting.read(rid, "CASE-A")
+    assert after["reporting_revision"] == saved.result["reporting_revision"]
+    assert after["reporting"] == policy and after["runtime_settings"]["allow_subagents"] is True
+    stale_reporting = run("UpdateResidentReporting", {"resident_id": rid, "reporting": policy,
+        "expected_revision": before["reporting_revision"]}, actor="CASE-A")
+    assert stale_reporting.error["code"] == "instruction.conflict"
 
 
 def test_exact_temporary_ama_loan_does_not_require_router_access(team, monkeypatch):
@@ -177,9 +213,12 @@ def test_exact_temporary_ama_loan_does_not_require_router_access(team, monkeypat
     from tests.cases.permission_test_support import enable, Fact
     from tests.cases.isa_test_support import run
     from management_portal.permission_system import temporary
+    from management_portal.society_service import facade_members, resident_catalog
     facade, router = team.source["resident_id"], team.target["resident_id"]
     set_role(facade, family_id="fbi_reporting_loan", actor="CASE-A")
     set_role(router, family_id="fbi_reporting_loan", role="router", actor="CASE-A")
+    resident_catalog.get_catalog().state_store.database.write(
+        lambda connection: facade_members.replace(connection, facade, [router]))
     for rid in (facade, router):
         record = records.find_resident(rid)
         record["personal_owner_id"] = "report-owner"
@@ -194,13 +233,74 @@ def test_exact_temporary_ama_loan_does_not_require_router_access(team, monkeypat
     before = run("GetResidentSettings", {"resident_id":facade}, actor="report-reader")
     assert before.status == "committed", before.error
     assert before.result["runtime_settings_access"] == "unavailable"
-    saved = run("UpdateResidentSettings", {"resident_id":facade,
-        "expected_revision":before.result["settings_revision"],
-        "changes":{"reporting":{"initiative":"medium","quality":"high"}}}, actor="report-reader")
+    assert before.result["runtime_settings_resident_id"] == ""
+    assert before.result["settings_revision"] == before.result["runtime_settings_revision"] == ""
+    assert before.result["settings"] == before.result["quota_switch"] == {}
+    assert before.result["prompt_injection"] == {"state": "unavailable"}
+    saved = run("UpdateResidentReporting", {"resident_id":facade,
+        "expected_revision":before.result["reporting_revision"],
+        "reporting":{"initiative":"medium","quality":"high"}}, actor="report-reader")
     assert saved.status == "committed", saved.error
-    assert saved.result["settings"]["reporting"]["quality"] == "high"
+    assert saved.result["reporting"]["quality"] == "high"
+    assert reporting.effective(router)["configured"] is False
+    facade_runtime = run("UpdateResidentSettings", {"resident_id": facade,
+        "changes": {"allow_subagents": True}}, actor="report-reader")
+    assert facade_runtime.error["code"] == "instruction.invalid_arguments"
+    assert facade_runtime.error["details"]["runtime_settings_resident_id"] == router
     denied = run("GetResidentSettings", {"resident_id":router}, actor="report-reader")
     assert denied.status != "committed"
+
+
+def test_facade_reporting_and_router_runtime_use_independent_permissions(team, monkeypatch):
+    from tests.cases.family_test_support import set_role
+    from tests.cases.permission_test_support import enable, Fact
+    from tests.cases.isa_test_support import run
+    from management_portal.society_service import facade_members, resident_catalog
+
+    facade, router = team.source["resident_id"], team.target["resident_id"]
+    set_role(facade, family_id="fbi_reporting_access", actor="CASE-A")
+    set_role(router, family_id="fbi_reporting_access", role="router", actor="CASE-A")
+    resident_catalog.get_catalog().state_store.database.write(
+        lambda connection: facade_members.replace(connection, facade, [router]))
+    permissions = enable(monkeypatch)
+    permissions.users("report-viewer", "report-writer", "router-author", category="intern")
+    permissions.place(Fact("resident", facade), Fact("resident", router))
+    permissions.grant("report-viewer", facade, "@viewer")
+    permissions.grant("report-writer", facade, "@contributor")
+    permissions.deny("report-viewer", router, "GetResidentSettings")
+    permissions.deny("report-writer", router, "GetResidentSettings")
+    permissions.deny("report-writer", router, "UpdateResidentSettings")
+    permissions.grant("router-author", facade, "@viewer")
+    permissions.grant("router-author", router, "@admin")
+
+    viewer_read = run("GetResidentSettings", {"resident_id": facade}, actor="report-viewer")
+    assert viewer_read.status == "committed", viewer_read.error
+    assert viewer_read.result["reporting"] == reporting.DEFAULT
+    assert viewer_read.result["settings"] == viewer_read.result["quota_switch"] == {}
+    assert viewer_read.result["runtime_settings_resident_id"] == ""
+    viewer_write = run("UpdateResidentReporting", {"resident_id": facade,
+        "reporting": dict(reporting.DEFAULT)}, actor="report-viewer")
+    assert viewer_write.error["code"] == "instruction.forbidden"
+
+    runtime_changes = {"allow_subagents": True}
+    redirect = run("UpdateResidentSettings", {"resident_id": facade, "changes": runtime_changes}, actor="report-writer")
+    assert redirect.error["code"] == "instruction.invalid_arguments"
+    assert redirect.error["details"]["runtime_settings_resident_id"] == router
+    denied = run("UpdateResidentSettings", {"resident_id": router, "changes": runtime_changes}, actor="report-writer")
+    assert denied.error["code"] == "instruction.forbidden"
+    hidden = run("GetResidentSettings", {"resident_id": facade}, actor="report-writer")
+    assert hidden.result["settings"] == {}
+
+    current = run("GetResidentSettings", {"resident_id": facade}, actor="router-author")
+    assert current.status == "committed", current.error
+    assert current.result["runtime_settings_resident_id"] == router
+    assert current.result["reporting_revision"] == viewer_read.result["reporting_revision"]
+    saved = run("UpdateResidentSettings", {"resident_id": router, "changes": runtime_changes,
+        "expected_revision": current.result["runtime_settings_revision"]}, actor="router-author")
+    assert saved.status == "committed", saved.error
+    assert saved.result["runtime_settings_resident_id"] == router
+    assert saved.result["settings"]["allow_subagents"] is True
+    assert reporting.effective(facade)["configured"] is False
 
 
 def test_old_database_upgrade_preview_apply_and_idempotency(resident_record):
@@ -222,7 +322,26 @@ def test_old_database_upgrade_preview_apply_and_idempotency(resident_record):
     from scripts.migrate_family_chat_controls import convert
     assert store.database.write(convert)["changed"] is False
     assert store.read_resident_execution_settings(rid) == before
-    assert reporting.read(rid,"CASE-A")["runtime_settings"]["reporting"] == reporting.DEFAULT
+    assert reporting.read(rid,"CASE-A")["reporting"] == reporting.DEFAULT
+
+
+def test_reporting_update_after_additive_text_migration(resident_record):
+    from management_portal.society_service import resident_catalog
+    from scripts.migrate_resident_reporting import migrate
+
+    rid = resident_record["resident_id"]
+    store = resident_catalog.get_catalog().state_store
+    before = store.read_resident_execution_settings(rid)
+    store.database.write(lambda connection: connection.execute(
+        "ALTER TABLE resident_execution_configuration DROP COLUMN reporting_json"))
+    assert migrate(store.database, apply=True)["changed"] is True
+
+    current = reporting.read(rid, "CASE-A")
+    policy = {"initiative": "high", "quality": "medium"}
+    saved = reporting.update(rid, "CASE-A", policy, expected_revision=current["reporting_revision"])
+    assert reporting.read(rid, "CASE-A")["reporting_revision"] == saved["reporting_revision"]
+    assert records.find_resident(rid)["reporting"] == policy
+    assert store.read_resident_execution_settings(rid) == before
 
 
 def test_seed_new_installation_has_the_same_reporting_column(resident_record):

@@ -141,13 +141,16 @@ async function panelSavesSettings() {
     load: async (residentId, options) => {
       loads.push([residentId, { ...options }]);
       if (failLoad) throw new Error('projection offline');
-      return { runtime_settings: settings, agent_harness_defaults: defaults, backend_capabilities: { runtime_capabilities: capabilities } };
+      return { allows: {UpdateResidentSettings: true}, agent_harness_defaults: defaults, backend_capabilities: { runtime_capabilities: capabilities } };
     },
     invalidate: residentId => invalidated.push(residentId),
   };
   let saving = null;
   w.PortalInstructionClient = {
     execute: async (instruction, args, options) => {
+      if (instruction === 'GetResidentSettings') return {
+        settings, runtime_settings_access: 'available', runtime_settings_resident_id: 'resident_router', runtime_settings_revision: 'harness-rev',
+      };
       executed.push([instruction, plain(args), options ? plain(options) : undefined]);
       if (saving) await saving.promise;
       return {};
@@ -175,12 +178,12 @@ async function panelSavesSettings() {
     const expectedFeatures = Object.fromEntries(Object.entries(defaults).map(([id, value]) => [id, { ...value }]));
     expectedFeatures.tool_output_offloading = { enabled: false, offload_trigger_bytes: 65536, timing: 'after_tool_batch' };
     assert.deepEqual(executed[0], ['UpdateResidentSettings', {
-      resident_id: 'resident_sample', changes: { agent_harness: { mode: 'manual', features: expectedFeatures } },
-    }, undefined], 'a switch saves the whole harness with the one feature changed');
+      resident_id: 'resident_router', expected_revision: 'harness-rev', changes: { agent_harness: { mode: 'manual', features: expectedFeatures } },
+    }, {idempotencyKey: executed[0][2].idempotencyKey}], 'a switch saves the whole harness with the one feature changed');
     saving.resolve();
     saving = null;
     await settle();
-    assert.deepEqual(invalidated, ['resident_sample'], 'a save drops the cached projection');
+    assert.deepEqual(invalidated, ['resident_sample', 'resident_router'], 'a save drops the cached projection');
     assert.equal(changed, 1, 'and tells the caller');
     assert.deepEqual(loads.at(-1)[1], { force: true });
     assert.equal(toggle('tool_output_offloading').disabled, false, 'the panel unlocks after the save');
@@ -199,7 +202,7 @@ async function panelSavesSettings() {
     subagents.checked = true;
     subagents.dispatchEvent(new w.Event('change'));
     await settle();
-    assert.deepEqual(executed.at(-1)[1], { resident_id: 'resident_sample', changes: { allow_subagents: true } });
+    assert.deepEqual(executed.at(-1)[1], { resident_id: 'resident_router', expected_revision: 'harness-rev', changes: { allow_subagents: true } });
 
     w.PortalInstructionClient.execute = async () => { throw new Error('not allowed'); };
     toggle('inline_media_history').dispatchEvent(new w.Event('change'));
@@ -231,21 +234,23 @@ async function promptInjectionPage() {
     }],
   });
   let settingsView = view('standard');
+  const read = () => ({ settings: {prompt_injection: {preset: settingsView.preset}}, prompt_injection: settingsView,
+    runtime_settings_access: 'available', runtime_settings_resident_id: 'resident_sample', runtime_settings_revision: 'prompt-rev' });
   w.PortalResidentProjection = {
-    load: async () => ({ runtime_settings: { prompt_injection: { preset: settingsView.preset } }, agent_harness_defaults: defaults, backend_capabilities: { runtime_capabilities: capabilities } }),
+    load: async () => ({ allows: {UpdateResidentSettings: true}, agent_harness_defaults: defaults, backend_capabilities: { runtime_capabilities: capabilities } }),
     invalidate() {},
   };
   w.PortalInstructionClient = {
     execute: async (instruction, args, options) => {
       executed.push([instruction, plain(args), options ? plain(options) : undefined]);
-      if (instruction === 'GetResidentSettings') return { prompt_injection: settingsView };
+      if (instruction === 'GetResidentSettings') return read();
       if (instruction === 'GetPromptInjectionPreview') {
         previews[args.turn] = deferred();
         return previews[args.turn].promise;
       }
       if (instruction === 'UpdateResidentSettings') {
         settingsView = { ...view(args.changes.prompt_injection.preset || 'custom') };
-        return { prompt_injection: settingsView };
+        return read();
       }
       return {};
     },
@@ -255,7 +260,7 @@ async function promptInjectionPage() {
     await settle();
     container.querySelector('[data-prompt-injection-open]').click();
     await settle();
-    assert.deepEqual(executed.slice(0, 2).map(([name, args]) => [name, args]), [
+    assert.deepEqual(executed.slice(1, 3).map(([name, args]) => [name, args]), [
       ['GetResidentSettings', { resident_id: 'resident_sample' }],
       ['GetPromptInjectionPreview', { resident_id: 'resident_sample', turn: 'first' }],
     ], 'the page reads the settings, then previews the first turn');
@@ -291,8 +296,8 @@ async function promptInjectionPage() {
     preset().dispatchEvent(new w.Event('change'));
     await settle();
     const update = executed.find(([name]) => name === 'UpdateResidentSettings');
-    assert.deepEqual(update[1], { resident_id: 'resident_sample', changes: { prompt_injection: { preset: 'minimal' } } });
-    assert.match(update[2].idempotencyKey, /^prompt-injection:[0-9a-f-]{36}$/);
+    assert.deepEqual(update[1], { resident_id: 'resident_sample', expected_revision: 'prompt-rev', changes: { prompt_injection: { preset: 'minimal' } } });
+    assert.match(update[2].idempotencyKey, /^resident-harness:[0-9a-f-]{36}$/);
     assert.equal(preset().value, 'minimal', 'the page shows the saved view');
     assert.deepEqual(executed.at(-1).slice(0, 2), ['GetPromptInjectionPreview', { resident_id: 'resident_sample', turn: 'after_compaction' }],
       'the preview is read again for the chosen turn');

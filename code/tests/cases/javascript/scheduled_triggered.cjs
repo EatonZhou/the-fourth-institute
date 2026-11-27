@@ -58,6 +58,7 @@ async function main() {
       if (caseName === 'cold_loading' && record.monitor_reads === 1) return {status: 'loading', loaded: false, items: []};
       return plain(monitor);
     }},
+    PortalNav: {openResidentMenu: async options => { record.openedResidentSettings = options.residentId; }},
     PortalAPI: {requestResult: async (url, options) => {
       assert.equal(url, '/api/instructions/execute');
       assert.equal(options.method, 'POST');
@@ -149,7 +150,7 @@ async function main() {
       const error = panel.querySelector('.agent-status-error'); assert.match(error.textContent, /Lineage read failed/);
       assert.equal(error.querySelector('img,script,[onerror]'), null); assert.equal(w.__monitorInjected, undefined);
     } else if (caseName === 'read_only_lineage') {
-      toggle(); assert.match(panel.textContent, /Daily Event/); assert.equal(panel.querySelector('[data-scheduled-triggered-action]'), null);
+      toggle(); assert.match(panel.textContent, /Daily Event/); assert.equal(panel.querySelector('[data-scheduled-triggered-action]:not([data-scheduled-triggered-action=open_settings])'), null);
     } else if (caseName === 'resident_without_timer') {
       assert.match(panel.textContent, /无定时 Event/); assert.match(panel.textContent, /running · 等待 1/);
       assert.equal(panel.querySelector('[data-scheduled-triggered-action="run_once"]'), null);
@@ -160,6 +161,9 @@ async function main() {
       const due = '2026-09-29T00:00:07Z';
       assert.equal(panel.querySelector('.scheduled-triggered-summary-value').textContent, due);
       toggle();
+      await act('[data-scheduled-triggered-action="open_settings"]');
+      assert.equal(record.openedResidentSettings, 'resident_100000000009');
+      assert.equal(record.instructions.length, 0, 'the monitor delegates configuration to the Resident menu');
       const daily = panel.querySelector('[data-scheduled-triggered-source="event_source_daily"]');
       assert.ok(daily.textContent.includes('下一次 ' + due));
       assert.ok(!panel.querySelector('[data-scheduled-triggered-source="event_source_evening"]').textContent.includes('下一次'));

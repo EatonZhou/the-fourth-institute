@@ -29,10 +29,14 @@ def view(context: InstructionContext, resident_id=None):
         return result
     resident_id = _resident_id(resident_id)
     stored = _call('GetResidentSettings', {'resident_id': resident_id}, context)
+    runtime_id = stored['runtime_settings_resident_id']
     config = desired_capability_config(stored['settings'])
     result['resident'] = {'resident_id': resident_id, 'title': resident_id,
+        'runtime_settings_resident_id': runtime_id,
+        'runtime_settings_access': stored['runtime_settings_access'],
         'settings_revision': stored['settings_revision'], 'capability_config': config,
-        'can_edit': _can_edit(context.caller, resident_id), 'application': stored.get('application', {})}
+        'can_edit': bool(runtime_id) and _can_edit(context.caller, runtime_id),
+        'application': stored.get('application', {})}
     result['connections'] = [dict(item, title=item['ref']) for item in config['mcp']]
     return result
 
@@ -58,7 +62,10 @@ def discover(context, payload, *, is_cancelled=None):
         raise invalid('请输入 MCP 连接资源地址')
     # Configuring this Resident is the authority to prepare its tools. Neither
     # a viewer nor a caller-supplied identity may turn resource reads into execution.
-    _call('GetResidentSettings', {'resident_id': resident_id}, context)
+    stored = _call('GetResidentSettings', {'resident_id': resident_id}, context)
+    if stored['runtime_settings_resident_id'] != resident_id:
+        raise invalid('请使用运行设置中的实际 Resident 进行工具发现',
+                      runtime_settings_resident_id=stored['runtime_settings_resident_id'])
     if not _can_edit(context.caller, resident_id):
         raise InstructionError('instruction.forbidden', '没有管理该 Resident 工具的权限')
     from .execution.resident_mcp import discover_mcp_directory

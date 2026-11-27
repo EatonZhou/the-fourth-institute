@@ -5,7 +5,7 @@ function fixture(){
  const calls=[],observers=new Map(),gates={};let fail=false;
  const window={addEventListener(){},PortalI18n:{t:s=>s},PortalUIPrimitives:{randomUUID:()=> 'key'}};
  vm.runInNewContext(source,{window,console});
- const service={projection:async({residentId})=>{calls.push(['projection',residentId]);if(gates[residentId])await gates[residentId];if(fail)throw new Error('offline');return {resident:{resident_id:residentId,backend:'codex'},allows:{RestartSession:true},chat_workspace:{actions:{runtime_settings:{}}}}},runtimeSettings:async id=>{calls.push(['settings',id]);return {settings:{model:'m'}}},runtimeCatalog:async()=>({models:['m']}),observeSessionRestart:(id,callback)=>{observers.set(id,callback);return()=>observers.delete(id)}};
+ const service={projection:async({residentId})=>{calls.push(['projection',residentId]);if(gates[residentId])await gates[residentId];if(fail)throw new Error('offline');return {resident:{resident_id:residentId,backend:'codex'},allows:{RestartSession:true},chat_workspace:{actions:{runtime_settings:{}}}}},runtimeSettings:async id=>{calls.push(['settings',id]);return {settings:{model:'m'},runtime_settings_access:'available',runtime_settings_resident_id:id,runtime_settings_revision:'rev-1'}},runtimeCatalog:async()=>({models:['m']}),observeSessionRestart:(id,callback)=>{observers.set(id,callback);return()=>observers.delete(id)}};
  return {ctrl:window.PortalResidentRuntimeController.create({service}),calls,observers,gates,setFail:v=>fail=v};
 }
 test('new subscriber receives current state; cache-hit load replays only to its caller',async()=>{

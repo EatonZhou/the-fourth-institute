@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 66
+  number: 76
   created_at: "2026-09-28T10:45:00Z"
   created_by:
     user: "weihao"
     agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-11-14T11:28:20Z"
+  updated_at: "2026-11-27T15:48:17Z"
   updated_by:
     user: ""
-    agent: "resident_60ae6d0cdf74"
+    agent: "resident_6199a7a36480"
 importance: 8
 metaness: 2
 ai_generated: false
@@ -89,7 +89,7 @@ links:
 | `DeleteProviderAccount` | 是 | 删除空闲账号及其主机目录与服务实例 | 对“共享”有 @admin |
 | `CreateProviderAccountLogin` | 是 | 打开订阅账号的登录会话 | 对“共享”有 @admin |
 | `UpdateProviderAccountLogin` | 是 | 向已有的登录会话提交登录流程回填的一次性授权材料 | 对“共享”有 @admin |
-| `GetProviderAccountLogin` | 否 | 读取登录会话与账号认证状态 | 对“共享”有 @viewer |
+| `GetProviderAccountLogin` | 否 | 读取登录会话与账号认证状态 | 对“共享”有 @admin |
 | `CancelProviderAccountLogin` | 是 | 取消订阅账号登录并结束登录进程 | 对“共享”有 @admin |
 | `ListBackendRoles` | 否 | 读取 Backend 角色映射 | 对“共享”有 @viewer |
 | `UpdateBackendRole` | 是 | 设置一个 Backend 角色指向的账号、模型与推理强度 | 对“共享”有 @admin |
@@ -130,7 +130,7 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个部署各有自
 
 ### `GetRuntimeCapacity`
 
-**读取用于运行容量预警的独立容量观察。** 指令由 Portal Web 执行，无参数，沿正式 ISA 的身份与权限检查；不启动模型、刷新 Provider 额度或改变调度配置。
+**读取用于运行容量预警的独立容量观察。** 指令由 Portal Web 执行，可选 `include_disks`（boolean，默认 true）；设为 false 时跳过磁盘采样，`disks.status=skipped`。沿正式 ISA 的身份与权限检查；不启动模型、刷新 Provider 额度或改变调度配置。
 
 结果为 `capacity`，新输出 schema 是 `tfi.runtime-capacity.v1`；读取方只接受该精确格式，`observed_at` 是本次开始采样的 UTC 时间。三个来源顺序采集，各自返回 `status=ok|unavailable`；某源异常只返回安全错误码，成功来源继续保留。这是当前观察，不是跨服务事务快照。
 
@@ -331,7 +331,7 @@ Telepus 绑定、提醒及服务控制改用应用工具，见 decision_692a484e
 | `GetExecutionSettings` | 无 |
 | `UpdateExecutionSettings` | `model_request_timing_enabled`、`harness_recording_enabled`、`harness_retention_days` |
 | `GetPortalStatus` | `deployment` |
-| `GetRuntimeCapacity` | 无 |
+| `GetRuntimeCapacity` | `include_disks` |
 | `RestartPortal` | `deployment`、`components` |
 | `GetDeviceStatus` | `kind`、`device_id`、`refresh` |
 | `CreateTerminal` | `device_id`、`cwd`、`cols`、`rows` |

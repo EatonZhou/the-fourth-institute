@@ -9,16 +9,16 @@ function fixture(family=false,canEdit=true){
  const tag=(parts,...values)=>parts.reduce((s,p,i)=>s+p+(values[i]??''),'');
  w.PortalI18n={t:String,html:tag,text:tag};w.PortalUIPrimitives={randomUUID:()=>String(calls.length)};
  w.PortalChatWorkspace={residentRuntimeSettingRows:()=>[]};
- w.PortalResidentRuntimeController={bind:()=>({load:async()=>{}})};
+ w.PortalResidentRuntimeController={bind:()=>({mount:async()=>{}})};
  w.PortalResidentProjection={invalidate(){}};
  w.PortalResidentService={
-  projection:async()=>({allows:{UpdateResidentSettings:canEdit}}),
-  runtimeSettings:async id=>{calls.push({read:id});if(readError)throw Error('read offline');return {settings:{reporting:{...reporting}},settings_revision:revision};},
-  updateRuntimeSettings:async(id,changes,key,expected)=>{calls.push({id,changes,key,expected});if(writeError)throw writeError;
-   assert.equal(expected,revision);reporting={...changes.reporting};revision++;return {settings_revision:revision};},
+  projection:async()=>({allows:{UpdateResidentReporting:canEdit,UpdateResidentSettings:false}}),
+  runtimeSettings:async id=>{calls.push({read:id});if(readError)throw Error('read offline');return {reporting:{...reporting},reporting_revision:revision};},
+  updateReporting:async(id,reportingDraft,key,expected)=>{calls.push({id,changes:{reporting:reportingDraft},key,expected});if(writeError)throw writeError;
+   assert.equal(expected,revision);reporting={...reportingDraft};revision++;return {reporting_revision:revision};},
  };
  w.eval(fs.readFileSync(path.resolve(__dirname,'../../../management_portal/static/portal_resident_menu_runtime.js'),'utf8'));
- const runtime=w.PortalResidentMenuRuntime.createRuntime({$id:id=>w.document.getElementById(id),esc:String,menuState:state,nodeMenuNotice(){},renderFamilySettings(){calls.push({family:true});}});
+ const runtime=w.PortalResidentMenuRuntime.createRuntime({changed: async () => {},$id:id=>w.document.getElementById(id),esc:String,menuState:state,nodeMenuNotice(){},renderFamilySettings(){calls.push({family:true});}});
  return {w,dom,calls,state,runtime,setServer:(value,version)=>{reporting=value;revision=version;},setWriteError:e=>{writeError=e;},setReadError:v=>{readError=v;},get reporting(){return reporting;},async load(){await runtime.loadNodeMenuRuntime();await tick();},get form(){return w.document.querySelector('form');},async save(){this.form.querySelector('input[name=quality]:checked').dispatchEvent(new w.Event('change',{bubbles:true}));await tick();},async select(name,value){this.form.elements[name].value=value;this.form.querySelector(`input[name=${name}]:checked`).dispatchEvent(new w.Event('change',{bubbles:true}));await tick();},async retry(){this.form.querySelector('[data-reporting-retry]').click();await tick();}};
 }
 for(const family of [false,true]) test(`${family?'Family facade':'Resident'} autosaves each changed option with CAS/readback and no save button`,async()=>{

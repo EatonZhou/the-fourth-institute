@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 50
+  number: 55
   created_at: "2026-09-28T10:45:00Z"
   created_by:
     user: "weihao"
     agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-11-26T05:11:39Z"
+  updated_at: "2026-11-27T15:48:17Z"
   updated_by:
     user: ""
-    agent: "resident_021703e3659a"
+    agent: "resident_6199a7a36480"
 importance: 8
 metaness: 2
 ai_generated: false
@@ -60,7 +60,7 @@ Lineage 定义指令创建、读取、修改和删除 Lineage，以及 Lineage �
 - **工作区交接（Workspace Handoff）**：Lineage 中两个 Resident 之间的一条交接关系，说明把来源工作区的哪些内容、用直接引用、文件复制或 Git worktree 中的哪种方式交给目标 Resident。
 - **碎片（fragment）**：Lineage 上暂存的想法、参考文字、图片引用和分层待办（decision_4adcc1ff2f2c“碎片与分层待办”）。每个碎片有自己的 ID、正文和图片引用，属于定义的一部分，修改时推进 revision。
 
-事件源、Effect 等组件的增加、删除和配置修改都使用本类的组件指令，例如让一个 Resident 每天定时开始工作，就是用 `CreateComponent` 创建一个 `time.reached` 事件源，再用 `CreateWire` 把它连到该 Resident 的 Invoke 端口并写明任务。
+事件源、Effect 等组件的增加、删除和配置修改都使用 `ApplyLineageChanges`，例如让一个 Resident 每天定时开始工作，就是在一次提交中 create 一个 `time.reached` 事件源，再 create 一条 route 连线把它连到该 Resident 的 Invoke 端口并写明任务。
 
 Function Block 实例内部的组件和连线也可以用这些指令直接修改。实例下一次重新展开时，按定义的内容覆盖这些修改（decision_5b5653c3eaa5）。
 
@@ -84,7 +84,7 @@ Lineage 定义的合并提交、显式 `expected_version`、冲突详情和多 L
 | --- | --- | --- | --- |
 | `CreateLineage` | 是 | 创建一个新的 Lineage，并分配独立的 Lineage ID。 | 对 `project_id` 有 @contributor |
 | `GetLineage` | 否 | 读取完整的 Lineage 定义 | 对 `lineage_id` 有 @viewer |
-| `UpdateLineage` | 是 | 修改 Lineage 的元数据、头像或碎片 | 对 `lineage_id` 有 @contributor |
+| `UpdateLineage` | 是 | 修改 Lineage 的元数据、头像或碎片 | 对 `lineage_id` 有 @contributor；指定 `changes.project_id` 时，对目标项目有 @admin |
 | `UpdateLineageLayout` | 是 | 保存画布坐标 | 对 `lineage_id` 有 @contributor |
 | `DeleteLineage` | 是 | 删除一个 Lineage | 对 `lineage_id` 有 @admin |
 | `ListComponentTypes` | 否 | 读取可用的组件类型与事件类型 | 对“共享”有 @viewer |

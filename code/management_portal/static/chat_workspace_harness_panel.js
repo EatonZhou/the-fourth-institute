@@ -166,15 +166,21 @@
     function mountResidentHarnessPanel({ container, residentId, onChanged } = {}) {
       if (!container || !residentId) throw new TypeError("container and residentId are required");
       let detail = null;
+      let settingsRead = null;
       let loadError = "";
       let busy = false;
       let destroyed = false;
       let promptInjection = null;
       const execute = (instruction, args, options) => window.PortalInstructionClient.execute(instruction, args, options);
+      const runtimeTarget = () => settingsRead?.runtime_settings_access === "available"
+        ? settingsRead.runtime_settings_resident_id : "";
+      const canEdit = () => !!runtimeTarget() && !!settingsRead.runtime_settings_revision
+        && detail?.allows?.UpdateResidentSettings === true;
       const load = async ({ force = false } = {}) => {
         try {
-          detail = await window.PortalResidentProjection.load(residentId, { force });
-          loadError = "";
+          settingsRead = await execute("GetResidentSettings", { resident_id: residentId });
+          detail = runtimeTarget() ? await window.PortalResidentProjection.load(runtimeTarget(), { force }) : null;
+          loadError = runtimeTarget() ? "" : window.PortalI18n.t("运行设置不可读");
         } catch (error) {
           loadError = error?.message || String(error);
         }
@@ -194,14 +200,30 @@
         }
       };
       const refresh = async () => {
+        const target = runtimeTarget();
         window.PortalResidentProjection?.invalidate?.(residentId);
+        if (target && target !== residentId) window.PortalResidentProjection?.invalidate?.(target);
         await onChanged?.();
         await load({ force: true });
       };
+      async function writeSettings(changes, version = settingsRead) {
+        if (!canEdit()) throw new Error(window.PortalI18n.t("无权限"));
+        const target = version.runtime_settings_resident_id;
+        if (target !== residentId) {
+          const current = await execute("GetResidentSettings", { resident_id: residentId });
+          if (current.runtime_settings_resident_id !== target || target !== runtimeTarget()) {
+            throw new Error(window.PortalI18n.t("运行设置的所属 Resident 已变更，请重新打开设置。"));
+          }
+        }
+        if (destroyed) return null;
+        return execute("UpdateResidentSettings", {
+          resident_id: target, changes, expected_revision: version.runtime_settings_revision,
+        }, { idempotencyKey: `resident-harness:${globalThis.PortalUIPrimitives.randomUUID()}` });
+      }
       const save = changes => run(async () => {
-        await execute("UpdateResidentSettings", { resident_id: residentId, changes });
-        await refresh();
+        if (await writeSettings(changes)) await refresh();
       });
+
 
       function render() {
         if (destroyed) return;
@@ -217,10 +239,10 @@
           container.innerHTML = window.PortalI18n.markup('<div class="chatHarnessLoading">正在读取 Harness 设置...</div>');
           return;
         }
-        const settings = detail.runtime_settings || {};
+        const settings = settingsRead.settings || {};
         const harnessDefaults = detail.agent_harness_defaults || {};
         container.innerHTML = `<div class="residentHarnessPanel">${residentHarnessMenuHtml(settings, {
-        busy,
+        busy: busy || !canEdit(),
         runtimeCapabilities: detail.backend_capabilities?.runtime_capabilities,
         harnessDefaults,
       })}</div>`;
@@ -242,11 +264,14 @@
 
       async function openPromptInjection() {
         if (busy) return;
-        const state = { view: null, preview: null, previewTurn: "first", previewError: "" };
+        const state = { view: null, version: null, preview: null, previewTurn: "first", previewError: "" };
         promptInjection = state;
         await run(async () => {
           const result = await execute("GetResidentSettings", { resident_id: residentId });
-          if (promptInjection === state) state.view = result?.prompt_injection || null;
+          if (promptInjection === state && result.runtime_settings_resident_id === runtimeTarget()) {
+            state.view = result.prompt_injection || null;
+            state.version = result;
+          }
         });
         if (promptInjection !== state) return;
         if (!state.view) {
@@ -263,7 +288,7 @@
         if (!state || destroyed) return;
         const turn = state.previewTurn;
         try {
-          const preview = await execute("GetPromptInjectionPreview", { resident_id: residentId, turn });
+          const preview = await execute("GetPromptInjectionPreview", { resident_id: state.version.runtime_settings_resident_id, turn });
           if (promptInjection !== state || state.previewTurn !== turn) return;
           state.preview = preview;
           state.previewError = "";
@@ -282,18 +307,17 @@
           return;
         }
         container.innerHTML = `<div class="residentHarnessPanel">${residentPromptInjectionPanelHtml(state.view, {
-        busy,
+        busy: busy || !canEdit(),
         preview: state.preview,
         previewTurn: state.previewTurn,
         previewError: state.previewError,
       })}</div>`;
         const root = container.firstElementChild;
         const update = changes => run(async () => {
-          const result = await execute("UpdateResidentSettings", {
-            resident_id: residentId, changes: { prompt_injection: changes },
-          }, { idempotencyKey: `prompt-injection:${globalThis.PortalUIPrimitives.randomUUID()}` });
-          if (promptInjection !== state) return;
+          const result = await writeSettings({ prompt_injection: changes }, state.version);
+          if (!result || promptInjection !== state) return;
           state.view = result.prompt_injection;
+          state.version = result;
           state.preview = null;
           await refresh();
           loadPromptInjectionPreview();
