@@ -189,7 +189,7 @@
     const surfaceSelector = [
       ".portalActivityRail",
       ".graphNavigationBar",
-      '[data-portal-overlay-layer="popover"]:not(.portalThemeMenu, .portalWorkbenchMenu)',
+      '[data-portal-overlay-layer="popover"]:not(.portalThemeMenu, .portalWorkbenchMenu, .articleProjectMenu)',
       ".portalUserMenuPopover",
       ".portalSecondaryNavPopover",
       ".portalToolbarOverflowPanel",

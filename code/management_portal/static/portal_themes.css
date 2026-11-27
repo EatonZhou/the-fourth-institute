@@ -2057,10 +2057,10 @@ html:root[data-portal-theme="liquid-glass"] .portalMailboxAlert {
     backdrop-filter: var(--liquid-glass-filter, blur(0px)) var(--lg-blur-popover);
   }
 
-  /* These adjacent menus have different heights. A normalized full-height
+  /* These menus have different heights. A normalized full-height
      gradient gives them different tint/alpha at the same screen position.
      Keep the body material constant, with the highlight confined to the rim. */
-  html:root[data-portal-theme="liquid-glass"] :is(.portalThemeMenu, .portalWorkbenchMenu) {
+  html:root[data-portal-theme="liquid-glass"] :is(.portalThemeMenu, .portalWorkbenchMenu, .articleProjectMenu) {
     background:
       radial-gradient(ellipse 62% 5px at 26% 0%, var(--lg-specular-top), transparent),
       var(--lg-surface-menu);
