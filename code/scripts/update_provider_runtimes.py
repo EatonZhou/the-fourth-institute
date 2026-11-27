@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from management_portal.execution.provider_activation import RECONCILE_SECONDS, pending_update_listener
 from management_portal.execution.provider_updates import (
-    ACTIVATION_WAIT_SECONDS, activate_pending_provider, pending_activation_failures, pending_provider_updates, run_update_pass, runtimes,
+    ACTIVATION_WAIT_SECONDS, activate_pending_provider, pending_activation_failures, pending_provider_updates, register_migrations, run_update_pass, runtimes,
     wait_for_installation_unlock,
 )
 from management_common.instance_manifest import load, instance_runtime_root
@@ -106,6 +106,21 @@ def _start_job(mode: str) -> str:
 
 
 def main(arguments):
+    if arguments[:1] == ["--register-migrations"]:
+        import argparse
+        parser = argparse.ArgumentParser(description="Register selected provider migrations")
+        parser.add_argument("--release", action="append", nargs="+", default=[], metavar="PROVIDER_OR_VERSION")
+        parser.add_argument("--claude-account", action="append", default=[])
+        parser.add_argument("--review", action="append", default=[], help="Record a release awaiting an operator decision")
+        args = parser.parse_args(arguments[1:])
+        if any(len(item) < 2 for item in args.release):
+            parser.error("--release requires a provider and its upstream version(s)")
+        versions = {provider: tuple(values) for provider, *values in args.release}
+        if not (versions or args.claude_account) or not set(args.review) <= versions.keys():
+            parser.error("Specify a release or account; each review must name a supplied release")
+        result = register_migrations(versions, args.claude_account, review=args.review)
+        print(json.dumps(result, ensure_ascii=False), flush=True)
+        return int(bool(result["errors"]))
     if arguments == ["--sync-model-catalogs"]:
         result = sync_model_catalogs()
         print(json.dumps(result, ensure_ascii=False, sort_keys=True), flush=True)

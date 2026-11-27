@@ -690,16 +690,20 @@ def _windows_link(path: Path, target: Path) -> None:
         _remove_windows_link(temporary)
 
 
-def _active_executions(provider: str) -> int:
+def _active_executions(provider: str, route: str = "") -> int:
     database = portal_database(schema="execution_runtime")
     try:
+        # Older requests with no explicit route may use the account being drained.
+        route_filter = (" AND COALESCE(NULLIF(NULLIF(request_json::text,'')::jsonb "
+                        "#>> '{session,backend_route_id}',''), %s) = %s") if route else ""
         with database.transaction() as connection:
             row = connection.execute(
                 "SELECT count(*) AS total FROM executions WHERE "
                 "(status IN ('claimed', 'running') OR (status='queued' AND "
                 "(NULLIF(checkpoint_json::text,'')::jsonb->>'turn_id' IS NOT NULL "
                 "OR NULLIF(checkpoint_json::text,'')::jsonb ? 'abandoned'))) "
-                "AND NULLIF(request_json::text,'')::jsonb->>'provider' = %s", (provider,),
+                "AND NULLIF(request_json::text,'')::jsonb->>'provider' = %s" + route_filter,
+                (provider, route, route) if route else (provider,),
             ).fetchone()
             return int(row["total"])
     finally:
@@ -832,11 +836,14 @@ def _update_state():
 
         saved_pending = dict(state.get("pending", {}))
         saved_check = state.get("last_checked_at")
+        saved_failures = set(state.get("activation_failures", {}))
 
         def save():
-            nonlocal saved_pending, saved_check
+            nonlocal saved_pending, saved_check, saved_failures
             pending = state.get("pending", {})
             changed = {key for key in saved_pending.keys() | pending.keys() if saved_pending.get(key) != pending.get(key)}
+            failures = set(state.get("activation_failures", {}))
+            changed.update((saved_failures - failures) & pending.keys())
             if saved_check != state.get("last_checked_at"):
                 changed.update(pending)  # A new update pass may retry a previously failed candidate.
             temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
@@ -849,6 +856,7 @@ def _update_state():
                         notify_pending_updates(changed)
                     temporary.replace(path)
                 saved_pending = dict(pending)
+                saved_failures = failures
                 saved_check = state.get("last_checked_at")
             finally:
                 temporary.unlink(missing_ok=True)
@@ -1079,6 +1087,9 @@ def run_update_pass() -> dict[str, object]:
                 state.setdefault("observations", {})[provider] = _version_observation(runtime, installed, available)
                 result["checked"][provider] = {"installed": runtime.version_label(installed, installed=True),
                                                "available": runtime.version_label(available)}
+                explicit = state.get("migrations", {}).get(provider, {})
+                if explicit.get("target") and explicit["target"] == pending.get(provider):
+                    continue  # The activation watcher owns this explicitly selected candidate.
                 if (not _newer(available, installed) and runtime.supports_versions(installed)
                         and runtime.installation_current(installed)):
                     if pending.pop(provider, None) is not None:
@@ -1154,10 +1165,18 @@ def _finish_pending(provider, path, apply=None, *, error=None):
             failure = exc if isinstance(exc, PreparationError) else PreparationError("service_activation", exc)
             if preparing:
                 preparation.update(status="failed", **failure.public())
+            migration = state.get("migrations", {}).get(provider, {})
+            if migration.get("target") == path:
+                migration.update(status="failed", **failure.public())
             state.setdefault("activation_failures", {})[provider] = path
             save()
             LOGGER.warning("Provider %s deferred activation failed at %s", provider, failure.phase)
             return {"status": "failed", **failure.public()}
+        migration = state.get("migrations", {}).get(provider, {})
+        if migration.get("target") == path:
+            migration.update(status="activated", finished_at=time.time())
+            for field in ("phase", "diagnostic", "message"):
+                migration.pop(field, None)
         del state["pending"][provider]
         state.get("activation_failures", {}).pop(provider, None)
         if preparing:
@@ -1168,9 +1187,137 @@ def _finish_pending(provider, path, apply=None, *, error=None):
         return {"status": "activated"}
 
 
+def _claude_route(account_id):
+    from .account_registrations import registration
+    from management_common.provider_account_paths import validate_identity
+    row = registration(validate_identity(account_id))
+    if not row or row["provider"] != "claude" or row["kind"] != "subscription_login":
+        raise ValueError("Expected a registered Claude subscription account")
+    return validate_identity(row["route_id"])
+
+
+def register_migrations(versions, claude_accounts, *, review=()):
+    """Prepare selected packages and submit durable work to the ordinary idle watcher."""
+    from management_common.instance_manifest import load
+    from management_portal.claude_code_client import account_socket
+    installed = runtimes()
+    targets = {}
+    errors = {}
+    with _update_state() as locked:
+        if locked is None:
+            raise BlockingIOError("Provider installer is busy")
+        state, save = locked
+        for provider, requested in versions.items():
+            try:
+                runtime = installed[provider]
+                current = runtime.installed()
+                if current == requested and runtime.installation_current(current):
+                    continue
+                if len(requested) != len(current) or any(Version(n) < Version(o) for n, o in zip(requested, current)):
+                    raise ValueError("Refusing to downgrade a runtime")
+                if not runtime.supports_versions(requested):
+                    raise ValueError("Unsupported candidate")
+                root = runtime.stage(requested)
+                targets[provider] = (str(root), runtime.version_label(requested))
+            except Exception as exc:
+                errors[provider] = str(exc)
+        instance = load()
+        for account_id in claude_accounts:
+            route = _claude_route(account_id)
+            key = "claude-account@" + route
+            if (key not in instance.document["services"]["components"]
+                    or account_socket(instance, route).with_suffix(".migrating").exists()):
+                targets[key] = (account_id, "dedicated")
+        pending = state.setdefault("pending", {})
+        migrations = state.setdefault("migrations", {})
+        for key, (target, label) in targets.items():
+            if key in pending and pending[key] != target:
+                errors[key] = "Another candidate is already pending"
+                continue
+            if key in review:
+                if key in pending:
+                    errors[key] = "The candidate is already queued for activation"
+                else:
+                    migrations[key] = dict(target=target, label=label, status="awaiting_approval", registered_at=time.time())
+                continue
+            pending[key] = target
+            if migrations.get(key, {}).get("status") != "pending" or migrations[key]["target"] != target:
+                migrations[key] = dict(target=target, label=label, status="pending", registered_at=time.time())
+            state.get("activation_failures", {}).pop(key, None)
+        save()
+    resume_pending_activation()
+    return {"registered": sorted(targets.keys() - errors.keys()), "errors": errors}
+
+
+def _activate_account_migration(key, account_id, deadline):
+    from management_common.instance_manifest import load
+    from management_portal.claude_code_client import ClaudeCodeClient, ClaudeCodeUnavailable, account_socket
+    from scripts.portal_service_units import claude_account_service
+
+    route = _claude_route(account_id)
+    if key != "claude-account@" + route:
+        raise ValueError("Registered account route has changed")
+    socket_path = account_socket(load(), route)
+    hold = socket_path.with_suffix(".migrating")
+    shared = ClaudeCodeClient()
+    dedicated = ClaudeCodeClient(socket_path)
+
+    def busy(provider):
+        return _active_executions(provider, route) or shared.health()["active"]
+
+    def apply(_preparing):
+        configured = key in load().document["services"]["components"]
+        if configured and not hold.exists():
+            health = dedicated.health()
+            if health["status"] != "ok" or health["provider_profile"] != route:
+                raise RuntimeError("Configured Claude service returned an unexpected identity")
+            return True
+        if busy("claude"):
+            return False
+        # Keep the shared route usable even if this process exits during provisioning.
+        socket_path.parent.mkdir(parents=True, exist_ok=True)
+        hold.touch()
+        expected = shared.health()["provider_version"]
+        claude_account_service(route, action="start")
+        expires = time.monotonic() + 30
+        while True:
+            try:
+                health = dedicated.health()
+                break
+            except ClaudeCodeUnavailable:
+                if time.monotonic() >= expires:
+                    raise
+                time.sleep(.1)
+        if (health["status"] != "ok" or health["provider_profile"] != route
+                or health["provider_version"] != expected):
+            raise RuntimeError("Dedicated Claude service did not confirm its route and version")
+        if busy("claude"):
+            return False
+        publish_activation_ready("claude", key)
+        hold.unlink()
+        return True
+
+    while True:
+        with activation_window("claude", deadline=deadline) as reserved:
+            if not reserved:
+                return {"status": "timeout"}
+            result = _finish_pending(key, account_id, apply)
+        if deadline is None or result["status"] not in {"busy", "pending"}:
+            return result
+        if time.monotonic() >= deadline:
+            return {"status": "timeout"}
+        if result["status"] == "busy":
+            if not wait_for_installation_unlock(deadline):
+                return {"status": "timeout"}
+        else:
+            wait_for_execution_idle("claude", busy, min(deadline, time.monotonic() + RECONCILE_SECONDS))
+
+
 def activate_pending_provider(provider, path, deadline):
     """Verify an immutable candidate, then queue without the installation lock."""
     try:
+        if provider.startswith("claude-account@"):
+            return _activate_account_migration(provider, path, deadline)
         runtime = runtimes()[provider]
         baseline = runtime.activation_link().resolve()
         root = _validated_candidate(provider, Path(path), baseline)

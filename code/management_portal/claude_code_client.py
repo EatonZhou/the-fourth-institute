@@ -246,6 +246,8 @@ def shared_client(route: str = "") -> ClaudeCodeClient:
         from management_common.instance_manifest import load
         instance = load()
         if f"claude-account@{route}" in instance.document["services"]["components"]:
-            return ClaudeCodeClient(account_socket(instance, route))
+            path = account_socket(instance, route)
+            if not path.with_suffix(".migrating").exists():
+                return ClaudeCodeClient(path)
 
     return ClaudeCodeClient()

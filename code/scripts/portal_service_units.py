@@ -119,6 +119,10 @@ def _undefine(component: str) -> None:
     remove_service_component(instance.root, component)
 
 
+def claude_account_service(account_id: str, *, action: str) -> dict[str, Any]:
+    return _account_service('claude-account', account_id, action=action)
+
+
 def kimi_account_service(account_id: str, *, action: str) -> dict[str, Any]:
     return _account_service('kimi-account', account_id, action=action)
 
@@ -141,7 +145,7 @@ def _account_service(kind: str, account_id: str, *, action: str) -> dict[str, An
     elif component not in instance.document['services']['components']:
         return {'active': 'inactive', 'pid': 0}
     instance_services.verify_definitions(instance, exact=False, selected_components=(component,),
-                                         claude_network_dropins=kind == 'antigravity-account')
+                                         claude_network_dropins=kind in {'antigravity-account', 'claude-account'})
     name = instance_services.unit_name(instance, component)
     control = instance_services.controller(instance)
     if action == 'start':

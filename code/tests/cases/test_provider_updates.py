@@ -707,3 +707,60 @@ def test_public_versions_follow_native_backend_and_preserve_build_editions(monke
     (release / "PROVIDER_EDITION").write_text("1")
     assert dsh.version_label(("1.0", "1.2")) == "1.0-2"
     assert dsh.version_label(("1.0", "1.1"), installed=True) == "1.0-1"
+
+
+def test_explicit_migration_keeps_its_target_across_discovery(monkeypatch, tmp_path):
+    _isolated(monkeypatch, tmp_path)
+    candidate = tmp_path / "2.5.3"
+    _stage_into(monkeypatch, [], lambda name, versions: candidate)
+    monkeypatch.setattr(updates, "_claude_route", lambda account: account)
+    monkeypatch.setattr(updates, "resume_pending_activation", lambda: None)
+    monkeypatch.setattr(updates, "notify_pending_updates", lambda providers: None)
+    updates.register_migrations({"kimi": ("2.5.3",)}, ["claude_one"], review=["kimi"])
+    assert updates._read_state()["migrations"]["kimi"]["status"] == "awaiting_approval"
+    assert updates.pending_provider_updates() == {"claude-account@claude_one": "claude_one"}
+    updates.register_migrations({"kimi": ("2.5.3",)}, ["claude_one"])
+    updates.run_update_pass()
+    assert updates.pending_provider_updates() == {"kimi": str(candidate), "claude-account@claude_one": "claude_one"}
+    updates._finish_pending("kimi", str(candidate), lambda preparing: True)
+    assert updates._read_state()["migrations"]["kimi"]["status"] == "activated"
+
+
+def test_claude_account_migration_waits_and_routes_only_after_health(monkeypatch, tmp_path):
+    from contextlib import nullcontext
+    from management_common import instance_manifest
+    from management_portal import claude_code_client as clients
+    from scripts import portal_service_units
+    _isolated(monkeypatch, tmp_path)
+    key, route = "claude-account@claude_one", "claude_one"
+    components = []
+    instance = SimpleNamespace(document={"services": {"components": components}}, directory=lambda _: tmp_path)
+    monkeypatch.setattr(instance_manifest, "load", lambda: instance)
+    monkeypatch.setattr(updates, "_claude_route", lambda account: account)
+    monkeypatch.setattr(updates, "activation_window", lambda *a, **kw: nullcontext(True))
+    monkeypatch.setattr(updates, "notify_pending_updates", lambda names: None)
+    monkeypatch.setattr(updates, "resume_pending_activation", lambda: None)
+    monkeypatch.setattr(updates, "publish_activation_ready", lambda *args: None)
+    busy = [True]
+    healthy = [False]
+    monkeypatch.setattr(clients, "portal_path", lambda area: tmp_path)
+    dedicated = clients.account_socket(instance, route)
+    monkeypatch.setattr(updates, "_active_executions", lambda provider, account: int(busy[0]))
+    def start(account, *, action):
+        if key not in components:
+            components.append(key)
+        assert clients.shared_client(route).socket_path != dedicated
+    def health(client):
+        return {"status": "ok", "active": 0, "provider_version": "v1",
+                "provider_profile": route if healthy[0] and client.socket_path == dedicated else ""}
+    monkeypatch.setattr(portal_service_units, "claude_account_service", start)
+    monkeypatch.setattr(clients.ClaudeCodeClient, "health", health)
+    updates.register_migrations({}, [route])
+    assert updates.activate_pending_provider(key, route, None)["status"] == "pending"
+    assert not components
+    busy[0] = False
+    assert updates.activate_pending_provider(key, route, None)["status"] == "failed"
+    assert clients.shared_client(route).socket_path != dedicated
+    healthy[0] = True
+    assert updates.activate_pending_provider(key, route, None)["status"] == "activated"
+    assert clients.shared_client(route).socket_path == dedicated
