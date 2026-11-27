@@ -132,7 +132,43 @@ def _samples(snapshot):
     return samples
 
 
-def advance(previous, snapshot, *, lineage_id, recipients, policy):
+def _ssd_alerts(state, report, admins, lineage_id):
+    """Notify each current administrator once per continuous above-threshold episode."""
+    episodes = state.setdefault("ssd_episodes", {})
+    local_mounts = set()
+    for device in report["devices"]:
+        if device["status"] != "ok":
+            continue
+        for volume in device["filesystems"]:
+            mount = volume["mount"]
+            if device["local"]:
+                local_mounts.add(mount)
+            key = f"{device['resource_id']}:{volume['key']}"
+            percent = _number(volume["used_percent"])
+            if percent <= 85:
+                episodes.pop(key, None)
+                continue
+            informed = set(episodes.get(key, []))
+            remaining = sorted(set(admins) - informed)
+            for start in range(0, len(remaining), 200):
+                batch = remaining[start:start + 200]
+                state["sequence"] += 1
+                digest = sha256(f"{lineage_id}:{state['sequence']}:{key}".encode()).hexdigest()[:32]
+                state["outbox"].append({
+                    "notification_id": "ssd_" + digest, "lineage_id": lineage_id,
+                    "recipients": batch, "severity": "warning",
+                    "title": f"SSD 容量预警：{device['host']} {mount} 已用 {percent:g}%",
+                    "message": (f"{device['host']} 的 SSD 文件系统 {volume['filesystem']}（{mount}）"
+                                f"使用率 {percent:g}%，超过 85%。可用空间 "
+                                f"{volume['available_bytes'] / 1024**3:.1f} GiB。"
+                                f"\n采集时间 {report['observed_at']}"),
+                })
+            episodes[key] = sorted(informed.union(remaining))
+    state["ssd_observation"] = report
+    return local_mounts
+
+
+def advance(previous, snapshot, *, lineage_id, recipients, policy, ssd_report=None, admins=()):
     if not schema_matches(snapshot.get("schema"), "tfi.runtime-capacity.v1"):
         raise ValueError("Unsupported runtime capacity schema")
     if previous and not schema_matches(previous.get("schema"), "tfi.capacity-alerts.v1"):
@@ -143,6 +179,12 @@ def advance(previous, snapshot, *, lineage_id, recipients, policy):
     if state.get("observed_at") and now <= _timestamp(state["observed_at"]):
         return state
     samples = _samples(snapshot)
+    if ssd_report is not None:
+        local_mounts = _ssd_alerts(state, ssd_report, admins, lineage_id)
+        for disk in snapshot["disks"].get("filesystems", []):
+            if disk["path"] in local_mounts:
+                samples.pop("disk:" + disk["key"], None)
+                state["metrics"].pop("disk:" + disk["key"], None)
     for key, record in state["metrics"].items():
         if key not in samples:
             record["pending"] = None
@@ -213,15 +255,25 @@ def drain(isa, lineage_id):
     raise RuntimeError("Capacity notification outbox did not converge")
 
 
-def run_once(isa, *, lineage_id, recipients, overrides=None):
+def run_once(isa, *, lineage_id, recipients, overrides=None, monitor_ssds=False):
     if not lineage_id or not recipients or any(not isinstance(x, str) or not x.strip() for x in recipients):
         raise ValueError("Capacity monitoring requires lineage and explicit human recipients")
     policy = policy_with(overrides)
     delivered = drain(isa, lineage_id)
+    ssd_report = None
+    admins = []
+    if monitor_ssds:
+        from management_portal.permission_system.administrators import ADMINISTRATOR
+        ssd_report = isa("GetDeviceStatus", kind="ssd_capacity")
+        admins = [u["username"] for u in isa("ListUsers", status="active")["users"]
+                  if u["category"] == ADMINISTRATOR]
+        if not admins:
+            raise RuntimeError("Capacity monitor could not resolve active Portal administrators")
     snapshot = isa("GetRuntimeCapacity")["capacity"]
     for _ in range(8):
         previous = _read(isa, lineage_id)
-        updated = advance(previous, snapshot, lineage_id=lineage_id, recipients=recipients, policy=policy)
+        updated = advance(previous, snapshot, lineage_id=lineage_id, recipients=recipients, policy=policy,
+                          ssd_report=ssd_report, admins=admins)
         if previous == updated or _cas(isa, lineage_id, previous, updated):
             break
     else:

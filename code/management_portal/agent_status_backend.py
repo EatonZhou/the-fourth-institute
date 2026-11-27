@@ -632,6 +632,57 @@ def _parse_df_output(text: str) -> list[dict[str, Any]]:
     return rows
 
 
+def _ssd_mounts(devices):
+    """Identify mounted volumes by their backing disk, including partitions and LVM."""
+    mounts = {}
+    def visit(node, solid):
+        if node["type"] == "disk":
+            solid = node.get("rota") in (False, 0, "0") and not Path(node["name"]).name.startswith(("zram", "ram"))
+        mount = node.get("mountpoint")
+        if solid and mount and mount.startswith("/"):
+            mounts[mount] = node.get("uuid") or node["name"]
+        for child in node.get("children", []):
+            visit(child, solid)
+    for node in devices:
+        visit(node, False)
+    return mounts
+
+
+def get_ssd_capacity(resource_id: str = "") -> dict[str, Any]:
+    from concurrent.futures import ThreadPoolExecutor
+
+    # Obtain both reports in the same host namespace. df supplies Home's Use%
+    # (lsblk FSUSE% rounds differently); no user-controlled shell arguments.
+    script = """set -e
+export LC_ALL=C
+lsblk -J -p -o NAME,TYPE,ROTA,UUID,MOUNTPOINT
+echo PORTAL_DF
+df -lPT -B1
+"""
+    def collect(resource):
+        result = {"resource_id": resource["resource_id"], "host": resource["display_name"],
+                  "local": resource["kind"] == "local", "filesystems": []}
+        try:
+            proc = _run_disk_script(resource, script, [])
+            if proc.returncode:
+                raise ValueError(proc.stderr.strip() or "SSD capacity probe failed")
+            inventory, report = proc.stdout.split("\nPORTAL_DF\n", 1)
+            mounts = _ssd_mounts(json.loads(inventory)["blockdevices"])
+            volumes = {}
+            for row in _parse_df_output(report):
+                key = mounts.get(row["mount"])
+                if key and key not in volumes:
+                    volumes[key] = {**row, "key": key}
+            result.update(status="ok", filesystems=list(volumes.values()))
+        except (OSError, subprocess.SubprocessError, ValueError, KeyError) as exc:
+            result.update(status="unavailable", error=_safe_error(exc))
+        return result
+
+    targets = [r for r in _disk_resources() if not resource_id or r["resource_id"] == resource_id]
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        return {"devices": list(pool.map(collect, targets)), "observed_at": utc_now_iso()}
+
+
 def _collect_df_rows(resource: dict[str, Any], paths: list[str]) -> tuple[list[dict[str, Any]], str]:
     clean_paths = [path for path in paths if str(path or "").strip()]
     if not clean_paths:

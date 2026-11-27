@@ -160,6 +160,29 @@ def run(isa):
     return alerts.run_once(isa, lineage_id="lineage_test", recipients=["sample_admin"])
 
 
+def test_ssd_alarm_df_boundary_admin_membership_and_rearming():
+    """SSD 首次超过 85% 即投递；失联不重置，新增管理员补收，恢复后可再次触发。"""
+    admins = ["admin1", "admin2"]
+    device = {"resource_id": "local", "host": "server", "local": True, "status": "ok"}
+    volume = {"mount": "/share", "key": "uuid", "filesystem": "/dev/test", "available_bytes": 100}
+    device["filesystems"] = [volume]
+    state = None
+    for n, (percent, status, new_recipients) in enumerate([
+        (84, "ok", []), (85, "ok", []), (86, "ok", admins[:]), (87, "ok", []),
+        (0, "unavailable", []), (87, "ok", ["admin3"]), (85, "ok", []),
+        (90, "ok", ["admin1", "admin2", "admin3"]),
+    ]):
+        if n == 5:
+            admins.append("admin3")
+        volume["used_percent"] = percent
+        device["status"] = status
+        report = {"observed_at": snapshot(n)["observed_at"], "devices": [device]}
+        state = alerts.advance(state, snapshot(n), lineage_id="lin", recipients=["legacy"],
+                               policy=alerts.policy_with(), ssd_report=deepcopy(report), admins=admins)
+        assert [u for notice in state["outbox"] for u in notice["recipients"]] == new_recipients
+        state["outbox"].clear()
+
+
 def test_notification_ack_loss_retries_exact_notice_and_subsequent_observation_does_not_repeat():
     """通知确认丢失后重试同一通知且后续观测不重复发送"""
     isa = FakeISA()

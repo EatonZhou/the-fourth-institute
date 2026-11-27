@@ -15,7 +15,7 @@ def main():
     invocation = inputs()
     arguments = invocation.get("arguments") or {}
     result = run_once(isa, lineage_id=invocation["lineage_id"],
-                      recipients=arguments["recipients"], overrides=arguments.get("policy"))
+                      recipients=arguments["recipients"], overrides=arguments.get("policy"), monitor_ssds=True)
     set_output(result)
     print(json.dumps(result, ensure_ascii=False))
 
