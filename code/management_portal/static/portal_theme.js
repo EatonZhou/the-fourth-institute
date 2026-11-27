@@ -362,17 +362,12 @@
 
     let visible = false;
     let initialized = false;
-    let hoveredLink = null;
-    let pressed = false;
-    let dragging = false;
 
     let curX = 0;
     let curY = 5;
     let curW = 0;
     let curH = 28;
-    let curPress = 0;
     let vx = 0;
-    let vw = 0;
 
     let targetX = 0;
     let targetY = 5;
@@ -400,25 +395,6 @@
         w: rect.width + padX * 2,
         h: rect.height + padY * 2,
       };
-    };
-
-    const getLinks = () => (nav ? Array.from(nav.querySelectorAll(":scope > .portalModuleLink[data-module-link]")) : []);
-
-    const findNearestLink = localX => {
-      const links = getLinks();
-      let best = null;
-      let bestDist = Infinity;
-      for (const link of links) {
-        const box = measureLink(link);
-        if (!box) continue;
-        const center = box.x + box.w / 2;
-        const dist = Math.abs(localX - center);
-        if (dist < bestDist) {
-          bestDist = dist;
-          best = { link, box };
-        }
-      }
-      return best;
     };
 
     const paint = (sx, sy, skew, light) => {
@@ -450,9 +426,7 @@
         curY = targetY;
         curW = targetW;
         curH = targetH;
-        curPress = 0;
         vx = 0;
-        vw = 0;
         paint(1, 1, 0, 50);
         return;
       }
@@ -460,7 +434,7 @@
       lastTime = now;
 
       const prevX = curX;
-      const followRate = dragging ? 0.44 : 0.30;
+      const followRate = 0.30;
       const stepAlpha = 1 - Math.exp(-followRate * dt);
       curX += (targetX - curX) * stepAlpha;
       curW += (targetW - curW) * stepAlpha;
@@ -469,25 +443,20 @@
 
       const rawVx = (curX - prevX) / dt;
       vx += (rawVx - vx) * Math.min(1, 0.48 * dt);
-      vw = 0;
-
-      const pressTarget = pressed ? 0.055 : 0;
-      curPress += (pressTarget - curPress) * Math.min(1, 0.35 * dt);
-
       const speed = Math.min(Math.abs(vx), 40);
-      const dragStretch = dragging ? Math.min(0.14, speed * 0.006 + 0.045) : 0;
-      const stretch = Math.min(0.28, speed * 0.0085 + dragStretch);
-      const sx = 1 + stretch + curPress;
+      const stretch = Math.min(0.28, speed * 0.0085);
+      const sx = 1 + stretch;
       const sy = 1 / Math.sqrt(sx);
-      const skew = clamp(-vx * (dragging ? 0.42 : 0.28), -9, 9);
+      const skew = clamp(-vx * 0.28, -9, 9);
       const light = clamp(50 + vx * 1.6, 16, 84);
 
       paint(sx, sy, skew, light);
 
       const settled = Math.abs(targetX - curX) < 0.08
         && Math.abs(targetW - curW) < 0.08
-        && Math.abs(vx) < 0.06
-        && Math.abs(pressTarget - curPress) < 0.002;
+        && Math.abs(targetY - curY) < 0.08
+        && Math.abs(targetH - curH) < 0.08
+        && Math.abs(vx) < 0.06;
       if (!settled) {
         raf = requestAnimationFrame(step);
       } else {
@@ -496,9 +465,7 @@
         curW = targetW;
         curH = targetH;
         vx = 0;
-        vw = 0;
-        const restSx = 1 + curPress;
-        paint(restSx, 1 / Math.sqrt(restSx), 0, 50);
+        paint(1, 1, 0, 50);
         lastTime = 0;
       }
     };
@@ -510,9 +477,7 @@
         curY = targetY;
         curW = targetW;
         curH = targetH;
-        curPress = 0;
         vx = 0;
-        vw = 0;
         paint(1, 1, 0, 50);
         return;
       }
@@ -531,7 +496,6 @@
         curW = box.w;
         curH = box.h;
         vx = 0;
-        vw = 0;
         initialized = true;
       }
       visible = true;
@@ -545,9 +509,9 @@
 
     const syncRestingTarget = immediate => {
       if (!nav || !droplet) return;
-      const active = hoveredLink && hoveredLink.isConnected
-        ? hoveredLink
-        : nav.querySelector(":scope > .portalModuleLink.active");
+      // The glass marks the current page. Hover, focus and drag must not
+      // impersonate selection or leave a highlight over an unrelated link.
+      const active = nav.querySelector(":scope > .portalModuleLink.active");
       const box = active ? measureLink(active) : null;
       if (box) {
         setTargetBox(box, immediate);
@@ -556,42 +520,6 @@
         initialized = false;
         stopLoop();
         paint(1, 1, 0, 50);
-      }
-    };
-
-    const setDraggingState = next => {
-      dragging = next;
-      if (!droplet) return;
-      if (next) droplet.dataset.lgDragging = "true";
-      else delete droplet.dataset.lgDragging;
-    };
-
-    const handlePointerAtX = (clientX, dragForce) => {
-      if (!nav) return;
-      const navRect = nav.getBoundingClientRect();
-      const localX = clientX - navRect.left + nav.scrollLeft;
-      const nearest = findNearestLink(localX);
-      if (!nearest) return;
-      hoveredLink = nearest.link;
-      const { box } = nearest;
-      if (dragForce) {
-        const pointerBoxX = localX - box.w / 2;
-        const blendedX = pointerBoxX * 0.72 + box.x * 0.28;
-        const minX = 0;
-        const maxX = Math.max(0, nav.scrollWidth - box.w);
-        setTargetBox({
-          x: clamp(blendedX, minX, maxX),
-          y: box.y,
-          w: box.w,
-          h: box.h,
-        }, false);
-      } else {
-        setTargetBox({
-          x: box.x,
-          y: box.y,
-          w: box.w,
-          h: box.h,
-        }, false);
       }
     };
 
@@ -605,9 +533,6 @@
       droplet?.remove();
       droplet = null;
       nav = null;
-      hoveredLink = null;
-      pressed = false;
-      dragging = false;
       visible = false;
       initialized = false;
     };
@@ -626,95 +551,6 @@
 
       navController = new AbortController();
       const passiveOpts = { passive: true, signal: navController.signal };
-      const eventLink = event => {
-        const link = event.target.closest?.(".portalModuleLink[data-module-link]");
-        return link?.parentElement === nav ? link : null;
-      };
-
-      nav.addEventListener("pointerover", event => {
-        if (dragging || (event.buttons & 1)) return;
-        hoveredLink = eventLink(event);
-        syncRestingTarget(false);
-      }, passiveOpts);
-
-      nav.addEventListener("pointermove", event => {
-        // Free movement belongs only to a drag begun on a navigation link.
-        // Empty space and a held pointer entering from elsewhere are not links.
-        if (pressed && (event.buttons & 1)) {
-          setDraggingState(true);
-          handlePointerAtX(event.clientX, true);
-          return;
-        }
-        if (!(event.buttons & 1)) {
-          pressed = false;
-          setDraggingState(false);
-        }
-        hoveredLink = (event.buttons & 1) ? null : eventLink(event);
-        syncRestingTarget(false);
-      }, passiveOpts);
-
-      nav.addEventListener("pointerdown", event => {
-        if (!event.isPrimary || event.button !== 0) return;
-        hoveredLink = eventLink(event);
-        if (!hoveredLink) {
-          syncRestingTarget(false);
-          return;
-        }
-        pressed = true;
-        syncRestingTarget(false);
-        wake();
-      }, passiveOpts);
-
-      nav.addEventListener("pointerleave", () => {
-        hoveredLink = null;
-        if (!dragging) syncRestingTarget(false);
-      }, passiveOpts);
-
-      nav.addEventListener("dragstart", event => {
-        if (!eventLink(event)) return;
-        setDraggingState(true);
-        pressed = true;
-        wake();
-      }, passiveOpts);
-
-      nav.addEventListener("dragover", event => {
-        if (!dragging) return;
-        handlePointerAtX(event.clientX, true);
-      }, passiveOpts);
-
-      const finishDrag = () => {
-        if (!dragging && !pressed) return;
-        pressed = false;
-        setDraggingState(false);
-        hoveredLink = null;
-        syncRestingTarget(false);
-      };
-      nav.addEventListener("drop", finishDrag, passiveOpts);
-      nav.addEventListener("dragend", finishDrag, passiveOpts);
-      window.addEventListener("pointerup", event => {
-        if (!pressed && !dragging) return;
-        pressed = false;
-        setDraggingState(false);
-        const hit = document.elementFromPoint(event.clientX, event.clientY);
-        hoveredLink = hit ? eventLink({ target: hit }) : null;
-        syncRestingTarget(false);
-        wake();
-      }, passiveOpts);
-      window.addEventListener("pointercancel", finishDrag, passiveOpts);
-
-      nav.addEventListener("focusin", event => {
-        const link = event.target.closest?.(".portalModuleLink[data-module-link]");
-        if (!link || !nav.contains(link)) return;
-        hoveredLink = link;
-        const box = measureLink(link);
-        if (box) setTargetBox(box, false);
-      }, passiveOpts);
-
-      nav.addEventListener("focusout", () => {
-        hoveredLink = null;
-        syncRestingTarget(false);
-      }, passiveOpts);
-
       nav.addEventListener("scroll", () => {
         if (visible) syncRestingTarget(true);
       }, passiveOpts);
@@ -737,7 +573,7 @@
         mountNav(candidate);
       } else {
         if (droplet && !droplet.isConnected) nav.append(droplet);
-        if (!dragging) syncRestingTarget(false);
+        syncRestingTarget(false);
       }
     };
 
