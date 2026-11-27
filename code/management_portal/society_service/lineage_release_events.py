@@ -21,12 +21,20 @@ def prefetch(lineage_id, plan, *, event=EVENT):
     if not sources:
         return {}
     runtime = lineage_program_runtime.read_runtime(lineage_id).get('event_sources', {})
+    if timeout:
+        # Establish a new subscriber's cursor before publishing overdue attempts,
+        # including those recovered after a SocietyService restart.
+        baseline, next_due = facts.collect_due()
     result = {}
     for key, source in sources.items():
         state = runtime.get(key, {})
         previous = state.get('state_value', '')
         if state.get('state_locator') != locator or not previous.startswith(prefix + ':'):
-            result[key] = {'baseline': facts.latest_sequence(), 'records': [], 'previous': ''}
+            if timeout:
+                result[key] = {'baseline': baseline, 'records': facts.after(baseline),
+                               'previous': value(baseline, prefix)}
+            else:
+                result[key] = {'baseline': facts.latest_sequence(), 'records': [], 'previous': ''}
         else:
             sequence = int(previous.split(':')[1])
             if timeout:
@@ -34,6 +42,8 @@ def prefetch(lineage_id, plan, *, event=EVENT):
             else:
                 records = facts.after(sequence, latest_only=source.get('misfire_policy') == 'coalesce_latest')
             result[key] = {'baseline': None, 'records': records, 'previous': state.get('state_signature', '')}
+        if timeout:
+            result[key]['next_due'] = next_due
     return result
 
 

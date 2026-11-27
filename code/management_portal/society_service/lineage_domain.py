@@ -741,8 +741,18 @@ def _program_control_authority() -> lineage_program_backlog.ProgramControlAuthor
     return lineage_program_services.control_authority(sys.modules[__name__])
 
 
+def register_provider_validation(provider, candidate, limit_seconds):
+    from uuid import uuid4
+    from management_common import provider_validation_timeouts
+
+    attempt_id = str(uuid4())
+    provider_validation_timeouts.register(attempt_id, provider, candidate, limit_seconds)
+    wake_provider_validation_observers()
+    return attempt_id
+
+
 def wake_provider_validation_observers():
-    """Notify subscribed graphs after the timeout fact commits, including busy Residents."""
+    """Schedule subscribed graphs when an acceptance deadline or a timeout fact commits."""
     from management_common.provider_validation_timeouts import EVENT
     from . import changes, graph_storage
     from .state_store import get_lineage_data_store

@@ -633,7 +633,18 @@ def test_failed_candidate_is_retested_before_pending_activation(monkeypatch, tmp
     assert attempts == [("kimi", root)] * 3 and switches == ["kimi"]
 
 
-def test_candidate_uses_private_home_and_exact_sdk_paths(monkeypatch, tmp_path):
+@pytest.fixture
+def validation_supervisor(monkeypatch):
+    from unittest.mock import Mock
+    from management_portal.society_service import transport
+
+    supervisor = Mock()
+    supervisor.register_provider_validation.return_value = "attempt"
+    monkeypatch.setattr(transport, "SocietyServiceClient", lambda **kw: SimpleNamespace(lineage=supervisor))
+    return supervisor
+
+
+def test_candidate_uses_private_home_and_exact_sdk_paths(monkeypatch, tmp_path, validation_supervisor):
     from management_portal.execution import provider_candidate
 
     active, staged = tmp_path / "active", tmp_path / "staged"
@@ -643,6 +654,7 @@ def test_candidate_uses_private_home_and_exact_sdk_paths(monkeypatch, tmp_path):
     attempts = []
 
     def run(command, *, env, cwd, **options):
+        assert options.get("timeout") is None
         attempts.append((command[-1], env["HOME"]))
         assert "ANTHROPIC_API_KEY" not in env
         assert cwd.parent == Path(env["HOME"])
@@ -658,7 +670,7 @@ def test_candidate_uses_private_home_and_exact_sdk_paths(monkeypatch, tmp_path):
     assert attempts[0][1] == attempts[1][1] and not Path(attempts[0][1]).exists()
 
 
-def test_antigravity_upgrade_needs_designated_account(monkeypatch, tmp_path):
+def test_antigravity_upgrade_needs_designated_account(monkeypatch, tmp_path, validation_supervisor):
     from management_portal.execution import provider_candidate
 
     active, staged = tmp_path / "active", tmp_path / "staged"
@@ -668,6 +680,7 @@ def test_antigravity_upgrade_needs_designated_account(monkeypatch, tmp_path):
     with pytest.raises(provider_candidate.CandidateCheckError) as failure:
         provider_candidate.validate("antigravity", staged, active)
     assert failure.value.public()["diagnostic"]["check"] == "test_profile"
+    validation_supervisor.finish_validation.assert_called_once_with("attempt")
 
 
 def test_watcher_finishes_on_interface_failure(monkeypatch):
@@ -767,34 +780,17 @@ def test_claude_account_migration_waits_and_routes_only_after_health(monkeypatch
     assert clients.shared_client(route).socket_path == dedicated
 
 
-def test_probe_deadline_wakes_review_while_timed_out_probe_is_being_reaped(monkeypatch, tmp_path):
-    import threading
-    import time
-    from management_common import provider_validation_timeouts as facts
-    from management_portal.society_service import transport
+def test_late_success_preserves_actual_probe_result(monkeypatch, tmp_path, validation_supervisor):
+    from unittest.mock import call
     from management_portal.execution import provider_candidate as probe
 
-    reported, noticed = [], threading.Event()
-    source, target = tmp_path / "old", tmp_path / "new"
-    source.mkdir()
-    target.mkdir()
-    budgets = []
-
-    def run(command, *, timeout, **kwargs):
-        budgets.append(timeout)
-        if len(budgets) == 1:
-            time.sleep(.025)
-            return
-        assert noticed.wait(2)
-        raise subprocess.TimeoutExpired(command, timeout)
-
-    monkeypatch.setattr(facts, "record", lambda *args: reported.append(args))
-    monkeypatch.setattr(transport, "SocietyServiceClient", lambda **kwargs: SimpleNamespace(
-        lineage=SimpleNamespace(wake_provider_validation_observers=noticed.set)))
-    monkeypatch.setattr(probe, "ACCEPTANCE_SECONDS", .15)
-    monkeypatch.setattr(probe, "run_process", run)
-    with pytest.raises(probe.CandidateCheckError) as error:
-        probe.validate("codex", target, source)
-    assert error.value.public()["diagnostic"]["kind"] == "timeout"
-    assert reported == [("codex", "new", "candidate", .15)]
-    assert 0 < budgets[1] < budgets[0] <= .15
+    # An immediately due review cannot abort setup, either SDK, or a late successful return.
+    monkeypatch.setattr(probe, "ACCEPTANCE_SECONDS", 0)
+    monkeypatch.setattr(probe, "run_process", lambda *a, **kw: None)
+    probe.validate("codex", tmp_path, tmp_path)
+    assert validation_supervisor.method_calls == [
+        call.register_provider_validation("codex", tmp_path.name, 0),
+        call.set_validation_stage("attempt", "baseline"),
+        call.set_validation_stage("attempt", "candidate"),
+        call.finish_validation("attempt"),
+    ]

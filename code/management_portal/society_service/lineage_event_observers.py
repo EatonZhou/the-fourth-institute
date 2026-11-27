@@ -215,13 +215,23 @@ def _ordered_fact(scan: Scan, source: Source) -> None:
     batch = (scan.facts.validation_timeouts if timeout else scan.facts.release_publications).get(source.id)
     if batch is None:
         return
+    if timeout and batch.get('next_due') is not None:
+        # Lineage wake times serialize to whole seconds. Round up to avoid
+        # waking before expiry and scheduling a second pass.
+        due = batch['next_due']
+        scan.wake(due.replace(microsecond=0) + timedelta(seconds=bool(due.microsecond)))
+    if timeout and len(batch['records']) == 100:
+        scan.wake(datetime.now(timezone.utc))
     if batch["baseline"] is not None:
         signature = lineage_release_events.value(batch["baseline"], "timeout" if timeout else "publication")
         observed = scan.observe(source, source.event_type if timeout else lineage_release_events.LOCATOR, signature, signature)
         scan.baseline_count += int(observed["status"] == "baseline")
-    elif scan.runtime_state(source).get("state_signature") == batch["previous"]:
-        scan.pending.extend(lineage_release_events.pending(
-            source.id, source.config, batch, scan.ports.event_contract_fingerprint))
+        if not timeout or not batch['records'] or observed['status'] != 'baseline':
+            return
+    elif scan.runtime_state(source).get("state_signature") != batch["previous"]:
+        return
+    scan.pending.extend(lineage_release_events.pending(
+        source.id, source.config, batch, scan.ports.event_contract_fingerprint))
 
 
 def _file_changed(scan: Scan, source: Source) -> None:

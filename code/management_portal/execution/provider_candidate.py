@@ -6,8 +6,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import threading
-import time
 
 from management_common.process_runtime import run_process
 from .provider_preparation import PreparationError, phase
@@ -19,7 +17,6 @@ LOGGER = logging.getLogger(__name__)
 
 class CandidateCheckError(PreparationError):
     descriptions = {
-        "deadline": "候选版本达到验收总时限，等待排查。",
         "test_profile": "请为更新服务配置已登录的 Antigravity 专用测试账号目录 AGY_TEST_PROFILE。",
         "baseline": "当前 SDK 未能完成测试会话的创建。",
         "candidate": "候选 SDK 未通过接口或会话接续检查。",
@@ -37,42 +34,29 @@ class CandidateCheckError(PreparationError):
 
 
 def validate(provider, root, active):
-    """Both processes share one deadline; notify even while a process tree is being reaped."""
-    from management_common import provider_validation_timeouts
+    """Register before starting either SDK. Only the independent supervisor owns the deadline."""
     from management_portal.society_service.transport import SocietyServiceClient
 
-    deadline = time.monotonic() + ACCEPTANCE_SECONDS
-    stage = "setup"
+    supervisor = SocietyServiceClient(timeout=5).lineage
+    with phase("interface_validation"):
+        attempt = supervisor.register_provider_validation(provider, root.name, ACCEPTANCE_SECONDS)
 
-    def set_stage(value):
-        nonlocal stage
-        if time.monotonic() >= deadline:
-            raise CandidateCheckError("deadline", TimeoutError())
-        stage = value
-
-    def notify():
+    def set_stage(stage):
         try:
-            provider_validation_timeouts.record(provider, root.name, stage, ACCEPTANCE_SECONDS)
-            # The updater can run as a standalone CLI without the Web service environment.
-            SocietyServiceClient(timeout=5).lineage.wake_provider_validation_observers()
+            supervisor.set_validation_stage(attempt, stage)
         except Exception:
-            LOGGER.exception("Could not report acceptance timeout for %s %s (%s)", provider, root.name, stage)
+            LOGGER.exception("Could not report %s stage for validation %s", stage, attempt)
 
-    alarm = threading.Timer(max(0, deadline - time.monotonic()), notify)
-    # A one-shot CLI must finish recording the event even when its test has ended.
-    alarm.daemon = False
-    alarm.start()
     try:
-        _validate(provider, root, active, deadline, set_stage)
+        _validate(provider, root, active, set_stage)
     finally:
-        if time.monotonic() >= deadline:
-            # Leave the alarm armed. The acceptance caller does not wait for
-            # message delivery, and a slow cleanup cannot suppress the event.
-            raise CandidateCheckError("deadline", TimeoutError())
-        alarm.cancel()
+        try:
+            supervisor.finish_validation(attempt)
+        except Exception:
+            LOGGER.exception("Could not report completion of validation %s", attempt)
 
 
-def _validate(provider, root, active, deadline, set_stage):
+def _validate(provider, root, active, set_stage):
     from .provider_updates import ROOT, venv_python
 
     with phase("interface_validation"), tempfile.TemporaryDirectory(prefix="tfi-probe-") as home:
@@ -122,7 +106,7 @@ def _validate(provider, root, active, deadline, set_stage):
             command = [str(interpreter), str(ROOT / "scripts/provider_candidate_probe.py"),
                        provider, str(version.resolve(strict=True))]
             try:
-                run_process(command, env=env, cwd=work, timeout=max(0, deadline - time.monotonic()),
+                run_process(command, env=env, cwd=work,
                             check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             except (OSError, subprocess.SubprocessError) as exc:
                 raise CandidateCheckError(check, exc) from exc
