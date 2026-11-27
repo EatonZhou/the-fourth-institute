@@ -1862,6 +1862,17 @@ html:root[data-portal-theme="liquid-glass"] .portalMailboxAlert {
     backdrop-filter: var(--liquid-glass-filter, blur(0px)) var(--lg-blur-popover);
   }
 
+  /* Layout controls overlap dense page text, sometimes below a header's
+     backdrop root. Keep the panel glass, with a veil that also works there. */
+  html:root[data-portal-theme="liquid-glass"] .portalWorkbenchMenu {
+    background:
+      radial-gradient(ellipse 66% 6px at 28% 0%, var(--lg-specular-top), transparent),
+      var(--lg-surface-panel-glass),
+      color-mix(in srgb, var(--panel) 70%, transparent);
+    -webkit-backdrop-filter: var(--lg-blur-panel-glass);
+    backdrop-filter: var(--lg-blur-panel-glass);
+  }
+
   /* Dense drawers and reading panels retain a tinted veil for legible text
      while the shared blur lets more background structure show through. */
   html:root[data-portal-theme="liquid-glass"] :is(
