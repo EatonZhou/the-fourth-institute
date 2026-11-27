@@ -482,3 +482,15 @@ def test_account_switch_blocks_only_claims_for_that_route():
             assert result["claimed"] and result["execution"]["execution_id"] == request.execution_id
     finally:
         scheduler.database.close()
+
+
+@pytest.mark.parametrize("active_turn,busy", [("", False), ("running", True)])
+def test_codex_loaded_error_checks_outstanding_turn(monkeypatch, active_turn, busy):
+    from management_portal.execution import account_runtime_updates as rollout
+    client = Mock()
+    client.request.side_effect = [{"data": ["thread"], "nextCursor": None},
+                                  {"thread": {"status": {"type": "systemError"}}}]
+    client.active_turn_id.return_value = active_turn
+    monkeypatch.setattr(rollout, "CodexAppServerClient", lambda *a, **kw: client)
+    assert rollout._codex_busy("codex_seven") is busy
+    client.close.assert_called_once()

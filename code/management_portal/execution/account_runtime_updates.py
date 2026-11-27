@@ -21,7 +21,11 @@ def _codex_busy(account):
             page = client.request("thread/loaded/list", {"cursor": cursor, "limit": 100})
             for thread_id in page["data"]:
                 thread = client.request("thread/read", {"threadId": thread_id, "includeTurns": False})["thread"]
-                if thread["status"]["type"] not in {"idle", "notLoaded"}:
+                status = thread["status"]["type"]
+                if status == "systemError" and not client.active_turn_id(thread_id):
+                    # Codex keeps a failed terminal turn loaded until its next request.
+                    continue
+                if status not in {"idle", "notLoaded"}:
                     return True
             cursor = page["nextCursor"]
             if not cursor:
