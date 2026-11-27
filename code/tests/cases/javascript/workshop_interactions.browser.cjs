@@ -15,6 +15,11 @@ const {chromium}=require('../../../management_portal/test_framework/tau_runtime/
   },process.env.WORKSHOP_TEST_LINEAGE);
   const root=page.locator('#templateWorkshop'),info=root.locator('.workshopInfoOverlay'),menu=root.locator('.templateResidentOverlay'),summary=root.locator('.templateDutySummary:visible');
   const closeInfo=()=>info.locator('[data-close-template-info]').click();
+  if(process.env.WORKSHOP_R27_VISUAL_ONLY==='1'){
+   await page.screenshot({path:`${folder}/blank-draft-entry.png`});
+   await page.evaluate(()=>workshop.openTemplate(router.template_id));const owner=root.locator('.hatgNode[data-node-id="router_resident"]');await owner.hover();await summary.waitFor({state:'visible'});await page.screenshot({path:`${folder}/router-duty-hover.png`});
+   await owner.dblclick();await menu.waitFor({state:'visible'});await page.screenshot({path:`${folder}/router-duty-menu.png`});return;
+  }
   assert.equal(await root.locator('.workshopInfo').count(),0);await root.locator('[data-workshop-info]').click();await info.waitFor({state:'visible'});assert.equal(await page.evaluate(()=>workshop.template().template_id||''),'');assert.equal(await page.evaluate(()=>workshop.dirty()),false);
   await info.locator('[data-meta="description"]').fill('Unsent draft information');await closeInfo();assert.equal(await page.evaluate(()=>workshop.dirty()),true);await root.locator('[data-workshop-history="undo"]').click();assert.equal(await page.evaluate(()=>workshop.dirty()),false);
   await root.locator('[data-template-id="workshop_new"]').click();await root.locator('.hatgNode[data-node-id]').hover();await summary.waitFor({state:'visible'});assert.match(await summary.innerText(),/暂无职责/);await root.locator('[data-workshop-history="undo"]').click();assert.equal(await page.evaluate(()=>workshop.dirty()),false);
