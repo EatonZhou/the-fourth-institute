@@ -362,6 +362,9 @@
 
     let visible = false;
     let initialized = false;
+    let pointer = null;
+    let keyboardFocus = false;
+    let navDragging = false;
 
     let curX = 0;
     let curY = 5;
@@ -509,9 +512,15 @@
 
     const syncRestingTarget = immediate => {
       if (!nav || !droplet) return;
-      // The glass marks the current page. Hover, focus and drag must not
-      // impersonate selection or leave a highlight over an unrelated link.
-      const active = nav.querySelector(":scope > .portalModuleLink.active");
+      // Re-hit-test after scrolling, reordering or layout changes. Keeping a
+      // hovered DOM node would leave the lens on an item no longer under the
+      // pointer; focus events from a click must not override pointer tracking.
+      const hit = pointer ? document.elementFromPoint(pointer.x, pointer.y) : null;
+      const hovered = hit?.closest?.(".portalModuleLink[data-module-link]");
+      const focused = keyboardFocus ? document.activeElement?.closest?.(".portalModuleLink[data-module-link]") : null;
+      const active = (hovered?.parentElement === nav ? hovered : null)
+        || (focused?.parentElement === nav ? focused : null)
+        || nav.querySelector(":scope > .portalModuleLink.active");
       const box = active ? measureLink(active) : null;
       if (box) {
         setTargetBox(box, immediate);
@@ -535,6 +544,9 @@
       nav = null;
       visible = false;
       initialized = false;
+      pointer = null;
+      keyboardFocus = false;
+      navDragging = false;
     };
 
     const mountNav = candidate => {
@@ -551,6 +563,61 @@
 
       navController = new AbortController();
       const passiveOpts = { passive: true, signal: navController.signal };
+      const trackPointer = event => {
+        if (event.pointerType === "touch") return;
+        const hit = document.elementFromPoint(event.clientX, event.clientY);
+        const inside = hit && nav.contains(hit);
+        const needsSync = inside || pointer || keyboardFocus;
+        pointer = inside ? { x: event.clientX, y: event.clientY } : null;
+        keyboardFocus = false;
+        if (needsSync) syncRestingTarget(false);
+      };
+      const resetInteraction = () => {
+        pointer = null;
+        keyboardFocus = false;
+        navDragging = false;
+        syncRestingTarget(false);
+      };
+      document.addEventListener("pointermove", trackPointer, passiveOpts);
+      document.addEventListener("pointerdown", trackPointer, passiveOpts);
+      nav.addEventListener("pointerleave", () => {
+        pointer = null;
+        syncRestingTarget(false);
+      }, passiveOpts);
+      document.addEventListener("keydown", event => {
+        if (!["Tab", "ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+        pointer = null;
+        keyboardFocus = true;
+        syncRestingTarget(false);
+      }, passiveOpts);
+      nav.addEventListener("focusin", () => syncRestingTarget(false), passiveOpts);
+      nav.addEventListener("focusout", () => {
+        // Wait until focus has reached its destination before choosing a target.
+        queueMicrotask(() => { if (nav) syncRestingTarget(false); });
+      }, passiveOpts);
+      nav.addEventListener("dragstart", event => {
+        const link = event.target.closest?.(".portalModuleLink[data-module-link]");
+        navDragging = link?.parentElement === nav;
+        if (navDragging) trackPointer(event);
+      }, passiveOpts);
+      document.addEventListener("dragover", event => {
+        if (navDragging) trackPointer(event);
+      }, passiveOpts);
+      const finishDrag = event => {
+        if (!navDragging) return;
+        navDragging = false;
+        trackPointer(event);
+      };
+      document.addEventListener("dragend", finishDrag, passiveOpts);
+      document.addEventListener("drop", finishDrag, passiveOpts);
+      window.addEventListener("pointercancel", () => {
+        // Native HTML dragging cancels pointer events, then uses dragover.
+        if (!navDragging) resetInteraction();
+      }, passiveOpts);
+      window.addEventListener("blur", resetInteraction, passiveOpts);
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) resetInteraction();
+      }, passiveOpts);
       nav.addEventListener("scroll", () => {
         if (visible) syncRestingTarget(true);
       }, passiveOpts);
