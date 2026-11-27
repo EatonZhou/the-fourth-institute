@@ -771,7 +771,7 @@ def test_probe_deadline_wakes_review_while_timed_out_probe_is_being_reaped(monke
     import threading
     import time
     from management_common import provider_validation_timeouts as facts
-    from management_portal import society_service
+    from management_portal.society_service import transport
     from management_portal.execution import provider_candidate as probe
 
     reported, noticed = [], threading.Event()
@@ -789,7 +789,7 @@ def test_probe_deadline_wakes_review_while_timed_out_probe_is_being_reaped(monke
         raise subprocess.TimeoutExpired(command, timeout)
 
     monkeypatch.setattr(facts, "record", lambda *args: reported.append(args))
-    monkeypatch.setattr(society_service, "get_society_service", lambda: SimpleNamespace(
+    monkeypatch.setattr(transport, "SocietyServiceClient", lambda **kwargs: SimpleNamespace(
         lineage=SimpleNamespace(wake_provider_validation_observers=noticed.set)))
     monkeypatch.setattr(probe, "ACCEPTANCE_SECONDS", .15)
     monkeypatch.setattr(probe, "run_process", run)

@@ -39,7 +39,7 @@ class CandidateCheckError(PreparationError):
 def validate(provider, root, active):
     """Both processes share one deadline; notify even while a process tree is being reaped."""
     from management_common import provider_validation_timeouts
-    from management_portal.society_service import get_society_service
+    from management_portal.society_service.transport import SocietyServiceClient
 
     deadline = time.monotonic() + ACCEPTANCE_SECONDS
     stage = "setup"
@@ -53,7 +53,8 @@ def validate(provider, root, active):
     def notify():
         try:
             provider_validation_timeouts.record(provider, root.name, stage, ACCEPTANCE_SECONDS)
-            get_society_service().lineage.wake_provider_validation_observers()
+            # The updater can run as a standalone CLI without the Web service environment.
+            SocietyServiceClient(timeout=5).lineage.wake_provider_validation_observers()
         except Exception:
             LOGGER.exception("Could not report acceptance timeout for %s %s (%s)", provider, root.name, stage)
 
