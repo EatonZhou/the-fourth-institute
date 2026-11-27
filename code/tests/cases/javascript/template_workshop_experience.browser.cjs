@@ -89,10 +89,10 @@ module.exports=async function experience(page) {
     await page.evaluate(()=>chatOptions.onInteractionChange(true,'attachment'));
     await panel.waitFor({state:'visible'});await page.mouse.move(5,5);await page.waitForTimeout(220);assert.equal(await panel.isVisible(),true);
     await page.evaluate(()=>chatOptions.onInteractionChange(false,'attachment'));
-    await root.locator('[data-workshop-chat]').click();
-    await icon.press('ArrowDown');
-    const box=await icon.boundingBox();await page.mouse.move(box.x+18,box.y+18);await page.mouse.down();await page.mouse.move(-50,-50,{steps:5});await page.mouse.up();
-    const dock=await icon.boundingBox();assert.ok(dock.x>=0&&dock.y>=0);await clean();
+    await icon.press('Escape');
+    const box=await icon.boundingBox();await icon.press('ArrowDown');
+    await page.mouse.move(box.x+18,box.y+18);await page.mouse.down();await page.mouse.move(-50,-50,{steps:5});await page.mouse.up();
+    await page.waitForFunction(()=>{const root=document.getElementById('experienceCase'),area=root.querySelector('.workshopEditorContent > [data-page="body"]').getBoundingClientRect(),icon=root.querySelector('[data-workshop-assistant]').getBoundingClientRect();return Math.abs(icon.left-area.left-12)<1&&Math.abs(area.bottom-icon.bottom-12)<1;});await clean();
     const destination=root.locator('[data-workshop-library] [data-template-id]').filter({hasText:'Parameterized loop'});
     await destination.focus();await destination.press('Enter');
     await page.waitForFunction(()=>exWorkshop.template().template_id===parameterRecipe);assert.equal(await undo.isDisabled(),true);await clean();
