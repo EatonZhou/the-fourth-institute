@@ -614,6 +614,15 @@ a.agent-status-creature.queued:hover {
   padding: 9px 10px;
   display: grid;
   gap: 8px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.agent-status-gpu-card,
+.agent-status-gpu-card :is(.agent-status-gpu-resource-list, .agent-status-gpu-resource-card, .agent-status-gpu-grid, .agent-status-gpu-row) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.agent-status-gpu-card :is(.agent-status-gpu-head, .agent-status-gpu-title) {
+  flex-wrap: wrap;
 }
 .agent-status-gpu-head {
   display: flex;
