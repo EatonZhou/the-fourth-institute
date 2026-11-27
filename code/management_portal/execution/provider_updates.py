@@ -3,7 +3,7 @@
 The System Lineage schedules a Resident to invoke this pass. Each Provider
 whose runtime Portal installs declares how (``AgentProvider.runtime_updater``,
 a ``ProviderRuntime``).  Installs are staged in versioned directories;
-activation replaces native services and automatically resumes interrupted inputs.
+activation waits for the affected provider to drain before replacing its runtime.
 """
 
 from __future__ import annotations
@@ -25,9 +25,9 @@ import subprocess
 import sys
 import time
 import threading
-import uuid
 from urllib.request import urlopen
 
+import psycopg
 from packaging.version import Version
 
 from management_common.portal_database import portal_database
@@ -36,7 +36,7 @@ from management_common.process_runtime import run_process
 from management_common.portal_paths import path as portal_path
 from management_common.code_environment import provider_entry, provider_directory
 from .provider_preparation import phase, diagnosed, PreparationError
-from .provider_activation import activation_window, notify_pending_updates, publish_activation_ready, wait_for_execution_idle
+from .provider_activation import RECONCILE_SECONDS, activation_window, notify_pending_updates, publish_activation_ready, wait_for_execution_idle
 
 LOGGER = logging.getLogger(__name__)
 ACTIVATION_WAIT_SECONDS = 72 * 60 * 60
@@ -496,16 +496,18 @@ class KimiRuntime(ProviderRuntime):
         return versions not in {("2.4.1",), ("2.5.3",)} or verified(self.link())
 
     def activation_ready(self, root, *, deadline=None):
-        from .kimi_runtime_patch import PATCH_ID
-        if not Path(root).name.endswith('-' + PATCH_ID):
-            return True
-        # Installing this restriction must not replay existing business turns.
         from management_portal import kimi_account_runtime
-        if deadline is None:
-            return not _active_executions('kimi') and not kimi_account_runtime.runtime_busy()
-        if not wait_for_execution_idle(lambda: _active_executions('kimi'), deadline):
+        from management_portal.kimi_code_client import KimiCodeUnavailable
+        try:
+            if deadline is None:
+                return not kimi_account_runtime.runtime_busy()
+            return kimi_account_runtime.wait_for_runtime_idle(deadline)
+        except (KimiCodeUnavailable, ConnectionError, OSError, EOFError):
+            # A lost native stream cannot establish idle. Reconnect and read
+            # the current account snapshot on the next attempt.
+            if deadline is not None:
+                time.sleep(min(1, max(0, deadline - time.monotonic())))
             return False
-        return kimi_account_runtime.wait_for_runtime_idle(deadline)
 
     @diagnosed("dependency_install")
     def stage(self, versions: tuple[str, ...]) -> Path:
@@ -732,19 +734,10 @@ def _activate_verified(provider, runtime, root, *, prepare=False):
 
 
 def _switch_if_ready(provider, runtime, root, *, prepare=False):
-    if not runtime.activation_ready(root):
+    if _active_executions(provider) or not runtime.activation_ready(root):
         return False
-    if provider != "codex" and _active_executions(provider):
-        _prepare_execution_recovery(provider)
     publish_activation_ready(provider, root.name)
     return _switch_runtime(provider, runtime, root, prepare=prepare)
-
-
-def _prepare_execution_recovery(provider):
-    from management_common.society_rpc_client import prepare_provider_runtime_update
-    return prepare_provider_runtime_update(
-        provider=provider, update_id=uuid.uuid4().hex,
-    )
 
 
 @diagnosed("service_activation")
@@ -1015,6 +1008,7 @@ def prepare_runtime(provider: str, *, background: bool = True) -> dict:
                 return {"status": "busy", "message": "运行环境正在准备或更新，请稍后重试。"}
             state, save = locked
             result = state.setdefault("preparations", {}).setdefault(provider, {})
+            state.get("activation_failures", {}).pop(provider, None)
             def report_phase(name):
                 result.update(phase=name, updated_at=datetime.now(timezone.utc).isoformat())
                 save()
@@ -1075,6 +1069,7 @@ def run_update_pass() -> dict[str, object]:
         state, save = locked
         pending = state.setdefault("pending", {})
 
+        state.pop("activation_failures", None)  # A new explicit discovery may retry a failed candidate.
         now = time.time()
         for provider, runtime in runtimes().items():
             try:
@@ -1108,6 +1103,25 @@ def run_update_pass() -> dict[str, object]:
         return result
 
 
+def pending_activation_failures():
+    return _read_state().get("activation_failures", {})
+
+
+def resume_pending_activation():
+    """Rearm a lost watcher from local state on execution service startup/maintenance."""
+    if not (STATE_ROOT / "provider-updates.json").is_file():
+        return
+    state = _read_state()
+    failures = state.get("activation_failures", {})
+    if any(failures.get(name) != path for name, path in state.get("pending", {}).items()):
+        from scripts import update_provider_runtimes
+        if sys.platform.startswith("linux"):
+            update_provider_runtimes._start_job("--activate-pending")
+        else:
+            from management_portal import business_tasks
+            business_tasks.start("provider-activation", update_provider_runtimes._watch_pending)
+
+
 def pending_provider_updates():
     """None means another update may still publish pending work."""
     pending = _read_state().get("pending")
@@ -1133,14 +1147,19 @@ def _finish_pending(provider, path, apply=None, *, error=None):
                 raise error
             if not apply(preparing):
                 return {"status": "pending"}
+        except psycopg.OperationalError:
+            # Loss of the admission database gives no evidence about the candidate.
+            raise
         except Exception as exc:
             failure = exc if isinstance(exc, PreparationError) else PreparationError("service_activation", exc)
             if preparing:
                 preparation.update(status="failed", **failure.public())
-                save()
+            state.setdefault("activation_failures", {})[provider] = path
+            save()
             LOGGER.warning("Provider %s deferred activation failed at %s", provider, failure.phase)
             return {"status": "failed", **failure.public()}
         del state["pending"][provider]
+        state.get("activation_failures", {}).pop(provider, None)
         if preparing:
             preparation.update(status="ready", source="installed", updated_at=datetime.now(timezone.utc).isoformat())
             for field in ("phase", "diagnostic", "message"):
@@ -1156,16 +1175,24 @@ def activate_pending_provider(provider, path, deadline):
         baseline = runtime.activation_link().resolve()
         root = _validated_candidate(provider, Path(path), baseline)
         while True:
-            with activation_window(provider, deadline=deadline) as reserved:
-                if not reserved:
+            try:
+                with activation_window(provider, deadline=deadline) as reserved:
+                    if not reserved:
+                        return {"status": "timeout"}
+
+                    def apply(preparing):
+                        if runtime.activation_link().resolve() != baseline:
+                            return False
+                        return _switch_if_ready(provider, runtime, root, prepare=preparing)
+
+                    result = _finish_pending(provider, path, apply)
+            except psycopg.OperationalError:
+                if deadline is None:
+                    raise
+                if time.monotonic() >= deadline:
                     return {"status": "timeout"}
-
-                def apply(preparing):
-                    if runtime.activation_link().resolve() != baseline:
-                        return False
-                    return _switch_if_ready(provider, runtime, root, prepare=preparing)
-
-                result = _finish_pending(provider, path, apply)
+                time.sleep(min(1, max(0, deadline - time.monotonic())))
+                continue
             if deadline is None or result["status"] not in {"pending", "busy"}:
                 return result
             if result["status"] == "busy":
@@ -1176,7 +1203,12 @@ def activate_pending_provider(provider, path, deadline):
                 root = _validated_candidate(provider, Path(path), baseline)
                 continue
             else:
-                ready = runtime.activation_ready(root, deadline=deadline)
+                # Re-enter the locked candidate/idle check after a lost event or
+                # candidate replacement, even when native work is still running.
+                reconcile_at = min(deadline, time.monotonic() + RECONCILE_SECONDS)
+                if wait_for_execution_idle(provider, _active_executions, reconcile_at):
+                    runtime.activation_ready(root, deadline=reconcile_at)
+                continue
             if not ready or time.monotonic() >= deadline:
                 return {"status": "timeout"}
     except Exception as exc:

@@ -207,16 +207,6 @@ def test_explicit_check_stages_once_and_waits_for_idle(monkeypatch, tmp_path):
     assert len(attempts) == 2
 
 
-def test_activation_schedules_recovery_and_switches_while_execution_exists(monkeypatch, tmp_path):
-    """在途执行先登记恢复，更新不等待长任务结束。"""
-    monkeypatch.setattr(updates, "_active_executions", lambda provider: 1)
-    calls = []
-    monkeypatch.setattr(updates, "_prepare_execution_recovery", lambda provider: calls.append(provider))
-    monkeypatch.setattr(updates, "_switch_runtime", lambda *a, **kw: True)
-    assert updates._activate_verified("kimi", updates.KimiRuntime(), tmp_path / "staged")
-    assert calls == ["kimi"]
-
-
 def test_codex_runtime_selection_keeps_existing_processes(tmp_path):
     """Codex 仅更新下次启动的入口，不查询或重启当前账号进程。"""
     from types import SimpleNamespace
@@ -591,8 +581,6 @@ def test_restricted_runtime_revision_defers_while_native_turns_exist(monkeypatch
     from unittest.mock import Mock
     runtime = updates.KimiRuntime()
     monkeypatch.setattr(updates, 'activation_window', lambda provider: nullcontext(True))
-    recover = Mock(side_effect=AssertionError('must not recover or replay existing inputs'))
-    monkeypatch.setattr(updates, '_prepare_execution_recovery', recover)
     switch = Mock(return_value=True)
     monkeypatch.setattr(updates, '_switch_runtime', switch)
     monkeypatch.setattr(updates, '_active_executions', lambda provider: 0)
@@ -606,7 +594,7 @@ def test_restricted_runtime_revision_defers_while_native_turns_exist(monkeypatch
     switch.assert_not_called()
     monkeypatch.setattr(updates, '_active_executions', lambda provider: 0)
     assert updates._activate_verified('kimi', runtime, root)
-    recover.assert_not_called()
+    switch.assert_called_once()
 
 
 def test_kimi_incompatible_protocol_is_not_ready_or_staged(monkeypatch, tmp_path):

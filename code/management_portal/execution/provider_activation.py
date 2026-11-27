@@ -1,8 +1,8 @@
 """Coordinate runtime replacement with execution admission.
 
 Claims hold a shared transaction lock until their claimed row commits. An
-updater holds the exclusive session lock only while recording recovery and
-replacing the runtime. Existing work is interrupted and resumed, never drained.
+updater holds the exclusive session lock while checking for idle and replacing
+the runtime. Existing work drains outside the lock.
 PostgreSQL releases the lock if the updater exits.
 """
 from contextlib import closing, contextmanager
@@ -60,6 +60,7 @@ def activation_window(provider, *, deadline=None):
         database.close()
 
 
+RECONCILE_SECONDS = 5 * 60
 ACTIVATION_READY_CHANNEL = "tfi_provider_activation_ready"
 
 
@@ -95,7 +96,7 @@ def pending_update_listener():
 
 
 def publish_activation_ready(provider, candidate):
-    """The switching owner emits this edge after validation and recovery, under its lock."""
+    """The switching owner emits this edge after validation and the idle check, under its lock."""
     database = portal_database(schema="execution_runtime")
     try:
         with database.transaction() as connection:
@@ -105,27 +106,37 @@ def publish_activation_ready(provider, candidate):
         database.close()
 
 
-def wait_for_execution_idle(is_busy, deadline):
-    """Listen before sampling so a commit between registration and the read is covered."""
+def wait_for_execution_idle(provider, is_busy, deadline):
+    """Subscribe before sampling. Re-read after release, reconnect, or the deadline."""
     import psycopg
     from psycopg import sql
     from .scheduler_changes import SCHEDULER_CHANGE_CHANNEL
 
     database = portal_database(schema="execution_runtime")
     try:
-        with psycopg.connect(database.dsn, autocommit=True, connect_timeout=30) as connection:
-            connection.execute(sql.SQL("LISTEN {}").format(sql.Identifier(SCHEDULER_CHANGE_CHANNEL)))
-            if not is_busy():
-                return True
-            remaining = deadline - time.monotonic()
-            if remaining > 0:
-                with closing(connection.notifies(timeout=remaining)) as changes:
-                    for change in changes:
-                        if time.monotonic() >= deadline:
-                            break
-                        schema, _, kinds = change.payload.partition(":")
-                        if schema == database.schema and "execution" in kinds.split(",") and not is_busy():
-                            return True
-            return False
+        while time.monotonic() < deadline:
+            try:
+                with psycopg.connect(database.dsn, autocommit=True, connect_timeout=30) as connection:
+                    connection.execute(sql.SQL("LISTEN {}").format(sql.Identifier(SCHEDULER_CHANGE_CHANNEL)))
+                    while is_busy(provider):
+                        remaining = deadline - time.monotonic()
+                        if remaining <= 0:
+                            return False
+                        with closing(connection.notifies(timeout=remaining)) as changes:
+                            for change in changes:
+                                schema, _, kinds = change.payload.partition(":")
+                                # Releases change execution status or ownership. Heartbeats
+                                # only change the lease expiry and emit "execution" alone.
+                                categories = kinds.split(",")
+                                if schema == database.schema and "execution" in categories and (
+                                    "claim" in categories or "control" in categories
+                                ):
+                                    break
+                                if time.monotonic() >= deadline:
+                                    break
+                    return True
+            except psycopg.OperationalError:
+                time.sleep(min(1, max(0, deadline - time.monotonic())))
+        return False
     finally:
         database.close()

@@ -1,4 +1,4 @@
-"""Immediate runtime replacement, claim races and automatic lock release.
+"""Idle runtime replacement, claim races and automatic lock release.
 
 :module: execution.service
 """
@@ -19,30 +19,22 @@ def _peer(call):
         return pool.submit(call).result(timeout=10)
 
 
-def test_codex_selection_does_not_prepare_recovery_or_wait_for_running_jobs(monkeypatch, tmp_path):
-    calls = []
-    monkeypatch.setattr(updates, "_active_executions", lambda _: 1)
-    monkeypatch.setattr(updates, "_prepare_execution_recovery", lambda provider: calls.append(("recovery", provider)))
-    monkeypatch.setattr(updates, "_switch_runtime", lambda provider, runtime, root, **kw: calls.append(("switch", root)) or True)
-    assert updates._activate_verified("codex", updates.CodexRuntime(), tmp_path)
-    assert calls == [("switch", tmp_path)]
-
-
-def test_recovery_preparation_failure_keeps_previous_runtime(monkeypatch, tmp_path):
-    monkeypatch.setattr(updates, "_active_executions", lambda _: 1)
-    monkeypatch.setattr(updates, "_prepare_execution_recovery", Mock(side_effect=RuntimeError("owner unavailable")))
-    switch = Mock()
+@pytest.mark.parametrize("provider", ["antigravity", "codex", "claude", "kimi", "dsh", "opencode"])
+def test_only_an_idle_provider_can_switch(monkeypatch, tmp_path, provider):
+    from management_portal import kimi_account_runtime
+    monkeypatch.setattr(kimi_account_runtime, "runtime_busy", lambda: False)
+    active = {provider: 2, "another": 3}
+    monkeypatch.setattr(updates, "_active_executions", active.get)
+    switch = Mock(return_value=True)
     monkeypatch.setattr(updates, "_switch_runtime", switch)
-    with pytest.raises(RuntimeError):
-        updates._activate_verified("claude", updates.ClaudeRuntime(), tmp_path)
+    runtime = updates.runtimes()[provider]
+    for remaining in (2, 1):
+        active[provider] = remaining
+        assert not updates._activate_verified(provider, runtime, tmp_path)
     switch.assert_not_called()
-    # The failed updater cannot leave dispatch paused.
-    db = portal_database(schema="execution_runtime")
-    try:
-        with db.transaction() as connection:
-            assert admitting_providers(connection, ["codex"]) == {"codex"}
-    finally:
-        db.close()
+    active[provider] = 0
+    assert updates._activate_verified(provider, runtime, tmp_path)
+    switch.assert_called_once()
 
 
 def test_claim_and_update_windows_are_exclusive_and_release_after_failure():
@@ -185,6 +177,8 @@ def test_all_provider_switches_publish_the_same_ready_event(monkeypatch, tmp_pat
     from psycopg import sql
     from management_portal.execution.provider_activation import ACTIVATION_READY_CHANNEL
 
+    from management_portal import kimi_account_runtime
+    monkeypatch.setattr(kimi_account_runtime, "runtime_busy", lambda: False)
     db = portal_database(schema="execution_runtime")
     monkeypatch.setattr(updates, "_active_executions", lambda _: 0)
     try:
@@ -241,7 +235,7 @@ def test_pending_activation_wakes_on_committed_execution_change(monkeypatch, tmp
             with db.transaction() as connection:
                 assert admitting_providers(connection, ["kimi"]) == {"kimi"}
                 completed.set()
-                connection.execute("SELECT pg_notify(%s, %s)", (SCHEDULER_CHANGE_CHANNEL, db.schema + ":execution"))
+                connection.execute("SELECT pg_notify(%s, %s)", (SCHEDULER_CHANGE_CHANNEL, db.schema + ":execution,claim,control"))
                 switch.assert_not_called()
             assert result.result(timeout=3) == {"status": "activated"}
             switch.assert_called_once()
@@ -359,3 +353,79 @@ def test_activation_failure_waits_for_another_update_request(monkeypatch):
     monkeypatch.setattr(script, "activate_pending_provider", activate)
     assert script._watch_pending() == 1
     activate.assert_called_once()
+
+
+def test_committed_release_handles_worker_loss_and_rollback():
+    import psycopg
+    from psycopg import sql
+    from management_portal.execution.scheduler_changes import SCHEDULER_CHANGE_CHANNEL
+
+    scheduler = Scheduler(dispatch_interval_min_seconds=0, dispatch_interval_max_seconds=0)
+    db = scheduler.database
+    request = ExecutionRequest.new(actor="sample_admin", prompt="wait", service_type="agent_session",
+        provider="codex", operation="turn", session=SessionOptions(mode="persistent", binding_id="resident:release"))
+    scheduler.submit(request)
+    try:
+        with psycopg.connect(db.dsn, autocommit=True) as listener, db.connect() as writer:
+            listener.execute(sql.SQL("LISTEN {}").format(sql.Identifier(SCHEDULER_CHANGE_CHANNEL)))
+            def update(status, checkpoint):
+                writer.execute("UPDATE executions SET status=%s,checkpoint_json=%s WHERE execution_id=%s",
+                               (status, checkpoint, request.execution_id))
+            update("claimed", "{}")
+            writer.commit()
+            update("queued", '{"turn_id":"detached"}')
+            writer.commit()
+            assert updates._active_executions("codex") == 1
+            assert list(listener.notifies(timeout=.05))  # Drain the claim and requeue notices.
+            update("completed", "{}")
+            writer.rollback()
+            assert not list(listener.notifies(timeout=0.05))
+            update("completed", "{}")
+            writer.commit()
+            assert [event.payload for event in listener.notifies(timeout=2, stop_after=1)] == [db.schema + ":execution,claim,control"]
+            assert not updates._active_executions("codex")
+    finally:
+        db.close()
+
+
+def test_missed_release_reconciles_and_rechecks_new_work_under_lock(monkeypatch, tmp_path):
+    import json
+    import time
+
+    path = str(tmp_path / "new")
+    monkeypatch.setattr(updates, "STATE_ROOT", tmp_path)
+    (tmp_path / "provider-updates.json").write_text(json.dumps({"pending": {"codex": path}}))
+    monkeypatch.setattr(updates, "_validated_candidate", lambda name, root, baseline: root)
+    monkeypatch.setattr(updates, "RECONCILE_SECONDS", .05)
+    # First completion loses its notification; new work wins the admission
+    # race before the update reacquires the lock. Only the second idle is safe.
+    samples = iter([1, 1, 0, 1, 0, 0])
+    monkeypatch.setattr(updates, "_active_executions", lambda name: next(samples))
+    switch = Mock(return_value=True)
+    monkeypatch.setattr(updates, "_switch_runtime", switch)
+    assert updates.activate_pending_provider("codex", path, time.monotonic() + 4) == {"status": "activated"}
+    switch.assert_called_once()
+
+def test_listener_reconnect_samples_idle_without_a_second_release(monkeypatch):
+    import time
+    import psycopg
+    from management_portal.execution.provider_activation import wait_for_execution_idle
+
+    snapshot = Mock(side_effect=[psycopg.OperationalError("connection lost"), 0])
+    assert wait_for_execution_idle("claude", snapshot, time.monotonic() + 5)
+    assert snapshot.call_count == 2
+
+
+def test_execution_maintenance_rearms_only_an_actionable_local_candidate(monkeypatch, tmp_path):
+    import json
+    from scripts import update_provider_runtimes as script
+    from types import SimpleNamespace
+    monkeypatch.setattr(updates, "sys", SimpleNamespace(platform="linux"))
+    monkeypatch.setattr(updates, "STATE_ROOT", tmp_path)
+    start = Mock()
+    monkeypatch.setattr(script, "_start_job", start)
+    pending = {"codex": "/candidate"}
+    for state in ({}, {"pending": pending, "activation_failures": pending}, {"pending": pending}):
+        (tmp_path / "provider-updates.json").write_text(json.dumps(state))
+        updates.resume_pending_activation()
+    start.assert_called_once_with("--activate-pending")

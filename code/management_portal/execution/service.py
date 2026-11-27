@@ -836,6 +836,14 @@ class ExecutionServiceServer(LocalServiceSocketMixin, socketserver.ThreadingTCPS
             )
         )
         result = self.scheduler.maintain()
+        if time.monotonic() >= getattr(self, '_next_provider_activation_check', 0):
+            from .provider_activation import RECONCILE_SECONDS
+            self._next_provider_activation_check = time.monotonic() + RECONCILE_SECONDS
+            try:
+                from .provider_updates import resume_pending_activation
+                resume_pending_activation()
+            except Exception:
+                LOGGER.exception('Could not resume pending provider activation')
         if time.monotonic() >= getattr(self, '_next_permission_cleanup_at', 0):
             try:
                 from management_portal import permission_system

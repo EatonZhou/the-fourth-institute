@@ -2,6 +2,9 @@
 """Check provider updates from a System Lineage script or a manual request."""
 
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import ExitStack
+
+import psycopg
 import json
 import os
 from pathlib import Path
@@ -13,9 +16,9 @@ import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from management_portal.execution.provider_activation import pending_update_listener
+from management_portal.execution.provider_activation import RECONCILE_SECONDS, pending_update_listener
 from management_portal.execution.provider_updates import (
-    ACTIVATION_WAIT_SECONDS, activate_pending_provider, pending_provider_updates, run_update_pass, runtimes,
+    ACTIVATION_WAIT_SECONDS, activate_pending_provider, pending_activation_failures, pending_provider_updates, run_update_pass, runtimes,
     wait_for_installation_unlock,
 )
 from management_common.instance_manifest import load, instance_runtime_root
@@ -28,10 +31,20 @@ def _watch_pending() -> int:
     active = {}
     failed = {}
     reader, writer = socket.socketpair()
-    with reader, writer, pending_update_listener() as listener, ThreadPoolExecutor(
+    with reader, writer, ExitStack() as subscriptions, ThreadPoolExecutor(
         max_workers=max(1, len(runtimes())), thread_name_prefix="provider-activation",
     ) as pool:
+        listener = None
         while True:
+            if listener is None:
+                try:
+                    listener = subscriptions.enter_context(pending_update_listener())
+                    failed = pending_activation_failures()
+                except psycopg.OperationalError:
+                    if time.monotonic() >= deadline:
+                        return 2
+                    time.sleep(min(1, max(0, deadline - time.monotonic())))
+                    continue
             for provider, (path, future) in list(active.items()):
                 if future.done():
                     result = future.result()
@@ -55,15 +68,22 @@ def _watch_pending() -> int:
             if not active:
                 return 1 if pending else 0
 
-            # Wait for a committed queue change or an actual task completion.
-            # The only timeout is the lifetime of the maintenance job.
-            ready, _, _ = select.select([listener, reader], [], [], max(0, deadline - time.monotonic()))
-            if reader in ready:
-                reader.recv(4096)
-            if listener in ready:
-                for notice in listener.notifies(timeout=0):
-                    for provider in json.loads(notice.payload):
-                        failed.pop(provider, None)
+            # A missed notice can delay re-reading the local candidate list
+            # by at most one reconciliation interval while work is pending.
+            timeout = min(RECONCILE_SECONDS, max(0, deadline - time.monotonic()))
+            try:
+                ready, _, _ = select.select([listener, reader], [], [], timeout)
+                if not ready:
+                    failed = pending_activation_failures()
+                if reader in ready:
+                    reader.recv(4096)
+                if listener in ready:
+                    for notice in listener.notifies(timeout=0):
+                        for provider in json.loads(notice.payload):
+                            failed.pop(provider, None)
+            except psycopg.OperationalError:
+                subscriptions.close()
+                listener = None  # Subscribe again before reading the durable queue.
 
 
 def _start_job(mode: str) -> str:
