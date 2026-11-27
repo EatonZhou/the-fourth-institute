@@ -148,7 +148,7 @@ DECLARATIONS = (
         R("resident", "object", "修改后的 Resident 基本信息，与 GetResident 的 resident 相同"),
     ), mutates=True, target="resident_id"),
     _d("GetResidentSummaries", (On("resident_ids", "resident"),), "批量读取 Resident 的累计摘要，供搜索、路由、工作查看和摘要维护共用。", (
-        R("resident_ids", "array", "最多 128 个 Resident ID", items={"type": "string"}, max_length=128),
+        R("resident_ids", "array", "Resident ID 列表，个数不设上限", items={"type": "string"}),
         P("fields", "array", "只返回 summary 中的这些字段；列出 pending_requests 时才带待处理请求", items={"type": "string"}),
         P("include_maintenance", "boolean", "同时返回维护摘要所需的内容版本 revision、汇总来源 source_versions、"
           "漏写轮次 missing_message_ids、待归纳输入 pending_message_ids 与维护者 writer_id；尚无摘要的可见 Resident 也返回一项（revision 为 0），"

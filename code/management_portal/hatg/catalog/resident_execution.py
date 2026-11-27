@@ -3,7 +3,6 @@ messages is in the Mailbox category (``mailbox``)."""
 from __future__ import annotations
 
 from ..declarations import ON_RESIDENT, InstructionDeclaration as D, On, P, R
-from .conversation import MAX_RESIDENT_BATCH
 
 
 def _d(name, decides, description, parameters=(), result=(), *, mutates=False, target=""):
@@ -28,8 +27,7 @@ QUEUE_ITEM = (
 
 DECLARATIONS = (
     _d("ListResidentStates", (On("resident_ids", "resident"),), "批量读取 Resident 的工作状态、接单状态和当前调用者可用的操作；读一个 Resident 时传只含它的列表。", (
-        R("resident_ids", "array", f"要读取的 Resident，最多 {MAX_RESIDENT_BATCH} 个；看不到的不返回", items={"type": "string"},
-          max_length=MAX_RESIDENT_BATCH),
+        R("resident_ids", "array", "要读取的 Resident；看不到的不返回", items={"type": "string"}),
         P("include_viewer_state", "boolean", "是否计算当前用户的会话未读状态；默认计算"),
     ), (R("states", "array", "每个可见 Resident 的状态与可用操作：work_state、work_phase、当前消息、等待数量、intake_state 与 controls"),)),
     _d("GetInputState", ON_RESIDENT, "读取一条用户消息的处理状态；Family 门面沿转交关系返回实际成员的状态和回复，转交本身不算任务完成。", (

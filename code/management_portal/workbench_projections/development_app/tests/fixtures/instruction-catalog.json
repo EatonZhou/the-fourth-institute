@@ -4103,7 +4103,7 @@
             "name": "resident_ids",
             "type": "array",
             "required": true,
-            "description": "最多 128 个 Resident ID",
+            "description": "Resident ID 列表，个数不设上限",
             "items": {
               "type": "string"
             }

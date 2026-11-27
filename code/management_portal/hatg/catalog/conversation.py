@@ -3,9 +3,6 @@ from __future__ import annotations
 
 from ..declarations import CURSOR, NEXT_CURSOR, ON_RESIDENT, InstructionDeclaration as D, On, P, R
 
-# Residents one batch read (states, requests, summaries) may name.
-MAX_RESIDENT_BATCH = 128
-
 
 def _d(name, decides, description, parameters=(), result=(), *, mutates=False, streaming=False,
        target="", one_of=()):
@@ -218,8 +215,7 @@ DECLARATIONS = (
         R("message_id", description="投给目标 Resident 的吸收消息 ID"),
     ), mutates=True, target="target_resident_id"),
     _d("ListResidentRequests", (On("resident_ids", "resident"),), "列出一个或多个 Resident 等待回答的请求。", (
-        R("resident_ids", "array", f"要列出请求的 Resident，最多 {MAX_RESIDENT_BATCH} 个", items={"type": "string"},
-          max_length=MAX_RESIDENT_BATCH),
+        R("resident_ids", "array", "要列出请求的 Resident", items={"type": "string"}),
     ), (R("requests", "array", "Resident ID、消息 ID、请求种类、问题与可选答案、发出时间"),),
        target="resident_ids"),
     _d("GetResidentRequest", ON_RESIDENT, "读取一个请求及其回答状态。", (

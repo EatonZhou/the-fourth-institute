@@ -23,7 +23,6 @@ from .embedder import (
     shared_embedder,
 )
 from .evidence import (
-    MAX_SUMMARY_RESIDENTS,
     PROMPT_VERSION,
     SUMMARY_FIELDS,
     SUMMARY_INSTRUCTIONS,
@@ -511,8 +510,6 @@ class ResidentContext:
 
     def contexts(self, *, actor: str, resident_ids: list[str]) -> dict[str, Any]:
         requested = list(dict.fromkeys(str(value or "").strip() for value in resident_ids if str(value or "").strip()))
-        if len(requested) > MAX_SUMMARY_RESIDENTS:
-            raise ValueError(f"at most {MAX_SUMMARY_RESIDENTS} Resident contexts may be requested")
         visible = self.source.authorized_resident_ids(str(actor or "").strip(), requested)
         documents = {item["resident_id"]: item for item in self.store.documents([rid for rid in requested if rid in visible])}
         return {

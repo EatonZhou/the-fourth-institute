@@ -7,7 +7,7 @@ from typing import Any
 from management_portal.hatg.contracts import InstructionError, invalid
 from management_portal.hatg.catalog.resident import SETTINGS_FIELDS
 from management_portal.hatg.kernel import Invocation
-from management_portal.society_service.resident_context.evidence import MAX_SUMMARY_RESIDENTS, SUMMARY_FIELDS
+from management_portal.society_service.resident_context.evidence import SUMMARY_FIELDS
 
 from .common import (
     caller_account,
@@ -260,8 +260,6 @@ def get_resident_summaries(inv: Invocation) -> dict[str, Any]:
     ))
     if not resident_ids:
         raise invalid("resident_ids 不能为空")
-    if len(resident_ids) > MAX_SUMMARY_RESIDENTS:
-        raise invalid(f"一次最多读取 {MAX_SUMMARY_RESIDENTS} 个 Resident 的摘要")
     fields = [str(name) for name in inv.argument("fields") or [] if str(name or "").strip()]
     unknown = sorted(set(fields) - {*SUMMARY_FIELDS, "pending_requests"})
     if unknown:

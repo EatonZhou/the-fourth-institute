@@ -127,17 +127,17 @@ def test_short_description_ends_at_a_sentence_or_clause_never_inside_a_word():
     assert words.endswith("…") and not words[:-1].endswith("Rea")
 
 
-def test_resident_batch_reads_share_one_limit():
-    """ListResidentStates、ListResidentRequests 的 resident_ids 与摘要批量读取共用同一个上限
+def test_resident_batch_reads_have_no_count_limit():
+    """ListResidentStates、ListResidentRequests、GetResidentSummaries 的 resident_ids 不设个数上限
 
-    :design: decision_898b8911a2ff
+    :design: decision_eeaf19569e4d
     """
-    from management_portal.society_service.resident_context.evidence import MAX_SUMMARY_RESIDENTS
-    for name in ("ListResidentStates", "ListResidentRequests"):
+    for name in ("ListResidentStates", "ListResidentRequests", "GetResidentSummaries"):
         parameter = instruction_catalog()[name].parameter_map["resident_ids"]
-        assert parameter.max_length == MAX_SUMMARY_RESIDENTS == 128
-        too_many = routing.execute({"instruction": name, "arguments": {"resident_ids": ["resident_x"] * 129}}, CONTEXT)
-        assert too_many.status == "failed" and too_many.error["code"] == "instruction.invalid_arguments"
+        assert parameter.max_length is None
+        result = routing.execute({"instruction": name, "arguments": {"resident_ids": [f"resident_{i}" for i in range(200)]}}, CONTEXT)
+        assert not (result.error and result.error["code"] == "instruction.invalid_arguments"
+                    and "长度" in str(result.error.get("message")))
 
 
 def test_unknown_group_is_rejected():

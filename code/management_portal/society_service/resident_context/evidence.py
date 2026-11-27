@@ -12,7 +12,6 @@ from __future__ import annotations
 from management_common.text_values import stripped_text
 
 from management_portal.execution.activity_redaction import redact_sensitive_text as redact_text
-from management_portal.hatg.catalog.conversation import MAX_RESIDENT_BATCH
 
 import hashlib
 import json
@@ -30,7 +29,6 @@ PROMPT_VERSION = "resident-discovery-summary.v4"
 # duty itself, not work of the holder's to summarize.
 SUMMARY_DUTY = "resident-summary"
 SUMMARY_DUTY_REF = f"duty/{SUMMARY_DUTY}"
-MAX_SUMMARY_RESIDENTS = MAX_RESIDENT_BATCH
 SUMMARY_FIELDS = (
     "current_focus",
     "active_threads",
