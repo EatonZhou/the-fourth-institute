@@ -484,9 +484,19 @@ html:root[data-portal-theme="liquid-glass"] :is(.portalPageFrame, .portalPageHea
 
 html:root[data-portal-theme="liquid-glass"] header.resourceSectionPageHeader {
   background: transparent;
-  border-bottom-color: transparent;
+  border-bottom-width: 0;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
+}
+
+/* Match the 6px workspace gutter below the second band. The site capsule
+   already leaves 2px (1px on mobile) inside its header box. */
+html:root[data-portal-theme="liquid-glass"] header.resourceSectionPageHeader > .resourceSectionFrame {
+  margin-top: 4px;
+}
+
+html[data-portal-viewport="mobile"]:root[data-portal-theme="liquid-glass"] header.resourceSectionPageHeader > .resourceSectionFrame {
+  margin-top: 5px;
 }
 
 html:root[data-portal-theme="liquid-glass"] header.resourceSectionPageHeader .portalBoardCommand {
