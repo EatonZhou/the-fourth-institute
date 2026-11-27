@@ -130,10 +130,15 @@ def test_watcher_queues_on_postgres_without_blocking_other_updates(monkeypatch, 
 
     def switch(provider, runtime, path, **kwargs):
         switched.append((provider, path.name))
-        if provider == "claude":
-            other_finished.set()
         return True
 
+    def activate(provider, path, deadline):
+        result = updates.activate_pending_provider(provider, path, deadline)
+        if provider == "claude" and result["status"] == "activated":
+            other_finished.set()
+        return result
+
+    monkeypatch.setattr(script, "activate_pending_provider", activate)
     monkeypatch.setattr(updates, "_switch_if_ready", switch)
     # Bound the SQL wait even if the test fails before releasing the claim.
     monkeypatch.setattr(script, "ACTIVATION_WAIT_SECONDS", 10)
@@ -300,3 +305,57 @@ def test_deferred_preparation_revalidates_after_baseline_changes(monkeypatch, tm
     assert updates.activate_pending_provider("codex", str(root), time.monotonic() + 3) == {"status": "activated"}
     assert verified == [old, other]
     switch.assert_called_once()
+
+
+def test_new_candidate_wakes_listener_while_another_provider_waits(monkeypatch, tmp_path):
+    import json
+    import threading
+    from scripts import update_provider_runtimes as script
+
+    state_path = tmp_path / "provider-updates.json"
+    state_path.write_text(json.dumps({"pending": {"kimi": "old"}}))
+    monkeypatch.setattr(updates, "STATE_ROOT", tmp_path)
+    monkeypatch.setattr(script, "ACTIVATION_WAIT_SECONDS", 120)
+    sleeping, release, second = (threading.Event() for _ in range(3))
+    waits = []
+    real_select = script.select.select
+
+    def wait(readers, writers, errors, timeout):
+        waits.append(timeout)
+        sleeping.set()
+        return real_select(readers, writers, errors, timeout)
+
+    from types import SimpleNamespace
+    monkeypatch.setattr(script, "select", SimpleNamespace(select=wait))
+
+    def validate(provider, path, baseline):
+        if provider == "kimi":
+            assert release.wait(5)
+        else:
+            second.set()
+        return path
+
+    monkeypatch.setattr(updates, "_validated_candidate", validate)
+    monkeypatch.setattr(updates, "_switch_if_ready", lambda *args, **kwargs: True)
+    with ThreadPoolExecutor(1) as pool:
+        job = pool.submit(script._watch_pending)
+        try:
+            assert sleeping.wait(3)
+            with updates._update_state() as (state, save):
+                state["pending"]["claude"] = "added"
+                save()
+            assert second.wait(3), "new provider should start while Kimi is still occupied"
+        finally:
+            release.set()
+        assert job.result(timeout=3) == 0
+    assert min(waits) > 110  # Sleeps until the job deadline, even with one active candidate.
+
+
+def test_activation_failure_waits_for_another_update_request(monkeypatch):
+    from scripts import update_provider_runtimes as script
+
+    monkeypatch.setattr(script, "pending_provider_updates", lambda: {"kimi": "candidate"})
+    activate = Mock(return_value={"status": "failed", "phase": "service_activation"})
+    monkeypatch.setattr(script, "activate_pending_provider", activate)
+    assert script._watch_pending() == 1
+    activate.assert_called_once()

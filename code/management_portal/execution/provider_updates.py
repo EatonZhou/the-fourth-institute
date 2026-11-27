@@ -36,7 +36,7 @@ from management_common.process_runtime import run_process
 from management_common.portal_paths import path as portal_path
 from management_common.code_environment import provider_entry, provider_directory
 from .provider_preparation import phase, diagnosed, PreparationError
-from .provider_activation import activation_window, publish_activation_ready, wait_for_execution_idle
+from .provider_activation import activation_window, notify_pending_updates, publish_activation_ready, wait_for_execution_idle
 
 LOGGER = logging.getLogger(__name__)
 ACTIVATION_WAIT_SECONDS = 72 * 60 * 60
@@ -837,12 +837,26 @@ def _update_state():
         path = STATE_ROOT / "provider-updates.json"
         state = _read_state()
 
+        saved_pending = dict(state.get("pending", {}))
+        saved_check = state.get("last_checked_at")
+
         def save():
+            nonlocal saved_pending, saved_check
+            pending = state.get("pending", {})
+            changed = {key for key in saved_pending.keys() | pending.keys() if saved_pending.get(key) != pending.get(key)}
+            if saved_check != state.get("last_checked_at"):
+                changed.update(pending)  # A new update pass may retry a previously failed candidate.
             temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
             try:
                 with _snapshot_access():
                     temporary.write_text(json.dumps(state, sort_keys=True) + "\n")
+                    if changed:
+                        # Readers take this lock too. Publish before rename so a
+                        # writer crash cannot leave a new candidate without a wakeup.
+                        notify_pending_updates(changed)
                     temporary.replace(path)
+                saved_pending = dict(pending)
+                saved_check = state.get("last_checked_at")
             finally:
                 temporary.unlink(missing_ok=True)
 
@@ -1166,4 +1180,9 @@ def activate_pending_provider(provider, path, deadline):
             if not ready or time.monotonic() >= deadline:
                 return {"status": "timeout"}
     except Exception as exc:
-        return _finish_pending(provider, path, error=exc)
+        while True:
+            result = _finish_pending(provider, path, error=exc)
+            if deadline is None or result["status"] != "busy":
+                return result
+            if not wait_for_installation_unlock(deadline):
+                return {"status": "timeout"}

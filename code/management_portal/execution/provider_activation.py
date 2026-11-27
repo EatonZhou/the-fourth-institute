@@ -6,6 +6,7 @@ replacing the runtime. Existing work is interrupted and resumed, never drained.
 PostgreSQL releases the lock if the updater exits.
 """
 from contextlib import closing, contextmanager
+import hashlib
 import json
 import time
 
@@ -60,6 +61,37 @@ def activation_window(provider, *, deadline=None):
 
 
 ACTIVATION_READY_CHANNEL = "tfi_provider_activation_ready"
+
+
+def _pending_channel(database):
+    # PostgreSQL channel identifiers are limited to 63 bytes.
+    return "tfi_provider_pending_" + hashlib.sha256(database.schema.encode()).hexdigest()[:32]
+
+
+def notify_pending_updates(providers):
+    import psycopg
+
+    database = portal_database(schema="execution_runtime")
+    try:
+        # Commit independently of any transaction surrounding the file writer.
+        with psycopg.connect(database.dsn, autocommit=True, connect_timeout=30) as connection:
+            connection.execute("SELECT pg_notify(%s, %s)", (_pending_channel(database), json.dumps(sorted(providers))))
+    finally:
+        database.close()
+
+
+@contextmanager
+def pending_update_listener():
+    import psycopg
+    from psycopg import sql
+
+    database = portal_database(schema="execution_runtime")
+    try:
+        with psycopg.connect(database.dsn, autocommit=True, connect_timeout=30) as connection:
+            connection.execute(sql.SQL("LISTEN {}").format(sql.Identifier(_pending_channel(database))))
+            yield connection
+    finally:
+        database.close()
 
 
 def publish_activation_ready(provider, candidate):

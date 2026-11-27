@@ -120,7 +120,7 @@ System Lineage 的每日时间事件直接调用 Effect，由 Effect 通过 RunS
 
 每次 RunScript 使用 `provider-runtime-update` 独占键，并设四小时执行上限。更新器继续用实例状态锁防止不同入口并发修改运行时。脚本保存本次检查结果到实例 runtime 下的 `provider-update-result.json`，同时把结果输出到 ScriptRun 日志；日志、退出码与 script_run_id 保留在正式脚本运行记录中。
 
-`--lineage-update` 完成一轮检查后退出。有待启用版本时，它启动实例所属的 provider-activation 独立作业，使用 `--activate-pending` 等待数据库授予各 Provider 的切换锁。安装锁忙时排队等锁释放。受限 Kimi 候选通过 PostgreSQL 执行状态通知与原生 WebSocket 的 `event.session.work_changed` 等待旧任务结束，包括 Worker 已断开的任务。等待者先订阅再读取忙闲状态，被唤醒后在切换锁内重新核对。各 Provider 独立等待，最多 72 小时。作业仍定期发现新增候选，并对暂时性故障退避重试。等待启用不占住每日检查的 ScriptRun；下一天仍能重新检查版本并继续安排启用。已有活动作业直接复用。查询、安装或启动等待作业失败，以及更新锁忙而未完成检查，均不能作为成功检查返回。
+`--lineage-update` 完成一轮检查后退出。有待启用版本时，它启动实例所属的 provider-activation 独立作业，使用 `--activate-pending` 等待数据库授予各 Provider 的切换锁。安装锁忙时排队等锁释放。受限 Kimi 候选通过 PostgreSQL 执行状态通知与原生 WebSocket 的 `event.session.work_changed` 等待旧任务结束，包括 Worker 已断开的任务。等待者先订阅再读取忙闲状态，被唤醒后在切换锁内重新核对。各 Provider 独立等待，最多 72 小时。作业先订阅本实例的 PostgreSQL 候选变更通知，再读取待切换清单。新增或替换候选时，写入方在同一份快照锁内发通知并发布清单。执行结束也会直接唤醒作业。作业只在这些事件发生时重读清单；失败的候选保留到下一次手动或每日更新再试。等待启用不占住每日检查的 ScriptRun；下一天仍能重新检查版本并继续安排启用。已有活动作业直接复用。查询、安装或启动等待作业失败，以及更新锁忙而未完成检查，均不能作为成功检查返回。
 
 更新 Effect 的 `script.finished` 失败事件交给 Provider Runtime 更新维护 Resident；Effect 的失败接收者同时获得平台失败通知。维护 Resident 使用自动账号选择，并允许额度不足时自动迁移，负责异常调查与修复。常规成功检查不调用模型。待启用状态与失败分别记录，不能把“已安装、等待空闲”写成“已启用”；运行时的空闲检查与失败回退契约保持不变。
 

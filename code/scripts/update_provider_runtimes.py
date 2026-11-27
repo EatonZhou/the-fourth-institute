@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
 """Check provider updates from a System Lineage script or a manual request."""
 
-from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
+from concurrent.futures import ThreadPoolExecutor
 import json
 import os
 from pathlib import Path
+import select
+import socket
 import subprocess
 import sys
 import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from management_portal.execution.provider_activation import pending_update_listener
 from management_portal.execution.provider_updates import (
     ACTIVATION_WAIT_SECONDS, activate_pending_provider, pending_provider_updates, run_update_pass, runtimes,
     wait_for_installation_unlock,
@@ -23,49 +26,44 @@ from scripts.provider_model_catalog_sync import run as sync_model_catalogs
 def _watch_pending() -> int:
     deadline = time.monotonic() + ACTIVATION_WAIT_SECONDS
     active = {}
-    retry = {}
-    with ThreadPoolExecutor(max_workers=max(1, len(runtimes())), thread_name_prefix="provider-activation") as pool:
+    failed = {}
+    reader, writer = socket.socketpair()
+    with reader, writer, pending_update_listener() as listener, ThreadPoolExecutor(
+        max_workers=max(1, len(runtimes())), thread_name_prefix="provider-activation",
+    ) as pool:
         while True:
             for provider, (path, future) in list(active.items()):
                 if future.done():
                     result = future.result()
                     print(json.dumps({"provider": provider, **result}, ensure_ascii=False), flush=True)
                     del active[provider]
-                    if result["status"] in {"activated", "superseded"}:
-                        retry.pop(provider, None)
-                    else:
-                        retry[provider] = (path, result, time.monotonic() + 30)
+                    if result["status"] not in {"activated", "superseded"}:
+                        failed[provider] = path
 
             pending = pending_provider_updates()
-            if pending == {} and not active:
-                return 0
-            now = time.monotonic()
-            if now >= deadline:
-                return 2
-            wake_at = min(deadline, now + 30)
-            failed = set()
-            for provider, path in (pending or {}).items():
-                if provider in active:
-                    continue
-                previous_path, result, retry_at = retry.get(provider, (None, {}, 0))
-                if previous_path == path:
-                    if result.get("phase") == "interface_validation":
-                        failed.add(provider)
-                        continue
-                    if retry_at > now:
-                        wake_at = min(wake_at, retry_at)
-                        continue
-                active[provider] = (path, pool.submit(activate_pending_provider, provider, path, deadline))
-            if failed and failed == set(pending) and not active:
-                return 1
-            delay = max(0, wake_at - time.monotonic())
-            if pending is None and not active:
+            if pending is None:
                 if not wait_for_installation_unlock(deadline):
                     return 2
-            elif active:
-                wait([future for _, future in active.values()], timeout=delay, return_when=FIRST_COMPLETED)
-            else:
-                time.sleep(delay)
+                continue
+            if time.monotonic() >= deadline:
+                return 2 if active or pending else 0
+            for provider, path in pending.items():
+                if provider not in active and failed.get(provider) != path:
+                    future = pool.submit(activate_pending_provider, provider, path, deadline)
+                    active[provider] = (path, future)
+                    future.add_done_callback(lambda _: writer.sendall(b"x"))
+            if not active:
+                return 1 if pending else 0
+
+            # Wait for a committed queue change or an actual task completion.
+            # The only timeout is the lifetime of the maintenance job.
+            ready, _, _ = select.select([listener, reader], [], [], max(0, deadline - time.monotonic()))
+            if reader in ready:
+                reader.recv(4096)
+            if listener in ready:
+                for notice in listener.notifies(timeout=0):
+                    for provider in json.loads(notice.payload):
+                        failed.pop(provider, None)
 
 
 def _start_job(mode: str) -> str:
