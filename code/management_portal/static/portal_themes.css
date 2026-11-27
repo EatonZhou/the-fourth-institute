@@ -1722,6 +1722,29 @@ html:root[data-portal-theme="liquid-glass"] .portalSectionLink::after {
 }
 
 /* Floating Liquid Glass chat composer: scrolled messages pass softly behind it with crisp legibility */
+/* A visible quota notice occupies the space between history and the composer.
+   Override the inherited overlap on the history subtree so its viewport,
+   scroll padding and round rail all stay above the notice, including resize. */
+html:root[data-portal-theme="liquid-glass"] .portalChatWorkspaceRoot:has(> .portalChatQuotaNotice:not([hidden])) > .portalWorkspaceBody {
+  --lg-composer-overlap: 0px;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalChatQuotaNotice {
+  margin: 0 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--lg-radius-item);
+  background: var(--lg-card-bg);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalChatQuotaRow {
+  flex-wrap: wrap;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalChatQuotaRow > span {
+  flex: 1 1 16rem;
+}
+
 html:root[data-portal-theme="liquid-glass"] .portalChatWorkspaceRoot:has(> .composer:not([hidden])) > .portalWorkspaceBody {
   margin-bottom: calc(-1 * var(--lg-composer-overlap, 160px));
 }
