@@ -2604,6 +2604,7 @@
           : { ...options, resident_id: residentId },
       );
       const scope = target.resident_id && options.load !== false ? residentSessionScope(target) : "";
+      if (scope) window.PortalNav?.preloadResidentMenu?.();
       const installed = Boolean(this.protocol) && residentSessionScope(this.workspace.target()) === scope;
       // A repeated request for a Resident whose first load is still running joins
       // that load. Restarting it on every page refresh never finishes when one load

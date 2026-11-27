@@ -58,6 +58,7 @@ const groups = JSON.parse(fs.readFileSync(path.join(root, '../script_groups.json
     await page.locator('#nodeMenuGroupPanel').waitFor({state: 'visible'});
     assert.equal(await page.locator('#nodeMenuGroupPanel').textContent(), 'Family settings fixture');
     assert.equal(loaded.filter(url => url === '/static/portal_resident_menu_memory.js').length, 1);
+    assert.equal(loaded.some(url => url.startsWith('/static/principal_backpack.')), false);
     assert.deepEqual(errors, []);
     console.log('Resident Menu opens through the cold navigation loader with all factories ready');
   } finally {

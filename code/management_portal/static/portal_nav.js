@@ -794,19 +794,25 @@
     return window.PortalUIPrimitives.loadAsset(path, { ready });
   }
 
-  async function loadPrincipalDetails() {
-      const scripts = [
-        ["portal_overlay", "PortalOverlay"], ["portal_ui", "PortalUI"],
-        ["portal_button_tooltips", "PortalButtonTooltips"],
-        ["portal_instruction_client", "PortalInstructionClient"],
-        ["portal_detail_surface", "PortalDetailSurface"],
-        ["portal_resident_avatar", "PortalResidentAvatar"], ["portal_user_avatar", "PortalUserAvatar"], ["principal_backpack", "PortalPrincipalBackpack"],
-      ];
-      await Promise.all([
-        loadBackpackAsset("/static/principal_backpack.css"),
-        loadBackpackAsset("/static/portal_resident_avatar.css"),
-        ...scripts.map(([path, name]) => loadBackpackAsset(`/static/${path}.js`, name)),
-      ]);
+  function loadDetailSurfaceAssets() {
+    return Promise.all([
+      loadBackpackAsset("/static/portal_overlay.js", "PortalOverlay"),
+      loadBackpackAsset("/static/portal_ui.js", "PortalUI"),
+      loadBackpackAsset("/static/portal_button_tooltips.js", "PortalButtonTooltips"),
+      loadBackpackAsset("/static/portal_instruction_client.js", "PortalInstructionClient"),
+      loadBackpackAsset("/static/portal_detail_surface.js", "PortalDetailSurface"),
+    ]);
+  }
+
+  function loadPrincipalDetails() {
+    return Promise.all([
+      loadDetailSurfaceAssets(),
+      loadBackpackAsset("/static/principal_backpack.css"),
+      loadBackpackAsset("/static/portal_resident_avatar.css"),
+      loadBackpackAsset("/static/portal_resident_avatar.js", "PortalResidentAvatar"),
+      loadBackpackAsset("/static/portal_user_avatar.js", "PortalUserAvatar"),
+      loadBackpackAsset("/static/principal_backpack.js", "PortalPrincipalBackpack"),
+    ]);
   }
 
   async function mountPrincipalDetails({ container, principalId }) {
@@ -868,37 +874,61 @@
     return window.PortalResidentMenu.removeFamily(options);
   }
 
+  let residentMenuAssets = null;
+  let residentMenuPreloadScheduled = false;
+
+  function loadResidentMenu() {
+    residentMenuAssets ||= Promise.all([
+      loadDetailSurfaceAssets(),
+      loadBackpackAsset("/static/portal_resident_menu.css"),
+      ...[
+        ["portal_society_service", "PortalSocietyService"],
+        ["portal_resident_service", "PortalResidentService"],
+        ["resident_projection", "PortalResidentProjection"],
+        ["portal_resource_routes", "PortalResourceRoutes"],
+        ["portal_resource_chips", "PortalResourceChips"],
+        ["portal_preview_contract", "PortalPreviewContract"],
+        ["portal_file_links", "PortalFileLinks"],
+        ["portal_resident_runtime_controller", "PortalResidentRuntimeController"],
+        ["portal_chat_workspace", "PortalChatWorkspace"],
+        ["hatg_mailbox_panel", "PortalMailboxPanel"],
+        // The Menu's parts load before the script that creates them.
+        ["portal_resident_menu_tabs", "PortalResidentMenuTabs"],
+        ["portal_resident_menu_resident", "PortalResidentMenuResident"],
+        ["portal_resident_menu_transfer", "PortalResidentMenuTransfer"],
+        ["portal_resident_menu_family", "PortalResidentMenuFamily"],
+        ["portal_resident_menu_group", "PortalResidentMenuGroup"],
+        ["portal_resident_menu_identity", "PortalResidentMenuIdentity"],
+        ["portal_resident_menu_journal", "PortalResidentMenuJournal"],
+        ["portal_resident_menu_duties", "PortalResidentMenuDuties"],
+        ["portal_resident_menu_memory", "PortalResidentMenuMemory"],
+        ["portal_resident_menu_runtime", "PortalResidentMenuRuntime"],
+        ["portal_resident_menu_events", "PortalResidentMenuEvents"],
+        ["portal_resident_menu", "PortalResidentMenu"],
+      ].map(([path, name]) => loadBackpackAsset(`/static/${path}.js`, name)),
+    ]).catch(error => {
+      residentMenuAssets = null;
+      throw error;
+    });
+    return residentMenuAssets;
+  }
+
+  function preloadResidentMenu() {
+    if (residentMenuAssets || residentMenuPreloadScheduled) return;
+    residentMenuPreloadScheduled = true;
+    const load = () => {
+      residentMenuPreloadScheduled = false;
+      void loadResidentMenu().catch(() => {});
+    };
+    // Warm only shared assets while a Resident surface is in use.
+    // Opening the menu still reads the current Resident and permissions.
+    if (window.requestIdleCallback) window.requestIdleCallback(load, {timeout: 1000});
+    else window.setTimeout(load, 0);
+  }
+
   async function openResidentMenu(options = {}) {
     try {
-      await loadPrincipalDetails();
-      await Promise.all([
-        loadBackpackAsset("/static/portal_resident_menu.css"),
-        ...[
-          ["portal_society_service", "PortalSocietyService"],
-          ["portal_resident_service", "PortalResidentService"],
-          ["resident_projection", "PortalResidentProjection"],
-          ["portal_resource_routes", "PortalResourceRoutes"],
-          ["portal_resource_chips", "PortalResourceChips"],
-          ["portal_preview_contract", "PortalPreviewContract"],
-          ["portal_file_links", "PortalFileLinks"],
-          ["portal_resident_runtime_controller", "PortalResidentRuntimeController"],
-          ["portal_chat_workspace", "PortalChatWorkspace"],
-          ["hatg_mailbox_panel", "PortalMailboxPanel"],
-          // The Menu's parts load before the script that creates them.
-          ["portal_resident_menu_tabs", "PortalResidentMenuTabs"],
-          ["portal_resident_menu_resident", "PortalResidentMenuResident"],
-          ["portal_resident_menu_transfer", "PortalResidentMenuTransfer"],
-          ["portal_resident_menu_family", "PortalResidentMenuFamily"],
-          ["portal_resident_menu_group", "PortalResidentMenuGroup"],
-          ["portal_resident_menu_identity", "PortalResidentMenuIdentity"],
-          ["portal_resident_menu_journal", "PortalResidentMenuJournal"],
-          ["portal_resident_menu_duties", "PortalResidentMenuDuties"],
-          ["portal_resident_menu_memory", "PortalResidentMenuMemory"],
-          ["portal_resident_menu_runtime", "PortalResidentMenuRuntime"],
-          ["portal_resident_menu_events", "PortalResidentMenuEvents"],
-          ["portal_resident_menu", "PortalResidentMenu"],
-        ].map(([path, name]) => loadBackpackAsset(`/static/${path}.js`, name)),
-      ]);
+      await loadResidentMenu();
       return await window.PortalResidentMenu.open(options);
     } catch (error) {
       window.PortalUI.toast(error.message || window.PortalI18n.t("无法打开 Resident Menu"), "error");
@@ -1578,6 +1608,7 @@
     personalAssistantTarget,
     loadChatWorkspace,
     openPrincipalBackpack,
+    preloadResidentMenu,
     openResidentMenu,
     removeFamily,
     openScopeMenu,

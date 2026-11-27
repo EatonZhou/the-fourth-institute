@@ -596,6 +596,7 @@
   }
 
   function mountHatgPanel(options = {}) {
+    window.PortalNav?.preloadResidentMenu?.();
     return createHatgRuntime().mount(options);
   }
 
