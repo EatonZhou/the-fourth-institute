@@ -15,12 +15,11 @@ from .account_quota import POLL_SECONDS
 # Account deadlines are independent of the passive polling cadence. Start
 # before expiry to leave room for native request latency; failures remain due
 # and retry through the same durable 10-minute admission gate.
-READING_EXPIRES_SECONDS = 8 * 3600
 READING_REFRESH_LEAD_SECONDS = 60
 MIN_READ_INTERVAL_SECONDS = 600
 from .activity_redaction import redact_sensitive_text
 from .account_usage_store import AccountUsageStore
-from .account_observation_store import AccountObservationStore, merge_windows
+from .account_observation_store import AccountObservationStore, READING_EXPIRES_SECONDS, merge_windows
 from .account_login import login_store, now as login_now
 from .provider_failures import is_authentication_failure
 

@@ -15,6 +15,9 @@ from management_common.database_time import instant, iso_time
 from management_common.json_columns import json_text, json_value
 
 
+READING_EXPIRES_SECONDS = 8 * 3600
+
+
 FIELDS = {
     'root': ('status', 'checked_at', 'error_code', 'error_kind', 'quota_request_sent', 'login_observation', 'login_observed_at'),
     'window': ('id', 'label', 'source', 'status', 'quota_group', 'remaining_percent',
@@ -145,7 +148,12 @@ class AccountObservationStore:
         windows = [json_value(row['window']) for row in rows]
         # All replayed windows pass the expiry check; even a latest old sample
         # must not make an expired model pool appear current after a restart.
-        return merge_windows({**latest, 'rate_limits': []}, {'rate_limits': windows}, now=now)
+        # Full buckets may have no reset date. Restore only those actually
+        # present in the latest sample, within the normal reading lifetime.
+        undated = [w for w in latest.get('rate_limits') or []
+                   if w.get('resets_at') is None and type(w.get('observed_at')) in (int, float)
+                   and 0 <= now - w['observed_at'] < READING_EXPIRES_SECONDS]
+        return merge_windows({**latest, 'rate_limits': undated}, {'rate_limits': windows}, now=now)
 
     def claim(self, provider, account_id, *, now, interval, profile=False):
         # Atomic across processes and deployments. A failed request still uses

@@ -10,7 +10,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
-from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
+from urllib.request import ProxyHandler, Request, build_opener
 
 from management_common.file_permissions import atomic_write_private_bytes
 from management_portal.antigravity_client import AcpClient, AcpError, AuthenticationRequired
@@ -158,25 +158,21 @@ def quota_windows(report, observed_at):
     return windows
 
 
-class _NoQuotaRedirect(HTTPRedirectHandler):
-    def redirect_request(self, *args):
-        return None
-
-
 def _quota_summary(env, version):
     """Read the same Cloud Code quota summary used by the signed-in CLI."""
+    from management_portal.execution.account_observation import urlopen
+
     token_file = Path(env["GEMINI_HOME"]) / "antigravity-acp" / "antigravity-oauth-token"
     if not token_file.is_file():
         return None
     bearer = json.loads(token_file.read_bytes())["token"]["access_token"]
-    opener = build_opener(_NoQuotaRedirect())
     headers = {"Content-Type": "application/json", "Authorization": "Bearer " + bearer,
                "User-Agent": "antigravity/" + version}
 
     def post(method, payload):
         url = "https://daily-cloudcode-pa.googleapis.com/v1internal:" + method
         request = Request(url, json.dumps(payload).encode(), headers)
-        with opener.open(request, timeout=8) as response:
+        with urlopen(request, timeout=8, follow_redirects=False) as response:
             return json.load(response)
 
     # The scope for quota is the project Google assigns to this subscription.

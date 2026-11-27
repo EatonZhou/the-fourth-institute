@@ -277,3 +277,14 @@ def test_shutdown_cancellation_is_not_recorded_as_a_new_observation():
     accounts.observe.side_effect = cancelled
     monitor.refresh_account(account)
     history.append.assert_not_called()
+
+
+def test_restore_latest_full_bucket_without_reset_time():
+    from management_portal.execution.account_observation_store import READING_EXPIRES_SECONDS
+
+    store = AccountObservationStore()
+    value = sample(remaining=100, reset=None)
+    value['rate_limits'][0]['observed_at'] = 1000
+    store.append('antigravity', 'one', value, started_at=1000, finished_at=1001)
+    assert store.restore_sample('antigravity', 'one', now=1200)['rate_limits'] == value['rate_limits']
+    assert store.restore_sample('antigravity', 'one', now=1000 + READING_EXPIRES_SECONDS)['rate_limits'] == []
