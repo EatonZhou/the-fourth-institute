@@ -631,7 +631,7 @@
   function authoringItems() {
     const items = [], body = (list,row) => ({roles:[],components:[],wires:[],match:[],[list]:[row]});
     const add = (key,title,group,content,icon) => items.push({template_id:`workshop_${key}`,kind:'structure',title,targets:['canvas'],toolbox_group:group,body:content,icon});
-    for (const kind of ['event_source','effect','loop','filter','selector','reducer','seed']) {
+    for (const kind of ['event_source','effect','loop','filter','selector','reducer','seed','blackboard']) {
       const definition = window.PortalLineageProgram.manifest.component_kinds[kind];
       add(kind,definition.title,'primitives',body('components',{key:kind,kind,title:definition.default_title || definition.title,config:JSON.parse(JSON.stringify(definition.default_config || {}))}),definition.icon || kind);
     }
