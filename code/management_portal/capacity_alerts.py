@@ -10,10 +10,13 @@ from management_common.format_tags import schema_matches
 from copy import deepcopy
 from datetime import datetime
 from hashlib import sha256
+from zoneinfo import ZoneInfo
 import math
 
 
 STATE_KEY = "runtime_capacity_alerts"
+DISK_THRESHOLDS = {"SSD": 85, "HDD": 95}
+REMINDER_TZ = ZoneInfo("Asia/Hong_Kong")
 SCHEMA = "tfi.capacity-alerts.v1"
 DEFAULT_POLICY = {
     "database": {"warning": 80, "critical": 90, "recovery": 70},
@@ -132,43 +135,50 @@ def _samples(snapshot):
     return samples
 
 
-def _ssd_alerts(state, report, admins, lineage_id):
-    """Notify each current administrator once per continuous above-threshold episode."""
-    episodes = state.setdefault("ssd_episodes", {})
-    local_mounts = set()
+def _disk_alerts(state, report, admins, lineage_id):
+    """Queue an edge warning and at most one scheduled reminder per local date."""
+    observed = datetime.fromtimestamp(_timestamp(report["observed_at"]), REMINDER_TZ)
+    today = observed.date().isoformat()
+    episodes = state.setdefault("disk_episodes", {})
+    old_date = datetime.fromtimestamp(_timestamp(state.get("observed_at") or report["observed_at"]), REMINDER_TZ).date().isoformat()
+    for key, informed in state.pop("ssd_episodes", {}).items():
+        episodes.setdefault(key, {"date": old_date, "recipients": informed})
     for device in report["devices"]:
         if device["status"] != "ok":
             continue
         for volume in device["filesystems"]:
             mount = volume["mount"]
-            if device["local"]:
-                local_mounts.add(mount)
             key = f"{device['resource_id']}:{volume['key']}"
             percent = _number(volume["used_percent"])
-            if percent <= 85:
+            medium = volume["medium"]
+            limit = DISK_THRESHOLDS[medium]
+            if percent <= limit:
                 episodes.pop(key, None)
                 continue
-            informed = set(episodes.get(key, []))
+            previous = episodes.get(key, {})
+            daily = bool(previous and previous["date"] < today and observed.hour >= 9)
+            informed = set() if daily else set(previous.get("recipients", []))
             remaining = sorted(set(admins) - informed)
             for start in range(0, len(remaining), 200):
                 batch = remaining[start:start + 200]
                 state["sequence"] += 1
                 digest = sha256(f"{lineage_id}:{state['sequence']}:{key}".encode()).hexdigest()[:32]
                 state["outbox"].append({
-                    "notification_id": "ssd_" + digest, "lineage_id": lineage_id,
+                    "notification_id": "disk_" + digest, "lineage_id": lineage_id,
                     "recipients": batch, "severity": "warning",
-                    "title": f"SSD 容量预警：{device['host']} {mount} 已用 {percent:g}%",
-                    "message": (f"{device['host']} 的 SSD 文件系统 {volume['filesystem']}（{mount}）"
-                                f"使用率 {percent:g}%，超过 85%。可用空间 "
+                    "title": f"{medium} 容量{'每日提醒' if daily else '预警'}：{device['host']} {mount} 已用 {percent:g}%",
+                    "message": (f"{device['host']} 的 {medium} 文件系统 {volume['filesystem']}（{mount}）"
+                                f"使用率 {percent:g}%，超过 {limit}%。可用空间 "
                                 f"{volume['available_bytes'] / 1024**3:.1f} GiB。"
                                 f"\n采集时间 {report['observed_at']}"),
                 })
-            episodes[key] = sorted(informed.union(remaining))
-    state["ssd_observation"] = report
-    return local_mounts
+            episodes[key] = {"date": today if daily or not previous else previous["date"],
+                             "recipients": sorted(informed.union(remaining))}
+    state.pop("ssd_observation", None)
+    state["disk_observation"] = report
 
 
-def advance(previous, snapshot, *, lineage_id, recipients, policy, ssd_report=None, admins=()):
+def advance(previous, snapshot, *, lineage_id, recipients, policy, disk_report=None, admins=()):
     if not schema_matches(snapshot.get("schema"), "tfi.runtime-capacity.v1"):
         raise ValueError("Unsupported runtime capacity schema")
     if previous and not schema_matches(previous.get("schema"), "tfi.capacity-alerts.v1"):
@@ -179,12 +189,11 @@ def advance(previous, snapshot, *, lineage_id, recipients, policy, ssd_report=No
     if state.get("observed_at") and now <= _timestamp(state["observed_at"]):
         return state
     samples = _samples(snapshot)
-    if ssd_report is not None:
-        local_mounts = _ssd_alerts(state, ssd_report, admins, lineage_id)
+    if disk_report is not None:
+        _disk_alerts(state, disk_report, admins, lineage_id)
         for disk in snapshot["disks"].get("filesystems", []):
-            if disk["path"] in local_mounts:
-                samples.pop("disk:" + disk["key"], None)
-                state["metrics"].pop("disk:" + disk["key"], None)
+            samples.pop("disk:" + disk["key"], None)
+            state["metrics"].pop("disk:" + disk["key"], None)
     for key, record in state["metrics"].items():
         if key not in samples:
             record["pending"] = None
@@ -255,16 +264,16 @@ def drain(isa, lineage_id):
     raise RuntimeError("Capacity notification outbox did not converge")
 
 
-def run_once(isa, *, lineage_id, recipients, overrides=None, monitor_ssds=False):
+def run_once(isa, *, lineage_id, recipients, overrides=None, monitor_media=False):
     if not lineage_id or not recipients or any(not isinstance(x, str) or not x.strip() for x in recipients):
         raise ValueError("Capacity monitoring requires lineage and explicit human recipients")
     policy = policy_with(overrides)
     delivered = drain(isa, lineage_id)
-    ssd_report = None
+    disk_report = None
     admins = []
-    if monitor_ssds:
+    if monitor_media:
         from management_portal.permission_system.administrators import ADMINISTRATOR
-        ssd_report = isa("GetDeviceStatus", kind="ssd_capacity")
+        disk_report = isa("GetDeviceStatus", kind="physical_disk_capacity")
         admins = [u["username"] for u in isa("ListUsers", status="active")["users"]
                   if u["category"] == ADMINISTRATOR]
         if not admins:
@@ -273,7 +282,7 @@ def run_once(isa, *, lineage_id, recipients, overrides=None, monitor_ssds=False)
     for _ in range(8):
         previous = _read(isa, lineage_id)
         updated = advance(previous, snapshot, lineage_id=lineage_id, recipients=recipients, policy=policy,
-                          ssd_report=ssd_report, admins=admins)
+                          disk_report=disk_report, admins=admins)
         if previous == updated or _cas(isa, lineage_id, previous, updated):
             break
     else:

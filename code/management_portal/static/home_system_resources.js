@@ -207,6 +207,7 @@
       const title = item?.volume_label || item?.filesystem || item?.path || item?.mount || "volume";
       const meta = [
         mountText,
+        item?.medium && item.warning_percent != null ? `${item.medium} · >${item.warning_percent}%` : "",
         item?.fstype || "",
         window.PortalI18n.text`总量 ${formatBytes(item?.size_bytes)} · 已用 ${formatBytes(item?.used_bytes)} · 可用 ${formatBytes(item?.available_bytes)}`,
       ].filter(Boolean).join(" · ");

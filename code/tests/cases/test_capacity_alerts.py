@@ -164,7 +164,7 @@ def test_ssd_alarm_df_boundary_admin_membership_and_rearming():
     """SSD 首次超过 85% 即投递；失联不重置，新增管理员补收，恢复后可再次触发。"""
     admins = ["admin1", "admin2"]
     device = {"resource_id": "local", "host": "server", "local": True, "status": "ok"}
-    volume = {"mount": "/share", "key": "uuid", "filesystem": "/dev/test", "available_bytes": 100}
+    volume = {"mount": "/share", "medium": "SSD", "key": "uuid", "filesystem": "/dev/test", "available_bytes": 100}
     device["filesystems"] = [volume]
     state = None
     for n, (percent, status, new_recipients) in enumerate([
@@ -178,9 +178,30 @@ def test_ssd_alarm_df_boundary_admin_membership_and_rearming():
         device["status"] = status
         report = {"observed_at": snapshot(n)["observed_at"], "devices": [device]}
         state = alerts.advance(state, snapshot(n), lineage_id="lin", recipients=["legacy"],
-                               policy=alerts.policy_with(), ssd_report=deepcopy(report), admins=admins)
+                               policy=alerts.policy_with(), disk_report=deepcopy(report), admins=admins)
         assert [u for notice in state["outbox"] for u in notice["recipients"]] == new_recipients
         state["outbox"].clear()
+
+
+@pytest.mark.parametrize("medium,limit", [("SSD", 85), ("HDD", 95)])
+def test_disk_daily_reminder_and_edge(medium, limit):
+    volume = {"mount": "/", "medium": medium, "key": "v", "filesystem": "dev", "available_bytes": 100}
+    device = {"host": "lab", "resource_id": "lab", "status": "ok", "filesystems": [volume]}
+    state = None
+    for seconds, percent, label in [
+        (0, limit, None), (60, limit+1, "预警"), (3600, limit+1, None),
+        (86400, limit+1, None), (90000, limit+1, "每日提醒"), (90300, limit+1, None),
+        (90600, limit, None), (90900, limit+2, "预警"),
+    ]:
+        sample = snapshot(seconds)
+        volume["used_percent"] = percent
+        state = alerts.advance(state, sample, lineage_id="lab", recipients=["legacy"], admins=["a"],
+                               policy=alerts.policy_with(), disk_report={"devices": [device], "observed_at": sample["observed_at"]})
+        notices = state["outbox"]
+        assert len(notices) == int(label is not None)
+        if label:
+            assert label in notices[0]["title"] and notices[0]["recipients"] == ["a"]
+        notices.clear()
 
 
 def test_notification_ack_loss_retries_exact_notice_and_subsequent_observation_does_not_repeat():

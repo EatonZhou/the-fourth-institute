@@ -731,8 +731,8 @@ def get_device_status(inv: Invocation) -> dict[str, Any]:
 
     refresh = bool(inv.argument("refresh"))
     device_id = inv.argument("device_id") or ""
-    if inv.argument("kind") == "ssd_capacity":
-        return agent_status_backend.get_ssd_capacity(device_id)
+    if inv.argument("kind") in {"ssd_capacity", "physical_disk_capacity"}:
+        return agent_status_backend.get_physical_disk_capacity(device_id, ssd_only=inv.argument("kind") == "ssd_capacity")
     if inv.argument("kind") == "local_disk_capacity":
         return agent_status_backend.get_local_disk_capacity(force_refresh=refresh, resource_id=device_id)
     if inv.argument("kind") == "cloud":

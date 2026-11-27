@@ -19,6 +19,7 @@ from management_common.clock import utc_now_iso
 
 
 from . import device_identity_backend
+from .capacity_alerts import DISK_THRESHOLDS
 from .execution.service import ExecutionService
 from .execution.account_resources import home_account_resources
 from .society_service import get_society_service
@@ -530,7 +531,7 @@ def _disk_resource_public(resource: dict[str, Any]) -> dict[str, Any]:
 
 
 def _disk_status_cache_key(resource: dict[str, Any]) -> str:
-    return f"disk_status:{resource.get('resource_id')}"
+    return f"disk_status:v2:{resource.get('resource_id')}"
 
 
 def _disk_status_placeholder(resource: dict[str, Any]) -> dict[str, Any]:
@@ -632,23 +633,41 @@ def _parse_df_output(text: str) -> list[dict[str, Any]]:
     return rows
 
 
-def _ssd_mounts(devices):
+def _disk_mounts(devices):
     """Identify mounted volumes by their backing disk, including partitions and LVM."""
     mounts = {}
-    def visit(node, solid):
+    def visit(node, medium):
         if node["type"] == "disk":
-            solid = node.get("rota") in (False, 0, "0") and not Path(node["name"]).name.startswith(("zram", "ram"))
+            medium = None if Path(node["name"]).name.startswith(("zram", "ram")) else {
+                "0": "SSD", "1": "HDD", "False": "SSD", "True": "HDD",
+            }.get(str(node.get("rota")))
         mount = node.get("mountpoint")
-        if solid and mount and mount.startswith("/"):
-            mounts[mount] = node.get("uuid") or node["name"]
+        if medium and mount and mount.startswith("/"):
+            # A volume backed by both media must warn at the earlier threshold.
+            if mount not in mounts or medium == "SSD":
+                mounts[mount] = (node.get("uuid") or node["name"], medium)
         for child in node.get("children", []):
-            visit(child, solid)
+            visit(child, medium)
     for node in devices:
-        visit(node, False)
+        visit(node, None)
     return mounts
 
 
-def get_ssd_capacity(resource_id: str = "") -> dict[str, Any]:
+def _typed_df_rows(inventory, report):
+    mounts = _disk_mounts(json.loads(inventory)["blockdevices"])
+    rows = _parse_df_output(report)
+    for row in rows:
+        if row["mount"] in mounts:
+            key, medium = mounts[row["mount"]]
+            limit = DISK_THRESHOLDS[medium]
+            level = "ok"
+            if row["used_percent"] > limit:
+                level = "critical" if row["used_percent"] >= DISK_CRITICAL_USED_PERCENT else "warn"
+            row.update(key=key, medium=medium, warning_percent=limit, status=level)
+    return rows
+
+
+def get_physical_disk_capacity(resource_id: str = "", *, ssd_only=False) -> dict[str, Any]:
     from concurrent.futures import ThreadPoolExecutor
 
     # Obtain both reports in the same host namespace. df supplies Home's Use%
@@ -665,14 +684,12 @@ df -lPT -B1
         try:
             proc = _run_disk_script(resource, script, [])
             if proc.returncode:
-                raise ValueError(proc.stderr.strip() or "SSD capacity probe failed")
+                raise ValueError(proc.stderr.strip() or "Disk capacity probe failed")
             inventory, report = proc.stdout.split("\nPORTAL_DF\n", 1)
-            mounts = _ssd_mounts(json.loads(inventory)["blockdevices"])
             volumes = {}
-            for row in _parse_df_output(report):
-                key = mounts.get(row["mount"])
-                if key and key not in volumes:
-                    volumes[key] = {**row, "key": key}
+            for row in _typed_df_rows(inventory, report):
+                if row.get("medium") and (not ssd_only or row["medium"] == "SSD"):
+                    volumes.setdefault(row["key"], row)
             result.update(status="ok", filesystems=list(volumes.values()))
         except (OSError, subprocess.SubprocessError, ValueError, KeyError) as exc:
             result.update(status="unavailable", error=_safe_error(exc))
@@ -688,6 +705,9 @@ def _collect_df_rows(resource: dict[str, Any], paths: list[str]) -> tuple[list[d
     if not clean_paths:
         return [], ""
     script = """
+export LC_ALL=C
+lsblk -J -p -o NAME,TYPE,ROTA,UUID,MOUNTPOINT 2>/dev/null || echo '{"blockdevices":[]}'
+echo PORTAL_DF
 for p in "$@"; do
   if [ -e "$p" ]; then
     printf '\\037PORTAL_PATH\\t%s\\n' "$p"
@@ -699,7 +719,8 @@ done
         result = _run_disk_script(resource, script, clean_paths)
     except Exception as exc:
         return [], _safe_error(exc)
-    rows = _parse_df_output(result.stdout)
+    inventory, separator, report = result.stdout.partition("\nPORTAL_DF\n")
+    rows = _typed_df_rows(inventory, report) if separator else _parse_df_output(result.stdout)
     if result.returncode != 0 and not rows:
         return [], _short_text(result.stderr or result.stdout or f"df exited {result.returncode}", 180)
     return rows, ""
