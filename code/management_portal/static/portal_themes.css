@@ -788,12 +788,34 @@ html:root[data-portal-theme="liquid-glass"] .portalActivityRailItemsAction::befo
 
 /* Embedded Home toolbars use the same glass controls as the site header. */
 html:root[data-portal-theme="liquid-glass"] .portalWorkbenchStage.has-tab-toolbar > .portalWorkbenchToolbar {
+  top: 7px;
   background: transparent;
 }
 
-html:root[data-portal-theme="liquid-glass"] .portalWorkbenchStage.has-tab-toolbar > .portalWorkbenchToolbar .portalWorkbenchHiddenRail {
-  padding-block: 3px;
-  margin-block: -3px;
+/* Scrollable rails need paint room on every edge for circular glass shadows. */
+html:root[data-portal-theme="liquid-glass"] .portalWorkbenchHiddenRail {
+  padding: 8px;
+  margin-block: -8px;
+}
+
+html:root[data-portal-theme="liquid-glass"]:not([data-portal-viewport="mobile"]) .portalWorkbenchStage.has-tab-toolbar.show-single-tab-header .portalWorkbenchStack:not(.is-collapsed) {
+  grid-template-rows: 40px minmax(0, 1fr);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalWorkbenchStage.has-tab-toolbar.show-single-tab-header .portalWorkbenchStack:not(.is-collapsed) > .portalWorkbenchTabs {
+  align-items: center;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalWorkbenchStage.has-tab-toolbar > .portalWorkbenchMenu {
+  top: 42px;
+}
+
+html:root[data-portal-theme="liquid-glass"][data-portal-viewport="mobile"] .portalWorkbenchStage.has-tab-toolbar {
+  grid-template-rows: 40px minmax(0, 1fr) 50px;
+}
+
+html:root[data-portal-theme="liquid-glass"][data-portal-viewport="mobile"] .portalWorkbenchStage.has-tab-toolbar > .portalWorkbenchToolbar {
+  align-self: center;
 }
 
 html:root[data-portal-theme="liquid-glass"] .portalWorkbenchStage.has-tab-toolbar > .portalWorkbenchToolbar :is(
