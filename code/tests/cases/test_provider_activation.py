@@ -109,3 +109,66 @@ def test_runtime_status_reports_real_pending_work_without_permanent_blockers(mon
     assert result["pending_switch"] is pending
     assert result["installed_version"] == "0.167.2"
     assert "activation_blocker" not in result
+
+
+@pytest.mark.parametrize("replace_candidate", [False, True])
+def test_watcher_queues_on_postgres_without_blocking_other_updates(monkeypatch, tmp_path, replace_candidate):
+    import json
+    import threading
+    import time
+    from scripts import update_provider_runtimes as script
+
+    monkeypatch.setattr(updates, "STATE_ROOT", tmp_path)
+    state_file = tmp_path / "provider-updates.json"
+    state_file.write_text(json.dumps({"pending": {"kimi": str(tmp_path/"a"), "claude": str(tmp_path/"b")}}))
+    runtime = Mock()
+    runtime.activation_link.return_value = tmp_path / "active"
+    monkeypatch.setattr(updates, "runtimes", lambda: {"kimi": runtime, "claude": runtime})
+    monkeypatch.setattr(updates, "_validated_candidate", lambda name, root, baseline: root)
+    other_finished = threading.Event()
+    switched = []
+
+    def switch(provider, runtime, path, **kwargs):
+        switched.append((provider, path.name))
+        if provider == "claude":
+            other_finished.set()
+        return True
+
+    monkeypatch.setattr(updates, "_switch_if_ready", switch)
+    # Bound the SQL wait even if the test fails before releasing the claim.
+    monkeypatch.setattr(script, "ACTIVATION_WAIT_SECONDS", 10)
+    db = portal_database(schema="execution_runtime")
+    try:
+        with ThreadPoolExecutor(max_workers=1) as executor, db.connect() as holder:
+            assert admitting_providers(holder, ["kimi"]) == {"kimi"}
+            completion = executor.submit(script._watch_pending)
+            assert other_finished.wait(5)
+            deadline = time.monotonic() + 5
+            while not holder.execute(
+                "SELECT EXISTS(SELECT FROM pg_locks l WHERE NOT granted AND locktype='advisory' "
+                "AND pg_backend_pid() = ANY(pg_blocking_pids(l.pid)))"
+            ).fetchone()[0]:
+                assert time.monotonic() < deadline, "provider did not join the database queue"
+                time.sleep(0.01)
+            with updates._update_state() as locked:
+                assert locked is not None
+                if replace_candidate:
+                    state, save = locked
+                    state["pending"]["kimi"] = str(tmp_path / "new")
+                    save()
+            holder.commit()
+            assert completion.result(timeout=5) == 0
+        assert switched == [("claude", "b"), ("kimi", "new" if replace_candidate else "a")]
+        assert updates.pending_provider_updates() == {}
+    finally:
+        db.close()
+
+
+def test_queued_lock_deadline_releases_waiter():
+    import time
+    with activation_window("kimi") as held:
+        assert held
+        with activation_window("kimi", deadline=time.monotonic() + 0.1) as acquired:
+            assert not acquired
+    with activation_window("kimi") as acquired:
+        assert acquired

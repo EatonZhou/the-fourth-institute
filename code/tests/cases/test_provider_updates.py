@@ -197,11 +197,13 @@ def test_explicit_check_stages_once_and_waits_for_idle(monkeypatch, tmp_path):
     assert first["pending"] == ["kimi"]
 
     idle = True
-    second = updates.activate_pending_once()
+    monkeypatch.setattr(updates, "_validated_candidate", lambda _, path, baseline: path)
+    monkeypatch.setattr(updates, "_switch_if_ready", lambda name, runtime, root, **kw: activate(name, runtime, root))
+    second = updates.activate_pending_provider("kimi", state["pending"]["kimi"], None)
     state = json.loads((tmp_path / "state/provider-updates.json").read_text())
     assert staged == [("kimi", ("2.2.0",))]
     assert state["pending"] == {}
-    assert second["activated"] == ["kimi"]
+    assert second["status"] == "activated"
     assert len(attempts) == 2
 
 
@@ -632,13 +634,13 @@ def test_failed_candidate_is_retested_before_pending_activation(monkeypatch, tmp
         if len(attempts) < 3:
             raise PreparationError("interface_validation", ValueError("private detail"))
     monkeypatch.setattr(provider_candidate, "validate", validate)
-    monkeypatch.setattr(updates, "_activate_verified", lambda provider, *a, **kw: switches.append(provider) or True)
-    for result in (updates.run_update_pass(), updates.activate_pending_once()):
-        assert result["pending"] == ["kimi"] and result["activated"] == []
-        assert result["errors"]["kimi"]["phase"] == "interface_validation"
-        assert "private detail" not in str(result)
+    monkeypatch.setattr(updates, "_switch_if_ready", lambda provider, *a, **kw: switches.append(provider) or True)
+    first = updates.run_update_pass()
+    assert first["pending"] == ["kimi"] and first["errors"]["kimi"]["phase"] == "interface_validation"
+    retry = updates.activate_pending_provider("kimi", str(root), None)
+    assert retry["phase"] == "interface_validation" and "private detail" not in str(retry)
     assert switches == []
-    assert updates.activate_pending_once()["activated"] == ["kimi"]
+    assert updates.activate_pending_provider("kimi", str(root), None)["status"] == "activated"
     assert attempts == [("kimi", root)] * 3 and switches == ["kimi"]
 
 
@@ -682,8 +684,8 @@ def test_antigravity_upgrade_needs_designated_account(monkeypatch, tmp_path):
 def test_watcher_finishes_on_interface_failure(monkeypatch):
     from scripts import update_provider_runtimes as script
 
-    result = {"pending": ["kimi"], "errors": {"kimi": {"phase": "interface_validation"}}}
-    monkeypatch.setattr(script, "activate_pending_once", lambda: result)
+    monkeypatch.setattr(script, "pending_provider_updates", lambda: {"kimi": "/candidate"})
+    monkeypatch.setattr(script, "activate_pending_provider", lambda *args: {"status": "failed", "phase": "interface_validation"})
     monkeypatch.setattr(script.time, "sleep", lambda _: pytest.fail("retry on next update pass"))
     assert script._watch_pending() == 1
 

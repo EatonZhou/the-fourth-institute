@@ -38,6 +38,7 @@ from .provider_preparation import phase, diagnosed, PreparationError
 from .provider_activation import activation_window
 
 LOGGER = logging.getLogger(__name__)
+ACTIVATION_WAIT_SECONDS = 72 * 60 * 60
 ROOT = Path(__file__).resolve().parents[2]
 RUNTIMES = provider_directory()
 STATE_ROOT = portal_path("provider-state")
@@ -699,7 +700,7 @@ def _active_executions(provider: str) -> int:
 
 
 @diagnosed("service_activation")
-def _activate(provider: str, runtime: ProviderRuntime, root: Path, *, prepare=False) -> bool:
+def _validated_candidate(provider, root, baseline):
     from .provider_candidate import validate
     if provider == "claude" and root.name.startswith("claude-agent-sdk-"):
         # Pending updates recorded by the SDK-only updater before migration.
@@ -708,7 +709,13 @@ def _activate(provider: str, runtime: ProviderRuntime, root: Path, *, prepare=Fa
         if not found:
             raise ValueError("Incomplete pending Claude SDK")
         root = stage_release(ROOT, RUNTIMES, *found)
-    validate(provider, root, runtime.activation_link())
+    validate(provider, root, baseline)
+    return root
+
+
+@diagnosed("service_activation")
+def _activate(provider: str, runtime: ProviderRuntime, root: Path, *, prepare=False) -> bool:
+    root = _validated_candidate(provider, root, runtime.activation_link())
     return _activate_verified(provider, runtime, root, prepare=prepare)
 
 
@@ -716,11 +723,15 @@ def _activate_verified(provider, runtime, root, *, prepare=False):
     with activation_window(provider) as reserved:
         if not reserved:
             return False
-        if not runtime.activation_ready(root):
-            return False
-        if provider != "codex" and _active_executions(provider):
-            _prepare_execution_recovery(provider)
-        return _switch_runtime(provider, runtime, root, prepare=prepare)
+        return _switch_if_ready(provider, runtime, root, prepare=prepare)
+
+
+def _switch_if_ready(provider, runtime, root, *, prepare=False):
+    if not runtime.activation_ready(root):
+        return False
+    if provider != "codex" and _active_executions(provider):
+        _prepare_execution_recovery(provider)
+    return _switch_runtime(provider, runtime, root, prepare=prepare)
 
 
 def _prepare_execution_recovery(provider):
@@ -1000,7 +1011,12 @@ def prepare_runtime(provider: str, *, background: bool = True) -> dict:
                     result.pop(field, None)
             result["updated_at"] = datetime.now(timezone.utc).isoformat()
             save()
-            return {key: value for key, value in result.items() if key != "owner"}
+            public = {key: value for key, value in result.items() if key != "owner"}
+        if public["status"] == "pending":
+            activate_pending_provider(provider, str(root), time.monotonic() + ACTIVATION_WAIT_SECONDS)
+            receipt = _read_state().get("preparations", {}).get(provider, public)
+            return {key: value for key, value in receipt.items() if key != "owner"}
+        return public
     if not background:
         return work()
     business_tasks.start(task_id, work)
@@ -1049,36 +1065,61 @@ def run_update_pass() -> dict[str, object]:
         return result
 
 
-def activate_pending_once() -> dict[str, object]:
-    """Retry staged runtime activation without waiting for executions to end."""
-    result: dict[str, object] = {"activated": [], "pending": [], "errors": {}}
+def pending_provider_updates():
+    """None means another update may still publish pending work."""
+    pending = _read_state().get("pending")
+    if pending:
+        return pending
+    with _update_state() as locked:
+        return None if locked is None else dict(locked[0].get("pending", {}))
+
+
+def _finish_pending(provider, path, apply=None, *, error=None):
+    # An updater holding this file lock only ever *tries* the database lock.
+    # Never block holding either lock while acquiring the other.
     with _update_state() as locked:
         if locked is None:
-            return {"busy": True}
+            return {"status": "busy"}
         state, save = locked
-        pending = state.get("pending") or {}
-        declared = runtimes()
-        for provider, path in tuple(pending.items()):
-            try:
-                if provider not in declared:
-                    raise ValueError(f"{provider} declares no runtime Portal installs")
-                preparation = state.get("preparations", {}).get(provider, {})
-                preparing = preparation.get("status") in {"pending", "failed"}
-                if _activate(provider, declared[provider], Path(path), **({"prepare": True} if preparing else {})):
-                    del pending[provider]
-                    if preparing:
-                        preparation.update(status="ready", source="installed", updated_at=datetime.now(timezone.utc).isoformat())
-                        for field in ("phase", "diagnostic", "message"):
-                            preparation.pop(field, None)
-                    result["activated"].append(provider)
-            except Exception as exc:
-                failure = exc if isinstance(exc, PreparationError) else PreparationError("service_activation", exc)
-                result["errors"][provider] = failure.public()
-                preparation = state.get("preparations", {}).get(provider, {})
-                if preparation.get("status") in {"pending", "failed"}:
-                    preparation.update(status="failed", **failure.public())
-                LOGGER.warning("Provider %s deferred activation failed at %s", provider, failure.phase)
-        state["pending"] = pending
+        if state.get("pending", {}).get(provider) != path:
+            return {"status": "superseded"}
+        preparation = state.get("preparations", {}).get(provider, {})
+        preparing = preparation.get("status") in {"pending", "failed"}
+        try:
+            if error is not None:
+                raise error
+            if not apply(preparing):
+                return {"status": "pending"}
+        except Exception as exc:
+            failure = exc if isinstance(exc, PreparationError) else PreparationError("service_activation", exc)
+            if preparing:
+                preparation.update(status="failed", **failure.public())
+                save()
+            LOGGER.warning("Provider %s deferred activation failed at %s", provider, failure.phase)
+            return {"status": "failed", **failure.public()}
+        del state["pending"][provider]
+        if preparing:
+            preparation.update(status="ready", source="installed", updated_at=datetime.now(timezone.utc).isoformat())
+            for field in ("phase", "diagnostic", "message"):
+                preparation.pop(field, None)
         save()
-        result["pending"] = sorted(pending)
-        return result
+        return {"status": "activated"}
+
+
+def activate_pending_provider(provider, path, deadline):
+    """Verify an immutable candidate, then queue without the installation lock."""
+    try:
+        runtime = runtimes()[provider]
+        baseline = runtime.activation_link().resolve()
+        root = _validated_candidate(provider, Path(path), baseline)
+        with activation_window(provider, deadline=deadline) as reserved:
+            if not reserved:
+                return {"status": "timeout"}
+
+            def apply(preparing):
+                if runtime.activation_link().resolve() != baseline:
+                    return False  # Revalidate against the newly active version.
+                return _switch_if_ready(provider, runtime, root, prepare=preparing)
+            return _finish_pending(provider, path, apply)
+    except Exception as exc:
+        return _finish_pending(provider, path, error=exc)

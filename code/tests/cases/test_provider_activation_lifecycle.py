@@ -164,10 +164,12 @@ def test_deferred_first_preparation_starts_daemon_and_clears_error(monkeypatch, 
     runtime = Mock()
     monkeypatch.setattr(updates, 'runtimes', lambda: {'claude': runtime})
     activate = Mock(return_value=True)
-    monkeypatch.setattr(updates, '_activate', activate)
+    monkeypatch.setattr(updates, "_validated_candidate", lambda _, path, baseline: path)
+    runtime.activation_link.return_value = tmp_path / "current"
+    monkeypatch.setattr(updates, "_switch_if_ready", activate)
     (tmp_path/'provider-updates.json').write_text(json.dumps({'pending': {'claude': str(tmp_path/'pkg')},
         'preparations': {'claude': {'status':'pending', 'message':'wait'}}}))
-    assert updates.activate_pending_once()['activated'] == ['claude']
+    assert updates.activate_pending_provider('claude', str(tmp_path/'pkg'), None)['status'] == 'activated'
     activate.assert_called_once_with('claude', runtime, tmp_path/'pkg', prepare=True)
     result=json.loads((tmp_path/'provider-updates.json').read_text())
     assert result['preparations']['claude']['status']=='ready'

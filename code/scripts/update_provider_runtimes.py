@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Check provider updates from a System Lineage script or a manual request."""
 
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 import json
 import os
 from pathlib import Path
@@ -10,28 +11,57 @@ import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from management_portal.execution.provider_updates import activate_pending_once, run_update_pass
+from management_portal.execution.provider_updates import (
+    ACTIVATION_WAIT_SECONDS, activate_pending_provider, pending_provider_updates, run_update_pass, runtimes,
+)
 from management_common.instance_manifest import load, instance_runtime_root
 from management_common.code_environment import runtime_python
 from scripts.provider_model_catalog_sync import run as sync_model_catalogs
 
 
 def _watch_pending() -> int:
-    deadline = time.monotonic() + 72 * 60 * 60
-    while True:
-        result = activate_pending_once()
-        print(json.dumps(result, ensure_ascii=False, sort_keys=True), flush=True)
-        if not result.get("pending") and not result.get("busy"):
-            return 0 if not result.get("errors") else 1
-        pending = result.get("pending") or []
-        errors = result.get("errors") or {}
-        if pending and all(errors.get(name, {}).get("phase") == "interface_validation" for name in pending):
-            # A new scheduled or manual pass can retry. Polling the same broken
-            # candidate every thirty seconds does not make the SDK compatible.
-            return 1
-        if time.monotonic() >= deadline:
-            return 2
-        time.sleep(30)
+    deadline = time.monotonic() + ACTIVATION_WAIT_SECONDS
+    active = {}
+    retry = {}
+    with ThreadPoolExecutor(max_workers=max(1, len(runtimes())), thread_name_prefix="provider-activation") as pool:
+        while True:
+            for provider, (path, future) in list(active.items()):
+                if future.done():
+                    result = future.result()
+                    print(json.dumps({"provider": provider, **result}, ensure_ascii=False), flush=True)
+                    del active[provider]
+                    if result["status"] in {"activated", "superseded"}:
+                        retry.pop(provider, None)
+                    else:
+                        retry[provider] = (path, result, time.monotonic() + 30)
+
+            pending = pending_provider_updates()
+            if pending == {} and not active:
+                return 0
+            now = time.monotonic()
+            if now >= deadline:
+                return 2
+            wake_at = min(deadline, now + 30)
+            failed = set()
+            for provider, path in (pending or {}).items():
+                if provider in active:
+                    continue
+                previous_path, result, retry_at = retry.get(provider, (None, {}, 0))
+                if previous_path == path:
+                    if result.get("phase") == "interface_validation":
+                        failed.add(provider)
+                        continue
+                    if retry_at > now:
+                        wake_at = min(wake_at, retry_at)
+                        continue
+                active[provider] = (path, pool.submit(activate_pending_provider, provider, path, deadline))
+            if failed and failed == set(pending) and not active:
+                return 1
+            delay = max(0, wake_at - time.monotonic())
+            if active:
+                wait([future for _, future in active.values()], timeout=delay, return_when=FIRST_COMPLETED)
+            else:
+                time.sleep(delay)
 
 
 def _start_job(mode: str) -> str:
