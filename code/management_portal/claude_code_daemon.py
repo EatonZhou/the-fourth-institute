@@ -742,10 +742,11 @@ def _agent_options(
         setting_sources=[],
         skills=[],
         include_partial_messages=False,
-        env=env,
+        env={**env, "CLAUDE_CODE_ENABLE_SDK_FILE_CHECKPOINTING": "1"},
         stderr=lambda line: print(f"Claude Code stderr: {line}", flush=True),
         max_buffer_size=CLI_MESSAGE_BUFFER_BYTES,
-        extra_args=dict(CLI_ARGS),
+        enable_file_checkpointing=True,
+        extra_args={**CLI_ARGS, "replay-user-messages": None},
     )
 
 
@@ -1700,6 +1701,41 @@ class ClaudeCodeDaemon:
                 handle.last_used = time.monotonic()
         return {"session_id": handle.session_id, **outcome}
 
+    async def file_checkpoints(self, params: dict[str, Any]) -> dict[str, Any]:
+        _, sid, handle = await self._loaded_session({"session_id": params.get("session_id")})
+        if not handle or not sid or handle.session_id != sid:
+            raise ValueError("Open this Claude session before using file checkpoints")
+        cwd, config, route = handle.signature[:3]
+        if cwd != params.get("cwd") or route != params.get("provider_profile"):
+            raise ValueError("Claude session binding changed")
+        identity = resident_identity_fingerprint(params.get("resident_environment"))
+        if json.loads(handle.signature[11]) != identity:
+            raise ValueError("Claude session identity changed")
+        if handle.lock.locked() or handle.active_turn_id:
+            raise ValueError("Claude session is busy")
+        async with handle.lock:
+            def read_ids():
+                ids = []
+                for path in (Path(config) / "projects").glob(f"*/{uuid.UUID(sid)}.jsonl"):
+                    for line in path.read_text(errors="replace").splitlines():
+                        try:
+                            row = json.loads(line)
+                        except ValueError:
+                            continue
+                        if row.get("type") == "file-history-snapshot":
+                            mid = (row.get("snapshot") or {}).get("messageId")
+                            if mid and mid not in ids:
+                                ids.append(mid)
+                return ids
+            checkpoints = await asyncio.to_thread(read_ids)
+            if "message_id" not in params:
+                return {"checkpoints": checkpoints}
+            target = params["message_id"]
+            if target not in checkpoints:
+                raise ValueError("Unknown file checkpoint in this session")
+            await handle.client.rewind_files(target)
+            return {"restored": target}
+
     async def session_status(self, params: dict[str, Any]) -> dict[str, Any]:
         session_key, session_id, handle = await self._loaded_session(params)
         if not handle:
@@ -2013,6 +2049,8 @@ class WorkerRequest:
             "subagent/stop": daemon.stop_subagent,
             "session/compact": daemon.compact_session,
             "session/status": daemon.session_status,
+            "session/rewind": daemon.file_checkpoints,
+            "session/checkpoints": daemon.file_checkpoints,
             "session/close": daemon.close_session,
             "session/fork": daemon.fork_session,
         }

@@ -139,6 +139,13 @@ class KimiBackend(NativeSocketBackend):
             route = session_route(kwargs["session_id"])
             if route:
                 return KimiBackend(client_for_route(route, for_control=True)).deliver_turn_input(**kwargs)
+        items = kwargs["items"]
+        if len(items) == 1 and items[0].get("type") == "user_input_response":
+            respond = getattr(self.client_factory(), "answer_question", None)
+            if not respond:
+                return False, "user_input_response_unsupported"
+            respond(kwargs["session_id"], kwargs["turn_id"], items[0])
+            return True, ""
         return super().deliver_turn_input(**kwargs)
 
     def interrupt(self, **kwargs):

@@ -16,8 +16,8 @@ def normalize_request(params: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(params.get("isBlocking"), bool):
         raise ValueError("user input request requires isBlocking")
     questions = params.get("questions")
-    if not isinstance(questions, list) or not 1 <= len(questions) <= 3:
-        raise ValueError("user input request requires one to three questions")
+    if not isinstance(questions, list) or not 1 <= len(questions) <= 4:
+        raise ValueError("user input request requires one to four questions")
     identifiers = set()
     for question in questions:
         if not isinstance(question, dict):
@@ -56,7 +56,7 @@ def validate_response(value: dict[str, Any], questions: list[dict[str, Any]] | N
     if action not in {"answer", "cancel"}:
         raise ValueError("unsupported user input action")
     answers = value.get("answers", {})
-    if not isinstance(answers, dict) or len(answers) > 3:
+    if not isinstance(answers, dict) or len(answers) > 4:
         raise ValueError("invalid user input answers")
     if action == "answer":
         if not answers or (questions is not None and set(answers) != {question["id"] for question in questions}):

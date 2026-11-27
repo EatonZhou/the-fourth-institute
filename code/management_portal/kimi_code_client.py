@@ -866,7 +866,8 @@ def runtime_client(runtime_root, *args, **kwargs):
         version = json.loads(manifest.read_text(encoding="utf-8"))["version"]
         if version == "2.5.3":
             from .kimi_transcript_client import KimiTranscriptClient
-            return KimiTranscriptClient(*args, **kwargs)
+            from .execution.provider_session_features import MARKER
+            return KimiTranscriptClient(*args, native_questions=(Path(runtime_root) / MARKER).is_file(), **kwargs)
     return KimiCodeClient(*args, **kwargs)
 
 

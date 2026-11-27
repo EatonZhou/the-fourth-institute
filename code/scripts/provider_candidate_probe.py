@@ -99,6 +99,10 @@ def codex(root, model):
         check(model.answer in messages, "Codex terminal message")
         request("thread/read", {"threadId": "invalid"}, error=True)
         check(request("thread/read", {"threadId": thread})["thread"]["id"] == thread, "thread/read")
+        if (binary.resolve().parent / "PORTAL_SESSION_CONTROLS").is_file():
+            request("thread/name/set", {"threadId": thread, "name": "Portal probe"})
+            request("thread/archive", {"threadId": thread})
+            check(request("thread/unarchive", {"threadId": thread})["thread"]["id"] == thread, "Codex unarchive")
         return thread
 
 
@@ -291,6 +295,23 @@ def opencode_session(root, model, tools):
             "model": {"providerID": "probe", "modelID": "probe"},
             "parts": [{"type": "text", "text": "Hello"}]})
         check(any(part.get("text") == model.answer for part in response["parts"]), "OpenCode response")
+        if (root / "PORTAL_SESSION_CONTROLS").is_file():
+            child = request("POST", f"/session/{session}/fork", {})["id"]
+            messages = request("GET", f"/session/{child}/message")
+            # A fork into another Resident must survive import into its separate database.
+            export_path = Path.cwd() / "fork-export.json"
+            export_path.write_text(json.dumps({"info": request("GET", f"/session/{child}"), "messages": messages}))
+            isolated_env = {**os.environ, "OPENCODE_DB": str(Path.cwd() / "fork-probe.db")}
+            binary = str(npm_binary(root, "opencode"))
+            subprocess.run([binary, "import", str(export_path)], check=True, capture_output=True, env=isolated_env, timeout=60)
+            exported = subprocess.run([binary, "export", child], check=True, capture_output=True, env=isolated_env, timeout=60)
+            restored = json.loads(exported.stdout)
+            check(restored["info"]["id"] == child and len(restored["messages"]) == len(messages), "OpenCode fork import")
+            mid = next(row["info"]["id"] for row in messages if row["info"]["role"] == "user")
+            check(isinstance(request("GET", f"/session/{child}/diff"), list), "OpenCode diff")
+            check(request("POST", f"/session/{child}/revert", {"messageID": mid})["revert"]["messageID"] == mid,
+                  "OpenCode revert")
+            check(not request("POST", f"/session/{child}/unrevert", {}).get("revert"), "OpenCode unrevert")
         check(request("POST", "/session/" + session + "/abort") is True, "abort")
         return session
 
@@ -399,6 +420,15 @@ def dsh(root, model):
         result = transport._request("turn/run", params, event_callback=events.append, tool_callback=dispatch)
         check(result["response"] == model.answer and sorted(calls) == [0, 1], "DSH tool round trip")
         check(sum(event["method"] == "turn/completed" for event in events) == 1, "DSH terminal event")
+        if (root / "PORTAL_SESSION_CONTROLS").is_file():
+            def goal(argument):
+                return transport._request("session/goal", {**params, "argument": argument})["goal"]
+            check(goal("fixture objective")["objective"] == "fixture objective", "DSH create goal")
+            check(goal("pause")["phase"] == "paused", "DSH pause goal")
+            check(goal("clear") is None, "DSH clear goal")
+            fork = client.fork_session(source_session_id=sid, provider_profile="fixture", cwd=os.getcwd(),
+                                       fork_key=model.answer, at_seq=0)
+            check(fork["session_id"] != sid, "DSH historical fork")
         check(client.interrupt("", sid, turn_id="absent") == {"interrupted": False}, "stale cancel")
         try:
             transport._request("portal/nonexistent", response_timeout=5)

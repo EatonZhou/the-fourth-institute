@@ -46,6 +46,9 @@ class ClaudeCodeClient(NativeAgentClient):
         return self._request("health", response_timeout=9.0)
 
 
+    def session_command(self, command, params):
+        return self._request("session/" + command, params, response_timeout=60)
+
     def account_usage(self, provider_profile: str, *, force_refresh: bool = False, native_refresh: bool = True) -> dict[str, Any]:
         # native_refresh=False reads only the cached turn events and /usage
         # result; it never starts a /usage read.

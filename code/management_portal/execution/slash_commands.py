@@ -20,6 +20,14 @@ PORTAL_PRIVATE_COMMANDS = (
 
 
 SLASH_COMMAND_DESCRIPTIONS = {
+    "rename": ("Rename", "重命名当前后端会话。"),
+    "archive": ("Archive", "归档当前后端会话。"),
+    "unarchive": ("Unarchive", "恢复当前已归档的后端会话。"),
+    "checkpoints": ("Checkpoints", "列出当前会话文件检查点的消息 ID。"),
+    "rewind": ("Rewind", "把此会话跟踪的文件恢复到指定用户消息之前。"),
+    "diff": ("Diff", "查看当前会话的文件差异。"),
+    "revert": ("Revert", "从指定消息撤回会话变更。"),
+    "unrevert": ("Unrevert", "恢复上次撤回的会话变更。"),
     "status": ("Status", "查看当前会话配置、session 与 token 摘要。"),
     "goal": ("Goal", "查看或更新当前会话的原生 goal。"),
     "plan": ("Plan", "切换 Plan mode。"),

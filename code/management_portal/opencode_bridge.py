@@ -101,8 +101,7 @@ class OpenCodeServer:
             "$schema": "https://opencode.ai/config.json",
             "autoupdate": False,
             "share": "disabled",
-            # Portal's workspaces are shared and large: no snapshot repository per step.
-            "snapshot": False,
+            "snapshot": bool(config.get("snapshot")),
             # A Portal turn has no one to answer OpenCode's questions; the
             # execution is a full-access one (``OpenCodeClient.run_turn``).
             "permission": {"*": "allow", "external_directory": "allow", "doom_loop": "allow"},
@@ -1136,6 +1135,37 @@ class Bridge:
             return self.interrupt(params)
         if method == "subagent/stop":
             return self.stop_subagent(params)
+        if method == "session/fork":
+            if params.get("session_id") != self.session_id or params.get("provider_profile") != self.config["route"]:
+                raise BridgeError("OpenCode fork source binding changed")
+            key = params.get("fork_key")
+            if not isinstance(key, str) or not key:
+                raise BridgeError("Missing fork identity")
+            with self.lock:
+                if self.current or self.compacting or not self.opencode_session:
+                    raise BridgeError("OpenCode session is busy or has no history")
+                forks = self.state.setdefault("forks", {})
+                if key not in forks:
+                    msg = params.get("message_id")
+                    child = self.server.request("POST", f"/session/{self.opencode_session}/fork",
+                                                {"messageID": msg} if msg else {})
+                    forks[key] = child["id"]
+                    self.save()
+                sid = forks[key]
+                return {"info": self.server.request("GET", f"/session/{sid}"),
+                        "messages": self.server.request("GET", f"/session/{sid}/message")}
+        if method in {"session/diff", "session/revert", "session/unrevert"}:
+            self.check({**params, "inherit_portal_database": self.config.get("inherit_portal_database", False)})
+            action = method.split("/")[1]
+            with self.lock:
+                if self.current or self.compacting or not self.opencode_session:
+                    raise BridgeError("OpenCode session is busy or has no history")
+                path = f"/session/{self.opencode_session}/{action}"
+                if action == "diff":
+                    return {"diff": self.server.request("GET", path)}
+                body = {"messageID": params["argument"]} if action == "revert" else {}
+                self.server.request("POST", path, body)
+                return {"completed": action}
         if method == "session/compact":
             return self.compact(params)
         if method == "usage/read":

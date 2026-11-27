@@ -69,12 +69,18 @@ def open_session(client, invocation, capabilities, servers, session_id, *, cwd, 
     if session_id:
         params["sessionId"] = session_id
     # agy acp uses the selected account's cached login.
-    return client.call("session/load" if session_id else "session/new", params)
+    if not session_id:
+        return client.call("session/new", params)
+    from .provider_session_features import session_features_enabled
+    resume = session_features_enabled("antigravity") and "resume" in (capabilities.get("sessionCapabilities") or {})
+    # Compaction discovers /compact in the replayed command list.
+    method = "session/resume" if resume and invocation.request.operation != "compact" else "session/load"
+    return client.call(method, params)
 
 
-def configure_session(client, session_id, session, model):
+def configure_session(client, session_id, session, model, mode="default"):
     config = {item.get("category"): item for item in session.get("configOptions", [])}
-    for category, value in (("model", model), ("mode", "default")):
+    for category, value in (("model", model), ("mode", mode)):
         option = config.get(category)
         if not option or not option.get("id"):
             raise RuntimeError(f"Antigravity CLI did not advertise the {category} option")

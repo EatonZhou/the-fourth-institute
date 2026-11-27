@@ -70,6 +70,9 @@ for line in sys.stdin:
         if sid in endpoints:
             threading.Thread(target=call_portal, args=(sid, identifier), daemon=True).start()
             continue
+        if sid in prompts and params.get('prompt'):
+            send(id=identifier, result={'stopReason':'end_turn', 'received':params['prompt']})
+            continue
         if params.get('crash'):
             sys.exit(7)
         if params.get('ignore_cancel'):
@@ -159,6 +162,28 @@ def test_one_process_twelve_workers(tmp_path):
         assert len({row["sessionId"] for row in results}) == 12
         with connect(path) as client:
             assert open_session(client)["pid"] == results[0]["pid"]
+    asyncio.run(with_host(tmp_path, exercise))
+
+
+def test_steering_targets_only_the_owning_workers_active_prompt(tmp_path):
+    def exercise(path):
+        started = threading.Event()
+        with connect(path, on_update=lambda _: started.set()) as owner, connect(path) as other:
+            sid = open_session(owner)["sessionId"]
+            open_session(other)
+            steer = {"sessionId": sid, "prompt": [{"type": "text", "text": "补充"}]}
+            with pytest.raises(AcpError):
+                owner.call("portal/steer", steer, timeout=3)
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                prompt = pool.submit(owner.call, "session/prompt", {"sessionId": sid}, timeout=6)
+                assert started.wait(3)
+                try:
+                    with pytest.raises(AcpError):
+                        other.call("portal/steer", steer, timeout=3)
+                    assert owner.call("portal/steer", steer, timeout=3)["received"] == steer["prompt"]
+                finally:
+                    owner.notify("session/cancel", {"sessionId": sid})
+                assert prompt.result()["stopReason"] == "cancelled"
     asyncio.run(with_host(tmp_path, exercise))
 
 

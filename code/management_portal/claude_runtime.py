@@ -5,7 +5,7 @@ import sys
 
 
 # Increment for changes to the packaged Portal adapter, including its dependencies.
-PROVIDER_REVISION = 1
+PROVIDER_REVISION = 2
 
 
 def provider_version(cli_version: str, revision: int = PROVIDER_REVISION) -> str:

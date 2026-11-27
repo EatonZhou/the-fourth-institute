@@ -52,10 +52,12 @@ class TurnInputPump:
         context: Any,
         event_processor: Any,
         deliver: Deliver,
+        accepts_question_answers: bool = False,
         poll_seconds: float = POLL_SECONDS,
     ) -> None:
         self._context = context
         self._event_processor = event_processor
+        self._accepts_question_answers = accepts_question_answers
         self._deliver = deliver
         self._poll_seconds = max(0.01, float(poll_seconds))
         self._lock = threading.Lock()
@@ -155,7 +157,8 @@ class TurnInputPump:
         if not isinstance(items, list) or not items:
             return False, "turn_control_input_missing"
         if any(isinstance(item, dict) and item.get("type") == "user_input_response" for item in items):
-            return False, "user_input_response_unsupported"
+            if not self._accepts_question_answers or len(items) != 1:
+                return False, "user_input_response_unsupported"
         with self._lock:
             if self._active_turn != turn_id:
                 return False, "active provider turn changed"

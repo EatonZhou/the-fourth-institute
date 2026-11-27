@@ -4,13 +4,14 @@ import localIpc from './local_ipc.cjs';
 import { chmodSync, closeSync, fstatSync, openSync, readFileSync, statSync, unlinkSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
+import { buildForkSeed } from '@deepseek-ai/dsh-session/fork';
 import { freezeMessage } from '@deepseek-ai/dsh-llm';
 import { observeModelRequests } from './request_timing.mjs';
 
 const dshVersion = JSON.parse(readFileSync(new URL('./node_modules/@deepseek-ai/dsh/package.json', import.meta.url), 'utf8')).version;
 
 export const name = 'portal-control';
-export const inject = ['agents', 'sessions', 'sessionPersistence', 'systemPrompt', 'tools', 'tokenMeter', 'compaction', 'terminals'];
+export const inject = ['agents', 'sessions', 'sessionPersistence', 'systemPrompt', 'tools', 'tokenMeter', 'compaction', 'terminals', 'goals'];
 
 const textOf = blocks => (blocks ?? []).filter(b => b.type === 'text').map(b => b.text).join('\n');
 const operationFingerprint = params => fingerprint([params.prompt, params.model, params.effort, params.tools]);
@@ -312,7 +313,10 @@ export function apply(ctx, config) {
           if (!current) return {kind: 'reject'};
           return next();
         });
-        agentCtx.systemPrompt.variable('portal_instructions', () => prompt);
+        agentCtx.systemPrompt.variable('portal_instructions', () => {
+          const goal = handle && ctx.goals.get(handle.agent);
+          return goal?.phase === 'active' ? [prompt, 'Current session goal: ' + goal.objective].filter(Boolean).join('\n\n') : prompt;
+        });
         agentCtx.systemPrompt.section({name: 'portal', order: 0, complete: true, text: '{{portal_instructions}}'});
       };
       const agentOptions = {provider: 'deepseek-official', model: options.model,
@@ -515,6 +519,64 @@ export function apply(ctx, config) {
             const matches = current && current.id === p.turn_id && (!p.session_id || p.session_id === sessionId);
             if (matches) handle.agent.cancel({kind: 'user'});
             return {interrupted: Boolean(matches)};
+          }
+          if (message.method === 'session/goal' || message.method === 'session/fork') {
+            if (p.session_id !== sessionId || p.provider_profile !== config.route) throw new Error('Session binding changed');
+            if (current || admitted || compacting) throw new Error('Session is busy');
+            compacting = true;
+            try {
+              if (message.method === 'session/fork') {
+                if (!/^dsh-[0-9a-f]{32}$/.test(p.child_id)) throw new Error('Invalid child session ID');
+                if (!(await ctx.sessionPersistence.stat(p.child_id))) {
+                  if (handle) await flush();
+                  const reader = await ctx.sessionPersistence.open(sessionId, 'read');
+                  let log, header;
+                  try {
+                    log = (await reader.read()).events;
+                    header = reader.header;
+                  } finally { await reader.close(); }
+                  let seq = p.at_seq;
+                  if (seq == null) {
+                    seq = log.findLast(e => e.type === 'turn/end')?.seq;
+                    if (seq == null) throw new Error('No completed turn to fork');
+                    for (const e of log.slice(seq + 1)) {
+                      if (e.type === 'turn/start' || e.type === 'agent/inbox/spliced' ||
+                          (e.type === 'user/message' && e.surfaceOp === 'append')) break;
+                      seq = e.seq;
+                    }
+                  }
+                  if (!Number.isSafeInteger(seq) || seq < 0 || log[seq]?.seq !== seq) throw new Error('Invalid fork sequence');
+                  const events = buildForkSeed(log, seq);
+                  const writer = await ctx.sessionPersistence.create(
+                    {...header, id: p.child_id, isSeeded: true}, {inheritedEventCount: seq + 1});
+                  try {
+                    await writer.append(events);
+                    await writer.flush();
+                  } finally { await writer.close(); }
+                }
+                return {session_id: p.child_id};
+              }
+              assertSession(p);
+              if (!(await ctx.sessionPersistence.stat(sessionId))) throw new Error('Session history missing');
+              await load(p);
+              const agent = handle.agent;
+              const goal = ctx.goals.get(agent);
+              const raw = String(p.argument || '').trim();
+              if (!raw || raw === 'status' || raw === 'show') return {goal: goal ?? null};
+              const ref = goal && {id: goal.id, revision: goal.revision};
+              if (['pause', 'resume', 'clear'].includes(raw)) {
+                if (!ref) throw new Error('No current goal');
+                ctx.goals[raw](agent, ref);
+              } else if (/^edit(?:\s|$)/.test(raw)) {
+                if (!ref || !raw.slice(4).trim()) throw new Error('Expected a current goal and a new objective');
+                ctx.goals.edit(agent, ref, {objective: raw.slice(4).trim()});
+              } else {
+                if (goal && goal.phase !== 'complete') throw new Error('Use /goal edit to change the active goal');
+                ctx.goals.create(agent, {objective: raw});
+              }
+              await flush();
+              return {goal: ctx.goals.get(agent) ?? null};
+            } finally { compacting = false; lastUsed = Date.now(); }
           }
           if (message.method === 'session/compact') {
             // DSH's own on-demand compaction (what its /compact command runs):

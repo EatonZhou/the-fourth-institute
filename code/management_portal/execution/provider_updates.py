@@ -155,6 +155,7 @@ class ProviderRuntime:
     code's dependency directory.
     """
 
+    session_controls_since = ""
     services: tuple[str, ...] = ()
     # A second Portal build of the same official backend gets a numbered edition.
     # Keep historical entries so running builds retain their identity after rollback.
@@ -200,6 +201,9 @@ class ProviderRuntime:
         return f"{official}-{edition}" if edition else official
 
     def mark_edition(self, root, official):
+        from .provider_session_features import MARKER
+        if self.session_controls_since and Version(official) >= Version(self.session_controls_since):
+            (root / MARKER).touch()
         if official in self.release_editions:
             (root / "PROVIDER_EDITION").write_text(str(self.release_editions[official]) + "\n")
 
@@ -238,6 +242,8 @@ class ProviderRuntime:
         return root
 
 class CodexRuntime(ProviderRuntime):
+    session_controls_since = "0.172.0"
+    release_editions = {"0.172.0": 1}
     # Each account host is its own registered component, defined when the
     # account starts; there is no static definition to install beforehand.
     unit_files = ()
@@ -486,14 +492,17 @@ class KimiRuntime(ProviderRuntime):
         return (run_command(str(npm_binary(link, "kimi")), "--version", timeout=60),)
 
     def version_label(self, versions, *, installed=False):
+        from .kimi_runtime_patch import verified
         base = super().version_label(versions)
-        if base in {"2.4.1", "2.5.3"} and (not installed or self.installation_current(versions)):
+        if base == "2.5.3":
+            if not installed:
+                return base + "-2"
+            if verified(self.link()):
+                marker = self.link() / "PROVIDER_EDITION"
+                return base + "-" + (marker.read_text().strip() if marker.exists() else "1")
+        elif base == "2.4.1" and (not installed or verified(self.link())):
             return base + "-1"
         return base
-
-    def installation_current(self, versions):
-        from .kimi_runtime_patch import verified
-        return versions not in {("2.4.1",), ("2.5.3",)} or verified(self.link())
 
     def activation_ready(self, root, *, deadline=None):
         from management_portal import kimi_account_runtime
@@ -520,6 +529,8 @@ class KimiRuntime(ProviderRuntime):
         if native_policy_revision:
             from .kimi_runtime_patch import PATCH_ID
             root = RUNTIMES / f"kimi-code-{version}-{PATCH_ID}"
+            if version == "2.5.3":
+                root = root.with_name(root.name + "-2")
         binary = npm_binary(root, "kimi")
         marker = root / ".portal-validated"
         if not marker.is_file() or not binary.is_file():
@@ -533,6 +544,10 @@ class KimiRuntime(ProviderRuntime):
             help_text = run_command(str(binary), "web", "--help", timeout=60)
             if "--no-open" not in help_text:
                 raise RuntimeError("Kimi web server contract changed")
+        if version == "2.5.3":
+            from .provider_session_features import MARKER
+            (root / MARKER).touch()
+            (root / "PROVIDER_EDITION").write_text("2\n")
         marker.write_text(version + "\n")
         return root
 
@@ -541,6 +556,8 @@ class KimiRuntime(ProviderRuntime):
 
 
 class DshRuntime(ProviderRuntime):
+    session_controls_since = "0.2.2-rc.5"
+    release_editions = {"0.2.2-rc.5": 1}
     """DSH and its LLM package are released separately; the bridge comes from the Portal tree."""
 
     PACKAGES = ("@deepseek-ai/dsh", "@deepseek-ai/dsh-llm")
@@ -557,7 +574,7 @@ class DshRuntime(ProviderRuntime):
 
     def version_label(self, versions, *, installed=False):
         if len(versions) != 2 or versions[0] == versions[1]:
-            return super().version_label(versions)
+            return super().version_label(versions, installed=installed)
         official, llm = versions
         # Reserve the bare official number for the upstream matched pair. A
         # staged variant carries its assigned edition across restarts/rollback.
@@ -575,18 +592,21 @@ class DshRuntime(ProviderRuntime):
                 editions[secondary] = int(marker.read_text())
             else:
                 legacy.add(secondary)
+        reserved = self.release_editions.get(official, 0)
         for secondary in sorted(legacy, key=Version):
-            edition = 1
+            edition = reserved + 1
             while edition in editions.values():
                 edition += 1
             editions[secondary] = edition
-        edition = editions.get(llm, max(editions.values(), default=0) + 1)
+        edition = editions.get(llm, max([reserved, *editions.values()]) + 1)
         return f"{official}-{edition}"
 
     def stage(self, versions: tuple[str, ...]) -> Path:
         version, llm = versions
         label = self.version_label(versions)
         root = RUNTIMES / f"dsh-runtime-{version}-{llm}"
+        if version == llm and version in self.release_editions:
+            root = root.with_name(root.name + f"-{self.release_editions[version]}")
         root.mkdir(parents=True, exist_ok=True)
         marker = root / ".portal-validated"
         source = ROOT / "management_portal/dsh_runtime"
@@ -616,6 +636,7 @@ class DshRuntime(ProviderRuntime):
             run_command("npm", "install", "--prefix", str(root), "--omit=dev", "--no-audit", "--no-fund", timeout=3600)
         run_command("node", "--check", str(root / "bridge.mjs"), timeout=60)
         run_command("node", "--input-type=module", "-e", "const m=await import(process.argv[1]); if(typeof m.apply !== 'function') process.exit(1)", (root / "bridge.mjs").as_uri(), timeout=90)
+        self.mark_edition(root, version)
         if version != llm:
             (root / "PROVIDER_EDITION").write_text(label.rsplit("-", 1)[1] + "\n")
         marker.write_text(expected_marker + "\n")
@@ -1232,8 +1253,14 @@ def register_migrations(versions, claude_accounts, *, review=()):
         migrations = state.setdefault("migrations", {})
         for key, (target, label) in targets.items():
             if key in pending and pending[key] != target:
-                errors[key] = "Another candidate is already pending"
-                continue
+                previous = migrations.get(key, {})
+                family, _, edition = label.rpartition("-")
+                old_family, _, old_edition = previous.get("label", "").rpartition("-")
+                if not (key not in review and previous.get("target") == pending[key]
+                        and old_family == family and edition.isdigit() and old_edition.isdigit()
+                        and int(edition) > int(old_edition)):
+                    errors[key] = "Another candidate is already pending"
+                    continue
             if key in review:
                 if key in pending:
                     errors[key] = "The candidate is already queued for activation"

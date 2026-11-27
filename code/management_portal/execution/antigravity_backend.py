@@ -12,6 +12,18 @@ class AntigravityOptions(NativeOptions):
 
         parts = str(content or "").strip().split(maxsplit=1)
         action = parts[0].lower() if parts else ""
+        if action == "/plan":
+            from .provider_session_features import session_features_enabled
+            if not session_features_enabled("antigravity"):
+                return None
+            if not can_update_runtime:
+                return _result(settings, "需要会话设置权限。", title="Antigravity Plan")
+            arg = parts[1].lower() if len(parts) > 1 else ""
+            mode = {"on": "plan", "off": "default", "": "default" if settings.get("collaboration_mode") == "plan" else "plan"}.get(arg)
+            if not mode:
+                return _result(settings, "用法：/plan [on|off]", title="Antigravity Plan")
+            updated = model_selection_settings(settings, {"collaboration_mode": mode}, actor=actor, updated_at=updated_at)
+            return _result(updated, f"下一轮模式：{mode}", title="Antigravity Plan", updates=updated)
         if action == "/swarm":
             return _result(settings, "当前 Portal 使用的 Antigravity ACP 未提供原生 Swarm。可在 Antigravity App 或 CLI 中使用 `/swarm`。",
                            title="Antigravity Swarm")
@@ -49,4 +61,4 @@ class AntigravityOptions(NativeOptions):
             # The settings store can express the Provider default as an empty
             # string. Unmapped custom permission settings still fail closed.
             preset = self.default_permission_preset
-        return {**options, "native_tools_enabled": preset == "full-access"}
+        return {**options, "collaboration_mode": settings.get("collaboration_mode") or "default", "native_tools_enabled": preset == "full-access"}

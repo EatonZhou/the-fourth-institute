@@ -67,7 +67,7 @@ def test_activated_claude_is_read_from_its_package(isolated, sdk):
     package = isolated / "claude-provider-test"
     package.mkdir()
     (package / "COMPONENTS.json").write_text(json.dumps(dict(agent_sdk="0.2.174", claude_code="2.1.288", revision=1)))
-    (package / "VERSION").write_text(provider_version("2.1.288"))
+    (package / "VERSION").write_text(provider_version("2.1.288", 1))
     (package / "SDK_DIRECTORY").write_text(selected_sdk.name)
     runtime = updates.ClaudeRuntime()
     runtime.activation_link().symlink_to(package, target_is_directory=True)

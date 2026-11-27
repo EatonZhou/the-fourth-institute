@@ -47,6 +47,26 @@ class ClaudeCodeDaemonTest(unittest.IsolatedAsyncioTestCase):
             installed_provider_paths["runtime_root"] / "claude-agent-sdk-current" / executable
         )
 
+    async def test_rewind_only_accepts_a_checkpoint_of_the_bound_idle_session(self):
+        with tempfile.TemporaryDirectory() as directory:
+            sid, target = str(uuid.uuid4()), str(uuid.uuid4())
+            params = {"session_id": sid, "cwd": directory, "config_dir": directory, "provider_profile": "test"}
+            daemon = daemon_module.ClaudeCodeDaemon()
+            handle = mock.Mock(session_id=sid, signature=daemon._signature(params, "test"),
+                               active_turn_id="", lock=asyncio.Lock(), client=mock.AsyncMock())
+            daemon._loaded_session = mock.AsyncMock(return_value=("key", sid, handle))
+            project = Path(directory) / "projects" / "test"
+            project.mkdir(parents=True)
+            (project / f"{sid}.jsonl").write_text(json.dumps({"type": "file-history-snapshot",
+                                                            "snapshot": {"messageId": target}}))
+            self.assertEqual(await daemon.file_checkpoints(params), {"checkpoints": [target]})
+            with self.assertRaises(ValueError):
+                await daemon.file_checkpoints({**params, "message_id": str(uuid.uuid4())})
+            with self.assertRaises(ValueError):
+                await daemon.file_checkpoints({**params, "provider_profile": "another", "message_id": target})
+            self.assertEqual(await daemon.file_checkpoints({**params, "message_id": target}), {"restored": target})
+            handle.client.rewind_files.assert_awaited_once_with(target)
+
     async def test_health_is_ready_before_accounts_are_registered(self):
         """新实例的 daemon 就绪不依赖账号登记、默认路由或密钥。"""
         with mock.patch.dict(os.environ):

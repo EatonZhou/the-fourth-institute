@@ -372,6 +372,23 @@ def handle_resident_native_command(
     from management_portal.execution.slash_commands import _token_usage_content, model_selection_settings
     backend = resident_backend.execution_backend(record)
     definition = AGENT_PROVIDERS[backend]
+    text = content.strip()
+    verb, _, argument = text.partition(" ")
+    command = verb[1:].lower() if verb.startswith("/") else ""
+    if command in definition.session_commands:
+        from management_portal.execution.provider_session_commands import execute
+        title = f"{definition.label} /{command}"
+        if not session_id:
+            return _backend_command_result(settings, "当前还没有后端会话。", title=title)
+        if not can_update_runtime:
+            return _backend_command_result(settings, "当前用户没有管理此会话的权限。", title=title)
+        route = str(resident_backend.execution_account(record).get("backend_route_id") or "")
+        try:
+            result = execute(backend, command, argument.strip(), session_id, route, cwd,
+                             resident_runtime_domain.resident_cli_environment(record))
+        except (RuntimeError, ValueError, OSError, TimeoutError) as exc:
+            return _backend_command_result(settings, f"/{command} 执行失败：{exc}", title=title)
+        return _backend_command_result(settings, result, title=title)
     native_result = definition.runtime_adapter().handle_native_command(
             content,
             settings,

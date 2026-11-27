@@ -344,6 +344,10 @@ class NativeSocketBackend:
             config_dir=str(options.get("config_dir") or ""),
             title=str(options.get("title") or ""),
             provider_profile=route_id,
+            **({"fork_key": request.execution_id, "inherit_portal_database": may_inherit_portal_database(request), "at_seq": options.get("at_seq", options.get("atSeq")),
+                "message_id": options.get("message_id"), "resident_environment": options.get("resident_environment", {}),
+                "model": options.get("model", ""), "effort": options.get("effort", "")}
+               if self.provider_id in {"dsh", "opencode"} else {}),
         )
         forked_id = str(forked.get("session_id") or "")
         if not forked_id:
@@ -567,6 +571,7 @@ class NativeTurnRun:
             context=context,
             event_processor=getattr(invocation, "provider_event_processor", None),
             deliver=self._deliver_turn_input,
+            accepts_question_answers=self.provider.native_questions,
         ) if self.provider.active_turn_input else _NO_TURN_INPUT
         self.tool_catalog, self.tool_callback = backend.prepare_turn_tools(invocation, context)
         self.client_options = backend.client_turn_options(invocation, context, self.tool_catalog)

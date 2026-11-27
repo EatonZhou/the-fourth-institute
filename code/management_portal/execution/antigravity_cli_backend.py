@@ -13,6 +13,7 @@ from management_portal.antigravity_client import AcpError, AcpTransportError, To
 from management_portal.antigravity_runtime import supported_version
 from management_portal.antigravity_account_host import connect_account
 from management_portal.antigravity_input_media import prompt_content
+from .turn_input_pump import TurnInputPump, text_input
 from . import antigravity_cli
 from .backend_contracts import BackendResult
 from .context_seed import realize_portable_seed
@@ -99,6 +100,7 @@ class _CliTurn:
         self.compact = self.request.operation == "compact"
         self.active_turn = False
         self.accepted = False
+        self.input_pump = None
         self.segment = 0
         self.after_tool = False
         self.text_parts = []
@@ -122,6 +124,8 @@ class _CliTurn:
             self.context.bind_input(provider=self.provider_id, backend_session_id=self.sid, turn_id=self.turn_id, backend_route_id=self.route)
             self.emit("turn/started", turn={"id": self.turn_id})
             self.accepted = True
+            if self.input_pump:
+                self.input_pump.turn_started(self.turn_id)
 
     def complete_tool(self, tool_id, item):
         name, arguments = _tool_arguments(item)
@@ -295,7 +299,7 @@ class AntigravityCliBackend:
             model = str(request.runtime_options.get("model") or models["default_model"])
             if model not in models["models"]:
                 raise ValueError("The selected model is no longer offered by this Antigravity account")
-            antigravity_cli.configure_session(client, session_id, opened, model)
+            antigravity_cli.configure_session(client, session_id, opened, model, request.runtime_options.get("collaboration_mode") or "default")
             yield client, session_id, model
 
     def prepare_context_seed(self, invocation):
@@ -371,6 +375,7 @@ class AntigravityCliBackend:
                 previous_checkpoint = _latest_checkpoint(env, turn.sid)
                 prompt = [{"type": "text", "text": "/compact"}]
             turn.start_idx, _ = _read_steps(env, turn.sid)
+            turn.portal_only = portal_only
             response = self.prompt(client, turn, prompt)
             if compact:
                 if response.get("stopReason") != "end_turn":
@@ -390,8 +395,22 @@ class AntigravityCliBackend:
             self._active[key] = client
         turn.active_turn = True
         try:
-            result = client.call("session/prompt", {"sessionId": turn.sid, "prompt": content},
-                                 timeout=None, cancelled=turn.context.is_cancelled, session_id=turn.sid)
+            def steer(turn_id, items, control_id):
+                value = text_input(items)
+                if not value or turn_id != turn.turn_id:
+                    return False, "turn_input_not_text"
+                if turn.portal_only and re.match(r"^/[a-zA-Z][\w-]*(?:\s|$)", value.lstrip()):
+                    return False, "native_commands_disabled"
+                client.call("portal/steer", {"sessionId": turn.sid, "prompt": [{"type": "text", "text": value}]})
+                return True, ""
+
+            with ExitStack() as stack:
+                from .provider_session_features import session_features_enabled
+                if not turn.compact and session_features_enabled("antigravity"):
+                    turn.input_pump = stack.enter_context(TurnInputPump(context=turn.context,
+                        event_processor=getattr(turn.invocation, "provider_event_processor", None), deliver=steer))
+                result = client.call("session/prompt", {"sessionId": turn.sid, "prompt": content},
+                                     timeout=None, cancelled=turn.context.is_cancelled, session_id=turn.sid)
             if result.get("stopReason") == "cancelled" or turn.context.is_cancelled():
                 raise InterruptedError("Antigravity turn cancelled")
             return result

@@ -70,7 +70,8 @@ def _cli_args(binary, env):
 
 
 class AntigravityRuntime(updates.ProviderRuntime):
-    release_editions = {VERSION: 1}
+    session_controls_since = "1.5.18"
+    release_editions = {VERSION: 2}
 
     def available(self):
         return (latest_distribution()["version"],)

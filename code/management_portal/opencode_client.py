@@ -23,7 +23,8 @@ from types import SimpleNamespace
 from management_common.provider_subagent_runs import PROGRESS_METHOD, STOPPING_METHOD, SubagentRuns
 from management_portal.native_agent_transport import NativeAgentClient, NativeAgentError, NativeAgentUnavailable
 from management_portal import opencode_provider_catalog
-from management_portal.resident_shell_environment import resident_process_environment
+from management_portal.resident_shell_environment import resident_process_environment, resident_identity_fingerprint
+from management_portal.execution.provider_session_features import session_features_enabled
 
 PROVIDER = "opencode"
 STATE = portal_path("provider-state") / "opencode"
@@ -149,6 +150,10 @@ class OpenCodeSubagentCards:
         return [] if card is None else [self._event("item/completed", card)]
 
 
+def account_scope(route, identity, inherit_database):
+    return digest(json.dumps([route, identity, bool(inherit_database)], sort_keys=True))
+
+
 class OpenCodeClient:
     def _transport(self, session_id: str) -> NativeAgentClient:
         if not SESSION_ID.fullmatch(str(session_id or "")):
@@ -183,12 +188,13 @@ class OpenCodeClient:
                 "config_home": str(opencode_provider_catalog.config_home()),
                 "inherit_portal_database": bool(params.get("inherit_portal_database")),
                 "version": opencode_provider_catalog.version(),
+                "snapshot": session_features_enabled("opencode"),
                 "identity_fingerprint": hashlib.sha256(
                     json.dumps(identity, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest(),
             }
             # Existing session databases stay at their original location. New native
             # sessions share storage only within the account and inherited shell authority.
-            scope = digest(json.dumps([route, identity, config["inherit_portal_database"]], sort_keys=True))
+            scope = account_scope(route, identity, config["inherit_portal_database"])
             generation = digest(json.dumps([scope, config["binary"], config["version"], config["provider"],
                                             digest(key or ""), BRIDGE.stat().st_mtime_ns], sort_keys=True))
             config["generation"] = generation
@@ -269,6 +275,55 @@ class OpenCodeClient:
         result = transport._request("turn/run", params, event_callback=event_callback, tool_callback=tool_callback,
                                     detach_requested=detach_requested)
         return SimpleNamespace(**result)
+
+    def fork_session(self, *, source_session_id, fork_key, cwd, provider_profile, message_id="", **options):
+        from management_common.file_permissions import atomic_write_private_bytes
+        if not fork_key:
+            raise ValueError("Missing fork execution identity")
+        target = session_for_turn("fork:" + fork_key)
+        root = STATE / target
+        root.mkdir(mode=0o700, parents=True, exist_ok=True)
+        state = root / "state.json"
+        with (root / "launch.lock").open("a+") as lock, lock_stream(lock):
+            if state.exists():
+                return {"session_id": target}
+            export = self._transport(source_session_id)._request("session/fork", {
+                "session_id": source_session_id, "provider_profile": provider_profile,
+                "fork_key": fork_key, "message_id": message_id}, response_timeout=180)
+            # Import the native export into the child's own database, also when the
+            # destination has a different Resident identity or working directory.
+            import tempfile
+            native = export["info"]["id"]
+            identity = resident_identity_fingerprint(options.get("resident_environment"))
+            scope = account_scope(provider_profile, identity, options.get("inherit_portal_database"))
+            account = STATE / "accounts" / scope
+            account.mkdir(mode=0o700, parents=True, exist_ok=True)
+            env = {k: os.environ[k] for k in ("PATH", "SYSTEMROOT", "TMPDIR") if k in os.environ}
+            env.update(HOME=str(root), XDG_DATA_HOME=str(root / "data"), XDG_CONFIG_HOME=str(root / "config"),
+                       XDG_STATE_HOME=str(root / "state"), OPENCODE_DB=str(account / "opencode.db"),
+                       OPENCODE_DISABLE_PROJECT_CONFIG="1", OPENCODE_DISABLE_AUTOUPDATE="1",
+                       OPENCODE_DISABLE_MODELS_FETCH="1")
+            with tempfile.TemporaryDirectory(dir=root) as tmp:
+                path = Path(tmp) / "session.json"
+                atomic_write_private_bytes(path, json.dumps(export).encode())
+                binary = str(opencode_provider_catalog.binary())
+                subprocess.run([binary, "import", str(path)], cwd=tmp, env=env, check=True,
+                               capture_output=True, timeout=120)
+                check = subprocess.run([binary, "export", native], cwd=tmp, env=env, check=True,
+                                       capture_output=True, timeout=120)
+                if json.loads(check.stdout)["info"]["id"] != native:
+                    raise NativeAgentError("OpenCode failed to import the fork")
+            atomic_write_private_bytes(state, json.dumps({"opencode_session_id": native, "turns": {}}).encode())
+        return {"session_id": target}
+
+    def session_command(self, command, params, argument):
+        params = {**params, "resident_environment": resident_identity_fingerprint(params.get("resident_environment"))}
+        transport = self._transport(params["session_id"])
+        try:
+            transport._request("health", response_timeout=3)
+        except NativeAgentUnavailable:
+            transport = self._start(params["session_id"], params)
+        return transport._request("session/" + command, {**params, "argument": argument}, response_timeout=180)
 
     def requests(self, session_id: str, *, since_ms: int) -> dict:
         """Every model request of the session since ``since_ms``, from OpenCode's own record."""

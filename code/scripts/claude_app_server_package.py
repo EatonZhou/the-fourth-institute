@@ -75,6 +75,8 @@ def stage_release(source: Path, directory: Path, sdk: Path, sdk_version: str, *,
         target = directory / f"claude-provider-{version}"
         (candidate / "VERSION").write_text(version + "\n")
         components = {"agent_sdk": sdk_version, "claude_code": cli_version, "revision": PROVIDER_REVISION}
+        from management_portal.execution.provider_session_features import MARKER
+        (candidate / MARKER).touch()
         (candidate / "COMPONENTS.json").write_text(json.dumps(components) + "\n")
         (candidate / ".portal-validated").write_text(version + "\n")
         try:

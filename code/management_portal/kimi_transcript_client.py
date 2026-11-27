@@ -1,12 +1,15 @@
 """Kimi Code 2.5 transcript and interaction protocol."""
 from __future__ import annotations
 
+import hashlib
+import threading
 import json
 import queue
 import time
 from fnmatch import fnmatchcase
 from urllib.parse import quote
 
+from management_common.provider_user_input import REQUEST_ITEM, RESULT_ITEM, validate_response
 from management_common.provider_subagent_runs import PROGRESS_METHOD, SubagentRuns
 
 from .kimi_code_client import (KimiCodeClient, KimiCodeDetached, KimiCodeObservationLost,
@@ -148,6 +151,12 @@ class TurnItems:
 
 
 class KimiTranscriptClient(KimiCodeClient):
+    def __init__(self, *args, native_questions=True, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.native_questions = native_questions
+        self._question_lock = threading.RLock()
+        self._questions = {}
+
     def _open_event_stream(self, session_id):
         return TranscriptStream(self.base_url, session_id)
 
@@ -205,7 +214,61 @@ class KimiTranscriptClient(KimiCodeClient):
             seen.add(cursor)
             page = self.transcript(session, before=cursor)
 
-    def _resolve_interactions(self, session_id, projection, owner, tools, resolved):
+    @staticmethod
+    def _question_event(emit, item_type, data):
+        key = data["request_id"]
+        item = {"type": item_type, "id": f"user-input:{key}:{item_type}", "user_input": data}
+        emit({"method": "item/started" if item_type == REQUEST_ITEM else "item/completed",
+              "params": {"threadId": data["thread_id"], "turnId": data["turn_id"], "item": item}})
+
+    def _open_question(self, session, prompt, req, emit):
+        ident = req["interactionId"]
+        key = hashlib.sha256(json.dumps([session, prompt, ident]).encode()).hexdigest()
+        questions = [{**q, "header": q.get("header") or q["question"]} for q in req["request"]["questions"]]
+        data = {"request_id": key, "thread_id": session, "turn_id": prompt, "item_id": ident,
+                "is_blocking": True, "questions": questions, "status": "pending"}
+        with self._question_lock:
+            self._questions[key] = (data, emit)
+            self._question_event(emit, REQUEST_ITEM, data)
+
+    def answer_question(self, session, prompt, item):
+        with self._question_lock:
+            key = item["request_id"]
+            entry = self._questions.get(key)
+            if not entry or (entry[0]["thread_id"], entry[0]["turn_id"]) != (session, prompt):
+                raise ValueError("Kimi question is no longer pending in this turn")
+            data, emit = entry
+            reply = validate_response(item, data["questions"])
+            cancel = reply["action"] == "cancel"
+            body = {"kind": "question"}
+            if cancel:
+                body["dismissed"] = True
+            else:
+                answers = {}
+                for q in data["questions"]:
+                    selected = reply["answers"][q["id"]]["answers"]
+                    options = {o["label"]: o["id"] for o in q["options"]}
+                    ids = [options[v] for v in selected if v in options]
+                    other = [v for v in selected if v not in options]
+                    if (len(other) > 1 or (other and not q.get("allow_other", True))
+                            or (not q.get("multi_select") and len(selected) != 1)):
+                        raise ValueError("Invalid Kimi question selection")
+                    if other and ids:
+                        answer = {"kind": "multi_with_other", "option_ids": ids, "other_text": other[0]}
+                    elif other:
+                        answer = {"kind": "other", "text": other[0]}
+                    elif q.get("multi_select"):
+                        answer = {"kind": "multi", "option_ids": ids}
+                    else:
+                        answer = {"kind": "single", "option_id": ids[0]}
+                    answers[q["id"]] = answer
+                body.update(answers=answers, method="click")
+            self._interaction(session, data["item_id"], body)
+            del self._questions[key]
+            self._question_event(emit, RESULT_ITEM, {**data, "status": "cancelled" if cancel else "answered",
+                                                     "answers": reply["answers"]})
+
+    def _resolve_interactions(self, session_id, projection, owner, tools, resolved, *, prompt_id=None, emit=None):
         calls = {f["toolCallId"] for s in owner["steps"] for f in s["frames"] if f["kind"] == "tool"}
         for req in projection.get("interactions", []):
             ident = req["interactionId"]
@@ -214,7 +277,10 @@ class KimiTranscriptClient(KimiCodeClient):
             if req.get("toolCallId") and req["toolCallId"] not in calls:
                 continue
             if req["interactionKind"] == "question":
-                self.dismiss_question(session_id, ident)
+                if self.native_questions:
+                    self._open_question(session_id, prompt_id, req, emit)
+                else:
+                    self.dismiss_question(session_id, ident)
             else:
                 request = req.get("request") or {}
                 name = request.get("toolName") or request.get("tool_name") or ""
@@ -222,7 +288,16 @@ class KimiTranscriptClient(KimiCodeClient):
                 self.resolve_approval(session_id, ident, decision="approved" if allowed else "rejected")
             resolved.add(ident)
 
-    def _follow_prompt(self, *, session_id, prompt_id, tools, started_at, emit, detach_requested,
+    def _follow_prompt(self, *, session_id, prompt_id, **options):
+        try:
+            return self._read_prompt(session_id=session_id, prompt_id=prompt_id, **options)
+        finally:
+            with self._question_lock:
+                for key, (data, _) in list(self._questions.items()):
+                    if (data["thread_id"], data["turn_id"]) == (session_id, prompt_id):
+                        del self._questions[key]
+
+    def _read_prompt(self, *, session_id, prompt_id, tools, started_at, emit, detach_requested,
                        live_stream, resumed=False, **kwargs):
         items = TurnItems(session_id, prompt_id, emit)
         resolved = set()
@@ -257,7 +332,7 @@ class KimiTranscriptClient(KimiCodeClient):
                 for child in items.follow_child(agent, parent_frame, child_page, turn):
                     pending.append((child_page, child))
             for projection, owner in pending:
-                self._resolve_interactions(session_id, projection, owner, tools, resolved)
+                self._resolve_interactions(session_id, projection, owner, tools, resolved, prompt_id=prompt_id, emit=emit)
             state = turn["state"]
             if state in {"failed", "cancelled"}:
                 raise KimiCodeTurnFailed(turn.get("error") or f"Kimi turn {state}")

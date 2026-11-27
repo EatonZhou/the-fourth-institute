@@ -120,7 +120,7 @@
                 || (part.status !== "pending" ? part : this.nativeOutcomes.get(part.request_id) || part);
               groups.push({
                 kind: "native", key: part.request_id, source_message_id: message.message_id, native: part,
-                questions: (part.questions || []).map(question => ({ id: question.id, title: question.question, options: (question.options || []).map(option => option.label) })),
+                questions: (part.questions || []).map(question => ({ id: question.id, title: question.question, multiple: question.multi_select === true, allowOther: question.allow_other !== false, options: (question.options || []).map(option => option.label) })),
                 state: result.status === "pending" ? "open" : result.status,
                 answers: Object.fromEntries(Object.entries(result.answers || {}).map(([id, answer]) => [id, (answer.answers || []).join("、")])),
                 delivery: "",
@@ -245,7 +245,8 @@
         const step = Math.min(progress.step, group.questions.length - 1);
         const question = group.questions[step];
         const chosen = progress.answers[question.id] || "";
-        const custom = progress.drafts?.[question.id] ?? (chosen && !question.options.includes(chosen) ? chosen : "");
+        const selected = question.multiple ? (progress.selections?.[question.id] ?? (Array.isArray(chosen) ? chosen : [])) : [];
+        const custom = progress.drafts?.[question.id] ?? (question.multiple ? selected.find(v => !question.options.includes(v)) || "" : chosen && !question.options.includes(chosen) ? chosen : "");
         // A permission request: its fixed options are the server's own words, the
         // first approves, and only the exact permissions it lists can be lent.
         const lending = question.credentials?.length > 0;
@@ -271,7 +272,7 @@
         <div class="residentQuestionTitle">${escapeHtml(question.title)}</div>
         ${credentials}
         ${progress.approvalPending ? window.PortalI18n.html`<button type="button" class="portalButton is-compact is-primary" data-question-retry>重试提交</button>` : ""}
-        <div class="residentQuestionChoices">${question.options.map((option, index) => window.PortalI18n.html`<button type="button" class="portalButton residentQuestionChoice" data-question-option="${index}" aria-pressed="${String(option === chosen)}">${index < 9 ? window.PortalI18n.html`<kbd>${index + 1}</kbd>` : ""}<span>${escapeHtml(lending ? window.PortalI18n.t(option) : option)}</span></button>`).join("")}</div>
+        <div class="residentQuestionChoices">${question.options.map((option, index) => window.PortalI18n.html`<button type="button" class="portalButton residentQuestionChoice" data-question-option="${index}" aria-pressed="${String(question.multiple ? selected.includes(option) : option === chosen)}">${index < 9 ? window.PortalI18n.html`<kbd>${index + 1}</kbd>` : ""}<span>${escapeHtml(lending ? window.PortalI18n.t(option) : option)}</span></button>`).join("")}</div>
         ${lending ? "" : window.PortalI18n.html`<div class="residentQuestionCustom"><input type="text" data-question-custom value="${escapeHtml(custom)}" placeholder="${escapeHtml(question.options.length ? window.PortalI18n.t("其他回答，按 Enter 确认") : window.PortalI18n.t("输入回答，按 Enter 确认"))}" aria-label="${escapeHtml(window.PortalI18n.text`回答：${question.title}`)}" /><button type="button" class="portalButton is-compact is-primary" data-question-confirm>${escapeHtml(step === group.questions.length - 1 ? window.PortalI18n.t("提交回答") : window.PortalI18n.t("下一题"))}</button></div>`}`;
         for (const control of element.querySelectorAll("button, input")) {
           control.disabled = sending || Boolean(progress.approvalPending)
@@ -293,10 +294,18 @@
                 if (selection.getRangeAt(index).intersectsNode(button)) return;
               }
             }
-            this.answer(question.options[Number(button.dataset.questionOption)]);
+            const value = question.options[Number(button.dataset.questionOption)];
+            if (question.multiple) {
+              (progress.selections ||= {})[question.id] = selected.includes(value) ? selected.filter(v => v !== value) : [...selected, value];
+              this.saveProgress();
+              this.drawActive();
+            } else {
+              this.answer(value);
+            }
           });
         });
         const input = element.querySelector("[data-question-custom]");
+        if (input && question.allowOther === false) input.hidden = true;
         input?.addEventListener("input", () => {
           // Unconfirmed text is a draft, never an answer or permission grant.
           // Save each edit so a reload does not depend on blur or confirmation.
@@ -307,7 +316,14 @@
           this.active.signature = this.activeSignature();
         });
         element.querySelector("[data-question-confirm]")?.addEventListener("click", () => {
-          this.answer(input.value.trim() || (progress.drafts?.[question.id] === undefined ? chosen : ""));
+          const free = input?.value.trim() || "";
+          if (question.multiple) {
+            const values = selected.filter(v => question.options.includes(v));
+            if (free && !values.includes(free)) values.push(free);
+            if (values.length) this.answer(values);
+          } else {
+            this.answer(free || (progress.drafts?.[question.id] === undefined ? chosen : ""));
+          }
         });
         element.querySelector("[data-question-back]")?.addEventListener("click", () => {
           progress.step = step - 1;
@@ -330,7 +346,7 @@
         if (input) {
           if (event.key === "Enter" && input.value.trim()) {
             event.preventDefault();
-            this.answer(input.value.trim());
+            this.active.element.querySelector("[data-question-confirm]")?.click();
           }
           return;
         }
@@ -468,7 +484,7 @@
         const key = `${scope}:${group.key}`;
         if (this.sending.has(key)) return;
         const progress = this.progressOf(group);
-        const answers = action === "cancel" ? {} : Object.fromEntries(group.questions.map(question => [question.id, { answers: [progress.answers[question.id]] }]));
+        const answers = action === "cancel" ? {} : Object.fromEntries(group.questions.map(question => [question.id, { answers: [].concat(progress.answers[question.id]) }]));
         this.sending.add(key);
         this.render(this.panel.snapshot() || {});
         try {

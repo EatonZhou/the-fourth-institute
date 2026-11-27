@@ -1,5 +1,7 @@
 from unittest.mock import Mock
 
+import pytest
+
 from management_portal.kimi_transcript_client import KimiTranscriptClient, TurnItems
 
 
@@ -45,3 +47,23 @@ def test_individual_subagent_stop_preserves_parent_turn():
     client._request = Mock(side_effect=AssertionError("must not cancel the session"))
     assert client.stop_subagent(session_id="s", tool_use_id="child") == {
         "stopped": False, "reason": "unsupported_by_provider"}
+
+
+def test_native_question_answer_is_bound_to_the_prompt_and_sent_once(tmp_path):
+    client = KimiTranscriptClient("http://localhost", home=tmp_path)
+    client._interaction = Mock()
+    events = []
+    question = {"id": "q", "question": "选择", "allow_other": True, "multi_select": True,
+                "options": [{"id": "a", "label": "A"}]}
+    req = {"interactionId": "i", "request": {"questions": [question]}}
+    client._open_question("session", "prompt", req, events.append)
+    key = events[0]["params"]["item"]["user_input"]["request_id"]
+    reply = {"request_id": key, "answers": {"q": {"answers": ["A", "自填"]}}}
+    with pytest.raises(ValueError):
+        client.answer_question("session", "other", reply)
+    client.answer_question("session", "prompt", reply)
+    with pytest.raises(ValueError):
+        client.answer_question("session", "prompt", reply)
+    client._interaction.assert_called_once_with("session", "i", {"kind": "question", "method": "click",
+        "answers": {"q": {"kind": "multi_with_other", "option_ids": ["a"], "other_text": "自填"}}})
+    assert events[-1]["params"]["item"]["user_input"]["status"] == "answered"

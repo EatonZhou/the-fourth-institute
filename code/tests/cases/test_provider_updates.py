@@ -13,11 +13,12 @@ import sys
 from types import SimpleNamespace
 import pytest
 
+from management_portal.claude_runtime import PROVIDER_REVISION
 from management_portal.execution import provider_updates as updates
 
 
 INSTALLED = {
-    updates.CodexRuntime: ("0.159.2",), updates.ClaudeRuntime: ("0.2.162", "2.1.288", "1"),
+    updates.CodexRuntime: ("0.159.2",), updates.ClaudeRuntime: ("0.2.162", "2.1.288", str(PROVIDER_REVISION)),
     updates.KimiRuntime: ("2.1.1",), updates.DshRuntime: ("0.2.0-rc.2", "0.2.0-rc.2"),
 }
 

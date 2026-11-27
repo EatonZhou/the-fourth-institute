@@ -4,7 +4,9 @@ Native SDKs, route parsing and model constraints stay behind these adapters.
 Adding a backend must not add provider tests to Resident or ExecutionRuntime.
 """
 import logging
-from dataclasses import dataclass, field
+from collections import UserDict
+from dataclasses import dataclass, field, replace
+from .provider_session_features import session_features_enabled
 from importlib import import_module
 from typing import Any
 
@@ -63,6 +65,8 @@ class AgentProvider:
     resume_without_session: bool = False
     native_review: bool = False
     native_goals: bool = False
+    session_commands: tuple[str, ...] = ()
+    native_questions: bool = False
     local_catalog: bool = True
     # The Provider's Backend, as ``module.Class`` (``build_backend``).
     adapter: str = ""
@@ -183,7 +187,7 @@ class AgentProvider:
             "permissions": "permissions" in self.runtime_settings,
             "compact": "compact" in self.operations,
         }
-        return tuple(name for name in NATIVE_COMMANDS if offered[name])
+        return tuple(name for name in NATIVE_COMMANDS if offered[name]) + self.session_commands
 
     def upstream_for(self, route: str = "") -> str:
         """The service this route sends its model requests to."""
@@ -254,7 +258,7 @@ class AgentProvider:
         return getattr(import_module(module), name)
 
     def runtime_capabilities(self) -> dict[str, Any]:
-        return self.runtime_adapter().capabilities(self)
+        return {**self.runtime_adapter().capabilities(self), "native_questions": self.native_questions}
 
     def backend_class(self):
         module, _, name = self.adapter.rpartition(".")
@@ -290,11 +294,31 @@ class AgentProvider:
         return model, effort
 
 
-AGENT_PROVIDERS = {
+class ProviderCatalog(UserDict):
+    """Keep menus and admission in step with the atomically selected runtime."""
+    def __init__(self, definitions):
+        super().__init__(definitions)
+        self.previous = {name: replace(p, session_commands=()) for name, p in definitions.items()}
+        agy = self.previous["antigravity"]
+        self.previous["antigravity"] = replace(agy, runtime_settings=("model", "permissions"), active_turn_input=False)
+        for name in ("dsh", "opencode"):
+            p = self.previous[name]
+            self.previous[name] = replace(p, operations=p.operations - {"fork"})
+        self.previous["kimi"] = replace(self.previous["kimi"], native_questions=False)
+        self.original = definitions
+
+    def __getitem__(self, name):
+        definition = self.data[name]
+        if self.original.get(name) is definition and not session_features_enabled(name):
+            return self.previous[name]
+        return definition
+
+
+AGENT_PROVIDERS = ProviderCatalog({
     p.provider: p for p in (
         AgentProvider("antigravity", "Google Antigravity", frozenset({"create", "turn", "compact", "release"}),
-                      ("model", "permissions"), "management_portal.antigravity_accounts",
-                      media=True,
+                      ("model", "permissions", "collaboration_mode"), "management_portal.antigravity_accounts",
+                      active_turn_input=True, media=True,
                       account_adapter="AntigravityAccounts",
                       adapter="management_portal.execution.antigravity_cli_backend.AntigravityCliBackend",
                       options_adapter="management_portal.execution.antigravity_backend.AntigravityOptions",
@@ -320,7 +344,7 @@ AGENT_PROVIDERS = {
                       credential_globs=(".gemini*",),
                       runtime_updater="management_portal.antigravity_runtime.AntigravityRuntime"),
         AgentProvider("codex", "Codex", frozenset({"create", "turn", "fork", "compact", "release"}),
-                      ("model", "reasoning_effort", "service_tier", "permissions", "collaboration_mode"), media=True, local_file_read=True, active_turn_input=True, adapter="management_portal.execution.codex_backend.CodexBackend", account_adapter="CodexAccounts", options_adapter="CodexOptions", native_review=True, native_goals=True, local_catalog=False, seeded_compaction=True,
+                      ("model", "reasoning_effort", "service_tier", "permissions", "collaboration_mode"), media=True, local_file_read=True, active_turn_input=True, adapter="management_portal.execution.codex_backend.CodexBackend", account_adapter="CodexAccounts", options_adapter="CodexOptions", native_questions=True, session_commands=("rename", "archive", "unarchive"), native_review=True, native_goals=True, local_catalog=False, seeded_compaction=True,
                       # App-server owns the running turn and its native processes.
                       # Interrupting a follower's handover can abandon those processes.
                       handover_keeps_turn=True, upstream="openai", api_protocol="openai_responses", api_protocol_conversion=True, session_tools_fixed=True,
@@ -352,7 +376,7 @@ AGENT_PROVIDERS = {
                                          ERROR_CONTINUATION, INPUT_IMAGE_DETAIL, TURN_REASONING_EFFORT,
                                          SUBAGENTS, SUBAGENT_EVENTS, SUBAGENT_STOP})),
         AgentProvider("claude", "Claude Code", frozenset({"turn", "fork", "compact", "release"}),
-                      ("model", "reasoning_effort", "permissions"), "management_portal.claude_provider_catalog", "deepseek_primary", adapter="management_portal.execution.claude_backend.ClaudeBackend", account_adapter="ClaudeAccounts", options_adapter="ClaudeOptions", resume_without_session=True,
+                      ("model", "reasoning_effort", "permissions"), "management_portal.claude_provider_catalog", "deepseek_primary", adapter="management_portal.execution.claude_backend.ClaudeBackend", account_adapter="ClaudeAccounts", options_adapter="ClaudeOptions", session_commands=("checkpoints", "rewind"), resume_without_session=True,
                       initial_instructions_transport="system_instructions", system_context_every_turn=True, media=True, local_file_read=True,
                       # The CLI takes a user message that arrives during a turn after the
                       # turn's current step (the daemon's ``turn/steer``).
@@ -376,15 +400,14 @@ AGENT_PROVIDERS = {
                       # Claude Code starts turns by itself (task notifications, messages).
                       self_started_usage="management_portal.execution.unattributed_usage.record_self_started_claude_usage"),
         AgentProvider("kimi", "Kimi Code", frozenset({"create", "turn", "fork", "compact", "release"}),
-                      ("model", "permissions"), media=True, local_file_read=True, adapter="management_portal.execution.kimi_backend.KimiBackend", account_adapter="KimiAccounts", options_adapter="KimiOptions", api_protocol="openai_chat",
+                      ("model", "permissions"), media=True, local_file_read=True, adapter="management_portal.execution.kimi_backend.KimiBackend", native_questions=True, account_adapter="KimiAccounts", options_adapter="KimiOptions", api_protocol="openai_chat",
                       # Kimi Code steers a prompt queued during a turn into the running one.
                       active_turn_input=True,
                       # The Kimi Code server runs the prompt; a Worker only follows it.
                       handover_keeps_turn=True,
                       initial_instructions_transport="system_instructions", image_input_transport="path_reference",
-                      # A subagent is a task of the main agent, which Kimi Code cancels alone.
-                      harness=frozenset({CONTEXT_USAGE_EVENTS, PORTAL_TOOLS, NATIVE_TOOL_EVENTS, ERROR_CONTINUATION, SUBAGENTS, SUBAGENT_EVENTS,
-                                         SUBAGENT_STOP}),
+                      # Transcript v2 reports child activity but cannot cancel a single child.
+                      harness=frozenset({CONTEXT_USAGE_EVENTS, PORTAL_TOOLS, NATIVE_TOOL_EVENTS, ERROR_CONTINUATION, SUBAGENTS, SUBAGENT_EVENTS}),
                       subagents_by_default=True, upstream="moonshot",
                       account_operations={"login": AccountOperation(
                           "management_portal.execution.kimi_account_login.account_login",
@@ -396,7 +419,7 @@ AGENT_PROVIDERS = {
                       credential_globs=(".kimi*",),
                       credential_paths_provider="management_portal.kimi_code_client.credential_paths",
                       runtime_updater="KimiRuntime"),
-        AgentProvider("dsh", "DeepSeek Harness", frozenset({"turn", "compact", "release"}),
+        AgentProvider("dsh", "DeepSeek Harness", frozenset({"turn", "fork", "compact", "release"}),
                       ("model", "reasoning_effort"), "management_portal.dsh_provider_catalog", "deepseek", adapter="management_portal.execution.dsh_backend.DshBackend", runtime_package="management_portal/dsh_runtime", resume_without_session=True,
                       # The agent takes steering at the running turn's next step (bridge ``turn/steer``).
                       active_turn_input=True,
@@ -408,10 +431,10 @@ AGENT_PROVIDERS = {
                       subagents_by_default=True, upstream="deepseek", api_protocol="anthropic_messages",
                       credential_paths_provider="management_portal.dsh_client.credential_paths",
                       system_context_every_turn=True,
-                      system_instructions_place="每轮完整替换运行时系统提示", runtime_updater="DshRuntime"),
-        AgentProvider("opencode", "OpenCode", frozenset({"turn", "compact", "release"}),
+                      system_instructions_place="每轮完整替换运行时系统提示", session_commands=("goal",), runtime_updater="DshRuntime"),
+        AgentProvider("opencode", "OpenCode", frozenset({"turn", "fork", "compact", "release"}),
                       ("model", "reasoning_effort"), "management_portal.opencode_provider_catalog", "zen_free", api_protocol="openai_chat",
-                      adapter="management_portal.opencode_backend.OpenCodeBackend", resume_without_session=True,
+                      adapter="management_portal.opencode_backend.OpenCodeBackend", session_commands=("diff", "revert", "unrevert"), resume_without_session=True,
                       # OpenCode keeps a message's system instructions with that message only.
                       initial_instructions_transport="system_instructions", system_context_every_turn=True,
                       # A message sent during a run is taken at the run's next step.
@@ -426,7 +449,7 @@ AGENT_PROVIDERS = {
                       credential_paths_provider="management_portal.opencode_client.credential_paths",
                       runtime_updater="management_portal.opencode_runtime.OpenCodeRuntime"),
     )
-}
+})
 
 
 def provider_name(value: object) -> str:

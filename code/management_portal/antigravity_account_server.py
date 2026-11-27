@@ -167,6 +167,7 @@ class WorkerConnection:
         self.sid = ""
         self.busy = None
         self.method = ""
+        self.steers = set()
         self.initialized = False
 
     def deliver(self, message):
@@ -193,6 +194,14 @@ class WorkerConnection:
                 elif identifier is None:
                     if method == "session/cancel" and self.sid and params.get("sessionId") == self.sid:
                         self.native.answer(message)
+                elif method == "portal/steer":
+                    if (self.busy and not self.busy.done() and self.method == "session/prompt"
+                            and self.sid and params.get("sessionId") == self.sid):
+                        task = asyncio.create_task(self.forward(identifier, "session/prompt", params))
+                        self.steers.add(task)
+                        task.add_done_callback(self.steers.discard)
+                    else:
+                        self.deliver(error(identifier, -32600))
                 elif self.busy and not self.busy.done():
                     self.deliver(error(identifier, -32600))
                 else:
@@ -211,14 +220,17 @@ class WorkerConnection:
             self.native.stop_if_abandoned()
             # Keep ownership until Google settles an outstanding prompt, even
             # if its caller dies. A late update must never reach the next turn.
+            outstanding = set(self.steers)
             if self.busy:
-                done, _ = await asyncio.wait({self.busy}, timeout=CANCEL_GRACE_SECONDS)
-                if not done:
+                outstanding.add(self.busy)
+            if outstanding:
+                _, remaining = await asyncio.wait(outstanding, timeout=CANCEL_GRACE_SECONDS)
+                if remaining:
                     # No new admissions. Let attached siblings finish, then
                     # reap the stuck native generation and all its children.
                     self.native.retiring = True
                     self.native.stop_if_abandoned()
-                await asyncio.gather(self.busy, return_exceptions=True)
+                await asyncio.gather(*outstanding, return_exceptions=True)
             sid = self.sid
             if self.native.sessions.get(sid) is self:
                 try:
@@ -245,11 +257,14 @@ class WorkerConnection:
         native = self.native
         sid = params.get("sessionId")
         try:
+            if asyncio.current_task() in self.steers and (self.busy.done() or self.method != "session/prompt"):
+                self.deliver(error(identifier, -32600))
+                return
             if method == "initialize":
                 reply = await native.setup(method)
                 self.initialized = "result" in reply
-            elif method in {"session/new", "session/load"} and self.initialized and not self.sid:
-                if method == "session/load":
+            elif method in {"session/new", "session/load", "session/resume"} and self.initialized and not self.sid:
+                if method in {"session/load", "session/resume"}:
                     if not isinstance(sid, str) or not sid or sid in native.sessions:
                         self.deliver(error(identifier, -32602))
                         return
@@ -272,7 +287,7 @@ class WorkerConnection:
                     for update in native.initial_updates.pop(sid, {}).values():
                         self.deliver({"jsonrpc": "2.0", "method": "session/update",
                                       "params": {"sessionId": sid, "update": update}})
-                if method == "session/load" and "error" in reply:
+                if method in {"session/load", "session/resume"} and "error" in reply:
                     native.sessions.pop(self.sid, None)
                     self.sid = ""
                 if not native.creating:

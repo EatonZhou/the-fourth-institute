@@ -2,6 +2,7 @@
 from __future__ import annotations
 from management_common.portal_paths import path as portal_path
 from management_common.code_environment import provider_entry
+from management_portal.execution.provider_session_features import MARKER as SESSION_CONTROLS
 
 from management_common.file_lock import lock_stream
 from management_common.process_runtime import spawn_process, terminate_process_tree
@@ -42,16 +43,24 @@ def _runtime_modules(names):
     return json.loads(result.stdout)
 
 
-def _profile_code(profile, modules):
+def _profile_code(profile, names):
     """Generated bridge files import the code owner's dependencies explicitly."""
+    sources = {}
+    imports = r"from (['\"])(@deepseek-ai/[^'\"]+)\1"
     for name in ("bridge.mjs", "api_provider.mjs"):
-        source = (Path(__file__).parent / "dsh_runtime" / name).read_text(encoding="utf-8")
-        source = re.sub(r"from (['\"])(@deepseek-ai/[^'\"]+)\1",
-                        lambda match: "from " + json.dumps(Path(modules[match[2]]).as_uri()), source)
+        selected = RUNTIME / name
+        source = (selected if selected.is_file() else Path(__file__).parent / "dsh_runtime" / name).read_text(encoding="utf-8")
+        sources[name] = source
+    dependencies = {match[1] for source in sources.values() for match in re.findall(imports, source)}
+    modules = _runtime_modules(set(names) | dependencies)
+    for name, source in sources.items():
+        source = re.sub(imports, lambda match: "from " + json.dumps(Path(modules[match[2]]).as_uri()), source)
         source = source.replace("'./node_modules/@deepseek-ai/dsh/package.json'",
                                 json.dumps((RUNTIME.resolve() / "node_modules/@deepseek-ai/dsh/package.json").as_uri()))
         (profile / name).write_text(source, encoding="utf-8")
-    shutil.copyfile(Path(__file__).parent / "dsh_runtime/request_timing.mjs", profile / "request_timing.mjs")
+    timing = RUNTIME / "request_timing.mjs"
+    shutil.copyfile(timing if timing.is_file() else Path(__file__).parent / "dsh_runtime/request_timing.mjs", profile / "request_timing.mjs")
+    return modules
 
 
 def credential_paths() -> tuple[Path, ...]:
@@ -175,6 +184,8 @@ class DshClient:
             subagents = params.get("allow_subagents") is not False
             (root / "launch.json").write_text(json.dumps({"threshold_ratio": ratio, "subagents": subagents}))
             plugin("dsh-session-checkpoint-policy")
+            if (RUNTIME / SESSION_CONTROLS).is_file():
+                plugin("dsh-goal")
             plugin("dsh-working-directory", {"defaultDirectory": params["cwd"]})
             plugin("dsh-sandbox-local")
             plugin("dsh-sandbox-policy", {"mode": "danger-full-access", "workspaceRoot": params["cwd"]})
@@ -204,9 +215,7 @@ class DshClient:
                 "pythonExecutable": sys.executable,
                 "route": params["provider_profile"],
                 "identityFingerprint": hashlib.sha256(json.dumps(identity, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()}})
-            modules = _runtime_modules([row["name"] for row in rows if row["name"].startswith("@deepseek-ai/")]
-                                       + ["@deepseek-ai/dsh-llm", "@deepseek-ai/dsh-llm-deepseek"])
-            _profile_code(profile, modules)
+            modules = _profile_code(profile, [row["name"] for row in rows if row["name"].startswith("@deepseek-ai/")])
             for plugin_row in rows:
                 if plugin_row["name"] in modules:
                     plugin_row["name"] = modules[plugin_row["name"]]
@@ -265,6 +274,37 @@ class DshClient:
                                     detach_requested=detach_requested)
         return SimpleNamespace(**result)
 
+
+    def session_goal(self, params, argument):
+        params = {**params, "resident_environment": resident_identity_fingerprint(params["resident_environment"])}
+        params["model"], params["effort"] = self._settings(params)
+        return self._start(params["session_id"], params)._request("session/goal", {**params, "argument": argument})
+
+    def fork_session(self, *, source_session_id, cwd, provider_profile, fork_key, at_seq=None, **options):
+        # Only history crosses the fork. The new execution establishes its own shell identity.
+        source = self._transport(source_session_id)
+        target = session_id_for("fork:" + fork_key)
+        if not fork_key:
+            raise ValueError("Missing fork execution identity")
+        result = source._request("session/fork", {"session_id": source_session_id, "provider_profile": provider_profile,
+                                 "child_id": target, "at_seq": at_seq}, response_timeout=120)
+        if result.get("session_id") != target:
+            raise NativeAgentError("Unexpected fork session ID")
+        original = STATE / source_session_id / "sessions"
+        files = list(original.glob(f"*/{target}/session.v*.jsonl"))
+        if not files:
+            raise NativeAgentError("DSH did not persist the fork")
+        from management_common.file_permissions import atomic_write_private_bytes
+        child = STATE / target
+        child.mkdir(mode=0o700, exist_ok=True)
+        with (child / "launch.lock").open("a+") as lock, lock_stream(lock):
+            for path in files:
+                dest = STATE / target / "sessions" / path.relative_to(original)
+                dest.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+                # A completed fork may already have been resumed by a retried execution.
+                if not dest.exists():
+                    atomic_write_private_bytes(dest, path.read_bytes())
+        return result
 
     def compact_session(self, *, session_key="", session_id, **params):
         """Compact an idle session's history now (what DSH's /compact runs).
