@@ -682,7 +682,7 @@ def test_candidate_account_gate_runs_once_on_exact_target(monkeypatch, tmp_path,
 
     def prepare(kind, env):
         assert kind == provider
-        assert len(attempts) == 2
+        assert len(attempts) == (3 if provider in {"claude", "dsh"} else 2)
         env["TEST_LOGIN"] = "present"
 
     def run(command, *, env, cwd, **options):
@@ -690,13 +690,18 @@ def test_candidate_account_gate_runs_once_on_exact_target(monkeypatch, tmp_path,
         assert kind == provider and "ANTHROPIC_API_KEY" not in env
         assert options.get("timeout") is None and cwd.parent == Path(env["HOME"])
         marker = cwd / "old-session"
-        if script.endswith("_live.py"):
-            assert "TEST_LOGIN" in env and not marker.exists()
-        elif not attempts:
-            assert "TEST_LOGIN" not in env
-            marker.write_text("saved")
-        else:
+        if len(attempts) == 3:
+            assert "TEST_LOGIN" in env and marker.read_text() == "saved"
+            assert "TFI_HANDOFF_SEED" not in env
+        elif len(attempts) == 1:
             assert "TEST_LOGIN" not in env and marker.read_text() == "saved"
+        else:
+            assert not marker.exists()
+            if script.endswith("_live.py"):
+                assert env["TFI_HANDOFF_SEED"] == "1" and "TEST_LOGIN" in env
+            else:
+                assert "TEST_LOGIN" not in env
+            marker.write_text("saved")
         attempts.append((Path(script).name, target, env["HOME"]))
 
     monkeypatch.setattr(probe.provider_probe_account, "prepare", prepare)
@@ -704,8 +709,9 @@ def test_candidate_account_gate_runs_once_on_exact_target(monkeypatch, tmp_path,
     probe.validate(provider, staged, active)
     assert [(s, p) for s, p, _ in attempts] == [
         ("provider_candidate_probe.py", str(active)), ("provider_candidate_probe.py", str(staged)),
+        ("provider_candidate_probe.py" if provider in {"claude", "dsh"} else "provider_candidate_live.py", str(active)),
         ("provider_candidate_live.py", str(staged))]
-    assert attempts[0][2] == attempts[1][2] != attempts[2][2]
+    assert attempts[0][2] == attempts[1][2] != attempts[2][2] == attempts[3][2]
     assert all(not Path(home).exists() for _, _, home in attempts)
 
 
@@ -738,14 +744,15 @@ def test_probe_preserves_subscription_billing_scope(monkeypatch):
         accounts.select_account("kimi")
 
 
-@pytest.mark.parametrize("failure_stage", ["test_profile", "live_account"])
+@pytest.mark.parametrize("failure_stage", ["test_profile", "handoff", "live_account"])
 def test_live_failure_blocks_acceptance(monkeypatch, tmp_path, validation_supervisor, failure_stage):
     from management_portal.execution import provider_candidate as probe
     def prepare(provider, env):
         if failure_stage == "test_profile":
             raise FileNotFoundError("private")
     def run(command, **kwargs):
-        if command[1].endswith("_live.py"):
+        seed = kwargs["env"].get("TFI_HANDOFF_SEED") == "1"
+        if command[1].endswith("_live.py") and seed == (failure_stage == "handoff"):
             raise subprocess.CalledProcessError(1, command)
     monkeypatch.setattr(probe.provider_probe_account, "prepare", prepare)
     monkeypatch.setattr(probe, "run_process", run)
@@ -865,6 +872,7 @@ def test_late_success_preserves_actual_probe_result(monkeypatch, tmp_path, valid
         call.register_provider_validation("codex", tmp_path.name, 0),
         call.set_validation_stage("attempt", "baseline"),
         call.set_validation_stage("attempt", "candidate"),
+        call.set_validation_stage("attempt", "handoff"),
         call.set_validation_stage("attempt", "live_account"),
         call.finish_validation("attempt"),
     ]

@@ -39,14 +39,12 @@ RECEIPT = {"name": "receipt", "description": "Get one of the two fixture receipt
                            "required": ["index", "path"]}}
 
 
-def codex(root, model):
+@contextmanager
+def codex_server(root):
     from management_portal.execution.provider_updates import npm_binary
     binary = root
     if root.is_dir():
         binary = root / "portal-codex" if sys.platform == "linux" else npm_binary(root, "codex")
-    Path(os.environ["CODEX_HOME"], "config.toml").write_text(
-        'model="gpt-5.4"\nmodel_provider="probe"\n[model_providers.probe]\n'
-        f'name="probe"\nbase_url="{model.url}/v1"\nwire_api="responses"\n')
     with process([str(binary), "app-server"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True) as child:
         count = 0
         def request(method, params, *, error=False):
@@ -64,6 +62,14 @@ def codex(root, model):
                                "capabilities": {"experimentalApi": True}})
         child.stdin.write('{"method":"initialized"}\n')
         child.stdin.flush()
+        yield child, request
+
+
+def codex(root, model):
+    Path(os.environ["CODEX_HOME"], "config.toml").write_text(
+        'model="gpt-5.4"\nmodel_provider="probe"\n[model_providers.probe]\n'
+        f'name="probe"\nbase_url="{model.url}/v1"\nwire_api="responses"\n')
+    with codex_server(root) as (child, request):
         check(request("model/list", {})["data"], "model/list")
         options = {"cwd": os.getcwd(), "approvalPolicy": "never", "sandbox": "read-only"}
         if not model.previous_id:
@@ -100,7 +106,7 @@ def codex(root, model):
         check(model.answer in messages, "Codex terminal message")
         request("thread/read", {"threadId": "invalid"}, error=True)
         check(request("thread/read", {"threadId": thread})["thread"]["id"] == thread, "thread/read")
-        if model.previous_id and (binary.resolve().parent / "PORTAL_SESSION_CONTROLS").is_file():
+        if model.previous_id and ((root if root.is_dir() else root.resolve().parent) / "PORTAL_SESSION_CONTROLS").is_file():
             request("thread/name/set", {"threadId": thread, "name": "Portal probe"})
             request("thread/archive", {"threadId": thread})
             check(request("thread/unarchive", {"threadId": thread})["thread"]["id"] == thread, "Codex unarchive")

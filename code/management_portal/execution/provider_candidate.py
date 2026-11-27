@@ -19,6 +19,7 @@ class CandidateCheckError(PreparationError):
     descriptions = {
         "test_profile": "无法准备已登记的可用验收账号，请检查登录状态、额度或 API 配置。",
         "live_account": "候选版本的真账号测试未取得预期的最终回复。",
+        "handoff": "旧版本创建交接会话失败。",
         "baseline": "当前 SDK 未能完成测试会话的创建。",
         "candidate": "候选 SDK 未通过接口或会话接续检查。",
     }
@@ -95,12 +96,19 @@ def _validate(provider, root, active, set_stage):
             _run(provider, version, "provider_candidate_probe.py", env, work, check)
 
     with phase("interface_validation"), tempfile.TemporaryDirectory(prefix="tfi-live-") as home:
-        set_stage("live_account")
         env = _environment(home)
         work = Path(home, "work")
         work.mkdir()
+        set_stage("handoff")
+        # Both SDKs require a persisted turn before they can resume. Seed it locally.
+        local_seed = provider in {"claude", "dsh"}
+        if local_seed:
+            _run(provider, previous, "provider_candidate_probe.py", env, work, "handoff")
         try:
             provider_probe_account.prepare(provider, env)
         except Exception as exc:
             raise CandidateCheckError("test_profile", exc) from exc
+        if not local_seed:
+            _run(provider, previous, "provider_candidate_live.py", {**env, "TFI_HANDOFF_SEED": "1"}, work, "handoff")
+        set_stage("live_account")
         _run(provider, root, "provider_candidate_live.py", env, work, "live_account")

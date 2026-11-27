@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import tomllib
 
 from management_common.file_permissions import atomic_write_private_bytes
 from management_common.provider_account_paths import registered_home
@@ -70,7 +71,14 @@ def prepare(provider, env):
         from management_portal import claude_provider_catalog
         profile = claude_provider_catalog.profile(route)
         if claude_provider_catalog.is_native(profile):
-            env.update(claude_provider_catalog.login_environment(profile))
+            login = claude_provider_catalog.login_environment(profile)
+            # Keep transcripts in the disposable directory and use only the current access token.
+            directory = Path(login.pop("CLAUDE_CONFIG_DIR"))
+            oauth = json.loads((directory / ".credentials.json").read_text())["claudeAiOauth"]
+            if not oauth.get("accessToken"):
+                raise ValueError("Claude login has no current access token")
+            env.update(login)
+            env["CLAUDE_CODE_OAUTH_TOKEN"] = oauth["accessToken"]
         else:
             from management_portal.model_api_bridge import connection
             from management_portal.model_api_wire import MESSAGES, upstream
@@ -85,10 +93,11 @@ def prepare(provider, env):
         if account["kind"] == "subscription_login":
             # Keep native OAuth locking/refresh on the original credential store.
             # Session, server, tools and history live only under the disposable home.
-            import tomllib
             from .codex_api_accounts import render_toml
             native = tomllib.loads((source / "config.toml").read_text())
             provider_id = "managed:kimi-code"
+            model = model or native["default_model"]
+            env["TFI_PROBE_MODEL"] = model
             settings = {"default_model": model, "providers": {provider_id: native["providers"][provider_id]},
                         "models": {k: v for k, v in native["models"].items() if v.get("provider") == provider_id}}
             atomic_write_private_bytes(home / "config.toml", render_toml(settings).encode())
@@ -101,6 +110,8 @@ def prepare(provider, env):
         else:
             from management_portal.kimi_provider_catalog import write_config
             write_config(account, home)
+            if not model:
+                env["TFI_PROBE_MODEL"] = tomllib.loads((home / "config.toml").read_text())["default_model"]
     elif provider == "opencode":
         from management_portal import opencode_provider_catalog as catalog
         service = catalog.service(route)
@@ -108,7 +119,8 @@ def prepare(provider, env):
         directory.mkdir(mode=0o700, parents=True)
         atomic_write_private_bytes(directory / "auth.json", json.dumps({
             service: {"type": "api", "key": catalog.api_key(route)}}).encode())
-        env.update(TFI_PROBE_SERVICE=service, OPENCODE_DISABLE_AUTOUPDATE="1",
+        env.update(TFI_PROBE_SERVICE=service, TFI_PROBE_MODEL=model or catalog.catalog(route)["default_model"],
+                   OPENCODE_DISABLE_AUTOUPDATE="1",
                    OPENCODE_DISABLE_PROJECT_CONFIG="1", OPENCODE_DISABLE_SHARE="1",
                    OPENCODE_CONFIG_CONTENT=json.dumps({"permission": "deny", "enabled_providers": [service],
                                                         "provider": catalog.provider_config(route)}))
