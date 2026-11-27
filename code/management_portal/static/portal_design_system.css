@@ -653,6 +653,8 @@ textarea.portalControl {
 .portalSearchField[data-portal-search-density="command"] input {
   height: 42px;
   padding-left: 0;
+  /* The caret sits on the input edge, where the shared pill radius clips it. */
+  border-radius: 0;
   font-size: clamp(17px, 3.9vw, 21px);
   font-weight: 500;
 }
