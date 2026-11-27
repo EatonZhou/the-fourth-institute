@@ -21,6 +21,7 @@
 
     function rateLimitWindowLabel(quotaWindow, fallbackName = "Limit") {
       const minutes = Math.max(0, Number(quotaWindow?.window_duration_mins || 0));
+      if (minutes === 30 * 24 * 60) return window.PortalI18n.t("每月");
       if (minutes === 7 * 24 * 60) return "Weekly";
       if (minutes && minutes % (24 * 60) === 0) return window.PortalI18n.text`${minutes / (24 * 60)}d`;
       if (minutes && minutes % 60 === 0) return window.PortalI18n.text`${minutes / 60}h`;
@@ -55,6 +56,10 @@
         return (quota.windows || []).filter(quotaWindow => quotaWindow.remaining_percent === 0).map(quotaWindow => ({
           id: quotaWindow.window, label: rateLimitWindowLabel(quotaWindow, window.PortalI18n.t("额度")), remaining_percent: 0, stale: true, resets_at: quotaWindow.resets_at,
         }));
+      }
+      if (account.provider === "codex") {
+        return windows.map(item => item.id === "primary" && Number(item.window_duration_mins) === 30 * 24 * 60
+          ? {...item, label: window.PortalI18n.t("每月")} : item);
       }
       return windows;
     }

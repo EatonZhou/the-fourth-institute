@@ -1333,13 +1333,9 @@
     root.appendChild(menu);
     const trigger = menu?.querySelector("[data-portal-user-trigger]");
     const popover = menu?.querySelector("[data-portal-user-popover]");
-    let hoverOpened = false;
-    let hoverCloseTimer = 0;
-    const cancelHoverClose = () => {
-      clearTimeout(hoverCloseTimer);
-      hoverCloseTimer = 0;
-    };
     if (menu && trigger && popover) {
+      const preview = window.PortalUIPrimitives.bindMenuPreview(trigger, popover,
+        () => openUserMenu(menu), () => closeUserMenu(menu));
       userMenuPopovers.set(menu, window.PortalOverlay.bindPopover({
         trigger,
         panel: popover,
@@ -1347,41 +1343,13 @@
         margin: 8,
         gap: 7,
         portal: true,
-        onClose: () => {
-          cancelHoverClose();
-          hoverOpened = false;
-        },
+        onClose: preview.reset,
       }));
-      trigger.addEventListener("pointerenter", event => {
-        if (event.pointerType !== "mouse") return;
-        cancelHoverClose();
-        if (trigger.getAttribute("aria-expanded") !== "true") {
-          openUserMenu(menu);
-          hoverOpened = true;
-        }
+      trigger.addEventListener("click", event => {
+        event.stopPropagation();
+        preview.toggle();
       });
-      const scheduleHoverClose = () => {
-        cancelHoverClose();
-        if (!hoverOpened) return;
-        hoverCloseTimer = setTimeout(() => {
-          if (trigger.matches(":hover") || popover.matches(":hover")
-            || popover.contains(document.activeElement)) return;
-          closeUserMenu(menu);
-        }, 140);
-      };
-      trigger.addEventListener("pointerleave", scheduleHoverClose);
-      popover.addEventListener("pointerenter", cancelHoverClose);
-      popover.addEventListener("pointerleave", scheduleHoverClose);
-      popover.addEventListener("focusout", scheduleHoverClose);
     }
-    trigger?.addEventListener("click", event => {
-      event.stopPropagation();
-      cancelHoverClose();
-      const wasHoverOpened = hoverOpened;
-      hoverOpened = false;
-      if (trigger.getAttribute("aria-expanded") === "true" && !wasHoverOpened) closeUserMenu(menu);
-      else openUserMenu(menu);
-    });
     menu?.querySelectorAll("[data-portal-deployment]").forEach(button => {
       button.addEventListener("click", () => switchPortalDeployment(menu, button.dataset.portalDeployment || ""));
     });

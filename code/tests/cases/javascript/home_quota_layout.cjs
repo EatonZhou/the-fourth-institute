@@ -182,6 +182,12 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
       assert.deepEqual(await antigravity.locator('.agent-status-limit-meta').allTextContents(),['—','99%*','100%','100%']);
       assert.deepEqual(await antigravity.locator('[data-account-quota-window]').evaluateAll(bars=>bars.map(bar=>bar.dataset.accountQuotaWindow)),['Gemini Models/Five Hour Limit Remaining','Gemini Models/Weekly Limit Remaining','Claude and GPT models/Five Hour Limit Remaining','Claude and GPT models/Weekly Limit Remaining']);
     }
+    await page.evaluate(()=>{
+      const account=data.accounts.find(a=>a.account_id==='codex_one');
+      account.rate_limits=[{...account.rate_limits[0],label:'primary',window_duration_mins:43200}];
+      refreshAccountQuotaWindows();
+    });
+    assert.equal(await codex.locator('.agent-status-window-name').innerText(),'每月');
     await page.addScriptTag({path:path.join(root,'management_portal/static/portal_translations.js')});
     await page.evaluate(()=>{
       window.PortalI18n.t=key=>window.__PORTAL_TRANSLATIONS__[key]?.en || key;
@@ -189,6 +195,7 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
     });
     assert.deepEqual(await antigravity.locator('.agent-status-window-name').allTextContents(),
       ['5 hours','Weekly','Other · 5 hours','Other · Weekly']);
+    assert.equal(await codex.locator('.agent-status-window-name').innerText(),'Monthly');
     await page.evaluate(()=>{window.PortalI18n.t=key=>key;refreshAccountQuotaWindows();});
     assert.match(await page.locator('[data-account-credits] dd').innerText(),/44.?904[.,]19/);
     for(const width of [1440,390,320]) {
