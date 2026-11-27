@@ -476,6 +476,12 @@ html:root[data-portal-theme="liquid-glass"] body {
 }
 
 /* Floating rounded-rectangle pill site header & navigation */
+/* Keep the capsule's internal clearance; tighten only the space between
+   page chrome and the next row or workspace. Horizontal gutters stay intact. */
+html:root[data-portal-theme="liquid-glass"] :is(.portalPageFrame, .portalPageHeaderFrame:not(.resourceSectionFrame), .portalSectionShell) {
+  padding-top: 6px;
+}
+
 html:root[data-portal-theme="liquid-glass"] header.resourceSectionPageHeader {
   background: transparent;
   border-bottom-color: transparent;
@@ -483,10 +489,15 @@ html:root[data-portal-theme="liquid-glass"] header.resourceSectionPageHeader {
   backdrop-filter: none;
 }
 
+html:root[data-portal-theme="liquid-glass"] header.resourceSectionPageHeader .portalBoardCommand {
+  padding-block: 3px;
+}
+
 html:root[data-portal-theme="liquid-glass"] .portalSiteHeader {
   background: transparent;
   border-bottom-color: transparent;
   padding-block: 7px;
+  padding-bottom: 4px;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
@@ -503,6 +514,7 @@ html:root[data-portal-theme="liquid-glass"] .portalSiteHeader::before {
   content: "";
   position: absolute;
   inset: 5px 12px;
+  bottom: 2px;
   z-index: -1;
   border-radius: var(--lg-radius-pill);
   background: var(--header-bg);
@@ -512,6 +524,7 @@ html:root[data-portal-theme="liquid-glass"] .portalSiteHeader::before {
 
 html[data-portal-viewport="mobile"]:root[data-portal-theme="liquid-glass"] .portalSiteHeader::before {
   inset: 4px 8px;
+  bottom: 1px;
 }
 
 /* Top navigation transparent liquid-glass water-droplet slider */
