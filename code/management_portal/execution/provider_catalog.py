@@ -339,7 +339,7 @@ AGENT_PROVIDERS = ProviderCatalog({
                       platform_hook="management_common.antigravity_platform.supports_account_isolation",
                       subscription_profile_hook="management_portal.antigravity_accounts.read_subscription_profile",
                       session_reset_key="antigravity_session_reset",
-                      check_discovers_model=True, check_permission_preset="default",
+                      check_discovers_model=True, check_permission_preset="portal-tools-only",
                       system_instructions_place="ACP session 的 systemPrompt.append，恢复时完整替换",
                       credential_globs=(".gemini*",),
                       runtime_updater="management_portal.antigravity_runtime.AntigravityRuntime"),

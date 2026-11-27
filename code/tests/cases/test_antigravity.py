@@ -429,7 +429,7 @@ def test_parallel_error_flush_preserves_actual_tool_result_and_immutable_segment
     (True, {"permission_preset": ""}, "selected"),
     (True, {"permission_preset": "", "sandbox": "danger-full-access", "sandbox_explicit": True}, "selected"),
     (True, {"permission_preset": "full-access"}, "selected"),
-    (True, {"permission_preset": "default"}, "cancelled"),
+    (True, {"permission_preset": "portal-tools-only"}, "cancelled"),
     (True, {"permission_preset": "", "sandbox": "read-only"}, "cancelled"),
     (True, {"permission_preset": "", "sandbox": "danger-full-access", "approval_policy": "on-request"}, "cancelled"),
     (False, {"permission_preset": ""}, "cancelled"),

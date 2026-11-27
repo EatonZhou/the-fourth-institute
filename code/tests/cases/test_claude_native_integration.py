@@ -213,7 +213,7 @@ def test_native_compact_and_status_do_not_require_online_route():
      ["- Provider: `DeepSeek Harness`", "- Route: `deepseek_primary`", "- Model: `deepseek-v4-flash`",
       "- Reasoning effort: `max`"], ["Permissions"]),
     # Kimi Code now has account routes; it still has no reasoning effort.
-    ({"backend": "kimi"}, {"model": "kimi-for-coding", "permission_preset": "default"},
+    ({"backend": "kimi"}, {"model": "kimi-for-coding", "permission_preset": "manual"},
      ["- Provider: `Kimi Code`", "- Model: `kimi-for-coding`", "- Permissions: `Manual`"], ["Reasoning effort"]),
 ], ids=["claude", "dsh", "kimi"])
 def test_native_status_names_the_provider_its_settings_and_the_sessions_tokens(record, settings, expected, absent):
@@ -260,8 +260,8 @@ def _permissions_command(backend, content, *, can_manage=True, settings=None):
         )
 
 
-@pytest.mark.parametrize("backend,restricted", [("claude", "Restricted"), ("kimi", "Manual")])
-def test_native_permissions_shows_and_switches_the_providers_permission_mode(backend, restricted):
+@pytest.mark.parametrize("backend,preset,restricted", [("claude", "restricted", "Restricted"), ("kimi", "manual", "Manual")])
+def test_native_permissions_shows_and_switches_the_providers_permission_mode(backend, preset, restricted):
     """原生会话 /permissions 显示并切换权限模式
 
     Claude Code 与 Kimi Code 的 /permissions 显示当前权限模式和可选模式，有权限的用户可用 /permissions <模式> 切换，后续 turn 生效。
@@ -271,13 +271,15 @@ def test_native_permissions_shows_and_switches_the_providers_permission_mode(bac
     """
     # As in the Resident's settings and Codex's /permissions: the Provider's own modes.
     shown = _permissions_command(backend, "/permissions")
-    assert "当前为 `Full Access`" in shown["content"] and f"`default`（{restricted}）" in shown["content"]
+    assert "当前为 `Full Access`" in shown["content"] and f"`{preset}`（{restricted}）" in shown["content"]
+    assert "`default`" not in shown["content"]
     assert not shown["updates"]
-    switched = _permissions_command(backend, "/permissions default")
-    assert switched["updates"]["permission_preset"] == "default"
+    switched = _permissions_command(backend, f"/permissions {preset}")
+    assert switched["updates"]["permission_preset"] == preset
     assert restricted in switched["content"]
     assert _permissions_command(backend, "/permissions auto-review")["title"] == "Invalid permissions"
-    denied = _permissions_command(backend, "/permissions default", can_manage=False)
+    assert _permissions_command(backend, "/permissions default")["title"] == "Invalid permissions"
+    denied = _permissions_command(backend, f"/permissions {preset}", can_manage=False)
     assert denied["title"] == "Permission denied" and not denied["updates"]
 
 

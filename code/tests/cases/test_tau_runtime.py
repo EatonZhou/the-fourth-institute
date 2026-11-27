@@ -157,7 +157,7 @@ def test_tau_campaign_runtime_is_applied_and_verified_before_dispatch(configured
     from management_portal import lineage_workflows, resident_handoff
 
     identity = {"resident_id": "resident_abcdefabcdef", "lineage_id": "lineage_abcdefabcdef"}
-    settings = {"model": "gpt-6-astra", "reasoning_effort": "low", "permission_preset": "default", "service_tier": ""}
+    settings = {"model": "gpt-6-astra", "reasoning_effort": "low", "permission_preset": "ask", "service_tier": ""}
     runtime = {"model": "gpt-5.6-sol", "reasoning_effort": "medium", "permission_preset": "full-access"}
 
     def update(_actor, arguments, _key, _version):

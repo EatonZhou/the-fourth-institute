@@ -89,7 +89,7 @@ def test_writable_parent_cannot_promote_read_only_binding(agent, turn):
     (True, RESIDENT, "full-access", True),
     (False, RESIDENT, "full-access", False),
     (True, "resident_ffffffffffff", "full-access", False),
-    (True, RESIDENT, "default", False),
+    (True, RESIDENT, "portal-tools-only", False),
 ])
 def test_resident_session_creation_scope_survives_option_preparation(agent, turn, owner, identity, preset, allowed):
     call, scope, folder, shared, project, _ = turn

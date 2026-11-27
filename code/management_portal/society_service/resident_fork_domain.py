@@ -809,7 +809,11 @@ def inherit_derived_resident_runtime_from_source(
         definition = AGENT_PROVIDERS.get(target_backend)
         if definition:
             capabilities = definition.runtime_capabilities()
-            if source_effective.get("permission_preset") not in capabilities["permission_presets"]:
+            from management_portal.execution.resident_runtime_settings import carried_permission_preset
+            carried = carried_permission_preset(source_effective.get("permission_preset"), capabilities["permission_presets"])
+            if carried:
+                source_effective["permission_preset"] = carried
+            else:
                 source_effective.pop("permission_preset", None)
             if "subagents" not in capabilities["harness_capabilities"]:
                 source_effective["allow_subagents"] = False

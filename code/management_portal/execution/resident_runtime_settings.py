@@ -19,7 +19,7 @@ SANDBOXES = ("read-only", "workspace-write", "danger-full-access")
 
 PERMISSION_PRESETS = (
     {
-        "id": "default",
+        "id": "ask",
         "label": "Ask for permissions",
         "permission_profile": ":workspace",
         "sandbox": "workspace-write",
@@ -46,6 +46,22 @@ PERMISSION_PRESETS = (
         "description": "Codex can edit files outside this workspace and access the internet without asking for approval. Exercise caution when using.",
     },
 )
+
+# Restricted presets other Providers declare in their permission_labels. They
+# carry no Codex permission fields; the Provider maps the id to its own mode.
+NATIVE_PERMISSION_PRESETS = frozenset({"restricted", "manual", "portal-tools-only"})
+# Each Provider's restricted tier under its own name.
+RESTRICTED_PERMISSION_PRESETS = NATIVE_PERMISSION_PRESETS | {"ask"}
+
+
+def carried_permission_preset(preset: object, presets: list[str]) -> str:
+    """The preset a session of another Provider keeps: the same id, or the target's restricted tier for a restricted one."""
+    text = str(preset or "")
+    if text in presets:
+        return text
+    if text in RESTRICTED_PERMISSION_PRESETS:
+        return next((item for item in presets if item in RESTRICTED_PERMISSION_PRESETS), "")
+    return ""
 
 
 def now_settings(
@@ -84,6 +100,7 @@ def normalize_settings(raw: object) -> dict[str, Any]:
     approvals_reviewer = _clean_approvals_reviewer(data.get("approvals_reviewer") or "")
     approval_policy = _clean_approval_policy(data.get("approval_policy") or "")
     explicit_preset = _permission_preset(data.get("permission_preset") or "")
+    native_preset = _native_permission_preset(data.get("permission_preset") or "")
     # The Resident's backend is its own column; settings name it only when given.
     backend = str(data.get("backend") or "").strip()
     out: dict[str, Any] = {
@@ -101,6 +118,8 @@ def normalize_settings(raw: object) -> dict[str, Any]:
     }
     if explicit_preset:
         out = _apply_permission_preset(out, explicit_preset["id"])
+    elif native_preset:
+        out = _apply_permission_preset(out, native_preset)
     if out["sandbox"] == "workspace-write" and not out["sandbox_explicit"]:
         out["sandbox"] = ""
     out["permission_preset"] = _permission_preset_id(out)
@@ -325,13 +344,11 @@ def _clean_runtime_authority(value: object) -> str:
 def _permission_preset(value: object) -> dict[str, str] | None:
     text = str(value or "").strip().lower().replace("_", "-")
     aliases = {
-        "workspace": "default",
-        ":workspace": "default",
-        "default": "default",
-        "ask": "default",
-        "ask-permissions": "default",
-        "ask-for-permissions": "default",
-        "askforpermissions": "default",
+        "workspace": "ask",
+        ":workspace": "ask",
+        "ask-permissions": "ask",
+        "ask-for-permissions": "ask",
+        "askforpermissions": "ask",
         "auto": "auto-review",
         "auto-review": "auto-review",
         "auto-reviewer": "auto-review",
@@ -350,9 +367,22 @@ def _permission_preset(value: object) -> dict[str, str] | None:
     return None
 
 
+def _native_permission_preset(value: object) -> str:
+    text = str(value or "").strip().lower().replace("_", "-")
+    return text if text in NATIVE_PERMISSION_PRESETS else ""
+
+
 def _apply_permission_preset(settings: dict[str, Any], preset_id: object) -> dict[str, Any]:
     preset = _permission_preset(preset_id)
     out = dict(settings)
+    native = _native_permission_preset(preset_id)
+    if native:
+        out.update({
+            "permissions": "", "approvals_reviewer": "", "approval_policy": "",
+            "sandbox": "", "sandbox_explicit": False,
+            "profile": f"permissions:{native}", "permission_preset": native,
+        })
+        return out
     if not preset:
         return out
     out.update({
@@ -371,6 +401,9 @@ def _permission_preset_id(settings: dict[str, Any]) -> str:
     explicit_preset = _permission_preset(settings.get("permission_preset") or "")
     if explicit_preset:
         return explicit_preset["id"]
+    native = _native_permission_preset(settings.get("permission_preset") or "")
+    if native:
+        return native
     profile = str(settings.get("permissions") or "").strip()
     reviewer = str(settings.get("approvals_reviewer") or "").strip().lower()
     approval_policy = str(settings.get("approval_policy") or "").strip().lower()
@@ -380,6 +413,9 @@ def _permission_preset_id(settings: dict[str, Any]) -> str:
         preset = _permission_preset(explicit.split(":", 1)[1])
         if preset:
             return preset["id"]
+        native = _native_permission_preset(explicit.split(":", 1)[1])
+        if native:
+            return native
     if profile in {":danger-full-access", ":danger-no-sandbox"}:
         return "full-access"
     if sandbox == "danger-full-access":
@@ -387,5 +423,5 @@ def _permission_preset_id(settings: dict[str, Any]) -> str:
     if profile == ":workspace" and reviewer == "auto_review" and approval_policy in {"", "on-request"}:
         return "auto-review"
     if profile == ":workspace" and reviewer in {"", "user"} and approval_policy in {"", "on-request"}:
-        return "default"
+        return "ask"
     return ""

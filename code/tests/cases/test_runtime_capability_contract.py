@@ -44,7 +44,8 @@ def test_resolved_catalog_and_resident_projection_share_adapter_capabilities():
     catalog = ExecutionAccounts((_ClaudeAccount(),)).runtime_catalog("claude_test")
     assert catalog["runtime_capabilities"] == definition.runtime_capabilities()
     assert catalog["runtime_capabilities"]["settings"] == catalog["runtime_settings"]
-    assert catalog["runtime_capabilities"]["permission_presets"] == ["default", "full-access"]
+    assert catalog["runtime_capabilities"]["permission_presets"] == ["restricted", "full-access"]
+    assert catalog["runtime_capabilities"]["default_permission_preset"] == "full-access"
     assert catalog["runtime_capabilities"]["default_permission_label"] == "Full Access"
     assert "service_tier" not in catalog["runtime_capabilities"]["settings"]
     assert "permission_policy" not in catalog
@@ -68,19 +69,64 @@ def test_permission_selection_is_validated_by_adapter_not_portal_role(provider):
 
 
 @pytest.mark.parametrize("owner", [True, False])
-@pytest.mark.parametrize("preset", [None, "", "default", "full-access"])
-def test_native_permission_selection_is_independent_of_owner_flag(owner, preset):
+@pytest.mark.parametrize("claude_preset,kimi_preset", [
+    (None, None), ("", ""), ("restricted", "manual"), ("full-access", "full-access"),
+])
+def test_native_permission_selection_is_independent_of_owner_flag(owner, claude_preset, kimi_preset):
     """claude 和 kimi 的原生权限模式只由权限预设决定，与是否为所有者无关"""
     claude = ClaudeOptions()
     from management_portal.execution.provider_catalog import AGENT_PROVIDERS
 
-    settings = {} if preset is None else {"permission_preset": preset}
-    expected = "dontAsk" if preset == "default" else "bypassPermissions"
+    settings = {} if claude_preset is None else {"permission_preset": claude_preset}
+    expected = "dontAsk" if claude_preset == "restricted" else "bypassPermissions"
     assert claude.native_options({"provider_profile": AGENT_PROVIDERS["claude"].default_route}, settings)["permission_mode"] == expected
+    settings = {} if kimi_preset is None else {"permission_preset": kimi_preset}
     invocation = _Invocation(_Request({"runtime_settings": settings,
                                       "authorization_scope": {"mode": "A"}, "is_owner": owner}))
     prepared = KimiOptions().prepare(invocation)
-    assert prepared.request.runtime_options["permission_mode"] == ("manual" if preset == "default" else "yolo")
+    assert prepared.request.runtime_options["permission_mode"] == ("manual" if kimi_preset == "manual" else "yolo")
+
+
+def test_restricted_presets_have_meaningful_names_and_default_is_not_a_preset():
+    """各 Provider 的受限权限档用表达含义的键，default 不再是权限预设
+
+    Codex 为 ask、Claude 为 restricted、Kimi 为 manual、Antigravity 为 portal-tools-only；
+    运行设置规范化保留这些键，不再接受 default。跨 Provider 分叉时受限档换成目标 Provider 的受限档。
+
+    :module: execution.providers
+    :design: decision_8b2fa224616b
+    """
+    from management_portal.execution.resident_runtime_settings import (
+        NATIVE_PERMISSION_PRESETS, PERMISSION_PRESETS, carried_permission_preset, normalize_settings,
+    )
+
+    restricted = {"codex": "ask", "claude": "restricted", "kimi": "manual", "antigravity": "portal-tools-only"}
+    known = {item["id"] for item in PERMISSION_PRESETS} | NATIVE_PERMISSION_PRESETS
+    for provider, definition in AGENT_PROVIDERS.items():
+        capabilities = definition.runtime_capabilities()
+        presets = capabilities["permission_presets"]
+        assert "default" not in presets
+        assert set(presets) <= known, provider
+        if presets:
+            assert capabilities["default_permission_preset"] in presets
+        if provider in restricted:
+            assert restricted[provider] in presets
+            assert normalize_settings({"permission_preset": restricted[provider]})["permission_preset"] == restricted[provider]
+            adapter = definition.runtime_adapter()
+            with pytest.raises(ValueError, match="does not support permission preset"):
+                adapter.validate_requested_fields(definition, {"permission_preset": "default"})
+    ask = normalize_settings({"permission_preset": "ask"})
+    assert (ask["permissions"], ask["profile"]) == (":workspace", "permissions:ask")
+    # A stored Codex "default" profile reads as ask through its fields alone.
+    assert normalize_settings({"permission_preset": "default", "profile": "permissions:default", "permissions": ":workspace",
+                               "approvals_reviewer": "user", "approval_policy": "on-request"})["permission_preset"] == "ask"
+    native = normalize_settings({"permission_preset": "restricted", "permissions": ":danger-full-access",
+                                 "sandbox": "danger-full-access", "sandbox_explicit": True})
+    assert (native["permission_preset"], native["permissions"], native["sandbox"]) == ("restricted", "", "")
+    assert carried_permission_preset("restricted", ["ask", "auto-review", "full-access"]) == "ask"
+    assert carried_permission_preset("ask", ["manual", "full-access"]) == "manual"
+    assert carried_permission_preset("auto-review", ["restricted", "full-access"]) == ""
+    assert carried_permission_preset("full-access", ["restricted", "full-access"]) == "full-access"
 
 
 @pytest.mark.parametrize("provider", ["codex", "claude", "kimi"])
@@ -102,7 +148,7 @@ def test_new_resident_defaults_and_capabilities_use_full_access(provider):
 def test_codex_a_mode_preserves_selected_native_permission_profile():
     """授权模式 A 下 codex 保留用户选择的原生权限配置和审批策略"""
     invocation = _Invocation(_Request({
-        "runtime_settings": {"permission_preset": "default", "permissions": ":workspace",
+        "runtime_settings": {"permission_preset": "ask", "permissions": ":workspace",
                              "sandbox": "workspace-write", "approval_policy": "on-request"},
         "authorization_scope": {"mode": "A", "approval_policy": "never"},
     }))

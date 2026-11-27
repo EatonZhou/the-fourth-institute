@@ -12,7 +12,8 @@ w.matchMedia = () => ({matches: false, addEventListener() {}, removeEventListene
 for (const name of ['portal_text', 'portal_state', 'portal_translations', 'portal_i18n', 'portal_ui_primitives', 'portal_overlay', 'portal_ui', 'portal_model_api_settings', 'chat_workspace_runtime_settings']) {
   w.eval(fs.readFileSync(path.join(root, name + '.js'), 'utf8'));
 }
-const catalog = {models: ['m', 'm2'], default_model: 'm', efforts_by_model: {}, service_tiers_by_model: {}, runtime_capabilities: {settings: ['model', 'permissions'], permission_presets: ['full-access']}};
+const catalog = {models: ['m', 'm2'], default_model: 'm', efforts_by_model: {}, service_tiers_by_model: {}, runtime_capabilities: {settings: ['model', 'permissions'], permission_presets: ['restricted', 'full-access'],
+  permission_labels: {restricted: 'Restricted', 'full-access': 'Full Access'}, default_permission_preset: 'full-access'}};
 const changes = [], saves = [], errors = [];
 let observe;
 w.PortalResidentService = {runtimeAccounts: async () => ({accounts: []}), runtimeCatalog: async () => catalog,
@@ -49,6 +50,10 @@ const plain = value => JSON.parse(JSON.stringify(value));
   assert.equal(w.document.querySelector('[data-capability-add]'), null, 'capability configuration is not offered');
   assert.equal(w.document.querySelector('[data-session-restart="strategy"]'), null, 'restarting the same account is not offered');
   assert.equal(w.document.querySelector('[data-session-restart="resume-failed"]'), null, 'switch must not retry a different failed input');
+  const permission = w.document.querySelector('[data-runtime-editor="current"] [data-runtime-setting="permission_preset"]');
+  assert.deepEqual([...permission.options].map(option => [option.value, option.textContent]),
+    [['restricted', 'Restricted'], ['full-access', 'Full Access (default)']], 'no empty default option; only the actual default is marked');
+  assert.equal(permission.value, 'full-access', 'an unset preset selects the actual default');
   const accountSelection = w.document.querySelector('[data-runtime-editor="current"] [data-runtime-setting="account_selection"]');
   assert(accountSelection.closest('label').hidden, 'catalogs without account selection must hide the control');
   accountSelection.value = 'auto';
@@ -57,6 +62,7 @@ const plain = value => JSON.parse(JSON.stringify(value));
   click('[data-session-restart-submit]'); await flush();
   assert.equal(saves.length, 1); assert.equal(saves[0].model, 'm2'); assert.equal(changes.length, 0);
   assert.equal(saves[0].account_selection, undefined, 'unsupported account selection never reaches the mutation');
+  assert.equal(Object.hasOwn(saves[0], 'permission_preset'), false, 'the shown default is not a change');
   dialog.open(config, async values => {changes.push(plain(values)); return {status: 'accepted', restart_id: 'op1'};}); await flush();
   select('[data-session-target]', JSON.stringify(['codex', 'three'])); await flush();
   assert.doesNotMatch(submit.textContent, /^(保存|Save)$/, 'another account turns the action into a switch');

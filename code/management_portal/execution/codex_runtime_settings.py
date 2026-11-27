@@ -361,7 +361,7 @@ def _codex_permissions_command(
         return _result(current, "当前用户不能修改这个会话的 Codex permissions。", title="Permission denied")
     preset = _permission_preset(args[0] if args else "")
     if not preset:
-        return _result(current, "权限模式无效。可选：`ask-for-permissions`、`auto-review`、`full-access`。", title="Invalid permissions")
+        return _result(current, "权限模式无效。可选：`ask`、`auto-review`、`full-access`。", title="Invalid permissions")
     next_settings = merge_settings(
         current,
         _apply_permission_preset({}, preset["id"]),

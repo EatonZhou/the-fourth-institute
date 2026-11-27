@@ -144,7 +144,7 @@
           <label class="portalRuntimeSettingsField"><span>Mode</span><select data-runtime-setting="collaboration_mode"><option value="default">Default · 默认执行</option><option value="plan">Plan · 先制定计划</option></select></label>
           <label class="portalRuntimeSettingsField"><span>Effort</span><select data-runtime-setting="reasoning_effort"></select></label>
           <label class="portalRuntimeSettingsField"><span>Speed</span><select data-runtime-setting="service_tier"></select></label>
-          <label class="portalRuntimeSettingsField"><span>执行沙箱与审批</span><select data-runtime-setting="permission_preset"><option value="">Full Access (default)</option><option value="default">Ask</option><option value="auto-review">Auto-review</option><option value="full-access">Full Access</option></select></label>
+          <label class="portalRuntimeSettingsField"><span>执行沙箱与审批</span><select data-runtime-setting="permission_preset"></select></label>
         </div>
         <p class="portalRuntimeSettingsHint" data-runtime-settings-hint>设置从下一轮生效。</p>
 `;
@@ -235,7 +235,8 @@
           }
           {
             if (!permissions.closest(".portalRuntimeSettingsField").hidden
-              && (complete || permissions.value !== String(initialSettings.permission_preset || ""))) {
+              && (complete || permissions.value !== String(initialSettings.permission_preset
+                || providerCatalog?.runtime_capabilities?.default_permission_preset || ""))) {
               selected.permission_preset = String(permissions.value || "").trim();
             }
             if (providerCatalog && (complete || modelChanged || effortChanged)) {
@@ -282,15 +283,16 @@
           setOptions(effort, dialogOptions.efforts || [], currentSettings.reasoning_effort || "", "Provider default");
           tier.disabled = false;
           tier.closest(".portalRuntimeSettingsField").title = "";
-          const permissionPresets = providerCatalog?.runtime_capabilities?.permission_presets || [];
-          const defaultPermissionLabel = providerCatalog?.runtime_capabilities?.default_permission_label;
-          setOptions(permissions, permissionPresets, currentSettings.permission_preset || "",
-            defaultPermissionLabel ? `${defaultPermissionLabel} (default)` : "Provider default");
-          for (const option of permissions.options) {
-            option.textContent = option.value
-              ? providerCatalog?.runtime_capabilities?.permission_labels?.[option.value] || option.value
-              : defaultPermissionLabel ? `${defaultPermissionLabel} (default)` : window.PortalI18n.t("Provider default");
-          }
+          // Only the Provider's presets: an unset preset selects the actual default, the one option marked default.
+          const permissionCapabilities = providerCatalog?.runtime_capabilities || {};
+          const permissionPresets = permissionCapabilities.permission_presets || [];
+          const defaultPermission = permissionCapabilities.default_permission_preset || "";
+          const currentPermission = String(currentSettings.permission_preset || defaultPermission);
+          permissions.replaceChildren(...[...new Set([...permissionPresets, currentPermission].filter(Boolean))].map(value => {
+            const label = permissionCapabilities.permission_labels?.[value] || value;
+            return new Option(value === defaultPermission ? `${label} (default)` : label, value);
+          }));
+          permissions.value = currentPermission;
           mode.value = currentSettings.collaboration_mode === "plan" ? "plan" : "default";
           syncModelControls();
           const fields = providerCatalog?.runtime_capabilities?.settings || [];

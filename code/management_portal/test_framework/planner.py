@@ -172,7 +172,7 @@ class RunPlanner:
 
 
 RESIDENT_RUNTIME_FIELDS = ("model", "reasoning_effort", "permission_preset")
-PERMISSION_PRESETS = {"default", "auto-review", "full-access"}
+PERMISSION_PRESETS = {"ask", "auto-review", "full-access"}
 
 
 def _resident_runtime(value: Any) -> dict[str, str]:

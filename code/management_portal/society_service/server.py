@@ -665,10 +665,12 @@ class SocietyServiceServer(LocalServiceSocketMixin, DrainingStreamServer):
                 'read_pool': self.read_pool.health(), 'index_pool': self.conversation_index_pool.health()}
 
     def serve_forever(self, poll_interval: float = 0.2) -> None:
+        from . import permission_preset_migration
         from .instruction_name_migration import migrate
         from .system_workflow_switches import restore
 
         migrate()
+        permission_preset_migration.migrate()
         restore()
         self.instruction_maintenance.start()
         if self.projections_enabled:

@@ -217,8 +217,8 @@ def check(inv):
     if not direct:
         definition = AGENT_PROVIDERS[row["provider"]]
         settings = definition.runtime_adapter().defaults(definition, {"model": model})
-        if antigravity:
-            settings["permission_preset"] = "default"
+        if definition.check_permission_preset:
+            settings["permission_preset"] = definition.check_permission_preset
         options.update(is_owner=True, runtime_settings={**settings, "model": model, "allow_subagents": False})
         if not route(row):
             # The shared service has an empty native route. Its registration

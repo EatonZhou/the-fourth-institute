@@ -201,7 +201,7 @@ def test_check_uses_normal_execution_owner(monkeypatch, tmp_path, provider):
     monkeypatch.setattr(setup, "signature", lambda _: {"registration_version": 1})
     monkeypatch.setattr(updates, "STATE_ROOT", tmp_path)
     monkeypatch.setattr(updates, "runtime_available", lambda _: True)
-    monkeypatch.setattr(setup, "AGENT_PROVIDERS", {provider: SimpleNamespace(validate_settings=lambda *args: None,
+    monkeypatch.setattr(setup, "AGENT_PROVIDERS", {provider: SimpleNamespace(validate_settings=lambda *args: None, check_permission_preset="",
         runtime_adapter=lambda: SimpleNamespace(defaults=lambda *args: {"permission_preset": "full-access"}))})
     monkeypatch.setattr(resident_configuration, "validate_api_settings", lambda *args: None)
     requests = []

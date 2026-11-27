@@ -4,7 +4,7 @@ from .native_options import NativeOptions
 
 
 class AntigravityOptions(NativeOptions):
-    permission_labels = {"default": "Portal tools only", "full-access": "Full Access"}
+    permission_labels = {"portal-tools-only": "Portal tools only", "full-access": "Full Access"}
     default_permission_preset = "full-access"
 
     def handle_native_command(self, content, settings, *, account_route, can_update_runtime, actor, updated_at, **context):

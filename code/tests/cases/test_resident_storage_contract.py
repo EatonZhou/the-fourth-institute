@@ -79,6 +79,44 @@ def test_configuration_backend_has_one_authority_and_closed_keys():
         store.write_resident_execution_settings(rid, {**actual, 'backend': 'claude'})
 
 
+@pytest.mark.usefixtures("directory_owners")
+def test_stored_default_permission_preset_moves_to_each_providers_key_once():
+    """已存的权限预设 default 按 Provider 一次性迁移到新键，再次启动不再改写
+
+    Codex 改为 ask、Claude 改为 restricted、Kimi 改为 manual、Antigravity 改为 portal-tools-only，
+    profile 随之改名；没有受限档的 Provider 去掉该预设，其他取值不变。
+
+    :module: execution.providers
+    :design: decision_8b2fa224616b"""
+    from management_portal.society_service import permission_preset_migration
+
+    store = LineageDataStore()
+    stored = {
+        'resident_222222222201': ('codex', {'permission_preset': 'default', 'profile': 'permissions:default', 'permissions': ':workspace'}),
+        'resident_222222222202': ('claude', {'permission_preset': 'default', 'profile': 'permissions:default'}),
+        'resident_222222222203': ('kimi', {'permission_preset': 'default'}),
+        'resident_222222222204': ('antigravity', {'permission_preset': 'default'}),
+        'resident_222222222205': ('dsh', {'permission_preset': 'default', 'profile': 'permissions:default'}),
+        'resident_222222222206': ('codex', {'permission_preset': 'full-access', 'profile': 'permissions:full-access'}),
+    }
+    for rid, (backend, settings) in stored.items():
+        with store.database.transaction() as connection, resident_identity_write(connection, rid):
+            contract.put_fields(connection, 'residents', contract.IDENTITY_FIELDS, rid, _identity(rid, backend=backend))
+            contract.put_fields(connection, 'resident_execution_configuration', contract.CONFIGURATION_FIELDS, rid,
+                                {'execution_settings': {'model': 'm', **settings}, 'harness_config': {}})
+    assert permission_preset_migration.migrate(store.database) == 5
+    with store.database.read() as connection:
+        rows = {row['resident_id']: json_value(row['execution_settings_json']) for row in connection.execute(
+            'SELECT resident_id,execution_settings_json FROM resident_execution_configuration WHERE resident_id = ANY(%s)',
+            (list(stored),)).fetchall()}
+    assert [(rows[rid].get('permission_preset'), rows[rid].get('profile')) for rid in stored] == [
+        ('ask', 'permissions:ask'), ('restricted', 'permissions:restricted'), ('manual', None),
+        ('portal-tools-only', None), (None, ''), ('full-access', 'permissions:full-access'),
+    ]
+    assert rows['resident_222222222201']['permissions'] == ':workspace'
+    assert permission_preset_migration.migrate(store.database) == 0
+
+
 
 def test_deleted_sparse_identity_needs_no_current_lineage_or_workspace():
     """已删除的 Resident 身份不需要当前 Lineage 或 Workspace，仅在包含已删除时可读

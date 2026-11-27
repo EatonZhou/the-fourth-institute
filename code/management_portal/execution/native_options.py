@@ -33,6 +33,7 @@ class NativeOptions:
                 "settings": list(definition.runtime_settings),
                 "operations": sorted(definition.operations),
                 "permission_presets": list(self.permission_labels), "permission_labels": dict(self.permission_labels),
+                "default_permission_preset": self.default_permission_preset,
                 "default_permission_label": self.permission_labels.get(self.default_permission_preset, ""),
                 "harness_capabilities": sorted(harness),
                 "harness_features": available_feature_ids(harness)}
@@ -158,8 +159,8 @@ def claude_route_config_dir(route: str) -> Path | None:
 
 
 class ClaudeOptions(NativeOptions):
-    permission_labels = {"default": "Restricted", "full-access": "Full Access"}
-    native_permission_modes = {"default": "dontAsk", "full-access": "bypassPermissions"}
+    permission_labels = {"restricted": "Restricted", "full-access": "Full Access"}
+    native_permission_modes = {"restricted": "dontAsk", "full-access": "bypassPermissions"}
     default_permission_preset = "full-access"
 
     def native_options(self, options, settings):
@@ -222,7 +223,7 @@ class CodexOptions(NativeOptions):
 
     # Codex's own handler (``codex_runtime_settings.handle_codex_native_command``) answers every one.
     slash_commands = frozenset(NATIVE_COMMANDS)
-    permission_labels = {"default": "Ask", "auto-review": "Auto-review", "full-access": "Full Access"}
+    permission_labels = {"ask": "Ask", "auto-review": "Auto-review", "full-access": "Full Access"}
     default_permission_preset = "full-access"
 
     def handle_native_command(self, content, settings, **context):
@@ -294,8 +295,8 @@ def kimi_text_only(options):
 
 
 class KimiOptions(NativeOptions):
-    permission_labels = {"default": "Manual", "full-access": "Full Access"}
-    native_permission_modes = {"default": "manual", "full-access": "yolo"}
+    permission_labels = {"manual": "Manual", "full-access": "Full Access"}
+    native_permission_modes = {"manual": "manual", "full-access": "yolo"}
     default_permission_preset = "full-access"
 
     def prepare(self, invocation):

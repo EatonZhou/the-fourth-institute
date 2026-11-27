@@ -30,8 +30,18 @@
     const sandbox = String(data.sandbox || "").trim();
     if (profile === ":danger-full-access" || sandbox === "danger-full-access") return "full-access";
     if (profile === ":workspace" && reviewer === "auto_review" && (!policy || policy === "on-request")) return "auto-review";
-    if (profile === ":workspace" && (!reviewer || reviewer === "user") && (!policy || policy === "on-request")) return "default";
+    if (profile === ":workspace" && (!reviewer || reviewer === "user") && (!policy || policy === "on-request")) return "ask";
     return "";
+  }
+
+  // The Provider's own presets; an unset preset shows as the actual default, the only one marked default.
+  function permissionPresetOptions(capabilities) {
+    const labels = capabilities?.permission_labels || {};
+    const fallback = capabilities?.default_permission_preset || "";
+    return (capabilities?.permission_presets || []).map(value => ({
+      value,
+      label: value === fallback ? `${labels[value] || value} (default)` : labels[value] || value,
+    }));
   }
 
   function replaceSelectOptions(select, options, requestedValue = "") {
@@ -162,7 +172,8 @@
       if (catalog.models?.includes(model)) $id("residentRuntimeModelSelect").value = model;
       syncResidentEffortSelect("residentRuntimeModelSelect", "residentRuntimeEffortSelect", settings.reasoning_effort || "");
       syncResidentTierSelect(catalog, settings.service_tier || "");
-      setSelectValue("residentRuntimePermissionSelect", runtimePermissionPreset(settings));
+      setSelectValue("residentRuntimePermissionSelect",
+        runtimePermissionPreset(settings) || residentRuntimeDefinition().runtime_capabilities?.default_permission_preset);
     }
 
     function selectedResidentRuntimeSettings() {
@@ -214,6 +225,14 @@
         modelSelect.value = catalog.models?.includes(previous) ? previous : catalog.default_model || "";
       }
       syncResidentTierSelect(catalog);
+      const permissionSelect = $id("residentRuntimePermissionSelect");
+      if (permissionSelect) {
+        const capabilities = definition.runtime_capabilities || {};
+        const options = permissionPresetOptions(capabilities);
+        const previousPreset = permissionSelect.value;
+        replaceSelectOptions(permissionSelect, options,
+          options.some(item => item.value === previousPreset) ? previousPreset : capabilities.default_permission_preset);
+      }
       for (const [id, field] of [["residentRuntimeEffortSelect", "reasoning_effort"], ["residentRuntimePermissionSelect", "permissions"]]) {
         const row = $id(id)?.closest(".residentFormRow");
         if (row) { row.hidden = !fields.includes(field); row.style.display = row.hidden ? "none" : ""; }
