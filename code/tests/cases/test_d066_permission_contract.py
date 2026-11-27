@@ -596,7 +596,12 @@ def cold_fact_owners(permissions, monkeypatch):
     with society.transaction() as con:
         con.execute("CREATE TABLE IF NOT EXISTS residents (resident_id TEXT PRIMARY KEY, "
                     "owned_workspace_id TEXT, deleted_at TIMESTAMPTZ)")
-        con.execute("INSERT INTO residents VALUES (%s,%s,NULL)", (resident, workspace))
+        # The installed table has more columns and requires a live Resident to own a registered Workspace.
+        from management_common.portal_paths import path as portal_path
+        from management_portal.resources.workspace_store import get_workspace_store
+        get_workspace_store().ensure(workspace, str(portal_path("lineages") / "owned" / resident / "workspace"),
+                                     connection=con)
+        con.execute("INSERT INTO residents (resident_id, owned_workspace_id) VALUES (%s,%s)", (resident, workspace))
     index = IndexStore()
     index.publish_snapshot("cold-test", [resource_record(
         resource_id="decision_111111111111", resource_type="decision", title="Existing knowledge",
@@ -1210,7 +1215,7 @@ def test_instruction_check_uses_owner_port_without_replacing_reader(permissions)
         received.append((name, arguments, actor, principal_id))
         return lineage_changes_permission_arguments(arguments)
     arguments = {"principal_id": "subject", "instruction": "ApplyLineageChanges", "arguments": {
-        "lineage_id": lineage, "operations": [{"op": "create", "kind": "component", "value": {"type": "Effect"}}],
+        "lineage_id": lineage, "operations": [{"op": "create", "kind": "component", "value": {"kind": "effect"}}],
     }}
     before = snapshot(permissions.store)
     result = api.manage("CheckInstructionPermission", arguments, actor="reader", derive_arguments=derive)

@@ -45,7 +45,7 @@ def test_entries_name_a_nodes_and_ask_the_instruction_on_their_resource(world):
         call("CreatePermissionEntry", "alice", p="bob", a="contributor", r=LINEAGE)
     for name, arguments in (("CreatePermissionEntry", {"p": "carol", "a": "@viewer", "r": LINEAGE}),
                             ("UpdatePermissionEntry", {"entry_id": entry_id, "disabled": True}),
-                            ("DeletePermissionEntry", {"entry_id": entry_id})):
+                            ("DeletePermissionEntry", {"entry_ids": [entry_id]})):
         with pytest.raises(InstructionError) as refused:
             attempt(name, "bob", arguments)
         assert refused.value.code == "instruction.forbidden"
@@ -53,7 +53,7 @@ def test_entries_name_a_nodes_and_ask_the_instruction_on_their_resource(world):
         attempt("UpdatePermissionEntry", "alice", {"entry_id": entry_id, "r": "@shared"})
     assert refused.value.code == "instruction.forbidden" and refused.value.details["target_id"] == "@shared"
     with pytest.raises(InstructionError) as missing:
-        attempt("DeletePermissionEntry", "alice", {"entry_id": "entry_000000000000"})
+        attempt("DeletePermissionEntry", "alice", {"entry_ids": ["entry_000000000000"]})
     assert missing.value.code == "instruction.not_found"
     assert world.holds("bob", "@contributor", LINEAGE)
     disabled = call("UpdatePermissionEntry", "alice", entry_id=entry_id, expected_version=1, disabled=True)["entry"]
@@ -63,7 +63,7 @@ def test_entries_name_a_nodes_and_ask_the_instruction_on_their_resource(world):
     assert stale.value.code == "instruction.version_conflict"
     assert stale.value.details == {"object_id": entry_id, "expected_version": 1, "current_version": 2}
     assert call("UpdatePermissionEntry", "alice", entry_id=entry_id, disabled=False)["entry"]["version"] == 3
-    assert call("DeletePermissionEntry", "alice", entry_id=entry_id)["deleted"] == [entry_id]
+    assert call("DeletePermissionEntry", "alice", entry_ids=[entry_id])["deleted"] == [entry_id]
 
 
 def attempt(name, actor, arguments):
@@ -85,7 +85,7 @@ def test_a_member_cannot_delete_the_administrators_entry(world):
     """
     entry = administrators_entry(world)
     with pytest.raises(InstructionError) as refused:
-        attempt("DeletePermissionEntry", "alice", {"entry_id": entry["entry_id"]})
+        attempt("DeletePermissionEntry", "alice", {"entry_ids": [entry["entry_id"]]})
     assert refused.value.code == "instruction.forbidden"
     assert administrators_entry(world) == entry
 
@@ -123,7 +123,7 @@ def test_inspection_checks_and_loans_use_a_nodes(world):
 
     GetEffectivePermissions 按 A 树分类节点给出覆盖范围，并报告 User 的分类。查看他人由方案中这几条指令对 principal_id 的要求判定：
     principal_id 必填，查看自己也要写明；查看自己不需要表项，实习用户查看别人被拒绝，管理员可以。
-    CheckPermission 与 CreateTemporaryCredential 用 a 参数，凭证列表也报告 a。
+    CheckPermission 与 CreateTemporaryCredential 用 a 参数，GetEffectivePermissions 的 temporary 列表也报告 a。
     """
     world.grant("bob", LINEAGE, "@contributor")
     with pytest.raises(ValueError, match="principal_id"):
@@ -133,7 +133,7 @@ def test_inspection_checks_and_loans_use_a_nodes(world):
     assert LINEAGE in effective["coverage"]["@contributor"]["permit"]
     assert LINEAGE not in effective["coverage"]["@admin"]["permit"]
     bob = InstructionContext(caller="bob", entry="web")
-    for name in ("GetEffectivePermissions", "ListTemporaryCredentials", "CheckPermission"):
+    for name in ("GetEffectivePermissions", "CheckPermission"):
         assert permission_system.authorize_reads(instruction_catalog()[name], [{"principal_id": "bob"}], bob) == [None]
         assert instruction_catalog()[name].parameter_map["principal_id"].required, name
         [refused] = permission_system.authorize_reads(instruction_catalog()[name], [{"principal_id": "alice"}], bob)
@@ -146,41 +146,25 @@ def test_inspection_checks_and_loans_use_a_nodes(world):
     assert call("CheckPermission", "alice", principal_id="bob", a="@admin", resource_id=LINEAGE)["allowed"] is False
     loan = call("CreateTemporaryCredential", "alice", principal_id="carol", a="@viewer", resource_id=LINEAGE)
     assert loan["a"] == "@viewer" and "level" not in loan
-    [listed] = call("ListTemporaryCredentials", "alice", principal_id="alice")["credentials"]
-    assert listed["a"] == "@viewer" and listed["direction"] == "issued"
+    [listed] = call("GetEffectivePermissions", "alice", principal_id="alice")["temporary"]
+    assert listed["a"] == "@viewer" and listed["issued_by"] == "alice" and listed["principal_id"] == "carol"
 
 
-def test_temporary_credentials_are_rows_that_end_with_their_task_or_time(world, monkeypatch):
-    """临时凭证是一行带签发者和过期时间的 permit：随消息签发的在输入结束时删除，按时长签发的可由签发者续期
+def test_temporary_credentials_are_rows_that_end_with_their_task_or_time(world):
+    """临时凭证是一行带签发者和过期时间的 permit：随消息签发的要求本人准备且尚未受理的输入，按时长签发的可由签发者续期
 
-    签发只核对签发者此刻持有；签发者的 deny 不复制给接收者，签发者之后失去权限也不影响凭证。随消息签发要求接收 Resident 的这条输入仍在处理，
-    输入结束（end_task_credentials 在同一事务中）时凭证删除；随消息的凭证不能续期，按时长的只能由签发者续期且不超过签发后 7 天。
+    签发只核对签发者此刻持有；签发者的 deny 不复制给接收者，签发者之后失去权限也不影响凭证。按时长的只能由签发者续期且不超过签发后 7 天。
     签发者可以撤回、接收者可以交还，其他人不能撤销；处理代码不再按凭证资源向引擎追问。
     """
-    from management_portal.permission_system import management
-
     resident = "resident_aaaaaaaaaaaa"
     world.place(Fact("resident", resident, {"lineage": "lineage_bbbbbbbbbbbb"}))
     world.deny("alice", "decision_aaaaaaaaaaaa", "@admin")
-    open_inputs = {(resident, "msg_task")}
-    monkeypatch.setattr(management, "input_open", lambda principal, message: (principal, message) in open_inputs)
     with pytest.raises(PermissionError, match="没有"):
         call("CreateTemporaryCredential", "bob", principal_id=resident, a="@admin", resource_id=LINEAGE)
-    with pytest.raises(PermissionError, match="处理中"):
+    # 随消息签发的任务凭证先在准备阶段停用、受理后启用，由 test_d066_permission_contract 的 prepared_* 用例覆盖；
+    # 没有本人准备且尚未受理的输入时，签发被拒绝。
+    with pytest.raises(PermissionError, match="尚未受理"):
         call("CreateTemporaryCredential", "alice", principal_id=resident, a="@admin", resource_id=LINEAGE, message_id="msg_done")
-    task = call("CreateTemporaryCredential", "alice", principal_id=resident, a="@admin", resource_id=LINEAGE, message_id="msg_task")
-    assert task["message_id"] == "msg_task" and task["lifetime"] == "task"
-    assert task["expires_at"] is None
-    assert task["deadline_at"] - task["issued_at"] == pytest.approx(7 * 24 * 3600, abs=5)
-    assert world.holds(resident, "@admin", LINEAGE)
-    with world.store.read() as connection:
-        lent = world.store.entries(connection, where="issued_by = 'alice'")
-    assert [(entry.effect, entry.p, entry.a, entry.r) for entry in lent] == [("permit", resident, "@admin", LINEAGE)]
-    with pytest.raises(ValueError, match="不能续期"):
-        call("UpdateTemporaryCredential", "alice", credential_id=task["credential_id"], expires_in_seconds=3600)
-    with world.store.transaction() as connection:
-        assert permission_system.end_task_credentials(connection, resident, "msg_task") == 1
-    assert not world.holds(resident, "@admin", LINEAGE)
 
     timed = call("CreateTemporaryCredential", "alice", principal_id="carol", a="@viewer", resource_id=LINEAGE,
                  expires_in_seconds=600)

@@ -60,7 +60,10 @@ def family(delivery_resident, monkeypatch):
     members = {wrong, right}
     monkeypatch.setattr(family_facade, "family_member_ids", lambda record: set(members))
     monkeypatch.setattr(family_facade, "family_steward_id", lambda record: steward)
-    monkeypatch.setattr(family_facade, "relay_target_ids", lambda record: sorted({*members, steward}))
+    # Only the facade has relay targets; any other record with some would count as a facade, and an
+    # info sent to the steward would then be forwarded to it again.
+    monkeypatch.setattr(family_facade, "relay_target_ids",
+                        lambda record: sorted({*members, steward}) if record.get("resident_id") == facade else [])
     marks = {}
     monkeypatch.setattr(family_facade, "validate_relay", lambda business_ref, actor: marks.get(business_ref))
     told = []

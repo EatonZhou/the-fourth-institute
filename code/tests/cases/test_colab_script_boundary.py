@@ -5,7 +5,6 @@ from types import SimpleNamespace
 import pytest
 
 from management_portal import google_cloud_devices as cloud, permission_system
-from management_portal.hatg.contracts import InstructionError
 from management_portal.permission_system.engine.model import Entry
 from management_portal.permission_system.engine.store import Store
 from management_portal.permission_system.par import PARPermissions
@@ -17,35 +16,23 @@ from scripts import colab_session
 DEVICE = 'device_ca437b806200'
 
 
-@pytest.mark.parametrize('action', ['colab.start', 'colab.stop'])
-def test_retired_actions_rejected_before_domain_dispatch(monkeypatch, action):
-    dispatched = []
-    service = SimpleNamespace(get=lambda *a, **k: {'resource_type': 'device'},
-                              action=lambda *a, **k: dispatched.append((a, k)))
-    monkeypatch.setattr(isa, '_service', lambda: service)
-    args = {'resource_id': DEVICE, 'action': action, 'arguments': {'hardware': 'A100'} if action.endswith('start') else {}}
-    inv = SimpleNamespace(caller='alice', argument=args.get)
-    with pytest.raises(InstructionError, match='没有声明动作') as exc:
-        isa.run_resource_action(inv)
-    assert exc.value.code == 'instruction.invalid_arguments'
-    assert not dispatched
+def test_generic_resource_actions_are_gone_so_colab_start_stop_cannot_be_dispatched():
+    """没有通用的资源动作入口：colab.start 与 colab.stop 不再有任何公开路径"""
+    from management_portal.hatg.catalog import instruction_catalog
+
+    assert 'RunResourceAction' not in instruction_catalog()
+    assert not hasattr(isa, 'run_resource_action')
+    assert not hasattr(ResourceServiceClient, 'action')
 
 
-def test_provider_has_no_colab_bypass_and_rpc_has_no_allocation_wait(monkeypatch):
-    registered = {}
-    device.install_action_provider(SimpleNamespace(register_action_provider=lambda kind, actions: registered.update(actions)))
-    assert {'ssh.test', 'ssh.run', 'ssh.credential.save', 'ssh.credential.delete'} <= registered.keys()
-    assert not {'colab.start', 'colab.stop'} & registered.keys()
-    client = object.__new__(ResourceServiceClient)
-    client.timeout = 30
-    requests = []
-    def reject(method, payload, *, timeout):
-        requests.append((method, payload, timeout))
-        raise ValueError('retired action rejected by owner')
-    monkeypatch.setattr(client, '_exchange', reject)
-    with pytest.raises(ValueError, match='retired action'):
-        client.action(DEVICE, 'colab.start', {'hardware': 'A100'}, actor='alice')
-    assert requests[0][2] == 30
+def test_provider_has_no_colab_bypass_and_rpc_has_no_allocation_wait():
+    from management_portal.hatg.catalog import instruction_catalog
+
+    names = set(instruction_catalog())
+    # The device's SSH operations are named instructions; none starts or stops a Colab session.
+    assert {'CheckDeviceSsh', 'RunDeviceCommand', 'UpdateDeviceSshCredential', 'DeleteDeviceSshCredential'} <= names
+    assert not {name for name in names if 'colab' in name.lower()}
+    assert not hasattr(device, 'install_action_provider')
 
 
 @pytest.fixture

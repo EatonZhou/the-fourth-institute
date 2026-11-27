@@ -19,9 +19,11 @@ from tests.cases.permission_test_support import permissions  # noqa: F401
 
 
 def invoke(service, rid, **changes):
-    return service.action(rid, "knowledge.file.rename", {
-        "filename": "新的文件.md", "expected_version": 3, **changes,
-    }, actor=ACTOR)
+    payload = {"filename": "新的文件.md", "expected_version": 3, **changes}
+    return service.update_knowledge_file_name(
+        rid, payload["filename"], payload["expected_version"],
+        actor=ACTOR, operation_id=payload.get("operation_id", ""),
+    )
 
 
 def test_primary_identity_content_companions_permissions_and_replay(file_service, permissions):
@@ -134,9 +136,7 @@ def test_directory_package_primary_stays_authoritative_after_rename_and_scan(fil
     assert service.resolve(rid, actor=ACTOR)["detail"]["file_count"] == 2
     assert (package / "aaa.md").read_text() == "companion without an identity"
     permissions.grant(ACTOR, "Destination")
-    moved = service.action("Destination", "knowledge.move", {
-        "items": [{"resource_id": rid, "expected_version": 4}],
-    }, actor=ACTOR, resource_type="project")
+    moved = service.move_knowledge_items("Destination", [{"resource_id": rid, "expected_version": 4}], actor=ACTOR)
     assert moved["status"] == "completed", moved
     relocated = Path(service.resolve(rid, actor=ACTOR)["resolved_path"])
     assert relocated.name == "zzz.md" and "Destination" in relocated.parts
@@ -187,7 +187,7 @@ def test_detail_capability_and_revoked_retry(file_service, permissions, monkeypa
         assert invoke(service, rid, operation_id="revoke")["status"] == "partial"
     real = move.permission_system.permitted_ids
     def deny_write(actor, instruction, parameter, ids):
-        return set() if instruction == "RunResourceAction" else real(actor, instruction, parameter, ids)
+        return set() if instruction == "UpdateKnowledgeFileName" else real(actor, instruction, parameter, ids)
     monkeypatch.setattr(move.permission_system, "permitted_ids", deny_write)
     assert resource_views.knowledge_detail(rid, service=service, actor=ACTOR)["can_edit"] is False
     with pytest.raises(PermissionError):
@@ -214,11 +214,9 @@ def test_public_isa_and_final_inventory_failure_recover(file_service, permission
         doc["directories"] = [{"path": stored_location(package), "owner_id": rid}]
         writer.put("knowledge", rid, doc)
     index.project_relocated([{**records[0], "path": str(primary), "content_root": str(package)}])
-    arguments = {"resource_id": rid, "action": "knowledge.file.rename", "arguments": {
-        "filename": "final.md", "expected_version": 3, "operation_id": "inventory",
-    }}
-    invocation = Invocation(catalog.declaration("RunResourceAction"),
-        InstructionCall(instruction="RunResourceAction", arguments=arguments),
+    arguments = {"resource_id": rid, "filename": "final.md", "expected_version": 3, "operation_id": "inventory"}
+    invocation = Invocation(catalog.declaration("UpdateKnowledgeFileName"),
+        InstructionCall(instruction="UpdateKnowledgeFileName", arguments=arguments),
         InstructionContext(caller=ACTOR, entry="harness"), "inst_res_0123456789abcdefabcd")
     original = index.project_relocated
     calls = []
@@ -229,9 +227,9 @@ def test_public_isa_and_final_inventory_failure_recover(file_service, permission
         return original(batch)
     with monkeypatch.context() as patch:
         patch.setattr(index, "project_relocated", fail_final)
-        pending = isa.run_resource_action(invocation)["result"]
+        pending = isa.update_knowledge_file_name(invocation)
     assert pending["status"] == "partial" and not primary.exists()
-    result = isa.run_resource_action(invocation)["result"]
+    result = isa.update_knowledge_file_name(invocation)
     assert result["status"] == "completed" and result["version"]["number"] == 4
     assert service.resolve(rid, actor=ACTOR)["detail"]["file_count"] == 1
 

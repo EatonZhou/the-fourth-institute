@@ -356,6 +356,11 @@ class PortalAccessStore:
         clean_username = stripped_text(username)
         if not USERNAME_RE.fullmatch(clean_username):
             raise ValueError("invalid username")
+        # Build the process-wide cleanup store before the transaction opens: its
+        # first construction creates the directory schema on its own connection,
+        # which would wait forever on this transaction's uncommitted CREATE SCHEMA.
+        from management_common.directory_cleanup_store import get_directory_cleanup_store
+        get_directory_cleanup_store()
         with self._writing() as connection:
             payload = self._read_uncached()
             current = _normalize_user(

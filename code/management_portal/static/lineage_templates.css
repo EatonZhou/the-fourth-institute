@@ -7,7 +7,7 @@
 .templateTile { width:100%; display:grid; grid-template-rows:72px auto; gap:5px; padding:8px; border:1px solid var(--border); border-radius:8px; background:var(--panel); color:var(--text); text-align:center; cursor:grab; }
 .templateTile:active { cursor:grabbing; }
 .templateTile:is(:hover,:focus-visible) { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 5%,var(--panel)); }
-.templateTile[aria-current="true"] { border-color:var(--accent); background:var(--accent-soft); }
+.templateTile[aria-current="true"] { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,var(--panel)); }
 .templateShelfIcons { padding:8px; gap:14px; }
 .templateShelfIcons .templateToolboxGroup h4 { text-align:center; font-size:11px; color:var(--muted); margin:0 0 6px; }
 .templateShelfIcons .templateToolboxCards { grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
@@ -25,7 +25,7 @@
 .templateCarryPreview[hidden] { display:none; }
 .templatePlacementPreview.hatgCanvas { position:absolute; inset:0; z-index:6; pointer-events:none; background:none; opacity:.82; }
 .templatePlacementPreview * { pointer-events:none !important; }
-.templatePlacementPreview .hatgNode { outline:1px dashed var(--accent); }
+.templatePlacementNode { outline:1px dashed var(--accent); }
 .templatePlacementPreview .templateDropTarget { outline:3px solid var(--accent); }
 .templateCarryPreview .templateThumbnail { height:100%; }
 .templatePicking, .templatePicking * { cursor:copy !important; }
@@ -191,7 +191,8 @@
   .templateResidentSettings { grid-template-columns: 1fr; }
   .templateForm .templateDialogFooter { padding: 12px; flex-wrap: wrap; }
 }
-:is(.templateGraph .hatgCanvas, .templatePlacementPreview.hatgCanvas) .hatgNode[data-node-id]:has(.templateBinding) {
+/* The template graph marks its own binding cards; it never selects the shared node class. */
+:is(.templateGraph, .templatePlacementPreview) .is-template-binding[data-node-id] {
   width:132px; min-height:132px; border:2px dashed var(--border); border-radius:50%;
   background:var(--lg-surface-panel-glass,var(--panel)); box-shadow:none;
 }

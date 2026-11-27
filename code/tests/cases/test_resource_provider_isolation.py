@@ -8,8 +8,8 @@ from management_portal.resources.service import ResourceService
 
 
 def test_provider_loading_is_lazy_atomic_and_recovers_per_type(monkeypatch, subtests):
-    """资源解析、变更和动作 provider 按类型懒加载，某类型注册失败不留残余且之后可重试"""
-    for capability, attr in [('resolver', '_resolvers'), ('mutation', '_mutation_providers'), ('action', '_action_providers')]:
+    """资源解析和变更 provider 按类型懒加载，某类型注册失败不留残余且之后可重试（ResourceService 没有动作 provider）"""
+    for capability, attr in [('resolver', '_resolvers'), ('mutation', '_mutation_providers')]:
         with subtests.test(capability=capability):
             attempts = []
             failing = True
@@ -17,13 +17,11 @@ def test_provider_loading_is_lazy_atomic_and_recovers_per_type(monkeypatch, subt
                 attempts.append('device')
                 if capability == 'resolver':
                     service.register_resolver('device', Mock())
-                elif capability == 'mutation':
-                    service.register_mutation_provider('device', update=Mock())
                 else:
-                    service.register_action_provider('device', {'connect': Mock()})
+                    service.register_mutation_provider('device', update=Mock())
                 if failing:
                     raise RuntimeError('isolated device registration failure')
-            method = {'resolver': 'install_resolver', 'mutation': 'install_mutation_provider', 'action': 'install_action_provider'}[capability]
+            method = {'resolver': 'install_resolver', 'mutation': 'install_mutation_provider'}[capability]
             def module(name):
                 if name.endswith('.device'):
                     return SimpleNamespace(**{method: install})
@@ -34,14 +32,14 @@ def test_provider_loading_is_lazy_atomic_and_recovers_per_type(monkeypatch, subt
             ))
             monkeypatch.setattr(providers, 'import_module', module)
             loader = providers.ProviderLoader(capability)
-            keyword = {'resolver': 'resolver_loader', 'mutation': 'mutation_provider_loader', 'action': 'action_provider_loader'}[capability]
+            keyword = {'resolver': 'resolver_loader', 'mutation': 'mutation_provider_loader'}[capability]
             service = ResourceService(**{keyword: loader})
             service._ensure_provider(capability, 'paper')
             assert attempts == ['paper']
             with pytest.raises(RuntimeError, match='isolated device'):
                 service._ensure_provider(capability, 'device')
             registry = getattr(service, attr)
-            assert ('device' not in registry.registered_types()) if capability != 'action' else not registry.actions_for('device')
+            assert 'device' not in registry.registered_types()
             service._ensure_provider(capability, 'paper')
             assert attempts == ['paper', 'device']
             failing = False

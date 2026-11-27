@@ -138,7 +138,7 @@
 - [Home 活动 Agent 状态、头像与会话入口](/r/decision_e30897dd3dc3)
 - [Home AI 账号面板：订阅额度、按 API 汇总金额与节点](/r/decision_4dea0db1f45a)
   - [执行账号：档位、额度与刷新规范](/r/repo_0cc377bb1dee/file/docs/accounts/execution-accounts.md)
-  - [Token 统计：增量记账、周期与归因](/r/decision_4dea0db1f45a/file/decision_4dea0db1f45a/token-usage.md)
+  - [Token 统计：增量记账、周期与归因](/r/repo_0cc377bb1dee/file/docs/usage/token-usage.md)
 - [Home Usage Attribution 的 token 统计](/r/decision_fc26f883773d)
 - [Home 定时与自动触发：查看与操作](/r/decision_481dc4e6292c)
 - [Home GPU 与磁盘资源状态](/r/decision_ed57c4ad1001)

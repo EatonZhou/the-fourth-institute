@@ -127,11 +127,11 @@ def test_credential_schema_explains_task_and_duration_receipts():
     assert "null" in create["expires_at"].description
     assert create["deadline_at"].type == "number"
     assert set(create["lifetime"].enum) == {"task", "duration"}
-    for name, field_name in [("AcceptUserAuthorization", "credentials"),
-                             ("ListTemporaryCredentials", "credentials"),
-                             ("DeliverMessage", "temporary_credentials")]:
-        field = next(f for f in declaration(name).result if f.name == field_name)
-        assert all(word in field.description for word in ("deadline_at", "null", "完成", "失败", "取消"))
+    field = next(f for f in declaration("AcceptUserAuthorization").result if f.name == "credentials")
+    assert all(word in field.description for word in ("deadline_at", "null", "完成", "失败", "取消"))
+    # The credential list is read through GetEffectivePermissions.temporary.
+    listed = next(f for f in declaration("GetEffectivePermissions").result if f.name == "temporary")
+    assert all(word in listed.description for word in ("deadline_at", "expires_at"))
     assert "instruction.not_found" in declaration("RevokeTemporaryCredential").description
 
 

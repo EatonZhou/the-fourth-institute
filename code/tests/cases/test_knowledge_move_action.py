@@ -1,4 +1,4 @@
-"""The public resource action moves registered Knowledge through the live index."""
+"""The public MoveKnowledgeItems instruction moves registered Knowledge through the live index."""
 from pathlib import Path
 import hashlib
 import time
@@ -17,7 +17,7 @@ from management_portal.resource_index_registries import ProjectRegistryAdapter
 from management_portal.resource_index_store import IndexStore
 from management_portal.resources import ResourceService, isa
 from management_portal.resources.directory_registrations import register_owned
-from management_portal.resources.providers import knowledge, project
+from management_portal.resources.providers import knowledge
 from tests.cases.permission_test_support import Fact, permissions  # noqa: F401
 from tests.cases.registry_support import write_projects
 from tests.cases.test_knowledge_versioning import _markdown, KNOWLEDGE_ID
@@ -44,8 +44,7 @@ def move_service(tmp_path, monkeypatch, permissions):
     store.publish_snapshot(project_adapter.name, [project_adapter.project_record("project", p) for p in projects], {})
     index = ResourceIndexService(store=store, adapters=[adapter, project_adapter, SkillPackageAdapter()], start_worker=False)
     index.adapter_layer._on_projection_changed = None
-    service = ResourceService(index_provider=index, resolver_loader=knowledge.install_resolver,
-                              action_provider_loader=project.install_action_provider)
+    service = ResourceService(index_provider=index, resolver_loader=knowledge.install_resolver)
     for module in (knowledge_backend, knowledge_source, knowledge_details):
         monkeypatch.setattr(module, "get_resource_service", lambda: service)
     from management_portal import resources
@@ -79,12 +78,12 @@ def test_public_action_moves_17_and_immediately_resolves_original_ids(move_servi
     apply = Mock(wraps=index.store.apply_batch)
     monkeypatch.setattr(index.store, "apply_batch", apply)
     monkeypatch.setattr(index, "refresh", Mock(side_effect=AssertionError("must not queue a scan")))
-    arguments = {"resource_id": "Destination", "action": "knowledge.move", "arguments": {"items": items}}
-    declaration = catalog.declaration("RunResourceAction")
-    invocation = Invocation(declaration, InstructionCall(instruction="RunResourceAction", arguments=arguments),
+    arguments = {"project_id": "Destination", "items": items}
+    declaration = catalog.declaration("MoveKnowledgeItems")
+    invocation = Invocation(declaration, InstructionCall(instruction="MoveKnowledgeItems", arguments=arguments),
                             InstructionContext(caller=ACTOR, entry="harness"), "inst_res_0123456789abcdefabcd")
     started = time.perf_counter()
-    result = isa.run_resource_action(invocation)["result"]
+    result = isa.move_knowledge_items(invocation)
     elapsed = time.perf_counter() - started
     assert result["status"] == "completed", result.get("error")
     assert result["projected"] and not result["pending"] and len(result["committed"]) == 17
@@ -98,7 +97,7 @@ def test_public_action_moves_17_and_immediately_resolves_original_ids(move_servi
         assert path.read_text().split("---", 2)[2] == before[rid]
         assert (path.parent / rid / "image.png").read_bytes() == b"test image bytes"
         assert permissions.store.paths("R", [rid])[rid][-2:] == ["Destination", rid]
-    replay = isa.run_resource_action(invocation)["result"]
+    replay = isa.move_knowledge_items(invocation)
     assert replay["status"] == "completed"
     assert apply.call_count == 1
     assert {r["version"]["number"] for r in replay["committed"]} == {4}
@@ -110,7 +109,7 @@ def test_source_and_target_permissions_are_required_before_any_move(move_service
     service, _index, items, records = move_service
     permissions.grant(ACTOR, grant)
     with pytest.raises(PermissionError):
-        service.action("Destination", "knowledge.move", {"items": items}, actor=ACTOR, resource_type="project")
+        service.move_knowledge_items("Destination", items, actor=ACTOR)
     assert all(Path(r["path"]).is_file() for r in records)
     assert not (Path(records[0]["path"]).parents[3] / "Destination" / "knowledge_base").exists()
 
@@ -138,8 +137,7 @@ def test_public_mixed_move_preserves_original_ids_attachments_and_permissions(mo
     index.project_relocated(skill_records)
     apply = Mock(wraps=index.store.apply_batch)
     monkeypatch.setattr(index.store, "apply_batch", apply)
-    result = service.action("Destination", "knowledge.move", {"items": items[-3:]}, actor=ACTOR,
-                            resource_type="project")
+    result = service.move_knowledge_items("Destination", items[-3:], actor=ACTOR)
     assert result["status"] == "completed", result.get("error")
     assert apply.call_count == 1
     for record in result["committed"]:

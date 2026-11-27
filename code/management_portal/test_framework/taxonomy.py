@@ -63,7 +63,7 @@ MODULE_GROUPS = (
     ModuleGroup("lineage", "6. Lineage 与 Agent 协作", (
         node("lineage.service", "SocietyService 与领域状态", "decision_1b2bdf5c33d6", "decision_d918ebebc062"),
         node("lineage.hatg", "HATG 原语与程序", "decision_4adcc1ff2f2c"),
-        node("lineage.team", "Agent Team 与协作图", "decision_6fc653d55c79"),
+        node("lineage.team", "Agent Team 与协作图", "decision_6fc653d55c79", "decision_ed2c1ed5c245"),
         node("lineage.family", "Family 门面与监督", "decision_44cf587c1721", "decision_b77fde81e7a0", "decision_9ad68dd077d4"),
     )),
     ModuleGroup("execution", "7. Execution、Provider 与 Agent Harness", (

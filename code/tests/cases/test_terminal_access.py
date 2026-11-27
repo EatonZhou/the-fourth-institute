@@ -76,22 +76,28 @@ def test_terminal_routes_answer_403_and_residents_never_open_one(permissions, sh
 
 
 def test_user_category_changes_are_audited_and_unchanged_ones_are_not_changes(open_mode, monkeypatch):
-    """UpdateUser 修改 User 分类写入访问审计，不变的分类不算修改，不存在的 User 被拒绝
+    """UpdateUserCategory 修改 User 分类写入访问审计，不变的分类不算修改，不存在的 User 被拒绝
 
-    分类写在 changes.category 中；一般用户与实习用户之间的调整按 UpdateUser 自身的检查，关闭时全部放开（sample_admin 2026-10-18）。
+    分类由 UpdateUserCategory 的 category 参数给出；该指令只允许 Portal 管理员调用，其他调用者被拒绝。
     """
     users = {"alice": {"configured": True, "status": "active"}, "bob": {"configured": True, "status": "active"}}
     audit = []
     monkeypatch.setattr(web_isa, "web", lambda _module: SimpleNamespace(_require_authenticated_actor=lambda _caller: None))
     monkeypatch.setattr(web_isa, "_access", lambda: SimpleNamespace(
         user=lambda name: users.get(name, {"configured": False}), is_active=lambda name: users[name]["status"] == "active",
+        require_revision=lambda _token: None,
         audit=lambda *args, **kwargs: audit.append((args, kwargs))))
-    change = lambda username, category, caller="bob": web_isa.update_user(SimpleNamespace(  # noqa: E731
-        caller=caller, argument={"user_id": username, "changes": {"category": category}}.get))
+    change = lambda username, category, caller="bob": web_isa.update_user_category(SimpleNamespace(  # noqa: E731
+        caller=caller, argument={"user_id": username, "category": category}.get,
+        expected_version_for=lambda _key: None))
+    from management_portal.permission_system import administrators
     from tests.cases.permission_test_support import Permissions
 
+    monkeypatch.setattr(administrators, "is_administrator", lambda actor: actor in {"alice", "bob"})
     Permissions.account("alice")
     Permissions.account("bob")
+    with pytest.raises(InstructionError, match="Portal 管理员"):
+        change("alice", "intern", caller="carol")
     result = change("alice", "intern")
     assert result["category_changed"] is True and result["user"]["category"] == "intern"
     assert change("alice", "intern")["category_changed"] is False
@@ -200,7 +206,7 @@ def test_managed_device_access_is_bound_to_the_target(permissions, monkeypatch, 
     monkeypatch.setattr(devices, "effective_ssh_access", lambda rid: {
         "via_resource_id": rid, "host": "portal-device", "config_path": str(profile)})
     monkeypatch.setattr(permission_system, "allows", lambda actor, instruction, args:
-                        actor == "alice" and instruction == "RunResourceAction" and args["resource_id"] == device)
+                        actor == "alice" and instruction == "RunDeviceCommand" and args["resource_id"] == device)
     monkeypatch.setattr(local_terminal_backend, "_start_device_process", lambda *args: args[-1])
 
     assert local_terminal_backend.open_terminal("alice", device_id=device) == devices.managed_ssh_command(profile)

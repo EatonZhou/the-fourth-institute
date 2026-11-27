@@ -210,7 +210,7 @@ class DatabaseSnapshot:
                 output[key] = [row for row in output[key] if row['node_id'] in owned_nodes]
         # Portable definitions use the installed ISA vocabulary; historical
         # rows are exported separately and retain their original evidence.
-        from management_portal.society_service.instruction_name_migration import normalize_definition
+        from management_portal.society_service.isa_definition_normalization import normalize_definition
         configs = {'lineage_components': {}, 'lineage_edges': {}}
         duty_prompts = {}
         has_config = any('config_json' in row for name in configs for row in output.get(('lineage', name), []))

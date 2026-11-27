@@ -8,20 +8,19 @@ from pathlib import Path
 import pytest
 
 from management_portal.resources.errors import ResourceVersionConflict
-from management_portal.resources.providers import knowledge
 from tests.cases.test_knowledge_move_action import move_service, ACTOR  # noqa: F401
 from tests.cases.permission_test_support import permissions  # noqa: F401
 
 
 @pytest.fixture
 def file_service(move_service):
-    knowledge.install_action_provider(move_service[0])
     return move_service
 
 
 def invoke(service, rid, **changes):
     payload = {"filename": "usage.md", "text": "# Usage\n", "expected_version": 3, **changes}
-    return service.action(rid, "knowledge.file.create", payload, actor=ACTOR)
+    return service.create_knowledge_file(rid, payload["filename"], payload["text"],
+                                         payload["expected_version"], actor=ACTOR)
 
 
 def test_create_is_immediately_readable_and_versions_primary(file_service, permissions):
@@ -75,13 +74,11 @@ def test_public_isa_and_primary_write_failure(file_service, permissions, monkeyp
     service, _index, items, records = file_service
     rid = items[0]["resource_id"]
     permissions.grant(ACTOR, "AlignMe")
-    arguments = {"resource_id": rid, "action": "knowledge.file.create", "arguments": {
-        "filename": "usage.md", "text": "# Usage\n", "expected_version": 3,
-    }}
-    inv = Invocation(catalog.declaration("RunResourceAction"),
-                     InstructionCall(instruction="RunResourceAction", arguments=arguments),
+    arguments = {"resource_id": rid, "filename": "usage.md", "text": "# Usage\n", "expected_version": 3}
+    inv = Invocation(catalog.declaration("CreateKnowledgeFile"),
+                     InstructionCall(instruction="CreateKnowledgeFile", arguments=arguments),
                      InstructionContext(caller=ACTOR, entry="harness"), "inst_res_0123456789abcdefabcd")
-    assert isa.run_resource_action(inv)["result"]["version"]["number"] == 4
+    assert isa.create_knowledge_file(inv)["version"]["number"] == 4
     primary = Path(records[0]["path"])
     before = primary.read_text()
     def fail(*_args):
