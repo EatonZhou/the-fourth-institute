@@ -644,42 +644,90 @@ def validation_supervisor(monkeypatch):
     return supervisor
 
 
-def test_candidate_uses_private_home_and_exact_sdk_paths(monkeypatch, tmp_path, validation_supervisor):
-    from management_portal.execution import provider_candidate
-
+@pytest.mark.parametrize("provider", ["codex", "claude", "antigravity", "kimi", "opencode", "dsh"])
+def test_candidate_account_gate_runs_once_on_exact_target(monkeypatch, tmp_path, validation_supervisor, provider):
+    from management_portal.execution import provider_candidate as probe
     active, staged = tmp_path / "active", tmp_path / "staged"
     active.mkdir()
     staged.mkdir()
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "live-secret")
+    from management_portal.antigravity_runtime import binary_path
+    binary_path(active).touch()
+    monkeypatch.setattr(updates.ClaudeRuntime, "selected_sdk", lambda self, version: version)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "ambient-secret")
     attempts = []
 
+    def prepare(kind, env):
+        assert kind == provider
+        assert len(attempts) == 2
+        env["TEST_LOGIN"] = "present"
+
     def run(command, *, env, cwd, **options):
-        assert options.get("timeout") is None
-        attempts.append((command[-1], env["HOME"]))
-        assert "ANTHROPIC_API_KEY" not in env
-        assert cwd.parent == Path(env["HOME"])
+        script, kind, target = command[-3:]
+        assert kind == provider and "ANTHROPIC_API_KEY" not in env
+        assert options.get("timeout") is None and cwd.parent == Path(env["HOME"])
         marker = cwd / "old-session"
-        if len(attempts) == 1:
+        if script.endswith("_live.py"):
+            assert "TEST_LOGIN" in env and not marker.exists()
+        elif not attempts:
+            assert "TEST_LOGIN" not in env
             marker.write_text("saved")
         else:
-            assert marker.read_text() == "saved"
+            assert "TEST_LOGIN" not in env and marker.read_text() == "saved"
+        attempts.append((Path(script).name, target, env["HOME"]))
 
-    monkeypatch.setattr(provider_candidate, "run_process", run)
-    provider_candidate.validate("codex", staged, active)
-    assert [path for path, _ in attempts] == [str(active), str(staged)]
-    assert attempts[0][1] == attempts[1][1] and not Path(attempts[0][1]).exists()
+    monkeypatch.setattr(probe.provider_probe_account, "prepare", prepare)
+    monkeypatch.setattr(probe, "run_process", run)
+    probe.validate(provider, staged, active)
+    assert [(s, p) for s, p, _ in attempts] == [
+        ("provider_candidate_probe.py", str(active)), ("provider_candidate_probe.py", str(staged)),
+        ("provider_candidate_live.py", str(staged))]
+    assert attempts[0][2] == attempts[1][2] != attempts[2][2]
+    assert all(not Path(home).exists() for _, _, home in attempts)
 
 
-def test_antigravity_upgrade_needs_designated_account(monkeypatch, tmp_path, validation_supervisor):
-    from management_portal.execution import provider_candidate
-
-    active, staged = tmp_path / "active", tmp_path / "staged"
-    active.mkdir()
-    staged.mkdir()
+def test_antigravity_uses_registered_login(monkeypatch, tmp_path):
+    from management_portal.execution import provider_probe_account as accounts
+    source, private = tmp_path / "profile", tmp_path / "private"
+    native = source / "antigravity-acp"
+    native.mkdir(parents=True)
+    private.mkdir(mode=0o700)
+    (native / "acp_token.json").write_text("test")
+    (native / "conversation").touch()
+    row = dict(account_id="agy_one", route_id="one", kind="subscription_login", enabled=True,
+               config={"account_dir": str(source)})
     monkeypatch.delenv("AGY_TEST_PROFILE", raising=False)
-    with pytest.raises(provider_candidate.CandidateCheckError) as failure:
-        provider_candidate.validate("antigravity", staged, active)
-    assert failure.value.public()["diagnostic"]["check"] == "test_profile"
+    monkeypatch.setattr(accounts.account_registrations, "registrations", lambda _: [row])
+    monkeypatch.setattr(accounts.account_selection, "observations", lambda: [
+        dict(row, provider="antigravity", login_state="logged_in")])
+    accounts.prepare("antigravity", {"HOME": str(private)})
+    assert [p.name for p in (private / native.name).iterdir()] == ["acp_token.json"]
+
+
+def test_probe_preserves_subscription_billing_scope(monkeypatch):
+    from management_portal.execution import provider_probe_account as accounts
+    rows = [dict(provider="kimi", account_id="login", kind="subscription_login", enabled=True),
+            dict(provider="kimi", account_id="api", kind="api_profile", enabled=True)]
+    monkeypatch.setattr(accounts.account_registrations, "registrations", lambda _: rows)
+    monkeypatch.setattr(accounts.account_selection, "observations", lambda: [
+        dict(rows[0], login_state="login_expired"), rows[1]])
+    with pytest.raises(FileNotFoundError):
+        accounts.select_account("kimi")
+
+
+@pytest.mark.parametrize("failure_stage", ["test_profile", "live_account"])
+def test_live_failure_blocks_acceptance(monkeypatch, tmp_path, validation_supervisor, failure_stage):
+    from management_portal.execution import provider_candidate as probe
+    def prepare(provider, env):
+        if failure_stage == "test_profile":
+            raise FileNotFoundError("private")
+    def run(command, **kwargs):
+        if command[1].endswith("_live.py"):
+            raise subprocess.CalledProcessError(1, command)
+    monkeypatch.setattr(probe.provider_probe_account, "prepare", prepare)
+    monkeypatch.setattr(probe, "run_process", run)
+    with pytest.raises(probe.CandidateCheckError) as error:
+        probe.validate("codex", tmp_path, tmp_path)
+    assert error.value.public()["diagnostic"]["check"] == failure_stage
     validation_supervisor.finish_validation.assert_called_once_with("attempt")
 
 
@@ -787,10 +835,12 @@ def test_late_success_preserves_actual_probe_result(monkeypatch, tmp_path, valid
     # An immediately due review cannot abort setup, either SDK, or a late successful return.
     monkeypatch.setattr(probe, "ACCEPTANCE_SECONDS", 0)
     monkeypatch.setattr(probe, "run_process", lambda *a, **kw: None)
+    monkeypatch.setattr(probe.provider_probe_account, "prepare", lambda *a: None)
     probe.validate("codex", tmp_path, tmp_path)
     assert validation_supervisor.method_calls == [
         call.register_provider_validation("codex", tmp_path.name, 0),
         call.set_validation_stage("attempt", "baseline"),
         call.set_validation_stage("attempt", "candidate"),
+        call.set_validation_stage("attempt", "live_account"),
         call.finish_validation("attempt"),
     ]
