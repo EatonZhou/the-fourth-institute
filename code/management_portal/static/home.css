@@ -180,6 +180,11 @@ body {
 .daily-news-body p,
 .daily-news-body ul,
 .daily-news-body ol { margin: 0 0 9px; }
+.daily-news-body ul,
+.daily-news-body ol {
+  padding-inline-start: 1.75em;
+  overflow-wrap: anywhere;
+}
 .daily-news-body li { margin: 0 0 3px; }
 .daily-news-body a { color: var(--accent); }
 .daily-news-body blockquote {
