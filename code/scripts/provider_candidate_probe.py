@@ -307,6 +307,8 @@ def kimi(root, model):
 
 def kimi_session(root, model):
     from management_portal.execution.provider_updates import npm_binary
+    from management_portal.kimi_account_runtime import _server_busy
+    from management_portal.kimi_live_events import wait_for_idle
     from management_portal.kimi_code_client import runtime_client
     from management_portal.kimi_code_server import DEFAULT_CONFIG_TEMPLATE
     template = DEFAULT_CONFIG_TEMPLATE.read_text().replace("__PORTAL_KIMI_DEFAULT_MODEL__", '"kimi-k3"')
@@ -327,7 +329,17 @@ def kimi_session(root, model):
                 "permission_mode": "manual", "deny_all_tools": True})
             check(bool(submitted["prompt_id"]), "Kimi prompt accepted")
             check(model.request_started.wait(10), "Kimi cancel targets active request")
-            client.abort_session(sid)
+            # The first sample follows the WebSocket ACK. Abort at that point
+            # so the probe requires a native wakeup even with no attached Worker.
+            samples = []
+            def busy():
+                value = _server_busy(client)
+                if not samples:
+                    check(value, "Kimi native work is active")
+                    client.abort_session(sid)
+                samples.append(value)
+                return value
+            check(wait_for_idle(client.base_url, busy, time.monotonic() + 12), "Kimi native idle event")
         result = client.run_turn(session_id=sid, prompt="Hello", permission_mode="manual",
                                  deny_all_tools=True, model="kimi-k3")
         check(result.session_id == sid and result.response == model.answer, "Kimi turn result")

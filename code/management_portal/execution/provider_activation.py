@@ -5,7 +5,8 @@ updater holds the exclusive session lock only while recording recovery and
 replacing the runtime. Existing work is interrupted and resumed, never drained.
 PostgreSQL releases the lock if the updater exits.
 """
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
+import json
 import time
 
 from management_common.portal_database import portal_database
@@ -54,5 +55,45 @@ def activation_window(provider, *, deadline=None):
                 reserved = True
             connection.commit()
             yield reserved
+    finally:
+        database.close()
+
+
+ACTIVATION_READY_CHANNEL = "tfi_provider_activation_ready"
+
+
+def publish_activation_ready(provider, candidate):
+    """The switching owner emits this edge after validation and recovery, under its lock."""
+    database = portal_database(schema="execution_runtime")
+    try:
+        with database.transaction() as connection:
+            payload = json.dumps({"schema": database.schema, "provider": provider, "candidate": candidate})
+            connection.execute("SELECT pg_notify(%s, %s)", (ACTIVATION_READY_CHANNEL, payload))
+    finally:
+        database.close()
+
+
+def wait_for_execution_idle(is_busy, deadline):
+    """Listen before sampling so a commit between registration and the read is covered."""
+    import psycopg
+    from psycopg import sql
+    from .scheduler_changes import SCHEDULER_CHANGE_CHANNEL
+
+    database = portal_database(schema="execution_runtime")
+    try:
+        with psycopg.connect(database.dsn, autocommit=True, connect_timeout=30) as connection:
+            connection.execute(sql.SQL("LISTEN {}").format(sql.Identifier(SCHEDULER_CHANGE_CHANNEL)))
+            if not is_busy():
+                return True
+            remaining = deadline - time.monotonic()
+            if remaining > 0:
+                with closing(connection.notifies(timeout=remaining)) as changes:
+                    for change in changes:
+                        if time.monotonic() >= deadline:
+                            break
+                        schema, _, kinds = change.payload.partition(":")
+                        if schema == database.schema and "execution" in kinds.split(",") and not is_busy():
+                            return True
+            return False
     finally:
         database.close()

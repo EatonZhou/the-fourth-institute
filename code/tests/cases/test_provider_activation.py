@@ -24,7 +24,7 @@ def test_codex_selection_does_not_prepare_recovery_or_wait_for_running_jobs(monk
     monkeypatch.setattr(updates, "_active_executions", lambda _: 1)
     monkeypatch.setattr(updates, "_prepare_execution_recovery", lambda provider: calls.append(("recovery", provider)))
     monkeypatch.setattr(updates, "_switch_runtime", lambda provider, runtime, root, **kw: calls.append(("switch", root)) or True)
-    assert updates._activate("codex", updates.CodexRuntime(), tmp_path)
+    assert updates._activate_verified("codex", updates.CodexRuntime(), tmp_path)
     assert calls == [("switch", tmp_path)]
 
 
@@ -34,7 +34,7 @@ def test_recovery_preparation_failure_keeps_previous_runtime(monkeypatch, tmp_pa
     switch = Mock()
     monkeypatch.setattr(updates, "_switch_runtime", switch)
     with pytest.raises(RuntimeError):
-        updates._activate("claude", updates.ClaudeRuntime(), tmp_path)
+        updates._activate_verified("claude", updates.ClaudeRuntime(), tmp_path)
     switch.assert_not_called()
     # The failed updater cannot leave dispatch paused.
     db = portal_database(schema="execution_runtime")
@@ -172,3 +172,131 @@ def test_queued_lock_deadline_releases_waiter():
             assert not acquired
     with activation_window("kimi") as acquired:
         assert acquired
+
+
+def test_all_provider_switches_publish_the_same_ready_event(monkeypatch, tmp_path):
+    import json
+    import psycopg
+    from psycopg import sql
+    from management_portal.execution.provider_activation import ACTIVATION_READY_CHANNEL
+
+    db = portal_database(schema="execution_runtime")
+    monkeypatch.setattr(updates, "_active_executions", lambda _: 0)
+    try:
+        with psycopg.connect(db.dsn, autocommit=True) as listener:
+            listener.execute(sql.SQL("LISTEN {}").format(sql.Identifier(ACTIVATION_READY_CHANNEL)))
+
+            def switch(provider, runtime, root, **kwargs):
+                changes = list(listener.notifies(timeout=2, stop_after=1))
+                assert [json.loads(change.payload) for change in changes] == [
+                    {"schema": db.schema, "provider": provider, "candidate": root.name}]
+                return True
+
+            monkeypatch.setattr(updates, "_switch_runtime", switch)
+            for name, runtime in updates.runtimes().items():
+                assert updates._activate_verified(name, runtime, tmp_path / "candidate")
+    finally:
+        db.close()
+
+
+def test_pending_activation_wakes_on_committed_execution_change(monkeypatch, tmp_path):
+    import json
+    import threading
+    import time
+    from management_portal import kimi_account_runtime
+    from management_portal.execution.scheduler_changes import SCHEDULER_CHANGE_CHANNEL
+
+    candidate = tmp_path / "kimi-code-2.5.3-portal-deny-all-v1"
+    monkeypatch.setattr(updates, "STATE_ROOT", tmp_path)
+    (tmp_path / "provider-updates.json").write_text(json.dumps({"pending": {"kimi": str(candidate)}}))
+    runtime = updates.KimiRuntime()
+    monkeypatch.setattr(runtime, "activation_link", lambda: tmp_path / "current")
+    monkeypatch.setattr(updates, "runtimes", lambda: {"kimi": runtime})
+    monkeypatch.setattr(updates, "_validated_candidate", lambda provider, root, baseline: root)
+    registered = threading.Event()
+    completed = threading.Event()
+    calls = []
+
+    def active(_):
+        calls.append(completed.is_set())
+        if len(calls) == 2:
+            registered.set()  # First read under activation lock, second after LISTEN.
+        return not calls[-1]
+
+    monkeypatch.setattr(updates, "_active_executions", active)
+    monkeypatch.setattr(kimi_account_runtime, "runtime_busy", lambda: False)
+    monkeypatch.setattr(kimi_account_runtime, "wait_for_runtime_idle", lambda deadline: True)
+    switch = Mock(return_value=True)
+    monkeypatch.setattr(updates, "_switch_runtime", switch)
+    db = portal_database(schema="execution_runtime")
+    try:
+        with ThreadPoolExecutor(1) as pool:
+            result = pool.submit(updates.activate_pending_provider, "kimi", str(candidate), time.monotonic() + 6)
+            assert registered.wait(3)
+            with db.transaction() as connection:
+                assert admitting_providers(connection, ["kimi"]) == {"kimi"}
+                completed.set()
+                connection.execute("SELECT pg_notify(%s, %s)", (SCHEDULER_CHANGE_CHANNEL, db.schema + ":execution"))
+                switch.assert_not_called()
+            assert result.result(timeout=3) == {"status": "activated"}
+            switch.assert_called_once()
+    finally:
+        db.close()
+
+
+def test_contended_installation_wakes_pending_provider(monkeypatch, tmp_path):
+    import json
+    import threading
+    import time
+
+    candidate = str(tmp_path / "new")
+    monkeypatch.setattr(updates, "STATE_ROOT", tmp_path)
+    (tmp_path / "provider-updates.json").write_text(json.dumps({"pending": {"codex": candidate}}))
+    monkeypatch.setattr(updates, "_validated_candidate", lambda _, root, old: root)
+    waiting = threading.Event()
+    original = updates.wait_for_installation_unlock
+
+    def wait(deadline):
+        waiting.set()
+        return original(deadline)
+
+    monkeypatch.setattr(updates, "wait_for_installation_unlock", wait)
+    switch = Mock(return_value=True)
+    monkeypatch.setattr(updates, "_switch_runtime", switch)
+    with ThreadPoolExecutor(1) as pool:
+        with updates._update_state() as locked:
+            assert locked
+            result = pool.submit(updates.activate_pending_provider, "codex", candidate, time.monotonic() + 5)
+            assert waiting.wait(2)
+            with activation_window("codex") as available:
+                assert available
+            switch.assert_not_called()
+        assert result.result(timeout=2) == {"status": "activated"}
+        switch.assert_called_once()
+
+
+def test_deferred_preparation_revalidates_after_baseline_changes(monkeypatch, tmp_path):
+    import json
+    import time
+
+    root, link = tmp_path / "next", tmp_path / "current"
+    old, other = tmp_path / "old", tmp_path / "other"
+    link.symlink_to(old)
+    monkeypatch.setattr(updates, "STATE_ROOT", tmp_path)
+    runtime = updates.CodexRuntime()
+    monkeypatch.setattr(runtime, "activation_link", lambda: link)
+    monkeypatch.setattr(updates, "runtimes", lambda: {"codex": runtime})
+    (tmp_path / "provider-updates.json").write_text(json.dumps({"pending": {"codex": str(root)}}))
+    verified = []
+    def validate(_, candidate, baseline):
+        verified.append(baseline)
+        if len(verified) == 1:
+            link.unlink()
+            link.symlink_to(other)
+        return candidate
+    monkeypatch.setattr(updates, "_validated_candidate", validate)
+    switch = Mock(return_value=True)
+    monkeypatch.setattr(updates, "_switch_runtime", switch)
+    assert updates.activate_pending_provider("codex", str(root), time.monotonic() + 3) == {"status": "activated"}
+    assert verified == [old, other]
+    switch.assert_called_once()

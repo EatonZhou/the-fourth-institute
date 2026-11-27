@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 import shutil
 import time
+from urllib.parse import urlencode
 
 from management_common.file_lock import lock_stream
 from management_common.file_permissions import atomic_write_private_bytes, ensure_private_directory
@@ -89,9 +90,22 @@ def _owned_process(target, state):
 
 
 def _server_busy(client):
-    sessions = client._request("GET", "sessions", timeout=3)
-    rows = sessions.get("items", sessions.get("sessions", [])) if isinstance(sessions, dict) else sessions
-    return any(_session_busy(client, row) for row in rows or [])
+    query = {"include_archive": "true", "page_size": 100}
+    cursors = set()
+    while True:
+        sessions = client._request("GET", "sessions?" + urlencode(query), timeout=3)
+        rows = sessions.get("items", sessions.get("sessions")) if isinstance(sessions, dict) else sessions
+        if not isinstance(rows, list):
+            raise ValueError("Kimi session list missing")
+        if any(_session_busy(client, row) for row in rows):
+            return True
+        if not isinstance(sessions, dict) or not sessions.get("has_more"):
+            return False
+        cursor = rows[-1].get("id") if rows else None
+        if not cursor or cursor in cursors:
+            raise ValueError("Kimi session list cursor did not advance")
+        cursors.add(cursor)
+        query["before_id"] = cursor
 
 
 def _session_busy(client, row):
@@ -101,7 +115,10 @@ def _session_busy(client, row):
     # servers retain their status probe; an absent flag is never assumed idle.
     if isinstance(row.get("busy"), bool):
         return row["busy"]
-    return client.get_status(row["id"]).get("busy")
+    busy = client.get_status(row["id"]).get("busy")
+    if not isinstance(busy, bool):
+        raise ValueError("Kimi session work state missing")
+    return busy
 
 
 def _stop_server(account, target, state):
@@ -148,14 +165,34 @@ def running_accounts():
     return result
 
 
-def runtime_busy():
-    if any(_server_busy(_client(target, state["port"])) for _, target, state in running_accounts()):
-        return True
+def _running_clients():
+    for _, target, state in running_accounts():
+        yield _client(target, state["port"])
     if any(account["kind"] == "service" for account in registrations("kimi")):
         from scripts.portal_service_units import provider_runtime_services
         if provider_runtime_services("portal-kimi-code.service"):
             from .kimi_code_client import shared_client
-            return _server_busy(shared_client())
+            yield shared_client()
+
+
+def runtime_busy():
+    return any(_server_busy(client) for client in _running_clients())
+
+
+def wait_for_runtime_idle(deadline):
+    from .kimi_live_events import wait_for_idle
+    while time.monotonic() < deadline:
+        client = next((item for item in _running_clients() if _server_busy(item)), None)
+        if client is None:
+            return True
+        try:
+            if not wait_for_idle(client.base_url, lambda: _server_busy(client), deadline):
+                return False
+        except (ConnectionError, EOFError, OSError):
+            # A retired account closes its socket. Re-enumerate the other
+            # accounts; a still-busy, unreachable service must defer the switch.
+            if any(item.base_url == client.base_url and _server_busy(item) for item in _running_clients()):
+                raise
     return False
 
 

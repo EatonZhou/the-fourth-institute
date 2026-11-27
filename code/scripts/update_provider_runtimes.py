@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from management_portal.execution.provider_updates import (
     ACTIVATION_WAIT_SECONDS, activate_pending_provider, pending_provider_updates, run_update_pass, runtimes,
+    wait_for_installation_unlock,
 )
 from management_common.instance_manifest import load, instance_runtime_root
 from management_common.code_environment import runtime_python
@@ -58,7 +59,10 @@ def _watch_pending() -> int:
             if failed and failed == set(pending) and not active:
                 return 1
             delay = max(0, wake_at - time.monotonic())
-            if active:
+            if pending is None and not active:
+                if not wait_for_installation_unlock(deadline):
+                    return 2
+            elif active:
                 wait([future for _, future in active.values()], timeout=delay, return_when=FIRST_COMPLETED)
             else:
                 time.sleep(delay)

@@ -11,6 +11,7 @@ import queue
 import socket
 import ssl
 import threading
+import time
 from dataclasses import dataclass, field
 from typing import Any, Callable
 from urllib.parse import urlsplit
@@ -22,6 +23,56 @@ from .provider_websocket import WebSocketTransport
 
 class UnsupportedKimiProtocol(ConnectionError):
     pass
+
+
+def _open_websocket(url, timeout):
+    port = url.port or (443 if url.scheme == "https" else 80)
+    sock = socket.create_connection((url.hostname or "localhost", port), timeout=timeout)
+    try:
+        if url.scheme == "https":
+            sock = ssl.create_default_context().wrap_socket(sock, server_hostname=url.hostname)
+        return WebSocketTransport(sock, host=url.netloc, path=url.path.rstrip("/") + "/ws")
+    except BaseException:
+        sock.close()
+        raise
+
+
+def wait_for_idle(base_url, is_busy, deadline):
+    """Observe account-wide native work, including turns with no connected Worker."""
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        return False
+    transport = _open_websocket(urlsplit(base_url), min(15, remaining))
+    try:
+        request_id = "portal-activation"
+        transport.send_text(json.dumps({"type": "client_hello", "id": request_id,
+                                       "payload": {"client_id": request_id, "subscriptions": []}}))
+        subscribed = False
+        while (remaining := deadline - time.monotonic()) > 0:
+            transport.sock.settimeout(remaining if subscribed else min(15, remaining))
+            frame = json.loads(transport.recv_text())
+            kind = frame.get("type")
+            if kind == "ping":
+                transport.send_text(json.dumps({"type": "pong", "id": frame.get("id")}))
+                continue
+            if kind == "ack" and frame.get("id") == request_id:
+                if frame.get("code", 0) != 0:
+                    raise ConnectionError("Kimi rejected the work subscription")
+                subscribed = True
+            elif not subscribed or kind not in {
+                "event.session.work_changed", "event.session.deleted", "event.session.archived", "resync_required",
+            }:
+                continue
+            # Subscribe first, then sample. Events that race the sample are buffered.
+            if not is_busy():
+                return True
+        return False
+    except TimeoutError:
+        if time.monotonic() < deadline:
+            raise
+        return False
+    finally:
+        transport.close()
 
 
 class KimiLiveStream:
@@ -68,15 +119,8 @@ class KimiLiveStream:
         gap_reported = False
         while not self.stop.is_set():
             try:
-                port = self.url.port or (443 if self.url.scheme == "https" else 80)
-                sock = socket.create_connection((self.url.hostname or "localhost", port), timeout=30)
-                if self.url.scheme == "https":
-                    sock = ssl.create_default_context().wrap_socket(sock, server_hostname=self.url.hostname)
-                try:
-                    transport = WebSocketTransport(sock, host=self.url.netloc, path=self.url.path.rstrip("/") + "/ws")
-                except BaseException:
-                    sock.close()
-                    raise
+                transport = _open_websocket(self.url, 30)
+                sock = transport.sock
                 self.transport = transport
                 self._subscribe(transport)
                 while not self.stop.is_set():

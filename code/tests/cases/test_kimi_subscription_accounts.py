@@ -50,11 +50,22 @@ def test_kimi_runtime_catalog_distinguishes_login_from_unexpected_failures(monke
 @pytest.mark.parametrize('busy', [False, True])
 def test_runtime_retirement_uses_native_session_listing_busy_flag(busy):
     def request(method, path, **kwargs):
-        assert (method, path) == ('GET', 'sessions')
+        assert (method, path) == ('GET', 'sessions?include_archive=true&page_size=100')
         return {'items': [{'id': 'native-session', 'busy': busy}]}
     def removed_status(_):
         pytest.fail('New native runtime removed the per-session status route')
     assert runtime._server_busy(SimpleNamespace(_request=request, get_status=removed_status)) is busy
+
+
+def test_runtime_retirement_checks_later_pages_before_declaring_idle():
+    paths = []
+    def request(method, path, **kwargs):
+        paths.append(path)
+        if len(paths) == 1:
+            return {"items": [{"id": "idle/one", "busy": False}], "has_more": True}
+        return {"items": [{"id": "busy", "busy": True}], "has_more": False}
+    assert runtime._server_busy(SimpleNamespace(_request=request))
+    assert paths[-1].endswith("before_id=idle%2Fone")
 
 
 def test_runtime_retirement_preserves_old_status_probe_and_errors():

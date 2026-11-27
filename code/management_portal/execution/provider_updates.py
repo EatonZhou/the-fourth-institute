@@ -24,6 +24,7 @@ import shutil
 import subprocess
 import sys
 import time
+import threading
 import uuid
 from urllib.request import urlopen
 
@@ -35,7 +36,7 @@ from management_common.process_runtime import run_process
 from management_common.portal_paths import path as portal_path
 from management_common.code_environment import provider_entry, provider_directory
 from .provider_preparation import phase, diagnosed, PreparationError
-from .provider_activation import activation_window
+from .provider_activation import activation_window, publish_activation_ready, wait_for_execution_idle
 
 LOGGER = logging.getLogger(__name__)
 ACTIVATION_WAIT_SECONDS = 72 * 60 * 60
@@ -221,7 +222,7 @@ class ProviderRuntime:
         """Whether the installed upstream versions include required local revisions."""
         return self.version_label(versions, installed=True) == self.version_label(versions)
 
-    def activation_ready(self, root):
+    def activation_ready(self, root, *, deadline=None):
         return True
 
     def account_processes(self):
@@ -494,13 +495,17 @@ class KimiRuntime(ProviderRuntime):
         from .kimi_runtime_patch import verified
         return versions not in {("2.4.1",), ("2.5.3",)} or verified(self.link())
 
-    def activation_ready(self, root):
+    def activation_ready(self, root, *, deadline=None):
         from .kimi_runtime_patch import PATCH_ID
-        if Path(root).name.endswith('-' + PATCH_ID):
-            # Installing this restriction must not replay existing business turns.
-            from management_portal.kimi_account_runtime import runtime_busy
-            return not _active_executions('kimi') and not runtime_busy()
-        return True
+        if not Path(root).name.endswith('-' + PATCH_ID):
+            return True
+        # Installing this restriction must not replay existing business turns.
+        from management_portal import kimi_account_runtime
+        if deadline is None:
+            return not _active_executions('kimi') and not kimi_account_runtime.runtime_busy()
+        if not wait_for_execution_idle(lambda: _active_executions('kimi'), deadline):
+            return False
+        return kimi_account_runtime.wait_for_runtime_idle(deadline)
 
     @diagnosed("dependency_install")
     def stage(self, versions: tuple[str, ...]) -> Path:
@@ -731,6 +736,7 @@ def _switch_if_ready(provider, runtime, root, *, prepare=False):
         return False
     if provider != "codex" and _active_executions(provider):
         _prepare_execution_recovery(provider)
+    publish_activation_ready(provider, root.name)
     return _switch_runtime(provider, runtime, root, prepare=prepare)
 
 
@@ -841,6 +847,29 @@ def _update_state():
                 temporary.unlink(missing_ok=True)
 
         yield state, save
+
+
+def wait_for_installation_unlock(deadline):
+    """Join the file lock queue outside the provider window, bounded by the job deadline."""
+    released = threading.Event()
+    errors = []
+    def wait():
+        try:
+            with (STATE_ROOT / "provider-updates.lock").open("a+") as stream, lock_stream(stream):
+                pass
+        except OSError as error:
+            errors.append(error)
+        finally:
+            released.set()
+
+    # flock has no timed blocking operation. This waiter only observes release
+    # and can never install a candidate after its caller has timed out.
+    threading.Thread(target=wait, name="provider-installation-lock", daemon=True).start()
+    if not released.wait(max(0, deadline - time.monotonic())):
+        return False
+    if errors:
+        raise errors[0]
+    return True
 
 
 def _version_observation(runtime, installed, available):
@@ -1112,14 +1141,29 @@ def activate_pending_provider(provider, path, deadline):
         runtime = runtimes()[provider]
         baseline = runtime.activation_link().resolve()
         root = _validated_candidate(provider, Path(path), baseline)
-        with activation_window(provider, deadline=deadline) as reserved:
-            if not reserved:
-                return {"status": "timeout"}
+        while True:
+            with activation_window(provider, deadline=deadline) as reserved:
+                if not reserved:
+                    return {"status": "timeout"}
 
-            def apply(preparing):
-                if runtime.activation_link().resolve() != baseline:
-                    return False  # Revalidate against the newly active version.
-                return _switch_if_ready(provider, runtime, root, prepare=preparing)
-            return _finish_pending(provider, path, apply)
+                def apply(preparing):
+                    if runtime.activation_link().resolve() != baseline:
+                        return False
+                    return _switch_if_ready(provider, runtime, root, prepare=preparing)
+
+                result = _finish_pending(provider, path, apply)
+            if deadline is None or result["status"] not in {"pending", "busy"}:
+                return result
+            if result["status"] == "busy":
+                ready = wait_for_installation_unlock(deadline)
+            elif runtime.activation_link().resolve() != baseline:
+                # First-use preparation also comes here, without an outer watcher.
+                baseline = runtime.activation_link().resolve()
+                root = _validated_candidate(provider, Path(path), baseline)
+                continue
+            else:
+                ready = runtime.activation_ready(root, deadline=deadline)
+            if not ready or time.monotonic() >= deadline:
+                return {"status": "timeout"}
     except Exception as exc:
         return _finish_pending(provider, path, error=exc)
