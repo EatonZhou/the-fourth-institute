@@ -42577,5 +42577,53 @@
   "施加时调用的指令": {"zh-CN": "施加时调用的指令", "en": "Instruction called on apply"},
   "在工坊中打开": {"zh-CN": "在工坊中打开", "en": "Open in the workshop"},
   "下架": {"zh-CN": "下架", "en": "Unpublish"},
-  "下架模板？": {"zh-CN": "下架模板？", "en": "Unpublish the template?"}
+  "下架模板？": {"zh-CN": "下架模板？", "en": "Unpublish the template?"},
+  "同类型同模型自动换号": {
+    "zh-CN": "同类型同模型自动换号",
+    "en": "Switch accounts within the same type and model"
+  },
+  "剩余额度超过 20% 时选最空闲的账号；否则选剩余额度最高的可用账号。": {
+    "zh-CN": "剩余额度超过 20% 时选最空闲的账号；否则选剩余额度最高的可用账号。",
+    "en": "Choose the least busy account above 20% remaining quota. Otherwise choose the available account with the most quota left."
+  },
+  "应急替换": {
+    "zh-CN": "应急替换",
+    "en": "Emergency fallback"
+  },
+  "没有可用的同类型同模型账号时，按此 Resident 的应急顺序替换。": {
+    "zh-CN": "没有可用的同类型同模型账号时，按此 Resident 的应急顺序替换。",
+    "en": "When no account of the same type supports the current model and is available, follow this Resident’s emergency order."
+  },
+  "应急顺序为空": {
+    "zh-CN": "应急顺序为空",
+    "en": "Emergency order is empty"
+  },
+  "应急替换目标": {
+    "zh-CN": "应急替换目标",
+    "en": "Emergency fallback target"
+  },
+  "此顺序用于新会话。已有会话的换号规则在各 Resident 的设置中配置。": {
+    "zh-CN": "此顺序用于新会话。已有会话的换号规则在各 Resident 的设置中配置。",
+    "en": "This order applies to new sessions. Configure account switching for existing sessions in each Resident’s settings."
+  },
+  "暂无符合此 Resident 换号条件的账号，等待可用账号或手动选择。": {
+    "zh-CN": "暂无符合此 Resident 换号条件的账号，等待可用账号或手动选择。",
+    "en": "No eligible account is available for this Resident. Waiting for availability or manual selection."
+  },
+  "新会话选择顺序为空。": {
+    "zh-CN": "新会话选择顺序为空。",
+    "en": "New session selection order is empty."
+  },
+  "添加可用于新会话的后端；API 用量按对应账户计费。": {
+    "zh-CN": "添加可用于新会话的后端；API 用量按对应账户计费。",
+    "en": "Add backends for new sessions. API usage is billed to the corresponding account."
+  },
+  "新会话使用这里的模型偏好；其他种类使用各自默认模型。": {
+    "zh-CN": "新会话使用这里的模型偏好；其他种类使用各自默认模型。",
+    "en": "New sessions use these model preferences. Other types use their own default model."
+  },
+  "此处配置新会话的起始后端。额度不足时的换号规则在各 Resident 的设置中配置。": {
+    "zh-CN": "此处配置新会话的起始后端。额度不足时的换号规则在各 Resident 的设置中配置。",
+    "en": "Configure the starting backend for new sessions here. Set quota fallback in each Resident’s settings."
+  }
 }

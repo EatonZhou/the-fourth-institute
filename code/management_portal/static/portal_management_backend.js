@@ -1330,7 +1330,8 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     const account = select(options, "模型偏好参考账号", "account_id", [["", t("选择账号")], ...state.accounts.filter(a => a.enabled !== false || a.account_id === role?.account_id).map(a => [a.account_id, a.account_id])], role?.account_id);
     account.required = true;
     const syncSelection = () => {
-      priority.disabled = selection.value === "fixed";
+      priority.hidden = selection.value === "fixed";
+      priority.disabled = priority.hidden;
       priority.dataset.disabled = String(priority.disabled);
       account.parentElement.querySelector("span").textContent = t(selection.value === "fixed" ? "固定账号" : "模型偏好参考账号");
     };
