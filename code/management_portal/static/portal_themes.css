@@ -703,7 +703,12 @@ html:root[data-portal-theme="liquid-glass"] .portalWorkbenchPageLayout > .portal
   border-radius: var(--lg-radius-pill);
   padding: 9px 7px;
   background: var(--header-bg);
-  box-shadow: var(--liquid-glass-edge), var(--shadow-soft);
+  /* Rails can sit flush against a clipped workspace. Keep the glass rim
+     inside the pill so its shadow cannot become a rectangular backplate. */
+  box-shadow:
+    inset 0 0 0 1px var(--lg-frame-border),
+    inset 0 2px 2px var(--lg-specular-top),
+    inset 0 -2px 3px var(--lg-rim-shade);
   color: var(--nav-text);
 }
 
@@ -1583,21 +1588,40 @@ html:root[data-portal-theme="liquid-glass"] .portalRuntimeSettingsField select:f
   outline-offset: 1px;
 }
 
-html:root[data-portal-theme="liquid-glass"] .portalSearchField {
+/* Search and resource selectors share the same raised glass material. The
+   outer search group owns the surface when it also contains a filter. */
+html:root[data-portal-theme="liquid-glass"] .portalSearchField:where(:not([data-portal-search-density="command"])),
+html:root[data-portal-theme="liquid-glass"] .portalBoardSearchGroup {
   border-radius: var(--lg-radius-pill);
-  border-color: var(--lg-tint-field-border);
-  background: var(--lg-tint-field);
-  box-shadow: var(--lg-field-shadow);
+  border-color: transparent;
+  background: var(--lg-btn-glass-bg);
+  box-shadow: var(--lg-btn-glass-shadow);
   transition:
-    background-color var(--lg-duration-fast) ease,
+    background var(--lg-duration-fast) ease,
     border-color var(--lg-duration-fast) ease,
     box-shadow var(--lg-duration-fast) ease;
 }
 
-html:root[data-portal-theme="liquid-glass"] .portalSearchField:focus-within {
-  background: #ffffff;
+html:root[data-portal-theme="liquid-glass"] .portalSearchField:where(:not([data-portal-search-density="command"])):hover,
+html:root[data-portal-theme="liquid-glass"] .portalBoardSearchGroup:hover {
+  background: var(--lg-btn-glass-hover);
+  box-shadow: var(--lg-btn-glass-hover-shadow);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalSearchField:where(:not([data-portal-search-density="command"])):focus-within,
+html:root[data-portal-theme="liquid-glass"] .portalBoardSearchGroup:focus-within {
   border-color: rgba(24, 24, 27, .38);
-  box-shadow: var(--portal-focus-ring);
+  box-shadow: var(--portal-focus-ring), var(--lg-btn-glass-shadow);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalBoardSearchGroup > .portalBoardSearch.portalSearchField {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalSearchField > .portalBoardSearchAction {
+  border-radius: var(--lg-radius-pill);
 }
 
 html:root[data-portal-theme="liquid-glass"] .portalButtonTooltip {
@@ -2009,6 +2033,19 @@ html:root[data-portal-theme="liquid-glass"] .portalMailboxAlert {
 
 /* Tier 3: Accessibility & reduced transparency / high contrast fallbacks */
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more), (forced-colors: active) {
+  html:root[data-portal-theme="liquid-glass"] .portalSearchField:where(:not([data-portal-search-density="command"], .portalBoardSearchGroup > *)),
+  html:root[data-portal-theme="liquid-glass"] .portalBoardSearchGroup {
+    background: var(--panel);
+    border-color: var(--border-strong);
+    box-shadow: none;
+  }
+
+  html:root[data-portal-theme="liquid-glass"] .portalSearchField:where(:not([data-portal-search-density="command"], .portalBoardSearchGroup > *)):focus-within,
+  html:root[data-portal-theme="liquid-glass"] .portalBoardSearchGroup:focus-within {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
   html:root[data-portal-theme="liquid-glass"] .messageItem.liveRuntime {
     background: var(--panel);
     border-color: var(--border-strong);
