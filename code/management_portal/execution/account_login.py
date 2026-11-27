@@ -25,7 +25,7 @@ from management_common.process_runtime import run_process, spawn_process, termin
 from management_common.portal_database import portal_database
 from management_portal.hatg.contracts import InstructionError, invalid
 from .account_hosting import account_home, ensure_account_home, start_codex_instance, validate_account_id
-from .provider_account_operations import account_operation, unsupported, validate_fields
+from .provider_account_operations import account_operation, login_profile, unsupported, validate_fields
 from .provider_catalog import AGENT_PROVIDERS
 
 
