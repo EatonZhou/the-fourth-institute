@@ -45,14 +45,16 @@ def annotate(projection, body, parent, roles, scopes, keys, *, source=None, role
     visible = {r['key'] for section in ('roles', 'components') for r in graph[section]}
     residents, bindings, owners = {}, {}, {}
     titles = {'facade': '门面', 'router': 'Router', 'steward': 'Steward'}
+    own_keys = {keys[e['id']] for scope in scopes for e in scope['elements'] if e['id'] in keys}
     used = {}
     for section in ('components', 'wires'):
         for row in graph[section]:
             for end in ('source', 'target'):
                 if end in row:
                     used.setdefault(row[end], []).append({'component': row['key'], 'path': end})
-            for key, path in references(row.get('config', {})):
-                used.setdefault(key, []).append({'component': row['key'], 'path': path})
+            if row['key'] in own_keys:
+                for key, path in references(row.get('config', {})):
+                    used.setdefault(key, []).append({'component': row['key'], 'path': path})
     # Installation context is not itself a visible graph interface. Preserve
     # only externally referenced Residents, including unbound collection slots.
     graph['roles'] = [r for r in graph['roles'] if not role_key or r['key'] == role_key + '_resident' or r['key'] in used]
@@ -122,7 +124,6 @@ def annotate(projection, body, parent, roles, scopes, keys, *, source=None, role
 
     if role_key:
         from .. import family_roles
-        own_keys = {keys[e['id']] for scope in scopes for e in scope['elements'] if e['id'] in keys}
         for row in graph['components']:
             local = row['key']
             if local in own_keys:

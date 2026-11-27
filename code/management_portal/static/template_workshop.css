@@ -45,6 +45,7 @@
 .templateGraphNavigation button { flex:none; }
 .workshopInfoOverlay { position:absolute; inset:0; z-index:45; padding:12px; }
 .workshopInfoOverlay .portalDetailSurface { width:min(620px,100%); max-height:100%; }
+.workshopInfoOverlay .nodeSettingsSurface::before { display:none; }
 .workshopInfoOverlay [data-template-info-fields] { min-height:0; overflow:auto; }
 .workshopInfoBody { display:flex; flex-direction:column; gap:12px; }
 .workshopInfoBody > * { flex-shrink:0; min-width:0; max-width:100%; }

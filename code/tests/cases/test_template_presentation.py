@@ -22,6 +22,7 @@ def test_role_menus_and_bindings_are_derived_from_the_source_without_runtime_ids
             assert not any(b['key']=='member_done' for b in meta['bindings'].values())
         else:
             assert any(b['key']=='member_done' for b in meta['bindings'].values())
+            assert not any(use['component']=='router' for use in meta['bindings']['router_resident']['uses'])
         assert any(b['key']=='members' and b['cardinality']=='many' for b in meta['bindings'].values())
         assert set(meta['residents']).isdisjoint(meta['bindings'])
         assert not any(r['from']=='lineage_leader' for r in view['roles'])
