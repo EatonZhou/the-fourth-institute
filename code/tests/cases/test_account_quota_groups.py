@@ -34,7 +34,7 @@ def test_claude_cache_is_read_passively_only_after_the_daemon_says_it_can(monkey
     from management_portal import claude_code_client
     client = Mock()
     client.account_usage.return_value = {"quota_status": "available", "rate_limits": []}
-    monkeypatch.setattr(claude_code_client, "shared_client", lambda: client)
+    monkeypatch.setattr(claude_code_client, "shared_client", lambda route_id: client)
     adapter, account = claude_subscription
     assert not adapter.observes_passively(account)
     adapter.observe(account)
@@ -66,7 +66,7 @@ def test_claude_model_specific_limits_do_not_block_the_common_pool(monkeypatch, 
                {"id": "seven_day_sonnet", "remaining_percent": 0}]
     client = Mock()
     client.account_usage.return_value = {"quota_status": "available", "rate_limits": windows}
-    monkeypatch.setattr(claude_code_client, "shared_client", lambda: client)
+    monkeypatch.setattr(claude_code_client, "shared_client", lambda route_id: client)
     adapter, account = claude_subscription
     result = adapter.observe(account)["rate_limits"]
     assert [w["quota_group"] for w in result] == ["claude", "claude", "seven_day_sonnet"]
@@ -82,7 +82,7 @@ def test_claude_fable_pool_neither_closes_the_account_nor_keeps_a_native_label(m
         {"id": "five_hour", "label": "5 小时", "remaining_percent": 80, "observed_at_unix": 1, "fresh_until": 2},
         {"id": "seven_day", "label": "每周", "remaining_percent": 90, "observed_at_unix": 1, "fresh_until": 2},
         {"id": "seven_day_overage_included", "label": "额外每周额度", "remaining_percent": 0}]}
-    monkeypatch.setattr(claude_code_client, "shared_client", lambda: client)
+    monkeypatch.setattr(claude_code_client, "shared_client", lambda route_id: client)
     adapter, account = claude_subscription
     result = adapter.observe(account)
     assert [w["label"] for w in result["rate_limits"]] == ["5 小时", "每周", "Fable 每周"]
@@ -98,7 +98,7 @@ def test_claude_passive_observation_never_starts_a_usage_read(monkeypatch, claud
     from management_portal import claude_code_client
     client = Mock()
     client.account_usage.return_value = {"quota_status": "stale", "quota_error": "x", "rate_limits": []}
-    monkeypatch.setattr(claude_code_client, "shared_client", lambda: client)
+    monkeypatch.setattr(claude_code_client, "shared_client", lambda route_id: client)
     from management_portal.execution import account_login
     probe = Mock(side_effect=AssertionError("A passive observation must not probe login"))
     monkeypatch.setattr(account_login, "provider_logged_in", probe)
@@ -115,7 +115,7 @@ def test_claude_adapter_returns_native_readings_without_own_retention_cache(monk
     fable = {"id": "seven_day_overage_included", "remaining_percent": 96, "resets_at": 2000, "observed_at": "t0"}
     client = Mock()
     client.account_usage.return_value = {"quota_status": "available", "rate_limits": [*common, fable]}
-    monkeypatch.setattr(claude_code_client, "shared_client", lambda: client)
+    monkeypatch.setattr(claude_code_client, "shared_client", lambda route_id: client)
     adapter, account = claude_subscription
     adapter.observe(account)
     client.account_usage.return_value = {"quota_status": "available", "rate_limits": common}

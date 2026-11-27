@@ -46,13 +46,14 @@ def test_native_query_uses_bundled_cli_and_keeps_zero_cost_validation(monkeypatc
     monkeypatch.setattr(module, 'native_cli_path', lambda: '/sdk/_bundled/claude')
     monkeypatch.setattr(module, 'login_environment', lambda _: {'CLAUDE_CONFIG_DIR': '/account/one'})
     process = mock.Mock(returncode=0)
-    response = {'result': 'Current session: 12% used\nCurrent week (all models): 24% used', 'total_cost_usd': 0}
+    response = {'result': 'Current session: 12% used\nCurrent week (all models): 24% used\nCurrent week (Fable): 0% used', 'total_cost_usd': 0}
     process.communicate = mock.AsyncMock(side_effect=lambda: (json.dumps(response).encode(), b''))
     spawn = mock.AsyncMock(return_value=process)
     monkeypatch.setattr(module.asyncio, 'create_subprocess_exec', spawn)
     profile = {'config_dir': '/account/one'}
     result = asyncio.run(module.read_native_usage(profile))
     assert result['five_hour']['utilization'] == .12
+    assert result['seven_day_overage_included']['utilization'] == 0
     assert spawn.call_args.args[:3] == ('/sdk/_bundled/claude', '--print', '/usage')
     assert spawn.call_args.kwargs['env']['CLAUDE_CONFIG_DIR'] == '/account/one'
     response['total_cost_usd'] = .01

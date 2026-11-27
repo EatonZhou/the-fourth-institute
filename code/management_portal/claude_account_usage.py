@@ -151,6 +151,7 @@ class ClaudeAccountUsage:
 _USAGE_LABELS = {
     "Current session": "five_hour",
     "Current week (all models)": "seven_day",
+    "Current week (Fable)": "seven_day_overage_included",
     "Current week (Sonnet only)": "seven_day_sonnet",
     "Current week (Opus only)": "seven_day_opus",
 }
@@ -161,8 +162,8 @@ def parse_native_usage(text: str, *, now: float | None = None) -> dict[str, Any]
     current = datetime.fromtimestamp(time.time() if now is None else now, timezone.utc)
     windows = {}
     for line in text.splitlines():
-        match = re.fullmatch(r"(Current session|Current week \(all models\)|Current week \(Sonnet only\)|Current week \(Opus only\)): ([0-9]+(?:\.[0-9]+)?)% used(?: · resets (.*))?", line.strip())
-        if not match:
+        match = re.fullmatch(r"([^:]+): ([0-9]+(?:\.[0-9]+)?)% used(?: · resets (.*))?", line.strip())
+        if not match or match[1] not in _USAGE_LABELS:
             continue
         used = float(match[2])
         if not 0 <= used <= 100:
