@@ -2,6 +2,7 @@
 
 from management_common.resource_lifecycle import LifecycleStore
 from management_common.directory_retention import enqueue_directory_cleanup
+from management_portal.hatg.contracts import InstructionError
 
 
 def delete_script_run(identifier):
@@ -44,17 +45,31 @@ def _finish_run(store, run_id, *, finalize_run=True):
 
     released, errors, completed_scopes = [], [], []
     creation_errors = []
+    # Sealing admits late allocations; it does not grant deletion permission.
+    # A refused object stays pending, but gets only one attempt in this pass.
+    # Keep this local so a later pass rechecks changed authorization normally.
+    denied = {}
     def release_scope(scope):
         resources = sorted(store.pending(scope['id']), key=resource_release_order)
         failures = []
         for resource_id in resources:
+            if resource_id in denied:
+                failures.append(denied[resource_id])
+                continue
             try:
                 key = f"test-release:{scope['id']}:{resource_id}"
                 _release_resource(resource_id, key)
                 store.released(scope['id'], resource_id)
                 released.append(resource_id)
             except Exception as error:
-                failures.append(f'{resource_id}: {error}')
+                failure = f'{resource_id}: {error}'
+                failures.append(failure)
+                if (isinstance(error, InstructionError)
+                        and error.commit_state == 'not_committed'
+                        and (error.code == 'instruction.forbidden'
+                             or error.code == 'instruction.not_found'
+                             and error.details.get('reason') == 'no_permit')):
+                    denied[resource_id] = failure
         return failures
 
     for scope in store.for_run(run_id):

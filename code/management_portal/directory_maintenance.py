@@ -135,5 +135,10 @@ def run(*, now=None, test_roots=None):
         report['errors'].append(f'paper reader: {error}')
     report['cleanup'] = retention.queue.run_pending()
     report['pending_cleanup'] = [row for row in retention.queue.status() if row['status'] != 'completed']
-    report['ok'] = not report['errors'] and not report['pending_cleanup'] and not report.get('pending_projections')
+    # A bounded pass can leave unattempted or reserved work for the next pass.
+    # Keep that work visible, but only an actual failed attempt is a failure.
+    # Retried failures remain unhealthy even while waiting for their backoff.
+    failed_cleanup = any(row['last_error'] for row in report['pending_cleanup'])
+    failed_projections = any(row['error'] for row in report.get('pending_projections', []))
+    report['ok'] = not report['errors'] and not failed_cleanup and not failed_projections
     return report

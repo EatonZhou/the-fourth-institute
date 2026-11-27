@@ -77,6 +77,29 @@ def _release_resource(resource_id: str, key: str) -> None:
     atomic_replace_json(path, state)
 
 
+def _denied_confirmation(error, resource_id, instruction, *, result=None, failure=None):
+    """Keep the original refusal and the same actor's limited read diagnosis."""
+    confirmation = {'actor': TAU_ACTOR, 'resource_id': resource_id,
+                    'instruction': instruction, 'outcome': 'unconfirmed'}
+    if failure is not None:
+        confirmation['error'] = {'code': failure.code,
+                                 'reason': failure.details.get('reason', '')}
+        outcome = failure.code
+    else:
+        record = (result or {}).get('resource') or {}
+        if record.get('resource_id') == resource_id:
+            confirmation['outcome'] = 'resource_exists'
+            confirmation['status'] = (record.get('attributes') or {}).get('status', '')
+        outcome = confirmation['outcome']
+    return InstructionError(
+        error.code,
+        f'{error}; cleanup confirmation {instruction}: {outcome}; actor={TAU_ACTOR}',
+        http_status=error.http_status, retryable=error.retryable,
+        commit_state=error.commit_state,
+        details={**error.details, 'cleanup_confirmation': confirmation},
+    )
+
+
 def _release_resource_once(resource_id: str, key: str) -> None:
     """Use the lifecycle owner, including when the UI already removed it."""
     from management_portal import isa_client
@@ -104,8 +127,9 @@ def _release_resource_once(resource_id: str, key: str) -> None:
                     # from a denied read or bypass authorization to delete.
                     try:
                         result = isa_client.call(TAU_ACTOR, 'GetProjectDeletion', {'project_id': resource_id})
-                    except InstructionError:
-                        raise error
+                    except InstructionError as confirmation_error:
+                        raise _denied_confirmation(error, resource_id, 'GetProjectDeletion',
+                                                   failure=confirmation_error) from error
                     if (result.get('project_id') != resource_id
                             or result.get('registration_status') != 'unregistered'
                             or result.get('effects', {}).get('status') != 'complete'):
@@ -144,10 +168,13 @@ def _release_resource_once(resource_id: str, key: str) -> None:
             # Only the ordinary resolver's explicit absence confirms cleanup;
             # denial, unavailable services and existing resources stay pending.
             try:
-                isa_client.call(TAU_ACTOR, 'ResolveResource', {'address': resource_id})
+                result = isa_client.call(TAU_ACTOR, 'ResolveResource', {'address': resource_id})
             except InstructionError as resolution:
                 if resolution.code == 'instruction.not_found' and resolution.details.get('reason') != 'no_permit':
                     return
+                raise _denied_confirmation(exc, resource_id, 'ResolveResource',
+                                           failure=resolution) from exc
+            raise _denied_confirmation(exc, resource_id, 'ResolveResource', result=result) from exc
         raise
 
 

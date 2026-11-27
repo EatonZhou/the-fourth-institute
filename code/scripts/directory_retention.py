@@ -2,6 +2,7 @@
 from pathlib import Path
 import argparse
 import json
+import os
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -13,6 +14,10 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--installation-plan', action='store_true')
     args = parser.parse_args(argv)
+    if not args.installation_plan:
+        # Recovery replays the recorded actor at the owning service. A local
+        # ISA kernel in this standalone process has no Society domain ports.
+        os.environ['PORTAL_ISA_ROUTING'] = 'socket'
     from management_portal.directory_maintenance import workflow_operations, run
     if args.installation_plan:
         print(json.dumps({'operations': workflow_operations(Path(__file__).resolve())}, ensure_ascii=False, indent=2))

@@ -13,6 +13,33 @@ from management_portal import business_tasks
 from management_portal.test_framework.records import RunRecords
 
 
+@pytest.mark.parametrize('routing', [None, 'local'])
+def test_maintenance_script_routes_recovery_to_running_owners(monkeypatch, routing):
+    from scripts import directory_retention
+    from management_portal import directory_maintenance
+    from management_portal.hatg.routing import routing_mode
+
+    if routing is None:
+        monkeypatch.delenv('PORTAL_ISA_ROUTING', raising=False)
+    else:
+        monkeypatch.setenv('PORTAL_ISA_ROUTING', routing)
+
+    def recover():
+        assert routing_mode() == 'socket'
+        return {'ok': True}
+
+    monkeypatch.setattr(directory_maintenance, 'run', recover)
+    assert directory_retention.main([]) == 0
+
+
+def test_maintenance_installation_plan_does_not_start_recovery(monkeypatch):
+    from scripts import directory_retention
+    from management_portal import directory_maintenance
+    monkeypatch.setenv('PORTAL_ISA_ROUTING', 'local')
+    monkeypatch.setattr(directory_maintenance, 'run', lambda: pytest.fail('plan started maintenance'))
+    assert directory_retention.main(['--installation-plan']) == 0
+
+
 def test_background_allocations_keep_run_ownership(tmp_path):
     store = LifecycleStore()
     scope = store.open(str(tmp_path), actor='alice', run_id='testrun_0123456789abcdef', case_id='case')
@@ -518,6 +545,45 @@ def test_mechanical_maintenance_reports_pending_failure_and_retries(tmp_path, mo
         connection.execute(f'UPDATE {retention.queue.table} SET available_at=clock_timestamp()')
     second = run(now=now, test_roots=[])
     assert second['ok'] and not second['pending_cleanup'] and not path.exists()
+
+
+@pytest.mark.parametrize('waiting', ['batch_limit', 'not_due'])
+def test_mechanical_maintenance_keeps_normal_waiting_work_without_failure(tmp_path, waiting):
+    """A bounded pass is successful with unattempted work; it must stay queued."""
+    from management_portal.directory_maintenance import run
+    from management_common.directory_retention import RetentionStore
+    retention = RetentionStore()
+    count = 101 if waiting == 'batch_limit' else 1
+    for number in range(count):
+        path = tmp_path / f'waiting-{number}'
+        path.mkdir()
+        with retention.queue.database.transaction() as connection:
+            retention.queue.enqueue(path, owner_id=f'waiting-{number}',
+                                    operation_id=f'waiting-{number}', actor='test-actor',
+                                    connection=connection)
+    if waiting == 'not_due':
+        with retention.queue.database.transaction() as connection:
+            connection.execute(f"UPDATE {retention.queue.table} SET available_at=clock_timestamp()+interval '1 hour'")
+    result = run(test_roots=[])
+    assert result['ok'], result['errors']
+    assert len(result['pending_cleanup']) == 1
+    assert result['pending_cleanup'][0]['status'] == 'pending'
+    assert not result['pending_cleanup'][0]['last_error']
+    assert len(result['cleanup']) == count - 1
+    assert sum(path.exists() for path in tmp_path.glob('waiting-*')) == 1
+
+
+@pytest.mark.parametrize('failed', [False, True])
+def test_mechanical_maintenance_distinguishes_projection_backlog_and_failure(monkeypatch, failed):
+    from management_portal.directory_maintenance import run
+    from management_portal.workbench_projections.resource_lifecycle import ResourceProjectionCleanup
+    pending = [{'resource_id': 'article_0123456789ab', 'actor': 'test-actor',
+                'attempts': int(failed), 'error': 'permission denied' if failed else ''}]
+    monkeypatch.setattr(ResourceProjectionCleanup, 'run_pending', lambda self: [])
+    monkeypatch.setattr(ResourceProjectionCleanup, 'pending', lambda self: pending)
+    result = run(test_roots=[])
+    assert result['ok'] is not failed
+    assert result['pending_projections'] == pending
 
 
 def test_cache_eviction_reservation_is_a_cache_miss_and_blocks_recreation(tmp_path):

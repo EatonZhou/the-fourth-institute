@@ -18,6 +18,7 @@ from management_portal.test_framework.tau_residents import TauResidentAssignment
 
 RID = 'resident_111111111111'
 LID = 'lineage_111111111111'
+isa_call = isa_client.call
 
 
 @pytest.fixture
@@ -213,6 +214,76 @@ def test_shared_resident_refuses_cascade(projection):
     with pytest.raises(ValueError, match='another resource'):
         resource_lifecycle.release_resource('paper_111111111111', actor='owner')
     assert not projection.calls
+
+
+def test_resource_release_preserves_shared_personal_history(projection):
+    resource_id = 'paper_111111111111'
+    associate(projection, resource_id)
+    associate(projection, resource_id, actor='bob', scope='surface-chat:bob:paper:history')
+    with pytest.raises(ValueError, match='personal history'):
+        resource_lifecycle.release_resource(resource_id, actor='owner')
+    assert not projection.calls
+    assert len(projection.store.list_namespace(resident_handoff.INVOCATION_ASSOCIATION_NAMESPACE)) == 2
+
+
+@pytest.mark.parametrize('allowed', [True, False])
+def test_projection_outbox_uses_society_owner_with_original_actor(projection, monkeypatch, allowed):
+    from management_portal.hatg import routing, socket_rpc
+    from management_portal.hatg.contracts import InstructionResult, failed_result
+
+    resource_id = 'plan_111111111111'
+    associate(projection, resource_id)
+    caller = 'original-owner' if allowed else 'original-member'
+    forward = isa_client.call  # The fixture's owner implementation.
+    monkeypatch.setattr(isa_client, 'call', isa_call)
+    monkeypatch.setenv('PORTAL_ISA_ROUTING', 'socket')
+    monkeypatch.setattr(routing, 'local_kernel', lambda owner: None)
+    monkeypatch.setattr(routing, 'build_kernel', lambda owner: pytest.fail('Maintenance loaded a local kernel'))
+
+    remote_calls = []
+
+    def remote(owner, call, context, **kwargs):
+        assert owner == 'lineage'
+        assert context.caller == caller
+        remote_calls.append(call.instruction)
+        if not allowed and call.instruction == 'ApplyLineageChanges':
+            return failed_result('inst_lin_denied', call.instruction,
+                                 InstructionError('instruction.forbidden', 'Resident admin required'))
+        if call.instruction == 'ApplyLineageChanges' and call.expected_version is None:
+            assert all(node['id'] != RID for node in projection.graph['nodes'])
+            result = {'deleted_ids': [RID]}
+        else:
+            result = forward(context.caller, call.instruction, call.arguments, version=call.expected_version)
+        return InstructionResult('inst_lin_ok', call.instruction, 'committed', result)
+
+    monkeypatch.setattr(socket_rpc, 'call_remote', remote)
+    worker = resource_lifecycle.ResourceProjectionCleanup.__new__(resource_lifecycle.ResourceProjectionCleanup)
+    worker.collection = 'projection_releases'
+    entries = {resource_id: {'resource_id': resource_id, 'actor': caller, 'attempts': 0}}
+    connection = Mock()
+    connection.execute.return_value.fetchone.return_value = (42,)
+    writer = SimpleNamespace(put=lambda _, key, value: entries.__setitem__(key, value),
+                             delete=lambda _, key: entries.pop(key))
+    worker.store = SimpleNamespace(
+        documents=lambda _: entries, get=lambda _, key: copy.deepcopy(entries.get(key)),
+        writer=lambda _: nullcontext(writer), database=SimpleNamespace(
+            schema='test', read=lambda: nullcontext(connection), advisory_lock=lambda _: nullcontext()),
+    )
+    before = copy.deepcopy(projection.graph)
+
+    result, = worker.run_pending()
+
+    assert 'ApplyLineageChanges' in remote_calls
+    associations = projection.store.list_namespace(resident_handoff.INVOCATION_ASSOCIATION_NAMESPACE)
+    if allowed:
+        assert result['status'] == 'completed'
+        assert not entries and not associations
+        assert all(node['id'] != RID for node in projection.graph['nodes'])
+    else:
+        assert result['status'] == 'retry'
+        assert entries[resource_id]['error_code'] == 'instruction.forbidden'
+        assert entries[resource_id]['attempts'] == 1
+        assert associations and projection.graph == before
 
 
 def test_rotating_slot_deletes_old_projection_before_overwriting_mapping(tmp_path, projection):
