@@ -63,8 +63,14 @@ header.resourceSectionPageHeader .portalBoardMeta[data-tone="alert"] {
   color: var(--danger, #b42318);
 }
 
+/* A selector with title + ID and its primary action use the board's taller
+   control size. Keep their search field and action row on that same height. */
+header.resourceSectionPageHeader .portalBoardCommand:has(> [data-portal-board-actions-layout="selector-primary"]) {
+  --resource-command-height: 38px;
+}
+
 header.resourceSectionPageHeader .portalBoardActions.portalToolbar {
-  height: 34px;
+  height: var(--resource-command-height, 34px);
   padding: 0;
   border: 0;
   background: transparent;
@@ -72,7 +78,7 @@ header.resourceSectionPageHeader .portalBoardActions.portalToolbar {
 
 header.resourceSectionPageHeader .portalBoardSearchGroup,
 header.resourceSectionPageHeader .portalBoardCommand > .portalBoardSearch {
-  height: 34px;
+  height: var(--resource-command-height, 34px);
 }
 
 /* Below the two-column width the tabs keep the band's first row and the
