@@ -3,7 +3,8 @@ from __future__ import annotations
 import threading
 from collections.abc import Callable, Iterable, Mapping
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, replace as replace_provider
+from copy import deepcopy
 from typing import Any, Iterator
 
 
@@ -26,6 +27,13 @@ class ResourceMutationProvider:
     # They are not reachable through generic UpdateResource or action dispatch.
     update_workbench_page: Callable[..., dict[str, Any]] | None = None
     update_workbench_reverse_plan: Callable[..., dict[str, Any]] | None = None
+    register_contract: Mapping[str, Any] | None = None
+    update_contract: Mapping[str, Any] | None = None
+
+
+def _copy_contracts(provider):
+    return replace_provider(provider, register_contract=deepcopy(provider.register_contract),
+                            update_contract=deepcopy(provider.update_contract))
 
 
 class MutationProviderRegistry:
@@ -61,6 +69,22 @@ class MutationProviderRegistry:
             for handler in handlers
         ):
             raise TypeError("resource mutation provider handlers must be callable")
+        from .mutation_contracts import prepare_mutation_contract, has_replay_contract
+
+        contracts = {}
+        for operation in ("register", "update"):
+            contract = getattr(provider, operation + "_contract")
+            if getattr(provider, operation) is None:
+                if contract is not None:
+                    raise ValueError(f"{', '.join(clean_types)}: {operation} contract requires a handler")
+            else:
+                if contract is None:
+                    raise ValueError(f"{', '.join(clean_types)}: {operation} handler requires a mutation contract")
+                contract = prepare_mutation_contract(contract)
+                if has_replay_contract(contract) and (operation != "register" or not provider.service_managed_registration):
+                    raise ValueError("legacy replay requires service-managed registration")
+            contracts[operation + "_contract"] = contract
+        provider = replace_provider(provider, **contracts)
         with self._lock:
             conflicts = [
                 value for value in clean_types if value in self._providers
@@ -80,7 +104,7 @@ class MutationProviderRegistry:
             raise ValueError(
                 f"no mutation provider registered for {resource_type}"
             )
-        return provider
+        return _copy_contracts(provider)
 
     def registered_types(self) -> frozenset[str]:
         with self._lock:

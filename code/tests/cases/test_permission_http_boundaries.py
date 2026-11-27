@@ -149,7 +149,11 @@ def test_stale_execution_receipt_does_not_replace_resource_authorization(checkpo
     monkeypatch.setattr(content_changes, "get_execution_service", lambda: execution)
     registry = ResourceService(index_provider=mock.Mock())
     update = mock.Mock(return_value={"resource_id": D})
-    registry.register_mutation_provider("article", update=update)
+    registry.register_mutation_provider(
+        "article", update=update,
+        update_contract={'type': 'object', 'properties': {'text': {'type': 'string'}},
+                         'required': ['text'], 'additionalProperties': False},
+    )
     monkeypatch.setattr(registry, "_notify_mutation", mock.Mock(return_value={}))
     with execution_scope("stale-execution"):
         result = registry.update(D, {"text": "allowed"}, actor="bob")

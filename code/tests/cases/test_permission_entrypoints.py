@@ -41,6 +41,11 @@ def test_a_resource_registration_notifies_the_index_without_account_lookups(reso
     registry = ResourceService(index_provider=index)
     registry.register_mutation_provider(resource_type, register=lambda payload, **context: {
         "resource_id": identifier, **payload,
+    }, register_contract={
+        'type': 'object',
+        'properties': {'title': {'type': 'string'},
+                       'project_ids': {'type': 'array', 'items': {'type': 'string'}}},
+        'required': ['title', 'project_ids'], 'additionalProperties': False,
     })
     result = registry.register(resource_type, {"title": "New resource", "project_ids": ["Fixture"]}, actor="bob")
     assert result["resource_id"] == identifier

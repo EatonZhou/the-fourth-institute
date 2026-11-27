@@ -18,7 +18,10 @@ def test_provider_loading_is_lazy_atomic_and_recovers_per_type(monkeypatch, subt
                 if capability == 'resolver':
                     service.register_resolver('device', Mock())
                 else:
-                    service.register_mutation_provider('device', update=Mock())
+                    service.register_mutation_provider(
+                        'device', update=Mock(),
+                        update_contract={'type': 'object', 'additionalProperties': False},
+                    )
                 if failing:
                     raise RuntimeError('isolated device registration failure')
             method = {'resolver': 'install_resolver', 'mutation': 'install_mutation_provider'}[capability]

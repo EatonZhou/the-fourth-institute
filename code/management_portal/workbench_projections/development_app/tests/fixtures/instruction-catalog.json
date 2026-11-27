@@ -8,7 +8,8 @@
       "Removed retired upload deletion instruction; browser uses its file endpoint.",
       "Applied the three ISA reduction Plans to this historical teaching catalogue.",
       "Applied the approved D066 v2 catalogue delta to this historical teaching catalogue.",
-      "Applied plan_1e95f54595a4 stage 1: separate Resident reporting and runtime settings."
+      "Applied plan_1e95f54595a4 stage 1: separate Resident reporting and runtime settings.",
+      "Applied plan_1e95f54595a4 stage 3: provider-owned register/update field contracts."
     ]
   },
   "catalog": {
@@ -3007,6 +3008,12 @@
             "type": "boolean",
             "required": true,
             "description": "提供者当前能否撤销登记这种资源"
+          },
+          {
+            "name": "contracts",
+            "type": "object",
+            "required": true,
+            "description": "实际提供者的 register/update JSON Schema 副本；不支持的操作省略，未安装为空。integer 仅接受整数，排除布尔和浮点；legacy-replay-only 分支仅可重放原已提交登记，领域权限与版本条件仍须满足"
           },
           {
             "name": "type",

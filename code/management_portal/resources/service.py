@@ -167,6 +167,8 @@ class ResourceService:
         owner_managed_unregistration: bool = False,
         update_workbench_page: Any = None,
         update_workbench_reverse_plan: Any = None,
+        register_contract: Mapping[str, Any] | None = None,
+        update_contract: Mapping[str, Any] | None = None,
         replace: bool = False,
     ) -> None:
         service_providers.register_mutation_provider(
@@ -175,6 +177,7 @@ class ResourceService:
             owner_managed_unregistration=owner_managed_unregistration,
             update_workbench_page=update_workbench_page,
             update_workbench_reverse_plan=update_workbench_reverse_plan,
+            register_contract=register_contract, update_contract=update_contract,
             replace=replace,
         )
 

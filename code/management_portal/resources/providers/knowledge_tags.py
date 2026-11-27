@@ -7,6 +7,19 @@ from management_portal import permission_system, project_registry
 from ..errors import ResourceVersionConflict
 
 
+UPDATE_CONTRACT = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object", "additionalProperties": False,
+    "required": ["content", "expected_version"],
+    "description": "替换知识标签单例配置；当前共享 admin 与配置 CAS 在所属领域核验。",
+    "properties": {
+        "content": {"type": "string", "description": "完整 JSON 标签数组正文。各项 id 为唯一小写标签名、description 为非空说明；可选 folder 默认 id 且须为唯一单层目录名，可选 param 沿标签配置规则。领域解析 JSON 并检查内容。"},
+        "expected_version": {"type": "string", "minLength": 1,
+                             "description": "ReadResource 返回的配置版本字符串，原样提交。"},
+    },
+}
+
+
 def _authorize(address: str, actor: str, role: str) -> None:
     if address != project_registry.KNOWLEDGE_TAGS_ID:
         raise KeyError(address)
@@ -55,4 +68,5 @@ def install_mutation_provider(service):
             ) from None
         return _record({"version": project_registry.tags_version(tags)})
 
-    service.register_mutation_provider("knowledge_tags", update=update, content_updatable=True)
+    service.register_mutation_provider("knowledge_tags", update=update, update_contract=UPDATE_CONTRACT,
+                                       content_updatable=True)

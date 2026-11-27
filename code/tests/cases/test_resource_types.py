@@ -56,6 +56,7 @@ def test_registration_policy_and_lazy_provider_capabilities(
             loaded.append(kind)
             service.register_mutation_provider(
                 kind, register=register if has_register else None, unregister=Mock(),
+                register_contract={'type': 'object', 'additionalProperties': False} if has_register else None,
             )
 
         service = ResourceService(

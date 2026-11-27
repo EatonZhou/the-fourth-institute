@@ -22,7 +22,7 @@
 
 ## 正式读写入口
 
-先读取 `GetResourceType` 和相关指令 schema，确认类型与有效能力。知识条目创建用 `RegisterResource`，fields 中给 `project_id`、`title`、`body`；当前选填项为 `importance`、`metaness`、`ai_generated`、`links`、`status`。不提交手造 kb_id、path、version 或带 YAML 头部的 body。服务补一级标题；自带一级标题时须与 title 一致，不再依赖加粗冒号标记抽取标题。
+先读取 `GetResourceType(resource_type=目标类型)` 和相关指令 schema，确认类型与有效能力。`contracts.register` 与 `contracts.update` 是该类型实际写入校验使用的字段契约；从中读取必填项、字段类型、取值范围、默认值和条件分支，不沿用其他资源类型的字段表。知识条目创建用 `RegisterResource`。不提交手造 kb_id、path、version 或带 YAML 头部的 body。服务补一级标题；自带一级标题时须与 title 一致，不再依赖加粗冒号标记抽取标题。
 
 更新前通过 `ReadResource` 取得完整文本和版本，用 `UpdateResource` 的 changes 提交 `text` 与 `expected_version`；版本冲突后重读并合并。保留 ID、类型和创建审计；提供者负责递增修改版本，调用者不预先加一或代写执行者。新增了什么与最终落盘结果以回读为准。
 

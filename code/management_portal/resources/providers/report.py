@@ -2,6 +2,7 @@
 import json
 import re
 
+from management_portal.home_report_mutation_contract import REGISTER_CONTRACT, UPDATE_CONTRACT
 from management_portal.home_report_store import ReportStore
 
 
@@ -41,10 +42,11 @@ def install_mutation_provider(service):
     def register(payload, *, actor='', resource_id='', **context):
         return ReportStore().create(resource_id, payload, actor)
     def update(resource_id, payload, *, actor='', **context):
-        if 'expected_revision' not in payload or set(payload) - {'expected_revision', 'quality', 'content'}:
-            raise ValueError('汇报只支持带expected_revision的显式刷新或新修订修改')
         return ReportStore().refresh(resource_id,actor,payload['expected_revision'],
             quality_level=payload.get('quality'), content=payload.get('content'))
     def unregister(resource_id, *, actor='', **context):
         return ReportStore().delete(resource_id,actor)
-    service.register_mutation_provider('report',register=register,update=update,unregister=unregister,service_managed_registration=True)
+    service.register_mutation_provider(
+        'report', register=register, update=update, unregister=unregister, service_managed_registration=True,
+        register_contract=REGISTER_CONTRACT, update_contract=UPDATE_CONTRACT,
+    )

@@ -8,6 +8,21 @@ if TYPE_CHECKING:
     from ..service import ResourceService
 
 
+_TEXT_TYPES = ["string", "number", "boolean", "array", "object", "null"]
+REGISTER_CONTRACT = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object",
+    "description": "登记 Project 内的 Article 目录。自动发现仅提交 path；普通调用必须声明实际项目归属，领域检查位置及权限。未使用扩展字段仍忽略。",
+    "required": ["path"], "additionalProperties": True,
+    "properties": {
+        "path": {"type": _TEXT_TYPES, "pattern": r"\S", "not": {"enum": [None, False, 0, [], {}]},
+                 "description": "Article 目录路径；文本转换后非空，实际位置必须在已登记 Project 内。"},
+        "project_ids": {"type": _TEXT_TYPES, "description": "普通调用必需的项目列表或逗号分隔文本，须与实际目录归属相同；自动发现可省略。@public 仅可单独出现。"},
+        "primary_file": {"type": _TEXT_TYPES, "description": "相对目录的主文件；省略由领域选择，必须是目录内已有文件。沿用文本转换。"},
+        "compiler": {"type": _TEXT_TYPES, "description": "TeX 主文件可用 pdflatex、xelatex、lualatex；其他格式沿用忽略该字段的行为。省略使用领域默认。"},
+    },
+}
+
+
 def install_resolver(service: "ResourceService") -> None:
     from management_portal import article_sections
 
@@ -62,6 +77,7 @@ def install_mutation_provider(service: "ResourceService") -> None:
 
     service.register_mutation_provider(
         "article",
+        register_contract=REGISTER_CONTRACT,
         register=register,
         unregister=unregister,
     )

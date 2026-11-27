@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 
 from .errors import ResourceVersionConflict
 from .mutation import mutation_payload
+from .mutation_contracts import validate_mutation_payload
 from .locking import serialized_mutation, mutation_projection_scope
 
 
@@ -210,6 +211,8 @@ def register(
         service._require_mutation_actor(actor)
     if provider.register is None:
         raise ValueError(f"{clean_type} resources do not support registration")
+    mode = validate_mutation_payload(provider.register_contract, clean_payload,
+                                     resource_type=clean_type, operation="register")
     expected_id = ""
     provider_context: dict[str, Any] = {
         "actor": clean_actor,
@@ -217,8 +220,17 @@ def register(
     }
     from uuid import uuid4
     from .creation import creation_operation
+    if mode == "legacy-replay-only":
+        if not operation_id:
+            raise ValueError("legacy-replay-only requires the original operation_id")
+        expected_id = service._registrations.existing(
+            clean_type, clean_payload, actor=clean_actor, operation_id=operation_id,
+        )
+        if not expected_id:
+            raise ValueError("legacy-replay-only requires an existing registration identity")
+        provider_context["resource_id"] = expected_id
     operation_id = operation_id or uuid4().hex
-    if provider.service_managed_registration:
+    if provider.service_managed_registration and mode == "write":
         def reserve_identity():
             # new_id() allocates to the ambient run immediately. Creation only
             # reserves a name here; its owner records allocation at commit.
@@ -293,6 +305,8 @@ def update(
         raise ValueError(
             f"{identity.resource_type} resources do not support updates"
         )
+    validate_mutation_payload(provider.update_contract, clean_payload,
+                              resource_type=identity.resource_type, operation="update")
     from .content_changes import capture_content_changes
 
     with capture_content_changes(actor=actor, resource_id=identity.resource_id) as captured:

@@ -44,6 +44,46 @@ PROJECT_TYPE_ALIASES = {
 UPDATABLE_FIELDS = frozenset({"status", "ddl", "project_type", "description", "tags"})
 
 
+# These fields historically use str(value or '') and tags also accept arrays.
+# Keep that coercion explicit instead of imposing a new string-only API.
+_JSON_TYPES = ["string", "number", "boolean", "array", "object", "null"]
+_PROJECT_TYPE = {
+    "type": _JSON_TYPES,
+    "description": "项目类型；空值默认 company，英文别名忽略大小写。别名：" + ", ".join(PROJECT_TYPE_ALIASES),
+    "pattern": r"^\s*(?:" + "|".join(
+        "".join(f"[{c.lower()}{c.upper()}]" if c.isascii() and c.isalpha() else re.escape(c)
+                for c in key) for key in PROJECT_TYPE_ALIASES) + r")?\s*$",
+}
+REGISTER_CONTRACT = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object",
+    "description": "创建 Project；未使用的扩展字段沿用忽略行为，目录、动态状态词表和授权仍由项目领域检查。",
+    "required": ["id"], "additionalProperties": True,
+    "properties": {
+        "id": {"type": _JSON_TYPES, "description": "项目 ID；文本转换后 1–80 个中文、字母、数字或 _ . @ + -。",
+               "pattern": r"^\s*[\w.@+\-]{1,80}\s*$",
+               "not": {"enum": [None, False, 0, [], {}]}},
+        "language": {"type": "string", "enum": ["en", "zh-CN"], "default": "zh-CN", "description": "种子文档语言。"},
+        "project_type": _PROJECT_TYPE,
+        "description": {"type": _JSON_TYPES, "description": "项目说明；沿用文本转换并去首尾空白。"},
+        "ddl": {"type": _JSON_TYPES, "description": "截止说明；沿用文本转换。"},
+        "status": {"type": _JSON_TYPES, "description": "当前状态词表中的值；空值默认 active，动态词表在事务中检查。"},
+        "path": {"type": _JSON_TYPES, "description": "省略或空值使用固定目录；提供时须与 projects 区域下 ID 对应目录一致。"},
+        "tags": {"type": _JSON_TYPES, "description": "标签数组或逗号、中文逗号、空白分隔字符串；沿用元素文本转换、去空白和去重。"},
+    },
+}
+UPDATE_CONTRACT = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object",
+    "description": "按 field 修改一个项目属性；未使用扩展字段仍忽略，value 省略或 null 沿用原默认处理。",
+    "required": ["field"], "additionalProperties": True,
+    "properties": {
+        "field": {"type": "string", "pattern": r"^\s*(?:" + "|".join(sorted(UPDATABLE_FIELDS)) + r")\s*$", "description": "status、ddl、project_type、description 或 tags。"},
+        "value": {"type": _JSON_TYPES, "description": "新值；tags 接受数组和分隔文本，其他字段沿用文本转换；动态状态及类型别名由领域规范化。"},
+    },
+    "allOf": [{"if": {"properties": {"field": {"pattern": r"^\s*project_type\s*$", "description": "选择项目类型的别名规范化分支。"}}},
+               "then": {"properties": {"value": _PROJECT_TYPE}}}],
+}
+
+
 def _load_registry() -> dict[str, Any]:
     return project_registry.load()
 
@@ -148,29 +188,20 @@ def _write_project_seed_files(
     tag_folders: list[str],
     language: str = "zh-CN",
 ) -> None:
-    from management_portal.project_seeds import project_seed_documents
+    from management_portal.workspace_seed import create_workspace_folder
 
-    academic = normalize_project_type(project_type) == "academic"
+    normalize_project_type(project_type)
     directories = [
-        project_root / "agent_port" / "skills",
-        project_root / "agent_port" / "tools",
         project_root / "agents",
         project_root / "knowledge_base",
-        project_root / "src",
-        project_root / "to_archive",
     ]
-    if academic:
-        directories.extend(
-            [project_root / "article", project_root / "references"]
-        )
     directories.extend(
         project_root / "knowledge_base" / folder for folder in tag_folders
     )
     for directory in directories:
         directory.mkdir(parents=True, exist_ok=True)
 
-    for relative, content in project_seed_documents(project_id, description, language).items():
-        (project_root / relative).write_text(content, encoding="utf-8")
+    create_workspace_folder(project_root / "workspace", "Project", description=description, language=language)
 
 
 def _project_record(project_id: str) -> dict[str, Any]:
@@ -273,6 +304,8 @@ def create_project(
         saved = next(item for item in document["projects"] if item.get("id") == project_id)
         with creation.registration(connection):
             permission_system.sync_resource({**saved, "resource_id": project_id}, resource_type="project", connection=connection)
+            from management_portal.workspace_seed import register_owned_workspace
+            register_owned_workspace(project_id, PROJECTS_ROOT / project_id / "workspace", creation, connection)
 
     with creation.prepare([(PROJECTS_ROOT / project_id, 'directory')]):
         if creation.completed:
@@ -462,6 +495,8 @@ def install_mutation_provider(service: "ResourceService") -> None:
 
     service.register_mutation_provider(
         "project",
+        register_contract=REGISTER_CONTRACT,
+        update_contract=UPDATE_CONTRACT,
         register=register,
         update=update,
         unregister=unregister,

@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 65
+  number: 66
   created_at: "2026-09-28T10:45:00Z"
   created_by:
     user: "weihao"
     agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-11-27T16:16:21Z"
+  updated_at: "2026-11-27T16:29:12Z"
   updated_by:
     user: ""
     agent: "resident_6199a7a36480"
@@ -152,6 +152,18 @@ links:
 - 参数：`resource_type`，与 `RegisterResource`、`SearchResources` 同名。
 - 结果：类型元数据、`state`、`installed`、`enabled`、`version`、`instance_count`、独立原始 `declaration`，以及 `registerable`、`updatable`、`unregisterable`。
 - 顶层 `registerable` 是声明政策与按需装载的 mutation 提供者登记机制的合取；未安装类型为 false。`declaration` 保留全部原始字段，不受有效能力覆盖。类型声明与状态规则见 decision_355ed742bca5。
+
+### 资源类型的写入契约
+
+`GetResourceType.contracts` 和 `ListResourceTypes.types[].contracts` 返回实际装配提供者的登记与修改字段契约：支持的操作分别放在 `register` 和 `update`，不支持的键省略；未安装类型返回空对象。它与类型声明 `declaration` 分开，`registerable` 等有效能力仍按原类型政策、安装与启停规则判定。可读取契约不代表获得修改资源的权限。
+
+每份契约是 JSON Schema Draft 2020-12 对象，给出字段说明、必填项、类型、取值范围、枚举及互斥或条件分支。`default` 说明领域缺省行为，校验器不注入默认值、不转换输入。`integer` 严格接受整数，拒绝布尔、浮点和数字字符串；领域原先明确兼容数字字符串的版本参数会在自身分支中列出。引用只允许本地 `$ref`，不下载外部 schema。
+
+字段声明与实际校验使用同一份提供者快照。RegisterResource 在预留身份与调用领域写入前检查 `fields`；UpdateResource 合并信封版本前提后，在内容审计及领域修改前检查 `changes`。字段不合要求时返回 `instruction.invalid_arguments`，`details` 带 `resource_type`、`operation` 和 `errors`；每项包含 JSON Pointer `path`、`schema_path`、`keyword`、`expected`、`actual_type` 和说明。错误不会回显输入值或正文。路径、权限、当前版本、跨字段业务语义仍由原领域检查，schema 通过不能跳过这些检查。
+
+例如 Knowledge 的 `importance`、`metaness` 类型与范围直接从当前 Knowledge 类型契约读取；不要套用 Experiment 的规则。Skill 没有通用登记契约，其更新分支也不接受 Knowledge 专用的正文替换和版本恢复字段。
+
+Report 的旧字段只在带 `x-resource-mode: legacy-replay-only` 的分支保留，用于原已提交登记的幂等重试。调用必须携带原操作键、匹配原调用者与原登记请求；不会预留新身份。领域继续核实原 Report 已提交且当前调用者可访问。此分支不能创建旧格式 Report，也不能用 origin_key 代替原操作键。
 
 ## 登记与修改
 

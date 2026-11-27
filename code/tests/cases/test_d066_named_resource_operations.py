@@ -54,7 +54,11 @@ def test_workbench_named_calls_use_installed_provider_only(named_service, monkey
     assert page.call_count == reverse.call_count == 1
     allowed['value'] = True
     # A generic update provider is not an implicit submission callback.
-    service._mutation_providers.register('workbench', ResourceMutationProvider(update=Mock()), replace=True)
+    service._mutation_providers.register(
+        'workbench', ResourceMutationProvider(
+            update=Mock(), update_contract={'type': 'object', 'additionalProperties': False},
+        ), replace=True,
+    )
     with pytest.raises(ValueError, match='UpdateWorkbenchPage.*not supported'):
         service.update_workbench_page(WORKBENCH, 'job-p', 3, 'blocked', actor=ACTOR)
     with pytest.raises(ValueError, match='UpdateWorkbenchReversePlan.*not supported'):

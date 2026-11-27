@@ -22,6 +22,7 @@ def install_resolver(service):
 
 
 def install_mutation_provider(service):
+    from management_portal.workbench_projections.mutation_contract import declaration
     from management_portal.workbench_projections.store import Store
 
     def register(payload, *, actor="", resource_id="", automatic=False, **_context):
@@ -51,11 +52,13 @@ def install_mutation_provider(service):
         store.delete(resource_id, actor)
         return canonical_record(resource_id, {**app, "deleted": True})
 
+    register_contract, update_contract = declaration()
     service.register_mutation_provider(
         "workbench", register=register, update=update, unregister=unregister,
         service_managed_registration=True,
         update_workbench_page=partial(update_workbench_page, service),
         update_workbench_reverse_plan=partial(update_workbench_reverse_plan, service),
+        register_contract=register_contract, update_contract=update_contract,
     )
 
 

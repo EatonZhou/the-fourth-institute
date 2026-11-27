@@ -190,7 +190,11 @@ def test_signed_resource_update_propagates_execution_and_returns_own_receipts(re
     def update(resource_id, payload, **context):
         record_text_change(resource_id, "item.md", "before", payload["text"])
         return {"resource_id": resource_id, "text": payload["text"]}
-    service.register_mutation_provider("thinking", update=update)
+    service.register_mutation_provider(
+        "thinking", update=update,
+        update_contract={'type': 'object', 'properties': {'text': {'type': 'string'}},
+                         'required': ['text'], 'additionalProperties': False},
+    )
     server = ResourceServiceServer(tmp_path / "resource.sock", service=service, publisher=Mock())
     thread = threading.Thread(target=socketserver.BaseServer.serve_forever, args=(server,), kwargs={"poll_interval": 0.01})
     thread.start()

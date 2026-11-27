@@ -2,7 +2,7 @@
 loading them on first use, and the capabilities they give a resource type."""
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Iterable
+from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
 from .address import ResourceResolver
 from .contracts import ResourceCapabilities
@@ -109,6 +109,8 @@ def register_mutation_provider(
     owner_managed_unregistration: bool = False,
     update_workbench_page: Any = None,
     update_workbench_reverse_plan: Any = None,
+    register_contract: Mapping[str, Any] | None = None,
+    update_contract: Mapping[str, Any] | None = None,
     replace: bool = False,
 ) -> None:
     values = (
@@ -131,6 +133,8 @@ def register_mutation_provider(
             owner_managed_unregistration=bool(owner_managed_unregistration),
             update_workbench_page=update_workbench_page,
             update_workbench_reverse_plan=update_workbench_reverse_plan,
+            register_contract=register_contract,
+            update_contract=update_contract,
         ),
         replace=replace,
     )
@@ -187,4 +191,9 @@ def _capabilities(service: "ResourceService", clean_type: str) -> dict[str, Any]
         ),
         unregisterable=bool(provider and provider.unregister is not None),
     ).as_dict()
+    capabilities['contracts'] = {
+        operation: getattr(provider, operation + '_contract')
+        for operation, capability in (("register", "registerable"), ("update", "updatable"))
+        if provider is not None and capabilities[capability]
+    }
     return capabilities

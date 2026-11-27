@@ -745,7 +745,7 @@ def test_resolution_rejects_every_identity_alias_in_a_resource_record_contracts(
         index.queue_change.return_value = ['resource_registry']
         index.wait_for_refresh.return_value = True
         service = ResourceService(index_provider=index)
-        service.register_mutation_provider('repo', register=lambda _payload, **_context: {'resource_id': repo_id}, unregister=lambda resource_id, **_context: {'resource_id': resource_id, 'deleted': True})
+        service.register_mutation_provider('repo', register=lambda _payload, **_context: {'resource_id': repo_id}, unregister=lambda resource_id, **_context: {'resource_id': resource_id, 'deleted': True}, register_contract={'type': 'object', 'properties': {'path': {'type': 'string'}}, 'required': ['path'], 'additionalProperties': False})
         result = service.register('repo', {'path': '/tmp/sample'}, actor='test-actor', wait_for_index=True, index_timeout=7)
         assert result == {'resource_id': repo_id}
         index.project_registered.assert_called_once_with('repo', result)
@@ -755,7 +755,7 @@ def test_resolution_rejects_every_identity_alias_in_a_resource_record_contracts(
         index = mock.Mock()
         index.project_registered.side_effect = RuntimeError('index unavailable')
         service = ResourceService(index_provider=index)
-        service.register_mutation_provider('repo', register=lambda _payload, **_context: {'resource_id': repo_id}, unregister=lambda resource_id, **_context: {'resource_id': resource_id, 'deleted': True})
+        service.register_mutation_provider('repo', register=lambda _payload, **_context: {'resource_id': repo_id}, unregister=lambda resource_id, **_context: {'resource_id': resource_id, 'deleted': True}, register_contract={'type': 'object', 'properties': {'path': {'type': 'string'}}, 'required': ['path'], 'additionalProperties': False})
         with pytest.raises(ResourceOperationError) as raised:
             service.register('repo', {'path': '/tmp/sample'}, actor='test-actor')
         assert raised.value.details['domain_committed'] is True
@@ -855,6 +855,9 @@ def test_a_resident_registers_a_project_resource_without_a_project_role() -> Non
             "resource_id": experiment_id,
             **payload,
         },
+        register_contract={'type': 'object', 'properties': {
+            'project_id': {'type': 'string'}, 'title': {'type': 'string'}},
+            'required': ['project_id', 'title'], 'additionalProperties': False},
     )
 
     created = service.register(
@@ -946,6 +949,8 @@ def test_every_signed_in_user_may_reference_and_update_resource_content() -> Non
             "project_ids": ["AI员工"],
         },
         content_updatable=True,
+        update_contract={'type': 'object', 'properties': {'text': {'type': 'string'}},
+                         'required': ['text'], 'additionalProperties': False},
     )
 
     viewer_reference = service.reference(resource_id, actor="viewer")
@@ -1008,6 +1013,10 @@ def test_resource_mutations_dispatch_by_type_and_notify_the_derived_index(tmp_pa
         register=register,
         unregister=unregister,
         update=update,
+        register_contract={'type': 'object', 'properties': {'path': {'type': 'string'}},
+                           'required': ['path'], 'additionalProperties': False},
+        update_contract={'type': 'object', 'properties': {'operation': {'const': 'set_remote'}},
+                         'required': ['operation'], 'additionalProperties': False},
     )
     created = service.register(
         "repo",
@@ -1069,7 +1078,11 @@ def test_resource_mutations_dispatch_by_type_and_notify_the_derived_index(tmp_pa
 
         failing = mock.Mock(side_effect=ValueError("missing_canonical_parent"))
         target = ResourceService(index_provider=index)
-        target.register_mutation_provider("repo", register=mutate, update=mutate, unregister=mutate)
+        target.register_mutation_provider(
+            "repo", register=mutate, update=mutate, unregister=mutate,
+            register_contract={'type': 'object', 'additionalProperties': False},
+            update_contract={'type': 'object', 'additionalProperties': False},
+        )
         args = ("repo", {}) if operation == "register" else (repo_id, {}) if operation == "update" else (repo_id,)
         index.reset_mock()
         hook = "unregister_resources" if operation == "unregister" else "sync_resource"
@@ -1089,7 +1102,10 @@ def test_resource_mutations_dispatch_by_type_and_notify_the_derived_index(tmp_pa
             assert failure["details"]["cause"]["message"] == "missing_canonical_parent"
 
     target = ResourceService(index_provider=index)
-    target.register_mutation_provider("repo", register=mock.Mock(side_effect=ValueError("invalid input")))
+    target.register_mutation_provider(
+        "repo", register=mock.Mock(side_effect=ValueError("invalid input")),
+        register_contract={'type': 'object', 'additionalProperties': False},
+    )
     with pytest.raises(ValueError) as raised:
         target.register("repo", {}, actor="alice")
     failure = normalize_error(raised.value).to_dict()

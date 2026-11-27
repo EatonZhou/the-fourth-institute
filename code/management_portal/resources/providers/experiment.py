@@ -372,9 +372,44 @@ def unregister_experiment(
     }
 
 
+# The owner intentionally stringifies text inputs; the schema keeps this
+# compatibility while importance remains a strict JSON integer.
+_TEXT_TYPES = ["string", "number", "boolean", "array", "object", "null"]
+_IMPORTANCE = {"type": "integer", "minimum": 0, "maximum": 10, "description": "重要性 0–10，必须是整数，拒绝布尔、浮点及数字字符串。"}
+_STATUS = {"type": _TEXT_TYPES, "pattern": r"^\s*[^\x00-\x08\x0a-\x1f]{0,80}\s*$", "description": "状态；文本转换并去首尾空白后最多 80 字符，不含非 tab 控制字符；创建时空值默认 planned。"}
+_BODY = {"type": _TEXT_TYPES, "maxLength": MAX_DOCUMENT_CHARS,
+         "description": "正文；沿用文本转换，最多 200 万字符。创建时非 null 的 body 优先，更新时只要提交 body 就优先（null 转为 None 文本）。"}
+_SUMMARY = {"type": _TEXT_TYPES,
+            "description": "兼容正文别名；body 优先时本字段被忽略，否则转换为文本且受正文长度上限约束。"}
+REGISTER_CONTRACT = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object",
+    "description": "在 Project 内创建实验；保留文本转换及扩展字段忽略行为，目录及权限继续由领域检查。",
+    "required": ["project_id", "title"], "additionalProperties": True,
+    "properties": {
+        "project_id": {"type": _TEXT_TYPES, "pattern": r"^\s*(?=[\s\S]*\S)[^\x00-\x08\x0a-\x1f]{1,80}\s*$", "not": {"enum": [None, False, 0, [], {}]}, "description": "已有 Project ID；文本转换去首尾空白后非空且最多 80 字符，不含非 tab 控制字符。"},
+        "title": {"type": _TEXT_TYPES, "pattern": r"^\s*(?=[\s\S]*\S)[^\x00-\x08\x0a-\x1f]{1,200}\s*$", "not": {"enum": [None, False, 0, [], {}]}, "description": "标题；文本转换去首尾空白后非空且最多 200 字符，不含非 tab 控制字符。"},
+        "slug": {"type": _TEXT_TYPES, "pattern": r"^\s*(?:[a-z0-9][a-z0-9_-]{0,79})?\s*$", "description": "目录名；空值从标题生成，否则为最多 80 位小写字母、数字、_ 或 - 且以字母或数字开头。"},
+        "status": _STATUS, "importance": {**_IMPORTANCE, "default": 5},
+        "body": _BODY, "summary": _SUMMARY,
+    },
+    "allOf": [{"if": {"anyOf": [{"not": {"required": ["body"]}}, {"properties": {"body": {"type": "null", "description": "创建时 null body 使用 summary。"}}, "required": ["body"]}]},
+               "then": {"properties": {"summary": {**_SUMMARY, "maxLength": MAX_DOCUMENT_CHARS}}}}],
+}
+UPDATE_CONTRACT = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object",
+    "description": "更新实验状态、重要性或正文；至少一项，body 和 summary 可以并存，body 优先。",
+    "minProperties": 1, "additionalProperties": False,
+    "properties": {"status": _STATUS, "importance": _IMPORTANCE, "body": _BODY, "summary": _SUMMARY},
+    "allOf": [{"if": {"not": {"required": ["body"]}},
+               "then": {"properties": {"summary": {**_SUMMARY, "maxLength": MAX_DOCUMENT_CHARS}}}}],
+}
+
+
 def install_mutation_provider(service: "ResourceService") -> None:
     service.register_mutation_provider(
         "experiment",
+        register_contract=REGISTER_CONTRACT,
+        update_contract=UPDATE_CONTRACT,
         register=lambda payload, **context: register_experiment(
             service,
             payload,

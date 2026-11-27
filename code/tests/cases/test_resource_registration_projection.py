@@ -58,6 +58,7 @@ def test_registration_is_queryable_before_return_without_adapter_scan(
 
         service.register_mutation_provider(
             resource_type, register=register,
+            register_contract={'type': 'object', 'additionalProperties': False},
         )
         with mock.patch.object(adapter, "scan", side_effect=AssertionError("full scan")):
             created = service.register(

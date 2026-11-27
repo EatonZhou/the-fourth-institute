@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-07-26'
 version:
-  number: 43
+  number: 44
   created_at: "2026-07-26"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-27T16:16:22Z"
+  updated_at: "2026-11-27T16:29:12Z"
   updated_by:
     user: ""
     agent: "resident_6199a7a36480"
@@ -208,6 +208,16 @@ Resident、Lineage 和工作区的关系由协作领域（SocietyService）保�
 - `workspace_id_for_path(path, preferred_id)` / `resource.collaboration.workspace_id_for_path` 为规范路径返回工作区 ID：已绑定的路径返回现有 ID；尚未绑定时使用 `preferred_id` 或分配新 ID。两次绑定几乎同时发生时，同一路径可能登记出多个工作区 ID：`preferred_id` 是其中之一时返回它，否则返回按字典序最小的那个，此后的绑定都落到同一个 ID 上。
 
 ## 登记、修改与撤销登记
+
+### 提供者的字段契约与校验
+
+实际 mutation 提供者通过 `register_contract`、`update_contract` 声明自己接受的字段对象，分别对应已装配的 register/update 回调。声明由各领域所有，ResourceService 不复制各资源的字段表。存在回调而缺少契约时，装配失败；不以任意对象作为兼容兜底。装配时校验整批 schema，并保存独立 JSON 快照，整批无效不会部分替换提供者。
+
+统一校验器使用 JSON Schema Draft 2020-12 和严格整数语义，拒绝非有限 JSON 数值，只接受本地引用；不强制转换输入、不注入默认值。对外类型发现返回这份快照的副本。登记在原身份、类型政策与内部保留字段校验后、预留 ID 前校验输入；修改在版本前提合并后、内容变更捕获及领域调用前校验。权限、CAS、路径和业务规则仍由原领域负责。
+
+校验失败为 `ResourceMutationValidationError`（ResourceOperationError，`invalid_argument`、HTTP 400、未提交），详情含 `resource_type`、`operation`、`errors`。错误列表按字段路径稳定排列，逐项给出路径、schema 路径、违反的关键字、期望约束与实际类型；不带输入值、正文或凭证。ISA 归一化为 `instruction.invalid_arguments` 并保留详情，HTTP/RPC 沿原错误封套传递。
+
+唯一的兼容写入模式是 Report 登记契约中显式的 `x-resource-mode: legacy-replay-only` 分支。它要求原操作键并只查原登记账本，不分配新身份；原领域进一步核实已提交对象和当前访问权。完成标志本身不足以证明原 Report 存在，不接受用业务 origin_key 冒充操作键。其他类型的声明和更新不得借此跳过校验。
 
 ### `register(...)` / `resource.register`
 

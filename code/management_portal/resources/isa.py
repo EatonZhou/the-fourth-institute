@@ -6,6 +6,8 @@ permission queries of the permission category (decision_22227d0ad075).
 """
 from __future__ import annotations
 
+from copy import deepcopy
+
 import contextvars
 import hashlib
 import json
@@ -273,6 +275,7 @@ def _resource_type_details(resource_type: str, *, row=None, counts=None, capabil
         "registerable": bool(capabilities.get("registerable")),
         "updatable": bool(capabilities.get("updatable")),
         "unregisterable": bool(capabilities.get("unregisterable")),
+        "contracts": deepcopy(capabilities.get("contracts", {})),
     }
 
 

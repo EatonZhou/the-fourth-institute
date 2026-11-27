@@ -9,6 +9,7 @@ import secrets
 import pytest
 
 from management_portal.resources import ResourceService
+from management_portal.resources.mutation_contracts import ResourceMutationValidationError
 from management_portal.resources.providers import experiment
 from management_portal.resources.registration import ResourceRegistrationStore
 
@@ -34,6 +35,21 @@ def experiment_service(
     return service, project_root
 
 
+def _assert_validation_error(error, *, operation, path, keyword, actual_type, expected):
+    assert error.code == "invalid_argument"
+    assert error.http_status == 400
+    assert error.commit_state == "not_committed"
+    assert error.details["resource_type"] == "experiment"
+    assert error.details["operation"] == operation
+    errors = error.details["errors"]
+    assert len(errors) == 1
+    assert errors[0]["path"] == path
+    assert errors[0]["schema_path"] == f"/properties{path}/{keyword}"
+    assert errors[0]["keyword"] == keyword
+    assert errors[0]["actual_type"] == actual_type
+    assert errors[0]["expected"] == expected
+
+
 @pytest.mark.parametrize("importance", [True, False, 1.7, 5.0, "5", None, [], {}])
 def test_experiment_importance_rejects_non_integer_values_without_writing(
     experiment_service: tuple[ResourceService, Path], importance: object,
@@ -41,15 +57,22 @@ def test_experiment_importance_rejects_non_integer_values_without_writing(
     """实验重要性拒绝非整数并保留已有文件"""
     service, project_root = experiment_service
     payload = {"project_id": "OSForAgent", "title": "Importance validation"}
-    with pytest.raises(ValueError, match="importance must be an integer"):
+    actual_type = {bool: "boolean", float: "number", str: "string", type(None): "null",
+                   list: "array", dict: "object"}[type(importance)]
+    expected = {"type": "integer", "minimum": 0, "maximum": 10}
+    with pytest.raises(ResourceMutationValidationError) as failure:
         service.register("experiment", {**payload, "importance": importance}, actor="resident_aaaaaaaaaaaa")
+    _assert_validation_error(failure.value, operation="register", path="/importance", keyword="type",
+                             actual_type=actual_type, expected=expected)
     assert not list(project_root.glob("knowledge_base/experiment/*/experiment.md"))
 
     created = service.register("experiment", payload, actor="resident_aaaaaaaaaaaa")
     document = next(project_root.glob("knowledge_base/experiment/*/experiment.md"))
     before = document.read_bytes()
-    with pytest.raises(ValueError, match="importance must be an integer"):
+    with pytest.raises(ResourceMutationValidationError) as failure:
         service.update(created["resource_id"], {"importance": importance}, actor="resident_aaaaaaaaaaaa", resource_type="experiment")
+    _assert_validation_error(failure.value, operation="update", path="/importance", keyword="type",
+                             actual_type=actual_type, expected=expected)
     assert document.read_bytes() == before
 
 
@@ -141,7 +164,7 @@ def test_experiment_registration_is_idempotent_and_updatable(
 ) -> None:
     """实验注册保持幂等且支持更新与删除后重建"""
     service, project_root = experiment_service
-    with pytest.raises(ValueError, match="slug must use lowercase"):
+    with pytest.raises(ResourceMutationValidationError) as failure:
         service.register(
             "experiment",
             {
@@ -151,6 +174,11 @@ def test_experiment_registration_is_idempotent_and_updatable(
             },
             actor="resident_aaaaaaaaaaaa",
         )
+    _assert_validation_error(failure.value, operation="register", path="/slug", keyword="pattern",
+                             actual_type="string", expected={
+                                 "type": ["string", "number", "boolean", "array", "object", "null"],
+                                 "pattern": r"^\s*(?:[a-z0-9][a-z0-9_-]{0,79})?\s*$",
+                             })
     assert not list(
         (project_root / "knowledge_base" / "experiment").glob(
             "*/experiment.md"

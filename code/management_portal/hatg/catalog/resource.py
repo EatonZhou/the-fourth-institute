@@ -74,6 +74,7 @@ DECLARATIONS = (
         R("registerable", "boolean", "提供者当前能否登记这种资源；未安装时为 false"),
         R("updatable", "boolean", "提供者当前能否修改这种资源"),
         R("unregisterable", "boolean", "提供者当前能否撤销登记这种资源"),
+        R("contracts", "object", "实际提供者的 register/update JSON Schema 副本；不支持的操作省略，未安装为空。integer 仅接受整数，排除布尔和浮点；legacy-replay-only 分支仅可重放原已提交登记，领域权限与版本条件仍须满足"),
         R("type", description="资源类型"), R("enabled", "boolean", "类型是否已安装且已启用"),
         R("installed", "boolean", "提供该类型的功能单元是否已部署"),
         R("state", description="not_installed、enabled 或 disabled"),
@@ -93,7 +94,7 @@ DECLARATIONS = (
     _d("RegisterResource", (On("resource_type", place={"project": ("fields.project_id", "fields.project_ids"),
                                                      "resident": ("$caller",), "personal_space": ("$caller",)}),), "按资源类型的要求登记一个新资源，调用者记为它的创建者（created_by）。汇报归属认证创建者：Resident 自身或 User 个人空间，调用方不能指定他人归属。", (
         R("resource_type", description="资源类型"),
-        P("fields", "object", "该类型要求的字段，例如知识条目的 project_id、title 与 body。"
+        P("fields", "object", "字段、类型、必填项及兼容分支以 GetResourceType.contracts.register 为准；integer 不接受布尔、浮点或数字字符串（除非契约另列字符串分支）。"
           "放在 Project 下的类型必须给出位置：知识条目与实验写 project_id，repo 与 Workbench 写 project_ids，公共内容写 [\"@public\"]",
           properties={"project_id": {"type": "string", "description": "资源所属 Project ID"},
                       "project_ids": {"type": "array", "items": {"type": "string"},
@@ -102,9 +103,9 @@ DECLARATIONS = (
         R("resource_id", description="新资源的统一 ID"),
         RESOURCE_RECORD,
     ), mutates=True),
-    _d("UpdateResource", (On("resource_id"),), "按资源类型修改正文或元数据；知识正文与 Skill 支持 expected_version 检查（知识正文用版本号，Skill 用 ReadResource 返回的 sha256）。Workspace 只允许修改非空 title，必须原样携带 ResolveResource 返回的 resource.version。", (
+    _d("UpdateResource", (On("resource_id"),), "按 GetResourceType.contracts.update 修改正文或元数据；领域继续检查当前权限、存在性和版本。", (
         R("resource_id", description="资源统一 ID"),
-        R("changes", "object", "要修改的字段；Knowledge 的 text（全文）与 body（仅 Markdown 主文件正文，保留元数据）必须且只能提供一个；body 可为空字符串，不可用于 Skill、伴随文件或版本恢复。可附 expected_version 防止覆盖。Knowledge 改变所属项目须使用 MoveKnowledgeItems，不能只改全文中的 project。Workspace 只接受 title 和 expected_version（也可用请求顶层 expected_version）"),
+        R("changes", "object", "按实际类型的 contracts.update 提交字段；声明 expected_version 的类型保留原 CAS 语义，支持的请求顶层 expected_version 优先合并到 changes 后按同一契约校验。字段 schema 通过不代替领域授权或状态约束"),
     ), (
         RESOURCE_RECORD,
         R("version", description="类型提供的版本号或修改时间；未提供时为空字符串"),

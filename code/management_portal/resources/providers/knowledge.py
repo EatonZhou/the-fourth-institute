@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any
 
 from .common import canonical_record, canonical_resolution
 from ..errors import ResourceVersionConflict
+from knowledge_board_lan.knowledge_mutation_contracts import REGISTER_CONTRACT, update_contract
 
 if TYPE_CHECKING:
     from ..service import ResourceService
@@ -130,6 +131,8 @@ def install_mutation_provider(service: "ResourceService") -> None:
         service.register_mutation_provider(
             resource_type,
             register=register,
+            register_contract=REGISTER_CONTRACT if register is not None else None,
+            update_contract=update_contract(resource_type),
             update=lambda resource_id, payload, **context: _update_knowledge(
                 resource_id,
                 payload,

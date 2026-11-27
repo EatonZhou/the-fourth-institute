@@ -138,7 +138,7 @@ class WorkspaceStore:
         return {wid: row["path"] for wid, row in rows.items()}
 
     def ensure(self, workspace_id: str, path: str, *, title="", connection=None, move=False,
-               owner_id=None, operation_id=None):
+               owner_id=None, operation_id=None, child_of_operation=False):
         get_resource_type_registry().validate(workspace_id, "workspace")
         absolute = canonical_path(path)
         path = stored_location(absolute)
@@ -176,12 +176,12 @@ class WorkspaceStore:
                 return workspace_id
             self._require_distinct_location(conn, absolute, workspace_id)
             self._insert(conn, workspace_id, absolute, path, title=title,
-                         owner_id=owner_id, operation_id=operation_id)
+                         owner_id=owner_id, operation_id=operation_id, child_of_operation=child_of_operation)
             return workspace_id
         return write(connection) if connection is not None else self.database.write(write)
 
     def _insert(self, connection, workspace_id, absolute, stored, *, title="", owner_id=None,
-                operation_id=None):
+                operation_id=None, child_of_operation=False):
         """Insert after the caller's locked identity and location decision."""
         from management_common.directory_dependencies import prepare_write
         prepare_write(connection)
@@ -191,7 +191,7 @@ class WorkspaceStore:
                            "(workspace_id,path,title,owner_id,operation_id,created_at,updated_at) "
                            "VALUES (%s,%s,%s,%s,%s,%s,%s)",
                            (workspace_id, stored, title or Path(absolute).name,
-                            owner_id or workspace_id, operation_id, timestamp, timestamp))
+                            owner_id or workspace_id, None if child_of_operation else operation_id, timestamp, timestamp))
         self.refresh_directory_dependency(workspace_id, connection=connection)
 
     def _location(self, connection, absolute):
@@ -291,6 +291,15 @@ class WorkspaceStore:
 
     def rename(self, workspace_id: str, title: str, *, expected_version: str, authorize):
         return self.update_metadata(workspace_id, title=title, expected_version=expected_version, authorize=authorize)
+
+    def owned_binding(self, owner_id, path, *, connection):
+        row = connection.execute(
+            f"SELECT workspace_id FROM {self.table} WHERE path=%s AND owner_id=%s AND deleted_at IS NULL",
+            (stored_location(canonical_path(path)), owner_id),
+        ).fetchone()
+        if row:
+            return {"workspace_id": row["workspace_id"], "path": canonical_path(path), "purpose": ""}
+        return None
 
     def for_path(self, path: str, *, new_id, preferred_id="") -> str:
         absolute = canonical_path(path)

@@ -73,6 +73,19 @@ def install_resolver(service: "ResourceService") -> None:
     )
 
 
+UPDATE_CONTRACT = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object",
+    "description": "更新 Workspace 元数据；领域持锁复核权限和版本，不接受路径或归属变更。",
+    "required": ["expected_version"], "additionalProperties": False,
+    "anyOf": [{"required": ["title"]}, {"required": ["summary"]}],
+    "properties": {
+        "expected_version": {"type": "string", "pattern": r"\S", "description": "当前资源版本字符串；可由调用信封提供。"},
+        "title": {"type": "string", "pattern": r"^(?![\s\S]*\u0000)[\s\S]*\S[\s\S]*$", "description": "非空名称；禁止 NUL。"},
+        "summary": {"type": "string", "maxLength": 2000, "pattern": r"^[^\u0000]*$", "description": "说明，最多 2000 字符；允许空串，禁止 NUL。"},
+    },
+}
+
+
 def install_mutation_provider(service: "ResourceService", *, unregister_workspace) -> None:
     from management_portal import permission_system
     from management_portal.society_service.lineage_access_policy import hidden_private_ids
@@ -114,4 +127,5 @@ def install_mutation_provider(service: "ResourceService", *, unregister_workspac
             resource_id, actor=actor, authorize=authorize,
         ))
 
-    service.register_mutation_provider("workspace", update=update, unregister=unregister)
+    service.register_mutation_provider("workspace", update=update, unregister=unregister,
+                                      update_contract=UPDATE_CONTRACT)

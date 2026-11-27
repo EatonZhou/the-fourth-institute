@@ -69,7 +69,7 @@ def test_versioned_primary_rejects_header_loss_without_write_or_receipt(version_
     with pytest.raises(ValueError, match="complete Markdown"):
         knowledge_versions.stamp_knowledge_version(text, previous_text=original)
     with execution_scope("execution-rejected"):
-        with pytest.raises(ValueError, match="knowledge.move"):
+        with pytest.raises(ValueError, match="MoveKnowledgeItems"):
             service.update(KNOWLEDGE_ID, {"text": text, "expected_version": 14}, actor=ACTOR)
     assert primary.read_text() == original
     assert not store.for_execution("execution-rejected", ACTOR)
