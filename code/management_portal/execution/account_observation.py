@@ -154,12 +154,12 @@ def _http_main():
     sys.stdout.write(json.dumps(result))
 
 
-def login_status(command, *, env):
+def login_status(command, *, env, cwd=None):
     """Own and reap a CLI credential status probe, never a login flow."""
     import subprocess
     from management_common.process_runtime import spawn_process, terminate_process_tree
     check_cancelled()
-    process = spawn_process(command, env=env, stdin=subprocess.DEVNULL,
+    process = spawn_process(command, env=env, cwd=cwd, stdin=subprocess.DEVNULL,
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
     try:
         with cancel_resource(lambda: terminate_process_tree(process, timeout=1)):

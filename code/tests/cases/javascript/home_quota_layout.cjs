@@ -46,7 +46,7 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
     `});
     for(const id of ['claude_one','antigravity_one','kimi-code']) {
       const row=page.locator('[data-account-limit-account="'+id+'"]');
-      assert.deepEqual(await row.locator('.agent-status-window-name').allTextContents(),id==='antigravity_one'?['5 小时','每周','Argon']:['5 小时','每周']);
+      assert.deepEqual(await row.locator('.agent-status-window-name').allTextContents(),id==='antigravity_one'?['Gemini · 5 小时','Gemini · 每周','Claude/GPT · 5 小时','Claude/GPT · 每周','Argon']:['5 小时','每周']);
     }
     assert.deepEqual(await page.locator('[data-account-api] .agent-status-balance-value').allTextContents(),['123.45 CNY','0 USD','52.12 USD*','—','100000 CNY','—']);
     assert.equal(await page.locator('[data-account-api=deepseek] .agent-status-balance-coins i').count(),12);
@@ -58,13 +58,13 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
     const notice=antigravity.locator('[data-account-quota-warning]');
     assert.equal(await notice.count(),0);
     await page.evaluate(()=>{
-      Object.assign(data.accounts[2].rate_limits[2],{id:'Claude and GPT models/Weekly Limit Remaining',label:'Claude and GPT models · Weekly Limit Remaining',remaining_percent:0,observed_at:Date.now()/1000,resets_at:Date.now()/1000+6*86400});
+      Object.assign(data.accounts[2].rate_limits[2],{id:'other-model-week',label:'Claude and GPT models · Weekly Limit Remaining',remaining_percent:0,observed_at:Date.now()/1000,resets_at:Date.now()/1000+6*86400});
       refreshAccountQuotaWindows();
     });
     assert.match(await notice.innerText(),/其他额度已耗尽/);
     assert.match(await notice.getAttribute('title'),/Claude and GPT models.*剩余 0%.*采样于.*预计重置/);
-    assert.deepEqual(await antigravity.locator('.agent-status-window-name').allTextContents(),['5 小时','每周','Argon']);
-    assert.deepEqual(await antigravity.locator('.agent-status-limit-meta').allTextContents(),['90%','100%','100%']);
+    assert.deepEqual(await antigravity.locator('.agent-status-window-name').allTextContents(),['Gemini · 5 小时','Gemini · 每周','Claude/GPT · 5 小时','Claude/GPT · 每周','Argon']);
+    assert.deepEqual(await antigravity.locator('.agent-status-limit-meta').allTextContents(),['90%','100%','—','—','100%']);
     const argon=antigravity.locator('[data-account-quota-window="Gemini 4 Argon/Gemini 4 Argon Weekly Limit"]');
     assert.match(await argon.getAttribute('title'),/Gemini 4 Argon Weekly Limit/);
     for(const [remaining,stale,expected] of [[null,false,'—'],[0,false,'0%'],[100,true,'100%*']]) {
@@ -178,9 +178,9 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
     });
     for (const initialRender of [false,true]) {
       if (initialRender) await page.evaluate(()=>document.querySelector('main > div').innerHTML=accountRows(data.accounts));
-      assert.deepEqual(await antigravity.locator('.agent-status-window-name').allTextContents(),['5 小时','每周']);
-      assert.deepEqual(await antigravity.locator('.agent-status-limit-meta').allTextContents(),['—','99%*']);
-      assert.deepEqual(await antigravity.locator('[data-account-quota-window]').evaluateAll(bars=>bars.map(bar=>bar.dataset.accountQuotaWindow)),['Gemini Models/Five Hour Limit Remaining','Gemini Models/Weekly Limit Remaining']);
+      assert.deepEqual(await antigravity.locator('.agent-status-window-name').allTextContents(),['Gemini · 5 小时','Gemini · 每周','Claude/GPT · 5 小时','Claude/GPT · 每周']);
+      assert.deepEqual(await antigravity.locator('.agent-status-limit-meta').allTextContents(),['—','99%*','100%','100%']);
+      assert.deepEqual(await antigravity.locator('[data-account-quota-window]').evaluateAll(bars=>bars.map(bar=>bar.dataset.accountQuotaWindow)),['Gemini Models/Five Hour Limit Remaining','Gemini Models/Weekly Limit Remaining','Claude and GPT models/Five Hour Limit Remaining','Claude and GPT models/Weekly Limit Remaining']);
     }
     assert.match(await page.locator('[data-account-credits] dd').innerText(),/44.?904[.,]19/);
     for(const width of [1440,390,320]) {

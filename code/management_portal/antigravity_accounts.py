@@ -4,7 +4,9 @@ from __future__ import annotations
 import json
 import queue
 import re
+import subprocess
 import sys
+import tempfile
 import threading
 import time
 from datetime import datetime, timezone
@@ -158,6 +160,33 @@ def quota_windows(report, observed_at):
     return windows
 
 
+def _cli_quota_summary(env):
+    from management_portal.execution.account_observation import login_status
+
+    token = Path(env["GEMINI_HOME"]) / "antigravity-acp" / "antigravity-oauth-token"
+    if not token.is_file():
+        return None
+    with tempfile.TemporaryDirectory(prefix="agy-quota-") as home:
+        profile = Path(home) / ".gemini" / "antigravity-cli"
+        profile.mkdir(parents=True)
+        (profile / token.name).symlink_to(token.resolve())
+        isolated = {**env, "HOME": home, "GEMINI_HOME": str(profile.parent),
+                    "XDG_CONFIG_HOME": home + "/.config", "XDG_DATA_HOME": home + "/.local/share"}
+        args = [command(env)[0], "-p", "/usage", "--output-format", "json",
+                "--print-timeout", "20s", "--log-file", "/dev/null"]
+        try:
+            result = login_status(args, env=isolated, cwd=home)
+            if result.returncode:
+                return None
+            groups = json.loads(result.stdout)["command"]["data"]["groups"]
+            return {"groups": [{"displayName": group["name"], "buckets": [
+                {"displayName": bucket["name"], "remainingFraction": bucket.get("remaining_fraction"),
+                 "resetTime": bucket.get("reset_time")} for bucket in group["buckets"]]}
+                for group in groups]}
+        except (ValueError, TypeError, KeyError, OSError, subprocess.TimeoutExpired):
+            return None
+
+
 def _quota_summary(env, version):
     """Read the same Cloud Code quota summary used by the signed-in CLI."""
     from management_portal.execution.account_observation import urlopen
@@ -266,12 +295,15 @@ def observe_account(account_id):
                         advertised.wait(timeout=.1)
                 check_cancelled()
                 if "usage" not in commands.get(session_id, set()):
-                    summary = _quota_summary(env, handshake.get("agentInfo", {}).get("version", ""))
+                    summary = _cli_quota_summary(env)
+                    source = "antigravity.cli/usage"
+                    if not summary or not summary["groups"]:
+                        source = "antigravity.retrieveUserQuotaSummary"
+                        summary = _quota_summary(env, handshake.get("agentInfo", {}).get("version", ""))
                     if summary is None:
                         sample.update(error_code="quota_unsupported", error="当前 Antigravity 运行时未提供额度查询")
                         return sample
                     windows = _summary_windows(summary, time.time())
-                    source = "antigravity.retrieveUserQuotaSummary"
                 else:
                     result = client.call("session/prompt", {"sessionId": session_id,
                         "prompt": [{"type": "text", "text": "/usage"}]}, timeout=30)

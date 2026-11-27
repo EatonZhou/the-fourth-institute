@@ -65,8 +65,10 @@
         ["limit5h", window.PortalI18n.t("5 小时")],
         ["limit7d", window.PortalI18n.t("每周")],
       ] : account.provider === "antigravity" ? [
-        ["Gemini Models/Five Hour Limit Remaining", window.PortalI18n.t("5 小时")],
-        ["Gemini Models/Weekly Limit Remaining", window.PortalI18n.t("每周")],
+        ["Gemini Models/Five Hour Limit Remaining", "Gemini · " + window.PortalI18n.t("5 小时")],
+        ["Gemini Models/Weekly Limit Remaining", "Gemini · " + window.PortalI18n.t("每周")],
+        ["Claude and GPT models/Five Hour Limit Remaining", "Claude/GPT · " + window.PortalI18n.t("5 小时")],
+        ["Claude and GPT models/Weekly Limit Remaining", "Claude/GPT · " + window.PortalI18n.t("每周")],
         ["Gemini 4 Argon/Gemini 4 Argon Weekly Limit", "Argon"],
       ] : null;
       // Keep the shared rolling windows compact. Omitted exhausted limits are
@@ -75,9 +77,8 @@
       return summary.flatMap(([id, label]) => {
         const quotaWindow = windows.find(item => item.id === id);
         if (quotaWindow) return [{...quotaWindow, full_label: quotaWindow.label || id, label}];
-        // A partial report can contain only partner-model quotas. Keep the
-        // two Gemini positions identifiable even when their readings are absent.
-        if (windows.length && id.startsWith("Gemini Models/")) {
+        // Keep both shared groups visible when an observation is partial.
+        if (windows.length && (id.startsWith("Gemini Models/") || id.startsWith("Claude and GPT models/"))) {
           return [{id, label, full_label: id, remaining_percent: null}];
         }
         return [];
