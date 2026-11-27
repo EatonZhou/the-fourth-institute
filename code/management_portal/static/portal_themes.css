@@ -1722,19 +1722,14 @@ html:root[data-portal-theme="liquid-glass"] .portalSectionLink::after {
 }
 
 /* Floating Liquid Glass chat composer: scrolled messages pass softly behind it with crisp legibility */
-/* A visible quota notice occupies the space between history and the composer.
-   Override the inherited overlap on the history subtree so its viewport,
-   scroll padding and round rail all stay above the notice, including resize. */
-html:root[data-portal-theme="liquid-glass"] .portalChatWorkspaceRoot:has(> .portalChatQuotaNotice:not([hidden])) > .portalWorkspaceBody {
-  --lg-composer-overlap: 0px;
-}
-
 html:root[data-portal-theme="liquid-glass"] .portalChatQuotaNotice {
+  position: relative;
+  z-index: 12;
   margin: 0 12px;
   padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: var(--lg-radius-item);
-  background: var(--lg-card-bg);
+  background: rgba(255, 255, 255, .92);
 }
 
 html:root[data-portal-theme="liquid-glass"] .portalChatQuotaRow {
@@ -2131,6 +2126,7 @@ html:root[data-portal-theme="liquid-glass"] .portalMailboxAlert {
     backdrop-filter: var(--lg-blur-panel-glass);
   }
 
+  html:root[data-portal-theme="liquid-glass"] .portalChatQuotaNotice,
   html:root[data-portal-theme="liquid-glass"] .composer::before {
     background: rgba(255, 255, 255, .52);
     -webkit-backdrop-filter: blur(12px) saturate(175%);
@@ -2230,6 +2226,7 @@ html:root[data-portal-theme="liquid-glass"] .portalMailboxAlert {
   html:root[data-portal-theme="liquid-glass"] .portalSiteHeader::before,
   html:root[data-portal-theme="liquid-glass"] .portalAgentInbox::before,
   html:root[data-portal-theme="liquid-glass"] .portalAgentInboxPanel::before,
+  html:root[data-portal-theme="liquid-glass"] .portalChatQuotaNotice,
   html:root[data-portal-theme="liquid-glass"] .composer::before,
   html:root[data-portal-theme="liquid-glass"] body.portalBoardShell .portalNavGlassDroplet,
   html:root[data-portal-theme="liquid-glass"] :is(
@@ -2291,6 +2288,7 @@ html:root[data-portal-theme="liquid-glass"] .portalMailboxAlert {
   html:root[data-portal-theme="liquid-glass"] .portalSiteHeader::before,
   html:root[data-portal-theme="liquid-glass"] .portalAgentInbox::before,
   html:root[data-portal-theme="liquid-glass"] .portalAgentInboxPanel::before,
+  html:root[data-portal-theme="liquid-glass"] .portalChatQuotaNotice,
   html:root[data-portal-theme="liquid-glass"] .composer::before {
     background: var(--modal-card-bg);
     border: 1px solid var(--border-strong);
@@ -2366,6 +2364,7 @@ html:root[data-portal-theme="liquid-glass"] .portalMailboxAlert {
   html:root[data-portal-theme="liquid-glass"] .portalSiteHeader::before,
   html:root[data-portal-theme="liquid-glass"] .portalAgentInbox::before,
   html:root[data-portal-theme="liquid-glass"] .portalAgentInboxPanel::before,
+  html:root[data-portal-theme="liquid-glass"] .portalChatQuotaNotice,
   html:root[data-portal-theme="liquid-glass"] .composer::before,
   html:root[data-portal-theme="liquid-glass"] :is(
     .portalActivityRail,

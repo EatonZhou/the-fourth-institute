@@ -669,11 +669,16 @@
         root.style.removeProperty("--lg-composer-overlap");
         return;
       }
-      const splitter = root.querySelector(":scope > .composerSplitter");
-      const cs = getComputedStyle(composer);
-      const marginY = (parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0);
-      const splitterH = splitter && !splitter.hidden ? splitter.offsetHeight : 0;
-      const overlap = Math.max(0, Math.round(composer.offsetHeight + splitterH + marginY));
+      // The quota notice floats over history with the composer. Include all
+      // visible footer surfaces so glass has a backdrop throughout, while the
+      // message scroll padding keeps the last message above the whole footer.
+      const overlap = Math.max(0, Math.round([...root.querySelectorAll(
+        ":scope > :is(.composer, .composerSplitter, .portalChatQuotaNotice)"
+      )].reduce((height, element) => {
+        if (element.hidden || !element.offsetHeight) return height;
+        const style = getComputedStyle(element);
+        return height + element.offsetHeight + (parseFloat(style.marginTop) || 0) + (parseFloat(style.marginBottom) || 0);
+      }, 0)));
       root.style.setProperty("--lg-composer-overlap", `${overlap}px`);
     };
 
@@ -689,23 +694,23 @@
     const syncRoots = () => {
       for (const [root, observed] of tracked) {
         if (!root.isConnected) {
-          if (observed) resize?.unobserve(observed);
+          for (const element of observed) resize?.unobserve(element);
           root.style.removeProperty("--lg-composer-overlap");
           tracked.delete(root);
         }
       }
       for (const root of document.querySelectorAll(".portalChatWorkspaceRoot")) {
-        const composer = root.querySelector(":scope > .composer");
-        const prev = tracked.get(root);
-        if (prev && prev !== composer) resize?.unobserve(prev);
-        if (composer && prev !== composer) resize?.observe(composer);
-        tracked.set(root, composer || null);
+        const elements = new Set(root.querySelectorAll(":scope > :is(.composer, .composerSplitter, .portalChatQuotaNotice)"));
+        const prev = tracked.get(root) || new Set();
+        for (const element of prev) if (!elements.has(element)) resize?.unobserve(element);
+        for (const element of elements) if (!prev.has(element)) resize?.observe(element);
+        tracked.set(root, elements);
         updateRoot(root);
       }
     };
 
     const observer = new MutationObserver(() => syncRoots());
-    if (document.body) observer.observe(document.body, { subtree: true, childList: true });
+    if (document.body) observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["hidden"] });
     syncRoots();
 
     return () => {
