@@ -60,7 +60,24 @@ class Admission:
         """Shared inputs for claim, a detailed queue view and batched states."""
         now = time.time() if now is None else now
         providers = {str(request.get("provider") or "") for request in requests}
-        updating = providers - admitting_providers(connection, providers)
+        # Claims and replacements use the same account key. Legacy requests
+        # without a resolved route may still reach any account of this provider.
+        from .account_registrations import registrations
+        rows = registrations()
+        routes = {p: {} for p in ("codex", "claude")}
+        for row in rows:
+            if row["provider"] in routes:
+                route = row["route_id"]
+                routes[row["provider"]].update({route: route, row["account_id"]: route})
+        def lock_keys(provider, raw):
+            if provider not in routes:
+                return ()
+            route = routes[provider].get(raw)
+            return tuple(provider + "@" + r for r in ((route,) if route else set(routes[provider].values())))
+        request_routes = {(r.get("provider"), (r.get("session") or {}).get("backend_route_id")) for r in requests}
+        request_locks = {key: lock_keys(*key) for key in request_routes}
+        keys = providers.union(*(request_locks.values()))
+        updating = keys - admitting_providers(connection, keys)
         active_counts = defaultdict(int)
         active_bindings = set()
         for _, request in self.active_requests.scheduling_requests(connection):
@@ -78,14 +95,16 @@ class Admission:
         ).fetchall()}
         quota_keys = capacities & self.quota.quota_capacity_keys if self.quota.quota_reserve_enabled else set()
         quotas, overrides = self.quota.quota_states(connection, quota_keys, bindings, now=now)
-        from .account_registrations import registrations
-        disabled = {row["account_id"] for row in registrations() if not row["enabled"]}
+        disabled = {row["account_id"] for row in rows if not row["enabled"]}
         return {"now": now, "active_counts": active_counts, "active_bindings": active_bindings,
                 "limits": limits, "dispatch": dispatch, "quotas": quotas, "overrides": overrides,
-                "disabled_accounts": disabled, "updating_providers": updating}
+                "disabled_accounts": disabled, "updating_providers": updating,
+                "updating_routes": {key for key, locks in request_locks.items() if updating.intersection(locks)}}
 
     def admission_reason(self, request, available_at, interrupt_only, admission):
-        if request.get("provider") in admission.get("updating_providers", set()):
+        if (request.get("provider") in admission.get("updating_providers", set())
+                or (request.get("provider"), (request.get("session") or {}).get("backend_route_id"))
+                in admission.get("updating_routes", set())):
             return "runtime_update"
         account = self.accounts.for_request(request)
         if not interrupt_only and account and account.account_id in admission.get("disabled_accounts", set()):

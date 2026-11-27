@@ -113,6 +113,22 @@ def provider_directory(instance=None) -> Path:
     return (instance or load()).code_root().parent / 'dependencies/providers'
 
 
+def account_provider_link(instance, component: str) -> Path:
+    from .provider_account_paths import validate_identity
+    kind, _, account = component.partition("@")
+    if kind not in {"codex-app-server", "claude-account"}:
+        raise ValueError("Expected an account service")
+    return instance.area("provider-state") / "account-versions" / kind / validate_identity(account)
+
+
+def selected_provider_entry(instance, component, key):
+    if "@" in component:
+        link = account_provider_link(instance, component)
+        if link.exists() or link.is_symlink():
+            return link.resolve(strict=True)
+    return provider_entry(key, instance)
+
+
 def provider_entry(key: str, instance=None) -> Path:
     entries = {
         'codex_binary': 'codex-cli-current' if os.name == 'nt' else 'codex',

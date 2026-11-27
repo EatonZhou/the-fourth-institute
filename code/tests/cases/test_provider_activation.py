@@ -14,6 +14,12 @@ from management_portal.execution.contracts import ExecutionRequest, SessionOptio
 from management_portal.execution.scheduler import Scheduler
 
 
+@pytest.fixture(autouse=True)
+def isolate_selected_runtimes(monkeypatch, tmp_path):
+    # Runtime binaries may be shared across instances; selection links must be private to a test.
+    monkeypatch.setattr(updates, "provider_entry", lambda name: tmp_path / "selections" / name)
+
+
 def _peer(call):
     with ThreadPoolExecutor(max_workers=1) as pool:
         return pool.submit(call).result(timeout=10)
@@ -429,3 +435,50 @@ def test_execution_maintenance_rearms_only_an_actionable_local_candidate(monkeyp
         (tmp_path / "provider-updates.json").write_text(json.dumps(state))
         updates.resume_pending_activation()
     start.assert_called_once_with("--activate-pending")
+
+
+@pytest.mark.parametrize("provider", ["codex", "claude"])
+def test_account_rollout_skips_busy_peer_and_resumes_after_release(provider, monkeypatch, tmp_path):
+    from contextlib import nullcontext
+    from management_portal.execution import account_runtime_updates as rollout
+
+    rows = [{"account_id": name, "route_id": name} for name in ("busy", "idle")]
+    active, calls = {"busy"}, []
+    old, new, default = (tmp_path / name for name in ("old", "new", "default"))
+    old.mkdir()
+    new.mkdir()
+    default.symlink_to(old)
+    runtime = Mock(unit_files=("shared",))
+    runtime.activation_link.return_value = default
+    runtime.link_target.return_value = new
+    def switch(provider, runtime, target, row):
+        calls.append(row["account_id"])
+        return row["account_id"] not in active
+    monkeypatch.setattr(rollout, "registrations", lambda _: rows)
+    monkeypatch.setattr(rollout, "switch_account", switch)
+    monkeypatch.setattr(rollout, "activation_window", lambda _: nullcontext(True))
+    monkeypatch.setattr(rollout, "provider_runtime_services", lambda _: ())
+    monkeypatch.setattr(rollout, "publish_activation_ready", lambda *args: None)
+    done = {}
+    assert not rollout.roll_accounts(provider, runtime, new, done, lambda: None, {})
+    assert set(done) == {"idle"} and default.resolve() == old
+    active.clear()
+    assert rollout.roll_accounts(provider, runtime, new, done, lambda: None, {})
+    assert calls == ["busy", "idle", "busy"] and default.resolve() == new
+
+
+def test_account_switch_blocks_only_claims_for_that_route():
+    scheduler = Scheduler(dispatch_interval_min_seconds=0, dispatch_interval_max_seconds=0)
+    scheduler.register_worker(worker_id="worker", build_id="test", capabilities=["agent_session:codex"])
+    try:
+        for route in ("one", "zero"):
+            request = ExecutionRequest.new(actor="sample_admin", prompt="answer", service_type="agent_session",
+                provider="codex", operation="turn", session=SessionOptions(mode="persistent",
+                    binding_id="resident:" + route, backend_route_id=route))
+            scheduler.submit(request)
+        with activation_window("codex@one") as reserved:
+            assert reserved
+            result = _peer(lambda: scheduler.claim(worker_id="worker", capabilities=["agent_session:codex"]))
+            assert result["claimed"] and result["execution"]["execution_id"] == request.execution_id
+    finally:
+        scheduler.database.close()

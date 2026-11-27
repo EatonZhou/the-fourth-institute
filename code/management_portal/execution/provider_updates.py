@@ -711,12 +711,12 @@ def _windows_link(path: Path, target: Path) -> None:
         _remove_windows_link(temporary)
 
 
-def _active_executions(provider: str, route: str = "") -> int:
+def _active_executions(provider: str, route: str = "", *, account_id: str = "") -> int:
     database = portal_database(schema="execution_runtime")
     try:
         # Older requests with no explicit route may use the account being drained.
         route_filter = (" AND COALESCE(NULLIF(NULLIF(request_json::text,'')::jsonb "
-                        "#>> '{session,backend_route_id}',''), %s) = %s") if route else ""
+                        "#>> '{session,backend_route_id}',''), %s) = ANY(%s)") if route else ""
         with database.transaction() as connection:
             row = connection.execute(
                 "SELECT count(*) AS total FROM executions WHERE "
@@ -724,7 +724,7 @@ def _active_executions(provider: str, route: str = "") -> int:
                 "(NULLIF(checkpoint_json::text,'')::jsonb->>'turn_id' IS NOT NULL "
                 "OR NULLIF(checkpoint_json::text,'')::jsonb ? 'abandoned'))) "
                 "AND NULLIF(request_json::text,'')::jsonb->>'provider' = %s" + route_filter,
-                (provider, route, route) if route else (provider,),
+                (provider, route, [route, account_id or route]) if route else (provider,),
             ).fetchone()
             return int(row["total"])
     finally:
@@ -747,6 +747,9 @@ def _validated_candidate(provider, root, baseline):
 
 @diagnosed("service_activation")
 def _activate(provider: str, runtime: ProviderRuntime, root: Path, *, prepare=False) -> bool:
+    if provider in {"codex", "claude"} and runtime.activation_link().exists():
+        # The watcher validates once, then rolls the deployed account hosts.
+        return False
     root = _validated_candidate(provider, root, runtime.activation_link())
     return _activate_verified(provider, runtime, root, prepare=prepare)
 
@@ -1163,7 +1166,7 @@ def pending_provider_updates():
         return None if locked is None else dict(locked[0].get("pending", {}))
 
 
-def _finish_pending(provider, path, apply=None, *, error=None):
+def _finish_pending(provider, path, apply=None, *, error=None, roll=None):
     # An updater holding this file lock only ever *tries* the database lock.
     # Never block holding either lock while acquiring the other.
     with _update_state() as locked:
@@ -1177,7 +1180,12 @@ def _finish_pending(provider, path, apply=None, *, error=None):
         try:
             if error is not None:
                 raise error
-            if not apply(preparing):
+            if roll is not None:
+                completed = state.setdefault("account_versions", {}).setdefault(provider, {})
+                activated = roll(completed, save)
+            else:
+                activated = apply(preparing)
+            if not activated:
                 return {"status": "pending"}
         except psycopg.OperationalError:
             # Loss of the admission database gives no evidence about the candidate.
@@ -1290,7 +1298,7 @@ def _activate_account_migration(key, account_id, deadline):
     dedicated = ClaudeCodeClient(socket_path)
 
     def busy(provider):
-        return _active_executions(provider, route) or shared.health()["active"]
+        return _active_executions(provider, route)
 
     def apply(_preparing):
         configured = key in load().document["services"]["components"]
@@ -1325,7 +1333,7 @@ def _activate_account_migration(key, account_id, deadline):
         return True
 
     while True:
-        with activation_window("claude", deadline=deadline) as reserved:
+        with activation_window("claude@" + route, deadline=deadline) as reserved:
             if not reserved:
                 return {"status": "timeout"}
             result = _finish_pending(key, account_id, apply)
@@ -1340,6 +1348,31 @@ def _activate_account_migration(key, account_id, deadline):
             wait_for_execution_idle("claude", busy, min(deadline, time.monotonic() + RECONCILE_SECONDS))
 
 
+def _roll_pending_accounts(provider, path, runtime, root, deadline):
+    from .account_runtime_updates import roll_accounts
+    result = {}
+    errors = {}
+    def attempt(_provider):
+        nonlocal result
+        result = _finish_pending(provider, path, roll=lambda completed, save:
+                                 roll_accounts(provider, runtime, root, completed, save, errors))
+        return result["status"] == "pending"
+
+    if deadline is None:
+        attempt(provider)
+        return result
+    while time.monotonic() < deadline:
+        # LISTEN before sampling all unfinished routes, then wake on release.
+        wake = min(deadline, time.monotonic() + RECONCILE_SECONDS)
+        if not wait_for_execution_idle(provider, attempt, wake):
+            continue
+        if result["status"] != "busy":
+            return result
+        if not wait_for_installation_unlock(deadline):
+            break
+    return {"status": "timeout"}
+
+
 def activate_pending_provider(provider, path, deadline):
     """Verify an immutable candidate, then queue without the installation lock."""
     try:
@@ -1348,6 +1381,16 @@ def activate_pending_provider(provider, path, deadline):
         runtime = runtimes()[provider]
         baseline = runtime.activation_link().resolve()
         root = _validated_candidate(provider, Path(path), baseline)
+        if provider in {"codex", "claude"} and runtime.activation_link().exists():
+            # An explicit candidate can supersede a partly completed rollout.
+            # Verify each distinct previous edition that its accounts still run.
+            deployed = _read_state().get("account_versions", {}).get(provider, {})
+            previous = {Path(record[1]) for record in deployed.values()}
+            for package in sorted(previous - {root}):
+                selection = runtime.link_target(package).resolve()
+                if selection != baseline:
+                    _validated_candidate(provider, root, selection)
+            return _roll_pending_accounts(provider, path, runtime, root, deadline)
         while True:
             try:
                 with activation_window(provider, deadline=deadline) as reserved:

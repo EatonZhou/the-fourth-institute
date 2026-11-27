@@ -120,7 +120,7 @@ def component_command(instance: InstanceManifest, component: str) -> tuple[list[
     if (component in {'claude', 'claude-code'} or component.startswith('claude-account@')):
         runtime = code_environment.provider_entry('claude_runtime_current', instance)
         from management_portal.claude_runtime import release_sdk
-        package = code_environment.provider_entry('claude_app_server_current', instance).resolve()
+        package = code_environment.selected_provider_entry(instance, component, 'claude_app_server_current').resolve()
         runtime = release_sdk(package, runtime)
         executable = runtime / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
         if not executable.is_file() or not (package / 'management_portal/claude_code_daemon.py').is_file():
@@ -162,7 +162,7 @@ def component_command(instance: InstanceManifest, component: str) -> tuple[list[
     if component.startswith('codex-app-server@'):
         from management_common.provider_account_paths import validate_identity
         account = validate_identity(component.partition('@')[2])
-        binary = code_environment.provider_entry('codex_binary', instance)
+        binary = code_environment.selected_provider_entry(instance, component, 'codex_binary')
         if os.name == 'nt':
             binary /= 'codex.cmd'
         if not binary.is_file():
