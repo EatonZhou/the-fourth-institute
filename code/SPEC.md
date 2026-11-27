@@ -17,6 +17,7 @@
 - [人类与AI的统一操作面：共同使用与共同演化](/r/thinking_ab37a18be710)
 - [Portal 系统架构](/r/decision_463fd3e76150)
 - [HATG ISA：指令格式、调用入口与执行规则](/r/decision_898b8911a2ff)
+- [HATG ISA：指令设计规范](/r/decision_eeaf19569e4d)，新增指令与审查指令集的条件、形状规则、经验和检查清单。
 - [HATG ISA：资源指令与知识标签资源读写](/r/decision_ad3e21094f14)
 - [HATG ISA：用户指令](/r/decision_6eac174d85bf)
 - [HATG ISA：Resident 指令](/r/decision_d19b9909a674)
