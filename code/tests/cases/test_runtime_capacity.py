@@ -233,7 +233,7 @@ def test_real_isa_routes_to_web_and_checks_resident_authorization(sources, monke
     kernel = InstructionKernel(web_isa.binding(), store=None)
     monkeypatch.setattr(kernel_module, "_KERNELS", {"web": kernel})
     declaration = instruction_catalog()["GetRuntimeCapacity"]
-    assert (declaration.owner, declaration.mutates, declaration.parameters) == ("web", False, ())
+    assert (declaration.owner, declaration.mutates) == ("web", False)
     result = routing.execute({"instruction": "GetRuntimeCapacity", "arguments": {}},
                              InstructionContext(caller=ACTOR, entry="harness"))
     assert len(authorization_calls) == 1

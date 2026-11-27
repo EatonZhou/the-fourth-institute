@@ -333,9 +333,11 @@ async function loadGpuStatus({force = true, signal} = {}) {
   }
 }
 
+const DISK_REFRESH_INTERVAL_MS = 60 * 60 * 1000;
+
 function ensureDiskStatusRefresh() {
   if (diskStatusRefresh) return diskStatusRefresh;
-  const delay = () => diskStatusData?.refreshing ? 1000 : 300000;
+  const delay = () => diskStatusData?.refreshing ? 1000 : DISK_REFRESH_INTERVAL_MS;
   diskStatusRefresh = window.PortalRefreshCoordinator.create({
     key: () => `home-disk-status:${portalUsername || "anonymous"}`,
     interval: delay,
@@ -369,7 +371,7 @@ function connectHomeShell({ context, signal }) {
   let devices = [];
   const capacity = window.PortalRefreshCoordinator.create({
     key: () => `home-local-disk-capacity:${portalUsername}`,
-    interval: () => devices.some(device => device.refreshing) ? 1000 : 300000,
+    interval: () => devices.some(device => device.refreshing) ? 1000 : DISK_REFRESH_INTERVAL_MS,
     pauseWhenHidden: true,
     fetch: ({ signal }) => window.PortalInstructionClient.execute("GetDeviceStatus", { kind: "local_disk_capacity" }, { signal }),
     apply: result => {

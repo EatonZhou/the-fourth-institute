@@ -41,7 +41,8 @@ DECLARATIONS = (
     _d("GetPortalStatus", FIXED, "读取 Portal 各部署与各组件的运行状态。", (
         P("deployment", description="只读取这个部署；省略时读取 dev 和 release", enum=("dev", "release")),
     ), (R("deployments", "array", "每个部署的 Web 健康检查、源码目录与共享服务单元"),)),
-    _d("GetRuntimeCapacity", FIXED, "只读观察共享数据库连接、本机磁盘与 Execution 队列容量；排队总数包含配额等等待。", (),
+    _d("GetRuntimeCapacity", FIXED, "只读观察共享数据库连接、本机磁盘与 Execution 队列容量；排队总数包含配额等等待。", (
+       P("include_disks", "boolean", "是否采集磁盘，默认开启；关闭时 disks.status 为 skipped"),),
        (R("capacity", "object", "tfi.runtime-capacity.v1；各来源独立返回 ok 或 unavailable"),)),
     _d("RestartPortal", FIXED, "请求重启一个 Portal 部署，或部署中的指定组件。", (
         R("deployment", description="要重启的部署", enum=("dev", "release")),

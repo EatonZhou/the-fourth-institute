@@ -98,7 +98,7 @@ def _execution_capacity() -> dict[str, Any]:
     }
 
 
-def runtime_capacity() -> dict[str, Any]:
+def runtime_capacity(*, include_disks: bool = True) -> dict[str, Any]:
     """Collect independent observations; errors never contain source diagnostics."""
     capacity: dict[str, Any] = {
         "schema": SCHEMA,
@@ -109,6 +109,9 @@ def runtime_capacity() -> dict[str, Any]:
         ("disks", _disk_capacity),
         ("execution_queue", _execution_capacity),
     ):
+        if name == "disks" and not include_disks:
+            capacity[name] = {"status": "skipped"}
+            continue
         try:
             capacity[name] = read()
         except Exception:

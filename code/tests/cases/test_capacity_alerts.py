@@ -160,6 +160,41 @@ def run(isa):
     return alerts.run_once(isa, lineage_id="lineage_test", recipients=["sample_admin"])
 
 
+def test_media_monitor_scans_once_per_hour(monkeypatch):
+    """同一小时的重复调用只采集数据库和队列，跨小时重新采集磁盘。"""
+    fake = FakeISA()
+    disk_reads = []
+    clock = datetime(2026, 10, 15, tzinfo=timezone.utc)
+
+    class Clock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return clock.astimezone(tz)
+
+    monkeypatch.setattr(alerts, "datetime", Clock)
+
+    def isa(name, **args):
+        if name == "GetDeviceStatus":
+            disk_reads.append(clock)
+            return {"observed_at": clock.isoformat(), "devices": []}
+        if name == "ListUsers":
+            return {"users": [{"category": "portal_admin", "username": "admin"}]}
+        if name == "GetRuntimeCapacity":
+            sample = snapshot()
+            sample["observed_at"] = clock.isoformat()
+            if not args["include_disks"]:
+                sample["disks"] = {"status": "skipped"}
+            return {"capacity": sample}
+        return fake(name, **args)
+
+    for minute, expected_reads in [(0, 1), (5, 1), (55, 1), (60, 2)]:
+        clock = datetime(2026, 10, 15, tzinfo=timezone.utc) + timedelta(minutes=minute)
+        alerts.run_once(isa, lineage_id="lin", recipients=["admin"], monitor_media=True)
+        assert len(disk_reads) == expected_reads
+        assert fake.state["metrics"]["database"]["observed_at"] == clock.isoformat()
+        assert fake.state["metrics"]["availability:disks"]["available"]
+
+
 def test_ssd_alarm_df_boundary_admin_membership_and_rearming():
     """SSD 首次超过 85% 即投递；失联不重置，新增管理员补收，恢复后可再次触发。"""
     admins = ["admin1", "admin2"]

@@ -101,6 +101,8 @@ def _samples(snapshot):
     labels = {"database": "数据库连接", "disks": "磁盘空间", "execution_queue": "执行队列"}
     for source, label in labels.items():
         data = snapshot[source]
+        if source == "disks" and data.get("status") == "skipped":
+            continue
         if data.get("status") not in {"ok", "unavailable"}:
             raise ValueError("Unknown capacity source status")
         available = data["status"] == "ok"
@@ -195,6 +197,8 @@ def advance(previous, snapshot, *, lineage_id, recipients, policy, disk_report=N
             samples.pop("disk:" + disk["key"], None)
             state["metrics"].pop("disk:" + disk["key"], None)
     for key, record in state["metrics"].items():
+        if snapshot["disks"]["status"] == "skipped" and (key.startswith("disk:") or key == "availability:disks"):
+            continue
         if key not in samples:
             record["pending"] = None
             record["available"] = False
@@ -209,7 +213,10 @@ def advance(previous, snapshot, *, lineage_id, recipients, policy, disk_report=N
         if LEVELS[candidate] < LEVELS[level] and value > thresholds["recovery"]:
             candidate = level
         pending = record.get("pending")
-        if record.get("observed_at") and now - _timestamp(record["observed_at"]) > policy["max_sample_gap_seconds"]:
+        max_gap = policy["max_sample_gap_seconds"]
+        if key == "availability:disks" and disk_report is not None:
+            max_gap += 3600
+        if record.get("observed_at") and now - _timestamp(record["observed_at"]) > max_gap:
             pending = None
         if candidate == level:
             pending = None
@@ -271,14 +278,20 @@ def run_once(isa, *, lineage_id, recipients, overrides=None, monitor_media=False
     delivered = drain(isa, lineage_id)
     disk_report = None
     admins = []
+    collect_disks = True
     if monitor_media:
+        saved = _read(isa, lineage_id) or {}
+        last = (saved.get("disk_observation") or saved.get("ssd_observation") or {}).get("observed_at")
+        # Both scheduled and manual runs share the same hourly collection slot.
+        collect_disks = not last or datetime.now(REMINDER_TZ).timestamp() // 3600 > _timestamp(last) // 3600
+    if monitor_media and collect_disks:
         from management_portal.permission_system.administrators import ADMINISTRATOR
         disk_report = isa("GetDeviceStatus", kind="physical_disk_capacity")
         admins = [u["username"] for u in isa("ListUsers", status="active")["users"]
                   if u["category"] == ADMINISTRATOR]
         if not admins:
             raise RuntimeError("Capacity monitor could not resolve active Portal administrators")
-    snapshot = isa("GetRuntimeCapacity")["capacity"]
+    snapshot = isa("GetRuntimeCapacity", include_disks=collect_disks)["capacity"]
     for _ in range(8):
         previous = _read(isa, lineage_id)
         updated = advance(previous, snapshot, lineage_id=lineage_id, recipients=recipients, policy=policy,

@@ -697,7 +697,7 @@ def set_user_navigation_favorite(inv: Invocation) -> dict[str, Any]:
 def get_runtime_capacity(inv: Invocation) -> dict[str, Any]:
     from management_portal.runtime_capacity import runtime_capacity
 
-    return {"capacity": runtime_capacity()}
+    return {"capacity": runtime_capacity(include_disks=inv.argument("include_disks") is not False)}
 
 
 def get_portal_status(inv: Invocation) -> dict[str, Any]:
