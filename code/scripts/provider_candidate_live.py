@@ -35,10 +35,13 @@ async def claude(root, prompt, model):
 
 
 def antigravity(root, prompt, model):
+    from management_common.local_ipc import connect_local, start_local_server
     from management_portal import antigravity_runtime as runtime
-    from management_portal.antigravity_client import AcpClient
+    from management_portal.antigravity_account_server import AccountServer, FRAME_LIMIT
+    from management_portal.antigravity_client import AccountAcpClient
     from management_portal.execution import antigravity_cli
-    env = {**os.environ, **runtime.credential_environment()}
+    from management_portal.execution.provider_session_features import MARKER
+    env = {**os.environ, **runtime.credential_environment(), "PORTAL_SHARED_ACP": "1"}
     env.pop("PORTAL_INSTANCE_ROOT", None)
     antigravity_cli.write_portal_agent(os.getcwd())
     command = runtime._cli_args(runtime.binary_path(root), env) + [
@@ -48,11 +51,33 @@ def antigravity(root, prompt, model):
         item = params.get("update", {})
         if item.get("sessionUpdate") == "agent_message_chunk":
             text.append(item.get("content", {}).get("text", ""))
-    with AcpClient(command, cwd=os.getcwd(), env=env, on_update=update) as client:
-        client.initialize()
-        sid = client.call("session/new", {"cwd": os.getcwd(), "mcpServers": []})["sessionId"]
-        result = client.call("session/prompt", {"sessionId": sid, "prompt": [{"type": "text", "text": prompt}]})
-        check(result["stopReason"] == "end_turn", "Antigravity terminal result")
+    socket_path = Path.cwd() / "account.sock"
+    params = {"cwd": os.getcwd(), "mcpServers": []}
+
+    def exercise():
+        with AccountAcpClient(connect_local(socket_path), on_update=update) as client:
+            client.initialize()
+            sid = client.call("session/new", params)["sessionId"]
+            result = client.call("session/prompt", {"sessionId": sid, "prompt": [{"type": "text", "text": prompt}]})
+            check(result["stopReason"] == "end_turn", "Antigravity terminal result")
+            client.call("session/close", {"sessionId": sid})
+        with AccountAcpClient(connect_local(socket_path)) as peer:
+            caps = peer.initialize()["agentCapabilities"]
+            resume = (root / MARKER).is_file() and "resume" in caps.get("sessionCapabilities", {})
+            session = peer.call("session/resume" if resume else "session/load", {**params, "sessionId": sid})
+            check(any(item.get("category") == "model" for item in session.get("configOptions", [])),
+                  "Antigravity restored session configuration")
+            peer.call("session/close", {"sessionId": sid})
+
+    async def run():
+        host = AccountServer(command, env, Path.cwd())
+        async with await start_local_server(host.handle, socket_path, limit=FRAME_LIMIT):
+            try:
+                await asyncio.to_thread(exercise)
+            finally:
+                await host.close()
+
+    asyncio.run(run())
     return "".join(text)
 
 

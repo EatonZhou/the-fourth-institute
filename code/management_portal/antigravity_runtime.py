@@ -72,6 +72,12 @@ def _cli_args(binary, env):
 class AntigravityRuntime(updates.ProviderRuntime):
     session_controls_since = "1.5.18"
     release_editions = {VERSION: 2}
+    unit_files = ()
+
+    @property
+    def services(self):
+        from scripts.portal_service_units import provider_account_services
+        return provider_account_services("antigravity")
 
     def available(self):
         return (latest_distribution()["version"],)

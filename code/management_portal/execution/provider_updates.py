@@ -361,8 +361,8 @@ class ClaudeRuntime(ProviderRuntime):
 
     @property
     def services(self) -> tuple[str, ...]:
-        from scripts.portal_service_units import claude_account_services, provider_runtime_services
-        return provider_runtime_services(self.unit_files[0]) + claude_account_services()
+        from scripts.portal_service_units import provider_account_services, provider_runtime_services
+        return provider_runtime_services(self.unit_files[0]) + provider_account_services("claude")
 
     def available(self) -> tuple[str, ...]:
         from management_portal.claude_runtime import PROVIDER_REVISION

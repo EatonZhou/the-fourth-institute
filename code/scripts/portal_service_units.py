@@ -69,11 +69,11 @@ def provider_runtime_services(unit: str) -> tuple[str, ...]:
     return (name,) if instance_services.controller(instance).status(name)["active"] == "active" else ()
 
 
-def claude_account_services():
+def provider_account_services(provider: str) -> tuple[str, ...]:
     from scripts import instance_services
     instance = _instance()
     components = [name for name in instance.document['services']['components']
-                  if name.startswith('claude-account@')]
+                  if name.startswith(f'{provider}-account@')]
     if components:
         instance_services.verify_definitions(instance, exact=False, selected_components=components, provider_network_dropins=True)
     control = instance_services.controller(instance)

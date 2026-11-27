@@ -89,6 +89,30 @@ def test_codex_runtime_services_follow_registered_running_instances(monkeypatch)
     assert runtime.services == ()
 
 
+def test_antigravity_switch_reloads_only_running_account_hosts(monkeypatch, tmp_path):
+    from management_portal.antigravity_runtime import AntigravityRuntime
+    from scripts import instance_services, portal_service_units
+
+    components = ["antigravity-account@one", "antigravity-account@two", "claude-account@one"]
+    instance = SimpleNamespace(document={"services": {"components": components}})
+    restarted = []
+    control = SimpleNamespace(restart=restarted.append, status=lambda name: {
+        "active": "inactive" if name == "antigravity-account@two" else "active"})
+    monkeypatch.setattr(portal_service_units, "_instance", lambda: instance)
+    monkeypatch.setattr(instance_services, "controller", lambda _: control)
+    monkeypatch.setattr(instance_services, "verify_definitions", lambda *args, **kwargs: None)
+    monkeypatch.setattr(instance_services, "unit_name", lambda _, component: component)
+    runtime = AntigravityRuntime()
+    monkeypatch.setattr(runtime, "service_control", lambda: control)
+    monkeypatch.setattr(runtime, "link", lambda: tmp_path / "current")
+    staged = tmp_path / "candidate"
+    staged.mkdir()
+    assert runtime.unit_files == ()
+    assert updates._switch_runtime("antigravity", runtime, staged)
+    assert runtime.link().resolve() == staged
+    assert restarted == ["antigravity-account@one"]
+
+
 def test_activation_rollback_keeps_original_dynamic_service_snapshot(monkeypatch, tmp_path):
     """首次重启失败后单元不再active，回退仍重启同一组实例。"""
     old, new, link = tmp_path / "old", tmp_path / "new", tmp_path / "current"
