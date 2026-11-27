@@ -89,29 +89,17 @@ def candidates(accounts: list[dict], source: Mapping[str, Any], *, model: str = 
     return sorted(eligible, key=rank)
 
 
-def migration_candidates(accounts: list[dict], source: Mapping[str, Any], *, model="", effort="",
-                         excluded=(), reserve=0) -> list[dict]:
-    """Prefer exact same-kind settings, then supported migration fallbacks.
-
-    This is deliberately separate from new-session and pinned-model selection.
-    """
-    from .account_migration_settings import migration_settings
-    exact = candidates(accounts, source, model=model, effort=effort, excluded=excluded, reserve=reserve)
-    chosen = {a["account_id"] for a in exact}
-    fallbacks = []
-    for account in accounts:
-        catalog = account.get("selection_catalog") or {}
-        if account.get("account_id") in chosen or not compatible(account, source) or catalog.get("fresh") is not True:
-            continue
-        try:
-            selected = migration_settings(catalog, source_provider=source.get("provider", ""),
-                                          target_provider=account.get("provider", ""), model=model, effort=effort)
-        except ValueError:
-            continue
-        if candidates([account], source, model=selected["model"], effort=selected["reasoning_effort"],
-                      excluded=excluded, reserve=reserve):
-            fallbacks.append(account)
-    return exact + candidates(fallbacks, source, excluded=excluded, reserve=reserve)
+def same_model_candidates(accounts: list[dict], source: Mapping[str, Any], *, model: str,
+                          effort: str = "", excluded=(), reserve=0) -> list[dict]:
+    """Select compatible accounts with confirmed model support, preferring the original effort."""
+    if not model:
+        return []
+    known = [a for a in accounts if (a.get("selection_catalog") or {}).get("fresh") is True]
+    ordered = candidates(known, source, model=model, excluded=excluded, reserve=reserve)
+    if effort:
+        ordered.sort(key=lambda a: effort not in
+                     (a["selection_catalog"].get("efforts_by_model") or {}).get(model, []))
+    return ordered
 
 
 def observations() -> list[dict]:

@@ -28,7 +28,7 @@ function harness(flag) {
 }
 test('facade Settings exposes default-on switch before members and saves against a fresh revision',async()=>{
   const h=harness();assert.match(h.root.html,/aria-checked="true"/);
-  assert.match(h.root.html,/Family 默认开关仅在成员未显式设置时生效/);
+  assert.match(h.root.html,/未单独设置的成员继承 Family 开关/);
   assert(h.root.html.indexOf('data-family-auto-migrate')<h.root.html.indexOf('data-family-members'));
   await h.ctx.saveFamilyAutoMigrate(h.ctx.nodeMenuContext);
   assert.equal(h.calls[1].name,'UpdateFamily');assert.equal(h.calls[1].args.auto_migrate,false);assert.equal(h.calls[1].options.expectedVersion,17);
@@ -37,7 +37,7 @@ test('facade Settings exposes default-on switch before members and saves against
 
 test('both Family menu entry points explain the same inheritance rule',()=>{
   const path=require('node:path');
-  const note='Family 默认开关仅在成员未显式设置时生效；成员显式开启时按站点默认排序切换。';
+  const note='成员显式开启自动切换时，先找同类型同模型账号，再按站点默认排序回退。未单独设置的成员继承 Family 开关。';
   for(const name of ['portal_resident_menu_family.js','hatg_function_block_menu.js']){
     const text=fs.readFileSync(path.resolve(__dirname,'../../../management_portal/static',name),'utf8');
     assert(text.includes(note),name);
@@ -58,7 +58,7 @@ test('Resident effective switch shows its raw policy source and keeps boolean sa
   w.PortalChatWorkspace={residentRuntimeSettingRows:()=>[]};
   w.eval('window.paint=('+callback+');');
   for(const row of [
-    {raw:true,effective:true,role:'member',label:/Resident 显式开启/},
+    {raw:true,effective:true,role:'member',label:/Resident 已开启自动切换。先找同类型同模型账号/},
     {raw:false,effective:false,role:'member',label:/Resident 显式关闭/},
     {effective:true,role:'router',label:/继承 Family 开关/},
     {effective:false,role:'member',label:/继承 Family 开关/},
@@ -131,8 +131,8 @@ test('Family editor distinguishes site inheritance and draft order, and explicit
   assert.deepEqual(listed(),['Claude Code · 订阅','Codex · 订阅']);
   assert.match(root.textContent,/当前继承站点默认帐号选择排序/);
   assert.match(root.textContent,/不代表站点当前生效顺序/);
-  assert.match(root.textContent,/成员显式开启额度自动切换时使用站点默认排序/);
-  assert.match(root.textContent,/跨种类使用 API 或服务账号须在此明确允许/);
+  assert.match(root.textContent,/显式开启额度自动切换的成员使用站点回退顺序/);
+  assert.match(root.textContent,/跨类型使用 API 或服务账号须在此明确允许/);
   assert.match(root.textContent,/排序仅表示候选优先级，不保证切换成功/);
   assert.match(root.textContent,/目标仍需有可用额度和兼容模型/);
   assert.match(root.textContent,/自动切换优先完整保留上下文/);

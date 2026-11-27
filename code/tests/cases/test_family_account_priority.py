@@ -56,12 +56,12 @@ def test_family_custom_order_appends_subscriptions_without_new_billing_kinds():
     service = account('kimi', 'service', 'service')
     accounts = [source, claude, paid, service, kimi]
     priority = ['missing:subscription_login', 'claude:subscription_login']
-    def pick(**kwargs):
+    def pick(*, append_subscriptions=True):
         return fallback_account(accounts, 'codex', 'source', [], reserve=True,
-                                priority=priority, append_subscriptions=True, **kwargs)
+                                priority=priority, append_subscriptions=append_subscriptions)
     assert pick() == kimi  # The same appended subscription displayed by the menu.
     assert priority == ['missing:subscription_login', 'claude:subscription_login']
-    assert pick(priority_only=True) == {}  # Explicit Resident/site policy stays strict.
+    assert pick(append_subscriptions=False) == {}  # Explicit Resident/site policy stays strict.
     kimi['enabled'] = False
     assert pick() == {}  # No implicit API or service authorization.
     priority.append('kimi:service')

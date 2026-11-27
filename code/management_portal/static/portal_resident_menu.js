@@ -21,7 +21,7 @@
       const policyNote = siteDefault ? "保存后恢复站点默认帐号选择排序。下列仅为排序草稿，不代表站点当前生效顺序。"
         : baseline.length ? "已自定义 Family 排序；未排序的订阅种类按默认顺序追加。"
           : "当前继承站点默认帐号选择排序。下列仅为可编辑草稿，不代表站点当前生效顺序；保存后改为 Family 自定义排序。";
-      panel.innerHTML = `<p class="paneNote">${esc(t(policyNote))}</p><p class="paneNote">${esc(t("此排序仅用于继承 Family 开关的成员；成员显式开启额度自动切换时使用站点默认排序。"))}</p><p class="paneNote">${esc(t("先选同种类可用账号，再按下列顺序切换；跨种类使用 API 或服务账号须在此明确允许。"))}</p>
+      panel.innerHTML = `<p class="paneNote">${esc(t(policyNote))}</p><p class="paneNote">${esc(t("继承 Family 开关的成员使用此回退顺序。显式开启额度自动切换的成员使用站点回退顺序。"))}</p><p class="paneNote">${esc(t("先选支持当前模型的同类型账号，再按下列顺序回退。跨类型使用 API 或服务账号须在此明确允许。"))}</p>
         <p class="paneNote">${esc(t("排序仅表示候选优先级，不保证切换成功。目标仍需有可用额度和兼容模型；自动切换优先完整保留上下文，无法直接保留时自动整理交接；待目标就绪后切换并继续原输入，旧会话历史保留。"))}</p>
         <ol>${order.map((key, i) => `<li><span>${esc(types.get(key)?.label || key + '（当前不可用）')}</span><button class="portalButton is-compact" type="button" data-priority-move="${i}" data-direction="-1" aria-label="${esc(t('上移') + ' ' + label(key))}"${readonly || busy || !i ? ' disabled' : ''}>↑</button><button class="portalButton is-compact" type="button" data-priority-move="${i}" data-direction="1" aria-label="${esc(t('下移') + ' ' + label(key))}"${readonly || busy || i === order.length - 1 ? ' disabled' : ''}>↓</button>${subscription(key) ? '' : `<button class="portalButton is-compact" type="button" data-priority-revoke="${esc(key)}" aria-label="${esc(t('不再允许') + ' ' + label(key))}"${readonly || busy ? ' disabled' : ''}>${esc(t('不再允许'))}</button>`}</li>`).join('')}</ol>
         ${others.length ? `<p class="paneNote">${esc(t("以下种类不会自动切换，需要明确允许："))}</p>

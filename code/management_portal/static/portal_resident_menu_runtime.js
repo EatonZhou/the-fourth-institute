@@ -98,7 +98,7 @@
               toggle.setAttribute("role", "switch"); toggle.setAttribute("aria-label", label.textContent);
               toggle.setAttribute("aria-checked", String(quotaSwitch.auto_switch_on_quota));
               toggle.disabled = disabled || !view.canEdit;
-              toggle.title = window.PortalI18n.t("开启后仅按默认帐号选择排序切换；关闭时额度不足会打开手动选择。未修改时沿用既有策略。");
+              toggle.title = window.PortalI18n.t("开启后先找同类型同模型账号，再按站点默认排序回退。关闭时，额度不足会打开手动选择。");
               toggle.onclick = async () => {
                 toggle.disabled = true;
                 try { await context.runtimeController.saveSettings({auto_switch_on_quota: !quotaSwitch.auto_switch_on_quota}); }
@@ -109,9 +109,9 @@
               const explicit = view.settings?.auto_switch_on_quota;
               const familyRole = (view.detail?.resident?.family || context.node?.family)?.role;
               const source = typeof explicit === "boolean"
-                ? (explicit ? "来源：Resident 显式开启；按站点默认排序切换。" : "来源：Resident 显式关闭；不会自动切换账号。")
+                ? (explicit ? "Resident 已开启自动切换。先找同类型同模型账号，再按站点默认排序回退。" : "来源：Resident 显式关闭；不会自动切换账号。")
                 : ["member", "router", "steward"].includes(familyRole)
-                  ? "来源：继承 Family 开关；开启时先选同种类账号，再按 Family 排序。"
+                  ? "继承 Family 开关。开启时先找同类型同模型账号，再按 Family 排序回退。"
                   : "来源：沿用既有账号选择策略。";
               const note = document.createElement("p"); note.className = "paneNote";
               note.dataset.menuQuotaSource = "1";

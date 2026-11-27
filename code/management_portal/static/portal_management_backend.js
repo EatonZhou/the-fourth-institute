@@ -1290,7 +1290,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       .sort((a, b) => a.default_priority - b.default_priority || a.id.localeCompare(b.id)).map(a => a.id);
     let order = Array.isArray(role?.backend_priority) ? [...role.backend_priority] : defaults;
     const priority = node("fieldset", undefined, {class: "backendPriority", "data-backend-priority": ""});
-    priority.append(node("legend", t("AI 后端优先级")), node("p", t("默认按从上到下的顺序选择。额度不足时，先尝试同类账号，再按此顺序切换；跨后端使用目标默认模型并保留上下文。"), {class: "backendHint"}));
+    priority.append(node("legend", t("AI 后端优先级")), node("p", t("新会话按从上到下的顺序选择。额度不足时，先选支持当前模型的同类型账号，再按此顺序回退并保留上下文。"), {class: "backendHint"}));
     const list = node("ol", undefined, {class: "backendPriorityList"});
     const other = node("div", undefined, {class: "backendPriorityOther"});
     const reset = button("恢复推荐顺序", () => { order = [...defaults]; draw(); });

@@ -69,11 +69,16 @@ def sufficient_reserve(account: Mapping[str, Any]) -> bool:
                 and quota["remaining_balance"] > 0 and not quota.get("windows"))
 
 
+def _migration_model(source, configured):
+    catalog = source.get("selection_catalog") or {}
+    return configured or (catalog.get("default_model", "") if catalog.get("fresh") is True else "")
+
+
 def fallback_account(accounts: list[dict[str, Any]], provider: str, route: str,
                      tried: list[str], *, reserve: bool = False, priority: list[str] | None = None,
                      append_subscriptions: bool = False, model: str = "", effort: str = "",
-                     priority_only: bool = False, pinned: bool = False) -> dict[str, Any]:
-    from management_portal.execution.account_selection import migration_candidates
+                     pinned: bool = False) -> dict[str, Any]:
+    from management_portal.execution.account_selection import same_model_candidates
     source = next((a for a in accounts if a.get("provider") == provider
                    and str(a.get("backend_route_id") or "") == route), {})
     if not source:
@@ -83,15 +88,15 @@ def fallback_account(accounts: list[dict[str, Any]], provider: str, route: str,
         from management_portal.execution.account_selection import quota_candidates
         own = quota_candidates(accounts, source, model=model, effort=effort, excluded=excluded)
         return own[0] if own else {}
-    if not priority_only:
-        own = migration_candidates(accounts, source, model=model, effort=effort, excluded=excluded,
-                         reserve=MIGRATION_RESERVE_PERCENT if reserve else 0)
-        if own:
-            return own[0]
+    model = _migration_model(source, model)
+    own = same_model_candidates(accounts, source, model=model, effort=effort, excluded=excluded,
+                                reserve=MIGRATION_RESERVE_PERCENT if reserve else 0)
+    if own:
+        return own[0]
     # Both site and Family orders explicitly authorize crossing kind boundaries.
     from management_portal.execution.account_selection import priority_candidates
     order = priority or []
-    if append_subscriptions and not priority_only:
+    if append_subscriptions:
         from management_portal.execution.account_migration_types import subscription_priority
         order = subscription_priority(accounts, order)
     ordered = priority_candidates(accounts, order, source=source, model=model, effort=effort,
@@ -123,7 +128,7 @@ def resident_account(record: Mapping[str, Any], accounts: list[dict[str, Any]]) 
 
 
 def migration_target_options(account: Mapping[str, Any], source_provider: str,
-                             *, source_settings: Mapping[str, Any] | None) -> dict[str, Any]:
+                             *, source_settings: Mapping[str, Any] | None, source_account=None) -> dict[str, Any]:
     """Freeze model/effort in every automatic restart, including same-kind moves."""
     from management_portal.execution.account_migration_settings import migration_settings
 
@@ -134,7 +139,7 @@ def migration_target_options(account: Mapping[str, Any], source_provider: str,
         catalog = AGENT_PROVIDERS[provider].catalog(route)
     settings = source_settings or {}
     selected = migration_settings(catalog, source_provider=source_provider,
-                                  target_provider=provider, model=str(settings.get("model") or ""),
+                                  target_provider=provider, model=_migration_model(source_account or {}, settings.get("model")),
                                   effort=str(settings.get("reasoning_effort") or ""))
     return {"target_provider": provider, "target_account": route,
             "context_strategy": "preserve", **selected}

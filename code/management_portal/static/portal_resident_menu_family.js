@@ -37,7 +37,7 @@
       const autoMigrate = context.family.family.auto_migrate !== false;
       root.innerHTML = window.PortalI18n.html`<p class="paneNote">在这里查看和调整 Family 内部成员的工作状态、Backend、账号与接单设置。</p>
         <div class="familyAutoMigrateSetting"><span>当前 AI 后端额度不足时自动转到别的后端</span><button class="portalButton residentMenuToggle" type="button" role="switch" aria-label="额度不足时自动转组" aria-checked="${autoMigrate}" data-family-auto-migrate></button></div>
-        <p class="paneNote">Family 默认开关仅在成员未显式设置时生效；成员显式开启时按站点默认排序切换。</p>
+        <p class="paneNote">成员显式开启自动切换时，先找同类型同模型账号，再按站点默认排序回退。未单独设置的成员继承 Family 开关。</p>
         <div data-family-priority></div>
         <p role="alert" data-family-settings-error hidden></p>
         <div class="residentMenuMembersHeader"><strong>成员</strong><button class="portalButton is-compact" type="button" data-family-add aria-expanded="false" aria-controls="familyMemberPicker">＋ 添加成员</button></div>

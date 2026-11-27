@@ -450,7 +450,7 @@
         ${functionBlockDutyHtml(block)}
         ${functionBlockInsideResidentsHtml(block)}
         ${roles ? window.PortalI18n.html`<div class="familyAutoMigrateSetting"><span>当前 AI 后端额度不足时自动转到别的后端</span><button class="portalButton residentMenuToggle" type="button" role="switch" aria-label="额度不足时自动转组" aria-checked="${autoMigrate}" data-family-auto-migrate${readonly ? " disabled" : ""}></button></div>` : ""}
-        ${roles ? window.PortalI18n.html`<p class="paneNote">Family 默认开关仅在成员未显式设置时生效；成员显式开启时按站点默认排序切换。</p><div data-family-priority></div>` : ""}
+        ${roles ? window.PortalI18n.html`<p class="paneNote">成员显式开启自动切换时，先找同类型同模型账号，再按站点默认排序回退。未单独设置的成员继承 Family 开关。</p><div data-family-priority></div>` : ""}
         ${functionBlockOverviewWorkflowHtml(block, readonly, taskDrafts, expandedTasks)}
         <div class="functionBlockInstanceActions">
           ${block.duty ? '<button class="portalButton" type="button" data-duty-workshop>在工坊中编辑</button>' : ''}

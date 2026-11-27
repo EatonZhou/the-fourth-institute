@@ -379,9 +379,9 @@ def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, A
             automatic = explicit or selection_mode(record) == "auto"
             target = fallback_account(accounts or [], provider, route, tried, reserve=not automatic,
                                       priority=resident_domain_port.auto_migration_priority(record),
-                                      priority_only=(record.get("execution_settings") or {}).get("auto_switch_on_quota") is True,
                                       pinned=pinned_quota(record),
-                                      append_subscriptions=bool((record.get("family") or {}).get("role")),
+                                      append_subscriptions=((record.get("execution_settings") or {}).get("auto_switch_on_quota") is not True
+                                                            and bool((record.get("family") or {}).get("role"))),
                               model=(record.get("execution_settings") or {}).get("model", ""),
                               effort=(record.get("execution_settings") or {}).get("reasoning_effort", ""))
             if not target:
@@ -393,7 +393,8 @@ def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, A
             # the same idempotent RestartSession, not a new initialization.
             try:
                 options = migration_target_options(target, provider,
-                                                   source_settings=record.get("execution_settings"))
+                                                   source_settings=record.get("execution_settings"),
+                                                   source_account=resident_account(record, accounts or []))
             except (KeyError, ValueError):
                 if not explicit:
                     raise

@@ -741,15 +741,13 @@ def _ensure_quota_switch(record: dict[str, Any], accounts: list[dict[str, Any]] 
     if submitted and resident_execution_work.execution_snapshot(job).get("status") != "queued":
         return False  # A running/claimed turn is never a quota-waiting input.
     priority = auto_migration_priority(record)
-    # A Family's inherited switch keeps its same-kind-first contract. Only
-    # the Resident's explicit switch opts into the site's strict ordering.
-    strict_priority = (record.get("execution_settings") or {}).get("auto_switch_on_quota") is True
+    explicit_switch = (record.get("execution_settings") or {}).get("auto_switch_on_quota") is True
     pinned = pinned_quota(record)
     windows = [(w.get("window"), w.get("resets_at")) for w in (account.get("quota_reserve") or {}).get("windows") or []]
     epoch = f"{account['account_id']}:{windows}:{priority}:automatic-handoff"
     if pinned:
         epoch += ":pinned-provider-model"
-    if not strict_priority:
+    if not explicit_switch:
         # Retire failures made under the old priority-only candidate policy;
         # re-evaluate queued work without replaying an admitted/running turn.
         epoch += ":same-kind-first"
@@ -760,7 +758,7 @@ def _ensure_quota_switch(record: dict[str, Any], accounts: list[dict[str, Any]] 
         if (not current or not _intake_allows_recovery(current)
                 or quota_switch_policy(current) is not True
                 or resident_account(current, accounts).get("account_id") != account["account_id"]
-                or ((current.get("execution_settings") or {}).get("auto_switch_on_quota") is True) != strict_priority
+                or ((current.get("execution_settings") or {}).get("auto_switch_on_quota") is True) != explicit_switch
                 or pinned_quota(current) != pinned
                 or auto_migration_priority(current) != priority):
             return False
@@ -782,9 +780,9 @@ def _ensure_quota_switch(record: dict[str, Any], accounts: list[dict[str, Any]] 
             payload = state.get("pending_restart")
             if not payload and state.get("switch_reason") != "migration_failed":
                 target = fallback_account(accounts, str(account["provider"]), str(account.get("backend_route_id") or ""),
-                                          state["tried_accounts"], priority=priority, priority_only=strict_priority,
+                                          state["tried_accounts"], priority=priority,
                                           pinned=pinned_quota(current),
-                                          append_subscriptions=bool((current.get("family") or {}).get("role")),
+                                          append_subscriptions=not explicit_switch and bool((current.get("family") or {}).get("role")),
                                           model=(current.get("execution_settings") or {}).get("model", ""),
                                           effort=(current.get("execution_settings") or {}).get("reasoning_effort", ""))
                 if target:
@@ -792,7 +790,7 @@ def _ensure_quota_switch(record: dict[str, Any], accounts: list[dict[str, Any]] 
                     state["tried_accounts"].append(target["account_id"])
                     try:
                         options = migration_target_options(target, str(account["provider"]),
-                                                           source_settings=current.get("execution_settings"))
+                                                           source_settings=current.get("execution_settings"), source_account=account)
                     except (KeyError, ValueError):
                         state.update(status="unavailable", switch_reason="migration_failed")
                     else:
@@ -940,7 +938,7 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
                 resume_failed = not resident_execution_work.is_active(current_job) and not bool(recovery_entry(current, failed_id).get("disabled"))
                 try:
                     options = migration_target_options(target, str(account["provider"]),
-                                                       source_settings=current.get("execution_settings"))
+                                                       source_settings=current.get("execution_settings"), source_account=account)
                 except (KeyError, ValueError):
                     migration.update(status="unavailable", switch_reason="migration_failed",
                                      reason="目标模型或推理设置不可用，原消息和会话已保留")

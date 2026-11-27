@@ -8,7 +8,7 @@ from types import SimpleNamespace
 import pytest
 
 from management_portal.execution.account_migration_settings import migration_settings
-from management_portal.execution.account_selection import migration_candidates, priority_candidates, quota_candidates
+from management_portal.execution.account_selection import same_model_candidates, priority_candidates, quota_candidates
 from management_portal.society_service import resident_account_policy as policy
 
 
@@ -50,7 +50,8 @@ def test_same_kind_fallback_keeps_strict_pinned_model_scope():
     source=account('source',{})
     fallback=account('fallback',catalog([SOL],SOL))
     exact=account('exact',catalog([LUNA],LUNA,{LUNA:['max']}))
-    assert migration_candidates([fallback,exact],source,model=LUNA,effort='max')==[exact,fallback]
+    lower = account('lower', catalog([LUNA], LUNA, {LUNA: ['high']}))
+    assert same_model_candidates([lower, fallback, exact], source, model=LUNA, effort='max') == [exact, lower]
     assert quota_candidates([fallback],source,model=LUNA,effort='max')==[]
 
 

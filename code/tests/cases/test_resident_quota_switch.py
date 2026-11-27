@@ -110,14 +110,28 @@ def test_explicit_switch_does_not_treat_unknown_or_account_fault_as_quota(switch
     assert quota.role_migration(f.record) == {}
 
 
-def test_default_order_is_strict_and_same_kind_does_not_jump_ahead(switching):
+def test_quota_switch_prefers_current_model_even_when_source_kind_is_unlisted(switching):
+    f = switching
+    other = _account("three", 90, provider="claude")
+    f.accounts.append(other)
+    f.order[:] = ["claude:subscription_login"]
+    # The source uses its default model. The peer supports it as a non-default.
+    f.accounts[1]["selection_catalog"].update(default_model="other", models=["other", "default"])
+    assert quota.ensure_role_reserve(f.record, f.accounts)
+    payload, = f.calls
+    assert (payload["target_account"], payload["model"]) == ("two", "default")
+
+
+def test_different_model_or_unconfirmed_support_yields_to_user_order(switching):
     f = switching
     other = _account("three", 50, provider="claude")
     accounts = [*f.accounts, other]
-    assert policy.fallback_account(accounts, "codex", "one", [], priority=["claude:subscription_login", "codex:subscription_login"], priority_only=True) == other
-    assert policy.fallback_account(accounts, "codex", "one", [], priority=["claude:subscription_login"], priority_only=True) == other
-    assert policy.fallback_account(accounts, "codex", "one", [], priority=[], priority_only=True) == {}
-    assert policy.fallback_account(accounts, "codex", "one", [], priority=[]) == f.accounts[1]  # legacy
+    priority = ["claude:subscription_login", "codex:subscription_login"]
+    for catalog in ({"fresh": False, "models": ["default"]},
+                    {"fresh": True, "models": ["other"], "default_model": "other"}):
+        f.accounts[1]["selection_catalog"] = catalog
+        assert policy.fallback_account(accounts, "codex", "one", [], priority=priority) == other
+        assert policy.fallback_account(accounts, "codex", "one", [], priority=[]) == {}
 
 
 def test_pinned_quota_restart_preserves_model_and_reuses_operation(switching):
@@ -136,6 +150,7 @@ def test_pinned_quota_restart_preserves_model_and_reuses_operation(switching):
 def test_empty_default_order_has_exact_manual_hint_and_changed_state_event(switching):
     f = switching
     f.order.clear()
+    f.accounts[1]["enabled"] = False
     repository = conversation.get_repository()
     before = repository.events_after(f.record["resident_id"], 0)
     assert quota.ensure_role_reserve(f.record, f.accounts)

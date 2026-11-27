@@ -46,14 +46,25 @@ def test_explicit_disabled_never_migrates_even_when_legacy_selection_is_auto(exh
     assert f.calls == []
 
 
-def test_failed_work_obeys_empty_default_order_and_projects_manual(exhausted):
+def test_failed_work_with_no_match_or_fallback_projects_manual(exhausted):
     f = exhausted
     f.order.clear()
+    f.accounts[1]["enabled"] = False
     assert recovery.reconcile_failed_work([_record(f.rid)]) == 0
     projected = family_quota.quota_switch_state(_record(f.rid), execution_gate={"state": "closed", "reason": "quota_used_up"})
     assert projected["reason"] == "default_backends_unavailable"
     assert projected["message"] == family_quota.NO_DEFAULT_BACKEND
     assert f.calls == []
+
+
+def test_failed_work_keeps_model_before_configured_backend(exhausted):
+    f = exhausted
+    f.order[:] = ["claude:subscription_login"]
+    f.accounts.append(_account("claude", "other", 95))
+    f.accounts[1]["selection_catalog"].update(default_model="other", models=["other", "default"])
+    assert recovery.reconcile_failed_work([_record(f.rid)]) == 1
+    payload, = f.calls
+    assert (payload["target_account"], payload["model"]) == ("two", "default")
 
 
 def test_failed_work_does_not_skip_later_default_candidates_after_two_switches(exhausted):
