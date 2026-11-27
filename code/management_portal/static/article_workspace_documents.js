@@ -421,15 +421,21 @@
         const revision = previous.revision;
         let payload = null;
         let diskVersion = "deleted";
-        if (state.filesByPath.has(path)) {
+        if (!state.fileListingComplete || state.filesByPath.has(path)) {
           const url = `/api/articles/${encodeURIComponent(articleId)}/file?path=${encodeURIComponent(path)}`;
-          payload = await request(`${url}&meta=1`, { signal });
-          if (!isCurrent()) return false;
-          diskVersion = `${payload.version || ""}:${payload.size ?? ""}`;
-          // Unchanged files keep their model, undo history and cursor intact.
-          if (payload.version && diskVersion === previous.diskVersion) continue;
-          if (documentIsDirty(previous) && diskVersion === previous.externalChangeVersion) continue;
-          if (window.PortalPreviewContract.isTextDocument(payload)) payload = { ...payload, ...await request(url, { signal }) };
+          try {
+            payload = await request(`${url}&meta=1`, { signal });
+            if (!isCurrent()) return false;
+            diskVersion = `${payload.version || ""}:${payload.size ?? ""}`;
+            // Unchanged files keep their model, undo history and cursor intact.
+            if (payload.version && diskVersion === previous.diskVersion) continue;
+            if (documentIsDirty(previous) && diskVersion === previous.externalChangeVersion) continue;
+            if (window.PortalPreviewContract.isTextDocument(payload)) payload = { ...payload, ...await request(url, { signal }) };
+          } catch (error) {
+            if (Number(error.status || error.statusCode) !== 404) throw error;
+            payload = null;
+            diskVersion = "deleted";
+          }
         }
         if (!isCurrent()) return false;
         captureActiveDocument();

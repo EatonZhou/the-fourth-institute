@@ -30,7 +30,7 @@ const { portalWorkbenchScripts, STATIC } = require('./portal_workbench_scripts.c
         reads.push(url); const parsed = new URL(url, location.href), suffix = parsed.pathname.split('/workspace')[1];
         if (suffix === '/tree') {
           const directory = parsed.searchParams.get('path');
-          return {entries: directory === 'docs' ? [{name: 'guide.md', path: 'docs/guide.md', kind: 'file'}]
+          return {path: directory, next_cursor: '', entries: directory === 'docs' ? [{name: 'guide.md', path: 'docs/guide.md', kind: 'file'}]
             : [{name: 'docs', path: 'docs', kind: 'directory'}, {name: '<script>.py', path: '<script>.py', kind: 'file'}]};
         }
         if (suffix === '/search') {

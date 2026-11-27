@@ -955,13 +955,16 @@
         const result = await execute("GetResident", { resident_id: required(residentId, "resident_id") });
         return workspaceMap({ ...(result?.resident || {}), resident_id: residentId });
       },
-      async listDirectory(directoryId, relPath = "") {
+      async listDirectory(directoryId, relPath = "", { cursor = "" } = {}) {
         const rootId = required(directoryId, "directory_id");
-        const listing = await execute("ReadResource", { address: fileAddress(rootId, relPath) });
+        const address = fileAddress(rootId, relPath);
+        const listing = cursor ? await execute("ListResourceFiles", { address, cursor })
+          : await execute("ReadResource", { address });
         return {
           directory_id: rootId, path: trimSlashes(relPath) ? `${rootId}/${trimSlashes(relPath)}` : rootId,
           entries: (listing.entries || []).map(entry => workspaceEntry(rootId, entry)),
-          truncated: Boolean(listing.truncated), hidden_count: Number(listing.hidden_count || 0),
+          truncated: Boolean(listing.next_cursor || listing.truncated), hidden_count: Number(listing.hidden_count || 0),
+          next_cursor: listing.next_cursor || "",
         };
       },
       async folder(residentId) {
@@ -969,7 +972,8 @@
         const roots = await Promise.all(workspace.roots.map(async root => {
           try {
             const listing = await client.listDirectory(root.directory_id);
-            return { ...root, entries: listing.entries, truncated: listing.truncated, hidden_count: listing.hidden_count, children_loaded: true };
+            return { ...root, entries: listing.entries, truncated: listing.truncated, hidden_count: listing.hidden_count,
+              next_cursor: listing.next_cursor, children_loaded: true };
           } catch (_) {
             // A root whose folder is missing or unreadable stays listed, empty.
             return { ...root, exists: false, has_children: false, entries: [] };

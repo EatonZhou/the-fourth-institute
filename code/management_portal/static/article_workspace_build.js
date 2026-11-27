@@ -182,7 +182,8 @@
         && (!configuredCandidates || configuredCandidates.has(String(entry.path || "")))
       ));
       if (!texFiles.some(entry => entry.path === settings.primary_file)) {
-        texFiles.unshift({ path: settings.primary_file, invalidPrimary: true });
+        texFiles.unshift({ path: settings.primary_file,
+          invalidPrimary: state.fileListingComplete || Boolean(configuredCandidates && !configuredCandidates.has(settings.primary_file)) });
       }
       $("articlePrimaryFile").innerHTML = texFiles.map(entry => window.PortalI18n.html`<option value="${esc(entry.path)}" ${entry.path === settings.primary_file ? "selected" : ""} ${entry.invalidPrimary ? "disabled" : ""}>${esc(entry.path)}${entry.invalidPrimary ? window.PortalI18n.t("（不是独立主文档）") : ""}</option>`).join("");
       $("articleTexLive").textContent = settings.tex_live_version || window.PortalI18n.t("TeX Live");
@@ -310,7 +311,7 @@
         line: Number(item.line || 1),
         source: "LaTeX build",
       };
-      if (path && state.filesByPath.has(path)) {
+      if (path && (!state.fileListingComplete || state.filesByPath.has(path))) {
         await openArticleFile(path, {
           line: Number(item.line || 1),
           column: Number(item.column || 1),

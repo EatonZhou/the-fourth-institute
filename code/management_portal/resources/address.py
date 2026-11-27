@@ -70,6 +70,7 @@ class ResourceResolver:
     read_content: ContentHandler | None = None
     read_content_range: ContentHandler | None = None
     query: QueryHandler | None = None
+    list_files: QueryHandler | None = None
 
 
 class ResolverRegistry:

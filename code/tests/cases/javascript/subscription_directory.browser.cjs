@@ -22,7 +22,7 @@ function check(name, actual, expected) { assert.deepEqual(actual, expected, name
     await page.goto('http://account.fixture.invalid');
     await page.evaluate(() => {
       window.PortalI18n = {t: text => text};
-      window.directoryCalls = []; window.lateResponses = {}; window.denyChild = false;
+      window.directoryCalls = []; window.lateResponses = {}; window.denyChild = false; window.failPage = true;
       window.PortalInstructionClient = {execute: async name => {
         switch (name) {
           case 'ListProviders': return {providers: [{provider: 'codex', title: 'Codex', kinds: ['subscription_login'], account_directory_prefix: '/host/accounts/codex/'}]};
@@ -36,12 +36,18 @@ function check(name, actual, expected) { assert.deepEqual(actual, expected, name
         const query = new URL(url, location.href).searchParams;
         if (query.get('action') !== 'browse') throw Error('Unexpected directory action');
         const p = query.get('path') || '/host';
-        window.directoryCalls.push({path: p, method: options.method});
+        const cursor = query.get('cursor');
+        window.directoryCalls.push({path: p, cursor, method: options.method});
+        if (p === '/truncated' && cursor === 'first' && window.failPage) {
+          window.failPage = false;
+          return {response: {ok: false}, payload: {error: '续读暂时失败'}};
+        }
+        if (p === '/truncated' && cursor === 'late') await new Promise(resolve => { window.lateResponses.page = resolve; });
         // Deliberately ignore AbortSignal: stale results must still be discarded.
         if (p === '/slow' || p === '/closed-late') await new Promise(resolve => { window.lateResponses[p] = resolve; });
         if (p === '/missing' || p === '/denied' || (window.denyChild && p === '/host/alpha')) return {response: {ok: false}, payload: {error: p === '/missing' ? '主机目录不存在' : '主机目录不可读', code: 'forbidden'}};
-        const names = p === '/host' ? ['alpha', 'beta', 'gamma', ...Array.from({length: 25}, (_, i) => `project-${String(i).padStart(2, '0')}`)] : p === '/host/alpha' ? ['nested'] : p === '/' ? ['host'] : p === '/truncated' ? ['visible'] : [];
-        return {response: {ok: true}, payload: {path: p, parent: p === '/' ? '/' : p.slice(0, p.lastIndexOf('/')) || '/', directories: names.map(name => ({name, path: (p === '/' ? '' : p) + '/' + name})), roots: [{name: '/', path: '/'}], truncated: p === '/truncated'}};
+        const names = p === '/host' ? ['alpha', 'beta', 'gamma', ...Array.from({length: 25}, (_, i) => `project-${String(i).padStart(2, '0')}`)] : p === '/host/alpha' ? ['nested'] : p === '/' ? ['host'] : p === '/truncated' ? (cursor === 'late' ? ['last'] : cursor === 'first' ? [] : ['visible']) : [];
+        return {response: {ok: true}, payload: {path: p, parent: p === '/' ? '/' : p.slice(0, p.lastIndexOf('/')) || '/', directories: names.map(name => ({name, path: (p === '/' ? '' : p) + '/' + name})), roots: [{name: '/', path: '/'}], truncated: p === '/truncated' && cursor !== 'late', next_cursor: p === '/truncated' ? (cursor === 'late' ? '' : cursor === 'first' ? 'late' : 'first') : ''}};
       }};
     });
     for (const name of ['portal_state', 'portal_ui_primitives', 'portal_overlay', 'portal_ui']) await page.addScriptTag({url: `/static/${name}.js`});
@@ -98,7 +104,24 @@ function check(name, actual, expected) { assert.deepEqual(actual, expected, name
     check('late read cannot erase address editing', await editingPath.inputValue(), '/manual'); check('edited address not selectable before read', await button('选择文件夹').isDisabled(), true);
     await editingPath.press('Enter'); await loaded('/manual');
     await navigate('/empty'); await loaded('/empty'); check('empty directory feedback', await feedback.textContent(), '此目录没有子目录。');
-    await navigate('/truncated'); await loaded('/truncated'); check('truncated feedback', await feedback.textContent(), '目录较多，仅显示部分；可输入完整路径。');
+    await navigate('/truncated'); await loaded('/truncated');
+    await button('加载更多').click();
+    await feedback.filter({hasText: '续读暂时失败'}).waitFor();
+    check('own first page survives a continuation error', await option('visible').count(), 1);
+    await button('重试加载更多').click();
+    await button('加载更多').waitFor();
+    check('an empty host page still offers continuation', await option('visible').count(), 1);
+    await button('加载更多').click();
+    await page.waitForFunction(() => !!window.lateResponses.page);
+    await button('主目录').click(); await loaded('/host');
+    await page.evaluate(() => {window.lateResponses.page(); delete window.lateResponses.page;});
+    await navigate('/truncated'); await loaded('/truncated');
+    check('changing directory discards a late continuation and starts again', await option('last').count(), 0);
+    await button('加载更多').click(); await button('加载更多').waitFor();
+    await button('加载更多').click(); await page.waitForFunction(() => !!window.lateResponses.page);
+    await page.evaluate(() => window.lateResponses.page());
+    await option('last').waitFor();
+    check('last page removes the continuation action', await button('加载更多').count(), 0);
     await button('主目录').click(); await loaded('/host'); await option('alpha').click(); await page.evaluate(() => {window.denyChild = true;});
     await button('选择文件夹').click(); await feedback.filter({hasText: '主机目录不可读'}).waitFor();
     check('confirm rechecks selected directory', await field.inputValue(), '/host'); check('failed confirm disables commit', await button('选择文件夹').isDisabled(), true);

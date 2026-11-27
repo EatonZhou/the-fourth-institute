@@ -1418,6 +1418,9 @@
     "ReadResource": {
       "a": "@viewer"
     },
+    "ListResourceFiles": {
+      "a": "@viewer"
+    },
     "ReleaseResidentSummaryJob": {
       "a": "@free",
       "r": "@portal"

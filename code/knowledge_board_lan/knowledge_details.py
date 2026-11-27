@@ -21,8 +21,6 @@ from knowledge_board_lan.knowledge_source import (
 )
 from skill_board_lan import skill_backend
 
-_ARTICLE_DETAIL_MAX_FILES = 2000
-
 
 def _indexed_item_files(
     record: dict,
@@ -98,8 +96,6 @@ def _candidate_article_files(root: Path) -> list[Path]:
             except ValueError:
                 continue
             candidates.append(resolved)
-            if len(candidates) >= _ARTICLE_DETAIL_MAX_FILES:
-                return candidates
     return candidates
 
 

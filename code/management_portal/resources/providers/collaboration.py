@@ -150,11 +150,15 @@ def install_resolver(service: "ResourceService") -> None:
             raise ValueError(f"{resolved.get('address')} has no byte range")
         return folder_files.read_content_range(resolved, _folder_root(resolved), start=start, end=end)
 
+    def list_files(resolved, *, cursor=None, limit=200, **_context):
+        return folder_files.list_files(resolved, _folder_root(resolved), cursor=cursor, limit=limit)
+
     service.register_resolver(
         sorted(READABLE_TYPES),
         resolve,
         read_content=_read_content,
         read_content_range=read_range,
+        list_files=list_files,
     )
 
 

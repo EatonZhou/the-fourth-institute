@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 45
+  number: 47
   created_at: "2026-09-01"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-19T12:51:32Z"
+  updated_at: "2026-11-27T16:16:23Z"
   updated_by:
     user: ""
-    agent: "resident_62dbdb2288fb"
+    agent: "resident_6199a7a36480"
 importance: 9
 metaness: 2
 ai_generated: false
@@ -67,7 +67,7 @@ Repo 也可以明确登记为不附带 Git 工作副本的导出源码树：它�
 - **Repo 登记**：PostgreSQL 资源登记表 `repo` 集合中每个 Repo 一条记录，采用 `tfi.repo.v1`，保存来源类型、内容根，以及适用时的 checkout、远端、所属 Project、简介、推送策略和 SSH 私钥引用。
 - **远端（remote）**：登记的远程仓库。`fetch` 取回远端信息，`pull` 把远端变化合并到当前分支，`push` 把本地提交发送到远端。
 - **推送策略**：登记中的开关，决定自动提交之后是否继续 push。它不绕过远端自己的权限。
-- **Git 凭据**：每位 Portal 用户私人保存的远端认证信息（HTTPS 的访问令牌或 SSH 口令），新建格式为 `tfi.repo-git-credential.v1`，认证解密后仅接受该精确格式，不改验密算法或回写原 token。凭据加密目录由 `PORTAL_REPO_CREDENTIAL_ROOT` 配置，缺省为 `portal_paths` 的 `secrets_dir/repo-git-credentials`；密钥路径由 `PORTAL_REPO_CREDENTIAL_KEY_PATH` 配置，缺省为 `secrets_dir/repo-git-credentials.master-key`。环境变量由公共产品环境读取器只按规范的 `PORTAL_*` 名称读取，任何接口都不返回其中的秘密内容，只返回凭据 ID 和脱敏的匹配信息。
+- **Git 凭据**：每位 Portal 用户私人保存的远端认证信息（HTTPS 的访问令牌或 SSH 口令），新建格式为 `tfi.repo-git-credential.v1`，认证解密后仅接受该精确格式，不改验密算法或回写原 token。凭据加密目录为 `portal_paths` 的 `secrets_dir/repo-git-credentials`；密钥路径为 `secrets_dir/repo-git-credentials.master-key`，二者不由环境变量配置。任何接口都不返回其中的秘密内容，只返回凭据 ID 和脱敏的匹配信息。
 - **Git 常用词**：分支（branch）是一条可以切换的提交线；标签（tag）标记一个提交；`HEAD` 是当前检出的位置；diff 是文件变化；blame 逐行显示最后修改它的提交和作者；已跟踪（tracked）文件是 Git 在管理的文件，未跟踪（untracked）文件是新出现、还没加入 Git 的文件。
 
 ## 内容来源与稳定文件地址
@@ -150,7 +150,7 @@ Markdown 预览即时显示当前编辑草稿；相对图片和内部文件链�
 
 LaTeX 预览有明确的主文件输入、编译器选择和编译动作。打开包含章节的 tex 文件时可指定真正的主文件；用户手动选定的主文件在切换章节时保留。编译前等待全部源码草稿保存完成，存在冲突或保存失败则不发起编译。编译器留空时从主文件 TeX program 提示推断，缺省 pdflatex。界面区分保存、编译和 PDF 加载，显示编译日志；旧的异步结果不得覆盖另一个文件或已销毁面板。
 
-Repo 与 Article 使用同一个 LaTeX 构建实现：调用方分别提供源目录、主文件、构建目录和报告持久化，不为 Repo 注册 Article。Repo 缓存按 Repo、内容根、主文件和编译器隔离，源码副本只复制变化的普通文件，不跟随符号链接；工作目录为主文件所在目录，图片、章节及 BibTeX 引用保持相对路径含义。辅助文件与生成 PDF 留在缓存，用户 checkout 不写编译产物。保留增量构建依赖，不变的稿件不强制重建；显式 from_scratch 清理构建缓存。构建不执行项目 rc、不启用 shell-escape，BibTeX 输出只授权到本次构建目录。
+Repo 与 Article 使用同一个 LaTeX 构建实现：调用方分别提供源目录、主文件、构建目录和报告持久化，不为 Repo 注册 Article。共享机制位于 `management_common/latex_*`，不依赖 Article 登记、设置或报告存储；两类适配器分别持有独立 `BuildRuntime`，同名构建和停止请求不共享活动状态。Repo 继续拥有快照、缓存租约、权限和报告持久化；其预检 `project_ids` 保留空列表，不为源码副本查找 Article 或 Project。Repo 缓存按 Repo、内容根、主文件和编译器隔离，源码副本只复制变化的普通文件，不跟随符号链接；工作目录为主文件所在目录，图片、章节及 BibTeX 引用保持相对路径含义。辅助文件与生成 PDF 留在缓存，用户 checkout 不写编译产物。保留增量构建依赖，不变的稿件不强制重建；显式 from_scratch 清理构建缓存。构建不执行项目 rc、不启用 shell-escape，BibTeX 输出只授权到本次构建目录。
 
 构建失败保留上次有效 PDF，并返回本次错误日志；可读 PDF 与本次编译成功分别表示。预览读取缓存与 PDF 需要 viewer，触发编译需要 contributor，导出源码同样可用隔离编译而不获得文件写入或 Git 能力。PDF 地址按主文件稳定，前端附 compiled_at 版本以确保新产物替换旧预览。未编译时显示空态；缓存状态读取不触发构建。
 
@@ -182,7 +182,7 @@ Repo 与 Article 使用同一个 LaTeX 构建实现：调用方分别提供源�
 
 - Workspace 概览包含 `source_kind` 与 `capabilities`。`browse_files` 表示目录和文件浏览；`git` 表示 Git 查询及操作；`write_files` 同时受来源与目录写权限约束；`search_files` 和 `statistics` 表示当前以 Git 文件清单计算的可选查找与统计。导出源码仅声明 `browse_files: true`，其余为 false。页面先读取概览，再请求允许的标签数据，不向不支持的查找或统计接口发请求。
 - Git 概览继续包含当前分支、工作区状态、分支与标签、脱敏的远端地址、推送策略和最近提交；Code 页显示目录后异步加载短时缓存的 About 统计。导出概览和目录不调用 Git，`head`、`status` 为 null，分支、标签、远端为空；目录直接枚举 canonical 根内内容，文件只返回内容及文件元信息，`editable: false`。两类目录接口都不等待统计扫描。
-- 文件树每次最多返回 1,000 个条目。文件读取只返回 2 MiB 以内的文本，二进制文件和超限文件不按文本返回。文件名查找最多返回 120 条结果，返回匹配路径与所在目录，不返回内容行号或摘录。
+- 文件树默认每页返回 1,000 个直接子项；`cursor` 与正整数 `limit` 支持续读，返回 `entries`、`next_cursor` 与 `truncated`，末页游标为空，无目录总数上限。目录在前，以名称 casefold 和原名称排序，游标绑定 Repo、相对目录和目录身份；每页重核当前权限。新增名称在已翻过的键之前时需刷新首枚举。页面按需“加载更多”，保留已读条目及失败重试，切换目录后迟到响应不覆盖当前树。文件读取只返回 2 MiB 以内的文本，二进制文件和超限文件不按文本返回。文件名查找最多返回 120 条结果，返回匹配路径与所在目录，不返回内容行号或摘录。
 - 提交列表支持按路径、数量、偏移和版本读取；提交详情和 diff 都有大小限制，diff 超过 2 MiB 时截断并标记 truncated，响应保留可用部分。
 - 服务先规范化相对路径，拒绝绝对路径、`..`、反斜杠、`.git`，以及解析后位于内容根之外或经目录别名进入 `.git` 的目标。符号链接自身最多返回链接元信息，不读取目标字节；README 不跟随符号链接；普通文件入口拒绝设备、管道等特殊文件。
 
@@ -214,7 +214,7 @@ Windows只读文件在创建含内容的保存临时文件前拒绝写入，并�
 - 有未提交改动或 Git 冲突、切换不安全时，切换失败，工作区保持原样。
 - 同步只针对登记中的远端；页面和错误信息中的远端地址都经过脱敏。
 - **凭据匹配**：服务只把匹配的凭据交给这一次 Git 命令。HTTPS 按协议、主机和用户名匹配，有用户名时优先完全匹配；远端地址没有用户名时，只有该主机恰好有一条候选凭据才自动使用。SSH 通过登记的私钥引用执行，私钥内容不会出现在命令输出中。
-- **缺少凭据**：返回 409，错误码 `git_auth_required`，附带协议、主机、可选用户名和提示。页面打开认证浮层，用户输入令牌或口令并选择是否保存。保存后，用户需要自己重新点击原来的操作，服务不会自动重试。
+- **缺少凭据**：返回 409，错误码 `git_auth_required`，附带协议、主机、可选用户名和提示。页面打开认证浮层，用户输入令牌或口令并选择是否保存；用户在浮层中确认后，页面把该凭据（`credential`，以及是否记住的 `remember_credential`）随原来的 `sync` 请求再提交一次，只有勾选记住才持久保存。服务端不会自行重试。
 - **认证被拒**：远端明确拒绝时，服务把该凭据标为无效并清除保存的秘密内容，之后不再自动使用它。
 - **删除凭据**：按凭据 ID 删除，重复删除返回同样的结果。
 
@@ -269,7 +269,7 @@ Repo 页面、资源地址跳转及其配套 HTTP API 接受已登录 User 或 P
 | --- | --- |
 | `GET /api/repos/automation/status` | 指定或全部可见 Repo 的自动提交状态和最近变化 |
 | `GET /api/repos/{repo_id}/workspace` | Workspace 概览 |
-| `GET /api/repos/{repo_id}/workspace/tree?path=` | 目录内容 |
+| `GET /api/repos/{repo_id}/workspace/tree?path=&cursor=&limit=` | 目录直接子项及续读游标，默认单页 1000 |
 | `GET /api/repos/{repo_id}/workspace/stats?path=` | Code 页 About 统计（语言、代码行数、工作树大小） |
 | `GET /api/repos/{repo_id}/workspace/file?path=` | 文件内容 |
 | `GET /api/repos/{repo_id}/workspace/search?q=&limit=` | 搜索 |
@@ -295,6 +295,6 @@ Repo 页面、资源地址跳转及其配套 HTTP API 接受已登录 User 或 P
 | `POST /api/repos/{repo_id}/workspace/branch` | 新建或切换分支 |
 | `POST /api/repos/{repo_id}/workspace/sync` | fetch、pull 或 push |
 | `POST /api/repos/{repo_id}/workspace/discard` | 丢弃改动 |
-| `POST /api/repos/{repo_id}/workspace/credentials` | 保存或删除凭据 |
+| `POST /api/repos/{repo_id}/workspace/credentials` | 删除凭据（`operation: delete`）；保存凭据随认证后的 `sync` 请求提交 |
 
 登记、修改登记和撤销登记使用资源指令 `RegisterResource`（`resource_type: repo`）、`UpdateResource`、`UnregisterResource`，不使用 HTTP 地址。

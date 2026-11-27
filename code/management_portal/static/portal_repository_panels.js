@@ -37,11 +37,11 @@
 
   function createFiles(options) {
     const view = base(options, "files", "文件树");
-    const expanded = new Set(), directories = new Map(), pending = new Map();
-    let revision = 0, loaded = false, refreshing = null, selected = "";
+    const expanded = new Set(), directories = new Map();
+    let loaded = false, refreshing = null, selected = "";
     function render() {
       if (view.destroyed()) return;
-      const focusPath = view.root.contains(document.activeElement) ? document.activeElement?.dataset.repositoryPath : null;
+      const focus = view.body.contains(document.activeElement) ? document.activeElement.dataset : null;
       const scrollTop = view.body.scrollTop;
       const branch = path => {
         const data = directories.get(path);
@@ -50,48 +50,81 @@
           const isDirectory = entry.kind === "directory", open = expanded.has(entry.path);
           return `<li><button type="button" class="repositoryFileRow${selected === entry.path ? " is-selected" : ""}" data-repository-path="${escape(entry.path)}" data-repository-kind="${escape(entry.kind)}" ${isDirectory ? `aria-expanded="${open}"` : ""} title="${escape(entry.path)}"><span class="repositoryTreeArrow" aria-hidden="true">${isDirectory ? (open ? "▾" : "▸") : ""}</span><span data-portal-icon="${isDirectory ? "folder" : "file"}" aria-hidden="true"></span><span class="repositoryFileName">${escape(entry.name)}</span>${entry.status ? `<small>${escape(entry.status)}</small>` : ""}</button>${isDirectory && open ? `<ul>${branch(entry.path)}</ul>` : ""}</li>`;
         }).join("");
-        return (entries || `<li class="repositoryPanelHint">${escape(t("空目录"))}</li>`) + (data.truncated ? `<li class="repositoryPanelHint">${escape(t("目录条目已截断，可使用文件名搜索查找。"))}</li>` : "");
+        const empty = !entries && data.loaded && !data.nextCursor ? `<li class="repositoryPanelHint">${escape(t("空目录"))}</li>` : "";
+        const label = data.loading ? "正在加载…" : data.error ? (data.loaded ? "重试加载更多" : "重试") : "加载更多";
+        const actions = data.loading || data.error || data.nextCursor ? `<li class="repositoryPanelHint">
+          <button class="portalButton is-compact" type="button" data-repository-page="${escape(path)}" aria-disabled="${data.loading}">${escape(t(label))}</button>
+          ${data.error ? `<span role="status">${escape(data.error)}</span>` : ""}
+        </li>` : "";
+        return entries + empty + actions;
       };
       view.body.innerHTML = `<ul class="repositoryFileTree" aria-label="${escape(t("仓库文件"))}">${branch("")}</ul>`;
       icons(view.body); view.body.scrollTop = scrollTop;
-      if (focusPath != null) Array.from(view.body.querySelectorAll("[data-repository-path]")).find(el => el.dataset.repositoryPath === focusPath)?.focus({ preventScroll: true });
+      if (!focus) return;
+      const find = (attribute, value) => view.body.querySelector(`[${attribute}="${CSS.escape(value)}"]`);
+      if (focus.repositoryPage != null) {
+        (find("data-repository-page", focus.repositoryPage) || find("data-repository-path", focus.repositoryPage)
+          || view.body.querySelector("[data-repository-path]"))?.focus({ preventScroll: true });
+      } else if (focus.repositoryPath != null) find("data-repository-path", focus.repositoryPath)?.focus({ preventScroll: true });
     }
-    function load(path) {
-      if (pending.has(path)) return pending.get(path);
-      const token = revision;
-      const request = view.get(`/tree?path=${encodeURIComponent(path)}`).then(data => {
-        if (view.destroyed() || token !== revision) return;
-        directories.set(path, data); render();
-      }).catch(error => { if (token === revision) { view.fail(error); directories.set(path, { entries: [] }); render(); } }).finally(() => {
-        if (pending.get(path) === request) pending.delete(path);
+    function load(path, { more = false } = {}) {
+      const data = directories.get(path) || { entries: [], nextCursor: "", loaded: false, loading: false, error: "" };
+      if (data.loading || (data.loaded && (!more || !data.nextCursor))) return;
+      const cursor = more ? data.nextCursor : "";
+      data.loading = true;
+      data.error = "";
+      directories.set(path, data);
+      render();
+      const query = new URLSearchParams({ path });
+      if (cursor) query.set("cursor", cursor);
+      const current = () => !view.destroyed() && directories.get(path) === data;
+      return view.get(`/tree?${query}`).then(page => {
+        if (!current()) return;
+        if (page.path !== path || (cursor && page.next_cursor === cursor)) throw new Error(t("无法继续读取目录。"));
+        const known = new Set(data.entries.map(entry => entry.path));
+        data.entries.push(...page.entries.filter(entry => !known.has(entry.path)));
+        data.nextCursor = page.next_cursor || "";
+        data.loaded = true;
+      }).catch(error => {
+        if (!current()) return;
+        data.error = message(error);
+        options.onError?.(error);
+      }).finally(() => {
+        if (!current()) return;
+        data.loading = false;
+        render();
+        if (data.error) return;
+        const children = data.entries.filter(entry =>
+          entry.kind === "directory" && expanded.has(entry.path) && !directories.has(entry.path));
+        return Promise.all(children.map(entry => load(entry.path)));
       });
-      pending.set(path, request); return request;
     }
     function refresh() {
       if (view.destroyed()) return Promise.resolve();
       if (refreshing) return refreshing;
-      revision++; pending.clear(); view.state(t("正在读取文件树…"));
-      refreshing = (async () => {
-        await load("");
-        // Only reload expanded descendants that still exist in their parents.
-        for (const path of [...expanded].sort((a, b) => a.split("/").length - b.split("/").length)) {
-          const parent = path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";
-          if (directories.get(parent)?.entries?.some(item => item.path === path && item.kind === "directory")) await load(path);
-          else { expanded.delete(path); directories.delete(path); }
-        }
-        loaded = true; if (!view.status.classList.contains("is-error")) view.state(); render();
-      })().finally(() => { refreshing = null; });
+      directories.clear();
+      refreshing = load("").finally(() => { loaded = true; refreshing = null; });
       return refreshing;
     }
     view.listen(view.root, "click", event => {
       const action = event.target.closest("[data-repository-action]");
       if (action?.dataset.repositoryAction === "refresh") { void refresh(); return; }
+      const page = event.target.closest("[data-repository-page]");
+      if (page) {
+        const path = page.dataset.repositoryPage;
+        void load(path, { more: directories.get(path)?.loaded === true });
+        return;
+      }
       const row = event.target.closest("[data-repository-path]");
       if (!row) return;
       const path = row.dataset.repositoryPath;
       if (row.dataset.repositoryKind === "directory") {
-        if (expanded.has(path)) expanded.delete(path);
-        else { expanded.add(path); if (!directories.has(path)) void load(path); }
+        if (expanded.delete(path)) {
+          for (const child of directories.keys()) if (child === path || child.startsWith(`${path}/`)) directories.delete(child);
+        } else {
+          expanded.add(path);
+          void load(path);
+        }
         render(); view.changed();
       } else { selected = path; render(); view.changed(); void view.call(() => options.onOpenFile?.(path)); }
     });
@@ -100,7 +133,7 @@
       show() { view.show(); if (!loaded) void refresh(); }, hide: view.hide,
       snapshot: () => ({ expanded: [...expanded], selected, scrollTop: view.body.scrollTop }),
       async restore(value = {}) { expanded.clear(); (value.expanded || []).filter(path => typeof path === "string").forEach(path => expanded.add(path)); selected = String(value.selected || ""); await refresh(); if (!view.destroyed()) view.body.scrollTop = Number(value.scrollTop || 0); },
-      destroy() { revision++; pending.clear(); view.destroy(); },
+      destroy() { directories.clear(); view.destroy(); },
     });
   }
 

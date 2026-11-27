@@ -65,7 +65,11 @@ class RepoHttp:
                         return http_files._serve_media_file(request, pdf, 'application/pdf')
                 result = repo_workspace_latex.repo_latex_status(repo_id, path, compiler=compiler)
             elif action == 'tree':
-                result = repo_workspace_files.list_repo_tree(repo_id, str((qs.get('path') or [''])[0]))
+                result = repo_workspace_files.list_repo_tree(
+                    repo_id, str((qs.get('path') or [''])[0]),
+                    cursor=(qs.get('cursor') or [None])[0],
+                    limit=int((qs.get('limit') or ['1000'])[0]),
+                )
             elif action == 'stats':
                 result = repo_workspace_statistics.repo_statistics(repo_id, str((qs.get('path') or [''])[0]))
             elif action == 'file':

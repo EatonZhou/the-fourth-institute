@@ -320,6 +320,11 @@ class ResourceServiceClient:
         )
         return dict(result or {})
 
+    def list_files(self, address, *, actor="", cursor=None, limit=200):
+        return self._exchange('resource.list_files', {
+            'address': address, 'actor': actor, 'cursor': cursor, 'limit': limit,
+        })
+
     def read_content(
         self,
         address: str | Mapping[str, str],

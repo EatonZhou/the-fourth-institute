@@ -20,6 +20,7 @@ from management_portal.repo_workspace_checkout import (
 )
 from management_portal.repo_workspace_git import _git, _git_bytes
 from management_portal.repo_workspace_state import _commit_record, _head_commit, _status_payload
+from management_portal.resources.directory_pagination import directory_key, directory_scope, paginate
 
 
 MAX_TEXT_BYTES = 2 * 1024 * 1024
@@ -138,6 +139,9 @@ def _visible_child_names(checkout: Path, directory: str) -> set[str]:
 def list_repo_tree(
     repo_id: str,
     path: str = "",
+    *,
+    cursor: str | None = None,
+    limit: int = MAX_TREE_ENTRIES,
 ) -> dict[str, Any]:
     record, checkout = _source_root(repo_id)
     git = _source_capabilities(record, checkout)["git"]
@@ -146,35 +150,27 @@ def list_repo_tree(
     if directory.is_symlink() or not directory.is_dir():
         raise ValueError(f"not a directory: {relative}")
     visible_names = _visible_child_names(checkout, relative) if git else None
-    children = sorted(
-        [
-            value
-            for value in directory.iterdir()
-            if value.name != ".git" and (visible_names is None or value.name in visible_names)
-        ],
-        key=lambda value: (
-            not (not value.is_symlink() and value.is_dir()),
-            value.name.casefold(),
-        ),
-    )
-    truncated = len(children) > MAX_TREE_ENTRIES
-    children = children[:MAX_TREE_ENTRIES]
+    def candidates():
+        for child in directory.iterdir():
+            if child.name == ".git" or (visible_names is not None and child.name not in visible_names):
+                continue
+            try:
+                info = child.lstat()
+            except FileNotFoundError:
+                continue
+            kind = "symlink" if stat.S_ISLNK(info.st_mode) else "directory" if stat.S_ISDIR(info.st_mode) else "file"
+            yield child, info, kind
+
+    page = paginate(candidates(), scope=directory_scope(repo_id, relative, directory.stat()),
+                    cursor=cursor, limit=limit,
+                    key=lambda row: directory_key(row[0].name, row[2] == "directory"))
+    children = [row[0] for row in page["entries"]]
     commit_map = _latest_commits_by_child(checkout, relative) if git else {}
     status = _status_payload(checkout) if git else None
     changed = status["changes"] if status else []
     entries: list[dict[str, Any]] = []
-    for child in children:
+    for child, info, kind in page["entries"]:
         child_relative = f"{relative.rstrip('/')}/{child.name}".strip("/")
-        try:
-            stat = child.lstat()
-        except FileNotFoundError:
-            continue
-        if child.is_symlink():
-            kind = "symlink"
-        elif child.is_dir():
-            kind = "directory"
-        else:
-            kind = "file"
         child_changes = [
             item
             for item in changed
@@ -187,8 +183,8 @@ def list_repo_tree(
                 "name": child.name,
                 "path": child_relative,
                 "kind": kind,
-                "size": stat.st_size if kind == "file" else None,
-                "modified_at": datetime.fromtimestamp(stat.st_mtime).astimezone().isoformat(),
+                "size": info.st_size if kind == "file" else None,
+                "modified_at": datetime.fromtimestamp(info.st_mtime).astimezone().isoformat(),
                 "status": child_changes[0]["label"] if child_changes else "",
                 "change_count": len(child_changes),
                 "last_commit": commit_map.get(child.name),
@@ -198,7 +194,8 @@ def list_repo_tree(
         "id": repo_id,
         "path": relative,
         "entries": entries,
-        "truncated": truncated,
+        "truncated": page["truncated"],
+        "next_cursor": page["next_cursor"],
         "readme": _readme_payload(checkout, relative, children),
         "head": _head_commit(checkout) if git else None,
         "status": status,

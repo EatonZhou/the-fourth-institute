@@ -57,7 +57,7 @@
       try {
         for (const location of (Array.isArray(saved?.tabs) ? saved.tabs.slice(0, 50) : [])) {
           if (!current()) return;
-          if (!state.filesByPath.has(location.path)) continue;
+          if (state.fileListingComplete && !state.filesByPath.has(location.path)) continue;
           const doc = await openArticleFile(location.path, { activate: false });
           if (!current()) return;
           if (doc) for (const key of DOCUMENT_FIELDS) if (location[key] !== undefined) doc[key] = location[key];

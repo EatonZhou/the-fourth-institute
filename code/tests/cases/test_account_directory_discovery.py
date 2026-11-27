@@ -127,7 +127,7 @@ def test_browse_parent_roots_empty_and_only_directory_metadata(tmp_path):
     result = discovery.browse(str(tmp_path))
     assert result == {"path": str(tmp_path), "parent": str(tmp_path.parent),
         "directories": [{"name": "empty", "path": str(empty)}],
-        "roots": [{"name": "/", "path": "/"}], "truncated": False}
+        "roots": [{"name": "/", "path": "/"}], "truncated": False, "next_cursor": ""}
     assert discovery.browse(str(empty))["directories"] == []
     assert discovery.browse(str(empty))["parent"] == str(tmp_path)
     assert discovery.browse()["path"] == str(tmp_path.parent)
@@ -151,6 +151,50 @@ def test_browse_denied_and_truncated(tmp_path, monkeypatch):
     with pytest.raises(InstructionError) as error:
         discovery.browse(str(tmp_path))
     assert error.value.code == "instruction.forbidden"
+
+
+def test_browse_uses_name_key_after_anchor_deleted(tmp_path):
+    tmp_path = tmp_path / "browser"
+    tmp_path.mkdir()
+    for name in ("Bravo", "alpha", "Alpha", "charlie"):
+        (tmp_path / name).mkdir()
+    first = discovery.browse(str(tmp_path), limit=2)
+    assert [d["name"] for d in first["directories"]] == ["Alpha", "alpha"]
+    (tmp_path / "alpha").rmdir()
+    (tmp_path / "aardvark").mkdir()
+    (tmp_path / "bravo").mkdir()
+    following = discovery.browse(str(tmp_path), cursor=first["next_cursor"], limit=3)
+    assert [d["name"] for d in following["directories"]] == ["Bravo", "bravo", "charlie"]
+    assert following["next_cursor"] == ""
+
+
+def test_browse_budget_allows_empty_page_and_makes_progress(tmp_path, monkeypatch):
+    tmp_path = tmp_path / "browser"
+    tmp_path.mkdir()
+    (tmp_path / "a-file").touch()
+    (tmp_path / "b-file").touch()
+    directory = tmp_path / "c-directory"
+    directory.mkdir()
+    monkeypatch.setattr(discovery, "MAX_BROWSE_ENTRIES", 2)
+
+    first = discovery.browse(str(tmp_path))
+    assert first["directories"] == []
+    assert first["next_cursor"]
+
+    second = discovery.browse(str(tmp_path), cursor=first["next_cursor"])
+    assert second["directories"] == [{"name": directory.name, "path": str(directory)}]
+    assert second["next_cursor"] == ""
+
+    for other in ("invalid", first["next_cursor"]):
+        with pytest.raises(InstructionError, match="目录游标无效") as error:
+            discovery.browse(str(directory), cursor=other)
+        assert error.value.code == "instruction.invalid_arguments"
+
+
+@pytest.mark.parametrize("limit", [False, 0, 501, 1.5, "2"])
+def test_browse_rejects_invalid_page_limits(tmp_path, limit):
+    with pytest.raises(InstructionError, match="limit"):
+        discovery.browse(str(tmp_path), limit=limit)
 
 
 @pytest.mark.parametrize("config", [None, {}, {"account_dir": ""}, {"account_dir": "relative"}, {"account_dir": "/definitely-missing-account-directory"}])

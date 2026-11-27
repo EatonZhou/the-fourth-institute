@@ -91,7 +91,10 @@ class ArticlesHttp:
         try:
             self.require_resource(article_id, self.session_actor(request) or "")
             if action == "files":
-                result = article_files.list_article_files(article_id)
+                result = article_files.list_article_files(
+                    article_id, cursor=(qs.get("cursor") or [None])[0],
+                    limit=int((qs.get("limit") or ["2500"])[0]),
+                )
             elif action in {"file", "raw"}:
                 relative_path = str((qs.get("path") or [""])[0]).strip()
                 if not relative_path:

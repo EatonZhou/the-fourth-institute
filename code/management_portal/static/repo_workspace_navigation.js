@@ -289,12 +289,13 @@
       state.overview = overview;
       if (!keepTab) state.activeTab = "code";
       if (state.activeTab === "code") {
+        const navigationSequence = state.navigationSequence;
         const filePath = state.file?.path;
         const treePath = state.tree?.path || queryState().path;
         const payload = await getJson(filePath
           ? `/api/repos/${encodeURIComponent(repoId)}/workspace/file?path=${encodeURIComponent(filePath)}`
           : `/api/repos/${encodeURIComponent(repoId)}/workspace/tree?path=${encodeURIComponent(treePath || "")}`);
-        if (!current() || state.activeTab !== "code" || state.file?.path !== filePath) return;
+        if (!current() || navigationSequence !== state.navigationSequence || state.activeTab !== "code" || state.file?.path !== filePath) return;
         if (filePath) state.file = payload;
         else state.tree = payload;
       }

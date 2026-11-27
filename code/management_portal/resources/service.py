@@ -135,11 +135,12 @@ class ResourceService:
         read_content: Any = None,
         read_content_range: Any = None,
         query: Any = None,
+        list_files: Any = None,
         replace: bool = False,
     ) -> None:
         service_providers.register_resolver(
             self, resource_types, resolve, read_content=read_content, read_content_range=read_content_range,
-            query=query, replace=replace,
+            query=query, list_files=list_files, replace=replace,
         )
 
     def register_index_backed_resolver(
@@ -353,6 +354,9 @@ class ResourceService:
         actor: str = "",
     ) -> dict[str, Any]:
         return service_reads.resolve(self, address, actor=actor)
+
+    def list_files(self, address, *, actor="", cursor=None, limit=200):
+        return service_reads.list_files(self, address, actor=actor, cursor=cursor, limit=limit)
 
     def read_content(
         self,

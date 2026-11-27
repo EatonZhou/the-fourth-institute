@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-07-26'
 version:
-  number: 41
+  number: 43
   created_at: "2026-07-26"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-13T21:18:24Z"
+  updated_at: "2026-11-27T16:16:22Z"
   updated_by:
     user: ""
-    agent: "resident_737599f56947"
+    agent: "resident_6199a7a36480"
 importance: 10
 metaness: 2
 ai_generated: false
@@ -39,7 +39,6 @@ links:
   - /opt/tfi/the-fourth-institute-dev/code/management_portal/knowledge_item_chat_backend.py
   - /opt/tfi/the-fourth-institute-dev/code/knowledge_board_lan/knowledge_backend.py
   - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/mutation.py
-  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/action.py
   - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/providers/__init__.py
   - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/server.py
   - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/transport.py
@@ -74,13 +73,13 @@ Portal 页面、Resident 和 Portal 的其他服务都通过 ResourceService 查
 | 访问者（actor） | 一次请求代表的 Portal 用户或 Resident，决定这次请求能发现、读取和管理哪些资源 |
 | 资源 ID | 资源稳定不变的根身份，例如 `decision_1a2b3c4d5e6f`，不随标题和路径变化（`decision_4a9ba5dfada6`） |
 | 资源地址 | 资源 ID，或资源 ID 加内部路径，例如 `workspace_1a2b3c4d5e6f/file/report.md` |
-| 请求内容（payload） | 登记、修改或动作提交的 JSON 对象，字段由资源类型的领域定义 |
-| 领域提供器 | 某种资源类型接入 ResourceService 的实现，负责该类型的解析、正文读取、登记、修改、撤销登记或动作 |
+| 请求内容（payload） | 登记或修改提交的 JSON 对象，字段由资源类型的领域定义 |
+| 领域提供器 | 某种资源类型接入 ResourceService 的实现，负责该类型的解析、正文读取、登记、修改或撤销登记 |
 | 资源索引 | 各领域资源摘要组成的查询表，可以重新生成，不保存正文和业务最终状态（`decision_8dc6b3d03ca7`） |
 | 权限系统 | 按当前权限模板生成的 P、A、R 三棵树和权限表，决定访问者对资源能否发现、读取和管理（decision_b820faf42218） |
 | 索引确认 | 一次领域修改之后，资源索引已经反映这次修改。索引可能稍晚于已经成功的领域修改 |
 
-本篇把登记、修改和撤销登记合称**变更**；把资源类型自己定义的命令称为**动作**，例如 Paper 的参考文献提取、Project 的摘要保存。
+本篇把登记、修改和撤销登记合称**变更**；资源类型自己定义的命令（例如 Paper 的参考文献提取、Project 的摘要保存）是各领域的具名指令，不经 ResourceService 的通用入口。
 
 ## 四种调用入口
 
@@ -97,10 +96,9 @@ Portal 页面、Resident 和 Portal 的其他服务都通过 ResourceService 查
 
 - **访问者只来自认证入口。** RPC 请求的参数中不能再写 `actor`；服务端从签名认证信息中取得访问者。
 - **只接受根 ID 的方法拒绝内部地址。** 同时收到 `resource_type` 时，类型必须与 ID 一致。
-- **变更的请求内容必须是 JSON 对象。** 动作没有提供请求内容时使用空对象；动作名只接受小写的点分格式，例如 `summary.save`。
-- **领域提供器返回的记录保持原资源 ID。** 返回对象不能再用 `id` 或其他 `*_id` 字段表达第二个根身份。
+- **变更的请求内容必须是 JSON 对象。** - **领域提供器返回的记录保持原资源 ID。** 返回对象不能再用 `id` 或其他 `*_id` 字段表达第二个根身份。
 - **认证、操作授权与领域约束分别履行职责。** ISA 按正式权限声明进入当前权限系统；ResourceService 门面要求认证的 User/Resident，领域继续校验存在性、版本和业务限制。不存在由 `test_lab` 等旧系统能力绕过当前方案的扩展；签名或 local 调用方式本身不授予业务权限（decision_b820faf42218）。
-- **`capabilities` 描述类型安装了哪些能力，不授予权限。** 每次修改和动作都重新检查当前权限和资源状态。
+- **`capabilities` 描述类型安装了哪些能力，不授予权限。** 每次修改都重新检查当前权限和资源状态。
 
 ## 身份、健康与能力
 
@@ -122,7 +120,7 @@ Portal 页面、Resident 和 Portal 的其他服务都通过 ResourceService 查
 
 **读取一种资源类型安装了哪些能力。**
 
-- 结果字段：`indexed`（资源索引是否收录）、`resolvable`、`readable`（能否读取正文）、`registerable`、`updatable`、`content_updatable`（能否修改正文）、`unregisterable` 和 `actions`（已安装的动作名列表）。
+- 结果字段：`indexed`（资源索引是否收录）、`resolvable`、`readable`（能否读取正文）、`registerable`、`updatable`、`content_updatable`（能否修改正文）和 `unregisterable`。
 - 类型未登记时是输入错误。
 
 ## 发现、解析与读取
@@ -168,6 +166,12 @@ Portal 页面、Resident 和 Portal 的其他服务都通过 ResourceService 查
 ### `reference(address, actor)` / `resource.reference`
 
 **生成适合保存或放进上下文的简短引用。** 解析和授权成功后返回规范地址、根 ID、类型和标题，可以附带摘要、状态、版本、分类、打开地址、编辑提示和下载提示。地址指向内部对象时，优先显示内部对象的标题、摘要或文件名，同时保留根 ID 和完整地址。
+
+### `list_files(address, actor, cursor?, limit=200)` / `resource.list_files`
+
+分页列出目录的直接子项，返回 `entries` 与 `next_cursor`（末页空字符串）。正整数 `limit` 仅控制页大小，没有目录总数上限。排序和不透明键游标沿资源指令 decision_ad3e21094f14；按目录在前、名称 casefold、原名称排序，隐藏项在分页前排除。每页通过当前解析器重新核对权限、删除状态和绑定；同时保留 `ReadResource` 与 `ListResourceFiles` 的当前授权要求，不因新增读取端口绕过既有拒绝。
+
+领域 Resolver 通过 `list_files` 回调提供分页，ResourceService 统一调用；服务端、transport 与签名 RPC 白名单均公开同名方法，访问者只来自签名认证。普通目录正文仍返回原目录结构，并在截断时给出能交给此方法续读的游标。游标绑定当前对象和目录身份，不是持久快照；不得跨对象、相对目录或替换后的目录身份复用。
 
 ### `read_content(address, actor, max_bytes)` / `resource.read_content`
 
@@ -257,16 +261,10 @@ Resident 在一次执行中修改资源正文时，ResourceService 为每次实�
 
 ## 领域动作
 
-### `action(...)` / `resource.action`
+ResourceService 没有通用的动作入口，也没有动作提供器。资源专用操作是具名指令，指令声明给出参数和权限要求，由所属领域的处理函数执行；领域继续履行自身约束。不维护一套 viewer/contributor/admin 的旧 operation 映射，也不能以名称后缀推导授权。ISA 声明与有效能力的关系见 decision_355ed742bca5。
 
-**执行资源类型声明的一个动作。**
-
-- 参数：`resource_id`、`action`、`payload`（默认空对象），可选的 `resource_type`。
-- 资源专用操作是具名指令，指令声明给出参数和权限要求，由已安装的类型处理函数执行；领域继续履行自身约束。不再维护一套 viewer/contributor/admin 的旧 operation 映射，也不能以名称后缀推导授权。
-- 注册表校验类型、动作名和可调用处理函数，重复绑定默认拒绝，装载失败原子撤回；ISA 声明与有效能力的关系见 decision_355ed742bca5。
-
-- 处理函数必须返回对象，ResourceService 原样返回，不包装成变更记录。动作的请求字段、幂等规则和结果结构由领域定义；请求内容中的 `timeout_seconds` 只延长客户端的等待时间。
-- 动作不自动发送变化通知，会改变状态的动作由所属领域通知自己的索引。
+- 具名指令的请求字段、幂等规则和结果结构由领域定义。
+- 指令不自动发送变化通知，会改变状态的操作由所属领域通知自己的索引。
 
 ### 资源目录 HTTP 身份边界
 
@@ -320,7 +318,7 @@ Project 格式化贡献缺失时，适配器不声明 Project 类型或 registry
 
 ### 客户端等待时间
 
-客户端对普通请求默认等待 10 秒；需要等待资源索引首次生成的读取至少等待 35 秒；读取正文至少等待 60 秒。`wait_for_index`、带等待的 `refresh` 和动作的 `timeout_seconds` 会在请求的等待时间上再加 5 秒余量。
+客户端对普通请求默认等待 30 秒；需要等待资源索引首次生成的读取（解析、引用、查询、建议、详情）至少等待 105 秒（90 秒就绪等待加 15 秒余量）；读取正文、打开正文和区间读取至少等待 180 秒。`wait_for_index` 和带等待的 `refresh` 会在请求的等待时间上再加 15 秒余量。
 
 等待时间只决定客户端何时停止等待，不会取消服务端的执行。修改请求超时或断线后，调用方重新读取资源的当前状态，不能据此认为修改没有发生。
 
@@ -381,7 +379,7 @@ Repo 登记遇到目录还不是 Git 仓库时，调用方可以提示用户选�
 | 正文修改记录 | 修改记录表 | 在写入时保存，按执行读取 |
 | 登录 Session、Resident 令牌 | 各认证入口 | 接收认证入口确认的访问者 |
 
-新增一种资源类型时，领域登记类型、解析器或索引适配器、变更提供器和动作提供器；通用的读取和修改直接使用 ResourceService，不在每个处理函数中另写权限判断。要让指令对这种类型的资源要求等级，模板的 R 树要为它声明位置（所属对象类型由 `permission_system/scheme/vocabulary.py` 给出，未声明的类型挂在默认节点下），并在指令映射中写明哪个参数要求哪个等级（decision_b820faf42218、decision_600ae27b0538）。
+新增一种资源类型时，领域登记类型、解析器或索引适配器、变更提供器；通用的读取和修改直接使用 ResourceService，不在每个处理函数中另写权限判断。要让指令对这种类型的资源要求等级，模板的 R 树要为它声明位置（所属对象类型由 `permission_system/scheme/vocabulary.py` 给出，未声明的类型挂在默认节点下），并在指令映射中写明哪个参数要求哪个等级（decision_b820faf42218、decision_600ae27b0538）。
 
 ### Workspace 注销适配
 
@@ -389,4 +387,4 @@ Workspace 支持 `UnregisterResource(resource_id=workspace_id)`，要求目标 W
 
 Workspace 注销的来源、区域内外目录与嵌套登记范围按《目录与路径协议》（decision_4aa13bc21e8e）处理。注销写入 deleted_at/deleted_by 并推进 updated_at，已删除身份不得复活；目录已不存在时只注销登记。不能用此入口删除区域根目录，也不沿子符号链接删除外部文件。
 
-Workspace 注销提交、后台文件清理、持久重试与进度回执按《目录与路径协议》（decision_4aa13bc21e8e）处理。提交前在事务中锁定 Workspace 表与目标行并重新鉴权，其他目录资源从权威注册表及 Lineage 表读取，不以搜索索引判断；提交后的索引确认继续使用通用 ResourceService 回执。
+Workspace 注销提交、后台文件清理、持久重试与进度回执按《目录与路径协议》（decision_4aa13bc21e8e）处理。提交前在事务中仅锁定精确目标活态行并重新鉴权，不锁整张 Workspace 表；范围与依赖由领域权威记录取得，不以搜索索引判断；提交后的索引确认继续使用通用 ResourceService 回执。

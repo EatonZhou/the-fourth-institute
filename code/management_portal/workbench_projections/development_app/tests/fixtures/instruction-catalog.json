@@ -38,9 +38,10 @@
         "instruction": "ReadResource",
         "category": "resource",
         "category_title": "资源",
+        "discovery_group": "general",
         "owner": "resource",
         "owner_title": "ResourceService",
-        "description": "读取资源正文，或读取资源内部某个文件的内容。",
+        "description": "读取资源正文，或读取文件夹资源里的文件和目录：Workspace、Resident（Resident Folder）和 Lineage（Lineage Folder）的文件都用 <资源ID>/file/<相对路径> 寻址；读目录（含 <资源ID>/file 本身）返回它的直接子项。",
         "mutates": false,
         "streaming": false
       },
@@ -2678,6 +2679,17 @@
         "description": "保存反向整理计划，核验原任务与提交者。",
         "mutates": true,
         "streaming": false
+      },
+      {
+        "instruction": "ListResourceFiles",
+        "category": "resource",
+        "category_title": "资源",
+        "discovery_group": "general",
+        "owner": "resource",
+        "owner_title": "ResourceService",
+        "description": "分页列出目录的直接子项，沿 ReadResource 地址权限；目录优先，再按名称 casefold 和原名排序。每页重新核验授权与绑定；不是时间快照，新插入游标之前的项需重新列举。",
+        "mutates": false,
+        "streaming": false
       }
     ],
     "schemas": {
@@ -2808,24 +2820,37 @@
         "instruction": "ReadResource",
         "category": "resource",
         "category_title": "资源",
+        "discovery_group": "general",
         "owner": "resource",
         "owner_title": "ResourceService",
-        "description": "读取资源正文，或读取资源内部某个文件的内容。",
+        "description": "读取资源正文，或读取文件夹资源里的文件和目录：Workspace、Resident（Resident Folder）和 Lineage（Lineage Folder）的文件都用 <资源ID>/file/<相对路径> 寻址；读目录（含 <资源ID>/file 本身）返回它的直接子项。",
         "mutates": false,
         "streaming": false,
         "parameters": [
           {
             "name": "address",
-            "type": "string",
+            "type": "any",
             "required": true,
-            "description": "统一 ID，或 <资源ID>/file/<相对路径>"
+            "description": "字符串资源地址，或 {workspace_id|repo_id|article_id, relative_path} 文件引用；上传文件推荐 {upload_id: 原上传句柄}，也接受 /api/uploads/<句柄> 或本实例正式 public/internal origin 或显式登记的 public_origin_aliases 的完整URL（可加 download=1，不接受其他参数或片段）。上传文件对所有已认证User/Resident可读，支持meta_only、preview和超限下载；普通资源权限保持不变"
           },
           {
             "name": "max_bytes",
             "type": "integer",
             "required": false,
-            "description": "直接返回内容的上限，默认 4 MiB",
+            "description": "直接返回内容的上限，默认 4 MiB；preview 时为预览长度",
             "minimum": 1
+          },
+          {
+            "name": "meta_only",
+            "type": "boolean",
+            "required": false,
+            "description": "只返回文件的名称、种类、大小和修改时间，不读内容；只用于文件地址"
+          },
+          {
+            "name": "preview",
+            "type": "boolean",
+            "required": false,
+            "description": "返回不超过 max_bytes 的文本预览：更长的文件截断并标记 truncated，图片、PDF 和其他二进制文件不返回内容，只标记 binary；只用于文件地址"
           }
         ],
         "result": [
@@ -2833,13 +2858,13 @@
             "name": "content_type",
             "type": "string",
             "required": true,
-            "description": "内容类型"
+            "description": "内容类型；目录为 application/vnd.tfi.directory+json"
           },
           {
             "name": "version",
             "type": "string",
-            "required": true,
-            "description": "根资源的版本号或修改时间；内部文件及下载结果为内容摘要"
+            "required": false,
+            "description": "根资源的版本号或修改时间；内部文件、目录及下载结果为内容摘要；meta_only 和截断的预览不返回"
           },
           {
             "name": "text",
@@ -2870,6 +2895,78 @@
             "type": "integer",
             "required": true,
             "description": "内容大小"
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "required": false,
+            "description": "文件或目录名"
+          },
+          {
+            "name": "kind",
+            "type": "string",
+            "required": false,
+            "description": "文件种类：directory、markdown、json、jsonl、text、image、pdf 或 binary"
+          },
+          {
+            "name": "modified_at",
+            "type": "string",
+            "required": false,
+            "description": "修改时间"
+          },
+          {
+            "name": "mtime_ns",
+            "type": "string",
+            "required": false,
+            "description": "纳秒修改时间，十进制字符串"
+          },
+          {
+            "name": "content_url",
+            "type": "string",
+            "required": false,
+            "description": "Portal 页面显示和下载这个文件的地址，支持 Range；加 &download=1 作为附件下载"
+          },
+          {
+            "name": "file_reference",
+            "type": "object",
+            "required": false,
+            "description": "可持久保存的 {workspace_id|repo_id|article_id, relative_path} 或上传文件 {upload_id} 引用"
+          },
+          {
+            "name": "entries",
+            "type": "array",
+            "required": false,
+            "description": "目录直接子项的首页，最多 200 项：name、kind、size、modified_at、mtime_ns、path（相对路径）和 address；更多项用 ListResourceFiles 续读"
+          },
+          {
+            "name": "next_cursor",
+            "type": "string",
+            "required": false,
+            "description": "目录截断时的续读游标，交给同地址的 ListResourceFiles；不是目录时间快照"
+          },
+          {
+            "name": "truncated",
+            "type": "boolean",
+            "required": false,
+            "description": "目录子项或预览被截断"
+          },
+          {
+            "name": "hidden_count",
+            "type": "integer",
+            "required": false,
+            "description": "目录中按安全规则隐藏的子项数"
+          },
+          {
+            "name": "binary",
+            "type": "boolean",
+            "required": false,
+            "description": "preview 时文件不是文本"
+          },
+          {
+            "name": "allows",
+            "type": "object",
+            "required": false,
+            "description": "Workspace 文件的 UpdateWorkspaceFile：调用者能否保存这个文件"
           }
         ],
         "target": "address"
@@ -17439,6 +17536,53 @@
           }
         ],
         "target": "resident_id"
+      },
+      "ListResourceFiles": {
+        "instruction": "ListResourceFiles",
+        "category": "resource",
+        "category_title": "资源",
+        "discovery_group": "general",
+        "owner": "resource",
+        "owner_title": "ResourceService",
+        "description": "分页列出目录的直接子项，沿 ReadResource 地址权限；目录优先，再按名称 casefold 和原名排序。每页重新核验授权与绑定；不是时间快照，新插入游标之前的项需重新列举。",
+        "mutates": false,
+        "streaming": false,
+        "parameters": [
+          {
+            "name": "address",
+            "type": "any",
+            "required": true,
+            "description": "目录资源地址 <资源ID>/file[/相对目录]，或 {workspace_id|repo_id|article_id, relative_path} 文件引用；拒绝文件和符号链接目录"
+          },
+          {
+            "name": "cursor",
+            "type": "string",
+            "required": false,
+            "description": "上一页返回的 next_cursor；只可用于同资源、同目录、同绑定，首页省略"
+          },
+          {
+            "name": "limit",
+            "type": "integer",
+            "required": false,
+            "description": "每页条数，默认 200；不是目录总数上限",
+            "minimum": 1
+          }
+        ],
+        "result": [
+          {
+            "name": "entries",
+            "type": "array",
+            "required": true,
+            "description": "当前页直接子项：name、kind、size、modified_at、mtime_ns、path、address 及适用的 file_reference；隐藏项不占页"
+          },
+          {
+            "name": "next_cursor",
+            "type": "string",
+            "required": true,
+            "description": "下一页游标；空字符串表示当前已无更多项"
+          }
+        ],
+        "target": "address"
       }
     }
   }

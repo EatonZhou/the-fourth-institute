@@ -89,6 +89,28 @@ def _file_root(resolved):
     return Path(resolved["checkout_path" if resolved["resource_type"] == "repo" else "article_root"])
 
 
+def list_files(service: "ResourceService", address, *, actor="", cursor=None, limit=200):
+    from management_portal import permission_system
+
+    parsed = service.parse_address(address)
+    if not parsed.suffix or parsed.suffix[0] != 'file':
+        raise ValueError('ListResourceFiles requires a directory file address')
+    # Recheck current binding, private boundaries and custom ReadResource denies.
+    # A cursor is a position, never authorization.
+    for instruction in ('ReadResource', 'ListResourceFiles'):
+        if not permission_system.allows(actor, instruction, {'address': parsed.root_id}):
+            raise PermissionError(f'{actor} cannot {instruction} {parsed.root_id}')
+    resolved = service.resolve(address, actor=actor)
+    if resolved.get('target_kind') != 'directory':
+        raise ValueError('ListResourceFiles requires a directory address')
+    if resolved.get('file_reference'):
+        return folder_files.list_files(resolved, _file_root(resolved), cursor=cursor, limit=limit)
+    resolver = service._resolvers.resolver_for(parsed.resource_type)
+    if resolver.list_files is None:
+        raise ValueError(f'{parsed.resource_type} resources expose no directory listing')
+    return resolver.list_files(resolved, address=parsed.value, actor=str(actor or ''), cursor=cursor, limit=limit)
+
+
 def read_content(
     service: "ResourceService",
     address: str | Mapping[str, str],

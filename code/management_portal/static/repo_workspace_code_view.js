@@ -180,6 +180,62 @@
       return window.PortalI18n.html`<nav class="repoBreadcrumb" aria-label="Repo path">${links.join("")}</nav>`;
     }
 
+    const treePageStatus = new WeakMap();
+
+    function renderTreePageControls(tree) {
+      if (!tree.next_cursor) return "";
+      const status = treePageStatus.get(tree);
+      const label = status?.loading ? "正在加载…" : status?.error ? "重试加载更多" : "加载更多";
+      return window.PortalI18n.html`
+        <div class="repoTreeTruncated">
+          <button class="portalButton is-compact" type="button" data-code-tree-more aria-disabled="${!!status?.loading}">${window.PortalI18n.t(label)}</button>
+          ${status?.error ? `<span role="status">${esc(status.error)}</span>` : ""}
+        </div>`;
+    }
+
+    elements.workspace.addEventListener("click", async event => {
+      const button = event.target.closest("[data-code-tree-more]");
+      const tree = state.tree;
+      if (!button || state.activeTab !== "code" || state.file || !tree?.next_cursor) return;
+      if (treePageStatus.get(tree)?.loading) return;
+      const repoId = state.selectedId;
+      const sequence = state.navigationSequence;
+      const cursor = tree.next_cursor;
+      const status = { loading: true, error: "" };
+      treePageStatus.set(tree, status);
+
+      // Keep the code workbench and its scroll position mounted while appending.
+      function updateControls(entries = []) {
+        if (tree !== state.tree || repoId !== state.selectedId || sequence !== state.navigationSequence
+          || state.activeTab !== "code" || state.file) return;
+        const controls = elements.workspace.querySelector("[data-code-tree-page-controls]");
+        if (!controls) return;
+        const focused = controls.contains(document.activeElement);
+        controls.insertAdjacentHTML("beforebegin", entries.map(renderTreeEntry).join(""));
+        controls.innerHTML = renderTreePageControls(tree);
+        if (focused) (controls.querySelector("button") || controls.previousElementSibling)?.focus({ preventScroll: true });
+      }
+
+      updateControls();
+      let added = [];
+      try {
+        const query = new URLSearchParams({ path: tree.path || "", cursor });
+        const page = await getJson(`/api/repos/${encodeURIComponent(repoId)}/workspace/tree?${query}`);
+        if (tree !== state.tree || repoId !== state.selectedId || sequence !== state.navigationSequence) return;
+        if (page.path !== tree.path || page.next_cursor === cursor) throw new Error(window.PortalI18n.t("无法继续读取目录。"));
+        const known = new Set(tree.entries.map(entry => entry.path));
+        added = page.entries.filter(entry => !known.has(entry.path));
+        tree.entries.push(...added);
+        tree.next_cursor = page.next_cursor || "";
+        tree.truncated = Boolean(tree.next_cursor);
+      } catch (error) {
+        status.error = String(error.message || error);
+      } finally {
+        status.loading = false;
+        updateControls(added);
+      }
+    });
+
     function renderCodeView() {
       if (state.file) return renderFileView();
       if (!state.tree) return repoStateHtml("正在读取目录。", { state: "loading", density: "compact" });
@@ -198,14 +254,14 @@
                   <span role="cell"></span><span role="cell"></span>
                 </button>` : ""}
               ${tree.entries.map(renderTreeEntry).join("")}
-              ${!tree.entries.length ? window.PortalI18n.html`
+              ${!tree.entries.length && !tree.next_cursor ? window.PortalI18n.html`
                 <div class="repoTreeEmpty">
                   ${uiIcon("folder")}
                   <strong>这个目录是空的</strong>
                   ${workspaceCapability("write_files") ? window.PortalI18n.html`<span>可以直接在当前目录创建第一个文件。</span>
                   <button class="portalButton is-primary" type="button" data-repo-action="new-file">${uiIcon("plus")}<span>新建文件</span></button>` : ""}
                 </div>` : ""}
-              ${tree.truncated ? window.PortalI18n.t('<div class="repoTreeTruncated">目录内容较多，仅显示前 1000 项。</div>') : ""}
+              <div data-code-tree-page-controls>${renderTreePageControls(tree)}</div>
             </div>
           </section>
           ${tree.readme ? renderReadme(tree.readme) : ""}

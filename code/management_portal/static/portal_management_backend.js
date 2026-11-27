@@ -194,7 +194,8 @@ function browseHostDirectory(initialPath, onSelect) {
   // Browsing and selection are separate. Only server-confirmed paths can be
   // committed; the dialog owns request cancellation and navigation history.
   let closed = false, generation = 0, request, current = "", parent = "", attempted = initialPath;
-  let entries = [], selected = "", busy = false, invalid = false, editing = false, truncated = false;
+  let entries = [], selected = "", busy = false, invalid = false, editing = false;
+  let nextCursor = "", loadingMore = false, pageError = "";
   const history = []; let historyIndex = -1;
   const view = dialog(t("选择文件夹"), () => { closed = true; generation++; request?.abort(); });
   view.el.classList.add("backendDirectoryPicker");
@@ -226,7 +227,9 @@ function browseHostDirectory(initialPath, onSelect) {
   const feedback = node("div", undefined, {class: "backendDirectoryFeedback"});
   const status = node("p", "", {role: "status", "aria-live": "polite"});
   const retry = button("重试", () => void load(attempted)); retry.hidden = true;
-  feedback.append(status, retry); main.append(listActions, list, feedback); content.append(places, main);
+  const more = button("加载更多", () => void loadMore());
+  more.hidden = true;
+  feedback.append(status, retry, more); main.append(listActions, list, feedback); content.append(places, main);
   const footer = node("footer", undefined, {class: "backendDirectoryFooter"});
   const pending = node("output", "", {"aria-label": t("待选路径"), class: "backendDirectoryPending"});
   const useCurrent = button("选择当前目录", () => { selected = ""; invalid = false; renderList(); sync(); });
@@ -246,7 +249,10 @@ function browseHostDirectory(initialPath, onSelect) {
     forward.disabled = historyIndex + 1 >= history.length;
     filter.disabled = busy || !current;
     enter.disabled = busy || editing || !selected;
-    list.setAttribute("aria-busy", String(busy));
+    list.setAttribute("aria-busy", String(busy || loadingMore));
+    more.hidden = !nextCursor;
+    more.disabled = busy || loadingMore || editing;
+    more.textContent = t(loadingMore ? "正在加载…" : pageError ? "重试加载更多" : "加载更多");
   }
   function editLocation() {
     if (busy) { generation++; request?.abort(); busy = false; invalid = true; status.textContent = ""; retry.hidden = true; }
@@ -290,8 +296,11 @@ function browseHostDirectory(initialPath, onSelect) {
     const index = items.findIndex(entry => entry.path === selected);
     if (index >= 0) list.setAttribute("aria-activedescendant", `backend-directory-option-${index}`);
     else list.removeAttribute("aria-activedescendant");
-    if (!busy && !invalid) status.textContent = truncated ? t("目录较多，仅显示部分；可输入完整路径。")
-      : !entries.length ? t("此目录没有子目录。") : !items.length ? t("没有匹配的文件夹。") : "";
+    if (!busy && !invalid) {
+      status.textContent = pageError || (loadingMore ? t("正在读取目录…") : !entries.length && !nextCursor
+        ? t("此目录没有子目录。")
+        : !items.length && filter.value.trim() ? t(nextCursor ? "已加载的文件夹中没有匹配项。" : "没有匹配的文件夹。") : "");
+    }
   }
   filter.addEventListener("input", () => { selected = ""; invalid = false; renderList(); sync(); });
   address.addEventListener("input", () => { invalid = true; sync(); });
@@ -310,20 +319,51 @@ function browseHostDirectory(initialPath, onSelect) {
     else if (event.altKey && event.key === "ArrowRight" && !forward.disabled) { event.preventDefault(); forward.click(); }
     else if (event.altKey && event.key === "ArrowUp" && !up.disabled) { event.preventDefault(); up.click(); }
   });
-  async function read(path) {
+  async function read(path, cursor = "") {
     request?.abort(); request = new AbortController();
-    return accountDirectoryRequest("browse", path ? {path} : {}, {signal: request.signal});
+    return accountDirectoryRequest("browse", {
+      ...(path ? {path} : {}), ...(cursor ? {cursor} : {}),
+    }, {signal: request.signal});
+  }
+  async function loadMore() {
+    if (!current || !nextCursor || more.disabled) return;
+    const path = current, cursor = nextCursor, token = generation;
+    const scrollTop = list.scrollTop;
+    loadingMore = true;
+    pageError = "";
+    status.textContent = t("正在读取目录…");
+    sync();
+    try {
+      const result = await read(path, cursor);
+      if (closed || token !== generation) return;
+      if (result.path !== path || result.next_cursor === cursor) throw new Error(t("无法继续读取目录。"));
+      const known = new Set(entries.map(entry => entry.path));
+      entries.push(...(result.directories || []).filter(entry => !known.has(entry.path)));
+      nextCursor = result.next_cursor || "";
+    } catch (error) {
+      if (closed || token !== generation) return;
+      pageError = errorText(error);
+    } finally {
+      if (!closed && token === generation) {
+        loadingMore = false;
+        renderList();
+        list.scrollTop = scrollTop;
+        sync();
+        if (!nextCursor && document.activeElement === more) list.focus();
+      }
+    }
   }
   async function load(path, {index, focusList = false} = {}) {
     const token = ++generation; attempted = path; busy = true; invalid = true;
     current = ""; selected = ""; entries = []; filter.value = ""; retry.hidden = true;
+    nextCursor = ""; loadingMore = false; pageError = "";
     status.textContent = t("正在读取目录…"); list.replaceChildren(); list.removeAttribute("aria-activedescendant"); sync();
     try {
       const result = await read(path);
       if (closed || token !== generation) return;
       if (!result.path) throw new Error(t("操作失败，请重试。"));
       current = result.path; parent = result.parent || ""; address.value = current;
-      entries = result.directories || []; truncated = !!result.truncated; invalid = false; busy = false;
+      entries = result.directories || []; nextCursor = result.next_cursor || ""; invalid = false; busy = false;
       if (index !== undefined) { historyIndex = index; history[index] = current; }
       else if (history[historyIndex] !== current) { history.splice(historyIndex + 1); history.push(current); historyIndex = history.length - 1; }
       roots.replaceChildren(...(result.roots || []).map(root => button(root.name, () => void load(root.path))));
@@ -338,7 +378,7 @@ function browseHostDirectory(initialPath, onSelect) {
   async function commit() {
     if (choose.disabled) return;
     const path = selected || current, token = ++generation;
-    busy = true; retry.hidden = true; status.textContent = t("正在读取目录…"); sync();
+    loadingMore = false; busy = true; retry.hidden = true; status.textContent = t("正在读取目录…"); sync();
     try {
       const result = await read(path);
       if (closed || token !== generation) return;

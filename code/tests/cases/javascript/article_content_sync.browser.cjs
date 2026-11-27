@@ -48,7 +48,7 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
       window.PortalPreviewContract = { isTextDocument: () => true };
       window.PortalPreview = { normalizeDocument: p => ({ ...p, contentKind: 'text', capabilities: {} }), configureDownloadLink() {}, dispose() {} };
       window.PortalDocumentSession = { create: () => ({ present() {}, updateDraft() {}, destroy() {} }) };
-      window.state = { selectedId: 'article_fixture', documents: new Map(), filesByPath: new Map(), openTabs: [],
+      window.state = { selectedId: 'article_fixture', documents: new Map(), filesByPath: new Map(), fileListingComplete: true, openTabs: [],
         openFile: '', source: '', savedSource: '', editorPreferences: { tabSize: 2 }, monacoReady: true };
       const host = $('articleMonacoEditor'); host.style.cssText = 'height:300px;width:800px';
       state.editor = monaco.editor.create(host, { value: '', language: 'plaintext' });
@@ -71,7 +71,8 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
       window.unregisteringArticles = new Set();
       window.loadFiles = async context => {
         if (!context.isCurrent()) return false;
-        state.filesByPath = new Map([['main.tex', {}]]); return false;
+        state.filesByPath = state.fileListingComplete ? new Map([['main.tex', {}]]) : new Map();
+        return false;
       };
       window.refreshArticleDocuments = docs.refreshArticleDocuments;
       window.loadSemanticIndex = async () => {};
@@ -112,11 +113,18 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
     await page.waitForTimeout(250);
     await page.evaluate(() => { fail = false; remote = { content: 'focus update', version: '5', revision: 'r5' }; window.dispatchEvent(new Event('focus')); });
     await page.waitForFunction(() => state.editor.getValue() === 'focus update');
-    await page.evaluate(() => { hold = true; remote.version = '6'; changeEvent(); });
+    await page.evaluate(() => {
+      state.fileListingComplete = false;
+      remote = { content: 'still outside the loaded page', version: '6', revision: 'r6' };
+      changeEvent();
+    });
+    await page.waitForFunction(() => state.editor.getValue() === 'still outside the loaded page');
+    assert.equal(await page.evaluate(() => state.filesByPath.has('main.tex')), false, 'open tab uses its own metadata when directory pages are incomplete');
+    await page.evaluate(() => { hold = true; remote.version = '7'; changeEvent(); });
     await page.waitForFunction(() => !!window.releaseRead);
     await page.evaluate(() => { state.selectedId = 'article_other'; sync.scheduleArticleContentRefresh(0); releaseRead(); });
     await page.waitForTimeout(250);
-    assert.equal(await page.evaluate(() => state.editor.getValue()), 'focus update', 'old response cannot change another Article');
+    assert.equal(await page.evaluate(() => state.editor.getValue()), 'still outside the loaded page', 'old response cannot change another Article');
     await page.evaluate(() => sync.articleContentRefresh.destroy());
     assert.deepEqual(errors, []);
     console.log('PASS: events, polling, focus recovery, Monaco cursor/model, draft/undo and stale response protection');

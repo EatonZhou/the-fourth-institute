@@ -122,6 +122,12 @@ from .service_mutations import resource_version as _resource_version
 
 
 @_file_read_errors
+def list_resource_files(inv: Invocation) -> dict[str, Any]:
+    return _service().list_files(inv.argument('address'), actor=inv.caller,
+                                 cursor=inv.argument('cursor'), limit=inv.argument('limit', 200))
+
+
+@_file_read_errors
 def read_resource(inv: Invocation) -> dict[str, Any]:
     import base64
 
@@ -205,6 +211,7 @@ def _directory_result(data: bytes, resolved: dict[str, Any]) -> dict[str, Any]:
         "name": str(resolved.get("filename") or ""), "kind": "directory",
         "modified_at": _iso(datetime.fromtimestamp(mtime_ns / 1e9, timezone.utc)),
         "entries": listing["entries"], "truncated": listing["truncated"], "hidden_count": listing["hidden_count"],
+        **({'next_cursor': listing['next_cursor']} if listing.get('next_cursor') else {}),
     }
 
 
@@ -1170,6 +1177,7 @@ HANDLERS = {
     "SearchResources": search_resources,
     "ResolveResource": resolve_resource,
     "ReadResource": read_resource,
+    "ListResourceFiles": list_resource_files,
     "GetResourceType": get_resource_type,
     "ListResourceTypes": list_resource_types,
     "SetResourceTypeEnabled": set_resource_type_enabled,
@@ -1204,7 +1212,7 @@ def binding() -> OwnerBinding:
 
 
 def _authorization_arguments(declaration, arguments, context):
-    if declaration.name in {"ReadResource", "ResolveResource"}:
+    if declaration.name in {"ReadResource", "ResolveResource", "ListResourceFiles"}:
         from .upload_files import file_reference
 
         if file_reference(arguments.get("address")) is not None:

@@ -411,6 +411,9 @@ class ResourceServiceServer(LocalServiceSocketMixin, DrainingStreamServer):
                 self._required(params, "address"),
                 actor=actor,
             )
+        if method == 'resource.list_files':
+            return self.service.list_files(self._required(params, 'address'), actor=actor,
+                                           cursor=params.get('cursor'), limit=params.get('limit', 200))
         if method == "resource.read_content":
             return self.service.read_content(
                 self._required(params, "address"),

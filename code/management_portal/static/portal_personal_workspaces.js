@@ -52,7 +52,7 @@
     function resourceLocation(path) {
       const normalize = value => String(value || "").replaceAll("\\", "/").replace(/\/+$/, "");
       const target = normalize(path);
-      const holding = [...residentItems.map(item => item.root), ...locks.map(item => item.value.resource_root)]
+      const holding = [resourceItem?.root, ...residentItems.map(item => item.root), ...locks.map(item => item.value.resource_root)]
         .filter(item => item?.path && item.directory_id)
         .map(item => ({ root: item, base: normalize(item.path) }))
         .filter(item => target === item.base || target.startsWith(`${item.base}/`))
@@ -83,8 +83,8 @@
         : row;
       if (!open.has(path)) return html;
       if (!data || data.loading) return html + note("正在读取文件夹…");
-      if (data.error) return html + note(`读取失败：${data.error}；可收起后重新展开。`);
-      if (!data.children.length) return html + note("空文件夹");
+      if (data.error) html += note(`读取失败：${data.error}`);
+      if (!data.children.length && !data.nextCursor && !data.error) return html + note("空文件夹");
       for (const child of data.children) {
         const childPath = `${data.path.replace(/\/$/, "")}/${child.name}`;
         html += child.type === "directory"
@@ -93,14 +93,20 @@
             isSelected: item => item.path === selected,
           });
       }
+      if (data.nextCursor || data.loadingMore || data.error) {
+        const label = data.loadingMore ? "正在加载…" : data.error ? (data.nextCursor ? "重试加载更多" : "重试") : "加载更多";
+        html += window.PortalI18n.html`<div class="portalFileInlineNote"><button type="button" class="portalButton is-compact"
+          data-workspace-directory-page="${esc(path)}" aria-disabled="${!!data.loadingMore}">${window.PortalI18n.t(label)}</button></div>`;
+      }
       return html;
     }
 
     function render() {
       if (destroyed) return;
       const visible = visibleItems();
-      const directoriesPending = visible.some(item => !closed.has(item.key)
-        && [...membership(item.key)].some(path => !directories.get(path) || directories.get(path).loading));
+      const directoriesPending = [...directories.values()].some(data => data.loading)
+        || visible.some(item => !closed.has(item.key)
+          && item.value.folders.some(path => membership(item.key).has(path) && !directories.has(path)));
       root.dataset.workspaceResidentId = residentId;
       root.setAttribute("aria-busy", String(busy || (!loaded && !error) || residentPending || directoriesPending));
       window.PortalFileTree.preserveViewport(list, () => {
@@ -117,7 +123,10 @@
           const key = treeRoot.closest("[data-workspace-key]").dataset.workspaceKey;
           window.PortalFileTree.bindRows({
             root: treeRoot, membership: membership(key), render,
-            afterToggle: path => { if (membership(key).has(path)) void readDirectory(path); },
+            afterToggle: path => {
+              if (membership(key).has(path)) void readDirectory(path);
+              else discardUnseenDirectory(path);
+            },
             open: async path => {
               const opening = ++selectionRevision;
               error = "";
@@ -147,22 +156,79 @@
       root.querySelectorAll("[data-workspace-action]").forEach(node => { node.disabled = busy; });
     }
 
-    async function readDirectory(path) {
+    function discardUnseenDirectory(path) {
+      const open = visibleItems().filter(item => !closed.has(item.key));
+      const shown = (item, directory) => item.value.folders.some(root => {
+        if (directory !== root && !directory.startsWith(`${root.replace(/\/$/, "")}/`)) return false;
+        const expandedPaths = membership(item.key);
+        if (!expandedPaths.has(root)) return false;
+        let ancestor = directory;
+        while (ancestor !== root && ancestor.length > root.length) {
+          if (!expandedPaths.has(ancestor)) return false;
+          ancestor = ancestor.slice(0, ancestor.lastIndexOf("/")) || "/";
+        }
+        return ancestor === root;
+      });
+      for (const child of directories.keys()) {
+        if ((child === path || child.startsWith(`${path.replace(/\/$/, "")}/`))
+          && !open.some(item => shown(item, child))) directories.delete(child);
+      }
+    }
+
+    async function readDirectory(path, { more = false } = {}) {
       const previous = directories.get(path);
-      if (previous && !previous.error) return;
-      const request = { loading: true };
-      directories.set(path, request);
-      render();
+      if (previous?.loading || previous?.loadingMore) return;
+      if (more ? !previous?.nextCursor : previous && !previous.error) return;
+      const cursor = more ? previous.nextCursor : "";
+      const data = more ? previous : { path, children: [], nextCursor: "" };
+      data.loading = !more;
+      data.loadingMore = more;
+      data.error = "";
+      directories.set(path, data);
+      renderDirectoryPage(path);
+      const current = () => !destroyed && directories.get(path) === data;
       try {
         const location = resourceLocation(path);
-        const listing = location ? await window.PortalResidentService.listDirectory(location.root.directory_id, location.relative) : null;
-        const payload = listing ? { kind: "directory", path, children: listing.entries || [] }
+        const listing = location ? await window.PortalResidentService.listDirectory(location.root.directory_id, location.relative, { cursor }) : null;
+        const payload = listing ? { kind: "directory", path, children: listing.entries || [], nextCursor: listing.next_cursor }
           : await window.PortalFileLinks.load(path);
+        if (!current()) return;
         if (payload.kind !== "directory") throw new Error("该路径不是文件夹");
-        Object.assign(request, { path: payload.path, children: payload.children || [] });
-      } catch (failure) { request.error = String(failure.message || failure); }
-      request.loading = false;
-      if (directories.get(path) === request) render();
+        if (cursor && (payload.path !== path || payload.nextCursor === cursor)) throw new Error("无法继续读取目录。");
+        const known = new Set(data.children.map(child => child.name));
+        data.path = payload.path;
+        data.children.push(...(payload.children || []).filter(child => !known.has(child.name)));
+        data.nextCursor = payload.nextCursor || "";
+      } catch (failure) {
+        if (current()) data.error = String(failure.message || failure);
+      } finally {
+        if (current()) {
+          data.loading = false;
+          data.loadingMore = false;
+          renderDirectoryPage(path);
+          if (!data.error) {
+            const openFolders = visibleItems().filter(item => !closed.has(item.key) && membership(item.key).has(path));
+            const prefix = `${data.path.replace(/\/$/, "")}/`;
+            for (const child of data.children) {
+              const childPath = prefix + child.name;
+              if (child.type === "directory" && openFolders.some(item => membership(item.key).has(childPath))) {
+                void readDirectory(childPath);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    function renderDirectoryPage(path) {
+      const before = document.activeElement;
+      const focused = list.contains(before) && before.dataset.workspaceDirectoryPage === path;
+      const section = focused ? before.closest("[data-workspace-key]")?.dataset.workspaceKey : null;
+      window.PortalFileTree.preserveViewport(list, render);
+      if (section == null) return;
+      const scope = list.querySelector(`[data-workspace-key="${CSS.escape(section)}"]`);
+      (scope?.querySelector(`[data-workspace-directory-page="${CSS.escape(path)}"]`)
+        || scope?.querySelector(`[data-portal-file-directory="${CSS.escape(path)}"]`))?.focus({ preventScroll: true });
     }
 
     async function load(force = false) {
@@ -200,7 +266,10 @@
       if (busy) return;
       if (action === "refresh") return load(true);
       if (action === "toggle") {
-        if (closed.has(item.key)) closed.delete(item.key); else closed.add(item.key);
+        if (!closed.delete(item.key)) {
+          closed.add(item.key);
+          item.value.folders.forEach(discardUnseenDirectory);
+        }
         render();
         if (!closed.has(item.key)) for (const path of membership(item.key)) void readDirectory(path);
         return;
@@ -259,6 +328,12 @@
     }
 
     root.addEventListener("click", event => {
+      const page = event.target.closest("[data-workspace-directory-page]");
+      if (page && !busy) {
+        const path = page.dataset.workspaceDirectoryPage;
+        void readDirectory(path, { more: Boolean(directories.get(path)?.nextCursor) });
+        return;
+      }
       const target = event.target.closest("[data-workspace-action]");
       if (!target) return;
       const key = target.closest("[data-workspace-key]")?.dataset.workspaceKey;
@@ -282,6 +357,14 @@
           expanded.delete(item.key);
           closed.delete(item.key);
         }
+        if (residentId !== id) {
+          for (const item of residentItems) {
+            const path = item.root.path;
+            for (const cached of directories.keys()) {
+              if (cached === path || cached.startsWith(`${path.replace(/\/$/, "")}/`)) directories.delete(cached);
+            }
+          }
+        }
         residentId = id;
         residentItems = nextItems;
         residentPending = Boolean(residentId && roots === null && !failure);
@@ -295,7 +378,7 @@
           // Lazy root metadata does not contain a directory listing. Retain
           // any loaded listing, and let expanded roots fetch missing content.
           if (failure || (item.root.children_loaded !== false && Array.isArray(item.root.entries))) {
-            directories.set(path, { path, children: item.root.entries || [], error: failure });
+            directories.set(path, { path, children: [...(item.root.entries || [])], nextCursor: item.root.next_cursor || "", error: failure });
           }
         }
         render();
@@ -305,7 +388,14 @@
         }
       },
       async openResource({ workspaceId, title, path }) {
-        resourceItem = { key: workspaceId, readOnly: true, source: "resource", value: { name: title || workspaceId, folders: [path] } };
+        if (resourceItem?.key !== workspaceId) {
+          const previous = resourceItem?.root?.path;
+          resourceItem = null;
+          if (previous) discardUnseenDirectory(previous);
+          directories.delete(path);
+        }
+        resourceItem = { key: workspaceId, readOnly: true, source: "resource", value: { name: title || workspaceId, folders: [path] },
+          root: { directory_id: workspaceId, path, root_kind: "workspace" } };
         closed.delete(workspaceId);
         membership(workspaceId).add(path);
         await load();

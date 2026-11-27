@@ -150,7 +150,7 @@
       const diagnostic = event.target.closest("[data-diagnostic-file]");
       if (diagnostic) {
         const path = diagnostic.dataset.diagnosticFile.replace(/^\.\//, "");
-        if (state.filesByPath.has(path)) {
+        if (path && (!state.fileListingComplete || state.filesByPath.has(path))) {
           openArticleFile(path, { line: Number(diagnostic.dataset.diagnosticLine || 1) });
         }
       }

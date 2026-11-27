@@ -18,6 +18,7 @@ from management_common.text_values import stripped_text
 from management_common import secure_paths
 from management_portal import article_discovery, article_registry, article_settings
 from management_portal.office_preview import supports_pdf_preview
+from management_portal.resources.directory_pagination import directory_key, directory_scope, paginate
 
 
 ARTICLE_UPLOAD_MAX_BYTES = 25 * 1024 * 1024
@@ -65,80 +66,61 @@ def _is_generated_latex_file(path: Path) -> bool:
     return any(lowered.endswith(suffix) for suffix in ARTICLE_TREE_IGNORED_SUFFIXES)
 
 
-def list_article_files(
-    article_id: str,
-    *,
-    build_root: str | Path | None = None,
-    limit: int = 2500,
-) -> dict[str, Any]:
-    record, root_item, article_root = article_registry._article_source_context(
-        article_id
-    )
-    settings = article_settings.load_article_settings(
-        article_id, build_root=build_root
-    )
-    entries: list[dict[str, Any]] = []
-    truncated = False
+def _article_file_entries(article_root: Path, primary_file: str):
+    """Enumerate the current manuscript tree; callers choose their own page size."""
     for folder, directory_names, file_names in os.walk(article_root, followlinks=False):
         current = Path(folder)
-        directory_names[:] = sorted(
-            [
-                name
-                for name in directory_names
-                if name not in article_discovery.ARTICLE_TREE_IGNORED_DIRECTORIES
-                and not (current / name).is_symlink()
-            ],
-            key=str.casefold,
-        )
+        directory_names[:] = [name for name in directory_names
+                              if name not in article_discovery.ARTICLE_TREE_IGNORED_DIRECTORIES
+                              and not (current / name).is_symlink()]
         for name in directory_names:
-            path = current / name
-            relative = path.relative_to(article_root).as_posix()
-            entries.append({"path": relative, "name": name, "type": "directory"})
-            if len(entries) >= limit:
-                truncated = True
-                break
-        if truncated:
-            break
-        for name in sorted(file_names, key=str.casefold):
+            relative = (current / name).relative_to(article_root).as_posix()
+            yield {"path": relative, "name": name, "type": "directory"}
+        for name in file_names:
             path = current / name
             if path.is_symlink() or _is_generated_latex_file(path):
                 continue
             try:
-                stat = path.stat()
+                info = path.stat()
             except OSError:
                 continue
             relative = path.relative_to(article_root).as_posix()
-            entries.append(
-                {
-                    "path": relative,
-                    "name": name,
-                    "type": "file",
-                    "size": stat.st_size,
-                    "modified_at": datetime.fromtimestamp(
-                        stat.st_mtime
-                    ).astimezone().isoformat(timespec="seconds"),
-                    "editable": (
-                        path.suffix.casefold() in ARTICLE_TEXT_SUFFIXES
-                        or path.name.casefold() == ".latexmkrc"
-                    ),
-                    "primary": relative == settings["primary_file"],
-                }
-            )
-            if len(entries) >= limit:
-                truncated = True
-                break
-        if truncated:
-            break
+            yield {
+                "path": relative, "name": name, "type": "file", "size": info.st_size,
+                "modified_at": datetime.fromtimestamp(info.st_mtime).astimezone().isoformat(timespec="seconds"),
+                "editable": path.suffix.casefold() in ARTICLE_TEXT_SUFFIXES or path.name.casefold() == ".latexmkrc",
+                "primary": relative == primary_file,
+            }
+
+
+def list_article_files(
+    article_id: str, *, build_root: str | Path | None = None,
+    limit: int = 2500, cursor: str | None = None,
+) -> dict[str, Any]:
+    record, root_item, article_root = article_registry._article_source_context(article_id)
+    settings = article_settings.load_article_settings(article_id, build_root=build_root)
+    page = paginate(
+        _article_file_entries(article_root, settings["primary_file"]),
+        scope=directory_scope(article_id, "", article_root.stat(), view="article-tree"),
+        cursor=cursor, limit=limit,
+        key=lambda row: directory_key(row["path"], row["type"] == "directory"),
+    )
     return {
-        "id": article_id,
-        "root": str(article_root),
+        "id": article_id, "root": str(article_root),
         "primary_file": settings["primary_file"],
-        "record_primary_file": stripped_text(
-            root_item.get("primary_file") or record.get("primary_file")
-        ),
-        "entries": entries,
-        "truncated": truncated,
+        "record_primary_file": stripped_text(root_item.get("primary_file") or record.get("primary_file")),
+        **page,
     }
+
+
+def _all_article_file_entries(article_id: str):
+    cursor = None
+    while True:
+        page = list_article_files(article_id, cursor=cursor)
+        yield from page["entries"]
+        cursor = page["next_cursor"]
+        if not cursor:
+            return
 
 
 def read_article_file(
@@ -342,11 +324,10 @@ def search_article_files(
         return {"id": article_id, "query": "", "results": [], "truncated": False}
     if len(needle) > 200:
         raise ValueError("article search query is too long")
-    tree = list_article_files(article_id)
     lowered = needle.casefold()
     results: list[dict[str, Any]] = []
     truncated = False
-    for entry in tree["entries"]:
+    for entry in _all_article_file_entries(article_id):
         if entry.get("type") != "file" or not entry.get("editable"):
             continue
         try:

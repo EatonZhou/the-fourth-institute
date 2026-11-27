@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 64
+  number: 65
   created_at: "2026-09-28T10:45:00Z"
   created_by:
     user: "weihao"
     agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-11-26T14:57:34Z"
+  updated_at: "2026-11-27T16:16:21Z"
   updated_by:
     user: ""
-    agent: "resident_60ae6d0cdf74"
+    agent: "resident_6199a7a36480"
 importance: 8
 metaness: 2
 ai_generated: false
@@ -56,6 +56,7 @@ links:
 | `SearchResources` | 否 | 按关键词、类型、项目和状态查找调用者可以看到的资源。 | 对“共享”有 @viewer |
 | `ResolveResource` | 否 | 把地址解析为资源记录 | 对 `address` 有 @viewer |
 | `ReadResource` | 否 | 读取资源正文或资源内部文件 | 对 `address` 有 @viewer |
+| `ListResourceFiles` | 否 | 分页列出目录的直接子项 | 对 `address` 有 @viewer |
 | `ListResourceTypes` | 否 | 列出全部资源类型声明、状态、实例数和提供者能力。 | 对“共享”有 @viewer |
 | `GetResourceType` | 否 | 读取一个资源类型是否可以登记、修改和撤销登记。 | 对“共享”有 @viewer |
 | `SetResourceTypeEnabled` | 是 | 启用或停用一个资源类型，可选信封版本前提 | 对“共享”有 @admin |
@@ -125,10 +126,17 @@ links:
 - 结果：内容类型、版本令牌 `version`，以及内容本身：不超过 `max_bytes` 时直接返回文本或 base64 编码的字节；根资源有版本号时返回该版本号的字符串，缺少版本号时使用资源修改时间或内容摘要。超过时返回一个有时效的下载地址和内容大小，调用者从下载地址分段读取。下载地址形如 `/api/resources/download/<令牌>`，15 分钟内有效，只有发起读取的调用者可以使用，支持单段 `Range` 请求；结果同时给出 `expires_at` 与内容摘要作为 `version`。
 - 读取内部文件时使用 `<资源ID>/file/<相对路径>`，文件的 `version` 是内容摘要。读取知识条目根正文得到的数字版本字符串可以用于 `UpdateResource`；下载结果中的内容摘要用于标识本次内容。
 - 文件地址的根可以是 Workspace（`workspace_<id>`）、Resident（`resident_<id>`，指 Resident Folder）或 Lineage（`lineage_<id>`，指 Lineage Folder）。Resident Folder 与 Lineage Folder 的文件要求对该 Resident 或 Lineage 有 viewer，Workspace 文件按 decision_8838269736d3 的规则检查。Resident Folder 与 Lineage Folder 无权读取与文件不存在返回相同结果；Workspace、Repo 和 Article 的对象文件引用及其字符串形式遵循上文分别报告三种失败的规则。路径不能含 `.` 或 `..` 段，不跟随符号链接。Resident Folder 与 Lineage Folder 中点开头的路径和凭证类目录不可读取；Workspace 中这些路径仍可按地址读取，只在目录子项里隐藏。
-- 地址指向目录时（`<资源ID>/file` 本身即根目录），结果的内容类型为 `application/vnd.tfi.directory+json`，`entries` 列出至多 200 个直接子项，每项含 name、kind、size、modified_at、mtime_ns、相对路径 `path` 和自己的文件地址 `address`。目录在前，按名称排序；点开头与凭证类子项不列出，只计入 `hidden_count`，`truncated` 表示还有未返回的子项。
+- 地址指向目录时（`<资源ID>/file` 本身即根目录），结果的内容类型为 `application/vnd.tfi.directory+json`，`entries` 列出至多 200 个直接子项，每项含 name、kind、size、modified_at、mtime_ns、相对路径 `path` 和自己的文件地址 `address`。目录在前，名称按不区分大小写的排序键及原名称排序；点开头与凭证类子项不列出，只计入 `hidden_count`。`truncated` 表示还有未返回的子项，此时附带可直接传给 `ListResourceFiles` 的 `next_cursor`。
 - 文件地址的结果还给出 name、kind（directory、markdown、json、jsonl、text、image、pdf 或 binary）、modified_at、mtime_ns 和 `content_url`。`content_url` 是 Portal 页面显示和下载该文件的地址 `/api/resources/content?address=…`，每次请求重新检查权限，支持单段 Range，加 `&download=1` 作为附件下载；图片、PDF、音视频内联显示，其他类型按附件返回；响应都带 `X-Content-Type-Options: nosniff` 与 `Content-Security-Policy: sandbox`。Workspace 文件的结果另带 `allows.UpdateWorkspaceFile`，表示调用者能否把这个文件写回同一地址，页面的保存按钮据此显示。
 - `meta_only` 只返回元数据，不读内容。`preview` 返回不超过 `max_bytes` 的 UTF-8 文本：文件更长时返回前段并标记 `truncated`，截断的预览不带 `version`；图片、PDF 与其他二进制文件不返回内容，只标记 `binary`。页面的文件预览使用 2 MiB 的 preview。
 - 下载地址只对本次调用者有效，到期后失效；每次读取都重新经过权限检查。
+
+### `ListResourceFiles`
+
+- 必填 `address` 沿用 `ReadResource` 的文件夹地址和对象文件引用形式，目标必须是目录。可选 `cursor` 原样传入上一页的 `next_cursor`；可选 `limit` 为正整数，默认 200，只限定单页数量，不限制全部可见子项总数。
+- 返回 `entries` 与 `next_cursor`；子项字段与 `ReadResource` 的目录相同，末页游标为空字符串。排序为目录在前、名称 casefold、原名称三个键；游标基于最后返回的键而非偏移量。隐藏项在分页前排除。
+- 每页重新核对当前读取权限、对象存活和目录绑定；保留原 `ReadResource` 的明确拒绝规则，新增指令不扩权。游标绑定对象、相对目录及当前目录身份，不能跨目录、跨对象或更换绑定后沿用；格式错误或不匹配须重新从首枚举。
+- 这不是文件系统快照：删除已翻过的条目不导致后页移位，已返回的同名键不重复；新增项若排序在游标之前，需重新枚举才能看到。符号链接及私有文件的边界保持原读取规则。
 
 ### `ListResourceTypes`
 
@@ -315,6 +323,7 @@ Workspace 支持 `UnregisterResource(resource_id=workspace_id)`，要求目标 W
 | `SearchResources` | `q`、`resource_type`、`user_id`、`project_id`、`status`、`limit`、`cursor` |
 | `ResolveResource` | `address` |
 | `ReadResource` | `address`、`max_bytes`、`meta_only`、`preview` |
+| `ListResourceFiles` | `address`、`cursor`、`limit` |
 | `ListResourceTypes` | 无 |
 | `GetResourceType` | `resource_type` |
 | `SetResourceTypeEnabled` | `resource_type`、`enabled` |

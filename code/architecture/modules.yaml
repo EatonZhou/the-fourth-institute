@@ -1739,7 +1739,7 @@ protocols:
       - "decision_1e2eb869bc10"
       - "decision_528bf9985705"
       - "decision_3ece26686464"
-    description: "按统一资源地址提供 resolve、read、query 与 action；类型适配器解释地址，权限和可读性检查由 ResourceService 执行。 Lineage resource_client 通过 WorkspaceStore 在传入的数据库连接内查路径、登记并校验绑定；该共享事务调用不能描述成一律在 Lineage 提交后同步。"
+    description: "按统一资源地址提供 resolve、read、list_files、query 与 action；类型适配器解释地址，权限和可读性检查由 ResourceService 执行。目录以稳定名称键续读，每页重核当前权限与路径绑定，游标不授予权限也不代表时间快照；目录提供者共用纯分页选择器，领域保留各自可见范围。Lineage resource_client 通过 WorkspaceStore 在传入的数据库连接内查路径、登记并校验绑定；该共享事务调用不能描述成一律在 Lineage 提交后同步。"
     example: "投影调用 Projection.resource('read', {address}) → Web 代理资源请求 → ResourceService 解析 Workspace 文件并通过权限端口检查当前 actor → 返回内容或明确不可读原因。"
   - id: "resource-authorization"
     title: "身份认证与 PAR 授权协议"

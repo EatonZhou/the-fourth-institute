@@ -17,6 +17,7 @@ RPC_ACTOR_METHODS = frozenset(
         "resource.resolve",
         "resource.reference",
         "resource.read_content",
+        "resource.list_files",
         "resource.open_content",
         "resource.read_content_range",
         "resource.register",

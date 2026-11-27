@@ -4,33 +4,33 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 23
+  number: 25
   created_at: "2026-09-01"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-06T01:17:37Z"
+  updated_at: "2026-11-27T16:16:22Z"
   updated_by:
     user: ""
-    agent: "resident_60ae6d0cdf74"
+    agent: "resident_6199a7a36480"
 importance: 10
 metaness: 3
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/http_resources.py
-  - ${code_root}/management_portal/resources/isa.py
-  - ${code_root}/core_skills/tfi-unified-id/SKILL.md
-  - ${code_root}/config/resource-types/_registry.json
-  - ${code_root}/management_common/resource_identity.py
-  - ${code_root}/management_portal/resources/address.py
-  - ${code_root}/management_portal/resources/contracts.py
-  - ${code_root}/management_portal/resources/service.py
-  - ${code_root}/management_portal/resources/portal.py
-  - ${code_root}/tests/cases/test_resource_portal_contract.py
-  - ${code_root}/tests/cases/test_resource_identity_backend.py
-  - ${code_root}/tests/cases/test_resource_resolver_portal.py
-  - ${code_root}/tests/cases/test_resource_service.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/http_resources.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/isa.py
+  - /opt/tfi/the-fourth-institute-dev/code/core_skills/tfi-unified-id/SKILL.md
+  - /opt/tfi/the-fourth-institute-dev/code/config/resource-types/_registry.json
+  - /opt/tfi/the-fourth-institute-dev/code/management_common/resource_identity.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/address.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/contracts.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/service.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/portal.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resource_portal_contract.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resource_identity_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resource_resolver_portal.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resource_service.py
   related:
   - decision_ad3e21094f14
   - decision_a4e5f03c8b9b
@@ -106,10 +106,14 @@ ResourceService 在普通资源地址解析之前把这类引用交给上传文�
 - **`read_content(address, actor, max_bytes)` 读取正文。** 它复用同一次解析与授权，再由领域解析器附带的正文读取函数返回字节、媒体类型和解析结果；默认最多 4 MiB。正文从不来自资源索引的摘要。
 - **`read_content_range(address, start, end, actor)` 按字节区间分段读取。** 每段读取都重新解析和授权。领域解析器提供区间读取函数时才可用；它支撑大文件的分段下载。
 
+### 目录地址与续读
+
+文件夹地址的 `list_files(address, actor, cursor?, limit=200)` 返回直接子项和末页为空字符串的 `next_cursor`。`ReadResource` 沿用原目录结果，截断时附带同一游标。目录在前、名称 casefold 后以原名称决胜，使用排序键续读而非偏移量；隐藏项分页前排除，不限制全部子项数量。每页按当前访问者重新解析、鉴权并检查对象存在和目录绑定；游标不能跨对象、目录或重绑复用。目录变化不构成快照，新增在旧游标之前的名称需重新枚举。领域解析器通过 `list_files` 回调提供能力，不根据调用者传入路径补造权限。
+
 ### 资源在浏览器中的打开地址由一份规则决定
 
 - **统一 ID 和嵌套地址是身份，浏览器打开地址指向实际的领域页面。** 通用入口 `/r/<百分号编码后的完整地址>` 用当前访问者解析地址，再跳转到对应的领域页面。
-- **打开地址的规则集中在 `management_portal/resources/portal.py`。** 它列出每种资源类型的页面路径、身份参数和允许附带的导航参数。ResourceService、领域解析器和索引都使用这份规则，不各自拼接地址；规则只决定地址格式，读取授权和存在性仍由 ResourceService 判断。
+- **打开地址由 `management_portal/resources/portal.py` 汇总为一份规则。** 核心列出基础页面路径、身份参数和允许附带的导航参数；已安装功能通过 `resource.portal_routes` 提供或替换自身页面落点。ResourceService、领域解析器和索引都使用这份规则，不各自拼接地址；规则只决定地址格式，读取授权和存在性仍由 ResourceService 判断。
 - **各类型打开的页面：**
 
   | 资源类型 | 打开地址 |
@@ -119,6 +123,7 @@ ResourceService 在普通资源地址解析之前把这类引用交给上传文�
   | Review | `/resource/knowledge?item=<ID>`；属于某篇论文的评阅改为打开该论文 |
   | Paper | `/paper?paper=<ID>` |
   | Test | `/wall?case=<ID>` |
+  | Notice | `/?notice_post=<ID>`，由 Notice Board 功能声明；Home 继续按 `GetPost` 的当前权限读取详情 |
   | Resident | `/lineage?resident=<ID>`，可附带所在 Lineage |
   | Lineage | `/lineage?lineage=<ID>` |
   | Chatroom | `/lineage?chatroom=<ID>` |

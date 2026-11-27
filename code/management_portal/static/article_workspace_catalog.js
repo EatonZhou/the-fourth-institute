@@ -12,7 +12,7 @@
     "detailHistory", "detailResourceGuest", "documentIsDirty", "esc", "hasDirtyDocuments", "loadArticleChat",
     "loadArticleGit", "loadBuild", "loadFiles", "loadSemanticIndex", "loadSettings", "openArticleFile",
     "queryState", "renderBuildSummary", "renderCompileMenu", "renderFileTree", "renderPdf",
-    "renderSemanticNavigation", "renderSettings", "request", "resetArticleGit", "scheduleArticleGitRefresh", "scheduleArticleContentRefresh",
+    "renderSemanticNavigation", "renderSettings", "request", "resetArticleGit", "resetFileListing", "scheduleArticleGitRefresh", "scheduleArticleContentRefresh",
     "selectedArticle", "setArticleResourceSearchOpen", "setOutputView", "setProjectMenu", "setTexlabStatus",
     "showPdfError", "showToast", "state", "updateSemanticUrl", "updateUrl", "readingPosition",
   ]);
@@ -25,7 +25,7 @@
       detailHistory, detailResourceGuest, documentIsDirty, esc, hasDirtyDocuments, loadArticleChat,
       loadArticleGit, loadBuild, loadFiles, loadSemanticIndex, loadSettings, openArticleFile, queryState,
       renderBuildSummary, renderCompileMenu, renderFileTree, renderPdf, renderSemanticNavigation,
-      renderSettings, request, resetArticleGit, scheduleArticleGitRefresh, scheduleArticleContentRefresh, selectedArticle,
+      renderSettings, request, resetArticleGit, resetFileListing, scheduleArticleGitRefresh, scheduleArticleContentRefresh, selectedArticle,
       setArticleResourceSearchOpen, setOutputView, setProjectMenu, setTexlabStatus, showPdfError, showToast,
       state, updateSemanticUrl, updateUrl, readingPosition,
     } = dependencies;
@@ -243,6 +243,7 @@
       window.clearTimeout(state.autoCompileTimer);
       state.autoCompileTimer = 0;
       state.queuedCompile = null;
+      resetFileListing();
       state.files = [];
       state.filesByPath.clear();
       state.linkedFiles = new Map();

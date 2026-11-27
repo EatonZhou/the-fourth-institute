@@ -99,6 +99,7 @@
     gitDiffSideBySide: true,
     files: [],
     filesByPath: new Map(),
+    fileListingComplete: false,
     linkedFiles: new Map(),
     linkedFileProbes: new Set(),
     collapsedDirectories: new Set(),
@@ -212,7 +213,7 @@
     if (!root || !target.startsWith(`${root}/`)) return "";
     const relative = target.slice(root.length + 1);
     const entry = state.filesByPath.get(relative);
-    return entry && entry.type !== "directory" ? relative : "";
+    return entry ? (entry.type !== "directory" ? relative : "") : (state.fileListingComplete ? "" : relative);
   }
 
   function articleProjects(article) {
@@ -327,7 +328,8 @@
     renderCompileMenu: (...args) => renderCompileMenu(...args),
     renderFileTree: (...args) => renderFileTree(...args), renderPdf: (...args) => renderPdf(...args),
     renderSemanticNavigation: (...args) => renderSemanticNavigation(...args),
-    renderSettings: (...args) => renderSettings(...args), request, resetArticleGit, scheduleArticleGitRefresh,
+    renderSettings: (...args) => renderSettings(...args), request, resetArticleGit, resetFileListing: (...args) => resetFileListing(...args),
+    scheduleArticleGitRefresh,
     scheduleArticleContentRefresh: (...args) => scheduleArticleContentRefresh(...args),
     selectedArticle, setArticleResourceSearchOpen, setOutputView: (...args) => setOutputView(...args),
     setProjectMenu, setTexlabStatus, showPdfError: (...args) => showPdfError(...args), showToast, state,
@@ -357,7 +359,7 @@
 
   const {
     createEntry, loadFiles, openArticleLinkedReference, openEntryModal, registerArticleLinkedFiles,
-    renderFileTree, uploadFile,
+    renderFileTree, resetFileListing, uploadFile,
   } = articleModule("PortalArticleWorkspaceFileTree").createFileTree({
     $, activeDocument: (...args) => activeDocument(...args), articleAbsolutePath, articleEntryDialog,
     articleInternalPath, articleStateHtml, loadSemanticIndex: (...args) => loadSemanticIndex(...args),
@@ -398,7 +400,7 @@
     initialDelay: 5000,
     shouldRefresh: () => !!state.selectedId && !unregisteringArticles.has(state.selectedId),
     fetch: async context => {
-      const filesChanged = await loadFiles(context);
+      const filesChanged = await loadFiles({ ...context, background: true });
       if (!context.isCurrent()) return;
       const documentsChanged = await refreshArticleDocuments(context.key, context);
       if (context.isCurrent() && (filesChanged || documentsChanged)) await loadSemanticIndex();

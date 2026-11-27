@@ -5,8 +5,11 @@ entry owns authorization and supplies current registered paths for exclusion.
 """
 from __future__ import annotations
 
+import base64
 from collections import deque
 from dataclasses import dataclass
+import hashlib
+from heapq import nsmallest
 import os
 from pathlib import Path
 import stat
@@ -29,10 +32,11 @@ RULES = {
     "antigravity": ProviderRule((".gemini", "gemini", "antigravity"), ("GEMINI_HOME",), ("oauth_creds.json",)),
     "kimi": ProviderRule((".kimi", "kimi"), ("KIMI_CODE_HOME", "KIMI_HOME"), ("config.toml",)),
 }
-# Limits apply to an entire call, including files inspected while listing.
+# Discovery limits apply to the entire recursive search.
 MAX_DIRECTORIES = 512
 MAX_ENTRIES = 4096
 MAX_CANDIDATES = 100
+# Browse bounds child metadata probes and returned directories per page.
 MAX_BROWSE_ENTRIES = 2048
 MAX_BROWSE_DIRECTORIES = 500
 
@@ -175,36 +179,73 @@ def _browse_roots():
     return roots
 
 
-def browse(value=None):
+def _browse_name_key(name: str) -> tuple[str, str]:
+    return name.casefold(), name
+
+
+def _browse_after(cursor: str, scope: str) -> tuple[str, str]:
+    if not cursor:
+        return "", ""
+    try:
+        if not isinstance(cursor, str) or len(cursor) > 8192:
+            raise ValueError
+        cursor_scope, encoded_name = cursor.split(".", 1)
+        name = os.fsdecode(base64.b64decode(encoded_name, altchars=b"-_", validate=True))
+        if cursor_scope != scope or not name or name in {".", ".."} or "\0" in name or Path(name).name != name:
+            raise ValueError
+    except ValueError:
+        raise invalid("目录游标无效，或与当前目录不匹配") from None
+    return _browse_name_key(name)
+
+
+def _browse_page(path: Path, limit: int, cursor: str) -> tuple[list[dict[str, str]], str]:
+    scope = hashlib.sha256(os.fsencode(path)).hexdigest()
+    after = _browse_after(cursor, scope)
+    directories = []
+    last_name = ""
+    with os.scandir(path) as entries:
+        # The filesystem supplies no portable name order. Keep only the first
+        # batch of names after the cursor, then probe metadata for that batch.
+        candidates = nsmallest(
+            MAX_BROWSE_ENTRIES + 1,
+            (entry for entry in entries if _browse_name_key(entry.name) > after),
+            key=lambda entry: _browse_name_key(entry.name),
+        )
+        has_more = len(candidates) > MAX_BROWSE_ENTRIES
+        for entry in candidates[:MAX_BROWSE_ENTRIES]:
+            if entry.is_dir(follow_symlinks=False) and not entry.is_symlink():
+                try:
+                    child = _directory(entry.path)
+                except (ValueError, OSError, RuntimeError):
+                    # A raced child or Windows junction is not selectable.
+                    pass
+                else:
+                    if len(directories) == limit:
+                        has_more = True
+                        break
+                    directories.append({"name": entry.name, "path": str(child)})
+            last_name = entry.name
+    if not has_more:
+        return directories, ""
+    name_token = base64.urlsafe_b64encode(os.fsencode(last_name)).decode("ascii")
+    return directories, f"{scope}.{name_token}"
+
+
+def browse(value=None, *, cursor: str = "", limit: int | None = None):
+    limit = MAX_BROWSE_DIRECTORIES if limit is None else limit
+    if type(limit) is not int or not 1 <= limit <= MAX_BROWSE_DIRECTORIES:
+        raise invalid(f"limit 必须是 1 至 {MAX_BROWSE_DIRECTORIES} 的整数")
     value = str(Path.home()) if value is None else value
     try:
         path = _directory(value)
-        directories = []
-        truncated = False
-        with os.scandir(path) as entries:
-            for index, entry in enumerate(entries):
-                if index >= MAX_BROWSE_ENTRIES:
-                    truncated = True
-                    break
-                if entry.is_dir(follow_symlinks=False) and not entry.is_symlink():
-                    if len(directories) >= MAX_BROWSE_DIRECTORIES:
-                        truncated = True
-                        break
-                    try:
-                        child = _directory(entry.path)
-                    except (ValueError, OSError, RuntimeError):
-                        # A raced child or Windows junction is not a canonical
-                        # selectable directory; the current parent is still usable.
-                        continue
-                    directories.append({"name": entry.name, "path": str(child)})
-        directories.sort(key=lambda item: (item["name"].casefold(), item["name"]))
+        directories, next_cursor = _browse_page(path, limit, cursor)
         return {"path": str(path), "parent": str(path.parent), "directories": directories,
-                "roots": _browse_roots(), "truncated": truncated}
+                "roots": _browse_roots(), "truncated": bool(next_cursor), "next_cursor": next_cursor}
+    except InstructionError:
+        raise
     except FileNotFoundError:
         raise not_found("主机目录不存在") from None
     except PermissionError:
         raise InstructionError("instruction.forbidden", "主机目录不可读") from None
     except (ValueError, OSError, RuntimeError):
         raise invalid("请指定可读的主机规范绝对目录，不支持符号链接") from None
-
-

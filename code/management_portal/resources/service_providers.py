@@ -50,6 +50,7 @@ def register_resolver(
     read_content: Any = None,
     read_content_range: Any = None,
     query: Any = None,
+    list_files: Any = None,
     replace: bool = False,
 ) -> None:
     values = [resource_types] if isinstance(resource_types, str) else list(resource_types)
@@ -64,6 +65,7 @@ def register_resolver(
             read_content=read_content,
             read_content_range=read_content_range,
             query=query,
+            list_files=list_files,
         ),
         replace=replace,
     )

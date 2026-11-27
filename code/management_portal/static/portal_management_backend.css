@@ -66,7 +66,8 @@
 .backendDirectoryIcon::before { content:""; position:absolute; width:7px; height:3px; top:-4px; left:-1.5px; border:1.5px solid var(--accent); border-bottom:0; border-radius:2px 2px 0 0; }
 .backendDirectoryFeedback { display:flex; align-items:center; gap:8px; flex:none; }
 .backendDirectoryFeedback p { margin:0; font-size:.8rem; color:var(--muted); overflow-wrap:anywhere; }
-.backendDirectoryFeedback:has(p:empty) { display:none; }
+.backendDirectoryFeedback p:empty, .backendDirectoryFeedback button[hidden],
+.backendDirectoryFeedback:has(p:empty):not(:has(button:not([hidden]))) { display:none; }
 .backendDirectoryPicker .backendDirectoryFooter { display:flex; align-items:center; flex-wrap:wrap; flex:none; gap:8px; margin:0; border-top:1px solid var(--border); padding:10px 12px; }
 .backendDirectoryPending { flex:1 1 200px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .backendDirectoryCommit { display:flex; gap:8px; margin-left:auto; }

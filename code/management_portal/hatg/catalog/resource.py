@@ -53,11 +53,20 @@ DECLARATIONS = (
         P("mtime_ns", description="纳秒修改时间，十进制字符串"),
         P("content_url", description="Portal 页面显示和下载这个文件的地址，支持 Range；加 &download=1 作为附件下载"),
         P("file_reference", "object", "可持久保存的 {workspace_id|repo_id|article_id, relative_path} 或上传文件 {upload_id} 引用"),
-        P("entries", "array", "目录的直接子项，最多 200 项：name、kind、size、modified_at、mtime_ns、path（相对路径）和 address"),
+        P("entries", "array", "目录直接子项的首页，最多 200 项：name、kind、size、modified_at、mtime_ns、path（相对路径）和 address；更多项用 ListResourceFiles 续读"),
+        P("next_cursor", description="目录截断时的续读游标，交给同地址的 ListResourceFiles；不是目录时间快照"),
         P("truncated", "boolean", "目录子项或预览被截断"),
         P("hidden_count", "integer", "目录中按安全规则隐藏的子项数"),
         P("binary", "boolean", "preview 时文件不是文本"),
         P("allows", "object", "Workspace 文件的 UpdateWorkspaceFile：调用者能否保存这个文件"),
+    ), target="address"),
+    _d("ListResourceFiles", (On("address"),), "分页列出目录的直接子项，沿 ReadResource 地址权限；目录优先，再按名称 casefold 和原名排序。每页重新核验授权与绑定；不是时间快照，新插入游标之前的项需重新列举。", (
+        R("address", "any", "目录资源地址 <资源ID>/file[/相对目录]，或 {workspace_id|repo_id|article_id, relative_path} 文件引用；拒绝文件和符号链接目录"),
+        P("cursor", description="上一页返回的 next_cursor；只可用于同资源、同目录、同绑定，首页省略"),
+        P("limit", "integer", "每页条数，默认 200；不是目录总数上限", minimum=1),
+    ), (
+        R("entries", "array", "当前页直接子项：name、kind、size、modified_at、mtime_ns、path、address 及适用的 file_reference；隐藏项不占页"),
+        R("next_cursor", description="下一页游标；空字符串表示当前已无更多项"),
     ), target="address"),
     _d("GetResourceType", FIXED, "读取一个资源类型是否可以登记、修改和撤销登记。", (
         R("resource_type", description="资源类型"),

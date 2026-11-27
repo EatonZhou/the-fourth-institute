@@ -9,7 +9,6 @@ the directory's direct children.
 """
 from __future__ import annotations
 
-import heapq
 import json
 import os
 import stat
@@ -21,6 +20,7 @@ from urllib.parse import urlencode
 from management_common import secure_paths
 from management_common.secure_paths import open_target
 from management_portal.office_preview import supports_pdf_preview
+from ..directory_pagination import directory_key, directory_scope, paginate
 
 DIRECTORY_MEDIA_TYPE = "application/vnd.tfi.directory+json"
 MAX_DIRECTORY_ENTRIES = 200
@@ -111,13 +111,14 @@ def metadata(info: os.stat_result, name: str) -> dict[str, Any]:
             "mtime_ns": str(info.st_mtime_ns)}
 
 
-def _listing(fd: int, root_id: str, parts: tuple[str, ...]) -> dict[str, Any]:
+def _listing(fd: int, root_id: str, parts: tuple[str, ...], *, cursor=None,
+             limit=MAX_DIRECTORY_ENTRIES, binding=None) -> dict[str, Any]:
     from ..file_references import file_reference_for, portable_parts
 
-    visible_count = hidden_count = 0
+    hidden_count = 0
 
     def candidates():
-        nonlocal visible_count, hidden_count
+        nonlocal hidden_count
         with secure_paths.scandir(fd) as items:
             for entry in items:
                 try:
@@ -132,24 +133,36 @@ def _listing(fd: int, root_id: str, parts: tuple[str, ...]) -> dict[str, Any]:
                 if hidden((*parts, entry.name)):
                     hidden_count += 1
                     continue
-                visible_count += 1
                 yield entry.name, info
 
     # Exact counts still require walking the directory, but only the returned
     # page's metadata needs to be retained and sorted.
-    selected = heapq.nsmallest(
-        MAX_DIRECTORY_ENTRIES, candidates(),
-        key=lambda item: (not stat.S_ISDIR(item[1].st_mode), item[0].casefold()),
+    page = paginate(
+        candidates(), scope=(directory_scope(root_id, '/'.join(parts), binding)
+                             if binding is not None else json.dumps([root_id, parts])),
+        key=lambda item: directory_key(item[0], stat.S_ISDIR(item[1].st_mode)),
+        cursor=cursor, limit=limit,
     )
     entries = []
-    for name, info in selected:
+    for name, info in page['entries']:
         relative = "/".join((*parts, name))
         reference = file_reference_for(root_id, relative)
         address = f"{root_id}/file/{relative.replace('%', '%25')}"
         entries.append({**metadata(info, name), "path": relative, "address": address,
                         **({"file_reference": reference} if reference else {})})
-    return {"entries": entries, "truncated": visible_count > MAX_DIRECTORY_ENTRIES,
-            "hidden_count": hidden_count}
+    return {"entries": entries, "truncated": page['truncated'], "hidden_count": hidden_count,
+            **({'next_cursor': page['next_cursor']} if page['next_cursor'] else {})}
+
+
+def list_files(resolved: dict[str, Any], root: PurePath, *, cursor=None, limit=MAX_DIRECTORY_ENTRIES):
+    if not resolved['exists']:
+        raise FileNotFoundError(resolved['address'])
+    parts = tuple(part for part in resolved['relative_path'].split('/') if part)
+    with open_target(root, parts) as (fd, info):
+        if not stat.S_ISDIR(info.st_mode):
+            raise ValueError('ListResourceFiles requires a directory address')
+        page = _listing(fd, resolved['root_id'], parts, cursor=cursor, limit=limit, binding=info)
+    return {'entries': page['entries'], 'next_cursor': page.get('next_cursor', '')}
 
 
 def read_content(resolved: dict[str, Any], root: PurePath, *, max_bytes: int = 4 * 1024 * 1024):
@@ -160,7 +173,7 @@ def read_content(resolved: dict[str, Any], root: PurePath, *, max_bytes: int = 4
     parts = tuple(part for part in resolved["relative_path"].split("/") if part)
     with open_target(root, parts) as (fd, info):
         if stat.S_ISDIR(info.st_mode):
-            data = json.dumps(_listing(fd, resolved["root_id"], parts), ensure_ascii=False).encode("utf-8")
+            data = json.dumps(_listing(fd, resolved["root_id"], parts, binding=info), ensure_ascii=False).encode("utf-8")
             if len(data) > max_bytes:
                 raise ValueError(f"resource exceeds {max_bytes} byte content limit")
             return data, DIRECTORY_MEDIA_TYPE, resolved
