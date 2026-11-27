@@ -89,17 +89,34 @@ def candidates(accounts: list[dict], source: Mapping[str, Any], *, model: str = 
     return sorted(eligible, key=rank)
 
 
+def account_load(account):
+    occupied = account.get("active_count", 0) + account.get("queued_count", 0)
+    return occupied / max(1, account.get("max_concurrency") or 1)
+
+
 def same_model_candidates(accounts: list[dict], source: Mapping[str, Any], *, model: str,
-                          effort: str = "", excluded=(), reserve=0) -> list[dict]:
-    """Select compatible accounts with confirmed model support, preferring the original effort."""
-    if not model:
-        return []
-    known = [a for a in accounts if (a.get("selection_catalog") or {}).get("fresh") is True]
-    ordered = candidates(known, source, model=model, excluded=excluded, reserve=reserve)
-    if effort:
-        ordered.sort(key=lambda a: effort not in
-                     (a["selection_catalog"].get("efforts_by_model") or {}).get(model, []))
-    return ordered
+                          effort: str = "", excluded=()) -> list[dict]:
+    """Prefer idle capacity above 20%; below that line conserve the fullest account."""
+    ranked = []
+    for account in accounts:
+        catalog = account.get("selection_catalog") or {}
+        if (not compatible(account, source) or account["account_id"] in excluded
+                or (account.get("kind") == "subscription_login" and account.get("login_state") != "logged_in")
+                or not available(account) or catalog.get("fresh") is not True
+                or not model or model not in catalog.get("models", [])):
+            continue
+        quota = account.get("quota_reserve") or {}
+        remaining = headroom(account)
+        load = account_load(account)
+        if remaining is None or remaining <= 0 or load >= 1:
+            continue
+        other_effort = bool(effort and effort not in (catalog.get("efforts_by_model") or {}).get(model, []))
+        if remaining > 20 and (quota.get("close_threshold") or {}).get("metric") != "balance":
+            rank = (0, load, -remaining)
+        else:
+            rank = (1, -remaining, load)
+        ranked.append(((*rank, other_effort, account["account_id"]), account))
+    return [account for _, account in sorted(ranked, key=lambda item: item[0])]
 
 
 def observations() -> list[dict]:

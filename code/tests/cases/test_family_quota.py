@@ -62,13 +62,13 @@ def test_family_switching_stays_among_subscriptions_unless_a_kind_is_allowed():
     api = {**_account("api", 90), "kind": "api_profile", "billing_account_id": "openai"}
     service = _account("svc", 95, provider="kimi", kind="service")
     pick = lambda accounts, **kwargs: accounts_policy.fallback_account(
-        accounts, "codex", "one", [], reserve=True, append_subscriptions=True, **kwargs).get("account_id", "")
+        accounts, "codex", "one", [], **kwargs).get("account_id", "")
     assert pick([_account("one", 5), api, service]) == ""
     assert pick([_account("one", 5), api, service, _account("two", 40, provider="claude")]) == ""
     assert pick([_account("one", 5), api, service], priority=["codex:api_profile:openai"]) == "codex_api"
     assert pick([_account("one", 5), api, service], priority=["kimi:service"]) == "kimi_svc"
     # General automatic selection uses the same billing and Provider boundary.
-    assert accounts_policy.fallback_account([_account("one", 5), api], "codex", "one", [], reserve=True) == {}
+    assert accounts_policy.fallback_account([_account("one", 5), api], "codex", "one", []) == {}
     # The source's own non-subscription kind stays allowed.
     source = {**_account("one", 5), "kind": "api_profile", "billing_account_id": "openai"}
     assert pick([source, api]) == "codex_api"
@@ -81,9 +81,9 @@ def test_reserve_targets_require_weekly_above_five_or_a_funded_metered_agent():
     """
     candidates = [_account("one", 4), _account("two", 5), _account("three", 50, fresh=False),
                   _account("four", 45), _account("claude_one", 80, provider="claude")]
-    assert accounts_policy.fallback_account(candidates, "codex", "one", [], reserve=True)["backend_route_id"] == "four"
-    assert accounts_policy.fallback_account(candidates, "codex", "one", ["codex_four"], reserve=True) == {}
-    assert accounts_policy.fallback_account(candidates, "codex", "one", ["codex_four"], reserve=True, priority=["claude:subscription_login"])["provider"] == "claude"
+    assert accounts_policy.fallback_account(candidates, "codex", "one", [])["backend_route_id"] == "four"
+    assert accounts_policy.fallback_account(candidates, "codex", "one", ["codex_four"])["backend_route_id"] == "two"
+    assert accounts_policy.fallback_account(candidates, "codex", "one", ["codex_four", "codex_two"], priority=["claude:subscription_login"])["provider"] == "claude"
     metered = {"provider": "claude", "account_id": "deepseek_primary", "backend_route_id": "deepseek_primary",
                "quota_reserve": {"status": "available", "fresh": True, "remaining": 15,
                                  "remaining_balance": 15, "currency": "CNY"}}

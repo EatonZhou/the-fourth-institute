@@ -116,7 +116,8 @@ TASKS = {
         "关闭整个 Family 门面表示暂停自维护，单个成员关闭不再自动免除恢复职责。",
         "核验并处理当前未解决故障。"),
     "quota": ("recheck_recovery", "steward", "业务成员额度不足",
-        "先用 GetResidentSettings 核对执行者有效自动切换策略，并用 GetLineage 读取 Family 配置；成员明确设置的开关优先，关闭时等待原额度或用户明确授权。继承 Family 时同种类可用账号优先，否则按有效种类排序；成员明确开启时使用站点默认排序。未排序的订阅种类按默认顺序追加，服务账号和 API 只在与原账号同种类或有效排序明确允许时可选。用 ListProviderAccounts.migration_type 区分订阅、服务账号及不同 API 接入，不能只按 harness 选择。检查五小时、周等所有窗口，自动迁移优先完整保留上下文；不支持完整导入时自动在目标账号整理交接，不等待用户选择，不空白重开；旧会话和历史保留，目标准备好后继续原任务。Steward 必要时使用 RestartSession 指定目标账号并核验跨后端交接；跨 Provider 须明确目标账号的默认 model，"
+        "先用 GetResidentSettings 核对目标 Resident 的两个换号开关。额度关闭后，由平台从同类型同模型账号中优先选余量超过 20% 且最空闲的账号，否则选正余量最高的可用账号。仅在没有同类目标且该 Resident 已开启应急替换时使用其应急顺序。两个开关都关闭时等待额度恢复或用户明确授权。"
+        "用 ListProviderAccounts.migration_type 区分订阅、服务账号及不同 API 接入，不能只按 harness 选择。检查五小时、周等所有窗口，自动迁移优先完整保留上下文；不支持完整导入时自动在目标账号整理交接，不等待用户选择，不空白重开；旧会话和历史保留，目标准备好后继续原任务。Steward 必要时使用 RestartSession 指定目标账号并核验跨后端交接；跨 Provider 须明确目标账号的默认 model，"
         "用 CheckRelayTarget 核对拟转交对象的接单状态和额度，再用 RelayMessage(reason=理由) 继续原请求。"
         "Router 和 Steward 自身的可用性由运行时保障；无可用后端时通知实际创建人。",
         "评估额度受限成员，安排原请求继续执行。"),
@@ -225,7 +226,7 @@ _SHIPPED_BINDING_DIGESTS = {
     ("recruit", "guide"): ("7c99e59499a54761bd6cd712dcdd0f2ca81e7da246720f7d84146c401c9c4e54",),
     ("route_review", "guide"): ("9ee60c39b6cde3e49c21a86e113b92b99f45885d8c27d1151480c1ad3f7428d6",),
     ("recovery", "guide"): ("05cc7be73850370df7aa9f321832015fa167e8df6ed9f0fa3087bdd22cf0ceec",),
-    ("quota", "guide"): ("d0b8b3bd0ae7770763415cf7ae66edd49fb4693d3614b39e25159fcd5366ef1d",),
+    ("quota", "guide"): ("7d8d7cf91e13055267dac244e465c8912908a72e6c3cc302f3ad56e8e1501da4", "d0b8b3bd0ae7770763415cf7ae66edd49fb4693d3614b39e25159fcd5366ef1d",),
 }
 
 
@@ -396,8 +397,6 @@ def render(record: dict, trigger: str, facts: dict, *, guide_version: str | None
             prompt += "\n指南：${guide_path}（${guide_version}）"
         prompt += "\n指南版本变化或尚未读取时，先按上述路径重读；其余资料按指南中的入口按需查看。"
     if entry["role"] == "steward":
-        enabled = block["family"].get("auto_migrate", True)
-        prompt += "\n行动前用 GetLineage 核对当前 auto_migrate，并用 GetResidentSettings 核对执行者有效自动切换开关；成员明确设置优先。Family 默认自动切换：" + ("开启。" if enabled else "关闭；未明确覆盖的执行者等待额度恢复或用户授权。")
-        prompt += "\n账号种类优先级 auto_migrate_priority：" + json.dumps(block["family"].get("auto_migrate_priority", []), ensure_ascii=False) + "。继承 Family 时先选同种类可用账号，再按排序；空数组跟随站点默认排序，非空排序末尾补未排序订阅种类。成员明确开启时按站点默认排序。服务账号和 API 只有有效排序明确允许或与原账号同种类时才可选。读取 ListProviderAccounts 的 migration_type，不将同 harness 的不同 API 与订阅混为一类；自动迁移优先完整保留上下文，不支持时自动整理交接，不等待用户选择；旧会话和历史保留，不空白重开。"
+        prompt += "\n账号换号由各 Resident 的运行设置控制。用 GetResidentSettings 核对同类型和应急开关，以及该 Resident 的应急顺序。"
     return Template(prompt).substitute(facts=json.dumps(facts, ensure_ascii=False),
         guide_path=path, guide_version=version if guide_version is None else guide_version)

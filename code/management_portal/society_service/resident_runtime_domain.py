@@ -1,6 +1,8 @@
 """Resident domain responsibilities: runtime."""
 from __future__ import annotations
 
+from management_portal.execution.account_selection_contract import QUOTA_SETTINGS, quota_updates
+
 from . import (
     identity_contract,
     resident_backend,
@@ -131,7 +133,7 @@ def assign_derived_resident_account_route(
         if not route:
             raise ValueError("切换到 Model API 时必须选择账号")
         # Model API owns validation, defaults and conversation-history policy.
-        updates = {key: inherited[key] for key in (*API_RUNTIME_SETTINGS, "auto_switch_on_quota", "quota_switch_strategy") if key in inherited}
+        updates = {key: inherited[key] for key in (*API_RUNTIME_SETTINGS, *QUOTA_SETTINGS) if key in inherited}
         if not same_provider or route != source_route:
             updates.pop("model", None)
             updates.pop("backend_options", None)
@@ -537,14 +539,7 @@ def validate_backend_runtime_updates(
     from management_portal.execution.resident_capability_settings import normalize_capability_config
     capability_updates = {}
     updates = dict(updates)
-    if "quota_switch_strategy" in updates:
-        from management_portal.execution.account_selection_contract import quota_switch_strategy
-        capability_updates["quota_switch_strategy"] = quota_switch_strategy(updates.pop("quota_switch_strategy"))
-    if "auto_switch_on_quota" in updates:
-        value = updates.pop("auto_switch_on_quota")
-        if type(value) is not bool:
-            raise ValueError("auto_switch_on_quota must be a boolean")
-        capability_updates["auto_switch_on_quota"] = value
+    capability_updates.update(quota_updates({key: updates.pop(key) for key in QUOTA_SETTINGS if key in updates}))
     if "capability_config" in updates:
         capability_updates["capability_config"] = normalize_capability_config(updates.pop("capability_config"))
     if not updates:
@@ -663,6 +658,9 @@ def fork_runtime_settings(
         actor=actor,
         updated_at=updated_at,
     )
+    from management_portal.execution.account_selection_contract import initial_quota_policy
+    inherited.pop("quota_switch_strategy", None)
+    inherited.update(initial_quota_policy())
     if not workspace_authority:
         inherited = resident_runtime_settings.read_only_runtime_settings(inherited)
     return inherited

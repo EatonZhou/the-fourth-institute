@@ -25,15 +25,19 @@ def test_quota_setting_roundtrip_cas_and_no_provider_io(resident_record, monkeyp
     rid = resident_record["resident_id"]
     read = lambda: resident_execution_domain.read_resident_runtime_settings(rid, "CASE-A")
     initial = read()
-    assert "auto_switch_on_quota" not in initial["runtime_settings"]
+    assert initial["runtime_settings"]["auto_switch_on_quota"] is False
+    assert initial["runtime_settings"]["emergency_switch_on_quota"] is False
+    assert initial["runtime_settings"]["emergency_switch_order"] == []
     for enabled in (True, False):
         before = read()
         result = resident_execution_domain.change_resident_runtime_settings(rid, "CASE-A", {
             "expected_revision": before["settings_revision"],
-            "runtime_settings": {"auto_switch_on_quota": enabled},
+            "runtime_settings": {"auto_switch_on_quota": enabled, "emergency_switch_on_quota": enabled,
+                                 "emergency_switch_order": ["claude:subscription_login"]},
         })
         assert result["runtime_settings"]["auto_switch_on_quota"] is enabled
         assert result["quota_switch"]["auto_switch_on_quota"] is enabled
+        assert read()["runtime_settings"]["emergency_switch_order"] == ["claude:subscription_login"]
         assert result["next_turn_fields"] == []
         assert resident_catalog.get_catalog().state_store.read_resident_execution_settings(rid)["auto_switch_on_quota"] is enabled
         assert read()["settings_revision"] == result["settings_revision"]
@@ -75,3 +79,13 @@ def test_quota_setting_merge_preserves_absence_and_false():
     merged = resident_runtime_settings.merge_settings({"auto_switch_on_quota": True}, {"auto_switch_on_quota": False})
     execution, harness = resident_settings_contract.split_runtime_settings(merged)
     assert resident_settings_contract.runtime_settings_from_parts(execution, harness)["auto_switch_on_quota"] is False
+
+def test_fork_resets_quota_policy_even_if_target_also_has_settings():
+    settings = {"model": "original", "auto_switch_on_quota": True, "emergency_switch_on_quota": True,
+                "emergency_switch_order": ["codex:subscription_login"], "quota_switch_strategy": "legacy"}
+    child = resident_runtime_domain.fork_runtime_settings(settings, settings, actor="test", updated_at="", workspace_authority=True)
+    assert child["model"] == settings["model"]
+    assert child["auto_switch_on_quota"] is child["emergency_switch_on_quota"] is False
+    assert child["emergency_switch_order"] == []
+    assert child.get("quota_switch_strategy") is None
+    assert settings["emergency_switch_on_quota"]

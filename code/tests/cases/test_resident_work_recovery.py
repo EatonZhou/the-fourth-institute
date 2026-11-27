@@ -232,8 +232,8 @@ def test_steward_quota_failure_migrates_without_calling_its_model(team, monkeypa
     record = _record(resident_id)
     record["backend_route_id"] = "one"
     record["execution_settings"] = {**record.get("execution_settings", {})}
-    record["execution_settings"].pop("auto_switch_on_quota", None)
-    resident_record_domain.save_resident_record(record)
+    record["execution_settings"]["auto_switch_on_quota"] = enabled
+    resident_record_domain.save_resident_record(record, commit_configuration=True)
     from tests.cases.family_test_support import set_role
     set_role(team.source["resident_id"], family_id="fbi_recovery", actor=ACTOR)
     set_role(resident_id, family_id="fbi_recovery", role=role, actor=ACTOR)
@@ -291,9 +291,9 @@ def test_fallback_requires_fresh_positive_agent_quota_and_can_change_provider():
     """
     accounts = [_account("codex", "one", 0), _account("codex", "two", 99, fresh=False),
                 _account("codex", "three", True), _account("claude", "claude_one", 50)]
-    assert recovery.fallback_account(accounts, "codex", "one", [], reserve=True) == {}
-    assert recovery.fallback_account(accounts, "codex", "one", [], reserve=True, priority=["claude:subscription_login"])["provider"] == "claude"
-    assert recovery.fallback_account(accounts, "codex", "one", ["claude_claude_one"], reserve=True) == {}
+    assert recovery.fallback_account(accounts, "codex", "one", []) == {}
+    assert recovery.fallback_account(accounts, "codex", "one", [], priority=["claude:subscription_login"])["provider"] == "claude"
+    assert recovery.fallback_account(accounts, "codex", "one", ["claude_claude_one"]) == {}
 
 
 @pytest.mark.parametrize("automatic", [True, False])
@@ -432,8 +432,8 @@ def test_steward_migration_intent_survives_interruption_without_new_request(team
     set_role(resident_id, family_id="fbi_recovery", role="steward", actor=ACTOR)
     record = _record(resident_id)
     record["backend_route_id"] = "one"
-    record["execution_settings"].pop("auto_switch_on_quota", None)
-    resident_record_domain.save_resident_record(record)
+    record["execution_settings"]["auto_switch_on_quota"] = True
+    resident_record_domain.save_resident_record(record, commit_configuration=True)
     from management_portal.society_service.state_store import get_lineage_data_store
     get_lineage_data_store().database.write(lambda c: c.execute(
         "UPDATE families SET auto_migrate=TRUE,auto_migrate_priority=%s WHERE family_id='fbi_recovery'",

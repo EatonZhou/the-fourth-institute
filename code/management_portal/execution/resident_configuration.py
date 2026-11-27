@@ -6,6 +6,8 @@ and protocol parameters belong to backend_options; they cannot override identity
 """
 from __future__ import annotations
 
+from management_portal.execution.account_selection_contract import QUOTA_SETTINGS
+
 from copy import deepcopy
 import json
 import math
@@ -126,7 +128,7 @@ def validate_api_parameters(parameters: Mapping[str, Any], protocol: str, *, req
 
 def validate_api_settings(route: str, current: Mapping[str, Any], updates: Mapping[str, Any]) -> dict[str, Any]:
     from management_portal.ai_provider_registry import AIProviderRegistry, shared_ai_provider_registry
-    unknown = set(updates) - set(API_RUNTIME_SETTINGS) - {"allow_subagents", "backend_role", "backend_role_fallback", "account_selection", "auto_switch_on_quota"}
+    unknown = set(updates) - set(API_RUNTIME_SETTINGS) - {"allow_subagents", "backend_role", "backend_role_fallback", "account_selection", *QUOTA_SETTINGS}
     if unknown or updates.get("allow_subagents") is True:
         raise ValueError("Model API does not support requested settings: " + ", ".join(sorted(unknown or {"allow_subagents"})))
     entry = shared_ai_provider_registry.get(route)

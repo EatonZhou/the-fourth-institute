@@ -75,32 +75,24 @@ def _migration_model(source, configured):
 
 
 def fallback_account(accounts: list[dict[str, Any]], provider: str, route: str,
-                     tried: list[str], *, reserve: bool = False, priority: list[str] | None = None,
-                     append_subscriptions: bool = False, model: str = "", effort: str = "",
-                     pinned: bool = False) -> dict[str, Any]:
-    from management_portal.execution.account_selection import same_model_candidates
+                     tried: list[str], *, priority: list[str] | None = None,
+                     same_type: bool = True, model: str = "", effort: str = "") -> dict[str, Any]:
+    from management_portal.execution.account_selection import account_load, headroom, priority_candidates, same_model_candidates
     source = next((a for a in accounts if a.get("provider") == provider
                    and str(a.get("backend_route_id") or "") == route), {})
     if not source:
         return {}
     excluded = [*tried, source["account_id"]]
-    if pinned:
-        from management_portal.execution.account_selection import quota_candidates
-        own = quota_candidates(accounts, source, model=model, effort=effort, excluded=excluded)
-        return own[0] if own else {}
     model = _migration_model(source, model)
-    own = same_model_candidates(accounts, source, model=model, effort=effort, excluded=excluded,
-                                reserve=MIGRATION_RESERVE_PERCENT if reserve else 0)
+    own = same_model_candidates(accounts, source, model=model, effort=effort, excluded=excluded)
     if own:
-        return own[0]
-    # Both site and Family orders explicitly authorize crossing kind boundaries.
-    from management_portal.execution.account_selection import priority_candidates
-    order = priority or []
-    if append_subscriptions:
-        from management_portal.execution.account_migration_types import subscription_priority
-        order = subscription_priority(accounts, order)
-    ordered = priority_candidates(accounts, order, source=source, model=model, effort=effort,
-                                  excluded=excluded, reserve=MIGRATION_RESERVE_PERCENT if reserve else 0)
+        return own[0] if same_type else {}
+    # An ordered emergency entry can opt into a metered account without percentage windows.
+    eligible = [a for a in accounts if account_load(a) < 1 and (a.get("selection_catalog") or {}).get("fresh")
+                and ((headroom(a) or 0) > 0 or (
+                    (a.get("quota_reserve") or {}).get("fresh") is True and sufficient_reserve(a)))]
+    ordered = priority_candidates(eligible, priority or [], source=source, model=model, effort=effort,
+                                  excluded=excluded)
     return ordered[0] if ordered else {}
 
 

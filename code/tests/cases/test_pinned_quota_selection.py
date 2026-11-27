@@ -27,9 +27,9 @@ def test_scope_and_evidence_are_required():
         invalid.append(row)
     invalid.append(api_account())
     assert quota_candidates(invalid, source, model="model", effort="high") == []
-    assert fallback_account([source, good, *invalid], "codex", "source", [], pinned=True,
-                            model="model", effort="high", priority=["claude:subscription_login"]) == good
-    assert fallback_account([source, good], "codex", "source", [], pinned=True, model="missing") == {}
+    assert fallback_account([source, good, *invalid], "codex", "source", [],
+                            model="model", effort="high") == good
+    assert fallback_account([source, good], "codex", "source", [], model="missing") == {}
 
 
 def test_fixed_switch_does_not_use_site_priority(monkeypatch):
@@ -38,12 +38,12 @@ def test_fixed_switch_does_not_use_site_priority(monkeypatch):
         "auto_switch_on_quota": True, "account_selection": "fixed", "quota_switch_strategy":"same_provider_model"}}) == []
 
 
-def test_legacy_fixed_true_preserves_site_priority(monkeypatch):
+def test_legacy_fixed_true_has_no_emergency_order(monkeypatch):
     from management_portal.society_service import family_quota, resident_default_backend
     monkeypatch.setattr(resident_default_backend,'selection_priority',lambda record:['legacy-site-order'])
     for strategy in ({},{'quota_switch_strategy':'legacy'}):
         record={'execution_settings':{'auto_switch_on_quota':True,'account_selection':'fixed',**strategy}}
-        assert family_quota.auto_migration_priority(record)==['legacy-site-order']
+        assert family_quota.auto_migration_priority(record)==[]
 
 
 def test_strategy_validation_and_settings_roundtrip():

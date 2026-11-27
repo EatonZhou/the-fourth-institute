@@ -157,7 +157,7 @@
             e.pendingSave = null;
             version.revision = result.runtime_settings_revision;
             invalidate(id); await load(e).catch(() => {}); changed(e, result);
-            if (Object.hasOwn(changes, "auto_switch_on_quota") && Object.keys(changes).length === 1) {
+            if (Object.keys(changes).every(key => ["auto_switch_on_quota", "emergency_switch_on_quota", "emergency_switch_order"].includes(key))) {
               window.PortalUI.toast(window.PortalI18n.t("额度自动切换设置已保存。"));
             } else window.PortalChatWorkspace?.notifyRuntimeSettingsSaved?.(result);
             return result;

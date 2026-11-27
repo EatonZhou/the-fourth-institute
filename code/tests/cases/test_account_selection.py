@@ -315,6 +315,8 @@ def test_backend_priority_drives_first_choice_and_recovery(monkeypatch):
     selected = defaults.configuration(record, {})
     assert selected["backend"] == "claude" and selected["runtime_settings"]["model"] == "sonnet"
     assert "reasoning_effort" not in selected["runtime_settings"]
+    assert family_quota.auto_migration_priority(record) == []
+    record["execution_settings"].update(emergency_switch_on_quota=True, emergency_switch_order=order)
     assert family_quota.auto_migration_priority(record) == order
     # Existing sessions keep same-kind preference before crossing to the sorted fallback.
     assert fallback_account(samples, "codex", "one", [], priority=order, model="model") == fuller

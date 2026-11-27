@@ -6,6 +6,8 @@ projection; execution requests may retain that projection as a dated snapshot.
 """
 from __future__ import annotations
 
+from management_portal.execution.account_selection_contract import QUOTA_SETTINGS
+
 from copy import deepcopy
 from typing import Any, Mapping
 
@@ -16,7 +18,7 @@ EXECUTION_SETTING_FIELDS = frozenset({
     "sandbox_explicit", "profile", "permission_preset",
     "prompt_injection", "capability_config", "allow_subagents", "updated_at", "updated_by",
     "prompt_context", "backend_options",
-    "backend_role", "backend_role_fallback", "account_selection", "auto_switch_on_quota", "quota_switch_strategy",
+    "backend_role", "backend_role_fallback", "account_selection", *QUOTA_SETTINGS,
     "runtime_settings_authority", "runtime_settings_authority_at",
     "runtime_settings_authority_by",
 })

@@ -6,7 +6,6 @@ Family stewards choose member migrations; the coordinator can migrate a
 quota-exhausted steward so supervision does not depend on its own model.
 """
 from __future__ import annotations
-from management_portal.execution.account_selection_contract import pinned_quota
 
 import time
 from typing import Any, Mapping
@@ -333,8 +332,13 @@ def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, A
         can_migrate = (resident_domain_port.auto_migration_enabled(record)
                        and bool(resident_domain_port.reserve_candidate(record)))
         pending = recovery.get("pending_restart")
-        if pending and not can_migrate:
-            continue
+        settings = record.get("execution_settings") or {}
+        policy = [settings.get("auto_switch_on_quota") is True,
+                  resident_domain_port.auto_migration_priority(record),
+                  settings.get("model", ""), settings.get("reasoning_effort", "")]
+        if pending and (not can_migrate or recovery.get("switch_policy") != policy):
+            _commit_switch_result(record, message_id, expected_pending=pending, pending_restart=None)
+            pending = None
         if pending:
             changed += int(_restart_quota_recovery(record, message_id, pending))
             continue
@@ -374,16 +378,11 @@ def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, A
                 _notify_steward_blocked(record, message_id, "steward 备用后端切换已失败两次")
                 continue
             tried = list(recovery.get("tried_accounts") or [])
-            # A Family switches only between subscriptions unless the user listed another kind.
-            from .resident_default_backend import selection_mode
-            automatic = explicit or selection_mode(record) == "auto"
-            target = fallback_account(accounts or [], provider, route, tried, reserve=not automatic,
+            settings = record.get("execution_settings") or {}
+            target = fallback_account(accounts or [], provider, route, tried,
                                       priority=resident_domain_port.auto_migration_priority(record),
-                                      pinned=pinned_quota(record),
-                                      append_subscriptions=((record.get("execution_settings") or {}).get("auto_switch_on_quota") is not True
-                                                            and bool((record.get("family") or {}).get("role"))),
-                              model=(record.get("execution_settings") or {}).get("model", ""),
-                              effort=(record.get("execution_settings") or {}).get("reasoning_effort", ""))
+                                      same_type=settings.get("auto_switch_on_quota") is True,
+                                      model=settings.get("model", ""), effort=settings.get("reasoning_effort", ""))
             if not target:
                 if explicit:
                     _commit_switch_result(record, message_id, switch_reason="default_backends_unavailable")
@@ -410,7 +409,7 @@ def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, A
                         or not resident_domain_port.auto_migration_enabled(current)
                         or not _intake_allows_recovery(current)):
                     continue
-                set_recovery_entry(current, message_id, pending_restart=payload,
+                set_recovery_entry(current, message_id, pending_restart=payload, switch_policy=policy,
                                    switch_reason="",
                                    switch_attempts=switches + 1,
                                    tried_accounts=[*tried, str(target["account_id"])])

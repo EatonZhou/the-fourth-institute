@@ -83,39 +83,8 @@
               target.textContent = window.PortalI18n.text`运行设置属于 ${view.runtimeSettingsResidentId}`;
               extras.append(target);
             }
-            const quotaSwitch = view.quotaSwitch;
-            const facade = context.family || context.node?.family?.role === "facade" || view.detail?.resident?.family?.role === "facade"
-              || !!view.detail?.family_facade?.family_id;
-            if (facade) {
-              const note = document.createElement("p");
-              note.textContent = window.PortalI18n.t("额度自动切换由 Family 设置管理"); extras.append(note);
-            }
-            if (!facade && typeof quotaSwitch?.auto_switch_on_quota === "boolean") {
-              const row = document.createElement("div"); row.className = "familyAutoMigrateSetting";
-              const label = document.createElement("span"); label.textContent = window.PortalI18n.t("在当前帐号额度用完时是否自动切换");
-              const toggle = document.createElement("button"); toggle.type = "button";
-              toggle.className = "portalButton residentMenuToggle"; toggle.dataset.menuQuotaSwitch = "1";
-              toggle.setAttribute("role", "switch"); toggle.setAttribute("aria-label", label.textContent);
-              toggle.setAttribute("aria-checked", String(quotaSwitch.auto_switch_on_quota));
-              toggle.disabled = disabled || !view.canEdit;
-              toggle.title = window.PortalI18n.t("开启后先找同类型同模型账号，再按站点默认排序回退。关闭时，额度不足会打开手动选择。");
-              toggle.onclick = async () => {
-                toggle.disabled = true;
-                try { await context.runtimeController.saveSettings({auto_switch_on_quota: !quotaSwitch.auto_switch_on_quota}); }
-                catch (error) { if (menuState.nodeMenuContext === context) nodeMenuNotice(error.message); }
-                finally { if (menuState.nodeMenuContext === context) context.runtimeController.load().catch(() => {}); }
-              };
-              row.append(label, toggle); extras.append(row);
-              const explicit = view.settings?.auto_switch_on_quota;
-              const familyRole = (view.detail?.resident?.family || context.node?.family)?.role;
-              const source = typeof explicit === "boolean"
-                ? (explicit ? "Resident 已开启自动切换。先找同类型同模型账号，再按站点默认排序回退。" : "来源：Resident 显式关闭；不会自动切换账号。")
-                : ["member", "router", "steward"].includes(familyRole)
-                  ? "继承 Family 开关。开启时先找同类型同模型账号，再按 Family 排序回退。"
-                  : "来源：沿用既有账号选择策略。";
-              const note = document.createElement("p"); note.className = "paneNote";
-              note.dataset.menuQuotaSource = "1";
-              note.textContent = window.PortalI18n.t(source); extras.append(note);
+            if (typeof view.quotaSwitch?.auto_switch_on_quota === "boolean" && view.runtimeSettingsResidentId) {
+              renderQuotaSettings(extras, context, view.settings || {}, disabled || !view.canEdit);
             }
           },
           onChanged: () => {
@@ -131,6 +100,90 @@
       }
       if (context.runtimePanelHost.parentElement !== root) root.replaceChildren(context.runtimePanelHost, context.runtimeExtras);
       await mountPanel();
+    }
+
+    function renderQuotaSettings(root, context, settings, disabled) {
+      const t = value => window.PortalI18n.t(value);
+      const save = changes => context.runtimeController.saveSettings(changes).catch(error => {
+        if (menuState.nodeMenuContext === context) nodeMenuNotice(error.message);
+      });
+      function switchRow(key, label, help, marker) {
+        const row = document.createElement("div");
+        row.className = "familyAutoMigrateSetting";
+        const title = document.createElement("span");
+        title.textContent = t(label);
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "portalButton residentMenuToggle";
+        button.dataset[marker] = "1";
+        button.setAttribute("role", "switch");
+        button.setAttribute("aria-label", title.textContent);
+        button.setAttribute("aria-checked", String(settings[key] === true));
+        button.disabled = disabled;
+        button.onclick = () => save({[key]: settings[key] !== true});
+        row.append(title, button);
+        const note = document.createElement("p");
+        note.className = "paneNote";
+        note.textContent = t(help);
+        root.append(row, note);
+      }
+      switchRow("auto_switch_on_quota", "同类型同模型自动换号",
+        "剩余额度超过 20% 时选最空闲的账号；否则选剩余额度最高的可用账号。", "menuQuotaSwitch");
+      switchRow("emergency_switch_on_quota", "应急替换",
+        "没有可用的同类型同模型账号时，按此 Resident 的应急顺序替换。", "menuEmergencySwitch");
+      if (!settings.emergency_switch_on_quota) return;
+      const editor = document.createElement("div");
+      root.append(editor);
+      const order = [...(settings.emergency_switch_order || [])];
+      function renderOrder(types) {
+        editor.replaceChildren();
+        const list = document.createElement("ol");
+        function action(parent, label, next, unavailable = false) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "portalButton is-compact";
+          button.textContent = t(label);
+          button.disabled = disabled || unavailable;
+          button.onclick = () => save({emergency_switch_order: next()});
+          parent.append(button);
+        }
+        for (const [index, id] of order.entries()) {
+          const item = document.createElement("li");
+          item.append(types.get(id) || id);
+          const move = offset => {
+            const next = [...order];
+            next.splice(index, 1);
+            next.splice(index + offset, 0, id);
+            return next;
+          };
+          action(item, "上移", () => move(-1), index === 0);
+          action(item, "下移", () => move(1), index === order.length - 1);
+          action(item, "移除", () => order.filter(key => key !== id));
+          list.append(item);
+        }
+        if (!order.length) editor.append(t("应急顺序为空"));
+        editor.append(list);
+        const select = document.createElement("select");
+        select.setAttribute("aria-label", t("应急替换目标"));
+        for (const [id, label] of types) {
+          if (!order.includes(id)) select.add(new Option(label, id));
+        }
+        if (select.length) {
+          select.disabled = disabled;
+          editor.append(select);
+          action(editor, "添加", () => [...order, select.value]);
+        }
+      }
+      renderOrder(new Map());
+      context.quotaTypes ||= window.PortalInstructionClient.execute("ListProviderAccounts", {}).then(result =>
+        new Map((result.accounts || []).filter(a => a.migration_type && a.provider !== "provider_api")
+          .map(a => [a.migration_type.id, a.migration_type.label])));
+      context.quotaTypes.then(types => {
+        if (editor.isConnected) renderOrder(types);
+      }).catch(error => {
+        context.quotaTypes = null;
+        if (editor.isConnected) editor.append(error.message);
+      });
     }
 
     async function loadNodeMenuReporting(context) {

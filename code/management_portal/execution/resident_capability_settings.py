@@ -5,6 +5,8 @@ time. Empty selections preserve the platform defaults, rather than clearing them
 """
 from __future__ import annotations
 
+from management_portal.execution.account_selection_contract import QUOTA_SETTINGS
+
 from collections.abc import Mapping
 import hashlib
 import json
@@ -142,8 +144,7 @@ def settings_application(settings: Mapping[str, Any], *, backend: str, revision:
                  "allow_subagents", "agent_harness", "prompt_context", "backend_options", "backend_role", "account_selection"):
         if name in settings:
             add(name, "next_turn", "configured_for_future_input_without_delivery_observation")
-    if "quota_switch_strategy" in settings:
-        add("quota_switch_strategy", "configured", "used_at_next_quota_check", delivery="not_applicable")
-    if "auto_switch_on_quota" in settings:
-        add("auto_switch_on_quota", "configured", "used_at_next_quota_check", delivery="not_applicable")
+    for key in QUOTA_SETTINGS:
+        if key in settings:
+            add(key, "configured", "used_at_next_quota_check", delivery="not_applicable")
     return {"schema": "tfi.resident-application.v1", "settings_revision": revision, "items": items}

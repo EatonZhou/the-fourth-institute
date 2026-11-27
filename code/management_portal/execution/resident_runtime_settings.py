@@ -7,6 +7,8 @@ The Agent Harness configuration it carries is normalized by
 """
 from __future__ import annotations
 
+from management_portal.execution.account_selection_contract import QUOTA_SETTINGS, quota_updates
+
 from typing import Any
 from .harness_settings import boolean_setting, normalize_agent_harness_settings
 
@@ -140,13 +142,7 @@ def normalize_settings(raw: object) -> dict[str, Any]:
         out["runtime_settings_authority_by"] = authority_by
     if "allow_subagents" in data:
         out["allow_subagents"] = boolean_setting(data["allow_subagents"], default=False)
-    if "quota_switch_strategy" in data:
-        from .account_selection_contract import quota_switch_strategy
-        out["quota_switch_strategy"] = quota_switch_strategy(data["quota_switch_strategy"])
-    if "auto_switch_on_quota" in data:
-        if type(data["auto_switch_on_quota"]) is not bool:
-            raise ValueError("auto_switch_on_quota must be a boolean")
-        out["auto_switch_on_quota"] = data["auto_switch_on_quota"]
+    out.update(quota_updates(data))
     if "account_selection" in data:
         from .account_selection import mode
         out["account_selection"] = mode(data["account_selection"])
@@ -221,7 +217,7 @@ def merge_settings(base: object, updates: object, *, actor: str = "", updated_at
         "prompt_context",
         "backend_options",
         "account_selection",
-        "auto_switch_on_quota", "quota_switch_strategy",
+        *QUOTA_SETTINGS,
         "backend_role",
         "backend_role_fallback",
     ):

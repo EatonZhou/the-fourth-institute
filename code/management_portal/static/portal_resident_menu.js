@@ -1,85 +1,6 @@
 (() => {
   "use strict";
   const esc = value => window.PortalUIPrimitives.escapeHtml(value);
-  // Both Family menus edit the same persisted policy using the account catalog's types.
-  function mountMigrationPriority(root, {lineageId, familyId, readonly = false, saved = () => {}}) {
-    let disposed = false, loaded = false, busy = false, baseline = [], order = [], siteDefault = false, types = new Map();
-    const current = () => !disposed && root.isConnected;
-    const t = value => window.PortalI18n.t(value);
-    const execute = (...args) => window.PortalInstructionClient.execute(...args);
-    root.innerHTML = `<details class="familyMigrationPriority"><summary>${esc(t("账号种类优先级"))}</summary><div data-priority-body></div></details>`;
-    const panel = root.querySelector('[data-priority-body]');
-    // Automatic switching stays among subscriptions; a service or API kind
-    // takes part only once the user allows it, by listing it in the policy.
-    const subscription = key => key.split(':')[1] === 'subscription_login';
-    const byDefault = (a, b) => a.default_priority - b.default_priority || a.id.localeCompare(b.id);
-    const defaults = () => [...types.values()].filter(item => subscription(item.id)).sort(byDefault).map(item => item.id);
-    const expand = selected => [...new Set([...selected, ...defaults()])];
-    const label = key => types.get(key)?.label || key;
-    const draw = () => {
-      const others = [...types.values()].filter(item => !order.includes(item.id)).sort(byDefault).map(item => item.id);
-      const policyNote = siteDefault ? "保存后恢复站点默认帐号选择排序。下列仅为排序草稿，不代表站点当前生效顺序。"
-        : baseline.length ? "已自定义 Family 排序；未排序的订阅种类按默认顺序追加。"
-          : "当前继承站点默认帐号选择排序。下列仅为可编辑草稿，不代表站点当前生效顺序；保存后改为 Family 自定义排序。";
-      panel.innerHTML = `<p class="paneNote">${esc(t(policyNote))}</p><p class="paneNote">${esc(t("继承 Family 开关的成员使用此回退顺序。显式开启额度自动切换的成员使用站点回退顺序。"))}</p><p class="paneNote">${esc(t("先选支持当前模型的同类型账号，再按下列顺序回退。跨类型使用 API 或服务账号须在此明确允许。"))}</p>
-        <p class="paneNote">${esc(t("排序仅表示候选优先级，不保证切换成功。目标仍需有可用额度和兼容模型；自动切换优先完整保留上下文，无法直接保留时自动整理交接；待目标就绪后切换并继续原输入，旧会话历史保留。"))}</p>
-        <ol>${order.map((key, i) => `<li><span>${esc(types.get(key)?.label || key + '（当前不可用）')}</span><button class="portalButton is-compact" type="button" data-priority-move="${i}" data-direction="-1" aria-label="${esc(t('上移') + ' ' + label(key))}"${readonly || busy || !i ? ' disabled' : ''}>↑</button><button class="portalButton is-compact" type="button" data-priority-move="${i}" data-direction="1" aria-label="${esc(t('下移') + ' ' + label(key))}"${readonly || busy || i === order.length - 1 ? ' disabled' : ''}>↓</button>${subscription(key) ? '' : `<button class="portalButton is-compact" type="button" data-priority-revoke="${esc(key)}" aria-label="${esc(t('不再允许') + ' ' + label(key))}"${readonly || busy ? ' disabled' : ''}>${esc(t('不再允许'))}</button>`}</li>`).join('')}</ol>
-        ${others.length ? `<p class="paneNote">${esc(t("以下种类不会自动切换，需要明确允许："))}</p>
-        <ul>${others.map(key => `<li><span>${esc(label(key))}</span><button class="portalButton is-compact" type="button" data-priority-allow="${esc(key)}" aria-label="${esc(t('允许自动切换') + ' ' + label(key))}"${readonly || busy ? ' disabled' : ''}>${esc(t('允许自动切换'))}</button></li>`).join('')}</ul>` : ''}
-        <p role="alert" data-priority-error hidden></p>
-        <div><button type="button" class="portalButton is-compact" data-priority-save${readonly || busy ? ' disabled' : ''}>${esc(t('保存顺序'))}</button> <button type="button" class="portalButton is-compact" data-priority-cancel${busy ? ' disabled' : ''}>${esc(t('取消'))}</button> <button type="button" class="portalButton is-compact" data-priority-default${readonly || busy ? ' disabled' : ''}>${esc(t('恢复默认'))}</button></div>`;
-      panel.querySelectorAll('[data-priority-move]').forEach(button => button.onclick = () => {
-        siteDefault = false;
-        const i = Number(button.dataset.priorityMove), j = i + Number(button.dataset.direction);
-        [order[i], order[j]] = [order[j], order[i]]; draw();
-        panel.querySelector(`[data-priority-move="${j}"][data-direction="${button.dataset.direction}"]`)?.focus();
-      });
-      panel.querySelectorAll('[data-priority-allow]').forEach(button => button.onclick = () => {
-        siteDefault = false;
-        order = [...order, button.dataset.priorityAllow]; draw();
-      });
-      panel.querySelectorAll('[data-priority-revoke]').forEach(button => button.onclick = () => {
-        siteDefault = false;
-        order = order.filter(key => key !== button.dataset.priorityRevoke); draw();
-      });
-      panel.querySelector('[data-priority-cancel]').onclick = () => { siteDefault = false; order = expand(baseline); draw(); root.querySelector('details').open = false; };
-      panel.querySelector('[data-priority-default]').onclick = () => { siteDefault = true; order = defaults(); draw(); };
-      panel.querySelector('[data-priority-save]').onclick = async () => {
-        if (busy || readonly) return;
-        busy = true; draw();
-        try {
-          const snapshot = (await execute('GetLineage', {lineage_id: lineageId})).lineage;
-          if (!current()) return;
-          const block = snapshot.function_blocks.find(item => item.id === familyId);
-          if (!block) throw new Error(t('Family 已不存在，请重新打开菜单。'));
-          if (JSON.stringify(block.family.auto_migrate_priority || []) !== JSON.stringify(baseline)) throw new Error(t('顺序已被其他人修改，请重新打开菜单后保存。'));
-          const priority = siteDefault ? [] : [...order];
-          const result = await execute('UpdateFamily', {lineage_id: lineageId, family_id: familyId, auto_migrate_priority: priority}, {expectedVersion: snapshot.revision});
-          if (!current()) return;
-          baseline = priority; siteDefault = false; busy = false; draw(); root.querySelector('details').open = false;
-          await saved(result);
-        } catch (error) {
-          if (!current()) return;
-          busy = false; draw(); const notice = panel.querySelector('[data-priority-error]'); notice.textContent = error.message; notice.hidden = false;
-        } finally { busy = false; }
-      };
-    };
-    root.querySelector('details').addEventListener('toggle', async () => {
-      if (!root.querySelector('details').open || loaded || busy) return;
-      busy = true; panel.textContent = t('正在读取账号种类…');
-      try {
-        const [catalog, graph] = await Promise.all([execute('ListProviderAccounts', {}), execute('GetLineage', {lineage_id: lineageId})]);
-        if (!current()) return;
-        const block = graph.lineage.function_blocks.find(item => item.id === familyId);
-        if (!block) throw new Error(t('Family 已不存在，请重新打开菜单。'));
-        types = new Map((catalog.accounts || []).filter(a => a.migration_type).map(a => [a.migration_type.id, a.migration_type]));
-        baseline = [...(block.family.auto_migrate_priority || [])]; order = expand(baseline); loaded = true; busy = false; draw();
-      } catch (error) { if (current()) panel.textContent = error.message; }
-      finally { busy = false; }
-    });
-    return {destroy() { disposed = true; }};
-  }
-
   const nodeResidentId = node => String(node?.resident_id || node?.id || "");
   const nodeIntakeState = node => node?.intake_state === "closed" ? "closed" : "open";
   const familyBlocks = lineage => (lineage?.function_blocks || []).filter(block => block.family);
@@ -285,7 +206,7 @@
     });
 
     const { disposeFamilySettings, renderFamilySettings } = menuPart("PortalResidentMenuFamily").createFamily({
-      $id, changed, dialog, esc, familyBlocks, familyMemberCandidates, menuState, mountMigrationPriority,
+      $id, changed, dialog, esc, familyBlocks, familyMemberCandidates, menuState,
       nodeMenuNotice, nodeResidentId, removeFamily, toast,
     });
 
@@ -382,5 +303,5 @@
     await instance.open({...options, node: {...node, id: residentId, backend: node.provider || node.backend, intake_state: runtime?.state?.intake_state || node.intake_state}, lineage});
     return instance;
   }
-  window.PortalResidentMenu = Object.freeze({open, removeFamily, removeDeletedResidents, mountMigrationPriority});
+  window.PortalResidentMenu = Object.freeze({open, removeFamily, removeDeletedResidents});
 })();

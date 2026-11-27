@@ -3900,11 +3900,11 @@
                   "legacy",
                   "same_provider_model"
                 ],
-                "description": "额度恢复策略；legacy 优先同类型同模型，再按配置顺序回退；same_provider_model 限定同 Provider 同模型并优先最高余量；不授予账号权限、不自动启用切换"
+                "description": "旧客户端兼容字段。换号由本 Resident 的两个开关控制。"
               },
               "auto_switch_on_quota": {
                 "type": "boolean",
-                "description": "额度不足时自动切换；true 默认先选同类型且支持当前模型的可用账号，再按默认后端顺序回退；false禁止额度自动切换"
+                "description": "同类型同模型自动换号。超过 20% 时选最空闲账号，否则选剩余额度最高的可用账号。新建和 fork 默认关闭。"
               },
               "capability_config": {
                 "type": "object",
@@ -3927,6 +3927,17 @@
               "backend_options": {
                 "type": "object",
                 "description": "后端专用参数；按所选后端的契约严格校验"
+              },
+              "emergency_switch_on_quota": {
+                "type": "boolean",
+                "description": "同类型同模型账号不可用时，按本 Resident 的应急顺序换号。新建和 fork 默认关闭。"
+              },
+              "emergency_switch_order": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "本 Resident 允许的应急账号种类 ID，按使用顺序排列，默认空数组。"
               }
             }
           },
@@ -4928,11 +4939,11 @@
                   "legacy",
                   "same_provider_model"
                 ],
-                "description": "额度恢复策略；legacy 优先同类型同模型，再按配置顺序回退；same_provider_model 限定同 Provider 同模型并优先最高余量；不授予账号权限、不自动启用切换"
+                "description": "旧客户端兼容字段。换号由本 Resident 的两个开关控制。"
               },
               "auto_switch_on_quota": {
                 "type": "boolean",
-                "description": "额度不足时自动切换；true 默认先选同类型且支持当前模型的可用账号，再按默认后端顺序回退；false禁止额度自动切换"
+                "description": "同类型同模型自动换号。超过 20% 时选最空闲账号，否则选剩余额度最高的可用账号。新建和 fork 默认关闭。"
               },
               "capability_config": {
                 "type": "object",
@@ -4955,6 +4966,17 @@
               "backend_options": {
                 "type": "object",
                 "description": "后端专用参数；按所选后端的契约严格校验"
+              },
+              "emergency_switch_on_quota": {
+                "type": "boolean",
+                "description": "同类型同模型账号不可用时，按本 Resident 的应急顺序换号。新建和 fork 默认关闭。"
+              },
+              "emergency_switch_order": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "本 Resident 允许的应急账号种类 ID，按使用顺序排列，默认空数组。"
               }
             }
           }

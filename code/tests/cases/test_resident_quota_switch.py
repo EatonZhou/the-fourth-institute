@@ -60,23 +60,24 @@ def test_conversation_quota_hint_follows_automatic_policy_and_current_receipt(sw
     assert '关闭接单' in resident_protocol._conversation_controls(target, 'CASE-A', state, allowed=True)['send_hint']
 
 
-def test_explicit_toggle_overrides_fixed_and_named_role_but_missing_keeps_legacy(switching, monkeypatch):
+def test_resident_controls_are_independent_from_site_order(switching, monkeypatch):
     f = switching
-    f.record["execution_settings"]["backend_role"] = "special"
-    names = []
-    monkeypatch.setattr(account_registrations, "resolve_role", lambda name: (names.append(name) or {"backend_priority": [name], "account_selection": "auto"}, False))
+    settings = f.record["execution_settings"]
+    settings["backend_role"] = "special"
+    monkeypatch.setattr(account_registrations, "resolve_role", lambda *_: pytest.fail("Unexpected site lookup"))
     assert quota.auto_migration_enabled(f.record)
-    assert quota.auto_migration_priority(f.record) == ["default"]
-    assert names == ["default"]
-    f.record["execution_settings"]["auto_switch_on_quota"] = False
+    assert quota.auto_migration_priority(f.record) == []
+    settings.update(auto_switch_on_quota=False, emergency_switch_order=["claude:subscription_login"])
     assert not quota.auto_migration_enabled(f.record)
-    assert not quota.ensure_role_reserve(f.record)
-    del f.record["execution_settings"]["auto_switch_on_quota"]
-    f.record["execution_settings"]["account_selection"] = "fixed"
-    assert not quota.auto_migration_enabled(f.record)  # old fixed policy
-    f.record["execution_settings"]["account_selection"] = "auto"
-    assert quota.auto_migration_enabled(f.record)
-    assert quota.auto_migration_priority(f.record) == ["special"]
+    settings["emergency_switch_on_quota"] = True
+    assert quota.auto_migration_priority(f.record) == ["claude:subscription_login"]
+    f.accounts.append(_account("other", 78, provider="claude"))
+    assert quota.ensure_role_reserve(f.record, f.accounts)
+    assert f.calls == []  # Same type is available but its switch is off.
+    f.accounts[1]["enabled"] = False
+    monkeypatch.setattr(quota, "RECHECK_SECONDS", 0)
+    assert quota.ensure_role_reserve(f.record, f.accounts)
+    assert f.calls[0]["target_provider"] == "claude"
 
 
 @pytest.mark.parametrize("gate", [{}, {"state": "unknown", "reason": "quota_unknown"},
@@ -157,7 +158,7 @@ def test_empty_default_order_has_exact_manual_hint_and_changed_state_event(switc
     result = quota.quota_switch_state(f.record, execution_gate=f.gate)
     assert result["state"] == "manual_required"
     assert result["reason"] == "default_backends_unavailable"
-    assert result["message"] == "当前没有默认可切换的ai后端, 请手动选择"
+    assert result["message"] == quota.NO_DEFAULT_BACKEND
     assert f.calls == []
     after = repository.events_after(f.record["resident_id"], 0)
     assert after["cursor"] > before["cursor"]
@@ -279,3 +280,18 @@ def test_submitted_quota_wait_is_offered_to_formal_handoff_but_running_or_stop_i
     job.update(status="queued", stop_requested_at="now")
     assert quota.reconcile_role_reserves([f.record]) == 0
     assert len(f.calls) == 1
+
+
+@pytest.mark.parametrize("remaining,active,winner", [
+    ([21, 99], [0, 1], "peer0"), ([20, 21], [0, 1], "peer1"),
+    ([19, 20], [0, 1], "peer1"), ([0, 0], [0, 0], None),
+    ([80, 4], [2, 0], "peer1"), ([20, 0], [2, 0], None),
+])
+def test_quota_and_free_capacity(remaining, active, winner):
+    accounts = [_account("source", 0)]
+    for index, (quota_left, busy) in enumerate(zip(remaining, active)):
+        peer = _account(f"peer{index}", quota_left)
+        peer.update(max_concurrency=2, active_count=busy)
+        accounts.append(peer)
+    selected = policy.fallback_account(accounts, "codex", "source", [])
+    assert selected.get("backend_route_id") == winner

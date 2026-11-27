@@ -229,6 +229,9 @@ class ResidentRecords:
                 json_value(prior['directory_json']) if prior and prior['directory_json'] else None,
                 resident_id, creating=prior is None,
             )
+            if prior is None:
+                from management_portal.execution.account_selection_contract import initial_quota_policy
+                record['execution_settings'] = {**initial_quota_policy(), **record['execution_settings']}
             if record.get('deleted_at') or (prior and prior['deleted_at'] is not None):
                 raise ValueError('Deleted Resident identity cannot be updated or restored')
             for field in ('deleted_at', 'deleted_by', 'historical_project_id'):

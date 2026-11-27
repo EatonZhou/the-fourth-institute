@@ -9,23 +9,20 @@
 
   const DEPENDENCIES = Object.freeze([
     "$id", "changed", "dialog", "esc", "familyBlocks", "familyMemberCandidates", "menuState",
-    "mountMigrationPriority", "nodeMenuNotice", "nodeResidentId", "removeFamily", "toast",
+    "nodeMenuNotice", "nodeResidentId", "removeFamily", "toast",
   ]);
 
   function createFamily(dependencies) {
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalResidentMenuFamily is missing: ${missing.join(", ")}`);
     const {
-      $id, changed, dialog, esc, familyBlocks, familyMemberCandidates, menuState, mountMigrationPriority,
+      $id, changed, dialog, esc, familyBlocks, familyMemberCandidates, menuState,
       nodeMenuNotice, nodeResidentId, removeFamily, toast,
     } = dependencies;
 
     let familySettingsView = null;
-    let familyPriorityView = null;
 
     function disposeFamilySettings() {
-      familyPriorityView?.destroy();
-      familyPriorityView = null;
       familySettingsView?.destroy();
       familySettingsView = null;
       $id("nodeMenuFamilySettings").replaceChildren();
@@ -34,12 +31,7 @@
     function renderFamilySettings(context) {
       disposeFamilySettings();
       const root = $id("nodeMenuFamilySettings");
-      const autoMigrate = context.family.family.auto_migrate !== false;
       root.innerHTML = window.PortalI18n.html`<p class="paneNote">在这里查看和调整 Family 内部成员的工作状态、Backend、账号与接单设置。</p>
-        <div class="familyAutoMigrateSetting"><span>当前 AI 后端额度不足时自动转到别的后端</span><button class="portalButton residentMenuToggle" type="button" role="switch" aria-label="额度不足时自动转组" aria-checked="${autoMigrate}" data-family-auto-migrate></button></div>
-        <p class="paneNote">成员显式开启自动切换时，先找同类型同模型账号，再按站点默认排序回退。未单独设置的成员继承 Family 开关。</p>
-        <div data-family-priority></div>
-        <p role="alert" data-family-settings-error hidden></p>
         <div class="residentMenuMembersHeader"><strong>成员</strong><button class="portalButton is-compact" type="button" data-family-add aria-expanded="false" aria-controls="familyMemberPicker">＋ 添加成员</button></div>
         <div id="familyMemberPicker" class="residentMenuMemberPicker" hidden></div>
         <div data-family-members></div>
@@ -47,55 +39,9 @@
           <section><div><strong>Unfamilize · 保留成员</strong><p>解除组合，保留成员、子 Family 和业务工作流；移除门面、Router、Steward 与自动生成的协作结构。</p></div><button class="portalButton" type="button" data-family-action="unfamilize">Unfamilize</button></section>
           <section><div><strong>删除整个 Family</strong><p>停止并删除门面及内部所有成员、子 Family 和工作流，移除 Session；所属目录及其嵌套对象按资源归属永久删除，共享目录中的其他文件保留；绑定同步解除。对话和运行轨迹保留。</p></div><button class="portalButton is-danger" type="button" data-family-action="delete">删除整个 Family</button></section>
         </div>`;
-      familyPriorityView = mountMigrationPriority(root.querySelector('[data-family-priority]'), {
-        lineageId: context.lineageId, familyId: context.family.id,
-        saved: async result => {
-          if (menuState.nodeMenuContext !== context) return;
-          context.family = result.function_block;
-          window.PortalResidentProjection.invalidate(context.residentId);
-          await changed({type: "family-auto-migrate", residentId: context.residentId, lineageId: context.lineageId, result});
-        },
-      });
       familySettingsView = window.PortalChatWorkspace.mountFamilyStatus(context.residentId, root.querySelector("[data-family-members]"));
-      root.querySelector("[data-family-auto-migrate]").addEventListener("click", () => saveFamilyAutoMigrate(context));
       root.querySelector("[data-family-add]").addEventListener("click", () => openFamilyMemberPicker(context));
       root.querySelectorAll("[data-family-action]").forEach(button => button.addEventListener("click", () => changeFamily(button.dataset.familyAction)));
-    }
-
-    async function saveFamilyAutoMigrate(context) {
-      if (menuState.nodeMenuContext !== context || context.busy || context.saving) return;
-      const root = $id("nodeMenuFamilySettings");
-      const button = root.querySelector("[data-family-auto-migrate]");
-      const errorLine = root.querySelector("[data-family-settings-error]");
-      const current = () => menuState.nodeMenuContext === context && root.contains(button);
-      const autoMigrate = context.family.family.auto_migrate === false;
-      context.busy = true;
-      button.disabled = true;
-      errorLine.hidden = true;
-      try {
-        const snapshot = (await window.PortalInstructionClient.execute("GetLineage", {lineage_id: context.lineageId})).lineage;
-        if (!current()) return;
-        const family = snapshot.function_blocks.find(block => block.id === context.family.id && block.family?.facade === context.residentId);
-        if (!family) throw new Error(window.PortalI18n.t("Family 已变化，请重新打开菜单。"));
-        const result = await window.PortalInstructionClient.execute("UpdateFamily", {
-          lineage_id: context.lineageId, family_id: family.id, auto_migrate: autoMigrate,
-        }, {expectedVersion: snapshot.revision});
-        if (!current()) return;
-        context.family = result.function_block;
-        menuState.lineage = {...menuState.lineage, function_blocks: (menuState.lineage.function_blocks || []).map(block => block.id === family.id ? result.function_block : block)};
-        window.PortalResidentProjection.invalidate(context.residentId);
-        renderFamilySettings(context);
-        root.querySelector("[data-family-auto-migrate]").focus();
-        await changed({type: "family-auto-migrate", residentId: context.residentId, lineageId: context.lineageId, result});
-      } catch (error) {
-        if (menuState.nodeMenuContext === context) {
-          const notice = root.querySelector("[data-family-settings-error]");
-          notice.textContent = error.message; notice.hidden = false;
-        }
-      } finally {
-        context.busy = false;
-        if (current()) button.disabled = false;
-      }
     }
 
     async function openFamilyMemberPicker(context) {

@@ -169,7 +169,6 @@ def provision_slot(*, actor, slot_id):
         actor=actor, resident_scope='paper-research:' + slot_id,
         lineage_scope='paper-research', lineage_binding=personal['lineage_id'],
         title=value['title'], cwd='',
-        runtime_settings={'auto_switch_on_quota': True, 'quota_switch_strategy': 'same_provider_model'},
         metadata={'surface': 'paper-research', 'slot_id': slot_id})
     # Reuse the existing private owned Workspace identity. A separately
     # registered nested Workspace does NOT inherit its file-use permissions.

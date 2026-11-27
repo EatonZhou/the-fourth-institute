@@ -21,18 +21,18 @@ def test_private_research_provisioning_real_owners(owners, monkeypatch):
     from management_portal.society_service import resident_catalog
     record = resident_catalog.get_catalog().get(bound['resident_id'])
     settings = research.isa_client.call(ACTOR, 'GetResidentSettings', {'resident_id': bound['resident_id']})
-    assert settings['settings']['auto_switch_on_quota'] is True
-    assert settings['settings']['quota_switch_strategy'] == 'same_provider_model'
+    assert settings['settings']['auto_switch_on_quota'] is False
+    assert settings['settings']['emergency_switch_on_quota'] is False
     original = dict(settings['settings'])
     # Creation defaults must not rewrite an existing assistant on retry/open.
     research.isa_client.call(ACTOR, 'UpdateResidentSettings', {
         'resident_id': bound['resident_id'], 'expected_revision': settings['settings_revision'],
-        'changes': {'auto_switch_on_quota': False}})
+        'changes': {'auto_switch_on_quota': True}})
     updated = research.isa_client.call(ACTOR, 'GetResidentSettings', {'resident_id': bound['resident_id']})['settings']
     assert research.provision_slot(actor=ACTOR, slot_id=slot['slot_id']) == bound
     reread = research.isa_client.call(ACTOR, 'GetResidentSettings', {'resident_id': bound['resident_id']})['settings']
-    assert reread['auto_switch_on_quota'] is False
-    assert reread['quota_switch_strategy'] == 'same_provider_model'
+    assert reread['auto_switch_on_quota'] is True
+    assert reread['emergency_switch_on_quota'] is False
     assert reread == updated  # A retry changes neither settings nor audit timestamps.
     audit_fields = {'auto_switch_on_quota', 'updated_at', 'runtime_settings_authority_at'}
     assert {k: v for k, v in reread.items() if k not in audit_fields} == {k: v for k, v in original.items() if k not in audit_fields}

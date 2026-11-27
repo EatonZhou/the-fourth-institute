@@ -1290,7 +1290,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       .sort((a, b) => a.default_priority - b.default_priority || a.id.localeCompare(b.id)).map(a => a.id);
     let order = Array.isArray(role?.backend_priority) ? [...role.backend_priority] : defaults;
     const priority = node("fieldset", undefined, {class: "backendPriority", "data-backend-priority": ""});
-    priority.append(node("legend", t("AI 后端优先级")), node("p", t("新会话按从上到下的顺序选择。额度不足时，先选支持当前模型的同类型账号，再按此顺序回退并保留上下文。"), {class: "backendHint"}));
+    priority.append(node("legend", t("AI 后端优先级")), node("p", t("此顺序用于新会话。已有会话的换号规则在各 Resident 的设置中配置。"), {class: "backendHint"}));
     const list = node("ol", undefined, {class: "backendPriorityList"});
     const other = node("div", undefined, {class: "backendPriorityOther"});
     const reset = button("恢复推荐顺序", () => { order = [...defaults]; draw(); });
@@ -1312,10 +1312,10 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         if (key.split(":")[1] !== "subscription_login") controls.append(button("移除", () => { order = order.filter(k => k !== key); draw(); }));
         row.append(node("span", String(i + 1), {class: "backendPriorityNumber", "aria-hidden": "true"}), title, controls); list.append(row);
       }
-      if (!order.length) list.append(node("p", t("尚未保存跨后端自动切换顺序。可点击“恢复推荐顺序”后保存。"), {class: "backendHint"}));
+      if (!order.length) list.append(node("p", t("新会话选择顺序为空。"), {class: "backendHint"}));
       const others = [...types.values()].filter(a => !order.includes(a.id));
       if (others.length) {
-        other.append(node("p", t("其他后端仅在加入后参与选择和切换；API 用量将按对应账户计费。"), {class: "backendHint"}));
+        other.append(node("p", t("添加可用于新会话的后端；API 用量按对应账户计费。"), {class: "backendHint"}));
         for (const item of others) {
           const row = node("div", undefined, {class: "backendPriorityOptional"});
           const add = button("加入排序", () => { order.push(item.id); draw(); });
@@ -1335,7 +1335,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       account.parentElement.querySelector("span").textContent = t(selection.value === "fixed" ? "固定账号" : "模型偏好参考账号");
     };
     selection.addEventListener("change", syncSelection); syncSelection();
-    hint(account, "模型和推理强度仅用于此账号同类的后端；其他种类使用各自默认模型。固定模式不会自动切换。");
+    hint(account, "新会话使用这里的模型偏好；其他种类使用各自默认模型。");
     const model = select(options, "模型偏好（可选）", "model", [["", t("使用账号默认模型")]]);
     const effort = select(options, "推理强度（可选）", "reasoning_effort", [["", t("使用模型默认强度")]]);
     const catalogStatus = node("p", "", {class: "backendHint", role: "status", "data-backend-role-catalog": ""});
@@ -1472,7 +1472,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     if (rolesReady) {
       const role = state.roles.find(row => row.role === "default") || {role: "default", version: 0};
       const summary = node("div", undefined, {class: "backendSelectionSummary", "data-backend-account-selection": ""});
-      summary.append(node("p", t("不同种类 AI 后端默认选择/自动切换的排序可手动调整，同种 AI 后端的选择由当前额度自动选择"), {class: "backendHint"}),
+      summary.append(node("p", t("此处配置新会话的起始后端。额度不足时的换号规则在各 Resident 的设置中配置。"), {class: "backendHint"}),
         button("默认帐号选择排序", () => roleEditor(role), !canWrite));
       output.append(summary);
     }

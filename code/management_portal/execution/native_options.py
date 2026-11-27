@@ -3,6 +3,8 @@
 Resident supplies settings, filesystem authorization and canonical identity.
 Native SDK names and permission switches never belong in that envelope.
 """
+
+from management_portal.execution.account_selection_contract import QUOTA_SETTINGS
 from dataclasses import replace
 from management_common.portal_paths import path as portal_path
 from pathlib import Path
@@ -46,7 +48,7 @@ class NativeOptions:
 
     def validate_requested_fields(self, definition, updates):
         capabilities = self.capabilities(definition)
-        fields = set(capabilities["settings"]) | {"prompt_injection", "allow_subagents", "agent_harness", "prompt_context", "backend_options", "backend_role", "backend_role_fallback", "account_selection", "auto_switch_on_quota"}
+        fields = set(capabilities["settings"]) | {"prompt_injection", "allow_subagents", "agent_harness", "prompt_context", "backend_options", "backend_role", "backend_role_fallback", "account_selection", *QUOTA_SETTINGS}
         from .resident_configuration import normalize_configuration_settings
         normalize_configuration_settings(updates, definition.provider)
         # The switch exists only where the model can start subagents; off is no change elsewhere.

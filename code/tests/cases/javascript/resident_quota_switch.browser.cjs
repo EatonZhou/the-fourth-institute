@@ -23,6 +23,10 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       PortalI18n.apply('zh-CN');
       const catalog = {models: ['m', 'm2'], default_model: 'm', efforts_by_model: {}, service_tiers_by_model: {}, runtime_capabilities: {settings: ['model']}};
       const contextOptions = [{id: 'preserve', enabled: true, description: '摘要重组'}];
+      window.PortalInstructionClient = {execute: async () => ({accounts: [
+        {provider: "claude", migration_type: {id: "claude:subscription_login", label: "Claude"}},
+        {provider: "codex", migration_type: {id: "codex:subscription_login", label: "Codex"}}
+      ]})};
       let settings = {model: 'm'}, revision = 'r0';
       let reporting = {initiative: 'off', quality: 'medium'}, reportingRevision = 'report-0';
       window.failRuntime = false;
@@ -88,6 +92,17 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     await toggle.click();
     await page.waitForFunction(() => saves.length === 2 && !document.querySelector('[data-menu-quota-switch]').disabled);
     assert.deepEqual(await page.evaluate(() => saves[1].changes), {auto_switch_on_quota: false});
+    const emergency = page.locator('[data-menu-emergency-switch]');
+    assert.equal(await emergency.getAttribute('aria-checked'), 'false');
+    await emergency.click();
+    const order = page.locator('#nodeMenuRuntime select[aria-label="应急替换目标"]');
+    await order.selectOption('claude:subscription_login');
+    await page.locator('#nodeMenuRuntime').getByRole('button', {name:'添加', exact:true}).click();
+    await page.waitForFunction(() => saves.at(-1)?.changes.emergency_switch_order?.[0] === 'claude:subscription_login');
+    await page.locator('#nodeMenuRuntime').getByRole('button', {name:'移除', exact:true}).click();
+    await page.waitForFunction(() => saves.at(-1)?.changes.emergency_switch_order?.length === 0);
+    await emergency.click();
+    await order.waitFor({state:'detached'});
     const runtimeModel = page.locator('#nodeMenuRuntime [data-runtime-setting="model"]:visible');
     await runtimeModel.selectOption('m2');
     await page.evaluate(() => { failRuntime = true; });
@@ -103,7 +118,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     assert.deepEqual(await page.evaluate(() => reportingWrites), [
       {id: 'fixture', changes: {initiative: 'off', quality: 'high'}, expected: 'report-0'},
     ]);
-    assert.equal(await page.evaluate(() => saves.length), 2);
+    assert.equal(await page.evaluate(() => saves.length), 6);
     await page.evaluate(() => { failRuntime = false; return reloadMenu(); });
 
     await page.evaluate(() => quota({state: 'disabled', reason: 'auto_switch_disabled', message: '额度不足，请手动选择'}));
@@ -203,8 +218,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     assert.equal(await page.locator('.portalSessionRestartOverlay:visible').count(), 0, 'retargeting cancels pending target picker');
     assert.equal(await page.locator('.portalChatQuotaRow').count(), 0);
     await page.evaluate(() => {menuContext.node.family = {role: 'facade'}; return reloadMenu();});
-    await page.waitForFunction(() => !document.querySelector('[data-menu-quota-switch]'));
-    assert.match(await page.locator('#nodeMenuRuntime').innerText(), /Family 设置管理|Family settings/);
+    await toggle.waitFor({state: 'visible'});
     await page.evaluate(() => {menuContext.node.family = {role: 'member'}; return reloadMenu();});
     await toggle.waitFor({state: 'visible'});
     await page.evaluate(() => {canEdit = false; PortalResidentRuntimeController.invalidate('fixture');});

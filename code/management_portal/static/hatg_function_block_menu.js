@@ -411,7 +411,6 @@
       let titleDraft;
       const menuLineageId = state.lineage?.lineage_id;
       let workflowDraft = null, workflowPending = false, workflowError = "", disposed = false;
-      let migrationPending = false;
       const taskDrafts = new Map();
       const expandedTasks = new Set();
       let editingId = "";
@@ -427,9 +426,8 @@
         if (!block) { root.textContent = window.PortalI18n.t("这个 Function Block 已不在 Lineage 中。"); return; }
         setLabel(pane === "objects" ? window.PortalI18n.t("内部对象") : pane === "issues" ? window.PortalI18n.t("问题") : block.title || window.PortalI18n.t("Function Block"));
         const roles = familyRoles(block);
-        const readonly = state.programMutationInFlight || workflowPending || migrationPending;
+        const readonly = state.programMutationInFlight || workflowPending;
         const revision = state.lineage.revision;
-        const autoMigrate = block.family?.auto_migrate !== false;
         if (roles && pane === "objects" && !workflowDraft) workflowDraft = {
           lineageId: menuLineageId, revision: state.lineage.revision, mode: "add", ids: new Set(), open: false,
         };
@@ -449,8 +447,6 @@
         <section class="functionBlockSource"><div><h3>来源模板</h3><p>${esc(sourceTitle)}</p></div>${sourceTemplate ? '<button class="portalButton is-quiet" type="button" data-function-block-source>查看来源模板</button>' : ""}</section>
         ${functionBlockDutyHtml(block)}
         ${functionBlockInsideResidentsHtml(block)}
-        ${roles ? window.PortalI18n.html`<div class="familyAutoMigrateSetting"><span>当前 AI 后端额度不足时自动转到别的后端</span><button class="portalButton residentMenuToggle" type="button" role="switch" aria-label="额度不足时自动转组" aria-checked="${autoMigrate}" data-family-auto-migrate${readonly ? " disabled" : ""}></button></div>` : ""}
-        ${roles ? window.PortalI18n.html`<p class="paneNote">成员显式开启自动切换时，先找同类型同模型账号，再按站点默认排序回退。未单独设置的成员继承 Family 开关。</p><div data-family-priority></div>` : ""}
         ${functionBlockOverviewWorkflowHtml(block, readonly, taskDrafts, expandedTasks)}
         <div class="functionBlockInstanceActions">
           ${block.duty ? '<button class="portalButton" type="button" data-duty-workshop>在工坊中编辑</button>' : ''}
@@ -465,23 +461,8 @@
           if (closing) close();
           Promise.resolve().then(callback).catch(error => toast(error.message || String(error), "error"));
         });
-        const priorityRoot = root.querySelector('[data-family-priority]');
         action('[data-duty-workshop]',() => window.PortalNav.openPage(`/lineage?${new URLSearchParams({lineage:menuLineageId,view:'hatg',duty:block.id})}`));
-        if (priorityRoot) window.PortalResidentMenu.mountMigrationPriority(priorityRoot, {
-          lineageId: menuLineageId, familyId: block.id, readonly,
-          saved: () => applyProgramMutation(() => window.PortalInstructionClient.execute("GetLineage", {lineage_id: menuLineageId}), "账号种类顺序已保存。"),
-        });
         const workflowForm = root.querySelector("[data-family-workflow-form]");
-        action("[data-family-auto-migrate]", async () => {
-          if (migrationPending || state.programMutationInFlight || workflowPending) return;
-          if (state.lineage?.lineage_id !== menuLineageId) { draw(); return; }
-          migrationPending = true; draw();
-          try {
-            await applyProgramMutation(() => executeHatgInstruction("UpdateFamily", {
-              family_id: block.id, auto_migrate: !autoMigrate,
-            }, { expectedVersion: revision }), "自动转组设置已保存。");
-          } finally { migrationPending = false; draw(); }
-        }, false);
         if (workflowForm) {
           const draft = workflowDraft;
           workflowForm.querySelector("[data-family-workflow-mode]").addEventListener("change", event => {

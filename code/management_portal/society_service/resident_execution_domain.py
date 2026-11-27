@@ -1,6 +1,8 @@
 """Resident domain responsibilities: execution."""
 from __future__ import annotations
 
+from management_portal.execution.account_selection_contract import QUOTA_SETTINGS
+
 import hashlib
 import logging
 import secrets
@@ -249,7 +251,7 @@ def prepare_resident_runtime_settings_change(resident_id: str, actor: str = "", 
             result["active_turn_fields"] = []
             result["next_turn_fields"] = [
                 name for name in next_turn_fields
-                if name not in result["active_turn_fields"] and name not in {"auto_switch_on_quota", "quota_switch_strategy"}
+                if name not in result["active_turn_fields"] and name not in {*QUOTA_SETTINGS}
             ]
             return result
 

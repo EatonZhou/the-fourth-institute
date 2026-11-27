@@ -9,7 +9,6 @@ migrates Family executors' accounts before admitting the next turn.
 from __future__ import annotations
 
 from .domain_ports import resident_domain_port
-from management_portal.execution.account_selection_contract import pinned_quota
 from management_portal.execution.transport import ExecutionResponseUnknown, ExecutionServiceUnavailable
 
 import hashlib
@@ -36,7 +35,7 @@ MIGRATION_FIELDS = frozenset({
 })
 RECHECK_SECONDS = 60
 MAX_MIGRATIONS = 2
-NO_DEFAULT_BACKEND = "当前没有默认可切换的ai后端, 请手动选择"
+NO_DEFAULT_BACKEND = "暂无符合此 Resident 换号条件的账号，等待可用账号或手动选择。"
 QUOTA_REASONS = frozenset({"quota_used_up", "quota_reserved"})
 
 
@@ -479,55 +478,18 @@ def _finish_relay(facade, message_id, member_id, delivered_id, repository):
         return dict(review["result"])
 
 
-def quota_switch_policy(record: dict) -> bool | None:
-    """Resident override, then its direct Family default; None is legacy intent."""
-    explicit = (record.get("execution_settings") or {}).get("auto_switch_on_quota")
-    if type(explicit) is bool:
-        return explicit
-    family = record.get("family") or {}
-    if family.get("role") in {"member", "router", "steward"} and not family_facade.is_facade(record):
-        with get_lineage_data_store().database.read() as connection:
-            row = connection.execute("SELECT auto_migrate FROM families WHERE family_id=%s AND deleted_at IS NULL",
-                                     (family["family_id"],)).fetchone()
-        if row:
-            return bool(row["auto_migrate"])
-    return None
+def quota_switch_policy(record: dict) -> bool:
+    settings = record.get("execution_settings") or {}
+    return settings.get("auto_switch_on_quota") is True or settings.get("emergency_switch_on_quota") is True
 
 
 def auto_migration_enabled(record: dict) -> bool:
-    """Explicit Resident intent wins; absent intent retains the existing policy."""
-    if record.get("deleted_at") or family_facade.is_facade(record):
-        return False
-    explicit = quota_switch_policy(record)
-    if type(explicit) is bool:
-        return explicit
-    from .resident_default_backend import selection_mode
-    mode = selection_mode(record)
-    if (record.get("execution_settings") or {}).get("account_selection") == "fixed":
-        return False
-    if mode == "auto" and not record.get("deleted_at"):
-        return True
-    return False
+    return quota_switch_policy(record) and not record.get("deleted_at") and not family_facade.is_facade(record)
 
 
 def auto_migration_priority(record: dict) -> list[str]:
-    """Explicit switch uses site order; otherwise preserve a direct Family's custom order."""
-    from .resident_default_backend import selection_mode, selection_priority
-    if (record.get("execution_settings") or {}).get("auto_switch_on_quota") is True:
-        if pinned_quota(record):
-            return []  # Explicit quota recovery preserves this provider/model scope.
-        # The explicit switch uses the site default, never a named role's or
-        # Family's order. selection_priority already handles a missing default.
-        return selection_priority({"execution_settings": {"backend_role": "default"}})
-    family = record.get("family") or {}
-    if family.get("role") not in {"member", "router", "steward"} or record.get("deleted_at"):
-        return selection_priority(record) if selection_mode(record) == "auto" else []
-    with get_lineage_data_store().database.read() as connection:
-        row = connection.execute("SELECT auto_migrate_priority FROM families WHERE family_id=%s AND deleted_at IS NULL",
-                                 (family["family_id"],)).fetchone()
-    if row:
-        return list(row["auto_migrate_priority"]) or selection_priority({"execution_settings": {"backend_role": "default"}})
-    return selection_priority(record) if selection_mode(record) == "auto" else []
+    settings = record.get("execution_settings") or {}
+    return list(settings.get("emergency_switch_order") or []) if settings.get("emergency_switch_on_quota") else []
 
 
 def _follow_facade_quota_release(record: dict[str, Any], facade: dict[str, Any]) -> dict[str, Any]:
@@ -598,9 +560,7 @@ def reserve_candidate(record: dict[str, Any]) -> dict[str, Any] | None:
     """All Family executors share admission; only internal roles auto-open intake."""
     from . import resident_record_domain
     from .resident_work_recovery import _intake_allows_recovery
-    from .resident_default_backend import selection_mode
-    if not record.get("family") and (selection_mode(record) == "auto" or
-            (record.get("execution_settings") or {}).get("auto_switch_on_quota") is True):
+    if not record.get("family") and quota_switch_policy(record):
         return record if not record.get("deleted_at") and _intake_allows_recovery(record) else None
     if family_facade.is_operating_role(record):
         return _restore_role_intake(record)
@@ -732,25 +692,13 @@ def _ensure_quota_switch(record: dict[str, Any], accounts: list[dict[str, Any]] 
         return False
     if gate.get("state") != "closed" or gate.get("reason") not in QUOTA_REASONS:
         return True  # Unknown/stale/disabled is not permission to migrate.
-    if pinned_quota(record) and any(
-            a.get("provider") == account.get("provider")
-            and (a.get("quota_reserve") or {}).get("fresh") is not True for a in accounts):
-        # AccountMonitor owns collection; stale samples never enter ranking.
-        accounts = list(service.accounts(force_refresh=True).get("accounts") or [])
     submitted = resident_execution_work.submitted_execution_id(job)
     if submitted and resident_execution_work.execution_snapshot(job).get("status") != "queued":
         return False  # A running/claimed turn is never a quota-waiting input.
     priority = auto_migration_priority(record)
     explicit_switch = (record.get("execution_settings") or {}).get("auto_switch_on_quota") is True
-    pinned = pinned_quota(record)
     windows = [(w.get("window"), w.get("resets_at")) for w in (account.get("quota_reserve") or {}).get("windows") or []]
-    epoch = f"{account['account_id']}:{windows}:{priority}:automatic-handoff"
-    if pinned:
-        epoch += ":pinned-provider-model"
-    if not explicit_switch:
-        # Retire failures made under the old priority-only candidate policy;
-        # re-evaluate queued work without replaying an admitted/running turn.
-        epoch += ":same-kind-first"
+    epoch = f"{account['account_id']}:{windows}:{explicit_switch}:{priority}:resident-quota-v2"
     now = time.time()
     payload = None
     with resident_record_domain.state_lock(rid), get_lineage_data_store().family_quota_migrations.transaction(record["lineage_id"], rid) as state:
@@ -759,7 +707,6 @@ def _ensure_quota_switch(record: dict[str, Any], accounts: list[dict[str, Any]] 
                 or quota_switch_policy(current) is not True
                 or resident_account(current, accounts).get("account_id") != account["account_id"]
                 or ((current.get("execution_settings") or {}).get("auto_switch_on_quota") is True) != explicit_switch
-                or pinned_quota(current) != pinned
                 or auto_migration_priority(current) != priority):
             return False
         current_job = resident_execution_work.read(current)
@@ -781,8 +728,7 @@ def _ensure_quota_switch(record: dict[str, Any], accounts: list[dict[str, Any]] 
             if not payload and state.get("switch_reason") != "migration_failed":
                 target = fallback_account(accounts, str(account["provider"]), str(account.get("backend_route_id") or ""),
                                           state["tried_accounts"], priority=priority,
-                                          pinned=pinned_quota(current),
-                                          append_subscriptions=not explicit_switch and bool((current.get("family") or {}).get("role")),
+                                          same_type=explicit_switch,
                                           model=(current.get("execution_settings") or {}).get("model", ""),
                                           effort=(current.get("execution_settings") or {}).get("reasoning_effort", ""))
                 if target:
@@ -833,177 +779,7 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
     record = reserve_candidate(record)
     if not record or not auto_migration_enabled(record):
         return False
-    if (record.get("execution_settings") or {}).get("auto_switch_on_quota") is True:
-        return _ensure_quota_switch(record, accounts)
-    resident_id = record["resident_id"]
-    if resident_record_domain.lifecycle_operations().pending(resident_id):
-        return True
-    job = resident_execution_work.read(record)
-    if resident_execution_work.is_active(job) and (
-        not resident_execution_work.can_preserve_for_session_restart(job) or job.get("stop_requested_at")
-    ):
-        return False  # Let a turn already admitted to Execution finish.
-    if accounts is None:
-        try:
-            accounts = list(execution_port.service().accounts().get("accounts") or [])
-        except Exception:
-            logging.getLogger(__name__).exception("Family role account service unavailable for %s", resident_id)
-            return True
-    account = resident_account(record, accounts)
-    migration = role_migration(record)
-    # Family reserve headroom remains preventive. Confirmed exhaustion uses
-    # the same Scheduler gate and durable handoff as an explicit Resident switch.
-    reserve = (account or {}).get("quota_reserve") or {}
-    if (quota_switch_policy(record) is True and reserve.get("fresh") and reserve.get("used_up")
-            and reserve.get("automatic_paused", True)):
-        return _ensure_quota_switch(record, accounts)
-    if not account:
-        reason = "尚未配置可用的 AI 账号；请在设置中连接 AI 并设为默认。原任务已保留，配置后将自动继续。"
-        if record.get("backend_route_id"):
-            reason = "当前绑定的 AI 账号不可用；请检查账号设置。原任务已保留，不会自动改用其他账号。"
-        if migration.get("account_wait") != reason:
-            with get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as state:
-                state["account_wait"] = reason
-        return True
-    if migration.get("account_wait"):
-        with get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as state:
-            state.pop("account_wait", None)
-    from .resident_default_backend import selection_mode
-    automatic = selection_mode(record) == "auto"
-    remaining = reserve_remaining(account)
-    if automatic:
-        # Automatic admission uses the shared availability policy, including
-        # configured APIs whose balance cannot be measured. Preventative
-        # migrations still require verified reserve headroom below.
-        ready = available(account)
-    else:
-        ready = account_credits_active(account) or (
-            remaining > MIGRATION_RESERVE_PERCENT if remaining is not None else sufficient_reserve(account))
-    if ready:
-        if role_migration(record):
-            with get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as healthy:
-                asked = (healthy.get("question_facade_id"), healthy.get("question_message_id"))
-                healthy.clear()
-            family_role_quota_questions.close(*asked)
-        return False
-    if remaining is None:
-        # Unknown quota cannot clear an incident for this account. A manually
-        # selected different account must not inherit the old binding's hold.
-        # Keep the original receipt and retry budget for audit / a switch back.
-        incident = role_migration(record)
-        current_incident = bool(incident.get("status")) and _migration_applies_to_account(
-            incident, account.get("account_id") or "")
-        return ((automatic or current_incident)
-                and not override_enabled(record))
-    epoch = f"{account['account_id']}:{[(w.get('window'), w.get('resets_at')) for w in (account.get('quota_reserve') or {}).get('windows') or []]}:automatic-handoff"
-    now = time.time()
-    expired: tuple[Any, Any] = (None, None)
-    with resident_record_domain.state_lock(resident_id), get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as migration:
-        current = resident_record_domain.find_resident(resident_id)
-        if (not current or current["lineage_id"] != record["lineage_id"]
-                or not _intake_allows_recovery(current) or not auto_migration_enabled(current)):
-            return False
-        current_job = resident_execution_work.read(current)
-        if (resident_account(current, accounts).get("account_id") != account.get("account_id")
-                or (resident_execution_work.is_active(current_job)
-                    and not resident_execution_work.can_preserve_for_session_restart(current_job))):
-            return False
-        _validate_migration(migration)
-        if migration.get("epoch") != epoch:
-            expired = (migration.get("question_facade_id"), migration.get("question_message_id"))
-            migration.clear()
-            migration.update({"epoch": epoch, "attempts": 0, "tried_accounts": [], "source_account": account["account_id"]})
-        if migration.get("switch_reason") == "migration_failed":
-            return not override_enabled(current)
-        # A manual quota release (the role's own, or the facade's for Router
-        # and Steward) lets the turn run on the current account's credits when
-        # no safe account takes it; a safe account is still preferred.
-        released = override_enabled(current)
-        if not released and now - float(migration.get("checked_at") or 0) < RECHECK_SECONDS:
-            return True
-        migration["checked_at"] = now
-        migration.update(status="waiting", reason=f"后端额度剩余 {remaining:g}%，正在寻找可用账号")
-        payload = migration.get("pending_restart")
-        if not payload and int(migration["attempts"]) < MAX_MIGRATIONS:
-            target = fallback_account(accounts, str(account["provider"]), str(account.get("backend_route_id") or ""),
-                                      migration["tried_accounts"], reserve=not automatic,
-                                      priority=auto_migration_priority(current), append_subscriptions=True,
-                                      model=(current.get("execution_settings") or {}).get("model", ""),
-                                      effort=(current.get("execution_settings") or {}).get("reasoning_effort", ""))
-            if target:
-                migration["attempts"] += 1
-                migration["tried_accounts"].append(target["account_id"])
-                from .resident_work_recovery import latest_failed_input, recovery_entry
-                failed_id = str(latest_failed_input(current).get("message_id") or "")
-                resume_failed = not resident_execution_work.is_active(current_job) and not bool(recovery_entry(current, failed_id).get("disabled"))
-                try:
-                    options = migration_target_options(target, str(account["provider"]),
-                                                       source_settings=current.get("execution_settings"), source_account=account)
-                except (KeyError, ValueError):
-                    migration.update(status="unavailable", switch_reason="migration_failed",
-                                     reason="目标模型或推理设置不可用，原消息和会话已保留")
-                else:
-                    payload = {**options, "active_execution_policy": "wait", "resume_failed_input": resume_failed,
-                               "idempotency_key": f"steward-reserve:{resident_id}:{epoch}:{migration['attempts']}"}
-                    migration["pending_restart"] = payload
-                    migration.update(status="migrating", reason="正在保留上下文并切换可用后端")
-        if not payload and released:
-            # Keep the window's attempts so the release does not retry
-            # migrations; only the waiting state ends.
-            migration.pop("status", None)
-            migration.pop("reason", None)
-    family_role_quota_questions.close(*expired)  # A new quota window asks again.
-    if not payload and released:
-        return False
-    if payload:
-        if resident_record_domain.lifecycle_operations().pending(resident_id):
-            return True
-        try:
-            resident_domain_port.restart_resident_session(resident_id, resident_id, payload, portal_reason="steward_weekly_reserve")
-        except Exception as error:
-            if not definitive_migration_failure(error):
-                raise  # Retry an interrupted transport with the same durable intent.
-            with resident_record_domain.state_lock(resident_id), get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as committed:
-                if resident_record_domain.lifecycle_operations().pending(resident_id):
-                    return True  # An admitted operation still owns its completion/compensation.
-                if committed.get("pending_restart") == payload:
-                    committed.update(pending_restart=None, status="unavailable", switch_reason="migration_failed",
-                                     source_account=account["account_id"], reason="后端切换未完成，原消息和会话已保留，请手动选择")
-                    logging.getLogger(__name__).warning("Family preventive migration rejected for %s: %s", resident_id, type(error).__name__)
-            return True
-        with resident_record_domain.state_lock(resident_id), get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as committed:
-            if committed.get("pending_restart") == payload:
-                committed["pending_restart"] = None
-    elif not migration.get("owner_notified"):
-        from . import lineage_human_notifications
-        from .family_owners import recipients
-        owners = recipients(record, creator_only=bool(record.get("family")))
-        reason = f"当前账号额度剩余 {remaining:g}%，没有安全备用后端或迁移已失败两次；原任务保留等待。"
-        with get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as blocked:
-            blocked.update(status="unavailable", reason=reason)
-        if owners:
-            lineage_human_notifications.create_notification(
-                record["lineage_id"], title=f"Resident 需要可用后端：{record.get('title') or resident_id}",
-                message=reason,
-                recipients=owners, severity="warning", created_by="portal",
-                notification_id=f"steward-reserve:{resident_id}:{epoch}",
-            )
-            facade = _facade_of(record) if family_facade.is_operating_role(record) else None
-            asked = ""
-            if facade:
-                # The people managing the facade decide in its Conversation:
-                # credits, wait for the reset, or another account.
-                asked = family_role_quota_questions.ask(record, facade, account, remaining, epoch)
-            else:
-                from .outward_messages import message_creator
-                message_creator(record, identity=f"role-reserve:{resident_id}:{epoch}",
-                                text=f"Resident {record.get('title') or resident_id} 暂不可用。{reason}请补充可用账号后恢复。")
-            with resident_record_domain.state_lock(resident_id), get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as committed:
-                if committed.get("epoch") == epoch:
-                    committed["owner_notified"] = True
-                    if asked:
-                        committed.update(question_facade_id=facade["resident_id"], question_message_id=asked)
-    return True
+    return _ensure_quota_switch(record, accounts)
 
 
 def answer_role_quota_question(facade_id: str, message_id: str, actor: str) -> None:

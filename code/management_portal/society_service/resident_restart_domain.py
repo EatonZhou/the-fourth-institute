@@ -1,6 +1,8 @@
 """Resident domain responsibilities: restart."""
 from __future__ import annotations
 
+from management_portal.execution.account_selection_contract import QUOTA_SETTINGS
+
 from .resident_restart_handoff import can_preserve as can_preserve_restart_input
 
 from . import (
@@ -570,7 +572,7 @@ def _target_runtime_settings(
         # Portal intent survives Provider changes. Provider model/transport
         # parameters are reconciled independently against the destination.
         current_settings = {key: copy.deepcopy(current_settings[key]) for key in (
-            "capability_config", "prompt_injection", "agent_harness", "prompt_context", "allow_subagents", "auto_switch_on_quota", "quota_switch_strategy",
+            "capability_config", "prompt_injection", "agent_harness", "prompt_context", "allow_subagents", *QUOTA_SETTINGS,
         ) if key in current_settings}
         if target_provider != "provider_api":
             current_settings.pop("prompt_context", None)
@@ -583,7 +585,7 @@ def _target_runtime_settings(
         if body.get("reasoning_effort"):
             raise ValueError("Model API 推理参数应放在 backend_options.parameters 中")
         settings = {key: value for key, value in current_settings.items()
-                    if key in {*API_RUNTIME_SETTINGS, "capability_config", "allow_subagents", "auto_switch_on_quota", "quota_switch_strategy"}}
+                    if key in {*API_RUNTIME_SETTINGS, "capability_config", "allow_subagents", *QUOTA_SETTINGS}}
         settings.update({key: body[key] for key in ("model", "prompt_context", "backend_options") if key in body})
         target_runtime_settings = resident_runtime_domain.resident_runtime_settings_from_register_payload(
             {**record, "backend": target_provider, "backend_route_id": target_route},

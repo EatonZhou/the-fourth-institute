@@ -18,8 +18,8 @@ def test_cc_subscription_does_not_prefer_cc_api_over_codex():
     source=account('claude','claude_one',remaining=0)
     api=account('claude','deepseek','api_profile',api='deepseek_primary')
     codex=account('codex','codex_one')
-    assert fallback_account([source,api,codex], 'claude','claude_one',[], reserve=True)=={}
-    assert fallback_account([source,api,codex], 'claude','claude_one',[], reserve=True, priority=['codex:subscription_login'])==codex
+    assert fallback_account([source,api,codex], 'claude','claude_one',[])=={}
+    assert fallback_account([source,api,codex], 'claude','claude_one',[], priority=['codex:subscription_login'])==codex
 
 
 def test_priority_same_kind_and_unavailable_accounts():
@@ -30,10 +30,10 @@ def test_priority_same_kind_and_unavailable_accounts():
     order=['kimi:service','codex:subscription_login']
     choices=[source,same,codex,kimi]
     def pick(tried):
-        return fallback_account(choices,'claude','claude_one',tried,reserve=True,priority=order)
+        return fallback_account(choices,'claude','claude_one',tried,priority=order)
     assert pick([])==same
     assert pick(['claude_two'])==kimi
-    kimi['quota_reserve']['windows'][0]['remaining_percent']=5
+    kimi['quota_reserve']['windows'][0]['remaining_percent']=0
     assert pick(['claude_two'])==codex
 
 
@@ -56,12 +56,10 @@ def test_family_custom_order_appends_subscriptions_without_new_billing_kinds():
     service = account('kimi', 'service', 'service')
     accounts = [source, claude, paid, service, kimi]
     priority = ['missing:subscription_login', 'claude:subscription_login']
-    def pick(*, append_subscriptions=True):
-        return fallback_account(accounts, 'codex', 'source', [], reserve=True,
-                                priority=priority, append_subscriptions=append_subscriptions)
-    assert pick() == kimi  # The same appended subscription displayed by the menu.
+    def pick():
+        return fallback_account(accounts, 'codex', 'source', [], priority=priority)
+    assert pick() == {}  # No unlisted subscription is appended.
     assert priority == ['missing:subscription_login', 'claude:subscription_login']
-    assert pick(append_subscriptions=False) == {}  # Explicit Resident/site policy stays strict.
     kimi['enabled'] = False
     assert pick() == {}  # No implicit API or service authorization.
     priority.append('kimi:service')
@@ -101,7 +99,7 @@ def test_priority_persists_and_unrelated_update_preserves_it(lineage, charters):
     assert next(b['family'] for b in graph(lineage)['function_blocks'] if b['id'] == family_id)['auto_migrate_priority'] == []
     ok('UpdateFamily', {'lineage_id': lineage, 'family_id': family_id, 'auto_migrate_priority': order})
     ok('UpdateFamily', {'lineage_id': lineage, 'family_id': family_id, 'goal': 'New goal'})
-    assert auto_migration_priority(find_resident(member)) == order
+    assert auto_migration_priority(find_resident(member)) == []
     assert next(b['family'] for b in graph(lineage)['function_blocks'] if b['id'] == family_id)['auto_migrate_priority'] == order
     ok('UpdateFamily', {'lineage_id': lineage, 'family_id': family_id, 'auto_migrate_priority': []})
     assert auto_migration_priority(find_resident(member)) == []
@@ -121,9 +119,9 @@ def test_admission_uses_family_type_order(quota_family, monkeypatch):
     accounts[2]['selection_catalog'] = {'fresh':True,'models':['kimi-default'],'default_model':'kimi-default'}
     calls = []
     monkeypatch.setattr(resident_restart_domain, 'restart_resident_session', lambda *a, **k: calls.append(a[2]))
-    assert family_quota.ensure_role_reserve(_record(f.steward), accounts)
-    assert calls[0]['target_provider'] == 'kimi'
-    assert calls[0]['model'] == 'kimi-default'
+    assert not family_quota.ensure_role_reserve(_record(f.steward), accounts)
+    assert calls == []  # A Family order cannot enable emergency switching.
+
 
 
 @pytest.mark.parametrize('previous_failure', [False, True])
@@ -141,6 +139,10 @@ def test_exhausted_family_tries_same_kind_before_preferred_provider(quota_family
                 account('claude', 'claude_one', remaining=90)]
     accounts[0]['quota_reserve']['used_up'] = True
     record = _record(f.steward)
+    from management_portal.society_service import resident_record_domain
+    record["execution_settings"].update(auto_switch_on_quota=True, emergency_switch_on_quota=True,
+                                        emergency_switch_order=priority)
+    resident_record_domain.save_resident_record(record, commit_configuration=True)
     if previous_failure:
         windows = [(w.get('window'), w.get('resets_at')) for w in accounts[0]['quota_reserve']['windows']]
         with store.family_quota_migrations.transaction(record['lineage_id'], f.steward) as state:
