@@ -36,7 +36,7 @@ LAYERS = (
     # Contracts, configuration, identities, locks and value rules.
     """
     allocator_memory application_target_configuration changes config contracts domain_ports effect_artifacts errors memory_profile
-    family_definition identity_contract invariant_locks lineage_effect_syntax
+    family_definition family_recovery_effects family_review_effects family_roles identity_contract invariant_locks isa_migration_scope lineage_effect_syntax
     lineage_execution_authority lineage_member_projection lineage_placement lineage_values
     principal_hierarchy project_folders read_snapshot resident_access_scope resident_backend resident_capability_materials
     resident_context resident_context.embedder resident_context.evidence resident_context.summary_layers
@@ -49,13 +49,13 @@ LAYERS = (
     """,
     # Tables, rows and stores.
     """
-    creation_intents definition_collections directory_execution_admission directory_owner domain_work_storage duty_storage edge_storage family_chat_storage family_storage
-    family_task_dispatch_storage graph_storage handoff_location_storage lineage_data_columns lineage_data_definitions
+    blackboard_storage creation_intents definition_collections directory_execution_admission directory_owner domain_work_storage duty_storage edge_storage facade_members family_chat_storage family_storage
+    family_task_dispatch_storage family_task_receipts graph_storage handoff_location_storage lineage_data_columns lineage_data_definitions
     lineage_data_effect_cleanup lineage_data_executions lineage_data_mailbox lineage_data_notifications
     lineage_data_project_graphs lineage_data_projection_outbox lineage_data_residents lineage_data_runtime
     lineage_definition_contract lineage_definition_versions lineage_metadata_storage lineage_state_domains
-    lineage_locations lineage_storage program_work_storage relation_work_storage resident_context.store
-    resident_delivery_storage resident_execution_storage resident_storage resident_store
+    lineage_locations lineage_storage program_work_storage relation_work_storage resident_context.store templates.persistence
+    permission_facts_projection resident_delivery_storage resident_execution_storage resident_prepared_input_storage resident_storage resident_store
     resident_workspace_storage runtime_read_models script_runs.store service_invocation_storage
     service_invocation_store state_store trigger_path_storage wire_delivery_storage user_pending_question_storage
     """,
@@ -71,7 +71,7 @@ LAYERS = (
     lineage_program_fields lineage_program_graph_mutation lineage_program_identity
     lineage_program_packet_routing lineage_program_queries lineage_program_vocabulary
     lineage_program_wires lineage_recurring_schedule lineage_subgraph lineage_workspace_binding
-    result_contracts
+    instruction_normalization isa_contract_migration result_contracts
     """,
     # Records, catalogs, the Conversation stream and the service clients.
     """
@@ -90,7 +90,7 @@ LAYERS = (
     """
     component_runtime effect_disposition effect_recovery_worker lineage_aggregate lineage_catalog
     lineage_definition_scope lineage_effect_script_journal lineage_event_claims lineage_event_conditions
-    lineage_event_delivery lineage_event_dispatch_rules lineage_event_routing lineage_loop_runtime
+    lineage_event_delivery lineage_blackboard_events lineage_event_dispatch_rules lineage_event_routing lineage_loop_runtime
     lineage_operator_runtime lineage_program_effect_results lineage_program_observations
     lineage_program_occurrences lineage_program_operator_execution lineage_program_resident_inputs
     lineage_program_runtime lineage_program_runtime_projection lineage_program_schedules
@@ -99,7 +99,7 @@ LAYERS = (
     """,
     # Resident records, the Family facade and messages out, which Programs deliver through.
     """
-    family_activity family_continuation family_facade family_familize family_owners family_tasks message_quotes outward_messages
+    family_activity family_continuation family_facade family_familize family_owners family_tasks isa_definition_normalization message_quotes outward_messages
     personal_history resident_access resident_execution_gate resident_execution_work resident_handoff_selection resident_input_history
     resident_fork_inheritance resident_held_infos resident_input_checkpoints resident_lineage
     resident_creation_recovery resident_mailbox resident_record_domain resident_unread resident_user_authorization resident_work_origin
@@ -120,7 +120,7 @@ LAYERS = (
     resident_directory_domain resident_execution_domain resident_execution_engine_domain
     resident_fork_domain resident_initialization resident_initialization_credits resident_input_queue_domain resident_input_recovery
     resident_intake_domain resident_lifecycle_domain resident_lifecycle_steps_domain
-    resident_management_domain resident_media_domain resident_prompt_domain resident_protocol
+    resident_management_domain resident_media_domain resident_prepared_input_admission resident_prompt_domain resident_protocol
     resident_questions resident_queue_control_domain resident_registration_domain resident_reporting resident_reporting_policy resident_restart_domain
     resident_restart_handoff resident_runtime_domain resident_session_backend_domain resident_session_credits
     resident_watchboard_domain resident_work_recovery resident_workspace_domain
@@ -135,16 +135,18 @@ LAYERS = (
     # Family, template, Function Block, Project and principal operations.
     """
     effect_script_authoring family_direct_delivery family_progress family_quality_reviewers family_quota family_quota_projection
-    family_reassign family_resource_projection family_review family_review_duty family_routing_context family_supervision resident_input_diagnostics
-    family_task_dispatches function_block_domain lineage_resident_operations principal_hierarchy_domain
-    personal_phone_assistant project_domain resident_domain templates templates.builtins templates.duty_capture
-    templates.explore templates.familize templates.family_duty templates.kinds templates.marketplace
-    templates.prompt templates.registry templates.rewrite templates.script templates.store
-    templates.structure templates.values
+    family_reassign family_resource_projection family_review family_review_duty family_role_composition family_routing_context
+    family_strategy_state family_supervision resident_input_diagnostics
+    family_task_dispatches function_block_domain instance_update instruction_name_migration lineage_resident_operations message_forwarding principal_hierarchy_domain
+    personal_phone_assistant project_domain relay_domain relay_review_resolution resident_domain resident_prepared_inputs resident_requests templates templates.builtins
+    templates.consolidation templates.duty_capture
+    templates.explore templates.familize templates.family_duty templates.family_graph templates.family_reconcile templates.kinds templates.marketplace
+    templates.presentation templates.prompt templates.registry templates.rewrite templates.role templates.role_recipes templates.script templates.store
+    templates.structure templates.structure_layout templates.values
     """,
     # Instruction handlers, hosts, projections and the service.
     """
-    active_agent_projection application conversation_projection coordinator resident_business_history user_pending_questions isa isa.common isa.conversation
+    active_agent_projection application conversation_projection coordinator resident_business_history user_pending_questions isa isa.blackboard isa.common isa.conversation
     isa.definition isa.resource_creation isa.execution isa.families isa.function_blocks isa.organization isa.residents isa.runs
     isa.script_runs isa.shared_state isa.system_workflows isa.templates resident_context.domain
     resident_context.worker resident_domain_host resident_lineage_host runtime.backend_adapter

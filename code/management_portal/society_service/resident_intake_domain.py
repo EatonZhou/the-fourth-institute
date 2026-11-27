@@ -15,7 +15,7 @@ from . import (
     resident_execution_work,
     resident_lineage,
     resident_message_contract,
-    resident_prepared_inputs,
+    resident_prepared_input_admission,
     resident_state,
     resident_record_domain,
     resident_prompt_domain,
@@ -660,7 +660,7 @@ def _input_request(
         reply_source_message_id=reply_source_message_id,
         channel=channel,
     )
-    resident_prepared_inputs.check_authored_input(
+    resident_prepared_input_admission.check_authored_input(
         resident_id, message_id, request.reader, protocol_input,
         business_ref=business_ref, automatic_quote=bool(reply_source_message_id),
     )
@@ -741,7 +741,7 @@ def _with_accepted_quote(request: ResidentInput, quote_record: Mapping[str, Any]
 def _admit_input(request: ResidentInput) -> dict[str, Any]:
     """Admit the input under the Resident's state lock; then queue it."""
 
-    resident_prepared_inputs.check_admission(
+    resident_prepared_input_admission.check_admission(
         request.resident_id, request.message_id, request.reader,
         activation_policy=request.activation.name, relay_source=_accepted_relay_source(request),
     )
@@ -754,8 +754,8 @@ def _admit_input(request: ResidentInput) -> dict[str, Any]:
             raise ValueError("该 Resident 已删除，不能接收消息")
         request = _with_question_answer(request, record)
         if (not request.relay.sender
-                and resident_prepared_inputs.releasing_approval(message_id) is None
-                and resident_prepared_inputs.approval_for(resident_id, request.protocol_input) is not None
+                and resident_prepared_input_admission.releasing_approval(message_id) is None
+                and resident_prepared_input_admission.approval_for(resident_id, request.protocol_input) is not None
                 and not existing_resident_delivery(resident_id, request.with_business_ref(request.user_message(resident_id)))):
             raise ValueError("同意权限请求时必须先准备回答并暂存批准的全部凭证")
         from . import resident_handoff_selection
@@ -780,7 +780,7 @@ def _accepted_relay_source(request: ResidentInput) -> tuple[str, str] | None:
 
 
 def _input_commit(request: ResidentInput):
-    return resident_prepared_inputs.accepting(
+    return resident_prepared_input_admission.accepting(
         request.resident_id, request.message_id, request.reader,
         activation_policy=request.activation.name, relay_source=_accepted_relay_source(request),
     )
@@ -928,7 +928,7 @@ def _deliver_to_facade(
         return _receipt(request)
     from . import family_recovery, family_role_quota_questions
 
-    approval = resident_prepared_inputs.releasing_approval(facade_message_id)
+    approval = resident_prepared_input_admission.releasing_approval(facade_message_id)
     if approval is not None and approval.next_hop(record_id):
         return _deliver_projected_permission_answer(request, record, facade_item, approval=approval)
 
@@ -987,7 +987,7 @@ def _deliver_to_facade(
 
 
 def _deliver_projected_permission_answer(request: ResidentInput, record: dict, message: dict, *,
-                                         approval: resident_prepared_inputs.Approval) -> dict:
+                                         approval: resident_prepared_input_admission.Approval) -> dict:
     """Admit the facade trace and the exact member answer in one transaction.
 
     Unlike an ordinary routed request, consent cannot wait for a Router to
@@ -1550,7 +1550,7 @@ def queue_bootstrap_resident_session(
         resident_execution_work.write(record, job)
         return job
     commit = (_input_commit(intake_request) if intake_request is not None else
-              resident_prepared_inputs.accepting(resident_domain_common.record_resident_id(record),
+              resident_prepared_input_admission.accepting(resident_domain_common.record_resident_id(record),
                   user_message_id, actor_id, activation_policy=activation_policy))
     with commit:
         if delivery_message_id:

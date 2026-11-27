@@ -8,7 +8,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from management_portal.society_service import family_progress as progress
+from management_portal.society_service import family_definition, family_progress as progress
 from management_portal.society_service.resident_intake_domain import deliver_resident_message_content
 from management_portal.society_service.state_store import get_lineage_data_store
 from tests.cases.test_family_supervision import team, lineage, charters, future_creation_store  # noqa: F401
@@ -25,10 +25,10 @@ def reports(team, monkeypatch):
               "source_versions": {"roster": "one", team.member: "two"}}
     monkeypatch.setattr(progress.work_summary, "get_facade_summary_inputs", lambda *args: copy.deepcopy(inputs))
     monkeypatch.setattr(progress.work_summary, "maintenance_view", lambda *args: copy.deepcopy(doc))
-    def update(actor, rid, *, summary, source_versions):
+    def update(actor, rid, summary, source_versions):
         assert actor == team.steward and rid == team.facade
         doc.update(revision=doc["revision"] + 1, summary=copy.deepcopy(summary), source_versions=source_versions)
-    monkeypatch.setattr(progress.work_summary, "update_resident_work_summary", update)
+    monkeypatch.setattr(progress.work_summary, "update_facade_summary", update)
     def deliver(rid, actor, text, **kwargs):
         infos.append({"resident_id": rid, "actor": actor, "text": text, **kwargs})
     monkeypatch.setattr(resident_intake_domain, "deliver_resident_message_content", deliver)
@@ -88,15 +88,15 @@ def test_summary_write_crash_retries_without_broadcast_or_duplicate_summary(repo
     """摘要写入后中断可重试，且不向成员群发。"""
     r = reports
     r.receive(every_turns=1)
-    update = progress.work_summary.update_resident_work_summary
+    update = progress.work_summary.update_facade_summary
     def interrupted(*args, **kwargs):
         update(*args, **kwargs)
         raise RuntimeError("crash after summary write")
-    monkeypatch.setattr(progress.work_summary, "update_resident_work_summary", interrupted)
+    monkeypatch.setattr(progress.work_summary, "update_facade_summary", interrupted)
     with pytest.raises(RuntimeError, match="crash"):
         r.publish("1")
     assert not r.infos and r.doc["revision"] == 1
-    monkeypatch.setattr(progress.work_summary, "update_resident_work_summary", update)
+    monkeypatch.setattr(progress.work_summary, "update_facade_summary", update)
     assert r.publish("1")["status"] == "published"
     r.publish("1")
     assert not r.infos and r.doc["revision"] == 1
@@ -144,7 +144,8 @@ def test_hourly_summary_is_the_only_generated_summary_schedule(reports):
     lid, fid = reports.team.lineage, reports.team.family["family_id"]
     view = graph(lid)
     block = next(b for b in view["function_blocks"] if b["id"] == fid)
-    elements = {e["key"]: e["id"] for e in block["elements"]}
+    # The Steward's summary duty owns the timer; the Family block keeps only shared structure.
+    elements = {e["key"]: e["id"] for e in family_definition.family_elements(view, block)}
     assert not {"request_progress", "progress_report"} & elements.keys()
     timer = next(c for c in view["program"]["components"] if c["id"] == elements["summary_timer"])
     assert timer["config"]["interval_seconds"] == 3600
@@ -168,14 +169,15 @@ def test_publication_updates_real_summary_without_infos_and_steward_can_notify_s
     """Family 进展简报的触发、发布与设置"""
     monkeypatch.setattr(resident_intake_domain, "deliver_resident_message_content", deliver_resident_message_content)
     mid = team.message(team.facade, "queued")
-    ok("MaintainFamilyProgress", {"lineage_id": team.lineage, "family_id": team.family["family_id"], "every_turns": 1,
-       "event": {"type": "resident.message_received", "payload": {"resident_id": team.facade, "message_id": mid}}},
-       actor=team.steward)
+    # MaintainFamilyProgress and PublishFamilyProgress are retired instructions: the Family workflow
+    # drives these owner functions with the shared-state ledger.
+    progress.check(team.lineage, team.family["family_id"], team.facade, every_turns=1,
+                   event={"type": "resident.message_received", "payload": {"resident_id": team.facade, "message_id": mid}})
     materials = progress.work_summary.get_facade_summary_inputs(team.steward, team.facade)
-    args = {"lineage_id": team.lineage, "family_id": team.family["family_id"], "batch_id": "1",
+    args = {"batch_id": "1",
             "report": "Family 已开始接收工作，成员成果摘要尚未齐全。", "summary": {"current_focus": "接收工作，等待成员成果摘要"},
             "source_versions": materials["source_versions"]}
-    assert ok("PublishFamilyProgress", args, actor=team.steward)["status"] == "published"
+    assert progress.publish(team.lineage, team.family["family_id"], team.steward, **args)["status"] == "published"
     stored = progress.work_summary.maintenance_view(team.steward, team.facade)
     assert stored["summary"]["current_focus"] == args["summary"]["current_focus"]
     assert stored["source_versions"] == args["source_versions"]

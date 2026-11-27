@@ -16,11 +16,11 @@ def is_resident_input_open(resident_id: str, message_id: str) -> bool:
 
 def is_resident_input_open_for_issuer(resident_id: str, message_id: str, issuer: str, *, connection=None) -> bool:
     """Verify the trusted issuer and recipient of a live prepared input."""
-    from . import resident_prepared_inputs
+    from . import resident_prepared_input_storage
 
     if connection is not None:
-        return resident_prepared_inputs.open_for_issuer(connection, resident_id, message_id, issuer)
+        return resident_prepared_input_storage.open_for_issuer(connection, resident_id, message_id, issuer)
     from .state_store import get_lineage_data_store
 
     with get_lineage_data_store().database.read() as connection:
-        return resident_prepared_inputs.open_for_issuer(connection, resident_id, message_id, issuer)
+        return resident_prepared_input_storage.open_for_issuer(connection, resident_id, message_id, issuer)

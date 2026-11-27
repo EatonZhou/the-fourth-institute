@@ -86,6 +86,32 @@ done
 output status="accepted_pending_checkpoint" message_id="$mid"'''
 
 
+PERSONAL_REVIEW = r'''activity=$(GetSharedState lineage_id="${arguments.lineage_id}" key="${arguments.activity_key}")
+if [ -z "${activity.value}" ]; then
+  output status="inactive"
+  exit
+fi
+review=$(GetSharedState lineage_id="${arguments.lineage_id}" key="${arguments.review_key}")
+if [ "${activity.value}" = "${review.value}" ]; then
+  output status="unchanged"
+  exit
+fi
+state=$(ListResidentStates resident_ids:=[${arguments.steward}] include_viewer_state:=false)
+if [ "${state.states.0.state.work_state}" != "idle" ]; then
+  output status="busy"
+  exit
+fi
+if [ "${state.states.0.state.queued_count}" -gt 0 ]; then
+  output status="busy"
+  exit
+fi
+notice_id="msg_d066000000000005${activity.value:4:32}"
+brief="回顾私人助手的分工与近期新对话。门面 ${arguments.facade}，活动输入 ${activity.value}。${arguments.family_tasks.review.prompt}\n${arguments.family_tasks.review.guide}"
+sent=$(DeliverMessage resident_id="${arguments.steward}" business_ref="duty/family-review" message:={"message_id":${notice_id},"content_parts":[{"type":"text","text":${brief}}]})
+UpdateSharedState lineage_id="${arguments.lineage_id}" key="${arguments.review_key}" value="${activity.value}" expected_value:=${review.value}
+output status="requested" message_id="${sent.message_id}"'''
+
+
 def bindings(lineage_id, family_id, family):
     return {key: {"value": value} for key, value in {
         "lineage_id": lineage_id, "review_key": f"family.{family_id}.review",

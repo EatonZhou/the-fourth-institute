@@ -2,16 +2,8 @@
 
 from __future__ import annotations
 
-import hashlib
-
 from ..lineage_effect_script import deliver_message_script
-
-
-def template_id(key):
-    return (
-        "template_"
-        + hashlib.sha256(f"builtin-template:{key}".encode()).hexdigest()[:12]
-    )
+from .registry import template_id  # noqa: F401  (builtins' identities stay available here)
 
 
 def _prompt(*parts):
@@ -80,7 +72,7 @@ def definitions():
 
     from ..family_tasks import defaults
     review = defaults("notify_periodic_review")["review"]
-    from . import role
+    from . import role_recipes as role
     templates = [
         {
             "builtin_key": "family_review", "kind": "family_duty", "category": "structure",

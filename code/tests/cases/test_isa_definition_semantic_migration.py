@@ -197,7 +197,7 @@ def test_society_script_migration_has_no_feature_import_edge():
     from management_portal.portal_features import FEATURES
     from tests.cases.test_core_layers import _imports
 
-    targets = _imports()["management_portal.society_service.instruction_name_migration"]
+    targets = _imports()["management_portal.society_service.instruction_normalization"]
     patterns = [pattern for feature in FEATURES for pattern in feature.modules]
     assert not {target for target in targets if any(fnmatchcase(target, pattern) for pattern in patterns)}
     assert "management_portal.portal_features" in targets

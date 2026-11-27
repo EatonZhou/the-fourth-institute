@@ -144,7 +144,7 @@ def review_config(config, actor, expected_hash, decision):
         if not draft['script'].strip():
             raise ValueError('候选脚本尚未编写')
         from .lineage_effect_script import analyze
-        from .instruction_name_migration import normalize_script
+        from .instruction_normalization import normalize_script
         from .lineage_program_effect_rules import validate_effect_argument
         from management_portal.hatg.catalog import instruction_catalog
         script = normalize_script(draft['script'])

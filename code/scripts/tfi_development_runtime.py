@@ -26,6 +26,8 @@ PERSISTENT_CONTRACT_OWNERS = frozenset({
     "management_portal/permission_system/scheme/repository.py",
     "management_portal/permission_system/scheme/d066_migration.py",
     "management_portal/society_service/instruction_name_migration.py",
+    "management_portal/society_service/instruction_normalization.py",
+    "management_portal/society_service/isa_definition_normalization.py",
     "management_portal/society_service/isa_contract_migration.py",
     "management_portal/society_service/facade_members.py",
 })

@@ -14,7 +14,7 @@ from string import Template
 
 from . import family_definition
 from .family_definition import family_elements as task_elements
-from .instruction_name_migration import normalize_prompt
+from .instruction_normalization import normalize_prompt
 
 
 ROUTER_CONTINUATION_CONTRACT = (
@@ -274,8 +274,7 @@ def configured(body: dict, block: dict) -> dict:
         entries.update({key: value for key, value in _configured_legacy(body, block).items()
                         if value['role'] not in block['family']['role_bindings']})
         # An explicitly installed independent review retains its own owner.
-        from . import family_review_duty
-        review = family_review_duty.task(body, block)
+        review = family_definition.review_task(body, block)
         if review:
             entries['review'] = review
         return entries

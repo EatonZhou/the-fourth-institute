@@ -123,8 +123,7 @@ def advance(record):
             return False  # claimed/running work still finishes on its original route
     try:
         if state.get("operation") == "clear_context":
-            from .resident_management_domain import apply_deferred_context_clear
-            return apply_deferred_context_clear(rid, deferred["request_id"])
+            return resident_domain_port.apply_deferred_context_clear(rid, deferred["request_id"])
         receipt = resident_domain_port.restart_resident_session(
             rid, deferred["actor"], deferred["payload"], portal_reason=str(state.get("reason") or ""),
         )

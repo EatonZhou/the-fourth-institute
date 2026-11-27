@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Protocol
@@ -9,6 +10,14 @@ from typing import Protocol
 
 def now():
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def template_id(key):
+    """The stable identity of a builtin template."""
+    return (
+        "template_"
+        + hashlib.sha256(f"builtin-template:{key}".encode()).hexdigest()[:12]
+    )
 
 
 class TemplateError(ValueError):

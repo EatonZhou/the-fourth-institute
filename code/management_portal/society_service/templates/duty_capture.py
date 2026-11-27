@@ -7,8 +7,8 @@ from .registry import TemplateError
 def capture(lineage, block):
     from ..family_review_duty import capture as capture_review
     from ..lineage_state import _normalize_lineage_payload
-    from .builtins import template_id
-    from .family_duty import install_review
+    from .family_reconcile import install_review
+    from .registry import template_id
 
     review = capture_review(lineage, block, template_id=template_id("family_review"),
                             install_recipe=install_review, normalize=_normalize_lineage_payload)

@@ -2,45 +2,40 @@
 
 A role has one Resident. Family-bound triggers keep using the platform's
 existing delivery protocol; neither a recipe nor its snapshot grants rights.
+``role_recipes`` holds the recipes themselves; this module installs and edits them.
 """
-from copy import deepcopy
-
 from .registry import TemplateError, result
-
-KEYS = ('router', 'steward')
-
-
-def references():
-    from .builtins import template_id
-    return {key: template_id('family_role_' + key) for key in KEYS}
+from .role_recipes import KEYS, definition, references, resolve  # noqa: F401  (the recipes are part of this kind's surface)
 
 
-def definition(key):
-    from .. import family_tasks
-    duties = []
-    for trigger, (_, owner, title, guide, objective) in family_tasks.TASKS.items():
-        if owner != key or trigger == 'progress':
-            continue
-        duties.append({'key': trigger, 'title': title, 'guide': guide,
-                       'prompt': objective + '\n${facts}\n指南：${guide_path}（${guide_version}）'})
-    identity = ('为当前原请求选择承接者；只按需读取候选资料，不执行业务正文。' if key == 'router' else
-                '维护所属 Family 的分工、业务成员摘要与故障恢复；不另造原业务请求。')
-    return {'role_key': key, 'resident': {},
-            'memories': [{'key': 'identity', 'level': 'session', 'prompt': identity}],
-            'duties': duties, 'bindings': ['family', 'facade', 'members', 'peer', 'member_done']}
+def install(body, resident_id, template, actor):
+    """Bind the role's Resident of a Family and install the recipe's memories and duties."""
+    from .. import family_role_composition
+    from .family_reconcile import reconcile_in_body
+    key = template['body']['role_key']
+    parent = next((b for b in body['function_blocks'] if b.get('family', {}).get(key) == resident_id), None)
+    if not parent or parent['family'].get('personal_ama_id'):
+        raise ValueError('角色必须绑定普通 Family 的对应 Resident，且类型不能冲突')
+    instance, count = family_role_composition.install(body, parent, key, {'template_id': template['template_id'],
+        'version': template.get('version', 1), 'body': template['body']}, actor)
+    if not count:
+        raise ValueError('此角色的职责与记忆已安装；请编辑现有职责或撤下后显式重装')
+    reconcile_in_body(body, parent, actor, installing=True)
+    return instance
 
 
-def resolve(refs):
-    from . import store
-    if set(refs) - set(KEYS):
-        raise TemplateError('Family 仅接受 Router 和 Steward 角色引用')
-    resolved = {}
-    for key, identity in refs.items():
-        item = store.get_persisted(identity)
-        if item['kind'] != 'role' or item['body']['role_key'] != key:
-            raise TemplateError('Family 角色引用与角色类型不符')
-        resolved[key] = {'template_id': identity, 'version': item['version'], 'body': deepcopy(item['body'])}
-    return resolved
+def project(template):
+    """The disposable graph an editor shows for one role recipe."""
+    from .. import family_role_composition, family_roles
+    from . import family_graph
+    from .family_reconcile import reconcile_in_body
+    key = template['body']['role_key']
+    body, parent, roles = family_graph.generate({})
+    source = {'template_id': template.get('template_id', ''), 'version': template.get('version', 1), 'body': template['body']}
+    family_role_composition.assemble(body, parent, {key: source}, 'template-preview')
+    reconcile_in_body(body, parent, 'template-preview', installing=True)
+    instance = next(iter(family_roles.role_blocks(body, parent)))
+    return family_graph.project_body(body, parent, roles, [instance, *family_roles.duties(body, instance)], role_key=key, source=template)
 
 
 class RoleKind:
@@ -49,7 +44,7 @@ class RoleKind:
     targets = ('resident',)
 
     def normalize(self, template):
-        from .familize import _validate_resident_settings
+        from .family_reconcile import validate_resident_settings as _validate_resident_settings
         from .. import family_tasks, function_block_authoring
         body = template['body']
         if set(body) != {'role_key', 'resident', 'memories', 'duties', 'bindings'} or body.get('role_key') not in KEYS:
@@ -83,18 +78,17 @@ class RoleKind:
             ('resident', '节点配置'), ('memories', '分层记忆'), ('duties', '职责与触发提示词'))]}
 
     def editor_graph(self, template):
-        from .. import family_roles
-        return family_roles.project(template)
+        return project(template)
 
     def describe(self, template):
         return {'persistent': True, 'steps': ['绑定所属 Family 的对应 Resident，安装此角色的配置、记忆和职责；共享对象保持外部引用。']}
 
     def _apply(self, ctx, dry_run):
-        from .. import family_roles, lineage_graph_edits
+        from .. import lineage_graph_edits
         if len(ctx.target['resident_ids']) != 1:
             raise TemplateError('请选择所属 Family 的对应角色 Resident')
         def edit(body):
-            return family_roles.install(body, ctx.target['resident_ids'][0], ctx.template, ctx.actor)['id']
+            return install(body, ctx.target['resident_ids'][0], ctx.template, ctx.actor)['id']
         # Node backend choices are a distinct lifecycle operation: binding an
         # existing Resident never silently overwrites its account/model.
         if ctx.template['body']['resident']:

@@ -4,17 +4,8 @@ import secrets
 from . import family_review_effects, family_tasks, function_block_authoring
 from .family_definition import (
     REVIEW_BLOCK_KEY, REVIEW_DUTY as KEY, REVIEW_ELEMENT_KEYS as ELEMENT_KEYS,
-    bind_review_activity, find_review_duty as find, has_independent_review as independent,
+    bind_review_activity, find_review_duty as find, has_independent_review as independent, review_task as task,
 )
-
-
-def task(body, parent):
-    block = find(body, parent)
-    if not block:
-        return None
-    wid = next((e['id'] for e in block['elements'] if e.get('key') == 'notify_periodic_review'), None)
-    wire = next((w for w in body['program']['wires'] if w['id'] == wid), {})
-    return wire.get('config', {}).get('invoke_profiles', {}).get('effect', {}).get('arguments', {}).get('family_tasks', {}).get('value', {}).get(KEY)
 
 
 def install(body, steward, actor, template, *, reconcile):

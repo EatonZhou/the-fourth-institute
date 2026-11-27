@@ -3,15 +3,12 @@ from __future__ import annotations
 
 import hashlib
 import secrets
-from . import family_recovery_effects, family_review_effects, personal_assistant
+from . import family_recovery_effects, family_review_effects, family_roles
+from .family_roles import REVIEW_ELEMENT_KEYS
 
 FAMILY_KEY = "family"
 REVIEW_DUTY = "review"
 REVIEW_BLOCK_KEY = "duty:" + REVIEW_DUTY
-REVIEW_ELEMENT_KEYS = frozenset({
-    "periodic_review", "notify_periodic_review_task", "notify_periodic_review",
-    "review_activity", "record_review_activity",
-})
 
 
 def has_independent_review(family):
@@ -24,16 +21,23 @@ def find_review_duty(body, parent):
                  and block.get("duty", {}).get("holder_id") == parent["family"]["steward"]), None)
 
 
+def review_task(body, parent):
+    """The task entry the independent review duty's notice wire carries, if one is installed."""
+    block = find_review_duty(body, parent)
+    if not block:
+        return None
+    wid = next((e['id'] for e in block['elements'] if e.get('key') == 'notify_periodic_review'), None)
+    wire = next((w for w in body['program']['wires'] if w['id'] == wid), {})
+    return wire.get('config', {}).get('invoke_profiles', {}).get('effect', {}).get('arguments', {}).get('family_tasks', {}).get('value', {}).get(REVIEW_DUTY)
+
+
 def family_elements(body, parent):
-    from . import family_roles
     review = find_review_duty(body, parent)
     return [*parent.get("elements", []), *family_roles.elements(body, parent), *(review["elements"] if review else [])]
 
 
 def bind_review_activity(body, parent):
     """Bind the review duty to the Family's shared completion event on installation."""
-    from . import family_review_effects
-
     block = find_review_duty(body, parent)
     if block is None:
         return
@@ -319,7 +323,7 @@ _ORIGINAL_SCRIPTS = {
     "866f9b8adbe67642327871a0cfa23dbb3094586c6034842376b47312d48cee27": FAMILY_ROLE_AVAILABILITY_SCRIPT,
     "383803173038e47d7ff63dbdda9855e927e1fd6655f29e9dea740c750bc518ba": family_review_effects.NOTICE,
     "b08a2b1a4ca4dc21b3f5d23caf8d2318b2214de4803346e7f437af539553744c": family_review_effects.RECORD_ACTIVITY,
-    "13305f83577da86164bd160bd113cba9442577c7050f70a5214d2ea56a3728a0": personal_assistant.REVIEW_SCRIPT,
+    "13305f83577da86164bd160bd113cba9442577c7050f70a5214d2ea56a3728a0": family_review_effects.PERSONAL_REVIEW,
 }
 
 _ORIGINAL_BY_ROLE = {

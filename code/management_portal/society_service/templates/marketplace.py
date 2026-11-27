@@ -4,39 +4,14 @@ from contextlib import contextmanager
 from copy import deepcopy
 import secrets
 
-from management_common.database_time import decode_times, encode_times
-from management_common.relational_rows import sync_rows
+from management_common.database_time import decode_times
 
 from ..effect_script_candidate import require_publishable
 from . import kinds, store
+from .persistence import STORE_FIELDS as FIELDS, STORE_TIMES as TIMES, store_items as items, write_store_items as _write
 from .registry import TemplateError, now
 
-TIMES = ("published_at", "updated_at", "unpublished_at")
 INSTALL = ("installed_from_store_id", "installed_store_version", "installed_store_hash")
-FIELDS = ("source_template_id", "publisher", "version", "release_note", *store.CONTENT,
-          "content_hash", "versions", "active", *TIMES)
-
-
-def items(connection):
-    return [decode_times(row, TIMES) for row in connection.execute("SELECT * FROM template_store_items")]
-
-
-def _write(connection, rows):
-    sync_rows(connection, "template_store_items", ("store_id",), FIELDS,
-              [encode_times(row, TIMES) for row in rows],
-              json_columns=("targets", "parameters", "body", "versions"))
-
-
-def migrate_fork_modes(connection):
-    from .structure import migrate_fork_modes as migrate_structure
-
-    current = items(connection)
-    migrated = [migrate_structure(item) for item in current]
-    if migrated != current:
-        for previous, item in zip(current, migrated, strict=True):
-            if item != previous:
-                item["content_hash"] = store.content_hash(item)
-        _write(connection, migrated)
 
 
 def group_for(template):
@@ -44,7 +19,7 @@ def group_for(template):
 
 
 def instructions_used(template):
-    from ..instruction_name_migration import normalize_template
+    from ..isa_definition_normalization import normalize_template
     from ..lineage_effect_script import parse
 
     kind, body = template["kind"], normalize_template(template)["body"]
@@ -234,7 +209,7 @@ def _owned_installation(item, rows, target_template_id, actor):
 
 
 def _installed_snapshot(item, actor, *, previous=None):
-    from ..instruction_name_migration import normalize_template
+    from ..isa_definition_normalization import normalize_template
 
     stamp = now()
     value = normalize_template({key: deepcopy(item[key]) for key in store.CONTENT})

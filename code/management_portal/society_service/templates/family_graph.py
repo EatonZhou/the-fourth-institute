@@ -5,18 +5,11 @@ Only recipe fields are saved; platform-owned wiring has a single runtime owner.
 """
 from copy import deepcopy
 
+from . import role_recipes
+from .family_reconcile import install_review, reconcile_in_body, values as family_values
+from .presentation import annotate, task_entries
 from .registry import TemplateError
 from .. import family_tasks
-
-
-def task_entries(body, block):
-    owned = {e['id'] for e in block['elements']}
-    for wire in body['program']['wires']:
-        if wire['id'] not in owned:
-            continue
-        for profile in wire.get('config', {}).get('invoke_profiles', {}).values():
-            for trigger, task in profile.get('arguments', {}).get('family_tasks', {}).get('value', {}).items():
-                yield wire, trigger, task
 
 
 def apply_tasks(body, block, tasks):
@@ -53,20 +46,17 @@ def apply_tasks(body, block, tasks):
 
 
 def generate(recipe, *, resolve_roles=False):
-    from .familize import _values, reconcile_in_body
-
     roles = {key: 'resident_' + str(index).zfill(12)
              for index, key in enumerate(('facade', 'steward', 'router', 'member'), 1)}
     values = {key: value for key, value in recipe.items() if key not in {'tasks', 'resident_settings', 'role_templates'}}
     block = {'id': 'fbi_000000000001', 'title': 'Family', 'elements': [],
-             'family': {**_values(values), **roles, 'title': 'Family', 'members': [roles['member']]}}
+             'family': {**family_values(values), **roles, 'title': 'Family', 'members': [roles['member']]}}
     body = {'lineage_id': 'lineage_000000000001', 'nodes': [{'id': rid} for rid in roles.values()],
             'function_blocks': [block], 'program': {'components': [], 'wires': []}}
     reconcile_in_body(body, block, 'template-preview')
     if resolve_roles and recipe.get('role_templates'):
-        from . import role
-        from .. import family_roles
-        family_roles.assemble(body, block, role.resolve(recipe['role_templates']), 'template-preview')
+        from .. import family_role_composition
+        family_role_composition.assemble(body, block, role_recipes.resolve(recipe['role_templates']), 'template-preview')
         reconcile_in_body(body, block, 'template-preview', installing=True)
     apply_tasks(body, block, recipe.get('tasks', {}))
     return body, block, roles
@@ -104,7 +94,6 @@ def project(template):
     body, parent, roles = generate({} if duty else template['body'], resolve_roles=not duty)
     block = parent
     if duty:
-        from .family_duty import install_review
         block = install_review(body, roles['steward'], 'template-preview',
                                {**template, 'template_id': template.get('template_id', '')})
     from .. import family_roles
@@ -164,5 +153,4 @@ def project_body(body, parent, roles, scopes, *, duty=False, role_key='', source
                   for role, rid in sorted(roles.items(), key=lambda pair: pair[0] != role_key) if (not duty and not role_key) or rid in visible or role == ('steward' if duty else role_key)],
         'components': [row(c) for c in body['program']['components'] if c['id'] in visible],
         'wires': [row(w) for w in wires], 'match': []}, 'controls': controls, 'groups': [] if role_key else groups}
-    from .presentation import annotate
     return annotate(projection, body, parent, roles, scopes, keys, source=source, role_key=role_key, duty=duty)

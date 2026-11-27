@@ -1,12 +1,8 @@
 """Reusable Family duty recipes; binding is resolved from the target Steward."""
 from string import Template
-from .familize import reconcile_in_body
+from .family_reconcile import install_review
 from .registry import result, TemplateError
-from .. import family_review_duty, lineage_graph_edits
-
-
-def install_review(body, steward, actor, template):
-    return family_review_duty.install(body, steward, actor, template, reconcile=reconcile_in_body)
+from .. import lineage_graph_edits
 
 
 class FamilyDutyKind:

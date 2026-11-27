@@ -128,8 +128,7 @@ def publish(lineage_id, family_id, actor, *, batch_id, report, summary, source_v
             # Recover a crash after the summary write but before outbox commit.
             same = previous["summary"] == clean and previous["source_versions"] == source_versions
             if not same:
-                work_summary.update_resident_work_summary(actor, facade,
-                    summary=clean, source_versions=source_versions)
+                work_summary.update_facade_summary(actor, facade, clean, source_versions)
             batch["content"] = copy.deepcopy(content)
         # Previously publishing batches may retain delivery receipts. Keep those
         # facts, but never resume their former member outbox on a retry.

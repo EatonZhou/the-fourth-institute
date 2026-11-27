@@ -6,6 +6,17 @@ the hierarchy only declares which owned nodes a Resident menu can unfold.
 from . import structure_layout
 
 
+def task_entries(body, block):
+    """The (wire, trigger, task) triples of the Family tasks a Family block's own wires carry."""
+    owned = {e['id'] for e in block['elements']}
+    for wire in body['program']['wires']:
+        if wire['id'] not in owned:
+            continue
+        for profile in wire.get('config', {}).get('invoke_profiles', {}).values():
+            for trigger, task in profile.get('arguments', {}).get('family_tasks', {}).get('value', {}).items():
+                yield wire, trigger, task
+
+
 def annotate(projection, body, parent, roles, scopes, keys, *, source=None, role_key='', duty=False):
     graph = projection['body']
     visible = {r['key'] for section in ('roles', 'components') for r in graph[section]}
@@ -57,7 +68,6 @@ def annotate(projection, body, parent, roles, scopes, keys, *, source=None, role
                     resident['duties'].append({**item, 'members': [], 'memory': {'level': 'on_demand', 'prompt': item['guide']}})
     # The legacy recipe's task owner is still explicit; do not invent a role
     # source or make it writable as a second independent definition.
-    from .family_graph import task_entries
     for wire, trigger, task in task_entries(body, parent):
         owner = residents.get(task.get('role', '') + '_resident')
         if owner and not any(d['key'] == trigger for d in owner['duties']):

@@ -418,7 +418,7 @@ def write_resident_runtime_settings(record: dict, settings: dict[str, Any]) -> d
 
 
 def migrate_instruction_names() -> None:
-    from . import instruction_name_migration, isa_migration_scope, resident_store
+    from . import instruction_normalization, isa_migration_scope, resident_store
 
     catalog = resident_catalog.get_catalog()
     # Read only durable ownership before opening any Resident record.
@@ -444,7 +444,7 @@ def migrate_instruction_names() -> None:
                 context = (settings or {}).get("prompt_context") or {}
                 prompt = context.get("system_prompt")
                 if isinstance(prompt, str):
-                    normalized = instruction_name_migration.normalize_prompt(prompt)
+                    normalized = instruction_normalization.normalize_prompt(prompt)
                     if normalized != prompt:
                         context["system_prompt"] = normalized
                         catalog.state_store.transaction(
@@ -452,7 +452,7 @@ def migrate_instruction_names() -> None:
                         )
                 path = resident_record_domain.resident_instructions_path(current)
                 text = resident_store.read_text(path, limit=0)
-                normalized = instruction_name_migration.normalize_prompt(text)
+                normalized = instruction_normalization.normalize_prompt(text)
                 if normalized != text:
                     resident_store.replace_file_text(path, normalized)
             except Exception as exc:

@@ -34,6 +34,8 @@ python3 code/scripts/tfi_development_runtime.py activate --root /实际实例目
 - `code/management_portal/permission_system/scheme/repository.py`
 - `code/management_portal/permission_system/scheme/d066_migration.py`
 - `code/management_portal/society_service/instruction_name_migration.py`
+- `code/management_portal/society_service/instruction_normalization.py`
+- `code/management_portal/society_service/isa_definition_normalization.py`
 - `code/management_portal/society_service/isa_contract_migration.py`
 - `code/management_portal/society_service/facade_members.py`
 

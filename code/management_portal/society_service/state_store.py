@@ -11,7 +11,7 @@ from typing import Any
 from management_common import directory_dependencies
 from management_common.portal_database import portal_database
 from . import trigger_path_storage, family_storage, resident_storage, program_work_storage, domain_work_storage, relation_work_storage, resident_execution_storage
-from . import resident_delivery_storage, resident_prepared_inputs
+from . import resident_delivery_storage, resident_prepared_input_storage
 from . import blackboard_storage, facade_members
 from . import graph_storage, definition_collections, lineage_metadata_storage, duty_storage
 from . import wire_delivery_storage
@@ -446,7 +446,7 @@ class LineageDataStore:
         facade_members.ensure_schema(connection)
         # Blackboards joined the store after installation; their tables are created when absent.
         blackboard_storage.ensure_schema(connection)
-        resident_prepared_inputs.ensure_schema(connection)
+        resident_prepared_input_storage.ensure_schema(connection)
         # Existing data is used by its owners. A metadata tag or an unrelated
         # table/column difference must not disable every Resident. Operations
         # requiring absent structures report their actual database error.

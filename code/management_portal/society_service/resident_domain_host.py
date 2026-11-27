@@ -81,7 +81,7 @@ class ResidentDomainHost:
             )),
             (resident_management_domain, (
                 "rename_resident_identity", "rename_resident_title", "update_resident",
-                "move_resident_identities", "transition_resident_state",
+                "move_resident_identities", "transition_resident_state", "apply_deferred_context_clear",
             )),
             (resident_intake_domain, ("deliver_resident_message_content", "preflight_resident_input", "existing_resident_delivery")),
             (resident_lifecycle_domain, (
