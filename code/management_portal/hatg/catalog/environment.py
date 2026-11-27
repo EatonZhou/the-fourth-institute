@@ -50,7 +50,7 @@ DECLARATIONS = (
     ), (R("request_id", description="执行这次重启的临时单元 tfi-pair-restart-<id>"),
         R("components", "array", "请求的组件；空列表表示默认组件")), mutates=True),
     _d("GetDeviceStatus", FIXED, "读取 GPU、磁盘或云设备的当前状态。省略 device_id 时读取该类设备。", (
-        R("kind", description="gpu 为 GPU 服务器与 GPU，disk 为磁盘，cloud 为云设备", enum=("gpu", "disk", "cloud")),
+        R("kind", description="gpu 为 GPU，disk 为全部磁盘详情，local_disk_capacity 为本机容量快照（不请求远程磁盘或按需诊断），cloud 为云设备", enum=("gpu", "disk", "local_disk_capacity", "cloud")),
         P("device_id", description="只读取这一台：GPU 为 Device 的统一 ID，磁盘为磁盘资源 ID（如 nas_storage）"),
         P("refresh", "boolean", "跳过缓存重新采集"),
     ), (R("devices", "array", "GPU：全部服务器，或指定的一台，未知 ID 时为空；磁盘：全部磁盘，或指定的一块"),), target="device_id"),

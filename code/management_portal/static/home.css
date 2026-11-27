@@ -580,6 +580,24 @@ a.agent-status-creature.queued:hover {
   font-size: 13px;
   line-height: 1.35;
 }
+.homeWorkbenchPage:has(> #homeDiskWarning:not([hidden])) {
+  display: flex;
+  flex-direction: column;
+}
+#homeDiskWarning:not([hidden]) {
+  flex: none;
+  padding: 6px 12px;
+  border-inline-start: 4px solid var(--warning);
+  background: var(--panel-2);
+  color: var(--text);
+  font-weight: 600;
+}
+#homeDiskWarning:not([hidden]) + .homeWorkbenchRoot {
+  flex: 1;
+  height: auto;
+}
+.agent-status-gpu-row[data-disk-level="warn"] .agent-status-progress > span { background: var(--warning); }
+.agent-status-gpu-row[data-disk-level="critical"] .agent-status-progress > span { background: var(--danger); }
 .agent-status-resource-line > span {
   white-space: nowrap;
 }

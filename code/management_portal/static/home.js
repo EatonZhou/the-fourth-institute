@@ -29,7 +29,7 @@ const {
 });
 
 const {
-  gpuResourceHtml, gpuDetailsHtml, diskResourceHtml, diskDetailsHtml,
+  gpuResourceHtml, gpuDetailsHtml, diskResourceHtml, diskDetailsHtml, renderLocalDiskWarning,
 } = window.PortalHomeSystemResources.createSystemResources({
   esc, formatDateTime,
 });
@@ -364,15 +364,29 @@ function listen(target, type, listener, signal) {
   target?.addEventListener?.(type, listener, { signal });
 }
 
-function connectHomeShell({ context }) {
-  // The shell owns only the current user; every panel reads its own data.
+function connectHomeShell({ context, signal }) {
+  const banner = document.getElementById("homeDiskWarning");
+  let devices = [];
+  const capacity = window.PortalRefreshCoordinator.create({
+    key: () => `home-local-disk-capacity:${portalUsername}`,
+    interval: () => devices.some(device => device.refreshing) ? 1000 : 300000,
+    pauseWhenHidden: true,
+    fetch: ({ signal }) => window.PortalInstructionClient.execute("GetDeviceStatus", { kind: "local_disk_capacity" }, { signal }),
+    apply: result => {
+      devices = result.devices;
+      renderLocalDiskWarning(banner, devices);
+    },
+    onError: () => renderLocalDiskWarning(banner, devices, true),
+  });
   context.currentUserReady = window.PortalUI.loadCurrentUser()
     .then(({ username, data }) => {
       portalUsername = username || "anonymous";
       canSetScheduler = data?.access?.permission_system === "open" || data?.access?.allows?.UpdateProviderAccount === true;
       canRegisterAccount = data?.access?.permission_system === "open" || data?.access?.allows?.RegisterProviderAccount === true;
+      if (data && !signal.aborted) capacity.start();
       return { username: portalUsername, data };
     });
+  return () => capacity.destroy();
 }
 
 function connectDailyNews() {

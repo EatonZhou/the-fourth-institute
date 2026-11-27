@@ -147,7 +147,8 @@
       : precision === "compact"
         ? (index === 0 || scaled >= 10 ? 0 : 1)
         : (index === 0 || scaled >= 100 ? 0 : scaled >= 10 ? 1 : 2);
-    return `${scaled.toFixed(decimals)} ${units[index]}`;
+    const label = options.binaryUnits && index > 0 ? units[index][0] + "iB" : units[index];
+    return `${scaled.toFixed(decimals)} ${label}`;
   }
 
   function confirmMessage(action, target = "", options = {}) {

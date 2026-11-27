@@ -77,7 +77,7 @@ DISK_RESOURCE_POOL: tuple[dict[str, Any], ...] = (
         "display_name": "dirty-base",
         "host_label": "local",
         "kind": "local",
-        "paths": [str(portal_path(key)) for key in ("projects", "skills", "papers", "lineages", "runtime")] + ([str(Path("/data2"))] if Path("/data2").exists() else []),
+        "paths": ["/", *(str(portal_path(key)) for key in ("projects", "skills", "papers", "lineages", "runtime"))] + (["/data2"] if Path("/data2").exists() else []),
     },
     {
         "resource_id": "thor_storage",
@@ -775,7 +775,7 @@ def _collect_transfer_targets(resource: dict[str, Any]) -> tuple[list[dict[str, 
 
 def _human_bytes(value: object) -> str:
     number = float(_nonnegative_int(value))
-    units = ["B", "KB", "MB", "GB", "TB", "PB"]
+    units = ["B", "KiB", "MiB", "GiB", "TiB", "PiB"]
     index = 0
     while number >= 1024 and index < len(units) - 1:
         number /= 1024
@@ -1230,6 +1230,19 @@ def get_google_device_status(*, force_refresh: bool = False, device_id: str = ""
             report = {**(cached or {}), "device_id": resource_id, "status": "warning", "stale": True}
         devices.append(_store_payload(key, report, {}, force=force_refresh, refresh_after_seconds=60))
     return devices
+
+
+def get_local_disk_capacity(*, force_refresh: bool = False, resource_id: str = "") -> dict[str, Any]:
+    devices = []
+    for resource in _disk_resources():
+        if resource["kind"] != "local" or (resource_id and resource["resource_id"] != resource_id):
+            continue
+        snapshot = _collect_disk_status(resource, force=force_refresh)
+        devices.append({key: snapshot[key] for key in (
+            "resource_id", "display_name", "filesystems", "updated_at", "ttl_seconds",
+            "status", "stale", "refresh_error", "refreshing",
+        ) if key in snapshot})
+    return {"devices": devices}
 
 
 def get_disk_resource_status(*, force_refresh: bool = False, resource_id: str = "") -> dict[str, Any]:

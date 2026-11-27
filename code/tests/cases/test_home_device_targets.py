@@ -8,6 +8,23 @@ import pytest
 from management_portal import agent_status_backend as status
 
 
+def test_local_home_capacity_matches_df_warning_boundary(monkeypatch):
+    targets = [{"kind": "ssh", "resource_id": "remote"}, {"kind": "local", "resource_id": "local"}]
+    monkeypatch.setattr(status, "_disk_resources", lambda: targets)
+    monkeypatch.setattr(status, "DISK_WARN_USED_PERCENT", 85)
+    rows = status._parse_df_output(
+        "/dev/a ext4 1000 840 160 84% /data\n/dev/b ext4 2000 1615 285 85% /\n"
+    )
+    def collect(target, *, force):
+        assert target == targets[1] and not force
+        return {**target, "filesystems": rows, "stale": True, "triage": {}}
+    monkeypatch.setattr(status, "_collect_disk_status", collect)
+    device, = status.get_local_disk_capacity()["devices"]
+    assert device["stale"] and "triage" not in device
+    assert [(r["mount"], r["status"]) for r in device["filesystems"]] == [("/data", "ok"), ("/", "warn")]
+    assert [rows[1][k] for k in ("size_bytes", "used_bytes", "available_bytes")] == [2000, 1615, 285]
+
+
 def test_configured_disk_targets_used_by_list_and_lookup(monkeypatch):
     target = {"resource_id": "remote_disk", "display_name": "Remote",
               "kind": "ssh", "ssh_host": "test-host", "ssh_config": "/test/ssh",

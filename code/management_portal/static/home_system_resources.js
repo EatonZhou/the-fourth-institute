@@ -15,7 +15,7 @@
     } = dependencies;
 
     function formatBytes(value) {
-      return window.PortalUI.formatBytes(value, { precision: "single" });
+      return window.PortalUI.formatBytes(value, { precision: "single", binaryUnits: true, fallback: "—", zeroFallback: "0 B" });
     }
 
     function gpuCount(gpu) {
@@ -167,15 +167,23 @@
     function diskSummaryText(disk) {
       if (!disk || disk.status === "loading") return window.PortalI18n.t("Disk: loading");
       if (disk.status === "error") return window.PortalI18n.t("Disk: unavailable");
-      if (disk.stale || disk.refresh_error) return window.PortalI18n.t("Disk: stale");
       const filesystems = Array.isArray(disk?.filesystems) ? disk.filesystems : [];
       const critical = filesystems.filter(item => item?.status === "critical").length;
       const warn = filesystems.filter(item => item?.status === "warn").length;
       if (critical) return window.PortalI18n.text`Disk: critical ${critical}`;
       if (warn) return window.PortalI18n.text`Disk: warn ${warn}`;
+      if (disk.stale || disk.refresh_error) return window.PortalI18n.t("Disk: stale");
       if (disk.status === "partial") return window.PortalI18n.t("Disk: partial");
       if (!filesystems.length) return window.PortalI18n.t("Disk: not checked");
       return window.PortalI18n.t("Disk: ok");
+    }
+
+    function renderLocalDiskWarning(node, devices, failed = false) {
+      const warnings = devices.flatMap(device => (device.filesystems || [])
+        .filter(row => ["warn", "critical"].includes(row.status))
+        .map(row => `${device.display_name} ${row.mount} · ${row.used_percent}%${device.stale || failed ? window.PortalI18n.t("（旧快照）") : ""}`));
+      node.textContent = warnings.length ? window.PortalI18n.text`磁盘空间告警 · ${warnings.join("；")}` : "";
+      node.hidden = !warnings.length;
     }
 
     function diskResourceHtml(disk) {
@@ -200,10 +208,10 @@
       const meta = [
         mountText,
         item?.fstype || "",
-        `${formatBytes(item?.available_bytes)} free`,
+        window.PortalI18n.text`总量 ${formatBytes(item?.size_bytes)} · 已用 ${formatBytes(item?.used_bytes)} · 可用 ${formatBytes(item?.available_bytes)}`,
       ].filter(Boolean).join(" · ");
       return window.PortalI18n.html`
-    <div class="agent-status-gpu-row">
+    <div class="agent-status-gpu-row" data-disk-level="${esc(item?.status || "")}">
       <div class="agent-status-gpu-title">
         <span>${esc(title)}</span>
         <span>${esc(item?.status || "ok")} · ${Number.isFinite(percent) ? percent.toFixed(1) : "0.0"}%</span>
@@ -311,7 +319,7 @@
     }
 
     return Object.freeze({
-      gpuResourceHtml, gpuDetailsHtml, diskResourceHtml, diskDetailsHtml,
+      gpuResourceHtml, gpuDetailsHtml, diskResourceHtml, diskDetailsHtml, renderLocalDiskWarning,
     });
   }
 

@@ -38,7 +38,20 @@ const root = path.resolve(__dirname, '../../..');
     assert.match(await card('nuc_storage').innerText(), /nuc.*\nok/s);
     assert.equal(await page.locator('.agent-status-progress').count(), 1);
     assert.match(await card('nuc_storage').innerText(), /5\.0%/);
-    assert.match(await card('nuc_storage').innerText(), /100 GiB free/);
+    assert.match(await card('nuc_storage').innerText(), /可用 100 GiB/);
+    const warnings = await page.evaluate(() => {
+      const node = document.createElement('div');
+      const show = (percent, status) => window.renderer.renderLocalDiskWarning(node, [{
+        display_name: 'host', filesystems: [{mount: '/', used_percent: percent, status}],
+      }]);
+      show(84, 'ok');
+      const below = node.hidden;
+      show(85, 'warn');
+      const at = !node.hidden && node.textContent.includes('host / · 85%');
+      show(84, 'ok');
+      return [below, at, node.hidden];
+    });
+    assert.deepEqual(warnings, [true, true, true]);
     assert.doesNotMatch(await card('nuc_storage').innerText(), /Diagnostic detail|Transfer suggestion|External targets/);
     await render([{...healthy, triage: {findings: []}, suggestions: [], transfer_targets: []}]);
     assert.equal(await page.locator('.agent-status-progress').count(), 1);
