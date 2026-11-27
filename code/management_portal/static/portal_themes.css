@@ -875,7 +875,8 @@ html:root[data-portal-theme="liquid-glass"] .portalWorkbenchSplitHandle {
   flex: 0 0 10px;
 }
 
-/* A quiet seam and a short glass grip, with the full-height drag target intact. */
+/* Carry the seam through both headers; fading its ends hides the boundary
+   between AMA and preview. A hairline and bright rim keep it light. */
 html:root[data-portal-theme="liquid-glass"] .homeDialogueConversation {
   border-right: 0;
 }
@@ -897,11 +898,11 @@ html:root[data-portal-theme="liquid-glass"] .homeDialogueDivider::after {
 }
 
 html:root[data-portal-theme="liquid-glass"] .homeDialogueDivider::before {
-  top: 16px;
-  bottom: 16px;
-  width: 1px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
   transform: translateX(-50%);
-  background: linear-gradient(transparent, rgba(24, 24, 27, .08) 20%, rgba(24, 24, 27, .08) 80%, transparent);
+  background: linear-gradient(90deg, rgba(24, 24, 27, .18) 50%, rgba(255, 255, 255, .95) 50%);
 }
 
 html:root[data-portal-theme="liquid-glass"] .homeDialogueDivider::after {
@@ -2064,6 +2065,7 @@ html:root[data-portal-theme="liquid-glass"] .portalMailboxAlert {
     box-shadow: none;
   }
 
+  html:root[data-portal-theme="liquid-glass"] .homeDialogueDivider::before,
   html:root[data-portal-theme="liquid-glass"] .homeDialogueDivider::after {
     background: CanvasText;
     box-shadow: none;
