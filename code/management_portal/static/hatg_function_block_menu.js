@@ -113,6 +113,10 @@
       return own + list;
     }
 
+    function functionBlockSourceTitle(block, sourceTemplate = block.template_id && currentTemplateController()?.find?.(block.template_id)) {
+      return sourceTemplate?.title || block.template_id || window.PortalI18n.t("自定义选区");
+    }
+
     function openEffectRecipientsEditor(effectIds) {
       const effects = effectIds.map(id => displayProgramComponentById(id)).filter(item => item?.kind === "effect");
       if (!effects.length || state.programMutationInFlight) return null;
@@ -435,8 +439,8 @@
         const events = components.filter(item => item.kind === "event_source" && selected.has(item.id));
         const pending = new Set(functionBlockInstanceUnacknowledgedFailures(block).map(issue => issue.id));
         const blockEffects = components.filter(item => item.kind === "effect");
-        const sourceTemplate = block.template_id && currentTemplateController()?.find?.(block.template_id);
-        const sourceTitle = sourceTemplate?.title || block.template_id || window.PortalI18n.t("自定义选区");
+        const sourceTemplate = (block.template_id && currentTemplateController()?.find?.(block.template_id)) || null;
+        const sourceTitle = functionBlockSourceTitle(block, sourceTemplate);
         const issueRows = failures.map(issue => window.PortalI18n.html`<article class="functionBlockIssue" data-block-issue="${esc(issue.id)}"><header><strong>${esc(issue.title || issue.id)}</strong><span>${esc(window.PortalI18n.t(pending.has(issue.id) ? "未查看" : "已查看"))}</span></header><small>${esc(issue.kind)} · ${esc(issue.id)}${issue.at ? ` · ${esc(formatDate(issue.at))}` : ""}</small><p>${esc(issue.error)}</p>${issue.kind === "effect" ? window.PortalI18n.html`<div class="functionBlockIssueRecipients"><span>失败通知</span>${effectRecipientsButtonHtml(issue, { limit: 4 })}</div>` : ""}<div>${issue.kind === "resident" ? window.PortalI18n.html`<button class="portalButton" type="button" data-function-block-chat="${esc(issue.id)}">查看对话</button>` : window.PortalI18n.html`<button class="portalButton" type="button" data-block-object-edit="${esc(issue.id)}">查看设置与运行记录</button>`}</div></article>`).join("");
         root.innerHTML = window.PortalI18n.html`<div class="portalHatgOverlayComponent functionBlockMenuPanel" data-function-block-menu-panel="${esc(block.id)}"><header class="functionBlockMenuIdentity"><strong>${esc(block.title || window.PortalI18n.t("Function Block"))}</strong><code>${esc(block.id)}</code></header><div class="functionBlockInstanceInspector">
         ${pane === "block" ? window.PortalI18n.html`<div class="functionBlockTitleEditor"><label>标题<input data-function-block-title value="${esc(titleDraft ?? block.title)}"${readonly ? " disabled" : ""}></label>
