@@ -3,6 +3,8 @@
 
   if (window.PortalResidentService) return;
 
+  // ListResidentStates limits resident_ids to 128 in the ISA catalog.
+  const RESIDENT_STATE_BATCH_LIMIT = 128;
   const restartRegistries = new WeakMap();
   // All clients in this page share the same Resident lifecycle, including
   // clients with their own API adapter and the graph's instruction client.
@@ -650,24 +652,33 @@
       clearMailbox(payload = {}) {
         return execute("ClearMailbox", { resident_id: required(payload.resident_id, "resident_id") }, keyed(payload, "queue-clear"));
       },
-      loadStates(residentIds, { includeViewerState = true, readObservation } = {}) {
-        const selected = ids(residentIds), batchId = `resident-state-${++readSequence}`;
-        const record = (phase, extra = {}) => selected.forEach(residentId => recordResidentRead({
-          phase, resident_id: residentId, batch_id: batchId, ...extra,
-        }));
-        record("state_batch_started");
-        return execute("ListResidentStates", {
-          resident_ids: selected,
-          ...(includeViewerState ? {} : { include_viewer_state: false }),
-        }, { readObservation: { ...readObservation, batch_id: batchId } }).then(value => {
+      async loadStates(residentIds, { includeViewerState = true, readObservation } = {}) {
+        const selected = ids(residentIds);
+        const states = [];
+        for (let offset = 0; offset < selected.length; offset += RESIDENT_STATE_BATCH_LIMIT) {
+          const batch = selected.slice(offset, offset + RESIDENT_STATE_BATCH_LIMIT);
+          const batchId = `resident-state-${++readSequence}`;
+          const record = (phase, extra = {}) => batch.forEach(residentId => recordResidentRead({
+            phase, resident_id: residentId, batch_id: batchId, ...extra,
+          }));
+          record("state_batch_started");
+          let value;
+          try {
+            value = await execute("ListResidentStates", {
+              resident_ids: batch,
+              ...(includeViewerState ? {} : { include_viewer_state: false }),
+            }, { readObservation: { ...readObservation, batch_id: batchId } });
+          } catch (error) {
+            record("state_batch_rejected", { error_code: /^[a-z][a-z0-9_.-]{1,95}$/.test(error?.code || "") ? error.code : null });
+            throw error;
+          }
           const received = Array.isArray(value?.states) ? new Set(value.states.map(item => item?.resident_id)) : null;
-          selected.forEach(residentId => recordResidentRead({ phase: "state_batch_resolved", resident_id: residentId,
+          batch.forEach(residentId => recordResidentRead({ phase: "state_batch_resolved", resident_id: residentId,
             batch_id: batchId, states_array: Boolean(received), target_present: received ? received.has(residentId) : null }));
-          return value;
-        }, error => {
-          record("state_batch_rejected", { error_code: /^[a-z][a-z0-9_.-]{1,95}$/.test(error?.code || "") ? error.code : null });
-          throw error;
-        });
+          if (!received) throw new Error("Resident State Snapshot states are invalid");
+          states.push(...value.states);
+        }
+        return { states };
       },
       setIntake(payload = {}) {
         return execute("SetIntakeOpen", {

@@ -21,14 +21,19 @@ const report = {checks:[], errors:[], ok:false};
     });
     await page.goto('https://hatg-state.fixture.invalid');
     for (const name of ['portal_design_system','portal_themes',...HATG_PANEL_STYLES]) await page.addStyleTag({url:'/static/'+name+'.css'});
-    for (const name of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','resident_protocol',...LINEAGE_GRAPH_SCRIPTS,'hatg_graph_model','hatg_node_status','hatg_graph_view','hatg_resident_runtime']) await page.addScriptTag({url:'/static/'+name+'.js'});
+    for (const name of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','portal_resident_service','resident_protocol',...LINEAGE_GRAPH_SCRIPTS,'hatg_graph_model','hatg_node_status','hatg_graph_view','hatg_resident_runtime']) await page.addScriptTag({url:'/static/'+name+'.js'});
     await page.evaluate(() => {
       PortalI18n.apply('zh-CN');
       const member='resident_fixture', facade='resident_facade';
       window.f={cursor:10,work:{work_state:'queued',work_phase:'',intake_state:'closed',active_message_id:'msg_fixture',execution_gate:{state:'closed',reason:'manual'}},calls:[],patches:0};
       window.PortalIdentity={load:async()=>{},username:()=> 'fixture'};
       window.PortalEvents={watchResident:()=>()=>{}};
-      window.PortalResidentService={loadStates:async ids=>{f.calls.push({name:'ListResidentStates',ids});return {states:ids.map(resident_id=>({resident_id,cursor:f.cursor,state:f.work,viewer_state:{unread:false}}))}},loadEvents:async()=>({events:[]})};
+      window.PortalInstructionClient={execute:async (name, {resident_ids:ids})=>{
+        if (name!=='ListResidentStates') throw new Error(`Unexpected instruction ${name}`);
+        f.calls.push({name,ids});
+        if (ids.length>128) throw Object.assign(new Error('resident_ids exceeds 128'), {status:400});
+        return {states:ids.map(resident_id=>({resident_id,cursor:f.cursor,state:f.work,viewer_state:{unread:false}}))};
+      }};
       window.state={lineage:{lineage_id:'lineage_fixture',nodes:[{id:member,title:'rviz审查',kind:'agent',x:25,y:30},{id:facade,title:'Family',kind:'agent',x:60,y:30}]},residentRuntimeById:new Map(),runtimeStatus:new Map()};
       window.esc=PortalUIPrimitives.escapeHtml;
       // A node's Resident, run status and kind are the production lookups, and
@@ -54,12 +59,12 @@ const report = {checks:[], errors:[], ok:false};
         setNodeRuntimeStatus,nodeExecutionGate,nodeIntakeState,nodeWorkPresentation,updateLineageSummary,renderControls,
         renderGraphRuntimePresentation:view.renderGraphRuntimePresentation,currentPanelActive:()=>true,
         currentHatgComponentOptions:()=>hatgComponentOptions});
+      f.bindStates=()=>{residents.bindResidentStateCollection();f.sub=state.residentStateCollection;};
       state.graphController=PortalHatgGraph.createGraph({root:'#canvas',world:'#world',edgeLayer:'#edges',effectLayer:'#effects',labelLayer:'#labels',nodeLayer:'#nodes',statusForNode:effectiveNodeStatus,nodeContent:view.graphNodeContent});
       const patch=state.graphController.patchRuntimePresentation;
       state.graphController.patchRuntimePresentation=(...args)=>{f.patches++;return patch(...args)};
       window.renderGraph=()=>state.graphController.render(graphVisibleModel());renderGraph();
-      residents.bindResidentStateCollection();
-      f.sub=state.residentStateCollection;
+      f.bindStates();
       f.load=()=>f.sub.load({force:true});
       f.event=(work,cursor=++f.cursor)=>{f.work={...f.work,...work};window.dispatchEvent(new CustomEvent('portal:change',{detail:{resident_events:[member,facade].map(resident_id=>({resident_id,cursor,event_type:'resident.state.changed',payload:{state:f.work}}))}}))};
     });
@@ -94,7 +99,21 @@ const report = {checks:[], errors:[], ok:false};
     await page.evaluate(()=>{PortalI18n.apply('en');f.work={...f.work,family_activity:null,work_state:'queued',work_phase:'waiting_quota'};return f.load()});
     assert.equal(await badge.textContent(),'Waiting for quota');
     report.checks.push('Family aggregate respected and English compact label');
-    report.calls=await page.evaluate(()=>f.calls);
+    report.calls=await page.evaluate(()=>f.calls.map(({name,ids})=>({name, size:ids.length})));
+    const large=await page.evaluate(async ()=>{
+      f.work={work_state:'idle',intake_state:'open',execution_gate:{state:'closed',reason:'quota_reserved'}};
+      const nodes=Array.from({length:180},(_,i)=>({id:`resident_large_${i}`,title:`Resident ${i}`,kind:'agent',x:i,y:40}));
+      state.lineage={lineage_id:'lineage_large',nodes};
+      state.residentRuntimeById.clear();
+      f.calls=[];
+      renderGraph();
+      f.bindStates();
+      await f.sub.load();
+      return {sizes:f.calls.map(({ids})=>ids.length),states:state.residentRuntimeById.size};
+    });
+    assert.deepEqual(large,{sizes:[128,52],states:180});
+    assert.equal(await page.locator('[data-node-id="resident_large_179"] .nodeIntakeStatus').textContent(),'CLOSED');
+    report.checks.push('180-node canvas reads 128 and 52 states and repaints the last card');
     await page.evaluate(()=>{f.sub.destroy();state.graphController.destroy()});
     assert.deepEqual(report.errors,[]);report.ok=true;
   } catch(e) {report.failure=e.stack;process.exitCode=1}
