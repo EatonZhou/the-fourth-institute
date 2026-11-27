@@ -124,7 +124,9 @@
       const lineageId = state.lineage.lineage_id;
       const nodeId = node.id;
       const workspace = await window.PortalResidentService.workspaces(nodeId);
-      if (state.lineage?.lineage_id === lineageId) state.workspaceGraphBindings.set(nodeId, workspace);
+      if (state.lineage?.lineage_id === lineageId) {
+        state.workspaceGraphBindings = new Map(state.workspaceGraphBindings).set(nodeId, workspace);
+      }
       if (sequence !== state.resultWorkspaceSeq || state.lineage?.lineage_id !== lineageId || state.selectedNodeId !== nodeId) return null;
       state.resultWorkspace = workspace;
       state.resultWorkspaceNodeId = nodeId;

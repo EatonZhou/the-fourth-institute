@@ -106,8 +106,8 @@
       if (depth.has(root)) continue;
       depth.set(root, 0);
       const queue = [root];
-      while (queue.length) {
-        const key = queue.shift();
+      for (let index = 0; index < queue.length; index += 1) {
+        const key = queue[index];
         next.get(key).forEach(target => {
           if (depth.has(target)) return;
           depth.set(target, depth.get(key) + 1);
@@ -116,7 +116,11 @@
       }
     }
     const columns = new Map();
-    keys.forEach(key => columns.set(depth.get(key), [...(columns.get(depth.get(key)) || []), key]));
+    for (const key of keys) {
+      const level = depth.get(key);
+      if (!columns.has(level)) columns.set(level, []);
+      columns.get(level).push(key);
+    }
     const positions = {};
     columns.forEach((column, level) => column.forEach((key, row) => {
       positions[key] = { x: 18 + level * 20, y: 50 + (row - (column.length - 1) / 2) * 16 };
@@ -136,7 +140,8 @@
     const xs = owned.map(item => layout[item.key]?.x || 50);
     const left = Math.min(...xs, 30) - 22, right = Math.max(...xs, 70) + 22;
     const positions = new Map(nodes.map(item => [item.key, layout[item.key] || {x: 50, y: 50}]));
-    const sides = [slots.filter(item => body.roles.includes(item)), slots.filter(item => !body.roles.includes(item))];
+    const roleSlots = new Set(body.roles);
+    const sides = [slots.filter(item => roleSlots.has(item)), slots.filter(item => !roleSlots.has(item))];
     sides.forEach((items, side) => items.forEach((item, index) => positions.set(item.key,
       {x: side ? right : left, y: 50 + (index - (items.length - 1) / 2) * 18})));
     const points = [...positions.values()];
@@ -228,10 +233,12 @@
 
   function bindings(body) {
     const result = {...body.presentation?.bindings};
+    const wires = [...(body.wires || []), ...foundWires(body)];
+    const inputs = new Set(wires.map(wire => wire.target));
+    const outputs = new Set(wires.map(wire => wire.source));
     for (const item of [...(body.roles || []).filter(item=>['target','lineage_leader'].includes(item.from)),...foundNodes(body)]) {
       if (body.presentation?.residents?.[item.key] || result[item.key]) continue;
-      const wires=[...(body.wires || []),...foundWires(body)];
-      const input=wires.some(wire=>wire.target===item.key),output=wires.some(wire=>wire.source===item.key);
+      const input = inputs.has(item.key), output = outputs.has(item.key);
       result[item.key]={key:item.key,type:item.from ? 'resident' : item.kind,direction:input&&output?'both':input?'in':output?'out':'both',
         cardinality:item.count==='all'?'many':'one',required:true,source:item.from || 'match'};
     }
@@ -251,8 +258,9 @@
     const automatic = autoLayout(source);
     if (workshop) {
       const slots = [...source.roles.filter(row => ['target', 'lineage_leader'].includes(row.from)), ...foundNodes(source)];
+      const roles = new Set(source.roles);
       slots.forEach((row, index) => {
-        automatic[row.key] = {x: source.roles.includes(row) ? 8 : 90, y: 20 + index * 18};
+        automatic[row.key] = {x: roles.has(row) ? 8 : 90, y: 20 + index * 18};
       });
     }
     const place = key => (saved[key] ? { ...saved[key] } : { ...automatic[key] });
@@ -266,6 +274,7 @@
       ...(found.has(wire.key) ? { config: effectiveConfig(wire), label: `${labels[wire.op || 'keep']} · ${wire.kind}${wire.count === 'all' ? ` · ${t('全部')}` : ''}` } : {}) }));
     const authored = { components, wires };
     const graph = program.projectGraph(authored, roles);
+    const nodesById = new Map(graph.nodes.map(node => [node.id, node]));
     const templates = new Map([...source.roles, ...source.components, ...source.match].map(item => [item.key, item]));
     const bindingRows=bindings(source), residents=residentContexts(source);
     graph.nodes.forEach(node => { node._template = templates.get(node.id); node._template_found = found.has(node.id);
@@ -273,8 +282,8 @@
     });
     // A wire without ports is drawn from the first ones that fit, as applying resolves it.
     graph.edges.forEach(edge => {
-      const sourceNode = graph.nodes.find(node => node.id === edge.source);
-      const targetNode = graph.nodes.find(node => node.id === edge.target);
+      const sourceNode = nodesById.get(edge.source);
+      const targetNode = nodesById.get(edge.target);
       if (!edge.source_port && sourceNode) edge.source_port = program.portsForNode(sourceNode).find(port => port.direction === 'out' && port.type === edge.type)?.port_id || '';
       if (!edge.target_port && targetNode && ['route'].includes(edge.type)) {
         const ports = program.portsForNode(targetNode).filter(port => port.direction === 'in');
@@ -283,11 +292,12 @@
       }
     });
     const representative = new Map(), grouped = [];
+    const expandedIds = new Set(expanded);
     if (source.presentation && !scope) for (const [key,owner] of Object.entries(source.presentation.owners)) {
-      if (!expanded.includes(owner)) representative.set(key,owner);
+      if (!expandedIds.has(owner)) representative.set(key,owner);
     }
     for (const group of (source.presentation ? [] : groups).filter(group => !group.expanded)) {
-      const resident = graph.nodes.find(node => node.id === group.resident);
+      const resident = nodesById.get(group.resident);
       if (!resident) continue;
       for (const key of group.members) representative.set(key, group.key);
       grouped.push({...resident, id:group.key, kind:'function_block', title:group.title,
@@ -315,10 +325,11 @@
       // typed reference, rather than inventing that wire or monitoring its
       // target Resident instead. The full graph retains the actual wire ID.
       const references=new Map();
+      const visibleWireIds = new Set(visibleEdges.map(edge => edge.id));
       visibleEdges=visibleEdges.map(edge=>{
         const subject=edge.watch_subject_wire_id;
-        if(!subject || visibleEdges.some(other=>other.id===subject))return edge;
-        const key=`binding:${subject}`,target=graph.nodes.find(node=>node.id===edge.target);
+        if(!subject || visibleWireIds.has(subject))return edge;
+        const key=`binding:${subject}`,target=nodesById.get(edge.target);
         if(!references.has(key))references.set(key,{id:key,kind:'event_source',x:(target?.x || 50)+18,y:target?.y || 50,
           _template:{key,title:subject,kind:'wire'},_template_binding:{key:subject,type:'wire',direction:'in',cardinality:'one',required:true}});
         return {...edge,target:key,canonical_target:key,watch_subject_wire_id:'',_template_watch_subject:subject};
@@ -347,6 +358,7 @@
   // the destination. Its anchor, rather than the browser drag image, is hit-tested.
   function placementPreview(view, body, onViewportChange) {
     const geometry=placement(body), graph=project(body);
+    const bindingIds = new Set(graph.nodes.filter(node => node._template_binding).map(node => node.id));
     const root=document.createElement('div');root.className='hatgCanvas templatePlacementPreview';
     root.setAttribute('aria-hidden','true');
     root.innerHTML='<div class="hatgWorld"><svg class="hatgEdges" viewBox="0 0 100 100" preserveAspectRatio="none"><g data-layer="edges"></g><g data-layer="effects"></g></svg><div class="hatgEdgeLabels"></div><div class="hatgNodes"></div></div>';
@@ -376,7 +388,7 @@
       root.dataset.anchor=geometry.slot;root.dataset.boundResident=resident?.id || '';
       root.querySelectorAll('[data-node-id]').forEach(element=>{
         element.classList.add('templatePlacementNode');
-        element.classList.toggle('is-template-binding',!!nodes.find(node=>node.id===element.dataset.nodeId)?._template_binding);
+        element.classList.toggle('is-template-binding',bindingIds.has(element.dataset.nodeId));
       });
       root.querySelector(`[data-node-id="${CSS.escape(geometry.slot)}"]`)?.classList.toggle('templateDropTarget',!!resident);
       return {x:target.x,y:target.y,hit:resident ? hit : null,
@@ -393,6 +405,7 @@
     let wireDraft = null;
     let current = { nodes: [], edges: [], wires: [] };
     let validateWireTarget;
+    let currentNodesById = new Map();
     let hintTimer = null;
     const labels = roleLabels();
     root.classList.add('portalHatgOverlayComponent', 'templateGraph');
@@ -433,17 +446,19 @@
 
     function render() {
       current = project(body(), {workshop,groups:groups(),expanded:expanded(),scope:scope()});
+      currentNodesById = new Map(current.nodes.map(node => [node.id, node]));
+      const selectedEdge = current.edges.some(edge => edge.id === selected);
       validateWireTarget = program.createConnectionValidator({ existingWires: current.wires, nodes: current.nodes });
       states.textContent = edgeStateRules(body()) + (workshop ? slotRules(body()) : '');
-      if (selected && !current.nodes.some(node => node.id === selected) && !current.edges.some(edge => edge.id === selected)) selected = '';
+      if (selected && !currentNodesById.has(selected) && !selectedEdge) selected = '';
       controller.render({
         nodes: current.nodes, edges: current.edges, layoutInteractive: true, selectionEnabled: false,
-        selectedNodeId: current.nodes.some(node => node.id === selected) ? selected : '',
-        selectedEdgeId: current.edges.some(edge => edge.id === selected) ? selected : '',
+        selectedNodeId: currentNodesById.has(selected) ? selected : '',
+        selectedEdgeId: selectedEdge ? selected : '',
         wireDraft,
       });
       canvas.querySelectorAll('[data-node-id]').forEach(element=>{
-        const node=current.nodes.find(node=>node.id===element.dataset.nodeId);
+        const node=currentNodesById.get(element.dataset.nodeId);
         element.classList.toggle('is-template-binding',!!node?._template_binding);
         if(node?._template_menu){element.tabIndex=0;element.setAttribute('aria-label',`${node.title} · ${t('模板 Resident 菜单')}`);element.title=node._template_menu.duties.map(duty=>duty.title).join(' · ');}
       });
@@ -454,7 +469,7 @@
     function select(key) {
       selected = key || '';
       render();
-      onSelect(selected,current.nodes.find(node=>node.id===selected));
+      onSelect(selected,currentNodesById.get(selected));
     }
 
     // `work` edits the body and returns the key to select, or nothing to keep the selection.

@@ -208,24 +208,17 @@
       componentOutgoing[source].add(target);
       componentIndegree[target] += 1;
     });
-    const componentOrder = componentIndex => nodeOrder.get(components[componentIndex][0]);
     const queue = components
       .map((_component, index) => index)
-      .filter(index => componentIndegree[index] === 0)
-      .sort((left, right) => componentOrder(left) - componentOrder(right));
+      .filter(index => componentIndegree[index] === 0);
     const componentDepth = components.map(() => 0);
-    while (queue.length) {
-      const source = queue.shift();
-      const targets = [...componentOutgoing[source]]
-        .sort((left, right) => componentOrder(left) - componentOrder(right));
-      targets.forEach(target => {
+    for (let index = 0; index < queue.length; index += 1) {
+      const source = queue[index];
+      for (const target of componentOutgoing[source]) {
         componentDepth[target] = Math.max(componentDepth[target], componentDepth[source] + 1);
         componentIndegree[target] -= 1;
-        if (componentIndegree[target] === 0) {
-          queue.push(target);
-          queue.sort((left, right) => componentOrder(left) - componentOrder(right));
-        }
-      });
+        if (componentIndegree[target] === 0) queue.push(target);
+      }
     }
 
     const depthByNode = new Map();

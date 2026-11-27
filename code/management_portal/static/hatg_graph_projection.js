@@ -27,6 +27,7 @@
     } = dependencies;
 
     let graphProgramProjectionCache = null;
+    let workspaceProjectionCache;
 
     function decorateGraphEdge(edge) {
       if (edge._program_wire) {
@@ -58,11 +59,18 @@
     }
 
     function workspaceGraphModel() {
-      const projection = window.PortalHatgWorkspaceProjection.project(
-        state.lineage?.nodes || [], (state.lineage?.edges || []).map(decorateGraphEdge), state.workspaceGraphBindings,
-      );
-      const positions = window.PortalHatgGraph.computeWorkspaceGraphLayout(projection.nodes, projection.edges);
-      const savedPositions = hatgViewPreferences.get(state.lineage?.lineage_id)?.workspace_positions || {};
+      const lineage = state.lineage;
+      const bindings = state.workspaceGraphBindings;
+      if (!workspaceProjectionCache || workspaceProjectionCache.lineage !== lineage
+          || workspaceProjectionCache.bindings !== bindings) {
+        const projection = window.PortalHatgWorkspaceProjection.project(
+          lineage?.nodes || [], (lineage?.edges || []).map(decorateGraphEdge), bindings,
+        );
+        const positions = window.PortalHatgGraph.computeWorkspaceGraphLayout(projection.nodes, projection.edges);
+        workspaceProjectionCache = { lineage, bindings, projection, positions };
+      }
+      const { projection, positions } = workspaceProjectionCache;
+      const savedPositions = hatgViewPreferences.get(lineage?.lineage_id)?.workspace_positions || {};
       const overviewNodes = projection.nodes.map(node => ({
         ...node, ...(savedPositions[node.id] || positions.get(node.id)), navigation_position: true,
       }));

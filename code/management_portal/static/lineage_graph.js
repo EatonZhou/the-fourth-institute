@@ -177,7 +177,8 @@
     });
 
     const {
-      edgeLabelElement, edgePathElement, hasNodeElement, incidentEdgeIds, minimapEdgeElement, minimapNodeElement,
+      edgeIdsForSelection, edgeLabelElement, edgePathElement, edgeSelectionId, hasNodeElement, incidentEdgeIds,
+      minimapEdgeElement, minimapNodeElement,
       nodeElement, ownerChromeElements, portElements, positionedElements, refreshInteractionIndexes,
     } = graphPart("PortalHatgGraphElementIndex").createElementIndex({ layers, minimapLayers, state });
 
@@ -203,9 +204,9 @@
     });
 
     const {
-      edgeIsActive, edgeIsSelected, edgeSelectionId, renderEdges, renderLabels, renderEdgeLabelLeaders,
+      edgeIsActive, edgeIsSelected, renderEdges, renderLabels, renderEdgeLabelLeaders, removeEdgeLabelLeader,
     } = graphPart("PortalHatgGraphEdges").createEdges({
-      connectToItem, edgeGeometry, endpointById, isActiveStatus, isProgramWire, layers, nodeStatus, options,
+      connectToItem, edgeGeometry, edgeSelectionId, endpointById, isActiveStatus, isProgramWire, layers, nodeStatus, options,
       parallelEdgeLane, state,
     });
 
@@ -241,8 +242,9 @@
     const {
       backgroundClickSuppressed, destroySelection, patchSelection,
     } = graphPart("PortalHatgGraphSelection").createSelection({
-      clamp, edgeIsActive, edgeIsSelected, edgeSelectionId, graphGeometry, hasNodeElement, layers, minimapLayers,
-      nodeElement, nodeHalfExtents, nodePosition, options, root, screenToWorld, state, syncPortOwnerVisibility,
+      clamp, edgeIdsForSelection, edgeIsActive, edgeIsSelected, edgeLabelElement, edgePathElement,
+      graphGeometry, hasNodeElement, incidentEdgeIds, minimapNodeElement, nodeElement, nodeHalfExtents,
+      nodePosition, options, ownerChromeElements, root, screenToWorld, state, syncPortOwnerVisibility,
     });
 
     const { cancelWireGesture, destroyWiring } = graphPart("PortalHatgGraphWiring").createWiring({
@@ -260,7 +262,8 @@
       applyTransformImmediately, cancelPendingNodeClick: (...args) => cancelPendingNodeClick(...args), clamp,
       computeEdgeGeometry, d3, edgeGeometry, edgeLabelElement, edgePathElement, forgetEdgeGeometry,
       incidentEdgeIds, layers, nodeElement, nodePosition, number, options, persistTransform, portElements,
-      portPosition, positionedElements, rememberEdgeGeometry, renderFunctionBlockBoundaries, renderEdgeLabelLeaders,
+      portPosition, positionedElements, rememberEdgeGeometry, removeEdgeLabelLeader,
+      renderFunctionBlockBoundaries, renderEdgeLabelLeaders,
       resolveEdgeLabelCollisions, root, screenToWorld, state, updateDraggedMinimapGeometry, validEdges,
     });
 

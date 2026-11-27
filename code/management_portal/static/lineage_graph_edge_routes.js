@@ -391,7 +391,6 @@
 
     function resolveEdgeLabelCollisions(edges = []) {
       invalidateEdgeGeometry();
-      const placed = [];
       // Node placement does not reserve space for edge labels. Include endpoint
       // cards as obstacles here too, including the source and destination.
       // Keep their measured bounds: the label box below already includes the
@@ -405,6 +404,7 @@
       // Query only boxes near a candidate label. Cards and labels retain the
       // same exact collision predicate and deterministic placement order.
       const cells = new Map();
+      const columns = new Map();
       const cellSize = 256;
       function visitCells(box, visit) {
         for (let x = Math.floor((box.x - box.halfWidth) / cellSize);
@@ -417,16 +417,17 @@
         return true;
       }
       function indexBox(box) {
+        for (let x = Math.floor((box.x - box.halfWidth) / cellSize);
+          x <= Math.floor((box.x + box.halfWidth) / cellSize); x += 1) {
+          if (!columns.has(x)) columns.set(x, []);
+          columns.get(x).push(box);
+        }
         visitCells(box, key => {
           if (!cells.has(key)) cells.set(key, []);
           cells.get(key).push(box);
         });
       }
       cards.forEach(indexBox);
-      function place(box) {
-        placed.push(box);
-        indexBox(box);
-      }
       function isFree(point, width, height) {
         return visitCells({ ...point, halfWidth: width / 2, halfHeight: height / 2 }, key => (
           (cells.get(key) || []).every(box => (
@@ -467,19 +468,24 @@
           if (onPath) {
             geometry.labelX = onPath.x / worldSize.width * 100;
             geometry.labelY = onPath.y / worldSize.height * 100;
-            place({...onPath, halfWidth: labelWidth / 2, halfHeight: labelHeight / 2});
+            indexBox({ ...onPath, halfWidth: labelWidth / 2, halfHeight: labelHeight / 2});
             edgeGeometryMap.set(String(edge.id || ""), geometry);
             return;
           }
           // A short gap between endpoint cards may have no room on its path.
           // Keep the existing unobscured placement in that case.
           const x = preferredX;
-          const obstacles = [...cards, ...placed].filter(box =>
-            Math.abs(x - box.x) < labelWidth / 2 + box.halfWidth);
+          const obstacles = new Set();
+          for (let column = Math.floor((x - labelWidth / 2) / cellSize);
+            column <= Math.floor((x + labelWidth / 2) / cellSize); column += 1) {
+            for (const box of columns.get(column) || []) {
+              if (Math.abs(x - box.x) < labelWidth / 2 + box.halfWidth) obstacles.add(box);
+            }
+          }
           // Nearest free vertical position lies at the desired point or at an
           // obstacle boundary. Unlike a fixed list of offsets, this also works
           // for tall cards and crowded diagrams without an unchecked fallback.
-          const candidates = [baseY, ...obstacles.flatMap(box => [
+          const candidates = [baseY, ...[...obstacles].flatMap(box => [
             box.y - box.halfHeight - labelHeight / 2 - 1,
             box.y + box.halfHeight + labelHeight / 2 + 1,
           ])].sort((left, right) => Math.abs(left - baseY) - Math.abs(right - baseY) || left - right);
@@ -495,7 +501,7 @@
             return !nearest || distance < nearest.distance ? { ...point, distance } : nearest;
           }, null);
           geometry.labelAnchor = { x: anchor.x, y: anchor.y };
-          place({ x, y, halfWidth: labelWidth / 2, halfHeight: labelHeight / 2 });
+          indexBox({ x, y, halfWidth: labelWidth / 2, halfHeight: labelHeight / 2 });
           edgeGeometryMap.set(String(edge.id || ""), geometry);
         });
     }

@@ -8,7 +8,7 @@
   // says and opens.
 
   const DEPENDENCIES = Object.freeze([
-    "connectToItem", "edgeGeometry", "endpointById", "isActiveStatus", "isProgramWire", "layers", "nodeStatus",
+    "connectToItem", "edgeGeometry", "edgeSelectionId", "endpointById", "isActiveStatus", "isProgramWire", "layers", "nodeStatus",
     "options", "parallelEdgeLane", "state",
   ]);
 
@@ -16,7 +16,7 @@
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalHatgGraphEdges is missing: ${missing.join(", ")}`);
     const {
-      connectToItem, edgeGeometry, endpointById, isActiveStatus, isProgramWire, layers, nodeStatus, options,
+      connectToItem, edgeGeometry, edgeSelectionId, endpointById, isActiveStatus, isProgramWire, layers, nodeStatus, options,
       parallelEdgeLane, state,
     } = dependencies;
 
@@ -37,15 +37,12 @@
       return edge.source === selectedEndpoint || edge.target === selectedEndpoint;
     }
 
-    function edgeSelectionId(edge) {
-      return String(edge.interaction_edge_id || edge.id || "");
-    }
-
     function edgeIsSelected(edge) {
       return Boolean(state.model.selectedEdgeId) && edgeSelectionId(edge) === state.model.selectedEdgeId;
     }
 
     function renderEdges(edges, _options = {}) {
+      const selectedIds = new Set(state.model.selectedNodeIds);
       layers.edges.selectAll("path.hatgEdge")
         .interrupt()
         .style("opacity", 1)
@@ -63,7 +60,7 @@
         .attr("data-parallel-lane", edge => String(parallelEdgeLane(edge.id)?.lane || 0))
         .attr("class", edge => {
           const active = edgeIsActive(edge);
-          const selected = edgeIsSelected(edge) || state.model.selectedNodeIds.includes(edge.id);
+          const selected = edgeIsSelected(edge) || selectedIds.has(edge.id);
           const flowing = edgeIsFlowing(edge);
           const dimmed = edge._family_dimmed ? " familyDimmed" : "";
           return `hatgEdge ${edge.type || "handoff"}${active ? " active" : ""}${selected ? " selected" : ""}${flowing ? " flowing" : ""}${dimmed}`;
@@ -80,8 +77,14 @@
         .attr("d", edge => edgeGeometry(edge)?.d || "");
     }
 
+    let labelLeaderById = new Map();
+    function removeEdgeLabelLeader(edgeId) {
+      labelLeaderById.get(edgeId)?.remove();
+      labelLeaderById.delete(edgeId);
+    }
+
     function renderEdgeLabelLeaders(edges) {
-      layers.edges.selectAll("line.hatgEdgeLabelLeader")
+      const leaders = layers.edges.selectAll("line.hatgEdgeLabelLeader")
         .data(edges.filter(edge => edgeGeometry(edge)?.labelAnchor), edge => edge.id)
         .join("line")
         .attr("class", "hatgEdgeLabelLeader")
@@ -91,6 +94,8 @@
         .attr("y1", edge => edgeGeometry(edge).labelAnchor.y)
         .attr("x2", edge => edgeGeometry(edge).labelX)
         .attr("y2", edge => edgeGeometry(edge).labelY);
+      labelLeaderById = new Map();
+      leaders.each(function indexLeader(edge) { labelLeaderById.set(edge.id, this); });
     }
 
     function edgeTooltip(edge) {
@@ -175,7 +180,7 @@
     }
 
     return {
-      edgeIsActive, edgeIsSelected, edgeSelectionId, renderEdges, renderLabels, renderEdgeLabelLeaders,
+      edgeIsActive, edgeIsSelected, renderEdges, renderLabels, renderEdgeLabelLeaders, removeEdgeLabelLeader,
     };
   }
 

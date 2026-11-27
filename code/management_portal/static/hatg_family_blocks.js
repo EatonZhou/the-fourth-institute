@@ -9,7 +9,7 @@
   const DEPENDENCIES = Object.freeze([
     "applyProgramMutation", "currentPageStateController", "displayNodeById", "esc",
     "executeHatgInstruction", "functionBlockInstanceById", "graphSelectedId",
-    "graphVisibleModel", "isFunctionBlockInstance", "nodeById", "nodeResidentId",
+    "graphVisibleModel", "isFunctionBlockInstance", "lineageObjectsOf", "nodeById", "nodeResidentId",
     "programComponentById", "programEffectRuntime", "programEventSourceRuntime",
     "programExecutionExplanation", "programFeature", "renderLineageSurface",
     "scheduleHatgViewPreferenceSave", "separateGraphObject", "state",
@@ -70,7 +70,7 @@
     const {
       applyProgramMutation, currentPageStateController, displayNodeById, esc,
       executeHatgInstruction, functionBlockInstanceById, graphSelectedId, graphVisibleModel,
-      isFunctionBlockInstance, nodeById, nodeResidentId, programComponentById,
+      isFunctionBlockInstance, lineageObjectsOf, nodeById, nodeResidentId, programComponentById,
       programEffectRuntime, programEventSourceRuntime, programExecutionExplanation,
       programFeature, renderLineageSurface, scheduleHatgViewPreferenceSave, separateGraphObject,
       state,
@@ -134,7 +134,7 @@
     function instanceInnerObjects(block, collection) {
       const kind = collection === "nodes" ? "resident" : collection === "components" ? "component" : "wire";
       const ids = new Set(functionBlockElements(block).filter(element => element.kind === kind).map(element => element.id));
-      return (collection === "nodes" ? state.lineage?.nodes || [] : state.lineage?.program?.[collection] || []).filter(item => ids.has(item.id));
+      return lineageObjectsOf(collection, ids);
     }
 
     function instanceManualSources(block) {
@@ -237,15 +237,28 @@
       return component ? (component.title || component.kind || objectId) : objectId;
     }
 
-    function familyInstances() {
-      return (state.lineage?.function_blocks || [])
-        .map(instance => ({ instance, roles: familyRoles(instance) }))
-        .filter(family => family.roles);
+    let familyIndex;
+    function indexedFamilies() {
+      const blocks = state.lineage?.function_blocks;
+      if (!familyIndex || familyIndex.blocks !== blocks) {
+        const rows = [];
+        const byFacade = new Map();
+        const byInstance = new Map();
+        for (const instance of blocks || []) {
+          const roles = familyRoles(instance);
+          if (!roles) continue;
+          const family = { instance, roles };
+          rows.push(family);
+          if (!byFacade.has(roles.facade)) byFacade.set(roles.facade, family);
+          if (!byInstance.has(instance.id)) byInstance.set(instance.id, family);
+        }
+        familyIndex = { blocks, rows, byFacade, byInstance };
+      }
+      return familyIndex;
     }
 
     function familyForFacade(residentId) {
-      const id = String(residentId || "");
-      return id ? familyInstances().find(family => family.roles.facade === id) || null : null;
+      return indexedFamilies().byFacade.get(String(residentId || "")) || null;
     }
 
     function familyExpanded(roles) {
@@ -286,8 +299,7 @@
     // one whatever its own state, pigeon and all. `standIn` names the visible
     // card that represents each hidden object on the canvas.
     function foldedFamilyObjects() {
-      const families = familyInstances();
-      const byFacade = new Map(families.map(family => [family.roles.facade, family]));
+      const { rows: families, byFacade } = indexedFamilies();
       const residents = new Set();
       const instances = new Set();
       const standIn = new Map();
@@ -334,11 +346,11 @@
     // the canvas; unselected, it draws none.
     function selectedFamilyPigeonId() {
       const selectedId = graphSelectedId();
-      return familyInstances().some(item => item.instance.id === selectedId) ? selectedId : "";
+      return indexedFamilies().byInstance.has(selectedId) ? selectedId : "";
     }
 
     function familyPigeonLinks() {
-      const family = familyInstances().find(item => item.instance.id === selectedFamilyPigeonId());
+      const family = indexedFamilies().byInstance.get(graphSelectedId());
       if (!family) return [];
       return [family.roles.facade, ...family.roles.members].filter(Boolean).map(target => ({
         id: `${family.instance.id}:family:${target}`,
@@ -370,7 +382,7 @@
     // Cards shown by an expanded Family carry its tone; its Residents also name it.
     function familyMembership(hidden) {
       const membership = new Map();
-      for (const family of familyInstances()) {
+      for (const family of indexedFamilies().rows) {
         const { instance, roles } = family;
         if (!familyExpanded(roles) || hidden.has(roles.facade)) continue;
         const mark = { tone: familyTone(roles), title: String(instance.title || "Family"), facade: roles.facade };
@@ -410,7 +422,7 @@
       const id = String(nodeId || "");
       const own = familyForFacade(id);
       if (own && familyExpanded(own.roles)) return own;
-      const holder = familyInstances().find(family => family.roles.members.includes(id) || family.roles.steward === id);
+      const holder = indexedFamilies().rows.find(family => family.roles.members.includes(id) || family.roles.steward === id);
       if (holder && familyExpanded(holder.roles)) return holder;
       return focusedFamily();
     }
@@ -452,7 +464,7 @@
     function showFamilyAlone(family) {
       if (state.graphViewMode !== "context") return setFamilyExpanded(family.roles.facade, true);
       // A deep link may name a Family hidden by a folded ancestor.
-      for (const ancestor of familyInstances()) {
+      for (const ancestor of indexedFamilies().rows) {
         if (functionBlockElements(ancestor.instance).some(element => element.id === family.instance.id)) {
           setFamilyExpanded(ancestor.roles.facade, true, { render: false });
         }

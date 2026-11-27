@@ -33,6 +33,7 @@
     }
 
     function renderNodeCards(nodes) {
+      const selectedIds = new Set(state.model.selectedNodeIds);
       let contentChanged = false;
       const selection = layers.nodes.selectAll(".hatgNode")
         .interrupt()
@@ -48,7 +49,7 @@
         .attr("class", node => {
           const selected = (
             node.id === state.model.selectedNodeId
-            || state.model.selectedNodeIds.includes(node.id)
+            || selectedIds.has(node.id)
           );
           const handoffSource = state.model.handoffMode && node.id === (state.model.handoffAgentId || state.model.handoffSourceId);
           const seedClass = node.kind === "seed" ? ` seedNode seed-${node.seed_type || "other"}` : "";
@@ -89,7 +90,7 @@
         .attr("data-semantic-level", state.semanticZoomLevel || "operate")
         .attr("aria-pressed", node => node.kind === "workspace_resident" ? null : (
           node.id === state.model.selectedNodeId
-          || state.model.selectedNodeIds.includes(node.id)
+          || selectedIds.has(node.id)
         ) ? "true" : "false")
         .style("left", node => `${nodePosition(node).x}%`)
         .style("top", node => `${nodePosition(node).y}%`)
@@ -352,6 +353,7 @@
     }
 
     function renderNodeOpenMenus(nodes) {
+      const selectedIds = new Set(state.model.selectedNodeIds);
       const menus = nodes
         .map(node => {
           const menu = resolveNodeOpenMenu(node);
@@ -367,7 +369,7 @@
         .attr("data-node-open-menu", item => item.node.id)
         .attr("data-action-node-id", item => item.node.id)
         .attr("data-node-owner-selected", item => (
-          item.node.id === state.model.selectedNodeId || state.model.selectedNodeIds.includes(item.node.id)
+          item.node.id === state.model.selectedNodeId || selectedIds.has(item.node.id)
         ) ? "true" : null)
         .attr("aria-label", item => item.menu.label || `Open ${item.node.title || item.node.id}`)
         .attr("title", null)

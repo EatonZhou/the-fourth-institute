@@ -17,7 +17,7 @@ const B='fbi_fixture',E='effect_fixture',V='event_source_fixture',R='resident_fi
   p.on('request',r=>requests.push(r.url()));p.on('pageerror',e=>errors.push(e.message));
   await p.setContent('<!doctype html><main><div id="hatgCanvas" class="hatgCanvas" style="height:500px;width:700px"><div id="world"><svg id="edges"></svg><svg id="effects"></svg><div id="labels"></div><div id="nodes"></div></div></div></main>');
   for(const n of ['portal_design_system','portal_themes',...HATG_PANEL_STYLES,'lineage_function_blocks','portal_resident_menu'])await p.addStyleTag({path:path.join(staticDir,n+'.css')});
-  for(const n of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','portal_overlay','portal_ui','portal_detail_surface','lineage_element_fields',...RESIDENT_MENU_SCRIPTS,'projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','lineage_program',...LINEAGE_TEMPLATES_SCRIPTS,...LINEAGE_GRAPH_SCRIPTS,'hatg_graph_view','hatg_family_blocks','hatg_function_block_menu'])await p.addScriptTag({path:path.join(staticDir,n+'.js')});
+  for(const n of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','portal_overlay','portal_ui','portal_detail_surface','lineage_element_fields',...RESIDENT_MENU_SCRIPTS,'projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min','lineage_program',...LINEAGE_TEMPLATES_SCRIPTS,...LINEAGE_GRAPH_SCRIPTS,'hatg_graph_view','hatg_graph_model', 'hatg_family_blocks','hatg_function_block_menu'])await p.addScriptTag({path:path.join(staticDir,n+'.js')});
   await p.evaluate(({B,E,V,R,TITLE})=>{
    PortalI18n.apply('en');window.calls=[];window.ack=[];
    window.PortalSocietyService={createClient:()=>({})};
@@ -27,7 +27,7 @@ const B='fbi_fixture',E='effect_fixture',V='event_source_fixture',R='resident_fi
    const components=[{id:E,kind:'effect',title:'Controlled Effect',config:{failure_recipients:[]}},{id:V,kind:'event_source',title:'Manual Event',config:{event_type:'manual.triggered'}}];
    const state={programMutationInFlight:false,lineage:{lineage_id:'lineage_fixture',revision:1,nodes:[{id:R,title:'Member'}],function_blocks:[block],program:{components,wires:[]}}};
    const common={state,esc:PortalUIPrimitives.escapeHtml,functionBlockInstanceById:id=>id===B?block:null};
-   const family=PortalHatgFamilyBlocks.createFamilyBlocks({...strict(PortalHatgFamilyBlocks),...common});
+   const family=PortalHatgFamilyBlocks.createFamilyBlocks({...strict(PortalHatgFamilyBlocks),...PortalHatgGraphModel.createGraphModel(common),...common});
    const issue={id:E,kind:'effect',title:'Controlled Effect',error:'Local fixture failure',fingerprint:'new-local-step'};
    const failures=()=>[issue],unseen=()=>[issue];
    const menu=PortalHatgFunctionBlockMenu.createFunctionBlockMenu({...strict(PortalHatgFunctionBlockMenu),...common,

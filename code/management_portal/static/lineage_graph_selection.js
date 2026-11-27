@@ -8,17 +8,18 @@
   // background to add the nodes inside it.
 
   const DEPENDENCIES = Object.freeze([
-    "clamp", "edgeIsActive", "edgeIsSelected", "edgeSelectionId", "graphGeometry", "hasNodeElement", "layers",
-    "minimapLayers", "nodeElement", "nodeHalfExtents", "nodePosition", "options", "root", "screenToWorld", "state",
-    "syncPortOwnerVisibility",
+    "clamp", "edgeIdsForSelection", "edgeIsActive", "edgeIsSelected", "edgeLabelElement", "edgePathElement",
+    "graphGeometry", "hasNodeElement", "incidentEdgeIds", "minimapNodeElement", "nodeElement", "nodeHalfExtents",
+    "nodePosition", "options", "ownerChromeElements", "root", "screenToWorld", "state", "syncPortOwnerVisibility",
   ]);
 
   function createSelection(dependencies) {
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalHatgGraphSelection is missing: ${missing.join(", ")}`);
     const {
-      clamp, edgeIsActive, edgeIsSelected, edgeSelectionId, graphGeometry, hasNodeElement, layers, minimapLayers,
-      nodeElement, nodeHalfExtents, nodePosition, options, root, screenToWorld, state, syncPortOwnerVisibility,
+      clamp, edgeIdsForSelection, edgeIsActive, edgeIsSelected, edgeLabelElement, edgePathElement,
+      graphGeometry, hasNodeElement, incidentEdgeIds, minimapNodeElement, nodeElement, nodeHalfExtents,
+      nodePosition, options, ownerChromeElements, root, screenToWorld, state, syncPortOwnerVisibility,
     } = dependencies;
 
     const selectionMarquee = document.createElement("div");
@@ -32,24 +33,24 @@
 
     let suppressBackgroundClick = false;
 
-    function syncNodeSelectionPresentation(selectedIds = state.model.selectedNodeIds) {
-      const selected = new Set(selectedIds);
-      layers.nodes.selectAll(".hatgNode")
-        .classed("selected", node => (
-          node.id === state.model.selectedNodeId || selected.has(node.id)
-        ))
-        .attr("aria-pressed", node => (
-          node.id === state.model.selectedNodeId || selected.has(node.id)
-        ) ? "true" : "false");
-      syncNodeOpenMenuSelectionPresentation(selected);
+    function paintNodeSelection(nodeId, selected) {
+      const element = nodeElement(nodeId);
+      element?.classList.toggle("selected", selected);
+      element?.setAttribute("aria-pressed", selected ? "true" : "false");
+      for (const chrome of ownerChromeElements(nodeId)) {
+        if (!chrome.classList.contains("hatgNodeOpenMenu")) continue;
+        if (selected) chrome.setAttribute("data-node-owner-selected", "true");
+        else chrome.removeAttribute("data-node-owner-selected");
+      }
     }
 
-    function syncNodeOpenMenuSelectionPresentation(selectedIds = state.model.selectedNodeIds) {
-      const selected = selectedIds instanceof Set ? selectedIds : new Set(selectedIds);
-      layers.nodes.selectAll("button.hatgNodeOpenMenu")
-        .attr("data-node-owner-selected", item => (
-          item.node.id === state.model.selectedNodeId || selected.has(item.node.id)
-        ) ? "true" : null);
+    function paintMarqueeSelection(marquee, next) {
+      const previous = marquee.previewModel === state.model
+        ? marquee.previewIds : new Set([...state.model.selectedNodeIds, state.model.selectedNodeId]);
+      for (const id of previous) if (!next.has(id)) paintNodeSelection(id, false);
+      for (const id of next) if (!previous.has(id)) paintNodeSelection(id, true);
+      marquee.previewModel = state.model;
+      marquee.previewIds = next;
     }
 
     function patchSelection(nextSelection = {}) {
@@ -60,10 +61,7 @@
       const nextSelectedEdgeId = String(nextSelection.selectedEdgeId || "");
       if (nextSelectedNodeId && !state.nodeMap.has(nextSelectedNodeId)) return false;
       if (nextSelectedNodeIds.some(nodeId => !state.nodeMap.has(nodeId))) return false;
-      if (
-        nextSelectedEdgeId
-        && !state.model.edges.some(edge => edgeSelectionId(edge) === nextSelectedEdgeId)
-      ) return false;
+      if (nextSelectedEdgeId && !edgeIdsForSelection(nextSelectedEdgeId).length) return false;
 
       const previousSelectedNodeId = state.model.selectedNodeId;
       const previousSelectedNodeIds = new Set([
@@ -88,38 +86,38 @@
       state.model.selectedNodeIds = nextSelectedNodeIds;
       state.model.selectedEdgeId = nextSelectedEdgeId;
 
-      changedNodeIds.forEach(nodeId => {
-        const element = nodeElement(nodeId);
-        const selected = selectedNodeIds.has(nodeId);
-        element.classList.toggle("selected", selected);
-        element.setAttribute("aria-pressed", selected ? "true" : "false");
-      });
-      syncNodeOpenMenuSelectionPresentation();
-
-      const previousEndpoint = previousSelectedNodeId;
-      const nextEndpoint = nextSelectedNodeId;
-      const affectedEndpoints = new Set([previousEndpoint, nextEndpoint].filter(Boolean));
-      const affectedEdgeIds = new Set([
-        previousSelectedEdgeId,
-        nextSelectedEdgeId,
-      ].filter(Boolean));
-      layers.edges.selectAll("path.hatgEdge")
-        .filter(edge => (
-          affectedEdgeIds.has(edgeSelectionId(edge))
-          || affectedEndpoints.has(edge.source)
-          || affectedEndpoints.has(edge.target)
-        ))
-        .classed("active", edge => edgeIsActive(edge))
-        .classed("selected", edgeIsSelected);
-      layers.labels.selectAll("button.edgeLabelBtn")
-        .filter(edge => affectedEdgeIds.has(edgeSelectionId(edge)))
-        .classed("selected", edgeIsSelected);
-
-      if (minimapLayers) {
-        minimapLayers.nodes.selectAll(".hatgMinimapNode")
-          .filter(node => changedNodeIds.has(node.id))
-          .classed("selected", node => node.id === state.model.selectedNodeId)
-          .attr("r", node => node.id === state.model.selectedNodeId ? 2.35 : 1.55);
+      for (const nodeId of changedNodeIds) paintNodeSelection(nodeId, selectedNodeIds.has(nodeId));
+      // A primary selection can switch while both nodes remain multi-selected.
+      for (const nodeId of new Set([...changedNodeIds, previousSelectedNodeId, nextSelectedNodeId])) {
+        if (!nodeId) continue;
+        const dot = minimapNodeElement(nodeId);
+        if (dot) {
+          const isPrimary = nodeId === nextSelectedNodeId;
+          dot.classList.toggle("selected", isPrimary);
+          dot.setAttribute("r", isPrimary ? "2.35" : "1.55");
+        }
+      }
+      const affectedEdges = new Set([
+        ...edgeIdsForSelection(previousSelectedEdgeId),
+        ...edgeIdsForSelection(nextSelectedEdgeId),
+      ]);
+      for (const edgeId of affectedEdges) {
+        const label = edgeLabelElement(edgeId);
+        if (label) label.classList.toggle("selected", edgeIsSelected(label.__data__));
+      }
+      for (const nodeId of new Set([previousSelectedNodeId, nextSelectedNodeId])) {
+        if (!nodeId) continue;
+        for (const edgeId of incidentEdgeIds(nodeId) || []) {
+          const edge = state.edgeById.get(edgeId);
+          if (edge?.source === nodeId || edge?.target === nodeId) affectedEdges.add(edgeId);
+        }
+      }
+      for (const edgeId of affectedEdges) {
+        const path = edgePathElement(edgeId);
+        if (!path) continue;
+        const edge = path.__data__;
+        path.classList.toggle("active", edgeIsActive(edge));
+        path.classList.toggle("selected", edgeIsSelected(edge));
       }
       syncPortOwnerVisibility();
       root.dataset.selectionCount = String(state.model.selectedNodeIds.length);
@@ -182,12 +180,9 @@
       selectionMarquee.style.height = `${bounds.height}px`;
       marqueeState.hitIds = marqueeState.moved ? marqueeHitIds(bounds) : [];
       selectionMarquee.dataset.count = String(marqueeState.hitIds.length);
-      syncNodeSelectionPresentation([
-        ...new Set([
-          ...marqueeState.baseSelectionIds,
-          ...marqueeState.hitIds,
-        ]),
-      ]);
+      paintMarqueeSelection(marqueeState, new Set([
+        state.model.selectedNodeId, ...marqueeState.baseSelectionIds, ...marqueeState.hitIds,
+      ]));
     }
 
     function finishMarquee(event, { cancelled = false } = {}) {
@@ -202,10 +197,8 @@
       delete selectionMarquee.dataset.count;
       root.classList.remove("isBoxSelecting");
       delete root.dataset.selectionBoxCount;
-      if (cancelled || !completed.moved) {
-        syncNodeSelectionPresentation();
-        return;
-      }
+      paintMarqueeSelection(completed, new Set([state.model.selectedNodeId, ...state.model.selectedNodeIds]));
+      if (cancelled || !completed.moved) return;
       suppressBackgroundClick = true;
       window.setTimeout(() => { suppressBackgroundClick = false; }, 0);
       const selectedNodes = completed.hitIds

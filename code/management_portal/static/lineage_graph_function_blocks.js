@@ -19,6 +19,27 @@
       worldSize,
     } = dependencies;
 
+    let boundaryIndex;
+    let elementsById = new Map();
+
+    function indexedBoundaries() {
+      const blocks = state.model.functionBlockBoundaries;
+      if (!boundaryIndex || boundaryIndex.blocks !== blocks) {
+        const byId = new Map(), byMember = new Map(), parents = new Map();
+        const add = (index, memberId, blockId) => {
+          if (!index.has(memberId)) index.set(memberId, []);
+          index.get(memberId).push(blockId);
+        };
+        for (const block of blocks || []) {
+          byId.set(block.id, block);
+          for (const id of block.member_ids) add(byMember, id, block.id);
+          for (const id of block.child_block_ids || []) add(parents, id, block.id);
+        }
+        boundaryIndex = { blocks, byId, byMember, parents };
+      }
+      return boundaryIndex;
+    }
+
     function nodeFootprint(node) {
       const position = nodePosition(node), half = nodeHalfExtents(node);
       const boxes = [{ left: position.x - half.x, right: position.x + half.x,
@@ -32,13 +53,20 @@
         top: Math.min(...boxes.map(box => box.top)), bottom: Math.max(...boxes.map(box => box.bottom)) };
     }
 
-    function functionBlockBoundaryBounds(block, seen = new Set()) {
+    function functionBlockBoundaryBounds(block, seen = new Set(), footprints = new Map()) {
       if (seen.has(block.id)) return null;
       seen.add(block.id);
-      const boxes = block.member_ids.map(id => state.nodeMap.get(id)).filter(Boolean).map(nodeFootprint);
+      const boxes = [];
+      for (const id of block.member_ids) {
+        const node = state.nodeMap.get(id);
+        if (!node) continue;
+        if (!footprints.has(id)) footprints.set(id, nodeFootprint(node));
+        boxes.push(footprints.get(id));
+      }
+      const { byId } = indexedBoundaries();
       for (const id of block.child_block_ids || []) {
-        const child = (state.model.functionBlockBoundaries || []).find(candidate => candidate.id === id);
-        const bounds = child && functionBlockBoundaryBounds(child, seen);
+        const child = byId.get(id);
+        const bounds = child && functionBlockBoundaryBounds(child, seen, footprints);
         if (bounds) boxes.push(bounds);
       }
       // Wire-only and empty blocks still need an accessible header and collapse control.
@@ -50,7 +78,7 @@
       }
       const left = Math.min(...boxes.map(box => box.left)) - 1600 / worldSize.width;
       const right = Math.max(...boxes.map(box => box.right)) + 1600 / worldSize.width;
-      const boundary = layers.nodes.node()?.querySelector(`[data-function-block-boundary="${CSS.escape(block.id)}"]`);
+      const boundary = elementsById.get(block.id);
       // Long identities wrap. Reserve their actual unscaled header height so
       // nested blocks and member ports remain below the title at every zoom.
       const width = `${right - left}%`;
@@ -69,22 +97,25 @@
     function getObjectSeparation(id) {
       refreshNodeExtentCache();
       renderFunctionBlockBoundaries();
-      const blocks = state.model.functionBlockBoundaries || [];
-      const block = blocks.find(item => item.id === id);
+      const { blocks, byId, parents } = indexedBoundaries();
+      const block = byId.get(id);
       const members = new Set(block ? block.member_ids : [id]);
       const node = state.nodeMap.get(id);
       const box = block ? functionBlockBoundaryBounds(block) : node && nodeFootprint(node);
       if (!box) return null;
-      const contains = (parent, target, seen = new Set()) => {
-        if (seen.has(parent.id)) return false;
-        seen.add(parent.id);
-        return (parent.child_block_ids || []).some(childId => childId === target
-          || (blocks.find(item => item.id === childId) && contains(blocks.find(item => item.id === childId), target, seen)));
+      const related = new Set([id]);
+      const collect = (next) => {
+        const seen = new Set([id]);
+        for (const current of seen) for (const relative of next(current)) seen.add(relative);
+        for (const relative of seen) related.add(relative);
       };
+      if (block) {
+        collect(current => parents.get(current) || []);
+        collect(current => byId.get(current)?.child_block_ids || []);
+      }
       const obstacles = state.model.nodes.filter(item => !members.has(item.id)).map(nodeFootprint);
-      for (const other of blocks) {
-        if (other.id === id || other.member_ids.includes(id)
-          || (block && (contains(other, id) || contains(block, other.id)))) continue;
+      for (const other of blocks || []) {
+        if (related.has(other.id) || other.member_ids.includes(id)) continue;
         const bounds = functionBlockBoundaryBounds(other);
         if (bounds) obstacles.push(bounds);
       }
@@ -93,11 +124,20 @@
         left: other.left - box.right - gapX, right: other.right - box.left + gapX,
         top: other.top - box.bottom - gapY, bottom: other.bottom - box.top + gapY,
       }));
-      let best = { x: 0, y: 0 }, score = Infinity;
-      const columns = new Set([0, ...rectangles.flatMap(rect => [rect.left, rect.right])]);
-      for (const x of columns) {
-        const intervals = rectangles.filter(rect => rect.left < x && x < rect.right)
-          .sort((a, b) => a.top - b.top);
+      let best = { x: 0, y: 0 }, score = Infinity, bestOrder = Infinity;
+      const columns = [...new Set([0, ...rectangles.flatMap(rect => [rect.left, rect.right])])]
+        .map((x, order) => ({ x, order })).sort((a, b) => a.x - b.x);
+      const starts = [...rectangles].sort((a, b) => a.left - b.left);
+      const ends = [...rectangles].sort((a, b) => a.right - b.right);
+      const active = new Set();
+      let start = 0, end = 0;
+      for (const { x, order } of columns) {
+        // Edge contact is free. Retain the original column order for equal scores.
+        while (start < starts.length && starts[start].left < x) active.add(starts[start++]);
+        while (end < ends.length && ends[end].right <= x) active.delete(ends[end++]);
+        const horizontalDistance = (x * worldSize.width) ** 2;
+        if (horizontalDistance > score || (horizontalDistance === score && order >= bestOrder)) continue;
+        const intervals = [...active].sort((a, b) => a.top - b.top);
         const merged = [];
         for (const interval of intervals) {
           const last = merged.at(-1);
@@ -106,39 +146,37 @@
         }
         const covering = merged.find(interval => interval.top < 0 && interval.bottom > 0);
         const y = covering ? (Math.abs(covering.top) < covering.bottom ? covering.top : covering.bottom) : 0;
-        const distance = (x * worldSize.width) ** 2 + (y * worldSize.height) ** 2;
-        if (distance < score) { best = { x, y }; score = distance; }
+        const distance = horizontalDistance + (y * worldSize.height) ** 2;
+        if (distance < score || (distance === score && order < bestOrder)) {
+          best = { x, y };
+          score = distance;
+          bestOrder = order;
+        }
       }
       return score > 0.000001 ? best : null;
     }
 
-    function positionBoundary(block) {
-      const bounds = functionBlockBoundaryBounds(block);
-      this.hidden = !bounds;
+    function positionBoundary(element, block, footprints) {
+      const bounds = functionBlockBoundaryBounds(block, new Set(), footprints);
+      element.hidden = !bounds;
       if (!bounds) return;
       const { left, right, top, bottom } = bounds;
-      Object.assign(this.style, { left: `${left}%`, top: `${top}%`, width: `${right - left}%`, height: `${bottom - top}%` });
+      Object.assign(element.style, { left: `${left}%`, top: `${top}%`, width: `${right - left}%`, height: `${bottom - top}%` });
     }
 
     function renderFunctionBlockBoundaries(movedNodeIds) {
+      const footprints = new Map();
       if (movedNodeIds) {
-        // A drag changes membership geometry only. Keep the existing controls
-        // and untouched frames; include every ancestor of an affected block.
-        const blocks = state.model.functionBlockBoundaries || [];
-        const parents = new Map();
+        const { byId, byMember, parents } = indexedBoundaries();
         const affected = new Set();
-        for (const block of blocks) {
-          if (block.member_ids.some(id => movedNodeIds.has(id))) affected.add(block.id);
-          for (const childId of block.child_block_ids || []) {
-            if (!parents.has(childId)) parents.set(childId, []);
-            parents.get(childId).push(block.id);
-          }
+        for (const nodeId of movedNodeIds) {
+          for (const blockId of byMember.get(nodeId) || []) affected.add(blockId);
         }
         for (const id of affected) {
           for (const parentId of parents.get(id) || []) affected.add(parentId);
+          const element = elementsById.get(id);
+          if (element) positionBoundary(element, byId.get(id), footprints);
         }
-        if (affected.size) layers.nodes.selectAll("section.functionBlockBoundary")
-          .filter(block => affected.has(block.id)).each(positionBoundary);
         return;
       }
       const boundaries = layers.nodes.selectAll("section.functionBlockBoundary")
@@ -153,7 +191,10 @@
         .attr("data-function-block-boundary", block => block.id);
       boundaries.select(".functionBlockBoundaryTitle").text(block => block.title || "Function Block");
       boundaries.select(".functionBlockBoundaryCollapse").text("−");
-      boundaries.each(positionBoundary).each(function bindBoundary(block) {
+      elementsById = new Map();
+      boundaries.each(function indexBoundary(block) { elementsById.set(block.id, this); });
+      boundaries.each(function bindBoundary(block) {
+          positionBoundary(this, block, footprints);
           const boundary = d3.select(this);
           boundary.select(".functionBlockBoundaryTitle").text(block.title || "Function Block")
             .on("click.hatg", event => { event.stopPropagation(); options.onFunctionBlockMenu?.(block.id); });

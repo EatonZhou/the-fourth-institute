@@ -137,7 +137,7 @@
       ) return false;
       state.resultWorkspace = workspace;
       state.resultWorkspaceNodeId = source.id;
-      state.workspaceGraphBindings.set(source.id, workspace);
+      state.workspaceGraphBindings = new Map(state.workspaceGraphBindings).set(source.id, workspace);
       state.selectedResultPath = "";
       renderLineageHeader();
       return true;

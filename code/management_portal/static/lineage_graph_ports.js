@@ -129,9 +129,16 @@
         delete root.dataset.wireDraftSourceId;
         delete root.dataset.wireDraftSourcePort;
       }
+      const compatibility = new Map();
+      const compatiblePort = port => {
+        if (!state.model.wireDraft) return null;
+        const key = portIdentity(port);
+        if (!compatibility.has(key)) compatibility.set(key, portCompatibility(port));
+        return compatibility.get(key);
+      };
       layers.nodes.selectAll("button.hatgPort")
         .attr("data-port-compatible", port => {
-          const compatible = portCompatibility(port);
+          const compatible = compatiblePort(port);
           return compatible === null ? null : String(compatible);
         })
         .attr("data-wire-draft-source", port => (
@@ -141,16 +148,16 @@
           state.model.wireDraft && portIdentity(port) === portIdentity(state.model.wireDraft) ? "true" : "false"
         ));
       layers.nodes.selectAll(".hatgNode")
-        .attr("data-wire-target", node => targetChoices(node).length || null);
+        .attr("data-wire-target", node => targetChoices(node, compatiblePort).length || null);
       layers.labels.selectAll("button.edgeLabelBtn")
-        .attr("data-wire-target", edge => targetChoices(edge).length || null);
+        .attr("data-wire-target", edge => targetChoices(edge, compatiblePort).length || null);
     }
 
-    function targetChoices(item) {
+    function targetChoices(item, compatiblePort = portCompatibility) {
       if (!state.model.wireDraft || state.model.readOnly) return [];
       const candidates = options.connectionTargets?.(state.model.wireDraft, item)
         || portsForNode(item).filter(port => port.direction === "in");
-      return candidates.filter(port => portCompatibility(port) === true);
+      return candidates.filter(port => compatiblePort(port) === true);
     }
 
     function connectToItem(item, event) {

@@ -90,7 +90,7 @@
 
   const {
     RELATION_LABEL, currentNode, displayedProgram, currentProgram, displayProgramComponentById,
-    functionBlockInstanceById, programResourceAddressHtml, programComponentById,
+    functionBlockInstanceById, lineageObjectsOf, programResourceAddressHtml, programComponentById,
     displayProgramWireById, isProgramComponent, isFunctionBlockInstance, candidateForkOf,
     activeSeeds, displaySeedById, seedById, graphSelectedId, graphSelectedEdgeId,
     displayGraphItemById, graphItemById, displayNodeById, displayEdgeById, nodeById, edgeById,
@@ -170,7 +170,7 @@
   } = hatgModule("PortalHatgFamilyBlocks").createFamilyBlocks({
     applyProgramMutation, currentPageStateController: () => panelHost.pageStateController, displayNodeById,
     esc, executeHatgInstruction, functionBlockInstanceById, graphSelectedId,
-    isFunctionBlockInstance, nodeById, nodeResidentId, programComponentById,
+    isFunctionBlockInstance, lineageObjectsOf, nodeById, nodeResidentId, programComponentById,
     programEffectRuntime, programEventSourceRuntime, programExecutionExplanation, programFeature,
     renderLineageSurface, state,
     // Layout is created after this part and reads its Family focus.

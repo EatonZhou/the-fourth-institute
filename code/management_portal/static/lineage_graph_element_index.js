@@ -12,6 +12,10 @@
     "layers", "minimapLayers", "state",
   ]);
 
+  function edgeSelectionId(edge) {
+    return String(edge.interaction_edge_id || edge.id || "");
+  }
+
   function createElementIndex(dependencies) {
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalHatgGraphElementIndex is missing: ${missing.join(", ")}`);
@@ -25,6 +29,7 @@
     let ownerChromeElementsByNode = new Map();
 
     let incidentEdgeIdsByNode = new Map();
+    let edgesBySelection = new Map();
 
     let edgePathElementsById = new Map();
     let edgeLabelElementsById = new Map();
@@ -52,6 +57,8 @@
       portElementsByNode = new Map();
       ownerChromeElementsByNode = new Map();
       incidentEdgeIdsByNode = new Map();
+      edgesBySelection = new Map();
+      state.model.edges.forEach(edge => appendIndexedElement(edgesBySelection, edgeSelectionId(edge), edge.id));
       state.edgeById = new Map(indexedEdges.map(edge => [String(edge.id || ""), edge]));
       edgePathElementsById = new Map();
       edgeLabelElementsById = new Map();
@@ -120,13 +127,14 @@
     const portElements = nodeId => portElementsByNode.get(nodeId) || [];
     const ownerChromeElements = nodeId => ownerChromeElementsByNode.get(nodeId) || [];
     const incidentEdgeIds = nodeId => incidentEdgeIdsByNode.get(nodeId);
+    const edgeIdsForSelection = id => edgesBySelection.get(id) || [];
     const edgePathElement = edgeId => edgePathElementsById.get(edgeId);
     const edgeLabelElement = edgeId => edgeLabelElementsById.get(edgeId);
     const minimapNodeElement = nodeId => minimapNodeElementsById.get(nodeId);
     const minimapEdgeElement = edgeId => minimapEdgeElementsById.get(edgeId);
 
     return {
-      edgeLabelElement, edgePathElement, hasNodeElement, incidentEdgeIds, minimapEdgeElement, minimapNodeElement,
+      edgeIdsForSelection, edgeLabelElement, edgePathElement, edgeSelectionId, hasNodeElement, incidentEdgeIds, minimapEdgeElement, minimapNodeElement,
       nodeElement, ownerChromeElements, portElements, positionedElements, refreshInteractionIndexes,
     };
   }

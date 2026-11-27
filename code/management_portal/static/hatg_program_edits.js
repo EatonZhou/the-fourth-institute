@@ -156,12 +156,13 @@
         cancelProgramWireDraft();
         return;
       }
+      const program = currentProgram();
       const validation = window.PortalLineageProgram?.validateConnection?.(
         state.programWireDraft,
         normalized,
         {
-          existingWires: currentProgram().wires,
-          nodes: [...(state.lineage?.nodes || []), ...currentProgram().components],
+          existingWires: program.wires,
+          nodes: [...(state.lineage?.nodes || []), ...program.components],
         },
       );
       if (!validation?.ok) {
@@ -179,15 +180,13 @@
       // Built when the queued edit runs: wires connected in quick succession each
       // carry the revision their predecessor produced, not the one seen at click time.
       const draft = state.programWireDraft;
-      const request = () => window.PortalLineageProgram.buildWireSaveRequest(
-        state.lineage,
-        draft,
-        normalized,
-        {
-          existingWires: currentProgram().wires,
-          nodes: [...(state.lineage?.nodes || []), ...currentProgram().components],
-        },
-      );
+      const request = () => {
+        const current = currentProgram();
+        return window.PortalLineageProgram.buildWireSaveRequest(state.lineage, draft, normalized, {
+          existingWires: current.wires,
+          nodes: [...(state.lineage?.nodes || []), ...current.components],
+        });
+      };
       try {
         await applyProgramMutation(
           mutation => societyService.saveProgramWire({ ...request(), ...mutation }),

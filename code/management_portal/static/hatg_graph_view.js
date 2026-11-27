@@ -214,11 +214,11 @@
           onOpen: currentHatgComponentOptions().onWorkspaceOpen,
           onChanged: async () => {
             if (!isCurrent()) return;
-            for (const [residentId, binding] of state.workspaceGraphBindings) {
-              if (binding.roots?.some(root => root.workspace_id === node.workspace_id)) {
-                state.workspaceGraphBindings.delete(residentId);
-              }
+            const bindings = new Map(state.workspaceGraphBindings);
+            for (const [residentId, binding] of bindings) {
+              if (binding.roots?.some(root => root.workspace_id === node.workspace_id)) bindings.delete(residentId);
             }
+            state.workspaceGraphBindings = bindings;
             bindingSequence = ++state.workspaceGraphLoadSeq;
             const result = await loadWorkspaceGraphBindings(state.lineage, {fit: false});
             if (!result.complete && !result.stale) throw new Error(window.PortalI18n.t("Workspace 绑定读取失败，请重新打开视图。"));

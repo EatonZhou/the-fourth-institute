@@ -34,10 +34,14 @@
       const normalized = String(query || "").trim().toLocaleLowerCase();
       if (!normalized) return [];
       if (state.graphViewMode === "workspace") {
-        return workspaceGraphModel().overviewNodes.filter(node => (
-          [node.title, node.workspace_path, node.workspace_id, node.resident_id]
-            .some(value => String(value || "").toLocaleLowerCase().includes(normalized))
-        )).slice(0, 8);
+        const matches = [];
+        for (const node of workspaceGraphModel().overviewNodes) {
+          const values = [node.title, node.workspace_path, node.workspace_id, node.resident_id];
+          if (!values.some(value => String(value || "").toLocaleLowerCase().includes(normalized))) continue;
+          matches.push(node);
+          if (matches.length === 8) break;
+        }
+        return matches;
       }
       const matches = [];
       const addMatches = (nodes, kind) => {

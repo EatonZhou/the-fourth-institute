@@ -279,10 +279,11 @@
 
       // Runtime state changes node chrome and whether incident edges flow.
       // Geometry, ports and interaction indexes remain owned by structural render().
-      renderEdges(validEdges(), { geometryChanged: false });
+      const edges = validEdges();
+      renderEdges(edges, { geometryChanged: false });
       if (edgesChanged) {
-        renderLabels(validEdges());
-        updateEdgeLabelGeometry(validEdges());
+        renderLabels(edges);
+        updateEdgeLabelGeometry(edges);
         renderMinimap({ geometryChanged: false });
       }
       return true;

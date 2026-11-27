@@ -70,8 +70,33 @@
       handoff: window.PortalI18n.t("Workspace Handoff"),
     });
 
+    const emptyRows = [];
+    const indexes = new WeakMap();
+
+    function objectIndex(rows = emptyRows) {
+      let index = indexes.get(rows);
+      if (!index) {
+        index = new Map();
+        rows.forEach((item, order) => {
+          if (!item) return;
+          const id = item.id;
+          if (!index.has(id)) index.set(id, { item, order });
+        });
+        indexes.set(rows, index);
+      }
+      return index;
+    }
+
+    function lineageObjectsOf(collection, ids) {
+      const rows = collection === "nodes" ? state.lineage?.nodes : state.lineage?.program?.[collection];
+      const index = objectIndex(rows);
+      // A Function Block's displays follow authoritative collection order.
+      return [...ids].map(id => index.get(id)).filter(Boolean)
+        .sort((a, b) => a.order - b.order).map(row => row.item);
+    }
+
     function currentNode() {
-      return state.lineage?.nodes?.find(node => node.id === state.selectedNodeId) || null;
+      return nodeById(state.selectedNodeId);
     }
 
     let displayedProgramCache = null;
@@ -109,9 +134,7 @@
     }
 
     function functionBlockInstanceById(instanceId) {
-      return (state.lineage?.function_blocks || []).find(
-        instance => instance.id === instanceId,
-      ) || null;
+      return objectIndex(state.lineage?.function_blocks).get(instanceId)?.item || null;
     }
 
     function programResourceAddress(namespace, itemId, lineage = state.lineage) {
@@ -144,9 +167,7 @@
     }
 
     function programComponentById(componentId) {
-      return (state.lineage?.program?.components || []).find(component => (
-        component?.id === componentId
-      )) || null;
+      return objectIndex(state.lineage?.program?.components).get(componentId)?.item || null;
     }
 
     function displayProgramWireById(wireId) {
@@ -175,8 +196,18 @@
 
     // A Seed's source is its candidate fork, a relation of the Lineage
     // (decision_4adcc1ff2f2c); a Seed view carries it as source_resident_id.
+    const candidateForkIndexes = new WeakMap();
     function candidateForkOf(seedId, lineage = state.lineage) {
-      return (lineage?.edges || []).find(edge => edge?.type === "candidate_fork" && edge.target === seedId) || null;
+      const edges = lineage?.edges || emptyRows;
+      let index = candidateForkIndexes.get(edges);
+      if (!index) {
+        index = new Map();
+        for (const edge of edges) {
+          if (edge?.type === "candidate_fork" && !index.has(edge.target)) index.set(edge.target, edge);
+        }
+        candidateForkIndexes.set(edges, index);
+      }
+      return index.get(seedId) || null;
     }
 
     function seedView(component, lineage = state.lineage) {
@@ -195,7 +226,8 @@
     }
 
     function displaySeedById(seedId) {
-      return activeSeeds(state.lineage).find(seed => seed.id === seedId) || null;
+      const seed = seedById(seedId);
+      return seed && String(seed.status || "active") === "active" ? seed : null;
     }
 
     function seedById(seedId) {
@@ -234,25 +266,20 @@
       // Layout edits must update the stored graph objects. Seed and Function Block
       // display views are copies and cannot own position changes.
       return nodeById(itemId)
-        || (state.lineage?.function_blocks || []).find(instance => instance?.id === itemId)
+        || functionBlockInstanceById(itemId)
         || programComponentById(itemId);
     }
 
-    function displayNodeById(nodeId) {
-      return state.lineage?.nodes?.find(node => node.id === nodeId) || null;
-    }
-
-    function displayEdgeById(edgeId) {
-      return state.lineage?.edges?.find(edge => edge.id === edgeId) || null;
-    }
-
     function nodeById(nodeId) {
-      return state.lineage?.nodes?.find(node => node.id === nodeId) || null;
+      return objectIndex(state.lineage?.nodes).get(nodeId)?.item || null;
     }
 
     function edgeById(edgeId) {
-      return state.lineage?.edges?.find(edge => edge.id === edgeId) || null;
+      return objectIndex(state.lineage?.edges).get(edgeId)?.item || null;
     }
+
+    const displayNodeById = nodeById;
+    const displayEdgeById = edgeById;
 
     function manualProgramEventKey(componentId, lineageId = state.lineage?.lineage_id) {
       return `${String(lineageId || "")}:${String(componentId || "")}`;
@@ -285,13 +312,6 @@
       return window.PortalHatgWorkspaceProjection.workspaces(workspaceBindingForNode(nodeId));
     }
 
-    function preferredWorkspaceForNode(nodeId) {
-      const workspaces = boundWorkspacesForNode(nodeId);
-      return workspaces.find(item => item.is_default_cwd)
-        || workspaces[0]
-        || null;
-    }
-
     function fillWorkspaceSelect(select, nodeId, selectedDirectoryId = "") {
       const workspaces = boundWorkspacesForNode(nodeId);
       select.innerHTML = workspaces.length
@@ -303,7 +323,7 @@
         : window.PortalI18n.markup('<option value="">没有可交接的 Workspace</option>');
       const preferred = selectedDirectoryId
         ? workspaces.find(item => item.workspace_id === selectedDirectoryId)
-        : preferredWorkspaceForNode(nodeId);
+        : workspaces.find(item => item.is_default_cwd) || workspaces[0];
       if (preferred) select.value = String(preferred.workspace_id || "");
       return workspaces;
     }
@@ -327,7 +347,7 @@
 
     return Object.freeze({
       RELATION_LABEL, currentNode, displayedProgram, currentProgram, displayProgramComponentById,
-      functionBlockInstanceById, programResourceAddressHtml, programComponentById,
+      functionBlockInstanceById, programResourceAddressHtml, programComponentById, lineageObjectsOf,
       displayProgramWireById, isProgramComponent, isFunctionBlockInstance, candidateForkOf,
       activeSeeds, displaySeedById, seedById, graphSelectedId, graphSelectedEdgeId,
       displayGraphItemById, graphItemById, displayNodeById, displayEdgeById, nodeById, edgeById,

@@ -20,3 +20,11 @@ def test_program_lookup_reuse_and_invalidation():
         capture_output=True, text=True, timeout=30,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_graph_scan_budget_and_projection_invalidation():
+    result = subprocess.run(
+        ["node", str(Path(__file__).with_name("javascript") / "hatg_scan_budget.cjs")],
+        capture_output=True, text=True, timeout=30,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

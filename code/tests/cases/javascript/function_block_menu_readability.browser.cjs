@@ -24,7 +24,7 @@ const evidence = process.env.FUNCTION_BLOCK_MENU_EVIDENCE;
     }
     for (const name of ['portal_text', 'portal_state', 'portal_translations', 'portal_i18n', 'portal_ui_primitives',
       'portal_overlay', 'portal_ui', 'portal_detail_surface', 'lineage_element_fields', ...RESIDENT_MENU_SCRIPTS,
-      'hatg_family_blocks', 'hatg_function_block_menu']) {
+      'hatg_graph_model', 'hatg_family_blocks', 'hatg_function_block_menu']) {
       await page.addScriptTag({ path: path.join(root, name + '.js') });
     }
     await page.evaluate(() => {
@@ -46,6 +46,7 @@ const evidence = process.env.FUNCTION_BLOCK_MENU_EVIDENCE;
         nodes: [], program: { components, wires }, function_blocks: [block] } };
       const defaults = module => Object.fromEntries(module.dependencies.map(name => [name, () => { throw Error('Unexpected dependency ' + name); }]));
       const family = PortalHatgFamilyBlocks.createFamilyBlocks({ ...defaults(PortalHatgFamilyBlocks),
+        ...PortalHatgGraphModel.createGraphModel({state, esc: PortalUIPrimitives.escapeHtml}),
         state, esc: PortalUIPrimitives.escapeHtml, functionBlockInstanceById: () => block });
       const deps = { ...defaults(PortalHatgFunctionBlockMenu),
         state, esc: PortalUIPrimitives.escapeHtml, familyRoles: () => null,
