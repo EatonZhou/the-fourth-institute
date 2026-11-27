@@ -10,7 +10,7 @@ const code = path.resolve(__dirname, "../../..");
 const scripts = ["portal_state", "portal_text", "portal_ui_primitives", "portal_refresh_coordinator",
   "resident_protocol", "portal_conversation_store", "portal_mailbox_todos", "portal_agent_inbox"];
 const styles = ["portal_components", "portal_components_agent_inbox", "wall"];
-if (process.env.DOCKING_CASE === "glass-hover") styles.push("portal_themes");
+if (["glass-hover", "drag-performance"].includes(process.env.DOCKING_CASE)) styles.push("portal_themes");
 const sources = new Map([...scripts.map(n => n + ".js"), ...styles.map(n => n + ".css")]
   .map(name => ["/static/" + name, fs.readFileSync(path.join(code, "management_portal/static", name))]));
 const html = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -132,6 +132,110 @@ async function touch(page, cdp, selector, destination) {
   await page.waitForTimeout(80);
   await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
 }
+async function dragPerformance(page, context) {
+  await page.evaluate(() => {
+    document.documentElement.dataset.portalTheme = "liquid-glass";
+    for (let i = 0; i < 40; i++) {
+      const el = document.createElement("div");
+      el.dataset.portalInboxAvoid = "";
+      el.style.cssText = `position:fixed;left:${i * 12}px;top:100px;width:8px;height:80px`;
+      document.body.append(el);
+    }
+  });
+  await page.waitForTimeout(100);
+  const measures = [];
+  for (const trigger of [mailbox, todo, assistant]) {
+    await page.mouse.move(500, 20);
+    const b = await box(page, trigger);
+    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+    await page.mouse.down();
+    const before = await preference(page);
+    const stats = await page.evaluate(async ({trigger, x, y}) => {
+      const el = document.querySelector(trigger), dock = el.closest('[data-portal-agent-inbox]');
+      let reads = 0, clearanceWrites = 0, styleChanges = 0;
+      const measure = Element.prototype.getBoundingClientRect;
+      const set = CSSStyleDeclaration.prototype.setProperty;
+      Element.prototype.getBoundingClientRect = function(...args) { reads++; return measure.apply(this, args); };
+      CSSStyleDeclaration.prototype.setProperty = function(name, ...args) {
+        if (this === document.documentElement.style && name.startsWith('--portal-floating-')) clearanceWrites++;
+        return set.call(this, name, ...args);
+      };
+      const observer = new MutationObserver(records => styleChanges += records.length);
+      observer.observe(dock, { attributes: true, attributeFilter: ['style'] });
+      try {
+        for (let i = 1; i <= 200; i++) el.dispatchEvent(new PointerEvent('pointermove', {
+          bubbles: true, cancelable: true, pointerId: 1, pointerType: 'mouse',
+          clientX: x - i * 2, clientY: y - i / 2,
+        }));
+        await new Promise(requestAnimationFrame);
+        await Promise.resolve();
+        return { reads, clearanceWrites, styleChanges,
+          transform: dock.style.transform,
+          backdrop: getComputedStyle(dock, '::before').backdropFilter };
+      } finally {
+        observer.disconnect(); Element.prototype.getBoundingClientRect = measure;
+        CSSStyleDeclaration.prototype.setProperty = set;
+      }
+    }, {trigger, x: b.x + b.width / 2, y: b.y + b.height / 2});
+    measures.push(stats);
+    assert.equal(stats.reads, 0, 'pointer burst must not force layout measurements');
+    assert.equal(stats.clearanceWrites, 0, 'drag must not invalidate page clearance');
+    assert.equal(stats.styleChanges, 1, '200 input events coalesce into one visual update');
+    assert.match(stats.transform, /^translate3d/);
+    assert.equal(stats.backdrop, 'none', 'moving glass does not resample the page');
+    await page.locator(trigger).dispatchEvent('pointercancel', {pointerId: 1, pointerType: 'mouse'});
+    await page.mouse.up();
+    assert.deepEqual(await preference(page), before, 'cancellation preserves saved placement');
+    assert.equal(await page.locator(rootSelector).evaluate(el => el.style.transform), '');
+    await page.waitForTimeout(420);
+  }
+  // Release before RAF: final pointer position, not the last painted frame, wins.
+  await page.mouse.move(500, 20);
+  let b = await box(page, mailbox);
+  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+  await page.mouse.down();
+  await page.evaluate(selector => {
+    const el = document.querySelector(selector);
+    for (const type of ['pointermove', 'pointerup']) el.dispatchEvent(new PointerEvent(type, {
+      bubbles: true, cancelable: true, pointerId: 1, pointerType: 'mouse', clientX: 20, clientY: 270,
+    }));
+  }, mailbox);
+  await page.mouse.up();
+  assert.equal((await preference(page)).dockSide, 'left');
+  assert.equal(await page.locator(rootSelector).getAttribute('data-expanded'), 'false');
+  await page.waitForTimeout(420);
+  await drag(page, assistant, 1080, 330);
+  assert.equal((await preference(page)).dockSide, 'right');
+  await screenshot(page, 'glass-drag-restored');
+  // A viewport change and remount must cancel any pending motion.
+  await page.mouse.move(500, 20);
+  b = await box(page, todo);
+  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(600, 200);
+  await page.setViewportSize({width: 625, height: 780});
+  await page.mouse.up();
+  assert.equal(await page.locator(rootSelector).getAttribute('data-dragging'), null);
+  assert.equal(await page.locator(rootSelector).evaluate(el => el.style.transform), '');
+  await page.evaluate(() => { PortalAgentInbox.destroy(); PortalAgentInbox.mount(); });
+  await page.waitForSelector(assistant);
+  await page.waitForTimeout(50);
+  assert.equal(await page.locator(rootSelector).evaluate(el => el.style.transform), '');
+  const mobile = await context.browser().newContext({viewport: {width: 390, height: 844}, hasTouch: true, isMobile: true});
+  try {
+    const touchPage = await mobile.newPage();
+    touchPage.on('pageerror', e => errors.push(e.message));
+    await touchPage.goto(page.url());
+    await touchPage.waitForSelector(assistant);
+    await touchPage.evaluate(() => document.documentElement.dataset.portalTheme = 'liquid-glass');
+    await touch(touchPage, await mobile.newCDPSession(touchPage), mailbox, {x: 14, y: 300});
+    assert.equal((await preference(touchPage)).dockSide, 'left');
+    assert.equal(await touchPage.locator(rootSelector).getAttribute('data-expanded'), 'false');
+  } finally { await mobile.close(); }
+  assert.deepEqual(errors, []);
+  console.log(JSON.stringify({case: 'drag-performance', measures, checks: ['cancel', 'latest release', 'both edges', 'resize', 'remount', 'touch']}));
+}
+
 async function glassHover(page) {
   await page.evaluate(() => { document.documentElement.dataset.portalTheme = "liquid-glass"; });
   for (const width of [1100, 720]) {
@@ -191,6 +295,7 @@ async function glassHover(page) {
     const origin = `http://127.0.0.1:${server.address().port}`;
     await page.goto(origin);
     await page.waitForSelector(assistant);
+    if (process.env.DOCKING_CASE === "drag-performance") { await dragPerformance(page, context); return; }
     if (process.env.DOCKING_CASE === "glass-hover") { await glassHover(page); return; }
     // A legacy record contains no side, and unrelated fields must survive.
     await page.evaluate(() => {

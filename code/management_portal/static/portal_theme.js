@@ -188,14 +188,11 @@
   function attachGlassRefraction(svgElement, header, reducedTransparency, signal) {
     const surfaceSelector = [
       ".portalActivityRail",
-      ".portalAgentInbox",
       ".graphNavigationBar",
-      '[data-portal-overlay-layer="popover"]',
-      ".portalThemeMenu",
+      '[data-portal-overlay-layer="popover"]:not(.portalThemeMenu, .portalWorkbenchMenu)',
       ".portalUserMenuPopover",
       ".portalSecondaryNavPopover",
       ".portalToolbarOverflowPanel",
-      ".portalWorkbenchMenu",
       ".portalMessageMenuPanel",
       ".filterPopover",
     ].join(", ");

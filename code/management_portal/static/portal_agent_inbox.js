@@ -83,7 +83,8 @@
   }
 
   function applyVerticalPosition() {
-    if (!root) return;
+    // A drag owns its cached geometry; avoidance and page clearance settle on release.
+    if (!root || state.dragging) return;
     const bounds = verticalBounds();
     const range = Math.max(0, bounds.maximum - bounds.minimum);
     if (!Number.isFinite(state.verticalRatio)) {
@@ -368,22 +369,35 @@
 
   function bindTriggerDragging(trigger, signal) {
     let gesture = null;
+    let dragFrame = 0;
+    const updatePosition = event => {
+      const { bounds, startLeft, startTop, startX, startY, maxLeft } = gesture;
+      gesture.left = clamp(startLeft + event.clientX - startX, 0, maxLeft);
+      gesture.top = clamp(startTop + event.clientY - startY, bounds.minimum, bounds.maximum);
+    };
+    const paintPosition = () => {
+      dragFrame = 0;
+      if (!gesture || !root) return;
+      root.style.transform = `translate3d(${gesture.left - gesture.startLeft}px, ${gesture.top - gesture.startTop}px, 0)`;
+    };
     const finish = event => {
       if (!gesture || event.pointerId !== gesture.pointerId) return;
-      const { moved, originalRatio } = gesture;
+      const { moved, bounds } = gesture;
       const cancelled = event.type !== "pointerup";
+      // Commit the latest pointer, even when pointerup precedes the queued frame.
       if (moved && !cancelled) {
-        const rect = root.getBoundingClientRect();
-        state.dockSide = rect.left + rect.width / 2 < window.innerWidth / 2 ? "left" : "right";
-      } else if (cancelled) {
-        state.verticalRatio = originalRatio;
+        updatePosition(event);
+        state.dockSide = gesture.left + gesture.width / 2 < window.innerWidth / 2 ? "left" : "right";
+        state.verticalRatio = (gesture.top - bounds.minimum) / Math.max(1, bounds.maximum - bounds.minimum);
       }
+      window.cancelAnimationFrame(dragFrame);
+      dragFrame = 0;
       gesture = null;
       state.dragging = false;
+      root.style.removeProperty("transform");
+      root.style.removeProperty("will-change");
       root.dataset.dockSide = state.dockSide;
-      root.style.removeProperty("left");
-      root.style.removeProperty("right");
-      root?.removeAttribute("data-dragging");
+      root.removeAttribute("data-dragging");
       if (trigger.hasPointerCapture?.(event.pointerId)) trigger.releasePointerCapture(event.pointerId);
       if (moved) {
         const until = performance.now() + 400;
@@ -394,10 +408,10 @@
         state.suppressHoverUntil = until;
         if (document.activeElement === trigger) trigger.blur();
         if (!cancelled) persistPosition();
-        applyVerticalPosition();
       } else {
         state.hovered = event.pointerType !== "touch" && Boolean(root?.matches(":hover"));
       }
+      applyVerticalPosition();
       updateChrome();
     };
     trigger.addEventListener("pointerdown", event => {
@@ -409,12 +423,17 @@
         startY: event.clientY,
         startLeft: rect.left,
         startTop: rect.top,
-        originalRatio: state.verticalRatio,
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        maxLeft: Math.max(0, window.innerWidth - rect.width),
+        bounds: verticalBounds(),
         moved: false,
       };
       state.dragging = true;
       state.hovered = false;
       root.dataset.dragging = "true";
+      root.style.willChange = "transform";
       trigger.setPointerCapture?.(event.pointerId);
       updateChrome();
     }, { signal });
@@ -424,18 +443,21 @@
       const deltaY = event.clientY - gesture.startY;
       if (!gesture.moved && Math.hypot(deltaX, deltaY) < 4) return;
       gesture.moved = true;
-      const bounds = verticalBounds();
-      const top = clamp(gesture.startTop + deltaY, bounds.minimum, bounds.maximum);
-      const maxLeft = Math.max(0, window.innerWidth - root.getBoundingClientRect().width);
-      root.style.left = `${clamp(gesture.startLeft + deltaX, 0, maxLeft)}px`;
-      root.style.right = "auto";
-      state.verticalRatio = (top - bounds.minimum) / Math.max(1, bounds.maximum - bounds.minimum);
-      applyVerticalPosition();
+      updatePosition(event);
+      if (!dragFrame) dragFrame = window.requestAnimationFrame(paintPosition);
       event.preventDefault();
     }, { signal });
     trigger.addEventListener("pointerup", finish, { signal });
     trigger.addEventListener("pointercancel", finish, { signal });
     trigger.addEventListener("lostpointercapture", finish, { signal });
+    window.addEventListener("resize", () => {
+      if (gesture) finish({ pointerId: gesture.pointerId, type: "pointercancel" });
+    }, { signal });
+    signal.addEventListener("abort", () => {
+      window.cancelAnimationFrame(dragFrame);
+      dragFrame = 0;
+      gesture = null;
+    }, { once: true });
   }
 
   const esc = value => window.PortalUIPrimitives.escapeHtml(value);

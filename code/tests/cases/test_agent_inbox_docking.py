@@ -11,7 +11,7 @@ import subprocess
 import pytest
 
 
-@pytest.mark.parametrize("case", ["standard", "glass-hover"])
+@pytest.mark.parametrize("case", ["standard", "glass-hover", "drag-performance"])
 def test_shared_inbox_edge_docking(case):
     """Three entries dock together; independent To Do retains editing and mobile access.
 

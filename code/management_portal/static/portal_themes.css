@@ -1993,6 +1993,28 @@ html:root[data-portal-theme="liquid-glass"] .portalMailboxAlert {
     background:
       radial-gradient(ellipse 62% 5px at 26% 0%, var(--lg-specular-top), transparent),
       var(--lg-surface-menu);
+    /* Use the same native blur regardless of refraction budget, menu size or
+       inherited header SVG filters. Both popovers must sample the backdrop. */
+    -webkit-backdrop-filter: var(--lg-blur-popover);
+    backdrop-filter: var(--lg-blur-popover);
+  }
+
+  html:root[data-portal-theme="liquid-glass"] .portalAgentInbox::before {
+    -webkit-backdrop-filter: var(--lg-blur-bar);
+    backdrop-filter: var(--lg-blur-bar);
+  }
+
+  /* Moving a live backdrop repaints the page underneath it. During a gesture
+     move a tinted surface, then restore the resting glass on release. */
+  html:root[data-portal-theme="liquid-glass"] .portalAgentInbox:where([data-dragging="true"])::before {
+    background: rgba(250, 251, 253, .94);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  html:root[data-portal-theme="liquid-glass"] .portalAgentInbox:where([data-dragging="true"]) .portalAgentInboxTrigger {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 
   /* Dense drawers and reading panels retain a tinted veil for legible text
