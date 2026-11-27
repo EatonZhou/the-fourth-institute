@@ -4,7 +4,7 @@ const {homeStatements} = require('./home_modules.cjs');
 const root = path.resolve(__dirname, '../../..');
 const {chromium} = require(path.join(root, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
 const functions = ['executionAccounts','accountQuotaWindowIsStale','accountQuotaWindows',
-  'accountSummaryQuotaWindows','accountQuotaWarning','accountLimitStatus','refreshAccountQuotaWindows','accountQuotaWindow','accountLimitRow',
+  'accountSummaryQuotaWindows','accountQuotaWarning','accountLimitStatus','refreshAccountQuotaWindows','accountQuotaWindow','accountLimitContent','accountLimitRow',
   'accountRows','accountApiRow','accountBalanceHtml','accountSubscriptionHtml','accountCreditsHtml','accountConcurrencyRows','accountConcurrencyHtml','accountIntervalHtml','accountSettingsPending','accountThresholdHtml','loadAccountThresholds','saveAccountThreshold','renderAccountDetails'];
 const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclaration' && functions.includes(n.id.name)).map(s=>s.source).join('\n');
 (async()=>{
@@ -162,6 +162,25 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
       refreshAccountQuotaWindows();
       accountDetails.accountId='claude_one';renderAccountDetails();
     });
+    await page.evaluate(()=>{
+      data.accounts[2].rate_limits=[];
+      refreshAccountQuotaWindows();
+    });
+    assert.equal(await antigravity.locator('[data-account-quota-window]').count(),0);
+    await page.evaluate(()=>{
+      const group='Claude and GPT models';
+      data.accounts[2].rate_limits=[
+        {...quota('Gemini Models/Weekly Limit Remaining','Gemini Weekly',99,'Gemini Models'),stale:true},
+        quota(group+'/Five Hour Limit Remaining',group+' · Five Hour Limit Remaining',100,group),
+        quota(group+'/Weekly Limit Remaining',group+' · Weekly Limit Remaining',100,group),
+      ];
+      refreshAccountQuotaWindows();
+    });
+    for (const initialRender of [false,true]) {
+      if (initialRender) await page.evaluate(()=>document.querySelector('main > div').innerHTML=accountRows(data.accounts));
+      assert.deepEqual(await antigravity.locator('.agent-status-window-name').allTextContents(),['Claude/GPT · 5 小时','Claude/GPT · 每周']);
+      assert.deepEqual(await antigravity.locator('[role="meter"]').evaluateAll(bars=>bars.map(bar=>bar.getAttribute('aria-valuenow'))),['100','100']);
+    }
     assert.match(await page.locator('[data-account-credits] dd').innerText(),/44.?904[.,]19/);
     for(const width of [1440,390,320]) {
       await page.setViewportSize({width,height:900});

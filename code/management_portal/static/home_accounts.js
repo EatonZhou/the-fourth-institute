@@ -72,9 +72,22 @@
       // Keep the shared rolling windows compact. Omitted exhausted limits are
       // reported separately so these bars do not imply every model is available.
       if (!summary) return windows;
-      return summary.flatMap(([id, label]) => {
+      const preferred = summary.flatMap(([id, label]) => {
         const quotaWindow = windows.find(item => item.id === id);
         return quotaWindow ? [{...quotaWindow, full_label: quotaWindow.label, label}] : [];
+      });
+      if (account.provider !== "antigravity" || preferred.some(item =>
+        item.id.startsWith("Gemini Models/") && !accountQuotaWindowIsStale(item) && Number.isFinite(item.remaining_percent))) {
+        return preferred;
+      }
+      const current = windows.filter(item => !accountQuotaWindowIsStale(item));
+      return (current.length ? current : windows).map(item => {
+        const [group, period] = String(item.id || "").split("/");
+        const shortPeriod = period === "Five Hour Limit Remaining" ? window.PortalI18n.t("5 小时")
+          : period === "Weekly Limit Remaining" ? window.PortalI18n.t("每周") : "";
+        if (!shortPeriod) return preferred.find(entry => entry.id === item.id) || item;
+        const groupLabel = group === "Claude and GPT models" ? "Claude/GPT" : group;
+        return {...item, full_label: item.label, label: `${groupLabel} · ${shortPeriod}`};
       });
     }
 
@@ -99,17 +112,11 @@
     // Refresh quota readings, status and an open details dialog together.
     function refreshAccountQuotaWindows() {
       const accounts = new Map(executionAccounts(currentAgentStatusData()).map(account => [account.account_id, account]));
-      for (const node of document.querySelectorAll("[data-account-quota-account]")) {
-        const account = accounts.get(node.dataset.accountQuotaAccount);
-        const windows = account && (node.closest("[data-account-limit-account]")
-          ? accountSummaryQuotaWindows(account) : accountQuotaWindows(account));
-        const quotaWindow = windows && windows.find(window => window.id === node.dataset.accountQuotaWindow);
-        if (quotaWindow) node.outerHTML = accountQuotaWindow(account, quotaWindow);
-        else if (account) node.remove();
-      }
-      for (const node of document.querySelectorAll("[data-account-limit-status]")) {
-        const account = accounts.get(node.dataset.accountLimitStatus);
-        if (account) node.innerHTML = accountLimitStatus(account);
+      for (const row of document.querySelectorAll("[data-account-limit-account]")) {
+        const account = accounts.get(row.dataset.accountLimitAccount);
+        if (!account) continue;
+        row.querySelector(".agent-status-account-rate-windows").innerHTML = accountLimitContent(account);
+        row.querySelector("[data-account-limit-status]").innerHTML = accountLimitStatus(account);
       }
       renderAccountDetails();
     }
@@ -264,7 +271,7 @@
         const weekly = minutes ? minutes === 7 * 24 * 60 : [
           "seven_day", "limit7d", "Gemini Models/Weekly Limit Remaining",
           "Gemini 4 Argon/Gemini 4 Argon Weekly Limit",
-        ].includes(w.id);
+        ].includes(w.id) || (account.provider === "antigravity" && w.id?.endsWith("/Weekly Limit Remaining"));
         return weekly && w.resets_at > Date.now() / 1000;
       }).map(w => w.resets_at);
       const refreshLabel = authenticationFailed ? window.PortalI18n.t("请重新登录该账号") : account.balance && !windows.length ? (account.balance.updated_at ? window.PortalI18n.text`更新 ${formatDateTime(account.balance.updated_at)}` : account.balance.status === "loading" ? window.PortalI18n.t("正在刷新余额…") : "") : exhausted ? recovery > Date.now() ? window.PortalI18n.text`预计恢复 ${formatDateTime(recovery)}` : window.PortalI18n.t("等待额度恢复确认") : account.refreshing ? window.PortalI18n.t("正在刷新用量…") : account.error ? window.PortalI18n.t("用量刷新失败")
@@ -272,21 +279,24 @@
       return esc(refreshLabel);
     }
 
-    function accountLimitRow(account) {
-      const accountId = String(account.account_id || "");
+    function accountLimitContent(account) {
       const windows = accountSummaryQuotaWindows(account);
       const reserved = account.quota_reserve?.status === "reserved";
       const authenticationFailed = account.error_code === "provider_authentication_failed";
       const authenticationLabel = authenticationFailed ? window.PortalI18n.t('<span class="agent-status-muted" data-account-status-error>登录凭据失效</span>') : "";
-      const content = authenticationLabel + (windows.length ? windows.map(window => accountQuotaWindow(account, window)).join("")
+      return authenticationLabel + (windows.length ? windows.map(window => accountQuotaWindow(account, window)).join("")
         : authenticationFailed ? "" : account.balance ? accountBalanceHtml(account) : window.PortalI18n.html`<span class="agent-status-muted"${reserved ? "" : " data-account-limit-stale"}>${esc(account.status === "loading" ? window.PortalI18n.t("正在读取额度…") : account.error || window.PortalI18n.t("额度数据不可用"))}</span>`);
+    }
+
+    function accountLimitRow(account) {
+      const accountId = String(account.account_id || "");
       return window.PortalI18n.html`<div class="agent-status-account-limit" data-account-limit-account="${esc(accountId)}">
     <span class="agent-status-account-name">${esc(accountId)}
       ${account.enabled === false ? window.PortalI18n.html`<small>已停用</small>` : ""}
       ${account.login_state === "login_expired" ? window.PortalI18n.html`<button class="portalButton is-compact" type="button" data-account-relogin="${esc(accountId)}" ${currentCanSetScheduler() ? "" : "disabled"}>重新登录</button>` : ""}
     </span>
     <div class="agent-status-account-windows">
-      <div class="agent-status-account-rate-windows">${content}</div>
+      <div class="agent-status-account-rate-windows">${accountLimitContent(account)}</div>
       <button class="portalButton is-compact agent-status-account-details" type="button" data-account-details="${esc(accountId)}" aria-haspopup="dialog" aria-expanded="false" aria-controls="account-details">详情</button>
 
       <span class="agent-status-account-refresh" data-account-limit-status="${esc(accountId)}">${accountLimitStatus(account)}</span>
