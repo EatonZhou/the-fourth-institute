@@ -260,62 +260,30 @@ def read_agent_context(
         if len(starts) > recent_turns or (require_round_count and starts):
             rows = rows[starts[-recent_turns]:]
     if binding_id and rows:
-        try:
-            rows = _undelivered_rows(connection, sequence_id, agent_id, binding_id, rows)
-        except SessionHistoryGap as gap:
-            if gap.provider == "codex":
-                gap.snapshot = _snapshot(connection, rows)
-            raise
+        rows = _undelivered_rows(connection, sequence_id, agent_id, binding_id, rows)
     return _snapshot(connection, rows)
-
-
-class SessionHistoryGap(ValueError):
-    """Appending would put a missing segment after a later one."""
-
-    def __init__(self, binding):
-        super().__init__("Session context cannot append missing history before received segments")
-        self.provider = binding["provider"]
-        self.expected = {"session_id": binding["backend_session_id"], "route": binding["backend_route_id"]}
 
 
 def _undelivered_rows(connection, sequence_id, agent_id, binding_id, rows):
     binding = connection.execute(
-        "SELECT s.provider_session_ref, s.provider, s.backend_session_id, s.backend_route_id "
-        "FROM provider_bindings b JOIN provider_sessions s USING(provider_session_ref) WHERE b.binding_id=%s", (binding_id,),
+        "SELECT provider_session_ref FROM provider_bindings WHERE binding_id=%s", (binding_id,),
     ).fetchone()
     if binding is None:
         return rows
     session_ref = binding["provider_session_ref"]
-    # Seed receipts delimit ranges in this Agent's trace. Executions identify
-    # native work in this session, including compactions without a turn id.
-    receipts = connection.execute(
-        "SELECT op.operation_id, array_agg(member.segment_id ORDER BY member.ordinal) AS members, "
-        "array_agg(member.segment_id ORDER BY member.ordinal) FILTER (WHERE "
-        "segment.segment_type <> 'compaction' OR execution.provider_session_ref IS DISTINCT FROM op.session_ref) "
-        "AS original_members "
+    # A live session continues after its latest known delivery. Compaction or
+    # switching accounts can leave gaps before that point in the Agent trace.
+    receipt = connection.execute(
+        "SELECT MAX(last.ordinal) AS through_ordinal "
         "FROM operation_positions position JOIN agent_operations op USING(operation_id) "
-        "JOIN sequence_segments first ON first.sequence_id=position.sequence_id "
-        "AND first.segment_id=op.data_json::jsonb->>'first_segment_id' "
         "JOIN sequence_segments last ON last.sequence_id=position.sequence_id "
         "AND last.segment_id=op.data_json::jsonb->>'last_segment_id' "
-        "JOIN sequence_segments member ON member.sequence_id=position.sequence_id "
-        "AND member.ordinal BETWEEN first.ordinal AND last.ordinal "
-        "JOIN segments segment ON segment.segment_id=member.segment_id "
-        "LEFT JOIN executions execution ON execution.execution_id=segment.execution_id "
         "WHERE position.sequence_id=%s AND op.kind='context_received' "
-        "AND op.agent_id=%s AND op.session_ref=%s AND last.ordinal >= %s AND first.ordinal <= %s "
-        "GROUP BY op.operation_id",
-        (sequence_id, agent_id, session_ref, rows[0]["ordinal"], rows[-1]["ordinal"]),
-    ).fetchall()
-    held = set()
-    for receipt in receipts:
-        members = receipt["members"]
-        if _context_seed_id(session_ref, agent_id, members) != receipt["operation_id"]:
-            # Compaction may insert its own summary ahead of retained items.
-            members = receipt["original_members"] or []
-            if _context_seed_id(session_ref, agent_id, members) != receipt["operation_id"]:
-                raise ValueError("Session context receipt no longer matches its ordered trace interval")
-        held.update(members)
+        "AND op.agent_id=%s AND op.session_ref=%s AND position.ordinal <= %s",
+        (sequence_id, agent_id, session_ref, rows[-1]["ordinal"]),
+    ).fetchone()
+    through = receipt["through_ordinal"]
+    held = {row["segment_id"] for row in rows if through is not None and row["ordinal"] <= through}
     held.update(row["segment_id"] for row in rows if row["execution_session"] == session_ref and (
             row["provider_turn_id"] or row["segment_type"] in {"compaction", "model", "tool"}
         ))
@@ -332,14 +300,10 @@ def _undelivered_rows(connection, sequence_id, agent_id, binding_id, rows):
             carrier = carriers[carrier_id]
             if carrier is not None and carrier["segment_id"] in held:
                 held.add(row["segment_id"])
-    pending = []
-    for row in rows:
-        if row["segment_id"] in held:
-            if pending:
-                raise SessionHistoryGap(binding)
-        else:
-            pending.append(row)
-    return pending
+    for index in range(len(rows) - 1, -1, -1):
+        if rows[index]["segment_id"] in held:
+            return rows[index + 1:]
+    return rows
 
 
 def _turn_end(connection, sequence_id, turn_id, first, last):

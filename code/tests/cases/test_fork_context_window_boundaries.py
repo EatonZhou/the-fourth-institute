@@ -135,8 +135,7 @@ def test_delivery_uses_receipts_and_native_turns_within_the_effective_window():
     native = append("model", "native response", execution_id="native")
     startup = append("input", "developer instructions", metadata={"kind": "system_instructions"})
     assert ids() == [summary, picture, logic, native, startup]
-    with pytest.raises(ValueError, match="before received segments"):
-        ids(binding)
+    assert ids(binding) == [startup]
     store.record_context_received(SOURCE, ref, [picture], actor_ref="test-actor")
     assert ids(binding) == [startup]
     delta = store.delivery_context_snapshot(SOURCE, message_id="", binding_id=binding)["segments"]

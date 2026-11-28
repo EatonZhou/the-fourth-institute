@@ -43,15 +43,30 @@ def test_held_info_delivery_follows_its_confirmed_carrier(carrier_delivery):
     else:
         assert [s['segment_id'] for s in pending] == [carrier['segment_id'], info['segment_id']]
 
-    # A later native output must not turn a genuinely missing input into a receipt.
+    # Earlier holes stay in the trace. Only the suffix is appended to this session.
     output = store.put_segment(segment_type='model', content='answer', execution_id=request.execution_id)
     store.append_agent_segments(AGENT, [output], actor_ref='test')
-    if carrier_delivery in {'native', 'receipt'}:
-        assert store.delivery_context_snapshot(AGENT, message_id="", binding_id=binding)['segments'] == []
-    else:
-        with pytest.raises(ValueError, match='cannot append missing history'):
-            store.delivery_context_snapshot(AGENT, message_id="", binding_id=binding)
+    assert store.delivery_context_snapshot(AGENT, message_id="", binding_id=binding)['segments'] == []
     assert store.agent_context_snapshot(AGENT)['segments'][:-1] == before['segments']
+    tail = store.put_segment(segment_type='model', content='new suffix')
+    store.append_agent_segments(AGENT, [tail], actor_ref='test')
+    snapshot = store.delivery_context_snapshot(AGENT, message_id="", binding_id=binding)
+    assert [item['segment_id'] for item in snapshot['segments']] == [tail]
+
+
+def test_sparse_receipt_allows_session_to_continue_after_its_last_member():
+    from tests.cases.live_trace_support import AGENT, _turn
+
+    store, _, request, session_ref = _turn('codex')
+    binding = request.session.binding_id
+    store.bind_provider_session(binding, session_ref)
+    segments = [store.put_segment(segment_type='model', content=text)
+                for text in ('first', 'hole', 'last', 'tail')]
+    store.append_agent_segments(AGENT, segments, actor_ref='test')
+    store.record_context_received(AGENT, session_ref, [segments[0], segments[2]], actor_ref='test')
+    snapshot = store.delivery_context_snapshot(AGENT, message_id="", binding_id=binding)
+    assert [item['segment_id'] for item in snapshot['segments']] == segments[-1:]
+
 
 
 def test_child_context_uses_trace_boundaries_and_receipts_not_source_records():
@@ -183,34 +198,3 @@ def test_native_and_stateless_delivery_preserve_the_same_frozen_history(monkeypa
     store.record_context_received(rid, session['provider_session_ref'], ids[:2], actor_ref='test')
     assert native_items() == [output]
     assert api_history(rid, 'current') == [summary, call, output]
-
-
-def test_codex_gap_replacement_uses_original_window_and_checks_binding(monkeypatch):
-    from management_portal.execution.agent_data_contexts import SessionHistoryGap
-    from management_portal.execution.contracts import ExecutionRequest, SessionOptions
-    from management_portal.execution.session_manager import SessionManager
-    rid = 'resident_123456789abc'
-    binding = 'resident:' + rid
-    manager = SessionManager(agent_data=get_agent_data_store())
-    manager.bind_session(binding, provider='codex', backend_route_id='one', backend_session_id='old')
-    gap = SessionHistoryGap(manager.provider_binding(binding))
-    gap.snapshot = {'segments': [{'segment_id': 's', 'segment_type': 'model', 'content': 'answer'}]}
-    def snapshot(*args, **kwargs):
-        raise gap
-    monkeypatch.setattr(delivery.execution_port, 'delivery_context_snapshot', snapshot)
-    monkeypatch.setattr(delivery, '_prepare_resident_prompt', lambda _, j: {**j, 'actual_sent_prompt': 'current'})
-    record = {'resident_id': rid, 'backend': 'codex'}
-    job = delivery._portable_context_execution(record, {})
-    req = ExecutionRequest.new(actor='test', agent_id=rid, prompt='current', service_type='agent_session',
-        provider='codex', operation='turn', session=SessionOptions(mode='persistent', binding_id=binding),
-        metadata={k:job[k] for k in ('codex_history_reset','fork_context_input')})
-    session = manager.prepare(req)
-    assert session.is_new_backend_session and not session.backend_session_id
-    assert manager.provider_binding(binding)['backend_session_id'] == 'old'
-    manager.complete(req, session, 'replacement')
-    assert manager.provider_binding(binding)['backend_session_id'] == 'replacement'
-    with pytest.raises(ValueError, match='binding changed'):
-        manager.prepare(req)
-    gap.snapshot['segments'][0]['metadata'] = {'kind':'reasoning'}
-    with pytest.raises(ValueError, match='Cannot rebuild Codex session with exact history'):
-        delivery._portable_context_execution(record, {})
