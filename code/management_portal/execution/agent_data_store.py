@@ -365,6 +365,12 @@ class AgentDataStore:
     def binding_has_accepted_input(self, binding_id: str, *, agent_id: str) -> bool:
         return self.executions.binding_has_accepted_input(binding_id, agent_id=agent_id)
 
+    def session_has_accepted_input(self, session_ref: str, agent_id: str) -> bool:
+        from .agent_data_executions import session_input_acceptance
+
+        with self.database.read() as connection:
+            return session_input_acceptance(connection, session_ref, agent_id) is not None
+
     def binding_has_context(self, binding_id: str, *, agent_id: str) -> bool:
         return self.contexts.binding_has_context(binding_id, agent_id=agent_id)
 

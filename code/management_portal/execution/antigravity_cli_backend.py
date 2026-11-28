@@ -16,7 +16,7 @@ from management_portal.antigravity_input_media import prompt_content
 from .turn_input_pump import TurnInputPump, text_input
 from . import antigravity_cli
 from .backend_contracts import BackendResult
-from .context_seed import require_native_history_import
+from .context_seed import context_seed, seed_reached_provider
 from .native_harness_tools import prepare_tools
 from .antigravity_history import _read_steps, _latest_checkpoint
 from .provider_turn_usage import TOKEN_USAGE_KEYS, _CAMEL_KEYS, usage_payload
@@ -308,7 +308,20 @@ class AntigravityCliBackend:
             yield client, session_id, model
 
     def prepare_context_seed(self, invocation):
-        return require_native_history_import(invocation)
+        request = invocation.request
+        if not context_seed(request).get("segments") or seed_reached_provider(invocation):
+            return invocation
+        # ACP restores the established main conversation on session/load or
+        # session/resume. Portal-only history after its last turn stays in Portal.
+        session = invocation.session
+        if (request.operation == "turn" and session.backend_session_id
+                and not session.is_new_backend_session and session.provider_session_ref
+                and session.binding_id == f"resident:{request.agent_id}"):
+            from .agent_data_store import get_agent_data_store
+
+            if get_agent_data_store().session_has_accepted_input(session.provider_session_ref, request.agent_id):
+                return invocation
+        raise ValueError("antigravity cannot import structured historical segments")
 
     def execute(self, invocation, context):
         request, session = invocation.request, invocation.session

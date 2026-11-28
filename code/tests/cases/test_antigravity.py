@@ -359,7 +359,24 @@ def test_turn_serves_portal_tools_and_reports_native_events_and_usage(agent):
 def test_resume_uses_native_history_without_replaying_it(agent):
     backend = AntigravityBackend()
     first = backend.execute(invocation(agent), context()[0])
-    second = backend.execute(invocation(agent, "next", sid=first.backend_session_id, execution="execution-next"), context()[0])
+    from management_portal.execution.agent_data_store import get_agent_data_store, utc_now
+
+    current = invocation(agent, "next", sid=first.backend_session_id, execution="execution-next")
+    current.request.metadata = {"fork_context_input": {"segments": [{"segment_id": "portal-only"}]}}
+    rid = current.request.agent_id = "resident_acptest"
+    current.session.binding_id = f"resident:{rid}"
+    current.session.is_new_backend_session = False
+    store = get_agent_data_store()
+    session = store.ensure_provider_session(provider="antigravity", backend_route_id="one",
+        backend_session_id=first.backend_session_id, agent_id=rid, actor_ref="test")
+    ref = current.session.provider_session_ref = session["provider_session_ref"]
+    with pytest.raises(ValueError, match="cannot import"):
+        backend.prepare_context_seed(current)
+    store.begin_execution(execution_id="acp-first", agent_id=rid, actor_ref="test",
+                          provider="antigravity", started_at=utc_now())
+    store.bind_execution_provider_session("acp-first", provider_session_ref=ref)
+    store.record_input_acceptance("acp-first", agent_id=rid, provider_turn_id="first-turn")
+    second = backend.execute(backend.prepare_context_seed(current), context()[0])
     assert second.backend_session_id == first.backend_session_id
     assert second.output["message"] == "next"
     rows = requests(agent)
