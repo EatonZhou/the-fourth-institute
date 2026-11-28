@@ -492,9 +492,8 @@ def test_session_initialization_preserves_user_words_contracts(subtests, isolate
         parameters = {parameter.name: parameter for parameter in restart.parameters}
         assert restart.owner == 'lineage' and restart.mutates and restart.target == 'resident_id'
         assert parameters['resident_id'].required is True
-        assert parameters['context_strategy'].enum == ('preserve',)
-        assert parameters['active_execution_policy'].enum == ('wait', 'cancel')
-        assert 'active_job_policy' not in parameters
+        assert parameters['account_selection'].enum == ('auto', 'fixed')
+        assert {'context_strategy', 'active_execution_policy', 'active_job_policy'}.isdisjoint(parameters)
         cancel = {parameter.name: parameter for parameter in catalog.declaration('CancelSessionRestart').parameters}
         assert cancel['resident_id'].required is True and cancel['restart_id'].required is True
         assert catalog.declaration('GetSessionRestart').mutates is False
