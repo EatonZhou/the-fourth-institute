@@ -393,7 +393,7 @@ def test_knowledge_permission_refusals_and_lock_recheck(knowledge_domain, permis
     assert list(p.name for p in companion.iterdir()) == ['image.png']
 
 
-@pytest.mark.parametrize('operation', ['credential_save', 'credential_delete', 'command'])
+@pytest.mark.parametrize('operation', ['credential_save', 'credential_delete'])
 def test_ssh_real_par_viewer_admin_and_revoke(monkeypatch, permissions, operation):
     from management_portal import device_identity_backend as backend
     permissions.place(Fact('project', 'Other'), Fact('lineage', 'lineage_0123456789ab', {'project': 'Other'}),
@@ -405,13 +405,10 @@ def test_ssh_real_par_viewer_admin_and_revoke(monkeypatch, permissions, operatio
     save = Mock(return_value={'credential_saved': True})
     monkeypatch.setattr(backend, 'save_device_ssh_password', save)
     delete = Mock(return_value={'credential_saved': False, 'deleted': True})
-    run = Mock(return_value={'exit_code': 0, 'output': '', 'truncated': False})
     monkeypatch.setattr(backend, 'delete_device_ssh_password', delete)
-    monkeypatch.setattr(backend, 'run_device_ssh', run)
     invoke = {
         'credential_save': lambda: service.update_device_ssh_credential(DEVICE, 'test-only-password', actor=ACTOR),
         'credential_delete': lambda: service.delete_device_ssh_credential(DEVICE, actor=ACTOR),
-        'command': lambda: service.run_device_command(DEVICE, 'true', actor=ACTOR),
     }[operation]
     permissions.grant(ACTOR, DEVICE, '@viewer')
     assert service.check_device_ssh(DEVICE, actor=ACTOR) == {'ok': True}
@@ -427,7 +424,6 @@ def test_ssh_real_par_viewer_admin_and_revoke(monkeypatch, permissions, operatio
         invoke()
     assert save.call_count == int(operation == 'credential_save')
     assert delete.call_count == int(operation == 'credential_delete')
-    assert run.call_count == int(operation == 'command')
 
 
 def test_old_action_declaration_and_discovery_are_removed(permissions):

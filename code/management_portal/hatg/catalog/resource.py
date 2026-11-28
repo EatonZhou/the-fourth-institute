@@ -147,7 +147,7 @@ DECLARATIONS = (
     _d("CheckDeviceSsh", (On("resource_id", "device"),), "测试设备 SSH 连接；需要设备 viewer，不保存凭据。", (
         R("resource_id", description="要检测 SSH 连接的设备统一 ID"), P("timeout_seconds", "integer", "超时秒数，默认15", minimum=1, maximum=45),
     ), (R("ok", "boolean", "SSH 连接检测是否成功"), P("error", description="连接检测失败的原因")), target="resource_id"),
-    _d("RunDeviceCommand", (On("resource_id", "device"),), "使用设备绑定 SSH 身份执行远端命令（30秒），需要设备 admin。", (
+    _d("RunDeviceCommand", (On("resource_id", "device"),), "使用设备绑定 SSH 身份执行远端命令（30秒）；需要对设备有“使用设备”权限，默认方案下所有 Resident 可用。", (
         R("resource_id", description="执行远端命令的设备统一 ID"), R("command", description="远端命令，最多8192字符", max_length=8192),
     ), (R("exit_code", "integer", "远端命令的退出码"), R("output", description="合并输出，最多32KiB"),
         R("truncated", "boolean", "输出是否因长度限制被截断")), mutates=True, target="resource_id"),

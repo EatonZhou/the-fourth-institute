@@ -43,6 +43,9 @@ def call(name, expected_version=None, **arguments):
     return permission_system.manage(name, arguments, actor="alice", collect_facts=facts, expected_version=expected_version)
 
 
+NO_RESIDENT_RULES = ("residents_use_devices",)
+
+
 def rules(scheme_id, *, workbench_under_project=True, without=()):
     document = copy.deepcopy(builtin_documents()["default"])
     document.update({"scheme_id": scheme_id, "title": scheme_id})
@@ -382,13 +385,15 @@ def test_moving_a_personal_ama_in_the_p_tree_alone_changes_nothing(off):
 
     :design: decision_b820faf42218
     """
+    # The Resident rule of the default scheme would apply to the AMA once it lands under "Resident"; this case
+    # is about the move alone, so the scheme under test leaves that rule out.
     ama, member = "lineage_cccccccccccc", "resident_000000000003"
 
     def ama_facts():
         return [*facts(), Fact("lineage", ama, {"personal_space": "personal_space:alice", "user": "alice"}),
                 Fact("resident", member, {"lineage": ama})]
 
-    placed = rules("placed")
+    placed = rules("placed", without=NO_RESIDENT_RULES)
     placed["trees"]["P"]["nodes"].append({"id": "@personal_ama", "parent": "@users", "title": "个人 AMA（在所有者名下）",
                                           "each": "lineage", "under": "user"})
     permission_system.manage("CreatePermissionScheme", {"scheme_id": "placed", "rules": placed}, actor="alice",
@@ -396,7 +401,7 @@ def test_moving_a_personal_ama_in_the_p_tree_alone_changes_nothing(off):
     store = off.store.scoped("placed")
     before = authdiff.View.stored(off.schemes.compiled("placed"), store)
     assert before.path("P", member) == ("@principals", "@users", "@members", "alice", ama, member)
-    after = authdiff.View.generated(off.schemes.compile(rules("placed")), store,
+    after = authdiff.View.generated(off.schemes.compile(rules("placed", without=NO_RESIDENT_RULES)), store,
                                     permission_system.facts.flatten(ama_facts()))
     assert after.path("P", member) == ("@principals", "@residents", ama, member)
 

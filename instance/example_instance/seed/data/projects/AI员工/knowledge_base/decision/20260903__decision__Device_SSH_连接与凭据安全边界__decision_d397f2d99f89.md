@@ -4,24 +4,24 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 14
-  created_at: '2026-09-03'
+  number: 23
+  created_at: "2026-09-03"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-31T01:59:37Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-28T06:55:46Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_6199a7a36480"
 importance: 8
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/device_identity_backend.py
-  - ${code_root}/management_portal/resources/providers/device.py
-  - ${code_root}/management_portal/serve_management_portal.py
-  - ${code_root}/tests/cases/test_device_identity_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/device_identity_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/providers/device.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/serve_management_portal.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_device_identity_backend.py
   related:
   - decision_ad3e21094f14
   - decision_b6e74d78f7b6
@@ -44,7 +44,9 @@ Portal 用 Device resource 表示一台可管理设备或设备中的硬件单�
 
 **宿主设备**是提供实际 SSH 入口的设备。GPU 等子设备可以通过父子关系指向宿主服务器。用户请求连接子设备时，Portal 沿父链找到真正提供主机地址的设备，再使用该设备的凭据。
 
-**权限系统**决定谁能执行 Device 操作（decision_b820faf42218）。设备在 R 树上挂在“共享”下，全员对它有 viewer；默认模板按指令分别要求：`CheckDeviceSsh` 对目标设备有 viewer，`UpdateDeviceSshCredential`、`DeleteDeviceSshCredential` 与 `RunDeviceCommand` 有 admin。设备的创建者和管理员满足，其他主体需要实例中增加的表项或临时凭证。连接参数和秘密文件仍由设备组件校验。
+**设备使用与配置管理分别判定。** 设备命令和 SSH 配置都由权限系统判定（decision_600ae27b0538）：`RunDeviceCommand` 对目标设备要求“使用设备”（`@use_device`，协作下的分类节点，`@admin` 与 `@contributor` 持有者因包含关系同样满足）；`CheckDeviceSsh` 要求设备 `@viewer`；`UpdateDeviceSshCredential` 与 `DeleteDeviceSshCredential` 要求设备 `@admin`。默认方案的权限表让所有 Resident 对“共享”下的设备拥有“使用设备”，所以默认所有 Resident 都能使用所有设备；管理员可以写 deny 表项收回某个 Resident 或某台设备，一般用户和实习用户由管理员授予。
+
+设备命令入口、权限能力投影和服务内设备使用复核都回到同一份权限判定，没有针对 Resident 的单独保证，权限系统关闭时按其统一规则处理。目标仍须是存在且可用的 Device，父链、连接参数、秘密文件、主机密钥和命令执行约束（8192 字符、30 秒、不回显凭据）照常检查。浏览器交互终端、设备登记注销及其他资源操作按各自指令判定。
 
 ## 用户和调用方看到的能力
 
@@ -54,6 +56,7 @@ Portal 用 Device resource 表示一台可管理设备或设备中的硬件单�
 | 保存凭据 | 为实际连接设备保存或覆盖密码；响应不回显密码 |
 | 删除凭据 | 移除实际连接设备的密码；响应说明当前是否仍有凭据 |
 | 测试连接 | 返回是否可达、延迟、测试时间和非敏感失败说明 |
+| 执行远端命令 | 持有“使用设备”权限的调用者（默认所有 Resident）使用设备绑定身份执行命令，返回退出码、输出和截断标记 |
 | 打开终端 | 浏览器显示远程 shell 输出，并允许发送输入和窗口控制 |
 
 当用户操作 GPU 子设备时，结果同时保留“用户请求的设备”和“真正建立 SSH 连接的设备”。这样，页面可以继续显示用户选择的 GPU，同时明确连接由宿主服务器提供。
@@ -157,7 +160,7 @@ SSH 子进程需要密码时，Portal 把秘密文件路径交给受控的 `SSH_
 
 ## 设备指令
 
-设备的专用操作是四条具名 HATG 指令，参数都以 `resource_id`（目标 Device）为首：`UpdateDeviceSshCredential`、`DeleteDeviceSshCredential`、`CheckDeviceSsh`、`RunDeviceCommand`。ResourceService 验证有效调用者和参数；所需等级由当前权限模板中各指令自己的要求决定（见上文权限一节），Device provider 执行操作。Colab 会话通过系统脚本 `colab_session`（源码 `scripts/colab_session.py`）管理，经站点配置绑定的固定 Portal 运维 Lineage 由 `RunScript` 运行。调用者须对该 Lineage 有 `@admin`；脚本以调用者身份确认目标是已登记的 Colab Device，会话变更要求对设备有 `@contributor`（decision_5ff0cb51ed84）。参数为 `resource_id`、`running`；`running=true` 须带 `hardware`，分配会消耗 CU，已有同规格会话可复用；`running=false` 释放会话，省略 `hardware`。
+设备的专用操作是四条具名 HATG 指令，参数都以 `resource_id`（目标 Device）为首：`UpdateDeviceSshCredential`、`DeleteDeviceSshCredential`、`CheckDeviceSsh`、`RunDeviceCommand`。ResourceService 验证有效调用者和参数；所需权限由权限方案中各指令自己的分类决定（见上文），设备领域执行操作。Colab 会话通过系统脚本 `colab_session`管理，经站点配置绑定的固定 Portal 运维 Lineage 由 `RunScript` 运行。调用者须对该 Lineage 有 `@admin`；脚本以调用者身份确认目标是已登记的 Colab Device，会话变更要求对设备有 `@contributor`（decision_5ff0cb51ed84）。参数为 `resource_id`、`running`；`running=true` 须带 `hardware`，分配会消耗 CU，已有同规格会话可复用；`running=false` 释放会话，省略 `hardware`。
 
 ### `UpdateDeviceSshCredential`
 
@@ -185,12 +188,8 @@ Device resolver 支持根 Device 地址和已经定义的 GPU 嵌套地址。解
 
 浏览器只发送终端输入、窗口控制和结束指令，并接收输出与状态。服务端负责读取 SSH 凭据、启动进程和维护生命周期。浏览器断开或 SSH 进程退出时，终端状态随之更新；长期保存的 Device secret 不会被自动删除。
 
-## 使用设备绑定的 SSH 密钥
+## 使用设备绑定的 SSH 身份
 
-ICWS2、UST ACF3234 和 PCRD027 各自绑定实例托管的 SSH 配置，共用原有密钥。UST 配置包含跳板。具备目标设备相应权限的用户可在设备详情打开 Terminal。Resident 调用 `RunDeviceCommand(resource_id, command)`，指定目标设备和远端命令，例如：
+调用者对设备有“使用设备”权限（默认所有 Resident）时，调用 `RunDeviceCommand(resource_id, command)`，指定已登记设备和远端命令。服务端按设备 ID 解析 SSH 入口并使用已托管的连接身份，不把密码或私钥交给调用者；执行命令不授予配置管理权限。
 
-```json
-{"resource_id":"device_6dc448ba22e7","command":"hostname"}
-```
-
-命令返回退出码、合并输出及截断标记，最多等待 30 秒。服务端根据设备 ID 选取受限配置并完成密钥认证。
+命令返回退出码、合并输出及截断标记，最多等待 30 秒。权限被方案拒绝时，错误指明被权限方案拒绝；目标不存在或不可用、父链无效、SSH 连接失败和远端命令失败分别保留原失败语义。

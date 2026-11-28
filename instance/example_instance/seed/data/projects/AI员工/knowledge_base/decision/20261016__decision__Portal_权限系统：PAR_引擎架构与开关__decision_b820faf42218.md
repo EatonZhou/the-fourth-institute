@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-10-16'
 version:
-  number: 93
+  number: 99
   created_at: "2026-10-16T09:28:31Z"
   created_by:
     user: "weihao"
     agent: "resident_0d928ae486ba"
-  updated_at: "2026-11-26T03:02:04Z"
+  updated_at: "2026-11-28T06:56:06Z"
   updated_by:
     user: ""
-    agent: "resident_83d75ad3a6c7"
+    agent: "resident_6199a7a36480"
 importance: 9
 metaness: 3
 ai_generated: false
@@ -105,7 +105,7 @@ Portal 业务层（ISA 内核、领域服务、页面入口、ResourceService）
 
 - 一次调用能否执行：`authorize_instruction`、`authorize_reads`、`readable_ids`。
 - `permitted(actor, 指令, 参数, 资源列表)`：只判定该指令声明在这个参数上的判定槽，逐个资源给出能否通过；`permitted_ids` 返回能通过的资源集合。例如列表中每个 Lineage 的按钮问 UpdateLineage、DeleteLineage 等指令的 `lineage_id`；Workspace 文件按它所属的 Workspace 判定，读问 ReadResource、写问 UpdateWorkspaceFile 的 `address`（第 5.5 节）；Workbench 目录按 GetProject 过滤可读 Project。指令的固定槽（例如对“Portal 运维”的 `@admin`）先判定，不通过时所有资源都不通过；没有判定槽在这个参数上时按固定槽的结果给出。
-- `allows(actor, 指令, 参数)`：按完整调用判定，供页面开关和设置项使用；`allows_each` 对同一组参数一次给出多条指令的结果。**页面上的一个按钮只问它自己那条指令**（weihao 2026-10-18）：对象的列表或详情结果带 `allows: {指令名: bool}`，按钮按点击时实际调用的指令显示或停用，不用一个 `can_manage` 代表多个按钮，也不借用另一条指令的结果。当前带 `allows` 的结果：GetPermissionSystem（方案的四条写指令按启用方案判定；表项的三条写指令按每行的 r 判定，这里恒为 true，按钮看 ListPermissionEntries 的 `allows`）、Lineage 列表（UpdateLineage、DeleteLineage、CreateResident、UpdateResident、CreateWorkspaceHandoff）、Resident 会话投影（DeliverMessage、UpdateResidentSettings、SetIntakeOpen（打开与关闭接单共用）、RestartSession、CancelInput、UpdateResident、DeleteResident，以及在本 Lineage 中分支的 ForkResident；输入框能否发送也取 DeliverMessage）、定时与自动触发监控的每一行（UpdateComponent、SetComponentPaused（暂停与恢复共用）、TriggerEvent、CancelScriptRun、UpdateResidentSettings、CancelInput）、Workbench（UpdateResource）、给出 `r` 的 ListPermissionEntries（在这个 r 上的 CreatePermissionEntry、DeletePermissionEntry，供项目与 Lineage 菜单的授予和删除按钮）、Workspace 文件预览（保存按钮的 UpdateWorkspaceFile）。页面已改读 `allows`，`can_manage` 已从全部结果中删除；会话投影、Resident 文件夹和 Workspace 文件预览中的 `permissions`（`can_edit_resident_file`、`can_create_fork`、`can_edit_task_folder`）也已删除：预览保存只看 `allows.UpdateWorkspaceFile`，且文件必须有 Workspace 地址；消息菜单的分支入口要求后端支持分支（`backend_capabilities.portal_fork`）且 `allows.ForkResident` 为 true。`/api/me` 的 `access.allows` 报告 CreateUser、GetExecutionSettings、UpdateExecutionSettings（只问权限系统开关，即参数 `permission_system_enabled`）、ActivatePermissionScheme、UpdateProviderAccount、CreateTerminal、ListResourceTypes、UpdateResourceType、ListProviders、ListProviderAccounts（另有调用者自己的 `user_category`），管理页入口、执行设置、账号调度表单和 Society 页面的终端组件据此显示；对 Portal 管理员，UpdateExecutionSettings 与 ActivatePermissionScheme 两项永远为 true（Portal 管理员保底）；管理页用户表单（包括 User 分类）按该行的 `allows.UpdateUser` 判断，为 false 时只读，管理员名单相关字段仍须结合 `user_category` 限制，见本节保底规则；执行设置在服务端同样按 Get/UpdateExecutionSettings 判定；修改账号状态问 DeleteUser；把运行身份设为其他 User 问对该 User 的 UpdateUser；每个打开 Terminal 的入口问 CreateTerminal。
+- `allows(actor, 指令, 参数)`：按完整调用判定，供页面开关和设置项使用；`allows_each` 对同一组参数一次给出多条指令的结果。**页面上的一个按钮只问它自己那条指令**（weihao 2026-10-18）：对象的列表或详情结果带 `allows: {指令名: bool}`，按钮按点击时实际调用的指令显示或停用，不用一个 `can_manage` 代表多个按钮，也不借用另一条指令的结果。当前带 `allows` 的结果：GetPermissionSystem（方案的四条写指令按启用方案判定；表项的三条写指令按每行的 r 判定，这里恒为 true，按钮看 ListPermissionEntries 的 `allows`）、Lineage 列表（UpdateLineage、DeleteLineage、CreateResident、UpdateResident、CreateWorkspaceHandoff）、Resident 会话投影（DeliverMessage、UpdateResidentSettings、SetIntakeOpen（打开与关闭接单共用）、RestartSession、CancelInput、UpdateResident、ApplyLineageChanges（删除 Resident），以及在本 Lineage 中分支的 ForkResident；输入框能否发送也取 DeliverMessage）、定时与自动触发监控的每一行（ApplyLineageChanges、SetComponentPaused（暂停与恢复共用）、TriggerEvent、CancelScriptRun、UpdateResidentSettings、CancelInput）、Workbench（UpdateResource）、给出 `r` 的 ListPermissionEntries（在这个 r 上的 CreatePermissionEntry、DeletePermissionEntry，供项目与 Lineage 菜单的授予和删除按钮）、Workspace 文件预览（保存按钮的 UpdateWorkspaceFile）。页面已改读 `allows`，`can_manage` 已从全部结果中删除；会话投影、Resident 文件夹和 Workspace 文件预览中的 `permissions`（`can_edit_resident_file`、`can_create_fork`、`can_edit_task_folder`）也已删除：预览保存只看 `allows.UpdateWorkspaceFile`，且文件必须有 Workspace 地址；消息菜单的分支入口要求后端支持分支（`backend_capabilities.portal_fork`）且 `allows.ForkResident` 为 true。`/api/me` 的 `access.allows` 报告 CreateUser、GetExecutionSettings、UpdateExecutionSettings、SetPermissionSystemEnabled、ActivatePermissionScheme、UpdateProviderAccount、CreateTerminal、ListResourceTypes、SetResourceTypeEnabled、ListProviders、ListProviderAccounts、RegisterProviderAccount、DeleteProviderAccount、DeleteModelApi、GetProviderAccountConfiguration、UpdateProviderAccountConfiguration（另有调用者自己的 `user_category`），管理页入口、执行设置、账号调度表单和 Society 页面的终端组件据此显示；对 Portal 管理员，SetPermissionSystemEnabled 与 ActivatePermissionScheme 两项永远为 true（Portal 管理员保底）；管理页用户表单（包括 User 分类）按该行的 `allows.UpdateUser` 判断，为 false 时只读，管理员名单相关字段仍须结合 `user_category` 限制，见本节保底规则；执行设置在服务端同样按 Get/UpdateExecutionSettings 判定；修改账号状态问 DeleteUser；把运行身份设为其他 User 问对该 User 的 UpdateUser；每个打开 Terminal 的入口问 CreateTerminal。
 - `users_permitted(指令, 参数, 资源)`：启用方案实例中让这条指令在该资源上通过的、未停用且不过期的表项所点名的活跃 User，Lineage 自动失败通知按 UpdateLineage 取收件人；表项写在 User 分类节点上时，该分类的每个 User 都算在内，写在更上层节点（全部 User、全部主体）上的不点名任何人。关闭时没有权限系统可问，返回 None；失败通知模块此时把通知发给 Lineage 的创建 User，这是通知模块自己的回退。
 - `user_categories()`、`user_category(用户名)`、`set_user_category(...)`：User 分类这项事实，保存在账号记录的 `category` 字段，开关开或关都可读写（UpdateUser 的 `changes.category`，第 3.3 节）。设为或取消 Portal 管理员只有 Portal 管理员能做（下文“Portal 管理员保底”）；一般用户与实习用户之间的调整关闭时已登录主体都能做，开启时按方案判定。用户列表和 `/api/me` 读取它。
 
@@ -113,7 +113,7 @@ Portal 业务层（ISA 内核、领域服务、页面入口、ResourceService）
 
 能通过 `SetPermissionSystemEnabled` 的主体在“执行设置”的“权限”分组切换开关，保存在 `execution_runtime.service_settings`。每个进程最多 3 秒后读到新值，读取失败时沿用上次的值，从未读到时按开启处理。
 
-**Portal 管理员保底**（weihao 2026-10-19，da10d535）。权限方案可以把任何主体挡在外面，包括写方案的人自己。开关因此可以直接打开：不做打开前的调用回放、不做推算，也不做打开后的观察机制（第 5.10 节仍是预留），保底是一条独立于方案的 Portal 管理员规则，也是权限系统中方案之外唯一的判定（“个人 AMA 归所有者”是 Society 的规定，不在权限系统中，见第 5.5 节）。它在开关开或关、启用哪套方案时都一样，由端口在方案之前判定，方案无法收回：
+**Portal 管理员保底**（weihao 2026-10-19，da10d535）。权限方案可以把任何主体挡在外面，包括写方案的人自己。开关因此可以直接打开：不做打开前的调用回放、不做推算，也不做打开后的观察机制（第 5.10 节仍是预留），保底是一条独立于方案的 Portal 管理员规则，是权限端口在方案之外判定的一类固定保证（“个人 AMA 归所有者”是 Society 的规定，不在权限系统中，见第 5.5 节）。它在开关开或关、启用哪套方案时都一样，由端口在方案之前判定，方案无法收回：
 
 - Portal 管理员永远可以开关权限系统（`SetPermissionSystemEnabled`），永远可以读取方案列表（ListPermissionSchemes）和启用方案（ActivatePermissionScheme）。这是一条放行：管理员做这三件事时入口检查、`allows`、编辑器按钮、CheckInstructionPermission 和设置处理代码都不问引擎（CheckInstructionPermission 返回 `portal_admin: true`、`requests` 为空）。读取方案列表在保底内（9c94 按 weihao“无论方案怎么设置，管理员永远能切换方案”定，2026-10-19）：执行设置的方案下拉框靠它列出可选方案，读不到时启用的保底在页面上不成立；它只读，没有风险。只加这一条读指令，读取单个方案（GetPermissionScheme）等其余权限指令仍按方案判定。需要所有人都不受限时，出口仍是关闭开关。同一次调用里还有其他设置项时，整次调用按方案判定。非管理员照常按方案判定，开关关闭时照常放行。
 - 管理员名单只有 Portal 管理员能改：把其他 User 设为或取消 Portal 管理员，停用、启用或删除管理员账号（删除或停用管理员等同于取消其管理员身份）；不能对自己做。开关关闭时同样只有管理员能改，这推翻了 10-18“关闭时谁都能改分类、本人能改自己的分类”中涉及管理员的部分。管理员做这类只改名单的调用（UpdateUser 的 `changes` 只含 `category`、`status`，或删除管理员）时也不问方案；非管理员一律以 `instruction.forbidden` 拒绝。一般用户与实习用户之间的调整不在名单之内，按方案判定，关闭时放行。管理员不能取消自己，但两位管理员可能同时互相停用；所以名单变更的检查和写入在同一个账号事务里进行，持有 identity 锁（`administrators.list_change`），并发的变更依次判定，后一个看到前一个的写入。取消管理员的写入完成后，如果已经没有启用中的 Portal 管理员，整次回滚。删除管理员时先在这个事务里停用账号，其余删除步骤（包括调用 SocietyService）在事务之后进行。管理员只能是 User，Resident 没有分类，永远不在名单上。
@@ -189,6 +189,8 @@ User 与 Resident 卡片的 Package 读取 GetEffectivePermissions，以奖章�
 
 ## 4. 权限与领域功能的划分
 
+设备命令不设固定领域能力：`RunDeviceCommand` 与其他指令一样按方案判定，默认方案以“使用设备”分类和一条 Resident 表规则让所有 Resident 使用所有设备，deny 可以收回（decision_600ae27b0538、decision_d397f2d99f89）。
+
 **方案表达的授权由 PAR 引擎判定。** 引擎拿到权限树和权限表后作答；业务代码和指令处理器不另写与方案竞争的授权。权限端口保留第 3.1 节明定的管理员保底，本节的领域规则也继续有效。A 树、R 树上的节点名（如“免检”“共享”）对代码没有语义，只是集合节点：一条指令落在“免检”下，所有人都能调用，完全因为表里有 (P 根, 免检, R 根) permit。
 
 **划分标准**（weihao 2026-10-18）：
@@ -223,7 +225,7 @@ User 与 Resident 卡片的 Package 读取 GetEffectivePermissions，以奖章�
 - 本人的数据：Git 凭据、个人访问令牌、Pulse 条目、Mailbox、待办、导航、上传；聊天室中编辑或撤回自己的消息、删除自己的回复；论文与 WALL 任务按发起人列出。
 - 工作流角色：Family 的门面、steward 与 Router，Leader，工作摘要只由 Resident 本人或 steward 写入，摘要任务的领取人，输入的认证发起人，Execution 的提交者与 Worker 领取。
 - 护栏：路径、根目录与符号链接约束，对象状态与版本，至少保留一位启用中的 Portal 管理员，首位管理员设置链接只在还没有任何账号时可用。
-- Portal 管理员保底（第 3.1 节）：权限系统中方案之外唯一的判定。个人 AMA 归所有者是 Society 的规定（第 5.5 节），不在权限系统中。
+- Portal 管理员保底（第 3.1 节）：权限端口中的固定保证；另有下述已认证 Resident 设备使用边界。个人 AMA 归所有者是 Society 的规定（第 5.5 节），不在权限系统中。
 
 审计找到的只按身份放行、没有询问引擎的入口，都归入已有指令判定（weihao 2026-10-18）：
 
@@ -231,7 +233,7 @@ User 与 Resident 卡片的 Package 读取 GetEffectivePermissions，以奖章�
 - 资源备份与校验的按钮询问资源备份 Lineage 上的 TriggerEvent，取消询问 CancelScriptRun；后端触发 Event 时由 TriggerEvent 自身判定，不再单独检查身份。
 - WALL 项目登记与注销询问所在 Project 的 UpdateProject。
 - 按 `job_id` 读取论文评审状态已改为按论文判定。
-- Watchboard 的运行按钮询问所在 Lineage 的 TriggerEvent，每个配置的编辑询问该文件地址的 UpdateWorkspaceFile，看板管理询问 ApplyLineageChanges。Telepus 看板上维护自己的联系人是固定角色规则（登录的 User 只改本人），BindTelepusContactForUser 与 UnbindTelepusContactForUser 仍只给管理员。
+- Watchboard 的运行按钮询问所在 Lineage 的 TriggerEvent，每个配置的编辑询问该文件地址的 UpdateWorkspaceFile，看板管理询问 ApplyLineageChanges。Telepus 看板上维护自己的联系人是固定角色规则（登录的 User 只改本人），BindTelepusContact 与 UnbindTelepusContact 仍只给管理员。
 - `/api/admin/access-control` 读取全部用户与访问审计，不另设判定（weihao 2026-10-18）：开关关闭时所有登录主体拥有全部权限，没有管理员之分；除 Portal 管理员保底（第 3.1 节）外，代码不按 Portal 管理员之类的分类放行，一切按权限系统处理。用户列表逐行带 `allows.UpdateUser`。
 
 ## 5. 权限方案：规则、实例与生命周期

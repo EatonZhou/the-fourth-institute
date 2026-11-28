@@ -15286,8 +15286,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260903__decision__Device_SSH_连接与凭据安全边界__decision_d397f2d99f89.md",
-      "sha256": "9695d4889f4dbb00da8685487565cde91c1eee837ebd5419169d0bf4fc86830c",
-      "size": 13183
+      "sha256": "5c462b65b6b25a5a940768e040adf33d8325361b8137c7a4e4177af71f84a303",
+      "size": 14140
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260903__decision__ExecutionService_模块与运行架构__decision_25eb93d803a4.md",
@@ -15731,8 +15731,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：资源指令__decision_ad3e21094f14.md",
-      "sha256": "e081ffc5b1e8d44cf1e3def1a66e5be94cfd12734ef76e436c7c87b3daee924c",
-      "size": 43259
+      "sha256": "c3bee9471061acfa2ff7621ae814bffd0f7b974eafd5bba3dea770b1c55c5280",
+      "size": 43298
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：运行环境指令__decision_4527448ad07f.md",
@@ -15821,13 +15821,13 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261016__decision__Portal_权限系统：PAR_引擎架构与开关__decision_b820faf42218.md",
-      "sha256": "acf094bb1ec4ac45473e20ed4059ba9389281b91d305d31e2b1706538d040fce",
-      "size": 92283
+      "sha256": "b9660c65093fa4766804afa47955591479a9984204ccb2feae821e1a1758f958",
+      "size": 92729
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261016__decision__Portal_权限默认方案：P、A、R_三棵树与表规则__decision_600ae27b0538.md",
-      "sha256": "45c384c53f63767fe5efe1a1188eb822985d186e71e5c50d899d548846fd2e67",
-      "size": 35019
+      "sha256": "6a5229ed1d66158334b21e84b62ff6d38345fcb1c3b734c90736b7204c698463",
+      "size": 36022
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261017__decision__Portal_管理页：权限方案编辑器__decision_ea13b85216d0.md",

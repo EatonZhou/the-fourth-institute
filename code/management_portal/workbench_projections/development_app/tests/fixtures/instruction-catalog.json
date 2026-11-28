@@ -2490,7 +2490,7 @@
         "discovery_group": "general",
         "owner": "resource",
         "owner_title": "ResourceService",
-        "description": "使用设备绑定 SSH 身份执行远端命令（30秒），需要设备 admin。",
+        "description": "使用设备绑定 SSH 身份执行远端命令（30秒）；需要对设备有“使用设备”权限，默认方案下所有 Resident 可用。",
         "mutates": true,
         "streaming": false
       },
@@ -16556,7 +16556,7 @@
         "discovery_group": "general",
         "owner": "resource",
         "owner_title": "ResourceService",
-        "description": "使用设备绑定 SSH 身份执行远端命令（30秒），需要设备 admin。",
+        "description": "使用设备绑定 SSH 身份执行远端命令（30秒）；需要对设备有“使用设备”权限，默认方案下所有 Resident 可用。",
         "mutates": true,
         "streaming": false,
         "parameters": [

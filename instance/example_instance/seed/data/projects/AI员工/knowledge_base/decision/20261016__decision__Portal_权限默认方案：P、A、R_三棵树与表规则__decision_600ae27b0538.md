@@ -44,16 +44,18 @@ A 根：全部动作（@actions）
 └── 管理（@admin，A 树默认节点）
     └── 协作（@contributor）
         ├── 查看（@viewer）
-        └── 给 Resident 发消息（@message）
+        ├── 给 Resident 发消息（@message）
+        └── 使用设备（@use_device）
 ```
 
 这些节点只是默认方案的数据。Portal 代码不认识它们的名字，只认识指令：指令声明的每个判定槽是一个 A 元素，方案的指令分类把每个 A 元素挂到其中一个节点下，业务代码再问“这条指令在这里能不能通过”（decision_b820faf42218 §3.1、§3.2）。
 
 - 每条 ISA 指令在声明中写判定槽：按哪个参数指向的对象判定，或用固定槽（decision_898b8911a2ff“声明格式”）。默认方案的 `instructions` 只写每个 A 元素挂在哪个节点下，固定槽另写对哪个 R 分类节点判定：`{"<A 元素>": {"a": "@contributor"}}`、`{"<A 元素>": {"a": "@admin", "r": "@shared"}}`。例如 ApplyLineageChanges 声明按 `lineage_id` 判定，默认方案把它放在 `@contributor` 下；AbsorbContext 声明源 Resident 与目标 Resident 两个槽，默认方案把源放在 `@viewer` 下、目标放在 `@contributor` 下。一个判定槽对应一个 (执行者, A 元素, 资源) 请求。下文说“对某参数要求某节点”，指这个参数上的判定槽被分类到该节点下。
 - 节点按包含关系嵌套：“协作”包含挂在它下面的全部要求，所以对资源 r 持有 `@contributor` 的表项，同时能执行挂在 `@viewer` 下的动作。
-- 指令分类沿用 TFI Portal 分级规则（原“模板 B”），另加权限指令自身的要求，给声明中的每个 A 元素分类（测试逐条核对）。所有人都能调用的指令显式放在“免检”下：写成 `{"a": "@free", "r": "@portal"}`，由“免检放行”表项覆盖。默认方案不设“未归类”节点；所有已安装指令的每个判定槽必须显式归入免检、查看、协作、管理或消息分类。A 树的结构默认节点为 `@admin`，但内置模板加载时必须核对正式 ISA 声明：缺少分类即报告模板错误及具体元素路径，不能以默认节点代替显式分类，也不能等到业务执行才报权限不足。新增指令或判定槽必须同时补齐模板并通过完整性检查（weihao 2026-10-20）。Project 内的主体继续通过 Project 的 `@admin` 表项覆盖同 Project 中的管理、协作、查看及消息动作；对其他 Project、共享运维或个人空间的访问仍按 R 树资源范围判定。自定义方案保留其自行指定的默认节点策略；GetPermissionScheme 和创建、修改、启用方案的 `dry_run` 仍用 `unmapped` 报告自定义方案遗漏的 A 元素，它不是默认模板的权限节点。GetProject 对 `project_id` 要求 `@viewer`（Workbench 目录按它过滤可读 Project）；ListPermissionEntries 对可选的 `r` 要求 `@viewer`，CreatePermissionEntry 对 `r` 要求 `@admin`，UpdatePermissionEntry 对表项已保存的 `r` 和可选的新 `r` 要求 `@admin`，DeletePermissionEntry 对每条表项已保存的 `r` 要求 `@admin`（`via` 槽位，见下表）。
+- 指令分类沿用 TFI Portal 分级规则（原“模板 B”），另加权限指令自身的要求，给声明中的每个 A 元素分类（测试逐条核对）。所有人都能调用的指令显式放在“免检”下：写成 `{"a": "@free", "r": "@portal"}`，由“免检放行”表项覆盖。默认方案不设“未归类”节点；所有已安装指令的每个判定槽必须显式归入免检、查看、协作、管理、消息或使用设备分类。A 树的结构默认节点为 `@admin`，但内置模板加载时必须核对正式 ISA 声明：缺少分类即报告模板错误及具体元素路径，不能以默认节点代替显式分类，也不能等到业务执行才报权限不足。新增指令或判定槽必须同时补齐模板并通过完整性检查（weihao 2026-10-20）。Project 内的主体继续通过 Project 的 `@admin` 表项覆盖同 Project 中的管理、协作、查看及消息动作；对其他 Project、共享运维或个人空间的访问仍按 R 树资源范围判定。自定义方案保留其自行指定的默认节点策略；GetPermissionScheme 和创建、修改、启用方案的 `dry_run` 仍用 `unmapped` 报告自定义方案遗漏的 A 元素，它不是默认模板的权限节点。GetProject 对 `project_id` 要求 `@viewer`（Workbench 目录按它过滤可读 Project）；ListPermissionEntries 对可选的 `r` 要求 `@viewer`，CreatePermissionEntry 对 `r` 要求 `@admin`，UpdatePermissionEntry 对表项已保存的 `r` 和可选的新 `r` 要求 `@admin`，DeletePermissionEntry 对每条表项已保存的 `r` 要求 `@admin`（`via` 槽位，见下表）。
 - “给 Resident 发消息”是“协作”下的分类节点。指令 `DeliverMessage`、`PrepareResidentInput` 和 `AnswerResidentRequest` 都对 `resident_id` 要求 `@message`。准备入口还校验正式投递权限及原领域限制。`DeliverUserMessage` 对 `user_id` 要求 `@message`，`ForwardMessagesToResident` 对 `target_resident_id` 要求 `@message`，`ForwardMessagesToChatroom` 对 `target_chatroom_id` 要求 `@contributor`（聊天室成员满足）。多判定槽的 A 元素按“指令:参数”命名。持有 `@contributor` 的主体照样能给 Resident 发消息；“全员可给 Resident 发消息”只打开这组指令，修改设置和队列仍按各自的权限要求。
 - 账号管理、Telepus 联系人绑定、权限方案的创建修改删除与启用、执行设置的读写（Get/UpdateExecutionSettings）等指令要求对“共享”节点通过 `@admin`；打开 Terminal（CreateTerminal）也是如此。修改 User 分类（UpdateUser 的 `changes.category`）在方案里没有单独的要求，和修改其他资料一样只要求对目标账号有 `@admin`；每个 User 对自己的账号持有 `@admin`，所以本人能在一般用户与实习用户之间改自己的分类。管理员名单不由方案决定（weihao 2026-10-19，decision_b820faf42218 §3.1“Portal 管理员保底”）：设为或取消 Portal 管理员、停用或删除管理员账号只有 Portal 管理员能做，不能对自己做；Portal 管理员永远可以开关权限系统和启用方案，即使方案把管理员挡在外面。Portal 管理员节点上的规则覆盖“共享”上的全部动作，所以 Portal 管理员在默认方案中也能执行它们。
+- “使用设备”是“协作”下的分类节点，与“给 Resident 发消息”同级。`RunDeviceCommand` 对必填的 `resource_id` 指向的设备要求 `@use_device`；持有 `@contributor` 或 `@admin` 的主体因包含关系同样满足。权限表有一条规则让所有 Resident 对“共享”（设备所在节点）拥有它，所以默认所有 Resident 能使用所有设备；管理员写 deny 表项即可收回某个 Resident 或某台设备（weihao 2026-11-28）。人类用户不在这条规则内：管理员能用，一般用户和实习用户由管理员授予。`CheckDeviceSsh` 仍是设备 `@viewer`，`UpdateDeviceSshCredential` 与 `DeleteDeviceSshCredential` 仍是设备 `@admin`。
 - A 树不再按读、写、删、管理细分。“持有 `@contributor` 但不能删除”这类需求用 deny 表项表达。
 
 2026-10-17 原先未映射、按免检放行的 110 条指令逐条归类如下：
@@ -67,7 +69,8 @@ A 根：全部动作（@actions）
 | 对“共享”有 `@viewer`（全员） | 运行状态与用量（GetPortalStatus、GetDeviceStatus、GetRuntimeCapacity、GetUsage、GetProviderUsageEvents、ListProviderAccounts、ListModelApis）、目录与列表（GetResidentSummaryQueue、GetResourceType、ListComponentTypes、GetTemplate、ListTemplates、ListPosts、ListProjects、ListUsers、SearchResidents、SearchResources）、只给出对象 ID 的读取（GetMoveOperation、GetWorkspaceHandoff，处理器再核对所属 Lineage） |
 | 对参数所指对象有 `@viewer` | 聊天室读取与已读（GetChatroom、ListChatroomMessages、UpdateChatroomReadPosition，以及给出 `chatroom_id` 的 SearchMessages、ListInputHistory）、帖子读取、已读与回复（GetPost、UpdatePostReadVersion、CreateReply）、Resident 读取（GetResident、ListResidentStates）、Function Block 读取（GetLineage 结果中的 `function_blocks`）、资源读取（ReadResource、ResolveResource）、CheckDeviceSsh（对必填的 `resource_id`）、GetUser（对 `user_id`，必填；读取本人由“账号本人”规则满足）、门面转交读取（GetRelayContext、CheckRelayTarget，对必填的门面 `resident_id`，领域再次核验门面可读） |
 | 对参数所指对象有 `@contributor` | UpdateChatroomReaction、CreateLineage（对必填的 `project_id`）、知识条目文件（CreateKnowledgeFile、UpdateKnowledgeFileName，对必填的 `resource_id`）、MoveKnowledgeItems（对目标 `project_id`，源条目另核）、UpdateWorkbenchPage、UpdateWorkbenchReversePlan（对必填的 `resource_id`）、UpdateWorkspaceFile（对必填的 `address` 所在的 Workspace；只接受 Workspace 文件地址，不接受绝对路径，weihao 2026-10-18）、门面转交（RelayMessage、ResolveRelayedRequest，对必填的门面 `resident_id`） |
-| 对参数所指设备有 `@admin` | UpdateDeviceSshCredential、DeleteDeviceSshCredential、RunDeviceCommand（对必填的 `resource_id`，weihao 2026-11-26；SSH 凭据与远程命令高于普通设备写入） |
+| 对参数所指设备有 `@admin` | UpdateDeviceSshCredential、DeleteDeviceSshCredential（对必填的 `resource_id`，weihao 2026-11-26；SSH 凭据高于普通设备写入） |
+| 对参数所指设备有“使用设备” | RunDeviceCommand（对必填的 `resource_id`；默认所有 Resident 经表规则拥有，weihao 2026-11-28） |
 | 对参数所指门面 Resident 有 `@admin` | UpdateFacadeMembers（对必填的 `resident_id`，weihao 2026-11-26；它决定谁能接收门面转交的请求） |
 | 对参数所指主体有 `@admin` | GetEffectivePermissions、CheckPermission、CheckInstructionPermission（对必填的 `principal_id`，查看自己也写明；它当作 R 树上的这个 User 或 Resident；账号本人、Project 中的 Resident 和个人 AMA 中的 Resident 都对自己满足）、ListPermissionEntries 的 `p`（`r` 要求 `@viewer`，两者至少给一个） |
 | 对参数所指 User 有 `@admin`（对必填的 `user_id`；账号本人满足，处理自己的数据也写明自己的用户名） | Mailbox（GetMailbox、ClearMailbox 给出 `user_id` 时，WatchMailbox）、ListMailboxTodos、个人访问凭据（CreateUserAccessToken、ListUserAccessTokens）、收藏（GetUserNavigation、UpdateUserNavigation）、GetPulse、ListChatrooms、UpdateUser |
@@ -161,6 +164,7 @@ AMA 中登记了所有者（`personal_owner_id`）的 Resident 由引擎按所�
 | 免检放行 | (P 根, 免检, R 根) permit |
 | 全员可读 | (P 根, @viewer, 共享) permit |
 | 全员可给 Resident 发消息 | (P 根, @message, R 根) permit |
+| 所有 Resident 可使用所有设备 | (Resident 节点, 使用设备, 共享) permit |
 | 全员可管理公共内容 | (P 根, @admin, 公共内容) permit |
 | Portal 管理员 | (Portal 管理员节点, A 根, 共享) permit |
 | 一般用户管理全部 Project | (一般用户节点, @admin, 全部 Project) permit |

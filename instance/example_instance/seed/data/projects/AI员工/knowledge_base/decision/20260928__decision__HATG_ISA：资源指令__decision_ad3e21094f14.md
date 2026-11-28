@@ -72,7 +72,7 @@ links:
 | `UpdateDeviceSshCredential` | 是 | 保存设备的 SSH 密码凭据，不回显内容 | 对 `resource_id` 有 @admin |
 | `DeleteDeviceSshCredential` | 是 | 删除设备的 SSH 密码凭据 | 对 `resource_id` 有 @admin |
 | `CheckDeviceSsh` | 否 | 测试到设备的 SSH 连接 | 对 `resource_id` 有 @viewer |
-| `RunDeviceCommand` | 是 | 用设备绑定的 SSH 身份在远端执行一条命令 | 对 `resource_id` 有 @admin |
+| `RunDeviceCommand` | 是 | 用设备绑定的 SSH 身份在远端执行一条命令 | 对 `resource_id` 有 @use_device（默认所有 Resident 拥有） |
 | `UpdateWorkbenchPage` | 是 | 保存一次页面生成结果 | 对 `resource_id` 有 @contributor |
 | `UpdateWorkbenchReversePlan` | 是 | 保存一份反向整理计划 | 对 `resource_id` 有 @contributor |
 | `CreateUpload` | 是 | 开始一次文件上传，返回上传句柄和写入字节的数据通道地址。 | 免检 |
