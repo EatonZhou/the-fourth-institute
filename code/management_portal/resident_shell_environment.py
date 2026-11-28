@@ -114,8 +114,14 @@ def shared_workspace_environment_dir() -> Path:
 
 
 def shared_server_environment() -> dict[str, str]:
-    """What a shared Provider server's environment adds so its shells find their Workspace variables."""
-    return {"BASH_ENV": str(WORKSPACE_ENV_HOOK), "PORTAL_SHARED_SHELL_ENV_DIR": str(shared_workspace_environment_dir())}
+    """What a shared Provider server's environment adds so its shells find their Workspace variables.
+
+    Node gives a command shell sockets for stdio. A top-level bash (SHLVL < 2)
+    with a socket on stdin takes itself for an rshd/sshd shell and reads
+    ~/.bashrc instead of BASH_ENV; SHLVL=1 makes each command shell level 2.
+    """
+    return {"BASH_ENV": str(WORKSPACE_ENV_HOOK), "PORTAL_SHARED_SHELL_ENV_DIR": str(shared_workspace_environment_dir()),
+            "SHLVL": "1"}
 
 
 def write_shared_workspace_environment(value: Mapping[str, str] | None, *, session_id: str = "") -> None:

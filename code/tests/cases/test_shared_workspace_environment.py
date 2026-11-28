@@ -60,6 +60,24 @@ def test_shared_server_shell_sources_its_residents_current_workspace_variables(t
     assert ((env_dir / f"{RESIDENT}.sh").stat().st_mode & 0o777) == 0o600
 
 
+def test_hook_runs_in_a_top_level_shell_with_socket_stdio_like_kimis(tmp_path, env_dir, monkeypatch):
+    """Kimi Code 以 socket 作 stdio、不带 SHLVL 启动 bash；服务器环境仍让它执行钩子，并从开头的 cd 找到 Resident"""
+    import socket
+
+    monkeypatch.setattr(shell, "shared_workspace_environment_dir", lambda: env_dir)
+    workspace = tmp_path / "agents" / LINEAGE / "residents" / RESIDENT / "workspace"
+    workspace.mkdir(parents=True)
+    shell.write_shared_workspace_environment(_identity(tmp_path))
+    environment = {key: os.environ[key] for key in ("PATH", "HOME") if key in os.environ}
+    environment.update(shell.shared_server_environment())
+    ours, theirs = socket.socketpair()
+    with ours, theirs:
+        # Kimi enters the session directory with a leading cd, from its server's directory.
+        output = subprocess.run(["/bin/bash", "-c", f"cd '{workspace}' && env"], cwd=tmp_path, env=environment,
+                                stdin=theirs, capture_output=True, text=True, check=True).stdout
+    assert _variables(output) == {"PORTAL_RESIDENT_WORKSPACE": str(tmp_path / "own workspace")}
+
+
 def test_antigravity_shell_finds_its_session_file_from_any_directory(tmp_path, env_dir):
     """Antigravity 的 shell 按 ANTIGRAVITY_CONVERSATION_ID 找到本会话的变量，命令在 Resident 目录之外也一样"""
     session = "af0789be-5c5d-4287-80bf-321855daae2f"
