@@ -67,3 +67,16 @@ def test_native_question_answer_is_bound_to_the_prompt_and_sent_once(tmp_path):
     client._interaction.assert_called_once_with("session", "i", {"kind": "question", "method": "click",
         "answers": {"q": {"kind": "multi_with_other", "option_ids": ["a"], "other_text": "自填"}}})
     assert events[-1]["params"]["item"]["user_input"]["status"] == "answered"
+
+def test_missing_native_session_is_distinct_from_an_unsupported_subscription():
+    import pytest
+    from management_portal.kimi_live_events import KimiSessionNotFound, UnsupportedKimiProtocol
+    from management_portal.kimi_transcript_client import TranscriptStream
+
+    stream = object.__new__(TranscriptStream)
+    stream.session_id = "old-session"
+    with pytest.raises(KimiSessionNotFound):
+        stream._accept({"code": 0}, {"accepted": [], "not_found": ["old-session"]})
+    with pytest.raises(UnsupportedKimiProtocol):
+        stream._accept({"code": 0}, {})
+    stream._accept({"code": 0}, {"accepted": ["old-session"], "not_found": []})

@@ -25,6 +25,10 @@ class UnsupportedKimiProtocol(ConnectionError):
     pass
 
 
+class KimiSessionNotFound(ConnectionError):
+    """The live server explicitly rejected an unknown session identifier."""
+
+
 def _open_websocket(url, timeout):
     port = url.port or (443 if url.scheme == "https" else 80)
     sock = socket.create_connection((url.hostname or "localhost", port), timeout=timeout)
@@ -89,6 +93,8 @@ class KimiLiveStream:
         self.thread.start()
         if not self.ready.wait(15) or self.error:
             self.close()
+            if isinstance(self.error, KimiSessionNotFound):
+                raise self.error
             message = ("Kimi live protocol is unsupported; prepare a compatible runtime"
                        if isinstance(self.error, UnsupportedKimiProtocol) else "Kimi live subscription failed")
             raise ConnectionError(message) from self.error

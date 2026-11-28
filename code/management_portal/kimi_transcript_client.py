@@ -15,7 +15,7 @@ from management_common.provider_subagent_runs import PROGRESS_METHOD, SubagentRu
 from .kimi_code_client import (KimiCodeClient, KimiCodeDetached, KimiCodeObservationLost,
                                KimiCodeTurnFailed, KimiCodeTurnResult, KimiCodeUnavailable,
                                SNAPSHOT_RECOVERY_SECONDS)
-from .kimi_live_events import KimiLiveStream, UnsupportedKimiProtocol
+from .kimi_live_events import KimiLiveStream, KimiSessionNotFound, UnsupportedKimiProtocol
 
 
 class TranscriptStream(KimiLiveStream):
@@ -30,6 +30,8 @@ class TranscriptStream(KimiLiveStream):
             transport.send_text(json.dumps({"type": method, "id": ident, "payload": payload}))
 
     def _accept(self, frame, payload):
+        if not frame.get("code") and self.session_id in (payload.get("not_found") or []):
+            raise KimiSessionNotFound("Kimi session no longer exists on this server")
         if frame.get("code") or self.session_id not in payload.get("accepted", []):
             raise UnsupportedKimiProtocol("Kimi rejected the transcript subscription")
 
