@@ -176,6 +176,7 @@ def run_telegram_refresh_daemon(argv: list[str]) -> int:
                 cleanup_at = time.monotonic() + 60
                 try:
                     (adapter or weixin).router.store.prune_expired_callback_tokens()
+                    weixin.quotes.prune()
                 except Exception as exc:
                     weixin.notifications.diagnostic('', exc)
             try:

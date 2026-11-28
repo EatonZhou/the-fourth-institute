@@ -175,7 +175,7 @@ class WeixinBinding:
         from .weixin_store import chat_key
         with self.store.router.connect() as c:
             for table in ('chat_state', 'telegram_inputs', 'delivered_messages', 'message_links', 'question_sessions',
-                          'callback_tokens', 'attachment_deliveries', 'outbound_queue'):
+                          'callback_tokens', 'attachment_deliveries', 'outbound_queue', 'weixin_messages'):
                 c.execute(f'UPDATE {table} SET chat_id=? WHERE chat_id=?', (chat_key(new), chat_key(old)))
             for prefix in ('weixin-control:', 'weixin-counter:'):
                 old_prefix = prefix + chat_key(old) + ':'

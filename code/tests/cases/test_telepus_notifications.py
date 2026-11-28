@@ -4,6 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from management_portal.telepus.router_store import SCHEMA_VERSION
 from management_portal.telepus.notifications import Notifications, settings
 from management_portal.telepus.router_store import RouterStore
 from management_portal.telepus.weixin_store import chat_key
@@ -432,7 +433,7 @@ def test_schema_nine_upgrade_preserves_data(telepus_schema):
     upgraded = RouterStore(telepus_schema)
     upgraded.init_schema()
     assert upgraded.get_chat_state('123')['portal_actor'] == ACTOR
-    assert upgraded.get_meta('schema_version') == '11'
+    assert upgraded.get_meta('schema_version') == str(SCHEMA_VERSION)
     assert Notifications(upgraded).preferences(ACTOR) == {'mention': False, 'question': False}
 
 

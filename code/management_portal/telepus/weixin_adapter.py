@@ -29,10 +29,15 @@ class WeixinAdapter:
         self.store = WeixinStore(self.router.store)
         from .notifications import Notifications
         self.notifications = Notifications(self.router.store, self.router.portal)
-        self.client_factory = client_factory
+        self._client_factory = client_factory
         self.budget = max(2, int(setting('weixin_send_budget', 8)))
-        from .weixin_quote import RecentQuotes
-        self.quotes = RecentQuotes()
+        from .weixin_quote import QuoteRecord
+        self.quotes = QuoteRecord(self.router.store)
+
+    def client_factory(self, account):
+        """iLink client whose sends record message times for later quotes."""
+        from .weixin_quote import TimedClient
+        return TimedClient(self._client_factory(account), self.quotes, self.store, chat_key(account['ilink_bot_id']))
 
     def _failure(self, actor, error):
         code = error.code if isinstance(error, WeixinError) else type(error).__name__
@@ -81,11 +86,11 @@ class WeixinAdapter:
         self.store.budget(chat, reset=True)
         self.router.waiting.received(chat, f'message:{local_id}')
         from .weixin_quote import message_text
-        # ID-only quotes of this message must still carry its text (memory only).
-        self.quotes.remember(chat, local_id, message_text(message.get('item_list')))
+        # Quotes may identify this message only by its time, and carry no text.
+        self.quotes.remember(chat, local_id, message_text(message.get('item_list')), at_ms=message.get('create_time_ms'))
         from .mention_reply import reply
         match = next((found for item in message.get('item_list') or []
-                      if (quote := item.get('ref_msg')) and (found := self.notifications.quoted(actor, quote))), None)
+                      if (quote := item.get('ref_msg')) and (found := self._quoted_reminder(chat, actor, quote, local_id))), None)
         if match:
             if match['category'] == 'question':
                 from .question_answer import reply as answer
@@ -137,6 +142,16 @@ class WeixinAdapter:
         if not local:
             self.typing(actor)
 
+    def _quoted_reminder(self, chat, actor, quote, current):
+        """A sent reminder the quote refers to, by ID or excerpt, else by message time."""
+        from .weixin_quote import quote_id, quote_time
+        found = self.notifications.quoted(actor, quote)
+        if found or quote_id(quote):
+            return found
+        hit = self.quotes.by_time(chat, quote_time(quote), exclude=current)
+        external = self.store.external_id(chat, hit[0]) if hit else ''
+        return self.notifications.quoted(actor, {'svr_id': external}) if external else None
+
     def _private_receipt(self, actor, incoming_id, text, carried=None):
         """Answer/option text must never enter the durable outbound queue.
 
@@ -174,9 +189,10 @@ class WeixinAdapter:
 
     def _content(self, account, message):
         """Return (text, quoted local id, quote block for an unmatched quote)."""
-        from .weixin_quote import UNREADABLE, block, quote_excerpt, quote_id, quote_shape
+        from .weixin_quote import UNREADABLE, block, quote_excerpt, quote_id, quote_shape, quote_time
         text, reference, quote_block = [], 0, ''
         chat = chat_key(account['ilink_bot_id'])
+        current = self.store.local_id(chat, message['message_id']) if message.get('message_id') else 0
         for item in message.get('item_list') or []:
             quote = item.get('ref_msg') or {}
             if quote:
@@ -190,15 +206,25 @@ class WeixinAdapter:
                     if linked:
                         reference = linked['telegram_message_id']
                         matched_by = 'text'
-                carried = ''
+                carried = self.quotes.find(chat, reference, excerpt) if not linked else ''
+                at, delta = quote_time(quote), None
+                if not linked and not carried and at:
+                    # Some clients identify the quoted message only by its time.
+                    hit = self.quotes.by_time(chat, at, exclude=current)
+                    if hit:
+                        reference, delta = hit
+                        matched_by = 'time'
+                        linked = self.router.store.linked_message(chat, reference)
+                        carried = '' if linked else self.quotes.find(chat, reference)
                 if not linked:
                     # Messages Telepus handled itself have no Portal counterpart;
                     # hand the quoted text on rather than dropping it.
-                    carried = self.quotes.find(chat, reference, excerpt)
-                    source = 'memory' if carried else 'quote' if excerpt else 'none'
+                    source = 'record' if carried else 'quote' if excerpt else 'none'
                     quote_block = block(carried or excerpt or UNREADABLE)
                 self.router.store.append_audit('quote_received', chat_id=chat, portal_actor=account['portal_actor'],
-                    payload={'has_id': bool(external_id), 'matched_by': matched_by,
+                    payload={'has_id': bool(external_id), 'id_valid': bool(external_id), 'matched_by': matched_by,
+                             **({'time_delta_ms': delta} if delta is not None else {}),
+                             **({'quote_time_ms': at} if at else {}),
                              **({} if linked else {'text_source': source}), 'shape': quote_shape(quote, excerpt)})
             kind = item.get('type')
             if kind == 1:

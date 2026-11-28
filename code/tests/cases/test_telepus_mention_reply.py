@@ -4,6 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from management_portal.telepus.router_store import SCHEMA_VERSION
 from management_portal.telepus.mention_reply import enrich
 from management_portal.telepus.router_store import RouterStore
 from management_portal.telepus.weixin_store import chat_key
@@ -247,7 +248,7 @@ def test_schema_ten_upgrade_adds_only_columns_and_keeps_sent_record(mentions):
     with upgraded.connect() as c:
         row = c.execute("SELECT * FROM notification_deliveries WHERE source_message_id='one'").fetchone()
         assert row['status'] == 'sent' and row['external_message_id'] == '' and row['quote_fingerprints'] == []
-    assert upgraded.get_meta('schema_version') == '11'
+    assert upgraded.get_meta('schema_version') == str(SCHEMA_VERSION)
 
 
 def test_real_kernel_default_chatroom_member_boundary(permissions, monkeypatch):

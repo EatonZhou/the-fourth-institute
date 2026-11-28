@@ -21,6 +21,7 @@ def test_refresh_schedules_weixin_without_telegram_credentials(monkeypatch):
 
     cleanup = Mock()
     weixin = SimpleNamespace(
+        quotes=SimpleNamespace(prune=lambda: 0),
         router=SimpleNamespace(store=SimpleNamespace(prune_expired_callback_tokens=cleanup)),
         store=SimpleNamespace(active_actors=lambda: ['user_a']),
         refresh=Mock(),
@@ -79,7 +80,7 @@ def test_refresh_releases_completed_inactive_accounts_and_closes_on_exit(monkeyp
         router=SimpleNamespace(store=SimpleNamespace(prune_expired_callback_tokens=lambda: None)),
         refresh_routes=lambda **kw: {}))
     monkeypatch.setattr(weixin_adapter, 'WeixinAdapter', lambda: SimpleNamespace(
-        store=SimpleNamespace(active_actors=actors), refresh=lambda actor: None))
+        quotes=SimpleNamespace(prune=lambda: 0), store=SimpleNamespace(active_actors=actors), refresh=lambda actor: None))
     monkeypatch.setattr(refresh_service, 'NotificationScheduler', lambda _: SimpleNamespace(
         start=lambda: None, close=lambda: closed.append('notifications')))
     if interrupt:
@@ -119,7 +120,7 @@ def test_weixin_refresh_does_not_depend_on_telegram(monkeypatch, telegram):
     monkeypatch.setattr(cli, 'TelegramClient', client)
     monkeypatch.setattr(cli, 'telegram_adapter', lambda _: SimpleNamespace(router=router, refresh_routes=failed))
     monkeypatch.setattr(weixin_adapter, 'WeixinAdapter', lambda: SimpleNamespace(
-        router=router, store=SimpleNamespace(active_actors=lambda: ['alice']), refresh=sent.append))
+        quotes=SimpleNamespace(prune=lambda: 0), router=router, store=SimpleNamespace(active_actors=lambda: ['alice']), refresh=sent.append))
     monkeypatch.setattr(refresh_service, 'NotificationScheduler', lambda _: SimpleNamespace(start=lambda: None, close=lambda: None))
     assert cli.run_telegram_refresh_daemon(['--max-iterations', '1']) == 0
     assert sent == ['alice']

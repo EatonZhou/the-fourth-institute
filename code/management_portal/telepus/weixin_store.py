@@ -128,6 +128,12 @@ class WeixinStore:
                             (chat, str(external_id))).fetchone()
         return int(row[0])
 
+    def external_id(self, chat, local_id):
+        with self.router.connect() as c:
+            row = c.execute("SELECT external_id FROM platform_message_ids WHERE channel='weixin' AND chat_id=? AND id=?",
+                            (chat, int(local_id))).fetchone()
+        return row[0] if row else ''
+
     def enqueue(self, chat, item, *, manual=False):
         with self.router.connect() as c:
             # Refresh may re-read an input that was reopened by the budget gate.

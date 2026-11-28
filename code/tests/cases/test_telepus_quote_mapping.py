@@ -2,6 +2,7 @@
 from concurrent.futures import ThreadPoolExecutor
 import pytest
 
+from management_portal.telepus.router_store import SCHEMA_VERSION
 from management_portal.telepus.router_store import RouterStore
 from management_portal.telepus.quote_text import quote_text
 from management_portal.telepus.weixin_quote import quote_excerpt, quote_shape
@@ -27,7 +28,7 @@ def test_weixin_quotes_own_input_by_both_identifiers(bridge, reference):
     assert portal.delivered[-1][2]['quote'] == {'message_id': original}
     with adapter.router.store.connect() as c:
         row = c.execute("SELECT payload_json FROM audit_events WHERE event_type='quote_received'").fetchone()
-    assert row[0] == {'has_id': True, 'matched_by': 'id', 'shape': quote_shape(reference, '')}
+    assert row[0] == {'has_id': True, 'id_valid': True, 'matched_by': 'id', 'shape': quote_shape(reference, '')}
 
 
 @pytest.mark.parametrize('reference', [
@@ -46,7 +47,7 @@ def test_unique_text_match_deduplicates_same_portal_reply(bridge, reference):
     assert portal.delivered[-1][2]['content_parts'][0]['text'] == 'follow up'
     with adapter.router.store.connect() as c:
         row = c.execute("SELECT payload_json FROM audit_events WHERE event_type='quote_received'").fetchone()
-    assert row[0] == {'has_id': bool(reference.get('svr_id')), 'matched_by': 'text',
+    assert row[0] == {'has_id': bool(reference.get('svr_id')), 'id_valid': bool(reference.get('svr_id')), 'matched_by': 'text',
                       'shape': quote_shape(reference, quote_excerpt(reference))}
     assert 'important' not in str(row[0])
 
@@ -62,7 +63,7 @@ def test_unresolved_or_ambiguous_quote_keeps_excerpt(bridge, ambiguous):
     assert portal.delivered[-1][2]['content_parts'][0]['text'] == '> same words\n\nfollow up'
     with adapter.router.store.connect() as c:
         row = c.execute("SELECT payload_json FROM audit_events WHERE event_type='quote_received'").fetchone()
-    assert row[0] == {'has_id': True, 'matched_by': 'none', 'text_source': 'quote',
+    assert row[0] == {'has_id': True, 'id_valid': True, 'matched_by': 'none', 'text_source': 'quote',
                       'shape': {'keys': ['svr_id', 'title'], 'excerpt_length': len('same words')}}
     with adapter.router.store.connect() as c:
         delivered = c.execute("SELECT payload_json FROM audit_events WHERE event_type='message_delivered' "
@@ -118,7 +119,7 @@ def test_quote_of_image_and_unreadable_quote_use_labels(bridge):
     with adapter.router.store.connect() as c:
         row = c.execute("SELECT payload_json FROM audit_events WHERE event_type='quote_received' "
                         "ORDER BY event_id DESC LIMIT 1").fetchone()
-    assert row[0] == {'has_id': True, 'matched_by': 'none', 'text_source': 'none',
+    assert row[0] == {'has_id': True, 'id_valid': True, 'matched_by': 'none', 'text_source': 'none',
                       'shape': {'keys': ['svr_id'], 'excerpt_length': 0}}
 
 
@@ -213,7 +214,7 @@ def test_schema_8_upgrade_is_locked_additive_and_preserves_input(telepus_schema)
     assert upgraded.linked_message('chat', 2)['message_id'] == 'old-reply'
     assert upgraded.linked_message_by_text('chat', 'kept')['message_id'] == 'old-input'
     with upgraded.connect() as c:
-        assert c.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()[0] == '11'
+        assert c.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()[0] == str(SCHEMA_VERSION)
         c.execute("UPDATE meta SET value='6' WHERE key='schema_version'")
     with pytest.raises(RuntimeError, match='migration'):
         RouterStore(telepus_schema).init_schema()
