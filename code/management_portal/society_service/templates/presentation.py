@@ -124,6 +124,7 @@ def annotate(projection, body, parent, roles, scopes, keys, *, source=None, role
             visible.add(local)
         bindings[local] = {'key': key, 'type': kind, 'direction': 'both', 'cardinality': cardinality, 'required': required}
 
+    runtime_owners = dict(owners)
     router = residents.get('router_resident')
     interactions = []
     if router:
@@ -206,9 +207,17 @@ def annotate(projection, body, parent, roles, scopes, keys, *, source=None, role
     # moves its visible Resident anchor away from the placement geometry.
     layout = structure_layout.positions(graph)
     if not duty:
+        # Family installation consumes this layout. Display ownership must not
+        # move its runtime objects: retain the original Family/role grouping.
+        layout_owners = owners
+        if not role_key:
+            layout_owners = dict(runtime_owners)
+            for row in graph['components']:
+                if row['key'] not in layout_owners and row['key'] not in bindings:
+                    layout_owners[row['key']] = 'binding_platform'
         def owner(key):
-            return owners.get(key, key)
-        top = [r['key'] for section in ('roles', 'components') for r in graph[section] if r['key'] not in owners]
+            return layout_owners.get(key, key)
+        top = [r['key'] for section in ('roles', 'components') for r in graph[section] if r['key'] not in layout_owners]
         edges = [{**w, 'source': owner(w['source']), 'target': owner(w['target'])} for w in
                  [*graph['wires'], *(interactions if role_key == 'router' else [])]]
         compact = structure_layout.positions({'roles': [{'key': key} for key in top],
@@ -218,8 +227,8 @@ def annotate(projection, body, parent, roles, scopes, keys, *, source=None, role
         if len(compact) > 4 and len({p['x'] for p in compact.values()}) == 1:
             compact = {key: {'x': 25 + (i // 3) * 30, 'y': 25 + (i % 3) * 25} for i, key in enumerate(top)}
         layout.update(compact)
-        for key in set(owners.values()):
-            members = [r['key'] for r in graph['components'] if owners.get(r['key']) == key]
+        for key in set(layout_owners.values()):
+            members = [r['key'] for r in graph['components'] if layout_owners.get(r['key']) == key]
             origin = compact[key]
             for i, member in enumerate(members):
                 layout[member] = {'x': origin['x'] + 20 + (i // 4) * 20, 'y': origin['y'] + (i % 4 - 1.5) * 16}
