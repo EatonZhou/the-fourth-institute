@@ -110,6 +110,10 @@ def project_body(body, parent, roles, scopes, *, duty=False, role_key='', source
     keys.update({rid: role + '_resident' for role, rid in roles.items()})
     keys.update({body['lineage_id']: 'lineage', parent['id']: 'family'})
     owned = {e['id'] for scope in scopes for e in scope['elements']}
+    # Routing finishes in Family-owned relay primitives. Include those real
+    # objects in the Router view without moving or cloning runtime ownership.
+    if role_key == 'router':
+        owned.update(identity for identity, key in keys.items() if key in {'relay', 'route_relay'})
     wires = [w for w in body['program']['wires'] if w['id'] in owned]
     # Include referenced external nodes (e.g. the shared completion signal).
     visible = owned | {w[end] for w in wires for end in ('source', 'target')}

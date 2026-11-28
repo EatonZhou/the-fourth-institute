@@ -46,6 +46,8 @@ def annotate(projection, body, parent, roles, scopes, keys, *, source=None, role
     residents, bindings, owners = {}, {}, {}
     titles = {'facade': '门面', 'router': 'Router', 'steward': 'Steward'}
     own_keys = {keys[e['id']] for scope in scopes for e in scope['elements'] if e['id'] in keys}
+    if role_key == 'router':
+        own_keys.update({'route_relay', 'relay'})
     used = {}
     for section in ('components', 'wires'):
         for row in graph[section]:
@@ -122,11 +124,41 @@ def annotate(projection, body, parent, roles, scopes, keys, *, source=None, role
             visible.add(local)
         bindings[local] = {'key': key, 'type': kind, 'direction': 'both', 'cardinality': cardinality, 'required': required}
 
+    router = residents.get('router_resident')
+    interactions = []
+    if router:
+        route = next((d for d in router['duties'] if d['key'] == 'route'), None)
+        for local in ('route_relay', 'relay'):
+            if local in visible or any(w['key'] == local for w in graph['wires']):
+                owners[local] = 'router_resident'
+                router['members'].append(local)
+                if route and local not in route['members']:
+                    route['members'].append(local)
+        # These describe actual public Effect calls, not executable wires.
+        for source_key, target, purpose in (
+            ('router', 'router_resident', '未命中直达时，交给 Router 选人'),
+            ('router', 'member_resident', '直连／引用／续谈命中时转交原请求'),
+            ('route_relay', 'member_resident', '转交所选成员'),
+            ('router', 'steward_resident', '目标不可用→招募；额度不足→额度复核'),
+            ('route_relay', 'steward_resident', '职责缺口→招募；额度不足→额度复核；格式无效／低置信→路由复核'),
+        ):
+            if source_key not in visible or target not in visible:
+                continue
+            interactions.append({'key': 'interaction:' + source_key + ':' + target,
+                'source': source_key, 'target': target, 'label': purpose, 'kind': 'handoff',
+                'collapsed_label': '转交所选成员' if target == 'member_resident' else
+                                   '招募／额度／路由复核' if target == 'steward_resident' else purpose})
+            for use in used.get(target, []):
+                if use['component'] == source_key or source_key == 'route_relay' and use['component'] == 'relay':
+                    use['purpose'] = purpose
+
     if role_key:
         from .. import family_roles
         for row in graph['components']:
             local = row['key']
             if local in own_keys:
+                continue
+            if local in owners:
                 continue
             other = family_roles.owner(local)
             remote = 'facade' if local == 'facade_inbox' else other[0] if other and other[0] != role_key else None
@@ -160,7 +192,8 @@ def annotate(projection, body, parent, roles, scopes, keys, *, source=None, role
                 if wire['key'] not in owners:
                     owners[wire['key']] = shared
     graph['presentation'] = {'level': 'duty' if duty else 'role' if role_key else 'organization',
-                             'residents': residents, 'bindings': bindings, 'owners': owners}
+                             'residents': residents, 'bindings': bindings, 'owners': owners,
+                             'interactions': interactions}
     for local, binding in bindings.items():
         binding['uses'] = used.get(local, [])
         incoming = any(owners.get(w['target'], w['target']) == local for w in graph['wires'])
@@ -176,7 +209,8 @@ def annotate(projection, body, parent, roles, scopes, keys, *, source=None, role
         def owner(key):
             return owners.get(key, key)
         top = [r['key'] for section in ('roles', 'components') for r in graph[section] if r['key'] not in owners]
-        edges = [{**w, 'source': owner(w['source']), 'target': owner(w['target'])} for w in graph['wires']]
+        edges = [{**w, 'source': owner(w['source']), 'target': owner(w['target'])} for w in
+                 [*graph['wires'], *(interactions if role_key == 'router' else [])]]
         compact = structure_layout.positions({'roles': [{'key': key} for key in top],
             'wires': [w for w in edges if w['source'] != w['target']]})
         # Explicit executable references can be visible without a wire. Their
@@ -189,5 +223,12 @@ def annotate(projection, body, parent, roles, scopes, keys, *, source=None, role
             origin = compact[key]
             for i, member in enumerate(members):
                 layout[member] = {'x': origin['x'] + 20 + (i // 4) * 20, 'y': origin['y'] + (i % 4 - 1.5) * 16}
+    if role_key == 'router':
+        # The role's expanded view reads left-to-right through the actual
+        # selection and relay stages; the Steward is a side recipient.
+        layout.update({key:{'x':x,'y':y} for key,x,y in (
+            ('facade_resident',12,50),('router',32,50),('router_resident',52,50),
+            ('route_relay',72,50),('member_resident',92,50),('steward_resident',72,84),
+        ) if key in visible})
     graph['layout'] = layout
     return projection

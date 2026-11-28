@@ -280,6 +280,9 @@ def _normalize_definition(definition, *, diagnostics=None, script_path=None):
             effect_ids.add(component["id"])
             if component.get("config") != before:
                 changed_effects.add(component["id"])
+    from .templates.family_reconcile import router_steward_bindings
+    for identity, bindings in router_steward_bindings(definition).items():
+        argument_additions.setdefault(identity, {}).update(bindings)
     affected_wires = {}
     for wire in program["wires"]:
         before = wire.get("config")

@@ -16,6 +16,33 @@ from ..family_definition import (FAMILY_MEMBER_SIGNALS, FAMILY_ROUTER_SCRIPT,
                                 FAMILY_QUEUE_NOTICE_SCRIPT, has_independent_review)
 from .registry import TemplateError
 
+
+def router_steward_bindings(definition):
+    """Repair the missing argument on existing stock Family routes, by ownership.
+
+    Return only the absent binding. No IDs, scripts, tasks, or authored values
+    are replaced, and removed roles/edges are never recreated.
+    """
+    from ..family_definition import family_elements
+    components={c['id']:c for c in definition['program']['components']}
+    wires={w['id']:w for w in definition['program']['wires']}
+    additions={}
+    for block in definition.get('function_blocks', []):
+        if not block.get('family', {}).get('steward'):
+            continue
+        elements=family_elements(definition,block)
+        routes=[e['id'] for e in elements if e.get('key')=='route']
+        effects=[e['id'] for e in elements if e.get('key')=='router']
+        if len(routes)!=1 or len(effects)!=1:
+            continue
+        wire=wires.get(routes[0]);effect=components.get(effects[0])
+        if not wire or not effect or wire.get('target')!=effect['id'] or effect.get('config', {}).get('script')!=FAMILY_ROUTER_SCRIPT:
+            continue
+        profile=wire.get('config', {}).get('invoke_profiles', {}).get('effect')
+        if isinstance(profile,dict) and 'steward' not in profile.get('arguments', {}):
+            additions[wire['id']]={'steward':{'value':block['family']['steward']}}
+    return additions
+
 # New roles keep the execution account unassigned until one is selected.
 # A saved recipe or explicit application setting can still pin each worker.
 RESIDENT_ROLES = [
@@ -196,7 +223,7 @@ def _reconcile_legacy_in_body(body: dict, block: dict, actor: str) -> None:
     put("watch_facade", "watch", source=inbox, target=facade, config={})
     effect = put("router", "effect", title="Family Router", config={"script": FAMILY_ROUTER_SCRIPT, "endpoints": []})
     relay = put("route_relay", "effect", title="转交所选成员", config={"script": FAMILY_ROUTE_RELAY_SCRIPT, "endpoints": []})
-    arguments = {"members": members, "router": router, "lineage_id": body.get("lineage_id") or body.get("id"),
+    arguments = {"members": members, "router": router, "steward": steward, "lineage_id": body.get("lineage_id") or body.get("id"),
                  "corrections_key": "family_corrections_" + facade,
                  "family": family["title"], "goal": family["goal"],
                  "preferences_key": personal_assistant.preferences_key(facade) if personal else "",

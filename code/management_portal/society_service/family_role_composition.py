@@ -93,6 +93,11 @@ def reconcile(body, parent, actor, generate, *, installing=False):
                 for profile_name, profile in old.get('config', {}).get('invoke_profiles', {}).items():
                     arguments = profile.get('arguments', {})
                     current = item.get('config', {}).get('invoke_profiles', {}).get(profile_name, {}).get('arguments', {})
+                    # The routing Effect consumes this parameter in direct-target
+                    # failure/quota branches, including previously installed routes.
+                    route_id = next((e['id'] for e in parent['elements'] if e.get('key') == 'route'), None)
+                    if item['id'] == route_id and 'steward' in current:
+                        arguments.setdefault('steward', deepcopy(current['steward']))
                     for key in ('members', 'family', 'goal', 'threshold', 'steward', 'router', 'facade', 'family_id', 'lineage_id'):
                         if key in arguments and key in current:
                             arguments[key] = deepcopy(current[key])

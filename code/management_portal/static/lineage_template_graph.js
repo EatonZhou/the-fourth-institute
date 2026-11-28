@@ -291,6 +291,9 @@
         edge.target_port = wanted.map(type => ports.find(port => port.type === type)).find(Boolean)?.port_id || '';
       }
     });
+    graph.edges.push(...(source.presentation?.interactions || []).map(row=>({
+      id:row.key,source:row.source,target:row.target,type:row.kind,label:row.label,_template_interaction:true,_template_collapsed_label:row.collapsed_label,
+    })));
     const representative = new Map(), grouped = [];
     const expandedIds = new Set(expanded);
     if (source.presentation && !scope) for (const [key,owner] of Object.entries(source.presentation.owners)) {
@@ -305,6 +308,7 @@
     }
     let edges = graph.edges.filter(edge=>!(representative.has(edge.source) && representative.get(edge.source)===(representative.get(edge.target)||edge.target)))
       .map(edge=>({...edge, source:representative.get(edge.source)||edge.source,
+        ...(representative.has(edge.source)&&edge._template_collapsed_label?{label:edge._template_collapsed_label}:{}),
         target:representative.get(edge.watch_subject_wire_id)||representative.get(edge.target)||edge.target,
         ...(representative.size && edge.watch_subject_wire_id ? {_template_watch_subject:edge.watch_subject_wire_id,canonical_target:representative.get(edge.watch_subject_wire_id)||representative.get(edge.target)||edge.target,watch_subject_wire_id:''} : {}),
         ...(representative.has(edge.source)?{source_port:''}:{}),...(representative.has(edge.target)?{target_port:''}:{})})).filter(edge=>edge.source!==edge.target);
@@ -321,7 +325,7 @@
       for(const [key,binding] of Object.entries(bindingRows)){
         if(binding.uses?.some(use=>wanted.has(use.component)))selected.add(key);
       }
-      visibleEdges=edges.filter(edge=>wanted.has(edge.id) || wanted.has(edge.source)&&wanted.has(edge.target));
+      visibleEdges=edges.filter(edge=>wanted.has(edge.id) || wanted.has(edge.source)&&wanted.has(edge.target) || edge._template_interaction&&wanted.has(edge.source));
       for (const edge of visibleEdges) {selected.add(edge.source);selected.add(edge.target);}
       nodes=nodes.filter(node=>selected.has(node.id));
       // A local duty may observe a shared wire outside its ownership. Expose a
@@ -409,7 +413,7 @@
     return {move,destroy(){destroyed=true;observer.disconnect();controller.destroy();root.remove();}};
   }
 
-  function mount({ root, body, workshop = false, readOnly = false, groups = () => [], expanded = () => [], scope = () => null, residentInfo = () => null, onOpenResident = () => {}, isReadonly = () => false, onBeforeChange = () => {}, onChange = () => {}, onSelect = () => {} }) {
+  function mount({ root, body, workshop = false, readOnly = false, groups = () => [], expanded = () => [], scope = () => null, residentInfo = () => null, onOpenResident = () => {}, onToggleRole = () => {}, isReadonly = () => false, onBeforeChange = () => {}, onChange = () => {}, onSelect = () => {} }) {
     const program = window.PortalLineageProgram;
     const factory = window.PortalHatgGraph?.createGraph;
     if (!program || !factory) throw new Error(t('HATG 图形引擎未加载'));
@@ -446,6 +450,17 @@
         <p class="templateGraphHint" data-graph-hint role="status" hidden></p>
       </div>`;
     const canvas = root.querySelector('.hatgCanvas');
+    const roleControls=document.createElement('div');roleControls.className='templateRoleViewControls';root.append(roleControls);
+    function positionRoleControls(){
+      const bounds=root.getBoundingClientRect();
+      roleControls.querySelectorAll('[data-collapse-role]').forEach(button=>{
+        const node=canvas.querySelector(`[data-node-id="${CSS.escape(button.dataset.collapseRole)}"]`);
+        button.hidden=!node;if(!node)return;
+        const card=node.getBoundingClientRect();
+        button.style.left=`${Math.max(8,Math.min(bounds.width-button.offsetWidth-8,card.left-bounds.left))}px`;
+        button.style.top=`${Math.max(8,Math.min(bounds.height-button.offsetHeight-8,card.bottom-bounds.top+6))}px`;
+      });
+    }
     let summaryBindings=[],summaryResume='';
     function bindDutySummary(element,node) {
       const dutySummary=document.createElement('aside');
@@ -510,6 +525,8 @@
         if(node?._template_menu){element.tabIndex=0;element.setAttribute('aria-label',`${node.title} · ${t('模板 Resident 菜单')}`);element.removeAttribute('title');bindDutySummary(element,node);}
       });
       canvas.querySelectorAll('[data-node-open-menu]').forEach(button=>{button.dataset.templateResidentMenu=button.dataset.nodeOpenMenu;});
+      roleControls.innerHTML=expanded().filter(key=>body().presentation?.residents[key]).map(key=>`<button type="button" class="portalButton is-compact" data-collapse-role="${esc(key)}" aria-label="${esc(t('收起内部结构'))} · ${esc(body().presentation.residents[key].title)}">${esc(t('收起内部结构'))}</button>`).join('');
+      positionRoleControls();
       summaryResume='';
       root.dataset.graphEmpty = String(!current.nodes.length);
     }
@@ -663,7 +680,9 @@
     });
 
     const abort = new AbortController();
-    const summaryResize=new ResizeObserver(()=>{root.querySelectorAll('.templateDutySummary').forEach(panel=>{panel.hidden=true;});});summaryResize.observe(root);
+    roleControls.addEventListener('click',event=>{const key=event.target.closest('[data-collapse-role]')?.dataset.collapseRole;if(key){event.stopPropagation();onToggleRole(key);canvas.querySelector(`[data-node-id="${CSS.escape(key)}"]`)?.focus({preventScroll:true});}},{signal:abort.signal});
+    const roleCamera=new MutationObserver(positionRoleControls);roleCamera.observe(canvas.querySelector('.hatgWorld'),{attributes:true,attributeFilter:['style']});
+    const summaryResize=new ResizeObserver(()=>{positionRoleControls();root.querySelectorAll('.templateDutySummary').forEach(panel=>{panel.hidden=true;});});summaryResize.observe(root);
     root.addEventListener('click', event => {
       const chip = event.target.closest('[data-add-role], [data-add-component], [data-add-found]');
       if (!chip) return;
@@ -694,7 +713,7 @@
       selected: () => selected,
       fit: () => controller.fit({ duration: 0, maxScale: workshop ? 1 : 1.1 }),
       remove: key => { if (!isReadonly(key)) change(source => { removeElement(source, key); return ''; }); },
-      destroy() { summaryResize.disconnect();summaryBindings.forEach(binding=>binding.destroy());clearTimeout(hintTimer); abort.abort(); controller.destroy(); root.replaceChildren(); },
+      destroy() { roleCamera.disconnect();summaryResize.disconnect();summaryBindings.forEach(binding=>binding.destroy());clearTimeout(hintTimer); abort.abort(); controller.destroy(); root.replaceChildren(); },
     });
   }
 

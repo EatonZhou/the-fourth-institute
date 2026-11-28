@@ -115,18 +115,28 @@
       inspector.addEventListener('click', event=>{if(event.target.closest('[data-close-recipe-inspector]')){inspector.hidden=true;inspector.innerHTML='';}const menu=event.target.closest('[data-open-template-menu]');if(menu)openMenu(menu.dataset.openTemplateMenu);});
       bodyPage.querySelector('[data-recipe-parameters]').addEventListener('click',()=>inspect(''));
       function openMenu(key){readDraft();inspector.hidden=true;inspector.innerHTML='';editorState.recipeMenu.open(key);}
+      const expandable=()=>[...new Set(Object.values(projection.body.presentation?.owners || {}))];
+      function syncExpansion(){
+        const keys=expandable(),all=keys.length>0&&keys.every(key=>expanded.has(key)),some=keys.some(key=>expanded.has(key));
+        const button=bodyPage.querySelector('[data-recipe-expand]');
+        button.setAttribute('aria-expanded',String(all));button.setAttribute('aria-pressed',all?'true':some?'mixed':'false');
+        button.textContent=t(all?'收起全部内部结构':'全部内部结构');
+      }
+      function toggleRole(key){if(expanded.has(key))expanded.delete(key);else expanded.add(key);syncExpansion();editorState.graph.render();editorState.graph.fit();}
       editorState.graph = window.LineageTemplateGraph.mount({root:bodyPage.querySelector('[data-template-graph]'), body:() => projection.body,
         workshop:true, readOnly:true, expanded:()=>[...expanded],scope:()=>localScope, onSelect:inspect,onOpenResident:openMenu,
+        onToggleRole:toggleRole,
         residentInfo:key=>{const meta=projection.body.presentation?.residents[key];return meta && {...meta,duties:draft.kind==='role'?draft.body.duties:meta.duties};}});
       const menu=window.LineageTemplateResidentMenu.create({root:bodyPage,draft,editorState,projection:()=>projection,readDraft,onChange:schedulePreview,onInspect:inspect,
-        onSource:id=>editorState.openTemplate?.(id),onExpand:key=>{expanded.add(key);editorState.graph.render();editorState.graph.fit();},
+        onSource:id=>editorState.openTemplate?.(id),isExpanded:key=>expanded.has(key),onExpand:toggleRole,
         onLocalGraph:(key,duty)=>{localScope=[key,...(duty?.members || [])];inspector.hidden=true;inspector.innerHTML='';bodyPage.querySelector('[data-recipe-back]').hidden=false;bodyPage.querySelector('[data-recipe-breadcrumb]').textContent=`${projection.body.presentation.residents[key].title} / ${duty?.title || ''}`;editorState.graph.render();editorState.graph.fit();}});
       editorState.recipeMenu=menu;
       bodyPage.querySelector('[data-recipe-back]').addEventListener('click',()=>{localScope=null;bodyPage.querySelector('[data-recipe-back]').hidden=true;bodyPage.querySelector('[data-recipe-breadcrumb]').textContent='';editorState.graph.render();editorState.graph.fit();});
-      bodyPage.querySelector('[data-recipe-expand]').addEventListener('click',event=>{const owners=Object.values(projection.body.presentation?.owners || {}),open=event.currentTarget.getAttribute('aria-expanded')!=='true';expanded.clear();if(open)owners.forEach(key=>expanded.add(key));event.currentTarget.setAttribute('aria-expanded',String(open));editorState.graph.render();editorState.graph.fit();});
+      bodyPage.querySelector('[data-recipe-expand]').addEventListener('click',()=>{const keys=expandable(),all=keys.length>0&&keys.every(key=>expanded.has(key));expanded.clear();if(!all)keys.forEach(key=>expanded.add(key));syncExpansion();editorState.graph.render();editorState.graph.fit();});
       select.addEventListener('change', () => {
         const key=select.value,owner=projection.body.presentation?.owners?.[key];
         if(owner)expanded.add(owner);
+        syncExpansion();
         localScope=null;bodyPage.querySelector('[data-recipe-back]').hidden=true;bodyPage.querySelector('[data-recipe-breadcrumb]').textContent='';
         editorState.graph.select(key);
       });
@@ -134,8 +144,10 @@
         if (!graph) return;
         graph.body.layout = projection.body.layout;
         projection = graph;
+        syncExpansion();
         editorState.graph.render();
       };
+      syncExpansion();
       if (draft.kind !== 'role' && !(draft.kind === 'familize' && Object.keys(draft.body.role_templates || {}).length)) inspect('');
     }
 
