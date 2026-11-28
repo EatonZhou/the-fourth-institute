@@ -590,11 +590,31 @@ class InstructionKernel:
             records = self.store.pending_projections(after=self._projection_cursor)
             self._projection_cursor = records[-1]["instruction_id"] if len(records) == PRUNE_BATCH_SIZE else ""
             for record in records:
+                try:
+                    declaration = self._maintenance_lookup(record["instruction"])
+                except InstructionError as exc:
+                    if exc.code != "instruction.unknown":
+                        LOGGER.exception("Instruction projection recovery failed: %s", record["instruction_id"])
+                        continue
+                    # A retired instruction can no longer be replayed by its
+                    # caller; settle the receipt instead of retrying forever.
+                    self.store.finish(
+                        record["instruction_id"], status="failed", now=timestamp, result=record.get("references"),
+                        error=InstructionError(
+                            "instruction.unknown", f"领域修改已提交，指令 {record['instruction']} 已删除，投影不再恢复",
+                            commit_state="committed", details={
+                                "reason": "instruction_retired",
+                                "projection_failures": (record.get("error") or {}).get("details", {}).get("projection_failures") or [],
+                            },
+                        ).to_dict(),
+                    )
+                    counts["projections"] += 1
+                    continue
                 # Receipts hold references, not original arguments. Projection
                 # owners must recover from those references and current facts.
                 try:
                     invocation = Invocation(
-                        self._maintenance_lookup(record["instruction"]), InstructionCall(record["instruction"], {}),
+                        declaration, InstructionCall(record["instruction"], {}),
                         InstructionContext(record["caller"], "system"), record["instruction_id"],
                     )
                     recovered = self._recover_projection(invocation, record, now=timestamp)

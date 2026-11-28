@@ -40,6 +40,22 @@ PAGE_MAX = 200
 # What a retracted entry still occupies: its header, no body.
 RETRACTED_BYTES = 0
 
+# The columns create_schema makes; the Lineage data schema check names them.
+TABLE_COLUMNS = {
+    "lineage_blackboards": ("board_id", "lineage_id", "title", "client_key", "created_by_principal_id",
+                            "config_json", "deleted_at"),
+    "lineage_blackboard_bindings": ("wire_id", "lineage_id", "wire_kind", "source_id", "board_id", "label",
+                                    "client_key", "config_json", "deleted_at"),
+    "blackboard_heads": ("board_id", "next_seq", "entry_count", "total_bytes"),
+    "blackboard_entries": ("board_id", "seq", "entry_id", "author_id", "created_at", "kind", "body", "data_json",
+                           "refs_json", "supersedes", "expires_at", "retracted", "retracted_at", "size_bytes"),
+    "blackboard_read_positions": ("board_id", "reader_id", "read_seq", "updated_at"),
+}
+INDEXES = frozenset({
+    "lineage_blackboards_lineage_idx", "lineage_blackboard_bindings_board_idx",
+    "lineage_blackboard_bindings_lineage_idx", "blackboard_entries_supersedes_idx",
+})
+
 
 def ensure_schema(connection: Any) -> None:
     """Create the blackboard tables when absent (new tables only; never alters a live one)."""

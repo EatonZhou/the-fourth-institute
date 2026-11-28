@@ -122,6 +122,27 @@ def test_unrecoverable_projection_is_failed_committed_and_can_expire(owner, monk
     assert effects == [first.instruction_id]
 
 
+def test_pending_receipt_of_a_deleted_instruction_is_settled_once(owner):
+    """指令删除后留下的投影待完成回执被维护任务一次结清，不再每轮报未登记的指令"""
+    kernel, call, effects, projections = owner
+    first = kernel.execute(call, InstructionContext('alice', 'web'))
+
+    def retired(name):
+        raise InstructionError('instruction.unknown', f'未登记的指令：{name}')
+
+    kernel._maintenance_lookup = retired
+    assert kernel.maintain(now='2099-01-01T00:00:00Z')['projections'] == 1
+    record = kernel.store.get(first.instruction_id)
+    assert record['status'] == 'failed'
+    assert record['error']['commit_state'] == 'committed'
+    assert record['error']['details']['reason'] == 'instruction_retired'
+    assert record['error']['details']['projection_failures']
+    assert kernel.store.pending_projections() == []
+    assert kernel.maintain(now='2099-01-01T00:00:00Z')['projections'] == 0
+    assert effects == [first.instruction_id] and projections == []
+    assert kernel.store.prune(now='2099-01-08T00:00:01Z') == 1
+
+
 def test_concurrent_retry_and_maintenance_project_once_without_transaction(owner, monkeypatch):
     """重试与维护并发时补投影只执行一次，且不在数据库事务内执行"""
     kernel, call, effects, _ = owner

@@ -107,12 +107,10 @@ def ensure_resident_workspace(record: dict, *, folder: Path | None = None) -> No
         # the final paths; preparation never writes into the published tree.
         folder = filesystem_path(folder)
         folder.mkdir(parents=True, exist_ok=True)
-        (folder / 'workspace').mkdir()
+        from management_portal.workspace_seed import create_workspace_folder
+        create_workspace_folder(folder / 'workspace', 'Resident')
         (folder / 'runtime').mkdir()
-        for filename in (resident_domain_common.RESIDENT_INSTRUCTIONS_FILE,
-                         resident_domain_common.RESIDENT_DIARY_FILE,
-                         resident_domain_common.RESIDENT_MAILBOX_FILE):
-            ensure_resident_file(folder, filename)
+        ensure_resident_file(folder, resident_domain_common.RESIDENT_INSTRUCTIONS_FILE)
         ensure_resident_file(folder, resident_domain_common.RESIDENT_WORKSPACES_FILE,
                              initial_content=resident_workspaces_text(record))
         return
@@ -131,8 +129,6 @@ def ensure_resident_workspace(record: dict, *, folder: Path | None = None) -> No
     resident_folder = resident_record_domain.resident_folder_path(record)
     filesystem_path(resident_folder).mkdir(parents=True, exist_ok=True)
     ensure_resident_file(resident_folder, resident_domain_common.RESIDENT_INSTRUCTIONS_FILE)
-    ensure_resident_file(resident_folder, resident_domain_common.RESIDENT_DIARY_FILE)
-    ensure_resident_file(resident_folder, resident_domain_common.RESIDENT_MAILBOX_FILE)
     ensure_resident_file(
         resident_folder,
         resident_domain_common.RESIDENT_WORKSPACES_FILE,

@@ -38,7 +38,6 @@ Resident 日常写入有两个去向：任务代码、过程记录和交付物�
         └── residents/
             └── resident_<ID>/
                 ├── resident.md     身份与长期职责，低频维护
-                ├── mailbox.md      消息入口，通过 Portal 消息接口使用
                 ├── workspaces.md   Portal 根据绑定记录生成，供查阅
                 └── workspace/         个人工作区，Provider 默认 cwd
 ```

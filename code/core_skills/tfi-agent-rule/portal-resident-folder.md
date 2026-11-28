@@ -5,7 +5,6 @@ Resident Folder 是一个 Lineage 节点的身份与记录目录，属于 System
 ```text
 <lineage_folder>/residents/<resident_id>/
 ├── resident.md
-├── mailbox.md
 ├── workspaces.md
 ├── workspace/
 └── runtime/
@@ -19,7 +18,6 @@ Resident Folder 是一个 Lineage 节点的身份与记录目录，属于 System
 
 - `resident.md`：节点长期身份、职责、偏好和边界。
 - `workspace/diary.md`：按需创建，记录节点跨会话连续工作的要点。
-- `mailbox.md`：协作者用文件留言的约定入口；不自动进入模型输入，不代替 Portal 消息。
 - `workspaces.md`：Workspace Registry 与 Lineage Binding 的可读投影。
 - `workspace/`：单独登记的节点自有 Workspace，保存 Seed、报告和其他运行产物。
 - `runtime/`：Provider 本地目录、工具缓存、授权上下文及扩展运行资料；运行配置、session、job、事件、恢复状态和 token usage 的真值在 PostgreSQL。

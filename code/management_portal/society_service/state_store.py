@@ -111,16 +111,18 @@ LINEAGE_DATA_COLUMNS = {
     ),
     "conversation_event_delivery": ("sequence", "resident_id", "cursor"),
 }
-from . import user_pending_question_storage
+from . import blackboard_storage, user_pending_question_storage
 
 POSTGRES_LINEAGE_DATA_COLUMNS = {
     **LINEAGE_DATA_COLUMNS,
     **user_pending_question_storage.TABLE_COLUMNS,
+    **blackboard_storage.TABLE_COLUMNS,
     "input_scopes": (
         "resident_id", "message_id", "actor", "descriptor",
     ),
     "facade_members": ("facade_id", "member_id"),
-    "resident_prepared_inputs": ("message_id", "resident_id", "issuer", "intent_json", "status", "created_at", "settled_at"),
+    "resident_prepared_inputs": ("message_id", "resident_id", "issuer", "intent_json", "approval_json", "status",
+                                 "created_at", "settled_at"),
 }
 
 LINEAGE_DATA_INDEXES = frozenset({
@@ -177,7 +179,7 @@ def _postgres_lineage_data_schema_matches(connection: Any) -> bool:
             "SELECT indexname FROM pg_indexes WHERE schemaname=current_schema()"
         ).fetchall()
     }
-    if not (LINEAGE_DATA_INDEXES | user_pending_question_storage.INDEXES).issubset(indexes):
+    if not (LINEAGE_DATA_INDEXES | user_pending_question_storage.INDEXES | blackboard_storage.INDEXES).issubset(indexes):
         return False
     # The independent directory upgrade installs these writer fences on
     # LineageData tables. Both installations share the same LineageData layout.

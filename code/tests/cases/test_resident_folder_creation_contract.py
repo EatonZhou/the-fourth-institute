@@ -680,13 +680,13 @@ def test_new_resident_creates_one_complete_canonical_lineage(
         "residents",
     }
     assert {item.name for item in resident_folder.iterdir()} >= {
-        "diary.md",
-        "mailbox.md",
         "resident.md",
         "runtime",
         "workspace",
         "workspaces.md",
     }
+    assert not (resident_folder / "diary.md").exists()
+    assert not (resident_folder / "mailbox.md").exists()
     assert owned_workspace.is_dir()
     assert lineage["leader_resident_id"] == record["resident_id"]
     assert [node["id"] for node in lineage["nodes"]] == [record["resident_id"]]
