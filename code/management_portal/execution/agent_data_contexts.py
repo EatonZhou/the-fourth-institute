@@ -260,17 +260,21 @@ def read_agent_context(
         if len(starts) > recent_turns or (require_round_count and starts):
             rows = rows[starts[-recent_turns]:]
     if binding_id and rows:
-        rows = _undelivered_rows(connection, sequence_id, agent_id, binding_id, rows)
+        binding = connection.execute(
+            "SELECT provider_session_ref, provider FROM provider_bindings "
+            "JOIN provider_sessions USING(provider_session_ref) WHERE binding_id=%s", (binding_id,),
+        ).fetchone()
+        if binding:
+            rows = _undelivered_rows(connection, sequence_id, agent_id, binding["provider_session_ref"], rows)
+            if binding["provider"] == "codex":
+                from .codex_history import is_display_only_reasoning
+
+                segments = [s for s in _snapshot(connection, rows)["segments"] if not is_display_only_reasoning(s)]
+                return {"segments": segments, "empty_context": not segments}
     return _snapshot(connection, rows)
 
 
-def _undelivered_rows(connection, sequence_id, agent_id, binding_id, rows):
-    binding = connection.execute(
-        "SELECT provider_session_ref FROM provider_bindings WHERE binding_id=%s", (binding_id,),
-    ).fetchone()
-    if binding is None:
-        return rows
-    session_ref = binding["provider_session_ref"]
+def _undelivered_rows(connection, sequence_id, agent_id, session_ref, rows):
     # A live session continues after its latest known delivery. Compaction or
     # switching accounts can leave gaps before that point in the Agent trace.
     receipt = connection.execute(

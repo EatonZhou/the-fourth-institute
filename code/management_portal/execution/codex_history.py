@@ -98,6 +98,16 @@ def _tool_output(value: Any) -> str | list[dict[str, Any]]:
     return _json(value)
 
 
+def is_display_only_reasoning(segment: Mapping[str, Any]) -> bool:
+    """A display projection stays in the trace but cannot be appended to a live Codex thread."""
+    if segment.get("segment_type") != "model":
+        return False
+    content = segment.get("content")
+    if isinstance(content, Mapping) and content.get("type"):
+        return content["type"] == "reasoning" and not content.get("encrypted_content")
+    return (segment.get("metadata") or {}).get("kind") == "reasoning"
+
+
 def response_items_from_segments(segments: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
     """Preserve a selected window's order, media and native compaction items."""
     items: list[dict[str, Any]] = []

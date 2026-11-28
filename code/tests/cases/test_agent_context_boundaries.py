@@ -198,3 +198,28 @@ def test_native_and_stateless_delivery_preserve_the_same_frozen_history(monkeypa
     store.record_context_received(rid, session['provider_session_ref'], ids[:2], actor_ref='test')
     assert native_items() == [output]
     assert api_history(rid, 'current') == [summary, call, output]
+
+
+def test_bound_codex_turn_omits_display_only_reasoning_from_the_delivery_receipt():
+    from management_portal.execution.codex_history import response_items_from_segments
+
+    store = get_agent_data_store()
+    rid = 'resident_321abc123abc'
+    binding = 'resident:' + rid
+    session = store.ensure_provider_session(provider='codex', backend_route_id='one',
+                                            backend_session_id='existing', agent_id=rid, actor_ref='test')
+    store.bind_provider_session(binding, session['provider_session_ref'])
+    native = {'type': 'reasoning', 'encrypted_content': 'opaque', 'summary': []}
+    ids = [store.put_segment(segment_type='model', content=content, content_type='application/json', metadata={'kind': 'reasoning'})
+           for content in ({'summary': ['display only']}, {'type': 'reasoning', 'summary': []}, native)]
+    text = store.put_segment(segment_type='model', content='previous reply')
+    store.append_agent_segments(rid, [*ids, text], actor_ref='test')
+    store.display_chat_message(rid, {'message_id': 'next', 'role': 'user',
+                                     'content_parts': [{'type': 'text', 'text': '怎么协调'}]})
+    delta = store.delivery_context_snapshot(rid, message_id='next', binding_id=binding)['segments']
+    assert [s['segment_id'] for s in delta] == [ids[-1], text]
+    assert response_items_from_segments(delta)[0] == native
+    full = store.delivery_context_snapshot(rid, message_id='next')['segments']
+    assert [s['segment_id'] for s in full] == [*ids, text]
+    store.record_context_received(rid, session['provider_session_ref'], [s['segment_id'] for s in delta], actor_ref='test')
+    assert store.delivery_context_snapshot(rid, message_id='next', binding_id=binding)['empty_context']
