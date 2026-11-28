@@ -301,12 +301,25 @@ def _undelivered_rows(connection, sequence_id, agent_id, binding_id, rows):
             if _context_seed_id(session_ref, agent_id, members) != receipt["operation_id"]:
                 raise ValueError("Session context receipt no longer matches its ordered trace interval")
         held.update(members)
+    held.update(row["segment_id"] for row in rows if row["execution_session"] == session_ref and (
+            row["provider_turn_id"] or row["segment_type"] in {"compaction", "model", "tool"}
+        ))
+    # Held infos travel inside their carrier's prompt, not as separate
+    # executions. A release association alone is not delivery: the carrier
+    # must itself be known to this session.
+    carriers = {}
+    for row in rows:
+        message = json_value(row["metadata_json"]).get("message") or {}
+        carrier_id = message.get("released_with") if row["segment_type"] == "input" else None
+        if carrier_id:
+            if carrier_id not in carriers:
+                carriers[carrier_id] = chat_member(connection, sequence_id, carrier_id)
+            carrier = carriers[carrier_id]
+            if carrier is not None and carrier["segment_id"] in held:
+                held.add(row["segment_id"])
     pending = []
     for row in rows:
-        native = row["execution_session"] == session_ref and (
-            row["provider_turn_id"] or row["segment_type"] in {"compaction", "model", "tool"}
-        )
-        if row["segment_id"] in held or native:
+        if row["segment_id"] in held:
             if pending:
                 raise ValueError("Session context cannot append missing history before received segments")
         else:

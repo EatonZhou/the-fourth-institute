@@ -9,6 +9,51 @@ from management_portal.execution.agent_data_store import get_agent_data_store
 from management_portal.society_service import resident_execution_domain as delivery, resident_execution_provider
 
 
+@pytest.mark.parametrize('carrier_delivery', ['native', 'receipt', 'pending', 'other_session'])
+def test_held_info_delivery_follows_its_confirmed_carrier(carrier_delivery):
+    """随请求送达的 info 不再补发；未送达或只送到别的会话仍保留。"""
+    from tests.cases.live_trace_support import AGENT, _turn
+
+    store, _, request, session_ref = _turn('codex')
+    with store.database.transaction() as connection:
+        connection.execute('UPDATE executions SET provider_turn_id=%s WHERE execution_id=%s',
+                           ('accepted-turn', request.execution_id))
+    carrier = store.display_chat_message(AGENT, {
+        'message_id': 'carrier', 'role': 'user',
+        'content_parts': [{'type': 'text', 'text': 'background info\nrequest'}],
+        **({'execution_id': request.execution_id} if carrier_delivery == 'native' else {}),
+    })
+    info = store.display_chat_message(AGENT, {
+        'message_id': 'info', 'role': 'user', 'released_with': 'carrier',
+        'content_parts': [{'type': 'text', 'text': 'background info'}],
+    })
+    binding = request.session.binding_id
+    store.bind_provider_session(binding, session_ref)
+    if carrier_delivery == 'receipt':
+        store.record_context_received(AGENT, session_ref, [carrier['segment_id']], actor_ref='test')
+    elif carrier_delivery == 'other_session':
+        other = store.ensure_provider_session(provider='codex', backend_route_id='one',
+                                              backend_session_id='other', agent_id=AGENT, actor_ref='test')
+        store.record_context_received(AGENT, other['provider_session_ref'], [carrier['segment_id']], actor_ref='test')
+
+    before = store.agent_context_snapshot(AGENT)
+    pending = store.delivery_context_snapshot(AGENT, message_id="", binding_id=binding)['segments']
+    if carrier_delivery in {'native', 'receipt'}:
+        assert pending == []
+    else:
+        assert [s['segment_id'] for s in pending] == [carrier['segment_id'], info['segment_id']]
+
+    # A later native output must not turn a genuinely missing input into a receipt.
+    output = store.put_segment(segment_type='model', content='answer', execution_id=request.execution_id)
+    store.append_agent_segments(AGENT, [output], actor_ref='test')
+    if carrier_delivery in {'native', 'receipt'}:
+        assert store.delivery_context_snapshot(AGENT, message_id="", binding_id=binding)['segments'] == []
+    else:
+        with pytest.raises(ValueError, match='cannot append missing history'):
+            store.delivery_context_snapshot(AGENT, message_id="", binding_id=binding)
+    assert store.agent_context_snapshot(AGENT)['segments'][:-1] == before['segments']
+
+
 def test_child_context_uses_trace_boundaries_and_receipts_not_source_records():
     """Fork 子代上下文不受源片段改写影响，Provider 重置后上下文为空但消息与片段仍在"""
     store = get_agent_data_store()
