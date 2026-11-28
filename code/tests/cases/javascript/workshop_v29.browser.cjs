@@ -29,7 +29,10 @@ const {chromium}=require('../../../management_portal/test_framework/tau_runtime/
   // Exercise the real graph drag callbacks, then a render and a Menu cycle.
   let box=await node.boundingBox();await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.mouse.move(box.x+box.width/2+65,box.y+box.height/2-50,{steps:12});await page.mouse.up();
   const saved=await page.evaluate(()=>JSON.stringify(graphViews[workshop.template().template_id].positions));
-  await node.click();await node.press('Enter');await root.locator('.templateResidentOverlay [data-menu-close]').click();
+  await node.click();await node.press('Enter');
+  const heading=await root.locator('.templateResidentOverlay .residentMenuHeading').boundingBox(),close=await root.locator('.templateResidentOverlay [data-menu-close]').boundingBox();
+  assert.ok(Math.abs(close.y-heading.y)<8);assert.ok(close.x>heading.x);
+  await root.locator('.templateResidentOverlay [data-menu-close]').click();
   assert.equal(await page.evaluate(()=>JSON.stringify(graphViews[workshop.template().template_id].positions)),saved);assert.equal(await page.evaluate(()=>workshop.dirty()),false);
   assert.equal(await page.evaluate(()=>JSON.stringify(LineageTemplateWorkshopDraft.payload(workshop.template()))),content);
   await open('family');await root.locator('[data-organization-menu]').click();
