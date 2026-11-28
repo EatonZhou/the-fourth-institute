@@ -93,7 +93,7 @@ def test_approval_accept_and_decline(answers, text, action):
     r.result_status = 'answered' if action == 'accept' else 'declined'
     reference = remind(r)
     deliver(r, reference, text=text)
-    assert r.submissions[0][2]['answers'] == {'action': action}
+    assert r.submissions[0][2]['decision'] == action and 'answers' not in r.submissions[0][2]
     assert '✅ 已回答' in sent_text(r)
 
 
@@ -292,10 +292,11 @@ def test_real_kernel_default_policy_allows_recipient_answer_and_denies_other_use
     lineage = 'lineage_aaaaaaaaaaaa'
     permissions.place(Fact('lineage', lineage, {'personal_space': 'personal_space:answer_alice', 'user': 'answer_alice'}),
                       Fact('resident', FACADE, {'lineage': lineage}))
-    calls, stored = [], {}
+    calls, stored, actions = [], {}, []
     request = {'kind': 'question', 'status': 'pending', 'questions': [{'id': 'q', 'question': '合成问题'}]}
     def native(resident, actor, payload):
         calls.append((actor, 'native'))
+        actions.append(payload['action'])
         return {'status': 'answered'}
     def delivery(inv, resident, message, **kwargs):
         calls.append((inv.caller, 'async'))
@@ -311,6 +312,9 @@ def test_real_kernel_default_policy_allows_recipient_answer_and_denies_other_use
         return source
     monkeypatch.setattr(conversation, 'protocol', lambda: SimpleNamespace(respond_resident_user_input=native,
         get_resident_request=lambda *a: request, get_resident_message=read))
+    # AnswerResidentRequest answers through resident_requests and its protocol port.
+    from management_portal.society_service import resident_requests
+    monkeypatch.setattr(resident_requests.resident_protocol, 'respond_resident_user_input', native)
     monkeypatch.setattr(execution, 'protocol', lambda: SimpleNamespace(get_resident_input_state=lambda *a, **k: {}))
     monkeypatch.setattr(conversation, 'deliver', delivery)
     monkeypatch.setattr(resident_conversation_stream, 'get_repository', lambda: SimpleNamespace(message=lambda *a: source))
@@ -341,6 +345,8 @@ def test_real_kernel_default_policy_allows_recipient_answer_and_denies_other_use
             else:
                 assert '✅ 已回答' not in receipt and audits[-1]['payload']['reason'] in ('permission', 'unavailable')
     assert calls == [('answer_alice', 'native'), ('answer_alice', 'native'), ('answer_alice', 'async')]
+    # An approval reaches the waiting turn as a decision, not as an answer named 'action'.
+    assert actions == ['answer', 'accept']
 
 
 @pytest.mark.parametrize('quote_receipt', [True, False])
@@ -363,3 +369,13 @@ def test_format_failure_text_reaches_assistant_when_quoted(answers, quote_receip
             "SELECT * FROM audit_events WHERE event_type IN ('quote_received','question_answer')").fetchall()], default=str)
         assert PRIVATE_ANSWER not in audits and PRIVATE_QUESTION not in audits
     assert PRIVATE_ANSWER not in str(capsys.readouterr())
+
+
+def test_closing_a_question_card_uses_the_cancel_instruction(monkeypatch):
+    from management_portal import isa_client
+    from management_portal.telepus import portal_client
+    calls = []
+    monkeypatch.setattr(portal_client, '_prepare_portal_runtime', lambda: None)
+    monkeypatch.setattr(isa_client, 'call', lambda actor, instruction, arguments, **kw: calls.append((instruction, arguments)) or {})
+    portal_client.PortalClient('weixin').close_questions('alice', FACADE, 'msg_source')
+    assert calls == [('CancelResidentRequest', {'resident_id': FACADE, 'message_id': 'msg_source'})]

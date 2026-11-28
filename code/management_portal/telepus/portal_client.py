@@ -189,8 +189,8 @@ class PortalClient:
         return self.call(actor, "InjectMailboxItem", {"resident_id": resident_id, "message_id": message_id})
 
     def close_questions(self, actor: str, resident_id: str, source_message_id: str) -> dict[str, Any]:
-        return self.call(actor, "AnswerResidentRequest", {
-            "resident_id": resident_id, "message_id": source_message_id, "answers": {"action": "cancel"},
+        return self.call(actor, "CancelResidentRequest", {
+            "resident_id": resident_id, "message_id": source_message_id,
         })
 
     # -- attachments -------------------------------------------------------------

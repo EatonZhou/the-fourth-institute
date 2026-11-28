@@ -156,10 +156,11 @@ def reply(adapter, account, message, match, carry=None):
             questions = request.get('questions') or []
             approval = request.get('kind') == 'approval'
             parsed = parse_answers(questions, text, approval=approval)
-            answers = {'action': parsed} if approval else {
-                question['id']: {'answers': [answer]} for question, answer in zip(questions, parsed)}
+            # Same shape as the web page: an approval is a decision, questions are answers.
+            response = {'decision': parsed} if approval else {'answers': {
+                question['id']: {'answers': [answer]} for question, answer in zip(questions, parsed)}}
             submitting = True
-            result = portal.call(actor, 'AnswerResidentRequest', {**arguments, 'answers': answers}, key=key)
+            result = portal.call(actor, 'AnswerResidentRequest', {**arguments, **response}, key=key)
         if result.get('status') == 'pending':
             outcome = 'pending'
             return '答案已提交，等待确认，请勿重复作答。'

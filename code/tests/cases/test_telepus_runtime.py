@@ -59,6 +59,9 @@ def native(tmp_path, monkeypatch):
     monkeypatch.setattr(instance_services, 'adapter', lambda: macos)
     monkeypatch.setattr(macos, 'unit_directory', lambda: agent_root)
     monkeypatch.setattr(macos, 'service_controller', lambda: control)
+    # Instance operations build their own launchd controller (agent root and
+    # shutdown state come from the instance); route it to the same fake.
+    monkeypatch.setattr(instance_services, 'controller', lambda instance: control)
     return TelepusRuntime(root=root), manager, root, agent_root
 
 

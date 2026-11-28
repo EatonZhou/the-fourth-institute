@@ -93,25 +93,25 @@ def test_isa_delivery_uses_only_trusted_context(facade):
     assert saved['author_id'] == 'CASE-A'
 
 
-def test_family_router_and_member_keep_source_channel(facade, monkeypatch):
-    from management_portal.society_service import family_facade, family_tasks, family_task_dispatches
-    from management_portal.society_service import resident_conversation_stream, resident_intake_domain, resident_record_domain
+def test_family_relay_to_member_keeps_source_channel(facade):
+    """A routed facade message reaches the chosen member with the source message's channel.
+
+    Routing is a Lineage program since d066: the Router only picks a member, and
+    ``RelayMessage`` delivers the facade message with the relay mark
+    ``<facade>/message/<id>``. That relay copies the channel, so the member
+    answers with the phone channel's formatting hint.
+    """
+    from management_portal.society_service import family_facade, relay_domain
+    from management_portal.society_service import resident_conversation_stream, resident_intake_domain
     facade_id = facade['resident_id']
     _register_test_member(facade, '成员')
+    relay_domain.update_facade_members(facade_id, [MEMBER], 'CASE-A')
     original = 'msg_' + 'e' * 32
     resident_intake_domain.deliver_resident_message_content(facade_id, 'CASE-A', 'hello', message_id=original, channel='weixin')
-    monkeypatch.setattr(family_tasks, 'render', lambda *args: 'route hello')
-    target = resident_record_domain.find_resident(MEMBER)
     routed = 'msg_' + 'f' * 32
-    family_task_dispatches.deliver(facade, target, 'route', {'message_id': original, 'routing': {}}, facade_id,
-                                  business_ref=f'family-route/{facade_id}/message/{original}', message_id=routed)
-    repository = resident_conversation_stream.get_repository()
-    router_input = repository.message(MEMBER, routed)
-    assert router_input['origin']['channel'] == {'kind': 'weixin'}
-    assert router_input['author_id'] == facade_id
-    assert '长回复会被分段' in resident_prompt_domain._sender_line({'actor': facade_id, 'input_message': router_input})
-    monkeypatch.setattr(family_facade, 'relay_delegates', lambda source, target: source == (facade_id, original))
-    relayed = 'msg_' + '1' * 32
-    resident_intake_domain.deliver_resident_message_content(MEMBER, facade_id, 'hello', message_id=relayed,
-                                      business_ref=f'{facade_id}/message/{original}')
-    assert repository.message(MEMBER, relayed)['origin']['channel'] == {'kind': 'weixin'}
+    resident_intake_domain.deliver_resident_message_content(
+        MEMBER, facade_id, 'hello', business_ref=family_facade.relay_mark(facade_id, original), message_id=routed)
+    member_input = resident_conversation_stream.get_repository().message(MEMBER, routed)
+    assert member_input['origin']['channel'] == {'kind': 'weixin'}
+    assert member_input['author_id'] == facade_id
+    assert '长回复会被分段' in resident_prompt_domain._sender_line({'actor': facade_id, 'input_message': member_input})
