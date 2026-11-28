@@ -690,8 +690,10 @@ def add_resident_reference_workspace(
             ),
             None,
         )
+        # A directory registered here is registered by the caller (relation 创建者).
         canonical_workspace_id = resource_port.workspace_id_for_path(
-            resolved_text, preferred_id=str(workspace_id or (existing_binding or {}).get("workspace_id") or ""))
+            resolved_text, preferred_id=str(workspace_id or (existing_binding or {}).get("workspace_id") or ""),
+            registrant=actor_id)
         if added:
             record["workspace_bindings"].append({
                 "workspace_id": canonical_workspace_id, "path": resolved_text,

@@ -490,7 +490,7 @@ def install_resource_boundary(monkeypatch, *, synthetic_residents=True) -> dict[
             count += 1
         return count
 
-    def workspace_id_for_path(path, *, preferred_id: str = ""):
+    def workspace_id_for_path(path, *, preferred_id: str = "", registrant: str = ""):
         from management_portal.resources.workspace_store import get_workspace_store
         from management_common.resource_identity import get_resource_type_registry
         return get_workspace_store().for_path(str(path), preferred_id=preferred_id,

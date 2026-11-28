@@ -437,16 +437,21 @@ class ResourceServiceClient:
         path: str | Path,
         *,
         preferred_id: str = "",
+        registrant: str = "",
     ) -> str:
         from management_common.operation_identity import current_operation_identity
         from management_common.resource_lifecycle import current_lifecycle
         identity = current_operation_identity()
         if current_lifecycle() and identity is None:
             raise PermissionError("Workspace allocation lifecycle requires the operation's authenticated actor")
+        actor = identity.principal.id if identity else ""
+        # Only the operation's own authenticated actor can be the registrant:
+        # the service records the signed actor, never a name. Any other
+        # registrant is not recorded and so grants nothing.
         result = self._exchange(
             "resource.collaboration.workspace_id_for_path",
-            {"path": str(path), "preferred_id": preferred_id,
-             "actor": identity.principal.id if identity else ""},
+            {"path": str(path), "preferred_id": preferred_id, "actor": actor,
+             **({"registrant": True} if registrant and registrant == actor else {})},
         )
         return str(result or "")
 

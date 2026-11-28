@@ -210,9 +210,11 @@ def _descriptor(
     }
 
 
-def workspace_id_for_path(path: str | Path, *, preferred_id: str = "") -> str:
+def workspace_id_for_path(path: str | Path, *, preferred_id: str = "", registrant: str = "") -> str:
     service = get_resource_service()
     preferred = stripped_text(preferred_id)
+    if registrant:
+        return service.workspace_id_for_path(path, preferred_id=preferred, registrant=registrant)
     return service.workspace_id_for_path(path, preferred_id=preferred)
 
 

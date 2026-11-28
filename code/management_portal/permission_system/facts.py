@@ -701,6 +701,11 @@ def collect_portal_facts(service=None, *, read_only: bool = False,
                 "SELECT resident_id, owned_workspace_id FROM residents WHERE deleted_at IS NULL AND owned_workspace_id IS NOT NULL").fetchall()}
         collaboration = {kind: service._collaboration.list(kind) for kind in ("lineage", "resident", "family")}
         read_index = lambda: service._index().authorization_snapshot()
+        # The Workspace registry states each registrant (relation 创建者), which index copies may lag.
+        from management_portal.resources.workspace_store import get_workspace_store
+        workspace_records = list(get_workspace_store().descriptors().values())
+    if read_only:
+        workspace_records = []
 
     facts: dict[str, Fact] = {}
     for username, user in sorted(users.items()):
@@ -724,6 +729,13 @@ def collect_portal_facts(service=None, *, read_only: bool = False,
             facts[fact.id] = fact
     # A Resident's own Workspace is placed with that Resident; the index record does not name its owner.
     placed = set(facts) | {dependent.id for fact in _flatten(facts.values()) for dependent in fact.dependents}
+    for record in workspace_records:
+        resource_id = _text(record.get("resource_id"))
+        if resource_id and resource_id not in placed:
+            fact = fact_from_record(record, "workspace")
+            if fact.active:
+                facts[resource_id] = fact
+                placed.add(resource_id)
     for record in read_index().get("records") or []:
         resource_id, kind = _text(record.get("resource_id")), _text(record.get("resource_type"))
         if resource_id and kind and resource_id not in placed and kind not in {"user", "project", "lineage", "resident", "family"}:

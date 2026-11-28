@@ -47,6 +47,28 @@ def _located(row):
     return {**row, "path": located_path(row["path"])}
 
 
+def registrant_fields(actor: object) -> tuple[str, str]:
+    """Who registered a Workspace: the User or Resident ``actor`` names, and the owner a personal AMA's Resident stands for.
+
+    Portal services and scripts are not registrants: a Workspace Portal creates
+    for a Resident, Lineage or Project gives no one @admin by being created.
+    """
+    from management_portal.permission_system.facts import principal_id
+
+    import re
+
+    creator = principal_id(actor)
+    # A resource ID other than a Resident's (a Lineage running a handoff) names
+    # no person, though it parses as a user name; it would give its members @admin.
+    if not creator or (re.fullmatch(r"[a-z]+_[0-9a-f]{12}", creator) and not creator.startswith("resident_")):
+        return "", ""
+    owner = ""
+    if creator.startswith("resident_"):
+        from management_portal.permission_system.personal_ama import owner_of
+        owner = owner_of(creator) or ""
+    return creator, owner if owner != creator else ""
+
+
 def now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="microseconds")
 
@@ -76,6 +98,53 @@ class WorkspaceStore:
         self.cleanup = get_directory_cleanup_store()
         self.database.write(self._initialize)
 
+    @property
+    def registrants(self):
+        # Who registered each Workspace. A table of its own: the registry table
+        # is read with SELECT * by running services and is never altered online.
+        return f'"{self.database.schema}".workspace_registrants'
+
+    def _initialize_registrants(self, connection):
+        if connection.execute("SELECT to_regclass(%s)", (self.registrants,)).fetchone()[0] is not None:
+            return
+        connection.execute(f"""CREATE TABLE {self.registrants} (
+            workspace_id TEXT PRIMARY KEY CHECK (workspace_id ~ '^workspace_[0-9a-f]{{12}}$'),
+            created_by TEXT NOT NULL CHECK (created_by <> ''),
+            created_for TEXT NOT NULL DEFAULT ''
+        )""")
+        self._backfill_registrants(connection)
+
+    def _backfill_registrants(self, connection):
+        """One time, with the table: the actor of each completed CreateWorkspace/RegisterWorkspace operation.
+
+        BindWorkspace registrations left no record that names their actor
+        reliably; they stay without a registrant (and give no permission).
+        """
+        creations = '"' + _database_schema('directory_lifecycle') + '".resource_creations'
+        if connection.execute("SELECT to_regclass(%s)", (creations,)).fetchone()[0] is None:
+            return
+        rows = connection.execute(f"""
+            SELECT c.resource_id, c.actor FROM {creations} c
+            JOIN {self.table} w ON w.workspace_id=c.resource_id
+            WHERE c.completed AND NOT c.aborted AND w.deleted_at IS NULL AND c.resource_id LIKE 'workspace\\_%%'
+            ORDER BY c.resource_id
+        """).fetchall()
+        count = 0
+        for row in rows:
+            if self._record_registrant(connection, row["resource_id"], row["actor"]):
+                count += 1
+        if count:
+            import logging
+            logging.getLogger(__name__).warning("Workspace registrants backfilled for %d Workspaces", count)
+
+    def _record_registrant(self, connection, workspace_id, actor) -> bool:
+        creator, created_for = registrant_fields(actor)
+        if not creator:
+            return False
+        return connection.execute(
+            f"INSERT INTO {self.registrants} (workspace_id,created_by,created_for) VALUES (%s,%s,%s) "
+            "ON CONFLICT (workspace_id) DO NOTHING", (workspace_id, creator, created_for)).rowcount == 1
+
     def _initialize(self, connection):
         connection.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s,0))",
                            (self.table + ":init",))
@@ -88,6 +157,7 @@ class WorkspaceStore:
                 raise RuntimeError('Workspace directory protocol migration requires the offline maintenance window')
             if 'origin' in columns:
                 connection.execute(f'ALTER TABLE {self.table} DROP COLUMN origin')
+            self._initialize_registrants(connection)
             return
         connection.execute(f"""CREATE TABLE {self.table} (
             workspace_id TEXT PRIMARY KEY CHECK (workspace_id ~ '^workspace_[0-9a-f]{{12}}$'),
@@ -106,6 +176,7 @@ class WorkspaceStore:
         from management_common.directory_dependencies import guard_new_table
         guard_new_table(connection, table=self.table, kind='workspace', key='workspace_id',
                         watched=['path', 'owner_id', 'deleted_at'], condition='NEW.deleted_at IS NULL')
+        self._initialize_registrants(connection)
 
     def lifecycle_facts(self, ids: Iterable[str]):
         """Current deletion facts without decoding or locating workspace paths."""
@@ -124,8 +195,10 @@ class WorkspaceStore:
         if not ids:
             return {}
         with nullcontext(connection) if connection is not None else self.database.read() as conn:
-            rows = conn.execute(f"SELECT * FROM {self.table} WHERE workspace_id=ANY(%s)"
-                                + ("" if include_deleted else " AND deleted_at IS NULL"), (ids,)).fetchall()
+            rows = conn.execute(f"SELECT w.*,r.created_by,r.created_for FROM {self.table} w "
+                                f"LEFT JOIN {self.registrants} r ON r.workspace_id=w.workspace_id "
+                                "WHERE w.workspace_id=ANY(%s)"
+                                + ("" if include_deleted else " AND w.deleted_at IS NULL"), (ids,)).fetchall()
         return {row["workspace_id"]: _located(decode_times(row, ('created_at', 'updated_at', 'deleted_at')))
                 for row in rows}
 
@@ -138,7 +211,7 @@ class WorkspaceStore:
         return {wid: row["path"] for wid, row in rows.items()}
 
     def ensure(self, workspace_id: str, path: str, *, title="", connection=None, move=False,
-               owner_id=None, operation_id=None, child_of_operation=False):
+               owner_id=None, operation_id=None, child_of_operation=False, registrant=""):
         get_resource_type_registry().validate(workspace_id, "workspace")
         absolute = canonical_path(path)
         path = stored_location(absolute)
@@ -176,12 +249,13 @@ class WorkspaceStore:
                 return workspace_id
             self._require_distinct_location(conn, absolute, workspace_id)
             self._insert(conn, workspace_id, absolute, path, title=title,
-                         owner_id=owner_id, operation_id=operation_id, child_of_operation=child_of_operation)
+                         owner_id=owner_id, operation_id=operation_id, child_of_operation=child_of_operation,
+                         registrant=registrant)
             return workspace_id
         return write(connection) if connection is not None else self.database.write(write)
 
     def _insert(self, connection, workspace_id, absolute, stored, *, title="", owner_id=None,
-                operation_id=None, child_of_operation=False):
+                operation_id=None, child_of_operation=False, registrant=""):
         """Insert after the caller's locked identity and location decision."""
         from management_common.directory_dependencies import prepare_write
         prepare_write(connection)
@@ -192,6 +266,8 @@ class WorkspaceStore:
                            "VALUES (%s,%s,%s,%s,%s,%s,%s)",
                            (workspace_id, stored, title or Path(absolute).name,
                             owner_id or workspace_id, None if child_of_operation else operation_id, timestamp, timestamp))
+        # The real actor that asked for this registration; Portal's own registrations pass none.
+        self._record_registrant(connection, workspace_id, registrant)
         self.refresh_directory_dependency(workspace_id, connection=connection)
 
     def _location(self, connection, absolute):
@@ -301,7 +377,7 @@ class WorkspaceStore:
             return {"workspace_id": row["workspace_id"], "path": canonical_path(path), "purpose": ""}
         return None
 
-    def for_path(self, path: str, *, new_id, preferred_id="") -> str:
+    def for_path(self, path: str, *, new_id, preferred_id="", registrant="") -> str:
         absolute = canonical_path(path)
         stored = stored_location(absolute)
         def identity(row):
@@ -337,7 +413,7 @@ class WorkspaceStore:
                 if existing['deleted_at'] is not None:
                     raise ValueError("Deleted Workspace cannot be restored")
                 raise ValueError("Workspace path differs from its registered location")
-            self._insert(conn, workspace_id, absolute, stored)
+            self._insert(conn, workspace_id, absolute, stored, registrant=registrant)
             return workspace_id
         return self.database.write(write)
 
@@ -357,7 +433,10 @@ class WorkspaceStore:
             "resource_id": row["workspace_id"], "title": row["title"], "summary": row["summary"],
             "status": "deleted" if row["deleted_at"] is not None else "active",
             "attributes": {"path": located_path(row["path"]),
-                           "directory": {"owner_id": row['owner_id']}},
+                           "directory": {"owner_id": row['owner_id']},
+                           # The registrant (relation 创建者); Portal-created Workspaces have none.
+                           **({"created_by": row["created_by"]} if row.get("created_by") else {}),
+                           **({"created_for": row["created_for"]} if row.get("created_for") else {})},
             "relations": [], "project_ids": [],
             "created_at": row["created_at"], "updated_at": row["updated_at"],
             "deleted_at": row["deleted_at"] or "",
@@ -366,7 +445,9 @@ class WorkspaceStore:
     def descriptors(self, ids=None, *, connection=None):
         if ids is None:
             with nullcontext(connection) if connection is not None else self.database.read() as conn:
-                rows = conn.execute(f"SELECT * FROM {self.table} ORDER BY workspace_id").fetchall()
+                rows = conn.execute(f"SELECT w.*,r.created_by,r.created_for FROM {self.table} w "
+                                    f"LEFT JOIN {self.registrants} r ON r.workspace_id=w.workspace_id "
+                                    "ORDER BY w.workspace_id").fetchall()
             return {row["workspace_id"]: self.descriptor(decode_times(row, ('created_at', 'updated_at', 'deleted_at')))
                     for row in rows}
         return {wid: self.descriptor(row) for wid, row in

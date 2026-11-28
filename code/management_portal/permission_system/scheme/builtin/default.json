@@ -365,6 +365,14 @@
       "title": "帖子作者"
     },
     {
+      "id": "workspace_registrant",
+      "effect": "permit",
+      "relation": "creator",
+      "a": "@admin",
+      "r": "@workspace",
+      "title": "Workspace 登记人"
+    },
+    {
       "id": "account_self",
       "effect": "permit",
       "relation": "self",

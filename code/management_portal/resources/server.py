@@ -400,6 +400,7 @@ class ResourceServiceServer(LocalServiceSocketMixin, DrainingStreamServer):
             return self.service.workspace_id_for_path(
                 self._required(params, "path"),
                 preferred_id=str(params.get("preferred_id") or ""),
+                registrant=actor if params.get("registrant") is True else "",
             )
         if method == "resource.resolve":
             return self.service.resolve(

@@ -486,7 +486,9 @@ class ResourceService:
         path: str | Path,
         *,
         preferred_id: str = "",
+        registrant: str = "",
     ) -> str:
+        """The Workspace registered at ``path``, registering it when new; ``registrant`` is the actor who asked (BindWorkspace)."""
         from .workspace_store import get_workspace_store
         def allocate():
             from management_common.resource_lifecycle import current_lifecycle
@@ -494,7 +496,7 @@ class ResourceService:
             owner = project_root_owner(path) if current_lifecycle() else ''
             return self.new_id('workspace', lifecycle_owner=owner) if owner else self.new_id('workspace')
         return get_workspace_store().for_path(str(path), preferred_id=preferred_id,
-                                             new_id=allocate)
+                                             new_id=allocate, registrant=registrant)
 
     # -- the permission instance (decision_b820faf42218 §3.3) -------------------------
 

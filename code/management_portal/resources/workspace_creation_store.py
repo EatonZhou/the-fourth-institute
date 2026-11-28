@@ -105,6 +105,13 @@ class WorkspaceCreationStore:
             if initialize is None and not target.parent.is_dir():
                 raise FileNotFoundError('Workspace parent directory must already exist')
             def populate(index, stage):
+                if artifact_kind == "directory" and initialize is None:
+                    from management_portal.workspace_seed import create_workspace_folder
+                    role = "Independent" if not owner_id else (
+                        "Lineage" if owner_id.startswith("lineage_") else
+                        "Resident" if owner_id.startswith("resident_") else "Project"
+                    )
+                    create_workspace_folder(stage, role)
                 if initialize is not None:
                     from .creation_git import GitWorktreeCreation
                     effects = GitWorktreeCreation(creation.artifacts[index],
@@ -124,9 +131,10 @@ class WorkspaceCreationStore:
                             != (creation.key, workspace_id, actor, payload, current_lifecycle())):
                         raise ValueError('Legacy Workspace creation proof changed before commit')
                     self._require_active_dependencies(legacy_dependencies, connection)
+                # CreateWorkspace/RegisterWorkspace: the caller is the registrant (relation 创建者).
                 self.workspaces.ensure(workspace_id, str(target), title=title,
                                        owner_id=owner_id or workspace_id, operation_id=creation.key,
-                                       connection=connection)
+                                       connection=connection, registrant=actor)
                 result = self.workspaces.rows([workspace_id], connection=connection)[workspace_id]
             return result, creation.artifacts[0].get('result', {})
 
