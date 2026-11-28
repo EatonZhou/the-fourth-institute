@@ -1594,9 +1594,9 @@ dialog.portalDetailSurface::backdrop {
   overscroll-behavior: contain;
 }
 
-.portalDetailForm :is(#nodeRouteSelect, #residentRouteSelect):disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
+#nodeForm:has(#nodeAccountSelection option[value="auto"]:checked) label:has(> #nodeRouteSelect),
+#residentRegisterForm:has(#residentAccountSelection option[value="auto"]:checked) #residentRouteField {
+  display: none;
 }
 
 .portalDetailForm > .portalDetailFooter {
