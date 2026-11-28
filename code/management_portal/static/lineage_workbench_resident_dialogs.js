@@ -188,10 +188,10 @@
 
     let residentCreationChoice = null;
     function syncResidentBackendRuntimeFields(event) {
-      if (event?.type === "change") residentCreationChoice = null;
+      const mode = $id("residentAccountSelection");
+      if (event?.type === "change" && event.target !== mode) residentCreationChoice = null;
       const definition = residentRuntimeDefinition();
       const fields = definition.runtime_settings || [];
-      const routes = definition.routes || [];
       const routeSelect = $id("residentRouteSelect");
       if (routeSelect) {
         const changedBackend = event?.target === $id("residentBackendSelect");
@@ -199,9 +199,7 @@
           : residentCreationChoice?.backend_route_id ?? (state.residentRouteChosen ? routeSelect.value : undefined);
         if (changedBackend) state.residentRouteChosen = true;
         const defaultAccount = residentAccountConfig().enabled ? residentAccountConfig().defaultAccountId : "";
-        window.PortalLineageCatalogs.populateCreationRoutes(routeSelect, definition, requested, defaultAccount);
-        routeSelect.required = routes.some(row => row.backend_route_id);
-        routeSelect.disabled = !routeSelect.required;
+        window.PortalLineageCatalogs.populateCreationRoutes(routeSelect, definition, requested, defaultAccount, mode);
         $id("residentRouteField").hidden = !routeSelect.required;
       }
       const catalog = residentRuntimeCatalog();

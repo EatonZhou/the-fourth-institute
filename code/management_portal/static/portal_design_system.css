@@ -1594,6 +1594,11 @@ dialog.portalDetailSurface::backdrop {
   overscroll-behavior: contain;
 }
 
+.portalDetailForm :is(#nodeRouteSelect, #residentRouteSelect):disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .portalDetailForm > .portalDetailFooter {
   min-height: 0;
   padding: 10px 0 0;

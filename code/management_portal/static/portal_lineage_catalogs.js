@@ -190,13 +190,19 @@
     select.value = backends.some(row => row.backend === current) ? current : "";
   }
 
-  function populateCreationRoutes(select, definition, requested, defaultAccount) {
+  function populateCreationRoutes(select, definition, requested, defaultAccount, mode) {
     const routes = definition.routes || [];
     const initial = routes.find(row => defaultAccount && row.account_id?.toLowerCase() === defaultAccount) || routes[0];
     const selected = requested === undefined ? initial : routes.find(row => row.backend_route_id === requested);
     select.replaceChildren(...routes.map(row => new Option(row.label, row.backend_route_id)));
-    if (!selected && routes.length) select.prepend(new Option(window.PortalI18n.t("选择账号"), ""));
+    const automatic = mode.value === "auto";
+    const unavailable = automatic && definition.backend && !selected;
+    const message = unavailable ? window.PortalI18n.t("该 Provider 暂无可用账号。") : "";
+    if (!selected && routes.length) select.prepend(new Option(message || window.PortalI18n.t("选择账号"), ""));
     select.value = selected?.backend_route_id || "";
+    select.required = routes.some(row => row.backend_route_id);
+    select.disabled = automatic || !select.required;
+    mode.setCustomValidity(message);
     return selected;
   }
 

@@ -60,10 +60,10 @@
 
     let nodeCreationChoice = null;
     function renderNodeProviderFields(event) {
-      if (event?.type === "change") nodeCreationChoice = null;
+      const mode = $id("nodeAccountSelection");
+      if (event?.type === "change" && event.target !== mode) nodeCreationChoice = null;
       const definition = state.agentBackendCatalog?.backends?.find(row => row.backend === $id("nodeBackendSelect")?.value) || {};
       const fields = definition.runtime_settings || [];
-      const routes = definition.routes || [];
       const route = $id("nodeRouteSelect");
       const model = $id("nodeModelSelect");
       const effort = $id("nodeEffortSelect");
@@ -73,7 +73,7 @@
         : nodeCreationChoice?.backend_route_id ?? (state.nodeRouteChosen ? route.value : undefined);
       if (changedBackend) state.nodeRouteChosen = true;
       const defaultAccount = definition.account_selection?.enabled ? nodeAccountConfig().defaultAccountId : "";
-      const selected = window.PortalLineageCatalogs.populateCreationRoutes(route, definition, requested, defaultAccount);
+      const selected = window.PortalLineageCatalogs.populateCreationRoutes(route, definition, requested, defaultAccount, mode);
       const selectedBackend = $id("nodeBackendSelect").value, selectedRoute = route.value;
       const catalog = window.PortalLineageCatalogs.routeRuntimeCatalog(selected, renderNodeProviderFields, error => {
         if ($id("nodeBackendSelect").value !== selectedBackend || route.value !== selectedRoute) return;
@@ -90,8 +90,9 @@
       model.replaceChildren(...models.map(item => new Option(item, item)));
       model.value = models.includes(previousModel) ? previousModel : catalog?.default_model || "";
       window.PortalLineageCatalogs.populateCreationEfforts(effort, catalog, model.value);
-      for (const input of [route, model, effort]) {
-        const enabled = input === route ? routes.some(row => row.backend_route_id) : fields.includes(input === model ? "model" : "reasoning_effort");
+      route.closest("[data-node-provider-setting]").hidden = !route.required;
+      for (const input of [model, effort]) {
+        const enabled = fields.includes(input === model ? "model" : "reasoning_effort");
         input.closest("[data-node-provider-setting]").hidden = !enabled;
         input.disabled = !enabled;
         input.required = enabled && input !== effort;

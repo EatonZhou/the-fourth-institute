@@ -174,7 +174,7 @@
       $id("emptyAddNodeBtn").addEventListener("click", openNodeModal);
       // Registered before the re-render below, so an explicit route choice is kept.
       $id("nodeRouteSelect").addEventListener("change", () => { state.nodeRouteChosen = true; });
-      for (const id of ["nodeBackendSelect", "nodeRouteSelect", "nodeModelSelect"]) {
+      for (const id of ["nodeBackendSelect", "nodeAccountSelection", "nodeRouteSelect", "nodeModelSelect"]) {
         $id(id).addEventListener("change", renderNodeProviderFields);
       }
       $id("nodeForm").addEventListener("submit", submitNodeForm);

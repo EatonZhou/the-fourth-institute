@@ -126,6 +126,7 @@
       state.crossLineageFork.residentId = String(event.target.value || "");
       renderCrossLineageForkModal();
     });
+    $id("residentAccountSelection").addEventListener("change", syncResidentBackendRuntimeFields);
     $id("residentBackendSelect").addEventListener("change", syncResidentBackendRuntimeFields);
     $id("residentRouteSelect").addEventListener("change", event => {
       state.residentRouteChosen = true;
