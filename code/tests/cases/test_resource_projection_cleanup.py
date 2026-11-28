@@ -31,7 +31,7 @@ def projection(monkeypatch):
     flow_store.lineage_lock.side_effect = lambda _: nullcontext()
     flow_store.for_resident.return_value = [{'steps': {'event': 'event_source_111111111111', 'effect': 'effect_111111111111'}}]
     monkeypatch.setattr(lineage_workflows, 'get_workflow_binding_store', lambda: flow_store)
-    state = SimpleNamespace(graph=graph, blocked=False, lost_response=False, calls=[])
+    state = SimpleNamespace(graph=graph, blocked=False, lost_response=False, refuse_finalization=False, calls=[])
     def call(actor, name, args, **kwargs):
         state.calls.append((name, copy.deepcopy(args)))
         if name == 'GetResident':
@@ -41,6 +41,12 @@ def projection(monkeypatch):
         if name == 'GetLineage':
             return {'lineage': copy.deepcopy(graph)}
         if name == 'ApplyLineageChanges':
+            if 'version' not in kwargs:
+                assert args['operations'] == [{'op': 'delete', 'kind': 'resident', 'id': RID}]
+                assert not any(n['id'] == RID for n in graph['nodes'])
+                if state.refuse_finalization:
+                    raise InstructionError('instruction.forbidden', 'no current Resident grant')
+                return {'deleted_ids': [RID]}
             assert kwargs['version'] == graph['revision']
             if state.blocked:
                 raise RuntimeError('busy')
@@ -187,6 +193,49 @@ def test_failed_release_keeps_association_and_graph_for_retry(projection):
     assert not projection.store.list_namespace(resident_handoff.INVOCATION_ASSOCIATION_NAMESPACE)
 
 
+@pytest.mark.parametrize("completed", [True, False])
+def test_forbidden_projection_replay_requires_committed_deletion_proof(projection, monkeypatch, completed):
+    from management_portal import society_service
+
+    resource_id = 'plan_111111111111'
+    associate(projection, resource_id)
+    projection.refuse_finalization = True
+    projection.graph['nodes'] = [node for node in projection.graph['nodes'] if node['id'] != RID]
+    completion = Mock(return_value=completed)
+    monkeypatch.setattr(society_service, 'get_society_service', lambda: SimpleNamespace(
+        resident=SimpleNamespace(resident_deletion_complete=completion),
+    ))
+    if completed:
+        assert resource_lifecycle.release_resource(resource_id, actor='owner') == {RID}
+        assert not projection.store.list_namespace(resident_handoff.INVOCATION_ASSOCIATION_NAMESPACE)
+    else:
+        with pytest.raises(InstructionError, match='no current Resident grant'):
+            resource_lifecycle.release_resource(resource_id, actor='owner')
+        assert projection.store.list_namespace(resident_handoff.INVOCATION_ASSOCIATION_NAMESPACE)
+    completion.assert_called_once_with(RID, LID)
+
+
+@pytest.mark.parametrize("deleted,lineage,pending,projection_pending,complete", [
+    (True, LID, False, False, True),
+    (False, LID, False, False, False),
+    (True, "lineage_222222222222", False, False, False),
+    (True, LID, True, False, False),
+    (True, LID, False, True, False),
+])
+def test_deletion_completion_requires_exact_resident_tombstone(
+    monkeypatch, deleted, lineage, pending, projection_pending, complete,
+):
+    from management_portal.society_service import resident_workspace_domain as domain
+
+    history = Mock(return_value={"deleted_at": "2026-11-28T06:54:00Z", "lineage_id": lineage} if deleted else None)
+    store = SimpleNamespace(database=SimpleNamespace(snapshot=nullcontext), resident_deletion=history,
+                            projection_outbox=SimpleNamespace(resident_resource_projection_pending=lambda _: projection_pending))
+    monkeypatch.setattr(domain.resident_catalog, 'get_catalog', lambda: SimpleNamespace(state_store=store))
+    monkeypatch.setattr(domain.resident_record_domain, 'lifecycle_operations', lambda: SimpleNamespace(pending=lambda _: pending))
+    assert domain.resident_deletion_complete(RID, LID) is complete
+    history.assert_called_once_with(RID)
+
+
 def test_lost_response_retries_finalization_and_removes_associations(projection):
     """删除节点后响应丢失，重试只补完收尾并清除关联，不重复修改 Lineage"""
     associate(projection, 'skill_111111111111')
@@ -195,7 +244,9 @@ def test_lost_response_retries_finalization_and_removes_associations(projection)
         resource_lifecycle.release_resource('skill_111111111111', actor='owner')
     resource_lifecycle.release_resource('skill_111111111111', actor='owner')
     assert not projection.store.list_namespace(resident_handoff.INVOCATION_ASSOCIATION_NAMESPACE)
-    assert len([c for c in projection.calls if c[0] == 'ApplyLineageChanges']) == 1
+    edits = [args['operations'] for name, args in projection.calls if name == 'ApplyLineageChanges']
+    assert len(edits) == 2
+    assert sum(any(op['kind'] == 'component' for op in operations) for operations in edits) == 1
 
 
 def test_shared_workflow_refuses_cascade(projection):

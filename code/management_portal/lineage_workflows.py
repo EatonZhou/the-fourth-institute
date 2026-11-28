@@ -137,9 +137,19 @@ class WorkflowBindings:
         attempt = secrets.token_hex(8)
 
         def finalize(target_lineage):
-            return isa_client.call(actor, "ApplyLineageChanges", {
-                "lineage_id": target_lineage, "operations": [{"op": "delete", "kind": "resident", "id": resident_id}],
-            }, key=f"release:{resident_id}:finalize:{attempt}")
+            try:
+                isa_client.call(actor, "ApplyLineageChanges", {
+                    "lineage_id": target_lineage, "operations": [{"op": "delete", "kind": "resident", "id": resident_id}],
+                }, key=f"release:{resident_id}:finalize:{attempt}")
+            except InstructionError as error:
+                if error.code not in {"instruction.forbidden", "instruction.not_found"}:
+                    raise
+                from .society_service import get_society_service
+
+                # Terminal deletion removes the target's permission facts.
+                # Only the canonical owner can confirm this exact cleanup.
+                if not get_society_service().resident.resident_deletion_complete(resident_id, target_lineage):
+                    raise
 
         try:
             record = isa_client.call(actor, 'GetResident', {'resident_id': resident_id})['resident']

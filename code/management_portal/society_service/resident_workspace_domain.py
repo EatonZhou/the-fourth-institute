@@ -398,6 +398,16 @@ def confirm_resident_deletion_projection(resident_id: str) -> None:
     }, publish)
 
 
+def resident_deletion_complete(resident_id: str, lineage_id: str) -> bool:
+    """Internal completion evidence for releasing an existing derived association."""
+    store = resident_catalog.get_catalog().state_store
+    with store.database.snapshot():
+        record = store.resident_deletion(resident_id)
+        return bool(record and record.get("deleted_at") and record.get("lineage_id") == lineage_id
+                    and not resident_record_domain.lifecycle_operations().pending(resident_id)
+                    and not store.projection_outbox.resident_resource_projection_pending(resident_id))
+
+
 def retry_deleted_resident(resident_id: str, actor: str) -> dict[str, Any] | None:
     """Authorize a deletion replay and reconcile its original idempotent effects."""
     from . import resident_access

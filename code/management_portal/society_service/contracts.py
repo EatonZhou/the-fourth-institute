@@ -72,6 +72,9 @@ DOMAIN_OPERATIONS = {
         (Operation('read', 'resident', implementation='management_portal.society_service.resident_directory_domain'), """
             get_resident_resource_projection
         """),
+        (Operation('read', 'resident', implementation='management_portal.society_service.resident_workspace_domain'), """
+            resident_deletion_complete
+        """),
         (Operation('read', 'resident', 'resident', 'resident_id', implementation='management_portal.society_service.resident_workspace_domain'), """
             resolve_resident_identity
         """),
