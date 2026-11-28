@@ -735,6 +735,15 @@
     element.append(text.slice(offset));
   }
 
+  function notificationSourceEntry(entry) {
+    const target = routedEntry(entry);
+    if (target.url && target.url !== "/") return target;
+    const sender = String(entry.notification?.created_by || "").trim();
+    if (!/^resident_[0-9a-f]{12}$/.test(sender)) return null;
+    return { ...target, kind: "resident", surface: "lineage", resident_id: sender,
+      url: "/lineage?resident=" + encodeURIComponent(sender) + "&open_chat=1" };
+  }
+
   function activateEntry(entry) {
     if (!isNotification(entry)) return navigateToEntry(entry);
     if (entry.kind === "notice-board-mention") {
@@ -747,7 +756,7 @@
       return;
     }
     const runtime = ensureNotificationDetail();
-    runtime.entry = routedEntry(entry);
+    runtime.entry = notificationSourceEntry(entry);
     const overlay = runtime.overlay;
     overlay.querySelector("#portalAgentNotificationTitle").textContent = entry.title || window.PortalI18n.t("通知");
     const severities = { info: "信息", warning: "提醒", error: "错误", success: "完成" };
@@ -765,8 +774,9 @@
     time.textContent = window.PortalUI.formatDateTime(time.dateTime);
     showNotificationText(overlay.querySelector("[data-agent-notification-message]"), detail.message);
     const sourceButton = overlay.querySelector("[data-agent-notification-source]");
-    sourceButton.textContent = detail.lineage_id ? window.PortalI18n.t("打开所属 Lineage") : window.PortalI18n.t("打开来源页面");
-    sourceButton.hidden = !runtime.entry.url;
+    sourceButton.textContent = runtime.entry?.kind === "resident" ? window.PortalI18n.t("打开 Resident 对话")
+      : detail.lineage_id ? window.PortalI18n.t("打开所属 Lineage") : window.PortalI18n.t("打开来源页面");
+    sourceButton.hidden = !runtime.entry?.url;
     if (runtime.controller.open()) {
       void store()?.markRead?.(entry.key)?.catch?.(() => {
         window.PortalUI?.toast?.("通知已显示，但已读状态保存失败，请稍后重试。", "warning");

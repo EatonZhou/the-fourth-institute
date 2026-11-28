@@ -12,7 +12,7 @@ const {chromium, webkit} = require(fs.existsSync(runtime) ? runtime : 'playwrigh
 const text = fs.readFileSync(path.join(assets, 'portal_agent_inbox.js'), 'utf8');
 const declarations = babelParse(text).program.body[0].expression.callee.body.body;
 const names = ['store', 'routedEntry', 'isNotification', 'navigationResidentId', 'verifyNavigationTarget',
-  'navigateToEntry', 'ensureNotificationDetail', 'activateEntry'];
+  'navigateToEntry', 'ensureNotificationDetail', 'showNotificationText', 'notificationSourceEntry', 'activateEntry'];
 const source = names.map(name => {
   const node = declarations.find(node => node.type === 'FunctionDeclaration' && node.id.name === name);
   assert.ok(node, name);
@@ -74,7 +74,10 @@ async function geometry(page) {
       }
       await page.addScriptTag({content:`let notificationDetail = null;
         const state = {listenerController:new AbortController(),navigationKeys:new Set()};
-        const residentDiscovery = null;
+        const residentDiscovery = { resolveNavigationTarget: async id => {
+          calls.push(['verify', id]);
+          if (window.denySender) throw Object.assign(Error('denied'), {status: 403});
+        }};
         function updateChrome() {}
         ${source}
         document.querySelector('#opener').onclick = () => activateEntry(window.entry);`});
@@ -113,6 +116,24 @@ async function geometry(page) {
       await page.waitForFunction(()=>calls.some(c=>c[0]==='navigate'));
       assert.equal(await page.locator(overlay).isVisible(),false);
       assert.equal(await page.evaluate(()=>calls.filter(c=>c[0]==='navigate').length),1);
+      await page.evaluate(() => {
+        entry.url='/'; entry.notification.lineage_id=''; entry.notification.lineage_title='';
+        entry.notification.created_by='resident_123456789abc';
+      });
+      await open();
+      assert.equal(await page.locator('[data-agent-notification-source]').textContent(), '打开 Resident 对话');
+      await page.locator('[data-agent-notification-source]').click();
+      await page.waitForFunction(() => calls.some(([kind,url]) => kind==='navigate' && url==='/lineage?resident=resident_123456789abc&open_chat=1'));
+      assert.ok(await page.evaluate(() => calls.some(([kind,id]) => kind==='verify' && id==='resident_123456789abc')));
+      await page.evaluate(() => { window.denySender=true; });
+      await open();
+      await page.locator('[data-agent-notification-source]').click();
+      await page.getByText('没有查看这个 Resident 的权限。').waitFor();
+      assert.equal(await page.evaluate(() => calls.filter(([kind]) => kind==='navigate').length), 2);
+      await page.evaluate(() => { entry.notification.created_by='portal'; });
+      await open();
+      assert.equal(await page.locator('[data-agent-notification-source]').isVisible(),false,'a Portal-wide notice has no source action');
+      await page.keyboard.press('Escape');
       // Untrusted/long values remain plain text; absent navigation hides its action.
       await page.evaluate(() => {
         entry.url=''; entry.title='很长的通知标题'.repeat(12);
