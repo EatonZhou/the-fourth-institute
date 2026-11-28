@@ -159,15 +159,12 @@ def test_migration_fails_before_creating_missing_completion_evidence():
 
 
 def test_original_rollup_adoption_requires_the_whole_original_script():
-    old = family_definition.FAMILY_SUMMARY_ROLLUP_SCRIPT.replace(
-        "GetFacadeSummaryInputs", "GetFamilySummaryInputs",
-    ).replace(
-        'DeliverMessage resident_id="${arguments.steward}" business_ref="duty/family-work-summary" message:=${inputs.notification}',
-        'DispatchFamilyTask resident_id="${arguments.facade}" trigger="summary" message_id="${inputs.notification.message_id}"',
-    )
-    assert family_definition.migrate_original_script(old) == family_definition.FAMILY_SUMMARY_ROLLUP_SCRIPT
-    edited = old + "\noutput owner=\"custom\""
-    assert family_definition.migrate_original_script(edited) == edited
+    from tests.cases.test_isa_d066_definition_migration import ROLLUP_BEFORE_DELIVERY_CHECK, original_rollup_script
+
+    for old in (original_rollup_script(), ROLLUP_BEFORE_DELIVERY_CHECK):
+        assert family_definition.migrate_original_script(old) == family_definition.FAMILY_SUMMARY_ROLLUP_SCRIPT
+        edited = old + '\noutput owner="custom"'
+        assert family_definition.migrate_original_script(edited) == edited
 
 
 def test_pending_frozen_dispatches_never_receive_a_replacement_message_id(monkeypatch):

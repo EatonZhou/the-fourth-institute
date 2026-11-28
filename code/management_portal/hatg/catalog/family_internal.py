@@ -74,7 +74,9 @@ DECLARATIONS = (
         R("previous_summary", "object", "门面当前的工作摘要"),
         R("consolidation_due", "array", "达到时间、轮次或容量条件的成员及内部角色；按需读取其维护视图"),
         R("facade_needs_update", "boolean", "门面来源是否变化"),
-        P("notification", "object", "overview_only 时返回可直接交给 DeliverMessage 的短通知；同小时同材料使用相同消息 ID"),
+        P("notification", "object", "overview_only 时返回可直接交给 DeliverMessage 的短通知；同材料使用相同消息 ID"),
+        P("notification_delivery", "object", "概览有待办且已确定 Steward 时返回 {resident_id,status}。"
+          "unsubmitted 表示暂无受理记录，accepted 表示本门面的同批任务已受理，conflict 表示身份或受理证据冲突。"),
         R("needs_update", "boolean", "来源版本与门面摘要上次保存的不同时为 true")),
        mutates=False),
 )

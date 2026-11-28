@@ -9,6 +9,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
+from management_common.actor_identity import same_actor
 from management_common.message_identity import derived_message_identity
 
 from .evidence import fingerprint, validate_summary
@@ -198,6 +199,27 @@ def update_facade_summary(actor: str, resident_id: str, summary: Any, source_ver
     )
 
 
+def _rollup_delivery(facade_id: str, steward_id: str, message_id: str) -> dict:
+    from ..resident_conversation_records import INPUT_STATES
+    from ..resident_conversation_stream import get_repository
+
+    repository = get_repository()
+    key = (steward_id, message_id)
+    receipt = repository.input_statuses_by_id([key]).get(key)
+    message = repository.messages.stored_messages_many([key]).get(key)
+    if message is not None and receipt is None:
+        # Admission may have committed between these reads.
+        receipt = repository.input_statuses_by_id([key]).get(key)
+    if message is None and receipt is None:
+        status = "unsubmitted"
+    elif (message and receipt and receipt.get("state") in INPUT_STATES and message.get("role") == "user"
+          and same_actor(message.get("author_id"), facade_id) and message.get("business_ref") == ROLLUP_REF):
+        status = "accepted"
+    else:
+        status = "conflict"
+    return {"resident_id": steward_id, "status": status}
+
+
 def get_facade_summary_inputs(actor: str, resident_id: str, *, overview_only: bool = False) -> dict:
     from management_portal import permission_system
     from .. import family_facade
@@ -250,10 +272,15 @@ def get_facade_summary_inputs(actor: str, resident_id: str, *, overview_only: bo
         material = {"versions": versions, "due": pending}
         if pending_inputs:
             material["pending_inputs"] = pending_inputs
-        return {"resident_id": resident_id, "needs_update": changed or bool(pending),
+        message_id = derived_message_identity(ROLLUP_REF, resident_id, fingerprint(material))
+        needs_update = changed or bool(pending)
+        delivery = {}
+        if needs_update and resident_id in roles["facade"] and len(roles["steward"]) == 1:
+            delivery["notification_delivery"] = _rollup_delivery(resident_id, roles["steward"][0], message_id)
+        return {"resident_id": resident_id, "needs_update": needs_update, **delivery,
                 "facade_needs_update": changed, "consolidation_due": pending,
                 "notification": {
-                    "message_id": derived_message_identity(ROLLUP_REF, resident_id, fingerprint(material)),
+                    "message_id": message_id,
                     "content_parts": [{"type": "text", "text":
                         f"门面 {resident_id} 有摘要维护待办。先用 GetFacadeSummaryInputs overview_only=true 查看；"
                         "对 consolidation_due 按需读取 GetResidentSummaries include_maintenance=true，"

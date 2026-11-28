@@ -14,17 +14,37 @@ def structured(name, arguments):
     return rewritten, {k: v.plain() for k, v in values.items()}
 
 
-def original_summary_graph():
-    from management_portal.society_service import family_definition, family_tasks
+ROLLUP_BEFORE_DELIVERY_CHECK = r'''state=$(ListResidentStates resident_ids:=[${arguments.steward}] include_viewer_state:=false)
+if [ "${state.states.0.state.work_state}" != "idle" ]; then
+  output status="busy"
+  exit
+fi
+if [ "${state.states.0.state.queued_count}" -gt 0 ]; then
+  output status="busy"
+  exit
+fi
+inputs=$(GetFacadeSummaryInputs resident_id="${arguments.facade}" overview_only:=true)
+if [ "${inputs.needs_update}" != "true" ]; then
+  output status="unchanged"
+  exit
+fi
+sent=$(DeliverMessage resident_id="${arguments.steward}" business_ref="duty/family-work-summary" message:=${inputs.notification})
+output status="requested" message_id="${sent.message_id}"'''
 
-    # Reconstruct the already fingerprinted historical fixture without copying
-    # a second production template or adding another migration mapping.
-    old = family_definition.FAMILY_SUMMARY_ROLLUP_SCRIPT.replace(
+
+def original_rollup_script():
+    return ROLLUP_BEFORE_DELIVERY_CHECK.replace(
         "GetFacadeSummaryInputs", "GetFamilySummaryInputs",
     ).replace(
         'DeliverMessage resident_id="${arguments.steward}" business_ref="duty/family-work-summary" message:=${inputs.notification}',
         'DispatchFamilyTask resident_id="${arguments.facade}" trigger="summary" message_id="${inputs.notification.message_id}"',
     )
+
+
+def original_summary_graph():
+    from management_portal.society_service import family_tasks
+
+    old = original_rollup_script()
     return {
         "lineage_id": "lineage_fixture",
         "program": {

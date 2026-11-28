@@ -14,7 +14,10 @@ from management_portal.society_service import (
     resident_conversation_stream,
     resident_held_infos,
     resident_intake_domain,
+    resident_protocol,
 )
+
+REAL_DELIVER_INPUT = resident_protocol.deliver_resident_input
 
 SUMMARY = {"current_focus": "维护登录", "active_threads": ["权限分工"], "durable_expertise": ["登录"],
            "recent_results": ["修正权限边界"], "primary_ownership": ["登录"], "supporting_expertise": [],
@@ -40,7 +43,8 @@ def setup_work(context, monkeypatch):
     completed_at = {"one": "2026-11-26T10:01:00Z", "two": "2026-11-26T10:00:00Z"}
     refs = {}
     pending, sent = [], []
-    repo = SimpleNamespace(input_state=lambda rid, mid: {"state": states[mid]} if mid in states else None,
+    repo = SimpleNamespace(messages=SimpleNamespace(stored_messages_many=lambda _requests: {}),
+                           input_state=lambda rid, mid: {"state": states[mid]} if mid in states else None,
                            input_statuses_by_id=lambda requests: {
                                (rid, mid): {"state": states[mid], "updated_at": completed_at.get(mid, "")}
                                for rid, mid in requests if mid in states
@@ -275,3 +279,84 @@ def test_hourly_effect_skips_unchanged_and_busy_stewards():
         assert bool(sent) == (expected == "requested")
         if sent:
             assert sent[0] == {"resident_id": B, "business_ref": "duty/family-work-summary", "message": notification}
+
+
+@pytest.mark.parametrize(
+    "envelope,state,expected",
+    [
+        (None, None, "unsubmitted"),
+        ({"role": "user", "author_id": C, "business_ref": work.ROLLUP_REF}, "completed", "accepted"),
+        ({"role": "user", "author_id": C, "business_ref": work.ROLLUP_REF}, "cancelled", "accepted"),
+        ({"role": "user", "author_id": C, "business_ref": work.ROLLUP_REF}, None, "conflict"),
+        ({"role": "user", "author_id": A, "business_ref": work.ROLLUP_REF}, "queued", "conflict"),
+        ({"role": "user", "author_id": C, "business_ref": work.REMINDER_REF}, "queued", "conflict"),
+        (None, "queued", "conflict"),
+    ],
+)
+def test_rollup_overview_and_effect_agree_on_durable_receipt(setup_work, monkeypatch, envelope, state, expected):
+    from tests.cases.test_family_router_script import _run
+    from management_portal.society_service.family_definition import FAMILY_SUMMARY_ROLLUP_SCRIPT
+
+    _, roles, *_ = setup_work
+    steward = roles["steward"][0]
+    first = work.get_facade_summary_inputs(C, C, overview_only=True)
+    assert first["needs_update"]
+    message_id = first["notification"]["message_id"]
+    repo = resident_conversation_stream.get_repository()
+    monkeypatch.setattr(repo.messages, "stored_messages_many",
+                        lambda requests: {(steward, message_id): envelope}
+                        if envelope and (steward, message_id) in requests else {})
+    monkeypatch.setattr(repo, "input_statuses_by_id",
+                        lambda requests: {(steward, message_id): {"state": state}}
+                        if state and (steward, message_id) in requests else {})
+    same = work.get_facade_summary_inputs(C, C, overview_only=True)
+    assert same["notification"]["message_id"] == message_id
+    assert same["needs_update"]
+    assert same["notification_delivery"] == {"resident_id": steward, "status": expected}
+    result, calls = _run(FAMILY_SUMMARY_ROLLUP_SCRIPT, {"arguments": {"facade": C, "steward": steward}}, {
+        "ListResidentStates": {"states": [{"state": {"work_state": "idle", "queued_count": 0}}]},
+        "GetFacadeSummaryInputs": same,
+        "DeliverMessage": {"message_id": message_id},
+    })
+    assert any(name == "DeliverMessage" for name, _ in calls) is (expected == "unsubmitted")
+    if expected == "conflict":
+        assert result.status == "failed"
+    else:
+        assert result.status == "succeeded"
+        assert result.outputs["status"] == ("already_accepted" if expected == "accepted" else "requested")
+    work.update_resident_work_summary(A, A, summary=SUMMARY, message_ids=["one"])
+    later = work.get_facade_summary_inputs(C, C, overview_only=True)
+    assert later["notification"]["message_id"] != message_id
+    assert later["notification_delivery"] == {"resident_id": steward, "status": "unsubmitted"}
+
+
+def test_rollup_recognizes_real_session_admission_and_new_fresh_delivery(lineage, monkeypatch):
+    from management_portal.society_service import lineage_program_resident_inputs
+    from tests.cases.isa_test_support import ok
+    from tests.cases.test_family_familize import resident
+
+    member = resident(lineage, "Summary member")
+    with monkeypatch.context() as setup:
+        setup.setattr(resident_intake_domain, "deliver_resident_message_content", lambda *args, **kw: {})
+        family = ok("Familize", {"lineage_id": lineage, "resident_ids": [member]})
+    facade, steward = family["facade_resident_id"], family["steward_resident_id"]
+    monkeypatch.setattr(resident_protocol, "deliver_resident_input", REAL_DELIVER_INPUT)
+    ok("SetIntakeOpen", {"resident_ids": [steward], "open": False})
+    args = {"resident_id": facade, "overview_only": True}
+    first = ok("GetFacadeSummaryInputs", args, actor=facade)
+    assert first["notification_delivery"] == {"resident_id": steward, "status": "unsubmitted"}
+
+    target = {"resident_id": steward, "business_ref": work.ROLLUP_REF}
+    original = ok("DeliverMessage", {**target, "message": first["notification"]}, actor=facade)
+    old_id = original["message_id"]
+    assert not lineage_program_resident_inputs.delivery_profile(lineage, old_id).get("isolated")
+    same = ok("GetFacadeSummaryInputs", args, actor=facade)
+    assert same["notification"]["message_id"] == old_id
+    assert same["notification_delivery"] == {"resident_id": steward, "status": "accepted"}
+
+    ok("UpdateResident", {"lineage_id": lineage, "resident_id": member, "title": "Renamed summary member"})
+    new = ok("GetFacadeSummaryInputs", args, actor=facade)
+    assert new["notification"]["message_id"] != old_id
+    assert new["notification_delivery"] == {"resident_id": steward, "status": "unsubmitted"}
+    result = ok("DeliverMessage", {**target, "message": new["notification"], "context_policy": "fresh"}, actor=facade)
+    assert lineage_program_resident_inputs.delivery_profile(lineage, result["message_id"])["isolated"] is True

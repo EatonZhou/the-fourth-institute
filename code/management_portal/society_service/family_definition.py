@@ -255,6 +255,18 @@ if [ "${inputs.needs_update}" != "true" ]; then
   output status="unchanged"
   exit
 fi
+if [ -n "${inputs.notification_delivery.resident_id}" ]; then
+  if [ "${inputs.notification_delivery.resident_id}" != "${arguments.steward}" ]; then
+    fail "摘要任务目标与当前 Family Steward 不一致"
+  fi
+  if [ "${inputs.notification_delivery.status}" = "accepted" ]; then
+    output status="already_accepted" message_id="${inputs.notification.message_id}"
+    exit
+  fi
+  if [ "${inputs.notification_delivery.status}" != "unsubmitted" ]; then
+    fail "摘要任务的固定消息 ID 缺少匹配的受理证据"
+  fi
+fi
 sent=$(DeliverMessage resident_id="${arguments.steward}" business_ref="duty/family-work-summary" message:=${inputs.notification})
 output status="requested" message_id="${sent.message_id}"'''
 
@@ -317,6 +329,8 @@ _ORIGINAL_SCRIPTS = {
     "d188f5e86aaf94aad24a2c403be83a0d464055484d075f8dd12d70b801cfe43a": FAMILY_ROUTER_SCRIPT,
     "d458ac34ddc0d6e67ae45ac0439373721aed1e5c13b517cd8ce9c1de4a0e1c44": FAMILY_ROUTE_RELAY_SCRIPT,
     "131b61a132dd3ff51e7ed53941159e1a31a2f6b10d08dd5de04d8c91365c8082": FAMILY_ROUTE_RELAY_SCRIPT,
+    "cf8f76e46a041d1d9745dd7212576f25567bb3f79a475f070fc5fc570a092f03": FAMILY_SUMMARY_CHECK_SCRIPT,
+    "ffd7ed0771a84168506ce6038feca78be48e074f09d7c6d50e6c543fa0f1afc8": FAMILY_SUMMARY_ROLLUP_SCRIPT,
     "22397c562a12582ba834bb4d9f85372f87b42a14a0bc57f349547c273850f18c": FAMILY_SUMMARY_CHECK_SCRIPT,
     "3e3873fbe45fdab870b4df259039d054f92343f721490a5dfe6e3a6ae1086343": FAMILY_SUMMARY_ROLLUP_SCRIPT,
     "3c29901ad1c2bb3f92ef89de8bebf2d272c8d6a86d01b502842ccb39c77ea6dd": family_recovery_effects.RECOVERY,

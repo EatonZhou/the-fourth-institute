@@ -202,18 +202,20 @@ def test_overview_contains_only_actionable_ids_and_deduplicated_notification(set
 def test_family_summary_effect_delivers_the_same_overview_notice(setup_work, monkeypatch):
     monkeypatch.setenv("PORTAL_SUMMARY_PHASE_ROUNDS", "1")
     work.update_resident_work_summary(A, A, summary=SUMMARY, message_ids=["one"])
+    _, roles, *_ = setup_work
+    steward = roles["steward"][0]
     first = work.get_facade_summary_inputs(C, C, overview_only=True)
     from tests.cases.test_family_router_script import _run
     from management_portal.society_service.family_definition import FAMILY_SUMMARY_ROLLUP_SCRIPT, FAMILY_SUMMARY_CHECK_SCRIPT
     for script in (FAMILY_SUMMARY_ROLLUP_SCRIPT, FAMILY_SUMMARY_CHECK_SCRIPT):
-        result, calls = _run(script, {"arguments": {"facade": C, "steward": B},
+        result, calls = _run(script, {"arguments": {"facade": C, "steward": steward},
             "event": {"subject_resident_id": A, "payload": {"message_id": "one"}}}, {
             "GetResidentSummaries": {"summaries": [{"missing_message_ids": [], "consolidation": {"due": True}}]},
             "ListResidentStates": {"states": [{"state": {"work_state": "idle", "queued_count": 0}}]},
             "GetFacadeSummaryInputs": first, "DeliverMessage": {"message_id": first["notification"]["message_id"]}})
         assert result.status == "succeeded", result
         sent = next(args for name, args in calls if name == "DeliverMessage")
-        assert sent == {"resident_id": B, "business_ref": "duty/family-work-summary", "message": first["notification"]}
+        assert sent == {"resident_id": steward, "business_ref": "duty/family-work-summary", "message": first["notification"]}
 
 
 def test_personal_family_due_without_enabling_hourly_facade_summary(setup_work, monkeypatch):
