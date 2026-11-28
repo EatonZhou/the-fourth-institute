@@ -11,23 +11,23 @@ from management_portal.execution.harness_settings import normalize_agent_harness
 MODEL_CATALOG = {
     "source": "model/list",
     "account_id": "bound-account",
-    "models": ["gpt-6.1-sol", "gpt-5.6-sol", "gpt-5.6-luna", "limited-model"],
+    "models": ["gpt-6.2-sol", "gpt-5.6-sol", "gpt-5.6-luna", "limited-model"],
     "default_model": "gpt-5.6-sol",
     "default_reasoning_effort": "low",
     "efforts_by_model": {
-        "gpt-6.1-sol": ["low", "medium", "high", "xhigh", "max"],
+        "gpt-6.2-sol": ["low", "medium", "high", "xhigh", "max"],
         "gpt-5.6-sol": ["low", "medium", "high", "xhigh", "max", "ultra"],
         "gpt-5.6-luna": ["low", "medium", "high", "xhigh", "max"],
         "limited-model": ["low"],
     },
     "default_efforts_by_model": {
-        "gpt-6.1-sol": "medium",
+        "gpt-6.2-sol": "medium",
         "gpt-5.6-sol": "low",
         "gpt-5.6-luna": "medium",
         "limited-model": "low",
     },
     "service_tiers_by_model": {
-        "gpt-6.1-sol": [{"id": "priority"}],
+        "gpt-6.2-sol": [{"id": "priority"}],
         "gpt-5.6-sol": [{"id": "priority"}],
         "gpt-5.6-luna": [],
         "limited-model": [],
@@ -61,8 +61,8 @@ class PortalSlashCommandsTest(unittest.TestCase):
         self.assertEqual(saved["reasoning_effort"], "low")
 
     def test_builtin_runtime_default_is_sol_high(self) -> None:
-        """codex 内置默认模型为 gpt-6.1-sol、推理强度 high，空值回落到默认"""
-        self.assertEqual(codex_runtime_settings.BUILTIN_PORTAL_DEFAULT_MODEL, "gpt-6.1-sol")
+        """codex 内置默认模型为 gpt-6.2-sol、推理强度 high，空值回落到默认"""
+        self.assertEqual(codex_runtime_settings.BUILTIN_PORTAL_DEFAULT_MODEL, "gpt-6.2-sol")
         self.assertEqual(codex_runtime_settings.BUILTIN_PORTAL_DEFAULT_REASONING_EFFORT, "high")
         with (
             mock.patch.object(codex_runtime_settings, "PORTAL_DEFAULT_MODEL", codex_runtime_settings.BUILTIN_PORTAL_DEFAULT_MODEL),
@@ -77,25 +77,25 @@ class PortalSlashCommandsTest(unittest.TestCase):
             effective = codex_runtime_settings.effective_codex_runtime_settings({})
             blank = codex_runtime_settings.effective_codex_runtime_settings({"model": "", "reasoning_effort": ""})
             explicit = codex_runtime_settings.effective_codex_runtime_settings({"model": "gpt-5.6-sol", "reasoning_effort": "high"})
-            model_only = codex_runtime_settings.effective_codex_runtime_settings({"model": "gpt-6.1-sol"})
+            model_only = codex_runtime_settings.effective_codex_runtime_settings({"model": "gpt-6.2-sol"})
             catalog = codex_runtime_settings.codex_runtime_catalog()
-        self.assertEqual(effective["model"], "gpt-6.1-sol")
+        self.assertEqual(effective["model"], "gpt-6.2-sol")
         self.assertEqual(effective["reasoning_effort"], "high")
-        self.assertEqual(blank["model"], "gpt-6.1-sol")
+        self.assertEqual(blank["model"], "gpt-6.2-sol")
         self.assertEqual(blank["reasoning_effort"], "high")
         self.assertEqual(explicit["model"], "gpt-5.6-sol")
         self.assertEqual(explicit["reasoning_effort"], "high")
         self.assertEqual(model_only["reasoning_effort"], "high")
-        self.assertEqual(catalog["default_model"], "gpt-6.1-sol")
+        self.assertEqual(catalog["default_model"], "gpt-6.2-sol")
         self.assertEqual(catalog["default_reasoning_effort"], "high")
-        self.assertEqual(catalog["efforts_by_model"]["gpt-6.1-sol"], ["low", "medium", "high", "xhigh", "max"])
-        self.assertEqual(catalog["default_efforts_by_model"]["gpt-6.1-sol"], "high")
-        self.assertEqual(catalog["service_tiers_by_model"]["gpt-6.1-sol"], [{"id": "priority"}])
+        self.assertEqual(catalog["efforts_by_model"]["gpt-6.2-sol"], ["low", "medium", "high", "xhigh", "max"])
+        self.assertEqual(catalog["default_efforts_by_model"]["gpt-6.2-sol"], "high")
+        self.assertEqual(catalog["service_tiers_by_model"]["gpt-6.2-sol"], [{"id": "priority"}])
         provider = {
-            "source": "model/list", "account_id": "bound-account", "models": ["gpt-6.1-sol", "limited-model"],
+            "source": "model/list", "account_id": "bound-account", "models": ["gpt-6.2-sol", "limited-model"],
             "default_model": "limited-model", "default_reasoning_effort": "low",
-            "efforts_by_model": {"gpt-6.1-sol": ["high", "xhigh"], "limited-model": ["low"]},
-            "default_efforts_by_model": {"gpt-6.1-sol": "high", "limited-model": "low"},
+            "efforts_by_model": {"gpt-6.2-sol": ["high", "xhigh"], "limited-model": ["low"]},
+            "default_efforts_by_model": {"gpt-6.2-sol": "high", "limited-model": "low"},
         }
         with mock.patch("management_portal.execution.get_execution_service") as service:
             service.return_value.runtime_catalog.return_value = codex_runtime_settings.resolve_codex_runtime_catalog(provider)
@@ -151,7 +151,7 @@ class PortalSlashCommandsTest(unittest.TestCase):
             service.return_value.runtime_catalog.assert_called_once_with("bound-account")
         picker = result["command_payload"]
         self.assertEqual(picker["models"], MODEL_CATALOG["models"])
-        self.assertEqual(picker["current"]["model"], "gpt-6.1-sol")
+        self.assertEqual(picker["current"]["model"], "gpt-6.2-sol")
         self.assertEqual(picker["current"]["reasoning_effort"], "high")
         self.assertIn("ultra", picker["efforts_by_model"]["gpt-5.6-sol"])
         self.assertNotIn("ultra", picker["efforts_by_model"]["gpt-5.6-luna"])

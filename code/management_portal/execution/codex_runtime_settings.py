@@ -15,7 +15,7 @@ from .resident_runtime_settings import PERMISSION_PRESETS, _apply_permission_pre
 from .slash_commands import _result, _split_command, _token_usage_content, parse_goal_command
 
 
-BUILTIN_PORTAL_DEFAULT_MODEL = "gpt-6.1-sol"
+BUILTIN_PORTAL_DEFAULT_MODEL = "gpt-6.2-sol"
 
 
 BUILTIN_PORTAL_DEFAULT_REASONING_EFFORT = "high"

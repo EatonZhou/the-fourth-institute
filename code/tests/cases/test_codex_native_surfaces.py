@@ -382,7 +382,7 @@ def test_runtime_catalog_uses_authorized_society_service_route(resident_record, 
     assert payload["account_id"] == "bound-route"
     assert payload["default_model"] == "gpt-6.1-sol"
     assert payload["default_reasoning_effort"] == "high"
-    assert payload["defaults_source"] == "portal"
+    assert payload["defaults_source"] == "provider_account"
     assert payload["models"] == ["gpt-6.1-sol"]
     route.assert_called_once_with(resident_id, "test-actor")
     catalog.assert_called_once_with(account_id="bound-route", backend="codex", include_backends=False)
