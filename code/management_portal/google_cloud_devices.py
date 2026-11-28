@@ -129,3 +129,25 @@ def read_status(config: dict, kind: str) -> dict:
                            ("storage_free_bytes", "free"), ("storage_trashed_bytes", "trashed"))
         if type(data.get(key)) is int and data[key] >= 0
     }
+
+def active_drive_transfers():
+    """Read the scoped gateway summary; None denotes unavailable telemetry."""
+    try:
+        result = subprocess.run(["/usr/local/bin/portal-drive-archive", "stats"],
+                                capture_output=True, timeout=4, check=True)
+        rows = json.loads(result.stdout)["transfers"]
+        if not isinstance(rows, list):
+            return None
+        transfers = []
+        for row in rows:
+            if not isinstance(row, dict) or not isinstance(row.get("name"), str):
+                return None
+            item = {"name": row["name"], "direction": row.get("direction")}
+            for key in ("bytes", "size", "speed"):
+                value = row.get(key)
+                if type(value) in (float, int) and 0 <= value < float("inf"):
+                    item[key] = value
+            transfers.append(item)
+        return transfers
+    except (OSError, subprocess.SubprocessError, KeyError, TypeError, ValueError):
+        return None

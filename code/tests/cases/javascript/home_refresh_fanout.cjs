@@ -7,14 +7,14 @@ const declarations = babelParse(source, 'home.js').program.body;
 const tick = () => new Promise(resolve => setImmediate(resolve));
 const metrics = [];
 async function scenario(visible, failure = false) {
-  const dom = new JSDOM('<section data-home-component="agent-status">' + ['agent-accounts', 'system-resources', 'scheduled-triggered', 'usage-attribution'].map(id => `<div data-home-component="${id}"></div>`).join('') + '</section>');
+  const dom = new JSDOM('<section data-home-component="agent-status">' + ['agent-accounts', 'system-resources', 'storage-resources', 'scheduled-triggered', 'usage-attribution'].map(id => `<div data-home-component="${id}">${id === "storage-resources" ? "<div data-home-disks></div>" : ""}</div>`).join('') + '</section>');
   const document = dom.window.document, calls = [], completed = [];
   let release;
   const accounts = new Promise(resolve => { release = resolve; });
   const refresh = name => ({start() {}, refresh: async ({force}) => { assert.equal(force, true); calls.push(name); await accounts; completed.push(name); }});
   const tag = (parts, ...values) => parts.reduce((s, part, index) => s + part + (values[index] ?? ''), '');
   const c = vm.createContext({document, window: {PortalI18n: {t: x => x, html: tag}},
-    agentStatusData: {}, diskStatusData: {}, gpuStatusData: {}, activeAgentStatus: {}, agentStatusSummaryLoaded: true, agentStatusRunboardHtml: '',
+    agentStatusData: {}, diskStatusData: {}, gpuStatusData: {}, driveStatusRefresh: null, activeAgentStatus: {}, agentStatusSummaryLoaded: true, agentStatusRunboardHtml: '',
     currentScheduledTriggeredStatus: () => ({}), executionAccounts: () => [], agentStatusRunboard: () => '', focusedResidentIcon: () => null,
     accountManagementActions: () => '', accountEmptyState: () => '', esc: String,
     gpuResourceHtml: () => '', diskResourceHtml: () => '', gpuDetailsHtml: () => '', diskDetailsHtml: () => '',
@@ -37,7 +37,8 @@ async function scenario(visible, failure = false) {
     const beforeRelease = [...calls], completedBeforeRelease = [...completed];
     release(); await tick(); await tick();
     const expected = [...(visible.includes('agent-accounts') ? ['accounts', 'active'] : []),
-      ...(visible.includes('system-resources') ? ['loadGpuStatus', 'loadDiskStatus'] : []),
+      ...(visible.includes('system-resources') ? ['loadGpuStatus'] : []),
+      ...(visible.includes('storage-resources') ? ['loadDiskStatus'] : []),
       ...(visible.includes('scheduled-triggered') ? ['loadScheduledTriggeredStatus'] : [])];
     metrics.push({visible, failure, started_before_accounts_release: beforeRelease, completed_before_accounts_release: completedBeforeRelease, final_calls: calls});
     assert.deepEqual(calls, expected, 'each visible owner is read once; hidden owners are not read');
@@ -49,9 +50,9 @@ async function scenario(visible, failure = false) {
   } finally { release(); dom.window.close(); }
 }
 (async () => {
-  await scenario(['agent-accounts', 'system-resources', 'scheduled-triggered']);
+  await scenario(['agent-accounts', 'system-resources', 'storage-resources', 'scheduled-triggered']);
   await scenario(['agent-accounts']);
-  await scenario(['system-resources', 'scheduled-triggered'], true);
+  await scenario(['system-resources', 'storage-resources', 'scheduled-triggered'], true);
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(() => {
   if (process.env.HOME_REFRESH_METRICS) fs.writeFileSync(process.env.HOME_REFRESH_METRICS, JSON.stringify(metrics, null, 2));
   console.log(JSON.stringify(metrics));

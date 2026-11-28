@@ -22,6 +22,18 @@ const root = path.resolve(__dirname, '../../..');
         formatDateTime: value => value || '',
       });
     });
+    const cloudText = await page.evaluate(() => {
+      const node = document.querySelector("#resources");
+      node.innerHTML = window.renderer.driveStorageHtml({storage_total_bytes: 5 * 1024 ** 3,
+        storage_used_bytes: 1024 ** 3, storage_free_bytes: 4 * 1024 ** 3,
+        transfers: [{direction: "upload", name: "run/<test>", bytes: 0, size: 1024 ** 3, speed: 0},
+                    {direction: "download", name: "data.bin"}]});
+      return node.textContent;
+    });
+    assert.match(cloudText, /总量 5 GiB · 已用 1 GiB · 可用 4 GiB/);
+    assert.match(cloudText, /上传 · run\/<test>/);
+    assert.match(cloudText, /下载 · data.bin/);
+    assert.match(cloudText, /0 GiB \/ 1 GiB · 0 GiB\/s/);
     const healthy = {
       resource_id: 'nuc_storage', display_name: 'nuc', status: 'ok', updated_at: '2026-11-07 16:00',
       filesystems: [{filesystem: '/dev/test', mount: '/', status: 'ok', used_percent: 5, available_bytes: 100 * 1024 ** 3}],

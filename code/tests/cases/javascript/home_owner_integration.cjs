@@ -32,15 +32,15 @@ async function main() {
     throw new Error('isolated collector did not reach the expected state');
   };
   const dom = new JSDOM('<section data-home-component="agent-status">' +
-    ['agent-accounts', 'system-resources', 'scheduled-triggered', 'usage-attribution']
-      .map(id => `<div data-home-component="${id}"></div>`).join('') + '</section>');
+    ['agent-accounts', 'system-resources', 'storage-resources', 'scheduled-triggered', 'usage-attribution']
+      .map(id => `<div data-home-component="${id}">${id === "storage-resources" ? "<div data-home-disks></div>" : ""}</div>`).join('') + '</section>');
   // Unrelated panels/localization are ports. The warning, busy state and button
   // markup come directly from renderAgentStatus; no duplicate refresh algorithm.
   const tag = (parts, ...values) => parts.reduce((result, part, index) => result + part + (values[index] ?? ''), '');
   const context = vm.createContext({
     document: dom.window.document,
     window: {PortalI18n: {t: value => value, html: tag}},
-    agentStatusData: {}, diskStatusData: {}, gpuStatusData: {}, scheduledTriggeredStatusData: {},
+    agentStatusData: {}, diskStatusData: {}, gpuStatusData: {}, driveStatusRefresh: null, scheduledTriggeredStatusData: {},
     activeAgentStatus: {}, agentStatusSummaryLoaded: true, agentStatusRunboardHtml: '',
     canRegisterAccount: false, canSetScheduler: false, accountRegistrationPending: false,
     currentScheduledTriggeredStatus: () => context.scheduledTriggeredStatusData,

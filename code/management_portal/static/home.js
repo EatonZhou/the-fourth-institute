@@ -29,7 +29,7 @@ const {
 });
 
 const {
-  gpuResourceHtml, gpuDetailsHtml, diskResourceHtml, diskDetailsHtml, renderLocalDiskWarning,
+  driveStorageHtml, gpuResourceHtml, gpuDetailsHtml, diskResourceHtml, diskDetailsHtml, renderLocalDiskWarning,
 } = window.PortalHomeSystemResources.createSystemResources({
   esc, formatDateTime,
 });
@@ -83,7 +83,7 @@ function displayDateTime(value) {
 }
 
 function ensureAgentStatusComponentHosts(node) {
-  const required = ["agent-accounts", "system-resources", "scheduled-triggered", "usage-attribution"];
+  const required = ["agent-accounts", "system-resources", "storage-resources", "scheduled-triggered", "usage-attribution"];
   const hosts = Object.fromEntries(required.map(id => [id, node?.querySelector?.(`[data-home-component="${id}"]`)]));
   const missing = required.filter(id => !hosts[id]);
   if (missing.length) {
@@ -141,14 +141,8 @@ function renderAgentStatus(data) {
       ${refreshNote}
       ${data?.accounts_refresh_error || data?.accounts_error ? window.PortalI18n.html`<div class="agent-status-error" role="alert" data-account-refresh-error>Agent status unavailable: ${esc(data.accounts_refresh_error || data.accounts_error)}</div>` : ""}
   `;
-  componentHosts["system-resources"].innerHTML = window.PortalI18n.html`
-      <div class="agent-status-resource-line">
-        ${gpuResourceHtml(gpu)}
-        ${diskResourceHtml(disk)}
-      </div>
-      ${gpuDetailsHtml(gpu)}
-      ${diskDetailsHtml(disk)}
-  `;
+  componentHosts["system-resources"].innerHTML = window.PortalI18n.html`<div class="agent-status-resource-line">${gpuResourceHtml(gpu)}</div>${gpuDetailsHtml(gpu)}`;
+  componentHosts["storage-resources"].querySelector("[data-home-disks]").innerHTML = window.PortalI18n.html`<div class="agent-status-resource-line">${diskResourceHtml(disk)}</div>${diskDetailsHtml(disk)}`;
   renderScheduledTriggeredStatus(componentHosts["scheduled-triggered"]);
   const nextRunboard = componentHosts["agent-accounts"].querySelector("[data-agent-status-runboard]");
   if (currentRunboard && nextRunboard && agentStatusRunboardHtml === runboardHtml) {
@@ -161,7 +155,8 @@ function renderAgentStatus(data) {
     refreshButton.addEventListener("click", async () => {
       const reads = [];
       if (homeController.isComponentVisible("agent-accounts")) reads.push(loadAgentStatus(true));
-      if (homeController.isComponentVisible("system-resources")) reads.push(loadGpuStatus(), loadDiskStatus());
+      if (homeController.isComponentVisible("system-resources")) reads.push(loadGpuStatus());
+      if (homeController.isComponentVisible("storage-resources")) reads.push(loadDiskStatus(), driveStatusRefresh?.refresh());
       if (homeController.isComponentVisible("scheduled-triggered")) reads.push(loadScheduledTriggeredStatus());
       await Promise.allSettled(reads);
     });
@@ -419,13 +414,32 @@ function connectAgentStatus({ context, signal }) {
 }
 
 function connectSystemResources({ context, signal }) {
+  context.currentUserReady.then(() => {
+    if (!signal.aborted) loadGpuStatus({force: false, signal});
+  });
+}
+
+let driveStatusRefresh = null;
+function connectStorageResources({ context, signal }) {
   context.currentUserReady.catch(() => {}).then(() => {
     if (signal.aborted) return;
     const disk = ensureDiskStatusRefresh();
     disk.start();
-    Promise.allSettled([loadGpuStatus({force: false, signal}), disk.refresh()]);
+    const node = document.querySelector("[data-home-drive]");
+    driveStatusRefresh = window.PortalRefreshCoordinator.create({
+      key: () => `home-drive:${portalUsername}`,
+      interval: 10000,
+      pauseWhenHidden: true,
+      fetch: ({signal}) => window.PortalInstructionClient.execute("GetDeviceStatus", {kind: "drive_storage"}, {signal}),
+      apply: report => { node.innerHTML = driveStorageHtml(report.devices?.[0]); },
+      onError: () => { node.textContent = window.PortalI18n.t("云盘状态暂不可用"); },
+    });
+    driveStatusRefresh.start();
+    Promise.allSettled([disk.refresh(), driveStatusRefresh.refresh()]);
   });
   return () => {
+    driveStatusRefresh?.destroy();
+    driveStatusRefresh = null;
     diskStatusRefresh?.destroy();
     diskStatusRefresh = null;
     diskStatusData = null;
@@ -447,7 +461,8 @@ const homeGroupPanels = {
   ]),
   "agent-status": groupPanels("agent-status", [
     { id: "agent-accounts", order: 10, title: "AI Activity & Accounts", icon: "pulse", source: '[data-home-component="agent-accounts"]', connect: connectAgentStatus },
-    { id: "system-resources", order: 20, title: window.PortalI18n.t("GPU / Disk Resources"), icon: "server", source: '[data-home-component="system-resources"]', connect: connectSystemResources },
+    { id: "system-resources", order: 20, title: window.PortalI18n.t("GPU"), icon: "server", source: '[data-home-component="system-resources"]', connect: connectSystemResources },
+    { id: "storage-resources", order: 21, title: window.PortalI18n.t("存储"), icon: "server", source: '[data-home-component="storage-resources"]', connect: connectStorageResources },
     { id: "scheduled-triggered", order: 30, title: window.PortalI18n.t("定时与自动触发"), icon: "bot", source: '[data-home-component="scheduled-triggered"]', connect: connectScheduledTriggered },
     { id: "usage-attribution", order: 40, title: window.PortalI18n.t("Usage Attribution"), icon: "list", source: '[data-home-component="usage-attribution"]', connect: connectUsageAttribution },
   ]),
@@ -496,7 +511,7 @@ const myPulseLayout = homeSplit("vertical", [
   homeStack(["personal-pulse"]),
 ], [1, 1]);
 const agentStatusLayout = homeSplit("vertical", [
-  homeSplit("horizontal", [homeStack(["agent-accounts"]), homeStack(["system-resources"])], [3, 2]),
+  homeSplit("horizontal", [homeStack(["agent-accounts"]), homeSplit("vertical", [homeStack(["system-resources"]), homeStack(["storage-resources"])], [1, 1])], [3, 2]),
   homeSplit("horizontal", [homeStack(["scheduled-triggered"]), homeStack(["usage-attribution"])], [1, 2]),
 ], [1, 1]);
 const agentStatusAccountsUsageLayout = homeSplit("vertical", [
@@ -599,7 +614,7 @@ const homeWorkbench = window.PortalHomeComponents.createWorkbenchComposition({
               id: "daily-overview",
               name: window.PortalI18n.t("每日概览"),
               layout: homeSplit("vertical", [homeStack(["agent-accounts"]), homeStack(["scheduled-triggered"])], [1, 1]),
-              hidden: ["system-resources", "usage-attribution"],
+              hidden: ["system-resources", "storage-resources", "usage-attribution"],
             },
           },
         },
@@ -615,7 +630,7 @@ const homeWorkbench = window.PortalHomeComponents.createWorkbenchComposition({
               id: "accounts-usage",
               name: window.PortalI18n.t("账号与用量"),
               layout: agentStatusAccountsUsageLayout,
-              hidden: ["system-resources", "scheduled-triggered"],
+              hidden: ["system-resources", "storage-resources", "scheduled-triggered"],
             },
           },
         },

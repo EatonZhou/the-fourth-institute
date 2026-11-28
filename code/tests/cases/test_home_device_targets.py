@@ -73,3 +73,15 @@ def test_local_gpu_script_needs_no_ssh_config(monkeypatch, capsys):
     assert calls[0][0] == [module.sys.executable, "-"]
     assert calls[0][1]["input"] == module.REMOTE_SCRIPT
     assert '"gpu_count": 1' in capsys.readouterr().out
+
+
+def test_home_drive_checks_resource_visibility_before_collection(monkeypatch):
+    from management_portal import google_cloud_devices, web_isa
+    from management_portal.resources.access import ResourceAccessPolicy
+
+    monkeypatch.setattr(google_cloud_devices, "settings", lambda: {"drive_device_id": "drive"})
+    monkeypatch.setattr(ResourceAccessPolicy, "readable_ids", lambda self, ids, actor: set())
+    monkeypatch.setattr(status, "get_google_device_status", lambda **kw: pytest.fail("unauthorized quota"))
+    monkeypatch.setattr(google_cloud_devices, "active_drive_transfers", lambda: pytest.fail("unauthorized transfers"))
+    request = SimpleNamespace(caller="viewer", argument={"kind": "drive_storage"}.get)
+    assert web_isa.get_device_status(request) == {"devices": []}

@@ -186,6 +186,22 @@
       node.hidden = !warnings.length;
     }
 
+    function driveStorageHtml(device) {
+      if (!device) return "";
+      const bytes = value => Number.isFinite(value) ? formatBytes(value) : "—";
+      const transfers = device.transfers;
+      const rows = Array.isArray(transfers) ? transfers.map(item => {
+        const direction = {upload: "上传", download: "下载"}[item.direction] || "传输";
+        const progress = Number.isFinite(item.bytes) ? bytes(item.bytes) + (Number.isFinite(item.size) ? " / " + bytes(item.size) : "") : "";
+        const speed = Number.isFinite(item.speed) ? bytes(item.speed) + "/s" : "";
+        return window.PortalI18n.html`<div class="agent-status-gpu-row"><strong>${esc(window.PortalI18n.t(direction))} · ${esc(item.name)}</strong><span>${esc([progress, speed].filter(Boolean).join(" · "))}</span></div>`;
+      }).join("") : "";
+      return window.PortalI18n.html`<div class="agent-status-gpu-card"><strong>Google Drive</strong>
+        <div>总量 ${esc(bytes(device.storage_total_bytes))} · 已用 ${esc(bytes(device.storage_used_bytes))} · 可用 ${esc(bytes(device.storage_free_bytes))}</div>
+        ${device.stale ? esc(window.PortalI18n.t("容量为上次观测")) : ""}
+        ${rows || esc(window.PortalI18n.t(Array.isArray(transfers) ? "当前没有云盘传输" : "云盘传输状态暂不可用"))}</div>`;
+    }
+
     function diskResourceHtml(disk) {
       return window.PortalI18n.html`<span>${esc(diskSummaryText(disk))}${disk?.refreshing ? window.PortalI18n.t(" · 采集中") : ""}</span>`;
     }
@@ -320,7 +336,7 @@
     }
 
     return Object.freeze({
-      gpuResourceHtml, gpuDetailsHtml, diskResourceHtml, diskDetailsHtml, renderLocalDiskWarning,
+      driveStorageHtml, gpuResourceHtml, gpuDetailsHtml, diskResourceHtml, diskDetailsHtml, renderLocalDiskWarning,
     });
   }
 

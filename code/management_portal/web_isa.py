@@ -735,6 +735,15 @@ def get_device_status(inv: Invocation) -> dict[str, Any]:
         return agent_status_backend.get_physical_disk_capacity(device_id, ssd_only=inv.argument("kind") == "ssd_capacity")
     if inv.argument("kind") == "local_disk_capacity":
         return agent_status_backend.get_local_disk_capacity(force_refresh=refresh, resource_id=device_id)
+    if inv.argument("kind") == "drive_storage":
+        from management_portal import google_cloud_devices
+        from management_portal.resources.access import ResourceAccessPolicy
+
+        drive_id = google_cloud_devices.settings().get("drive_device_id")
+        if not drive_id or drive_id not in ResourceAccessPolicy().readable_ids([drive_id], actor=inv.caller):
+            return {"devices": []}
+        devices = agent_status_backend.get_google_device_status(device_id=drive_id)
+        return {"devices": [{**device, "transfers": google_cloud_devices.active_drive_transfers()} for device in devices]}
     if inv.argument("kind") == "cloud":
         return {"devices": agent_status_backend.get_google_device_status(force_refresh=refresh, device_id=device_id)}
     if inv.argument("kind") == "disk":
