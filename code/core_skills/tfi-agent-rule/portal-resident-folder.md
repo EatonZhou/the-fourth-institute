@@ -5,7 +5,6 @@ Resident Folder 是一个 Lineage 节点的身份与记录目录，属于 System
 ```text
 <lineage_folder>/residents/<resident_id>/
 ├── resident.md
-├── diary.md
 ├── mailbox.md
 ├── workspaces.md
 ├── workspace/
@@ -19,7 +18,7 @@ Resident Folder 是一个 Lineage 节点的身份与记录目录，属于 System
 ## 文件职责
 
 - `resident.md`：节点长期身份、职责、偏好和边界。
-- `diary.md`：节点跨会话连续工作所需的简短记录。
+- `workspace/diary.md`：按需创建，记录节点跨会话连续工作的要点。
 - `mailbox.md`：协作者用文件留言的约定入口；不自动进入模型输入，不代替 Portal 消息。
 - `workspaces.md`：Workspace Registry 与 Lineage Binding 的可读投影。
 - `workspace/`：单独登记的节点自有 Workspace，保存 Seed、报告和其他运行产物。
@@ -41,4 +40,4 @@ Context fork 创建自己的节点和 `workspace/`，并继承父节点绑定的
 
 修改 Resident Folder 或 Binding 前，检查 actor 权限，说明修改对象与效果，并取得用户确认；当前请求已经明确要求时不重复询问。
 
-身份与长期职责写入 `resident.md`；连续性写入 `diary.md`；Portal 协作消息通过正式消息接口处理；Workspace Binding 先更新数据库真值再生成清单；组件本地运行资料写入 `runtime/`；任务文件写入 Workspace。看到额外文件时先判断实际职责，不因其未列在基础结构中而删除。
+身份与长期职责写入 `resident.md`；连续性写入 `workspace/diary.md`；Portal 协作消息通过正式消息接口处理；Workspace Binding 先更新数据库真值再生成清单；组件本地运行资料写入 `runtime/`；任务文件写入 Workspace。看到额外文件时先判断实际职责，不因其未列在基础结构中而删除。
