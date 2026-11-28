@@ -23,7 +23,9 @@ from types import SimpleNamespace
 from management_common.provider_subagent_runs import PROGRESS_METHOD, STOPPING_METHOD, SubagentRuns
 from management_portal.native_agent_transport import NativeAgentClient, NativeAgentError, NativeAgentUnavailable
 from management_portal import opencode_provider_catalog
-from management_portal.resident_shell_environment import resident_process_environment, resident_identity_fingerprint
+from management_portal.resident_shell_environment import (
+    resident_identity_fingerprint, resident_identity_only, resident_process_environment,
+)
 from management_portal.execution.provider_session_features import session_features_enabled
 
 PROVIDER = "opencode"
@@ -189,14 +191,22 @@ class OpenCodeClient:
                 "inherit_portal_database": bool(params.get("inherit_portal_database")),
                 "version": opencode_provider_catalog.version(),
                 "snapshot": session_features_enabled("opencode"),
+                # The whole shell environment the bridge checks each turn against.
                 "identity_fingerprint": hashlib.sha256(
                     json.dumps(identity, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest(),
+                # The Resident alone: Workspace bindings may change between turns.
+                "resident_fingerprint": hashlib.sha256(json.dumps(
+                    resident_identity_only(identity), sort_keys=True, separators=(",", ":"), ensure_ascii=False,
+                ).encode()).hexdigest(),
             }
             # Existing session databases stay at their original location. New native
             # sessions share storage only within the account and inherited shell authority.
-            scope = account_scope(route, identity, config["inherit_portal_database"])
+            scope = account_scope(route, resident_identity_only(identity), config["inherit_portal_database"])
+            # A changed environment (new Workspace variables) is a new generation:
+            # an idle bridge is relaunched so its shells see the current values.
             generation = digest(json.dumps([scope, config["binary"], config["version"], config["provider"],
-                                            digest(key or ""), BRIDGE.stat().st_mtime_ns], sort_keys=True))
+                                            digest(key or ""), BRIDGE.stat().st_mtime_ns,
+                                            config["identity_fingerprint"]], sort_keys=True))
             config["generation"] = generation
             if not (root / "opencode.db").exists():
                 config.update(account_state=str(STATE / "accounts" / scope),
@@ -204,7 +214,9 @@ class OpenCodeClient:
             launch = root / "launch.json"
             if launch.is_file():
                 previous = json.loads(launch.read_text())
-                if any(previous.get(key) != config[key] for key in ("route", "identity_fingerprint", "cwd")):
+                # Launches before resident_fingerprint recorded only the whole environment.
+                if any(previous.get(key) != config[key] for key in ("route", "cwd")) or (
+                        "resident_fingerprint" in previous and previous["resident_fingerprint"] != config["resident_fingerprint"]):
                     raise ValueError("OpenCode session account, shell identity or directory changed")
                 if "inherit_portal_database" in previous and previous["inherit_portal_database"] != config["inherit_portal_database"]:
                     raise ValueError("OpenCode session shell authority changed")
@@ -295,7 +307,7 @@ class OpenCodeClient:
             import tempfile
             native = export["info"]["id"]
             identity = resident_identity_fingerprint(options.get("resident_environment"))
-            scope = account_scope(provider_profile, identity, options.get("inherit_portal_database"))
+            scope = account_scope(provider_profile, resident_identity_only(identity), options.get("inherit_portal_database"))
             account = STATE / "accounts" / scope
             account.mkdir(mode=0o700, parents=True, exist_ok=True)
             env = {k: os.environ[k] for k in ("PATH", "SYSTEMROOT", "TMPDIR") if k in os.environ}

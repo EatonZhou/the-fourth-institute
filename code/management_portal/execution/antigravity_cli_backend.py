@@ -286,6 +286,11 @@ class AntigravityCliBackend:
                 raise RuntimeError("Antigravity returned no session ID")
             if previous_id and previous_id != session_id:
                 raise RuntimeError("Antigravity resumed a different session")
+            if not portal_only and "resident_environment" in request.runtime_options:
+                from management_portal.resident_shell_environment import write_shared_workspace_environment
+                # The shells carry ANTIGRAVITY_CONVERSATION_ID, so this file also
+                # reaches commands run outside the Resident's folder.
+                write_shared_workspace_environment(request.runtime_options["resident_environment"], session_id=session_id)
             def release():
                 with suppress(AcpError, OSError, TimeoutError):
                     client.call("session/close", {"sessionId": session_id}, timeout=10)

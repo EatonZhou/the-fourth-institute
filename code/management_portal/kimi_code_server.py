@@ -135,7 +135,7 @@ def account_main(account_id, binary, port, *, supervised=False):
     """Own the API adapter for exactly as long as this native account server."""
     from . import kimi_account_runtime, kimi_provider_catalog, model_api_bridge
     from .provider_daemon_host import run
-    from .resident_shell_environment import resident_process_environment
+    from .resident_shell_environment import resident_process_environment, shared_server_environment
     account = kimi_account_runtime.account_for_route(account_id)
     if account['kind'] not in {'api_profile', 'subscription_login'} or not 0 < port < 65536:
         raise ValueError('Invalid on-demand Kimi account server')
@@ -143,7 +143,7 @@ def account_main(account_id, binary, port, *, supervised=False):
     try:
         kimi_provider_catalog.write_config(account, target)
         env, _ = resident_process_environment({})
-        env.update(KIMI_CODE_HOME=str(target))
+        env.update(KIMI_CODE_HOME=str(target), **shared_server_environment())
         env.update(kimi_windows_runtime.environment())
         if supervised:
             kimi_account_runtime.record_service(account, binary, port)
@@ -209,6 +209,10 @@ def main(argv=None) -> int:
         "KIMI_MODEL_ADAPTIVE_THINKING",
     ):
         env.pop(key, None)
+    from .resident_shell_environment import shared_server_environment
+    # Every Resident's session runs in this one process; their shells read
+    # their own Workspace variables through the hook.
+    env.update(shared_server_environment())
     env.update({
         "KIMI_CODE_HOME": str(kimi_home),
         "KIMI_CODE_AGENT_SWARM_MAX_CONCURRENCY": str(settings().get("swarm_max_concurrency", 3)),

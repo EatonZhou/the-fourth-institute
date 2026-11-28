@@ -11,13 +11,19 @@ Resident 可按现有权限读取项目。普通任务在相应用途的 workspa
 
 Provider 的默认 cwd 始终使用 Resident 自有 Workspace。写入其他 Workspace 时，从绑定记录或已知 Workspace ID 取得登记路径，用目标文件的绝对路径或工具的输出路径参数指定落点。
 
-## Provider 的 Workspace 路径变量（拟议接口）
+## Provider 的 Workspace 路径变量
 
 Provider 启动任务时，从当前 Resident 的绑定记录取得各 Workspace 的真实绝对路径，并注入执行命令的进程环境。自有 Workspace 也包含在内。每项绑定都有一个以稳定 Workspace ID 命名的变量，例如 workspace_4d69f2c8b978 对应 PORTAL_WORKSPACE_4D69F2C8B978。多个同类绑定分别保留，重命名或调整绑定顺序不影响变量名。
 
-常用位置提供短名：PORTAL_RESIDENT_WORKSPACE 指向本节点自有 Workspace；PORTAL_LINEAGE_WORKSPACE 指向本节点所在 Lineage 的 `<项目>/agents/lineage_<ID>/workspace/`，PORTAL_PROJECT_WORKSPACE 指向所在项目的 `<项目>/workspace/`，均按规范目录树中的路径确定。对应 Workspace 未绑定时，省略该短名。独立 Workspace 按 ID 引用。
+常用位置提供短名：PORTAL_RESIDENT_WORKSPACE 指向本节点自有 Workspace；PORTAL_LINEAGE_WORKSPACE 指向本节点所在 Lineage 的 `<lineage_folder>/workspace/`，项目内即 `<项目>/agents/lineage_<ID>/workspace/`，不属于项目的 Lineage 为 `lineages:<lineage_id>/workspace/`；PORTAL_PROJECT_WORKSPACE 指向所在项目的 `<项目>/workspace/`，不属于项目的 Lineage 没有这个短名。短名均按规范目录树中的路径确定。对应 Workspace 未绑定时，省略该短名。独立 Workspace 按 ID 引用。
 
-绑定发生变化时，下一次启动命令前按最新记录刷新受管变量，并移除已解绑项。变量仅提供路径导航，访问权限沿用现有机制。此接口实施前仍通过绑定记录取得路径。
+绑定发生变化后，受管变量按最新记录刷新，已解绑项被移除。变量仅提供路径导航，访问权限和沙箱沿用现有机制。
+
+长驻的原生进程无法在每条命令前改写自身环境，因此各 Provider 按轮刷新：一轮开始时取当前绑定，这一轮里启动的命令使用这组值，下一轮生效新的绑定。
+- **Codex**：变量随每轮的线程配置（`shell_environment_policy`）发给 app-server。
+- **Claude Code**：变量属于会话签名；值有变化时，下一轮前按新环境重启该会话的 CLI 进程。
+- **Kimi Code、Antigravity**：一个服务进程运行多个 Resident 的会话。Worker 每轮执行前把该 Resident 的变量写入 `runtime/workspace-env/`；服务进程启动的每个 bash 通过 `BASH_ENV` 钩子读取。Antigravity 按会话 ID（`ANTIGRAVITY_CONVERSATION_ID`）找到本会话的文件；Kimi Code 按命令工作目录所在的 Resident Folder 找到文件，工作目录在 Resident Folder 之外的命令拿不到这些变量。
+- **DSH、OpenCode**：每个会话一个进程；值有变化时，下一轮在会话空闲时按新环境重启进程，正在运行的一轮保留原进程。
 
 ## 规范目录树
 

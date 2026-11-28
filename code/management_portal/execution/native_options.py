@@ -27,6 +27,9 @@ class NativeOptions:
     permission_labels = {}
     native_permission_modes = {}
     default_permission_preset = ""
+    # One native server process runs the shells of several Residents, so the
+    # Workspace path variables reach them through a per-Resident file.
+    shared_shell_server = False
 
     def capabilities(self, definition):
         # The Harness features this Backend can run follow from what its
@@ -331,6 +334,7 @@ class KimiOptions(NativeOptions):
     permission_labels = {"manual": "Manual", "full-access": "Full Access"}
     native_permission_modes = {"manual": "manual", "full-access": "yolo"}
     default_permission_preset = "full-access"
+    shared_shell_server = True
 
     def prepare(self, invocation):
         options = dict(invocation.request.runtime_options)
@@ -358,9 +362,14 @@ class KimiOptions(NativeOptions):
 def prepare_invocation(invocation):
     from . import provider_catalog
     request = invocation.request
+    definition = provider_catalog.AGENT_PROVIDERS[request.provider]
+    adapter = definition.runtime_adapter()
     if "resident_environment" in request.runtime_options:
         environment = resident_session_environment(request.runtime_options["resident_environment"])
         options = {**request.runtime_options, "resident_environment": environment}
         invocation = replace(invocation, request=replace(request, runtime_options=options))
-    definition = provider_catalog.AGENT_PROVIDERS[request.provider]
-    return definition.runtime_adapter().prepare(invocation)
+        if getattr(adapter, "shared_shell_server", False):
+            from management_portal.resident_shell_environment import write_shared_workspace_environment
+            # Refreshed before every turn; the server's shells source it (resident_workspace_env.bash).
+            write_shared_workspace_environment(environment)
+    return adapter.prepare(invocation)

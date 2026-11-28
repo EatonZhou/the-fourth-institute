@@ -90,6 +90,68 @@ def resident_session_environment(value: Mapping[str, str] | None) -> dict[str, s
     return _resident_environment(value or {}, extensible=True)
 
 
+def workspace_fields(environment: Mapping[str, str]) -> dict[str, str]:
+    """The Workspace path variables (``PORTAL_WORKSPACE_<ID>`` and the short names) of an environment."""
+    return {key: value for key, value in environment.items() if SESSION_WORKSPACE_FIELD.fullmatch(key)}
+
+
+def resident_identity_only(environment: Mapping[str, str]) -> dict[str, str]:
+    """The environment without its Workspace path variables: what names the Resident."""
+    return {key: value for key, value in environment.items() if not SESSION_WORKSPACE_FIELD.fullmatch(key)}
+
+
+# Shared Provider servers (one process for several Residents) give every shell
+# this hook; it sources the variables the Worker wrote for the shell's
+# session or Resident (write_shared_workspace_environment).
+WORKSPACE_ENV_HOOK = Path(__file__).with_name("resident_workspace_env.bash")
+NATIVE_SESSION_KEY = re.compile(r"[A-Za-z0-9-]{1,80}")
+STALE_SESSION_FILE_SECONDS = 30 * 24 * 3600
+
+
+def shared_workspace_environment_dir() -> Path:
+    from management_common import portal_paths
+    return portal_paths.path("runtime") / "workspace-env"
+
+
+def shared_server_environment() -> dict[str, str]:
+    """What a shared Provider server's environment adds so its shells find their Workspace variables."""
+    return {"BASH_ENV": str(WORKSPACE_ENV_HOOK), "PORTAL_SHARED_SHELL_ENV_DIR": str(shared_workspace_environment_dir())}
+
+
+def write_shared_workspace_environment(value: Mapping[str, str] | None, *, session_id: str = "") -> None:
+    """Replace the Workspace variables a shared server's shells source for this Resident (and native session).
+
+    Each turn rewrites the whole file, so unbound Workspaces disappear from the
+    next command on. The file holds paths only.
+    """
+    import shlex
+    import time
+    from management_common.file_permissions import atomic_write_private_bytes
+
+    raw = dict(value or {})
+    if not (read_product_env("PORTAL_RESIDENT_ID", "", environ=raw) and read_product_env("PORTAL_LINEAGE_ID", "", environ=raw)):
+        return  # Not a Resident's turn: no variables to give.
+    environment = resident_session_environment(raw)
+    resident = read_product_env("PORTAL_RESIDENT_ID", "", environ=environment)
+    if not re.fullmatch(r"resident_[0-9a-f]{12}", resident):
+        return
+    text = "".join(f"export {key}={shlex.quote(item)}\n" for key, item in sorted(workspace_fields(environment).items()))
+    directory = shared_workspace_environment_dir()
+    directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+    atomic_write_private_bytes(directory / f"{resident}.sh", text.encode())
+    if session_id:
+        if not NATIVE_SESSION_KEY.fullmatch(session_id):
+            raise ValueError("Invalid native session identity")
+        atomic_write_private_bytes(directory / f"session-{session_id}.sh", text.encode())
+        cutoff = time.time() - STALE_SESSION_FILE_SECONDS
+        for path in directory.glob("session-*.sh"):
+            try:
+                if path.stat().st_mtime < cutoff:
+                    path.unlink()
+            except FileNotFoundError:
+                pass
+
+
 def resident_identity_fingerprint(value: Mapping[str, Any] | None) -> dict[str, str]:
     """Use the same canonical identity for processes and session fingerprints."""
     environment = resident_session_environment(value)

@@ -365,11 +365,14 @@ def account_configuration(account_id, portal_only=False):
     from management_portal import antigravity_accounts as accounts
     from management_portal.antigravity_runtime import command, credential_environment
     from management_portal.execution.antigravity_cli import PORTAL_AGENT, write_portal_agent
-    from management_portal.resident_shell_environment import resident_process_environment
+    from management_portal.resident_shell_environment import resident_process_environment, shared_server_environment
 
     row = accounts.account_for_route(account_id)
     env, _ = resident_process_environment({})
     env.update(accounts.environment(row["account_id"]), **credential_environment(), PORTAL_SHARED_ACP="1")
+    # The account's sessions belong to several Residents; their shells read
+    # their own Workspace variables through the hook.
+    env.update(shared_server_environment())
     args = command(env)
     cwd = registered_home(row)
     if portal_only:

@@ -79,6 +79,19 @@ def _digest(value):
     return hashlib.sha256(value.encode()).hexdigest()[:32]
 
 
+def _environment_digest(params) -> str:
+    """The Resident environment (identity and Workspace variables) a process was launched with."""
+    identity = resident_identity_fingerprint(params.get("resident_environment"))
+    return hashlib.sha256(json.dumps(identity, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+
+
+def _read_text(path) -> str:
+    try:
+        return path.read_text()
+    except OSError:
+        return ""
+
+
 def session_id_for(turn_id: str) -> str:
     return "dsh-" + _digest(turn_id)
 
@@ -129,9 +142,30 @@ class DshClient:
         root = STATE / session_id
         root.mkdir(exist_ok=True, mode=0o700)
         with (root / "launch.lock").open("a+") as lock, lock_stream(lock):
+            # The process's shells keep the environment it started with. When
+            # the Resident's Workspace bindings changed, an idle process is
+            # relaunched so the next command sees the current variables.
+            environment_marker = root / "environment.sha256"
+            expected = _environment_digest(params)
             try:
                 transport._request("health", response_timeout=3)
-                return transport
+                if _read_text(environment_marker) == expected:
+                    return transport
+                try:
+                    transport._request("session/close", {"session_id": session_id}, response_timeout=30)
+                except NativeAgentUnavailable:
+                    pass
+                except NativeAgentError:
+                    return transport  # A running turn keeps its process.
+                deadline = time.monotonic() + 30
+                while time.monotonic() < deadline:
+                    time.sleep(0.05)
+                    try:
+                        transport._request("health", response_timeout=3)
+                    except NativeAgentUnavailable:
+                        break
+                else:
+                    return transport
             except NativeAgentUnavailable:
                 pass
             row = dsh_provider_catalog.profile(params["provider_profile"])
@@ -229,6 +263,7 @@ class DshClient:
                 host = Path(__file__).resolve().parents[1] / "management_common/process_host.py"
                 process = spawn_process([sys.executable, "-I", str(host), "node", str(launcher), "--profile", "portal-resident"],
                     cwd=params["cwd"], env=env, stdin=subprocess.DEVNULL, stdout=log, stderr=log, kill_on_owner_exit=False)
+            environment_marker.write_text(expected)
             try:
                 deadline = time.monotonic() + 75
                 while time.monotonic() < deadline:

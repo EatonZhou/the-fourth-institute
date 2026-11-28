@@ -241,6 +241,32 @@ def test_account_reuses_server_for_concurrent_sessions_and_partitions_shell_scop
     assert len(opencode.servers()) == 2
 
 
+def test_changed_workspace_bindings_relaunch_the_idle_session_with_current_variables(opencode):
+    """Workspace 绑定变化后 OpenCode 会话下一轮按新变量重启，已解绑的变量消失；换 Resident 仍被拒绝
+
+    :module: platform.core
+    :design: decision_ccb99a00eebd"""
+    # The fake server records PORTAL_TEAM_WORKSPACE among the Workspace variables.
+    identity = {"PORTAL_RESIDENT_ID": "resident_0123456789ab", "PORTAL_LINEAGE_ID": "lineage_0123456789ab",
+                "PORTAL_TEAM_WORKSPACE": str(opencode.state / "bound")}
+    first = _run_turn(opencode, "bound", "plain", resident_environment=identity)
+    assert opencode.servers()[-1]["PORTAL_TEAM_WORKSPACE"] == identity["PORTAL_TEAM_WORKSPACE"]
+    launch = opencode.state / first.session_id / "launch.json"
+    before = json.loads(launch.read_text())
+    unbound = {key: value for key, value in identity.items() if key != "PORTAL_TEAM_WORKSPACE"}
+    opencode.client._start(first.session_id, {"cwd": opencode.cwd, "provider_profile": ROUTE, "resident_environment": unbound})
+    after = json.loads(launch.read_text())
+    assert after["generation"] != before["generation"]
+    # The fake records every listed variable, null when the process lacks it.
+    assert opencode.servers()[-1].get("PORTAL_TEAM_WORKSPACE") is None
+    assert opencode.servers()[-1]["PORTAL_RESIDENT_ID"] == identity["PORTAL_RESIDENT_ID"]
+    # The relaunched server reads the session from the same account storage.
+    assert after["account_state"] == before["account_state"]
+    other = {**unbound, "PORTAL_RESIDENT_ID": "resident_ba9876543210"}
+    with pytest.raises(ValueError, match="shell identity"):
+        opencode.client._start(first.session_id, {"cwd": opencode.cwd, "provider_profile": ROUTE, "resident_environment": other})
+
+
 def test_idle_session_reopens_on_a_new_account_generation(opencode):
     session_id = _run_turn(opencode, "generation", "plain").session_id
     transport = opencode.client._transport(session_id)
