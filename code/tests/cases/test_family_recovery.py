@@ -431,3 +431,32 @@ def test_completed_retry_is_observed_and_other_users_cannot_resume_the_request(f
     command = _send(family, "continue")
     assert _view(family, command)["original_message_id"] == root
     assert _view(family, command)["status"] == "completed"
+
+
+def test_script_quota_review_is_visible_until_a_new_routing_attempt(family):
+    from management_portal.society_service import trigger_paths, trigger_path_storage
+
+    root = _send(family, "quota review")
+    facade = _record(family)
+    lineage_id, family_id = facade['lineage_id'], facade['family']['family_id']
+    facade_id = family['facade']
+    payload = {"input_business_ref": f"family-route/{facade_id}/message/{root}"}
+    event = {"id": "event_route_review", "occurred_at": trigger_paths.now(), "payload": payload}
+    path = trigger_paths.begin_event(lineage_id, "router", event, cause_kind="input", cause_id=root)
+    with trigger_paths.data_store().database.transaction() as connection:
+        connection.execute("INSERT INTO function_block_elements VALUES (%s,%s,'component','route_relay')",
+                           (family_id, "effect_review"))
+        step = trigger_path_storage.admit_step(connection, trigger_path_id=path, node_id="effect_review",
+                                              kind="effect", activation_key="relay", created_at=event["occurred_at"])
+        trigger_path_storage.transition_step(connection, step, status="completed", at=event["occurred_at"],
+            result={"outputs": {"state": "waiting_for_quota_review", "steward_message_id": "msg_review"}})
+
+    def progress():
+        shown = family_facade.project_messages(facade, [{"role": "user", "message_id": root}],
+                                               input_states={root: "queued"})
+        return shown[0]["relay"]["state"]
+
+    assert progress() == "quota_review"
+    trigger_paths.begin_event(lineage_id, "router", {**event, "id": "event_retry", "occurred_at": trigger_paths.now()},
+                              cause_kind="input", cause_id=root)
+    assert progress() == "routing"

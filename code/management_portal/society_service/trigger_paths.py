@@ -278,6 +278,28 @@ def find_event_paths(lineage_id: str, payload: Mapping[str, str], *, limit: int 
     return results
 
 
+def family_review_progress(lineage_id, family_id, facade_id, message_ids):
+    """Read the latest route attempt for each unresolved input, including script-driven reviews."""
+    if not message_ids:
+        return {}
+    with data_store().database.read() as connection:
+        rows = connection.execute(
+            "SELECT inputs.mid, step.result_json::jsonb->'outputs'->>'state' AS review_state "
+            "FROM unnest(%s::text[]) inputs(mid) CROSS JOIN LATERAL ("
+            "SELECT p.trigger_path_id FROM trigger_paths p WHERE p.lineage_id=%s AND ("
+            "p.input_json::jsonb->'payload' @> jsonb_build_object('resident_id', %s::text, 'message_id', inputs.mid) OR "
+            "p.input_json::jsonb->'payload' @> jsonb_build_object('input_business_ref', %s::text || inputs.mid)) "
+            "ORDER BY p.occurred_at DESC,p.trigger_path_id DESC LIMIT 1) attempt "
+            "JOIN trigger_path_steps step ON step.trigger_path_id=attempt.trigger_path_id "
+            "JOIN function_block_elements elem ON elem.function_block_id=%s AND elem.element_id=step.node_id "
+            "WHERE elem.element_key IN ('inbox','route_relay') AND step.kind='effect' AND step.status='completed' "
+            "AND COALESCE(step.result_json::jsonb->'outputs'->>'steward_message_id', '') <> ''",
+            (list(message_ids), lineage_id, facade_id, f"family-route/{facade_id}/message/", family_id),
+        ).fetchall()
+    states = {"waiting_for_quota_review": "quota_review", "waiting_for_steward": "scope_review"}
+    return {row["mid"]: {"state": states[row["review_state"]]} for row in rows if row["review_state"] in states}
+
+
 def list_paths(lineage_id: str, *, limit: int = 50, offset: int = 0, resident_id: str = "") -> tuple[list[dict[str, Any]], int]:
     where, params = "p.lineage_id=%s", [lineage_id]
     if resident_id:

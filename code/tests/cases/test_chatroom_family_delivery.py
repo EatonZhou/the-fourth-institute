@@ -36,6 +36,9 @@ def test_chatroom_waits_for_family_work_and_projects_its_terminal(delivery_resid
     facade = resident_record_domain.find_resident(facade_id)
     _register_test_member(facade, "Implementation")
     set_role(MEMBER, family_id="fbi_chatroom_family", role="member", actor="sample_admin")
+    from management_portal.society_service import facade_members
+    from management_portal.society_service.state_store import get_lineage_data_store
+    get_lineage_data_store().database.write(lambda c: facade_members.replace(c, facade_id, [MEMBER]))
     room_id = chatroom.create_chatroom("sample_admin", ["bob"], "Family work")["chatroom_id"]
     posted = chatroom.post_message("sample_admin", room_id, [{"type": "text", "text": f"@{facade_id} Fix it"}])
     delivery, = posted["deliveries"]

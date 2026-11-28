@@ -848,6 +848,14 @@ def project_messages(
     selected = {str(message.get("message_id") or ""): links[str(message["message_id"])]
                 for message in messages if isinstance(message, dict) and message.get("role") == "user"
                 and str(message.get("message_id") or "") in links}
+    from . import trigger_paths
+    review_candidates = [m["message_id"] for m in messages if isinstance(m, dict) and m.get("role") == "user"
+                         and states.get(m.get("message_id")) == "queued" and m["message_id"] not in links
+                         and m["message_id"] not in recoveries and not any(m.get(mark) for mark in INFO_MARKS)]
+    family_id = facade_configuration(facade).get("family_id")
+    script_reviews = trigger_paths.family_review_progress(
+        resident_lineage.lineage_id(facade), family_id, facade_id, review_candidates,
+    ) if review_candidates and family_id else {}
     projected = _relay_views(selected, repository, members)
     result: list[Any] = []
     shared_replies: dict[tuple[str, str], dict[str, Any]] = {}
@@ -877,6 +885,8 @@ def project_messages(
                 elif review.get("status") == "waiting":
                     message["relay"] = {"state": "quota_review", "resident_id": review["member_id"],
                                         "quota_remaining_percent": review.get("quota_remaining_percent")}
+                elif message_id in script_reviews:
+                    message["relay"] = script_reviews[message_id]
                 elif _unavailable_handoff(facade, message):
                     message["relay"] = {"state": "failed", "error": {"message": "原卡片的发出成员已不可用，未重新路由"}}
                 elif direct := direct_member(facade, message):
