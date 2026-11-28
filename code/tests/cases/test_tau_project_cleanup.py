@@ -90,6 +90,48 @@ def test_denied_project_cleanup_requires_same_actor_completed_receipt(monkeypatc
     assert calls == ['DeleteProject', 'GetProjectDeletion']
 
 
+@pytest.mark.parametrize('owner', ['absent', 'registered', 'pending', 'wall', 'open_scope'])
+def test_closed_test_project_cleanup_checks_both_registries(tmp_path, monkeypatch, owner):
+    from contextlib import nullcontext
+    from types import SimpleNamespace
+
+    from management_portal import project_registry, wall_backend
+    from management_portal.resources import project_deletion_effects
+
+    pid = 'project-446a38ff874400ce'
+    scope = allocate(tmp_path, pid)
+    if owner != 'open_scope':
+        LifecycleStore().request_close(scope)
+    monkeypatch.setattr(project_registry, 'project', lambda _id: {'id': pid} if owner == 'registered' else None)
+    entry = {'effects': {'status': 'pending'}} if owner == 'pending' else None
+    registry = SimpleNamespace(database=SimpleNamespace(snapshot=nullcontext), get=lambda *_: entry)
+    monkeypatch.setattr(project_deletion_effects, 'get_registry_store', lambda: registry)
+    monkeypatch.setattr(project_deletion_effects, 'exclusive', lambda _id: nullcontext())
+    monkeypatch.setattr(wall_backend, 'projects', lambda actor: {
+        'capabilities': {'register': True},
+        'projects': [{'id': pid}] if owner == 'wall' else [],
+    })
+    calls = []
+
+    def call(actor, name, arguments, **options):
+        assert actor == 'test-actor' and arguments == {'project_id': pid}
+        calls.append(name)
+        if name == 'DeleteProject':
+            raise InstructionError('instruction.forbidden', 'not allowed')
+        assert name == 'GetProjectDeletion'
+        raise InstructionError('instruction.not_found', 'no own receipt')
+
+    monkeypatch.setattr(isa_client, 'call', call)
+    key = f'test-release:{scope}:{pid}'
+    if owner == 'absent':
+        tau_fixtures._release_resource(pid, key)
+        tau_fixtures._release_resource(pid, key)
+    else:
+        with pytest.raises(InstructionError, match='not allowed'):
+            tau_fixtures._release_resource(pid, key)
+    assert calls == ['DeleteProject', 'GetProjectDeletion']
+
+
 def test_case_and_run_cleanup_share_project_owner(tmp_path, monkeypatch):
     """逐例及整轮清理处理已分配自然 Project，未分配对象保持不动。
 

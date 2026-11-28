@@ -33,6 +33,18 @@ def status_for_actor(project_id, actor):
             'deleted_at': entry.get('deleted_at'), 'effects': deepcopy(entry.get('effects') or {})}
 
 
+def registration_release_complete(project_id):
+    """Confirm the current Project owner has neither the identity nor unfinished deletion effects."""
+    from management_portal import project_registry
+
+    registry = get_registry_store()
+    with exclusive(project_id), registry.database.snapshot():
+        if project_registry.project(project_id) is not None:
+            return False
+        entry = registry.get(COLLECTION, project_id)
+        return entry is None or entry.get('effects', {}).get('status') == 'complete'
+
+
 def _permissions(entry):
     from management_portal import permission_system
     return permission_system.unregister_resources(entry['resource_ids'])

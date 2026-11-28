@@ -100,6 +100,29 @@ def _denied_confirmation(error, resource_id, instruction, *, result=None, failur
     )
 
 
+def _closed_test_project_is_absent(resource_id, key):
+    """Settle an allocated test name with no live or pending owner, without deleting it."""
+    from management_common.resource_lifecycle import LifecycleStore
+    from management_portal import wall_backend
+    from management_portal.resources.project_deletion_effects import registration_release_complete
+
+    prefix, _, payload = key.partition(':')
+    scope_id, _, target = payload.partition(':')
+    expected = resource_id + ':'
+    if (prefix != 'test-release' or not re.fullmatch(r'[0-9a-f]{64}', scope_id)
+            or not target.startswith(expected) or not re.fullmatch(r'[0-9a-f]{32}', target[len(expected):])):
+        return False
+    lifecycle = LifecycleStore()
+    scope = lifecycle.scope(scope_id)
+    if (not scope or scope['state'] != 'closing' or scope['actor'] != TAU_ACTOR
+            or resource_id not in lifecycle.pending(scope_id)):
+        return False
+    if not registration_release_complete(resource_id):
+        return False
+    wall = wall_backend.projects(TAU_ACTOR)
+    return wall['capabilities']['register'] and not any(item['id'] == resource_id for item in wall['projects'])
+
+
 def _release_resource_once(resource_id: str, key: str) -> None:
     """Use the lifecycle owner, including when the UI already removed it."""
     from management_portal import isa_client
@@ -128,6 +151,10 @@ def _release_resource_once(resource_id: str, key: str) -> None:
                     try:
                         result = isa_client.call(TAU_ACTOR, 'GetProjectDeletion', {'project_id': resource_id})
                     except InstructionError as confirmation_error:
+                        if (confirmation_error.code == 'instruction.not_found'
+                                and confirmation_error.details.get('reason') != 'no_permit'
+                                and _closed_test_project_is_absent(resource_id, key)):
+                            return
                         raise _denied_confirmation(error, resource_id, 'GetProjectDeletion',
                                                    failure=confirmation_error) from error
                     if (result.get('project_id') != resource_id
