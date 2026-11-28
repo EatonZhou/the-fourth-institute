@@ -57,9 +57,20 @@ def message_contexts(connection: Any, segment_ids: list[str], message_ids: list[
 
 def reply_placements(connection: Any, segment_ids: list[str]) -> dict[str, str]:
     rows = connection.execute(
-        "SELECT output.segment_id, appended.message_id FROM segments output "
-        "JOIN sequence_segments occurrence ON occurrence.segment_id=output.segment_id "
-        "JOIN agents trace ON trace.trace_sequence_id=occurrence.sequence_id AND trace.agent_id=output.created_by_agent_id "
+        "WITH outputs AS ("
+        "SELECT model.segment_id,model.execution_id,model.created_by_agent_id,occurrence.sequence_id,occurrence.ordinal "
+        "FROM segments model JOIN sequence_segments occurrence USING(segment_id) "
+        "WHERE model.segment_id=ANY(%s) AND model.segment_type='model' "
+        "UNION ALL "
+        # A subagent result is a visible output at its own trace position.
+        # Other operation cards may describe an entire execution.
+        "SELECT notice.operation_id,notice.data_json::jsonb->>'execution_id',notice.agent_id,"
+        "occurrence.sequence_id,occurrence.ordinal "
+        "FROM agent_operations notice JOIN operation_positions occurrence USING(operation_id) "
+        "WHERE notice.operation_id=ANY(%s) AND notice.kind='notice' "
+        "AND (notice.data_json::jsonb#>'{metadata,message,parts}') @> '[{\"type\":\"subagent_run\"}]'::jsonb) "
+        "SELECT output.segment_id, appended.message_id FROM outputs output "
+        "JOIN agents trace ON trace.trace_sequence_id=output.sequence_id AND trace.agent_id=output.created_by_agent_id "
         # Find this execution's inputs before ordering their few trace
         # positions. Starting with the trace walks all old outputs per reply.
         "CROSS JOIN LATERAL (SELECT position.message_id FROM LATERAL ("
@@ -67,14 +78,13 @@ def reply_placements(connection: Any, segment_ids: list[str]) -> dict[str, str]:
         "WHERE execution_id=output.execution_id AND execution_id<>'' "
         "AND created_by_agent_id=output.created_by_agent_id OFFSET 0) input "
         "JOIN LATERAL (SELECT message_id,ordinal FROM chat_message_positions "
-        "WHERE source_id=input.segment_id AND sequence_id=occurrence.sequence_id "
+        "WHERE source_id=input.segment_id AND sequence_id=output.sequence_id "
         "AND source_kind='segment' OFFSET 0) position ON TRUE "
         "WHERE input.metadata_json::jsonb->>'kind'='appended_provider_input' "
         f"AND {TYPED_BY_USER.format(metadata='input.metadata_json')} "
-        "AND position.ordinal<occurrence.ordinal "
-        "ORDER BY position.ordinal DESC LIMIT 1) appended "
-        "WHERE output.segment_id=ANY(%s) AND output.segment_type='model'",
-        (segment_ids,),
+        "AND position.ordinal<output.ordinal "
+        "ORDER BY position.ordinal DESC LIMIT 1) appended",
+        (segment_ids, segment_ids),
     ).fetchall()
     return {str(row['segment_id']): str(row['message_id']) for row in rows if row['message_id']}
 

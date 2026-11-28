@@ -32,6 +32,27 @@ def test_unconfirmed_mailbox_input_cannot_steal_reply(delivered_work):
     assert repo.message(rid, reply["message_id"])["display_reply_to_message_id"] == appended
 
 
+def test_finished_subagent_card_stays_with_the_latest_delivered_input(delivered_work):
+    rid, repo, store, head, appended, execution, _ = delivered_work
+    repo.accept_user_message(rid, {"message_id": "queued-answer", "role": "user", "author_id": "CASE-A",
+        "content_parts": [{"type": "text", "text": "Answer still in the Mailbox"}]})
+    for kind in ("subagent_run", "native_turn"):
+        repo.append_message(rid, {"message_id": f"msg_{kind}", "role": "agent", "author_id": rid,
+            "reply_to_message_id": head, "execution_id": execution,
+            "content_parts": [{"type": kind, "status": "completed", "execution_id": execution}]})
+
+    card = repo.message(rid, "msg_subagent_run")
+    assert card["reply_to_message_id"] == head
+    assert card["display_reply_to_message_id"] == appended
+    assert next(message for message in store.read_chat_messages(rid) if message["message_id"] == "msg_subagent_run")[
+        "display_reply_to_message_id"] == appended
+    assert "display_reply_to_message_id" not in repo.message(rid, "msg_native_turn")
+    assert repo.reply_blocks([(rid, appended)])[(rid, appended)]["replies"] == []
+    event = next(event for event in repo.events_after(rid, 0)["events"]
+                 if event.get("payload", {}).get("message", {}).get("message_id") == "msg_subagent_run")
+    assert event["payload"]["message"]["display_reply_to_message_id"] == appended
+
+
 def test_facade_injected_page_gets_its_reply_without_loading_original(team, delivered_work, monkeypatch):
     rid, repo, store, head, appended, execution, _ = delivered_work
     facade = team.source
