@@ -15,7 +15,7 @@ Provider 的默认 cwd 始终使用 Resident 自有 Workspace。写入其他 Wor
 
 Provider 启动任务时，从当前 Resident 的绑定记录取得各 Workspace 的真实绝对路径，并注入执行命令的进程环境。自有 Workspace 也包含在内。每项绑定都有一个以稳定 Workspace ID 命名的变量，例如 workspace_4d69f2c8b978 对应 PORTAL_WORKSPACE_4D69F2C8B978。多个同类绑定分别保留，重命名或调整绑定顺序不影响变量名。
 
-常用位置提供短名：PORTAL_RESIDENT_WORKSPACE 指向本节点自有 Workspace；PORTAL_LINEAGE_WORKSPACE 和 PORTAL_PROJECT_WORKSPACE 分别指向已绑定且明确指定为本团队或本项目默认工作区的目录。缺少对应绑定或默认项不明确时，省略该短名。独立 Workspace 按 ID 引用。
+常用位置提供短名：PORTAL_RESIDENT_WORKSPACE 指向本节点自有 Workspace；PORTAL_LINEAGE_WORKSPACE 指向本节点所在 Lineage 的 `<项目>/agents/lineage_<ID>/workspace/`，PORTAL_PROJECT_WORKSPACE 指向所在项目的 `<项目>/workspace/`，均按规范目录树中的路径确定。对应 Workspace 未绑定时，省略该短名。独立 Workspace 按 ID 引用。
 
 绑定发生变化时，下一次启动命令前按最新记录刷新受管变量，并移除已解绑项。变量仅提供路径导航，访问权限沿用现有机制。此接口实施前仍通过绑定记录取得路径。
 
