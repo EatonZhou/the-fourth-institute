@@ -198,7 +198,7 @@ def due_lineage_ids() -> list[str]:
         return [row["lineage_id"] for row in connection.execute("""
             SELECT lineage_id FROM lineage_shared_state
             WHERE EXISTS (
-                SELECT 1 FROM jsonb_each_text(cells_json->'expires_at') AS expiry(key, deadline)
+                SELECT 1 FROM jsonb_each_text(cells_json::jsonb->'expires_at') AS expiry(key, deadline)
                 WHERE expiry.deadline <= %s
             )
             ORDER BY lineage_id

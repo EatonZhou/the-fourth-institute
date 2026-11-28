@@ -3511,8 +3511,11 @@ def test_expired_shared_state_observed_once_without_matching_missing(primitive_s
         return lineage_domain.reconcile_lineage_system_events(lineage_id, ACTOR)
 
     lineage_graph_state.update_cell(lineage_id, "marker", True, ttl_seconds=1)
+    assert lineage_id not in lineage_graph_state.due_lineage_ids()
     assert poll()["event_count"] == 0
     now += timedelta(seconds=1)
+    # The all-Lineage poll finds the due cell in the stored (text) cells column.
+    assert lineage_id in lineage_graph_state.due_lineage_ids()
     assert poll()["event_count"] == 1
     assert poll()["event_count"] == 0
     assert sent == [WORK_A]
