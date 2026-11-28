@@ -1,4 +1,4 @@
-"""Retire an isolated stale registration without deleting redirected content."""
+"""Retire a Workspace identity without deleting or reassigning its contents."""
 import pytest
 
 from management_common import directory_dependencies as deps
@@ -56,7 +56,8 @@ def test_formal_retirement_preserves_link_target_and_records_no_cleanup(workspac
         plan = connection.execute(f'SELECT plan FROM {deps.schema()}.identity_retirements WHERE identity=%s', (WID,)).fetchone()['plan']
         assert plan['actor'] == 'alice' and plan['cleanup_ids'] == []
         assert plan['resource_ids'] == [WID]
-        assert plan['binding_count'] == 0 and plan['nested_count'] == 0
+        assert plan['binding_count'] == 0 and plan['retired_nested_count'] == 0
+        assert plan['preserves_independent_registrations'] is True
     # Restoring the old parent cannot turn this retirement into future deletion.
     link.unlink()
     target.rename(link)
@@ -65,7 +66,7 @@ def test_formal_retirement_preserves_link_target_and_records_no_cleanup(workspac
 
 
 @pytest.mark.parametrize('placement', ['old', 'target'])
-def test_nested_registration_prevents_retirement(workspace, placement):
+def test_nested_registration_survives_parent_retirement(workspace, placement):
     child = 'workspace_111111111111'
     if placement == 'old':
         workspace.store.ensure(child, str(workspace.root / 'child'))
@@ -73,10 +74,10 @@ def test_nested_registration_prevents_retirement(workspace, placement):
     if placement == 'target':
         workspace.store.ensure(child, str(directory / 'child'))
     prepare(workspace)
-    result = call(workspace)
-    assert result.status == 'failed' and result.error['commit_state'] == 'not_committed'
-    assert 'nested' in result.error['message'].lower(), result.to_payload()
-    assert set(workspace.store.rows([WID, child])) == {WID, child}
+    before = workspace.store.rows([child])
+    result = call(workspace).raise_for_error()
+    assert result['attributes']['directory_retirement']['resource_ids'] == [WID]
+    assert workspace.store.rows([WID, child]) == before
     assert not workspace.store.cleanup.status(owner_id=WID)
     assert link.is_symlink() and directory.is_dir()
 

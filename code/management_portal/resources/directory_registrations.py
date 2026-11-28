@@ -72,7 +72,7 @@ def unregister_identity(resource_id, *, connection, actor='', preserved_paths=()
     _unregister_identity_metadata(resource_id, connection=connection, actor=actor)
 
 
-def _unregister_identity_metadata(resource_id, *, connection, actor=''):
+def _unregister_identity_metadata(resource_id, *, connection, actor='', release_projections=True):
     """Enlist tombstone/projection/permissions after the directory owner decision."""
     registry = get_registry_store()
     registry._ensure()
@@ -85,7 +85,8 @@ def _unregister_identity_metadata(resource_id, *, connection, actor=''):
         connection.execute(f'UPDATE {table} SET deleted=TRUE WHERE resource_id=%s', (resource_id,))
     from management_portal import permission_system
     permission_system.unregister_resources([resource_id], connection=connection)
-    request_projection_release(resource_id, actor=actor, connection=connection)
+    if release_projections:
+        request_projection_release(resource_id, actor=actor, connection=connection)
 
 
 def register_owned(collection, resource_id, paths, *, scanning=False, connection=None):
@@ -185,11 +186,13 @@ def unregister_nested(roots, *, connection, actor):
 
 
 def retire_workspace_registration(row, *, connection, actor):
-    """Explicitly retire an isolated Workspace identity while preserving files.
+    """Retire only this Workspace identity, preserving independent registrations.
 
     The Workspace owner has locked/authorized the row and checked its usage
     bindings in this transaction. Installed owner dependencies prove that this
-    exact registration has no remaining owned artifacts or nested registrations.
+    exact identity has no remaining owned artifacts or overlapping operations.
+    Physical containment does not establish ownership: independent registrations
+    and their bindings stay untouched, including registrations at the same path.
     No paths are rewritten and no physical cleanup is scheduled, even if the
     original parent is later restored. Keep that decision in the retirement log.
     """
@@ -211,27 +214,35 @@ def retire_workspace_registration(row, *, connection, actor):
     if (len(own) != 1 or own[0]['owner_id'] != identity or own[0]['location'] != location
             or own[0]['disposition'] != 'owned'):
         raise deps.DirectoryDependenciesMissing('Workspace directory ownership evidence is incomplete')
-    # Conservative lexical candidates include case aliases. Check both the
-    # former location and today's target, without traversing either file tree.
+    # Conservative lexical candidates include case aliases. Check claims at
+    # both locations; independent nested resources are not a deletion closure.
     roots = list(dict.fromkeys((root, root.resolve(strict=False))))
     keys = [deps.path_keys(path)[0] for path in roots]
     ancestors = sorted({key for path in roots for key in deps.path_keys(path)[1]})
-    other = connection.execute(f'SELECT 1 FROM {deps.schema()}.directory_dependencies '
-        'WHERE (owner_id=%s OR path_key=ANY(%s::text[]) OR ancestors && %s::text[] '
-        "OR (disposition='claim' AND path_key=ANY(%s::text[]))) "
-        "AND NOT (kind='workspace' AND object_id=%s) LIMIT 1",
-        (identity, keys, keys, ancestors, identity)).fetchone()
-    if other:
-        raise ValueError('Workspace has nested registrations, claims or other owned directories')
+    owned = connection.execute(f'SELECT 1 FROM {deps.schema()}.directory_dependencies '
+        "WHERE owner_id=%s AND NOT (kind='workspace' AND object_id=%s) LIMIT 1",
+        (identity, identity)).fetchone()
+    if owned:
+        raise ValueError('Workspace still has other owned directories or dependent operations')
+    claim = connection.execute(f'SELECT 1 FROM {deps.schema()}.directory_dependencies '
+        "WHERE disposition='claim' AND (path_key=ANY(%s::text[]) "
+        'OR ancestors && %s::text[]) LIMIT 1', (ancestors, keys)).fetchone()
+    if claim:
+        raise ValueError('Workspace overlaps pending directory cleanup or operation claims')
     store = get_workspace_store()
     timestamp = now()
     plan = {'plan_id': 'workspace-retirement:' + identity, 'mode': 'registration_only',
             'reason': 'preserve_files', 'actor': actor, 'retired_at': timestamp,
             'resource_ids': [identity], 'workspace_ids': [identity],
             'workspace_paths': [str(root)], 'preserved_paths': [str(path) for path in roots],
-            'binding_count': 0, 'nested_count': 0, 'cleanup_roots': [], 'cleanup_ids': []}
+            'binding_count': 0, 'retired_nested_count': 0,
+            'preserves_independent_registrations': True, 'preserves_projections': True,
+            'cleanup_roots': [], 'cleanup_ids': []}
     store.mark_deleted(identity, deleted_at=timestamp, deleted_by=actor, connection=connection)
-    _unregister_identity_metadata(identity, connection=connection, actor=actor)
+    # Discussion projection release can delete its Resident and owned files.
+    # Registration-only retirement must not schedule that indirect cascade.
+    _unregister_identity_metadata(identity, connection=connection, actor=actor,
+                                  release_projections=False)
     connection.execute(f'INSERT INTO {deps.schema()}.identity_retirements(identity,root,plan) '
                        'VALUES (%s,%s,%s::jsonb)', (identity, location, json.dumps(plan)))
     return plan
