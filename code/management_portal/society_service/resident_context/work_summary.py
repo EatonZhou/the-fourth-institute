@@ -17,6 +17,8 @@ from .service import resident_context
 
 REMINDER_REF = "duty/work-summary-reminder"
 ROLLUP_REF = "duty/family-work-summary"
+# Older Family dispatches used this reference for the same stable summary ID.
+_ROLLUP_RECEIPT_REFS = frozenset({ROLLUP_REF, "duty/family-summary"})
 MAINTENANCE_REFS = (REMINDER_REF, ROLLUP_REF, "duty/family-progress")
 REMINDER = (
     "你有已完成轮次尚未登记工作摘要。请用 GetResidentSummaries（resident_ids 只含自己，include_maintenance=true）"
@@ -213,7 +215,7 @@ def _rollup_delivery(facade_id: str, steward_id: str, message_id: str) -> dict:
     if message is None and receipt is None:
         status = "unsubmitted"
     elif (message and receipt and receipt.get("state") in INPUT_STATES and message.get("role") == "user"
-          and same_actor(message.get("author_id"), facade_id) and message.get("business_ref") == ROLLUP_REF):
+          and same_actor(message.get("author_id"), facade_id) and message.get("business_ref") in _ROLLUP_RECEIPT_REFS):
         status = "accepted"
     else:
         status = "conflict"

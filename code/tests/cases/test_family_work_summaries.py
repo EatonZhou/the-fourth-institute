@@ -347,7 +347,8 @@ def test_rollup_recognizes_real_session_admission_and_new_fresh_delivery(lineage
     assert first["notification_delivery"] == {"resident_id": steward, "status": "unsubmitted"}
 
     target = {"resident_id": steward, "business_ref": work.ROLLUP_REF}
-    original = ok("DeliverMessage", {**target, "message": first["notification"]}, actor=facade)
+    original = ok("DeliverMessage", {**target, "business_ref": "duty/family-summary",
+                                     "message": first["notification"]}, actor=facade)
     old_id = original["message_id"]
     assert not lineage_program_resident_inputs.delivery_profile(lineage, old_id).get("isolated")
     same = ok("GetFacadeSummaryInputs", args, actor=facade)
