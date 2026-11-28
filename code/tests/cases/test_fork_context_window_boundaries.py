@@ -51,6 +51,8 @@ def test_recent_materializes_complete_turns_and_nested_fork_freezes_them(recent,
     selected = store.agent_context_snapshot(SOURCE, recent_turns=recent)["segments"]
     expected = [ref for i in range(first, 13) for ref in turns[i]]
     assert [item["segment_id"] for item in selected] == expected
+    references = store.agent_context_snapshot(SOURCE, recent_turns=recent, references_only=True)
+    assert references == {"segments": [{"segment_id": ref} for ref in expected], "empty_context": False}
     store.fork_agent(source_agent_id=SOURCE, target_agent_id="resident_window_child",
                      actor_ref="test-actor", segment_ids=expected)
     _turn(store, 13, background=True)

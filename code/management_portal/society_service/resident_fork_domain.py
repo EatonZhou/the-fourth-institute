@@ -251,7 +251,6 @@ def _queue_derived_resident_session_creation(
 
 def _ensure_derived_resident_session(
     record: dict[str, Any],
-    registry: dict[str, Any],
     resident: dict[str, Any],
     actor: str,
 ) -> dict[str, Any]:
@@ -287,9 +286,13 @@ def _ensure_derived_resident_session(
     return resident
 
 
+def _next_fork_number(record: dict, actor: str) -> int:
+    registry = resident_lineage.snapshot(record)
+    return 1 + len(resident_runtime_domain.managed_derived_residents(record, registry, actor))
+
+
 def _create_resident_by_full_context_fork(
     record: dict,
-    registry: dict[str, Any],
     actor: str,
     *,
     lineage_source: str = "",
@@ -305,11 +308,6 @@ def _create_resident_by_full_context_fork(
     target_backend = _fork_target_backend(record, provider)
     actor_id = canonical_actor_id(actor)
     owner = _can_manage_resident(record, actor_id)
-    derived_residents = resident_runtime_domain.managed_derived_residents(
-        record,
-        registry,
-        actor_id,
-    )
     now = resident_domain_common.now_iso()
     # Freeze the effective model window before publishing the child. Chat and
     # the audit trace are copied independently and are not an input fallback.
@@ -321,11 +319,11 @@ def _create_resident_by_full_context_fork(
         if not context_snapshot.get("segments"):
             raise ValueError("压缩继承需要非空的有效模型上下文")
     target_resident_id = _fork_resident_id()
-    sequence = len(derived_residents) + 1
+
     child = {
         "resident_id": target_resident_id,
         "title": str(fork_title or "").strip()
-        or f"派生 Resident {sequence} · {resident_domain_common.date_part(now)}",
+        or f"派生 Resident {_next_fork_number(record, actor_id)} · {resident_domain_common.date_part(now)}",
         "title_origin": "custom" if str(fork_title or "").strip() else "generated",
         "session_state": "active",
         "created_by": actor_id,
@@ -360,7 +358,6 @@ def _create_resident_by_full_context_fork(
         lineage_source or "fork:full_context",
         now,
     )
-    registry["residents"].append(child)
     child["fork_mode"] = "full"
     if compact_context:
         child.update({
@@ -381,7 +378,6 @@ def _create_resident_by_full_context_fork(
         return child
     return _ensure_derived_resident_session(
         record,
-        registry,
         child,
         actor_id,
     )
@@ -432,10 +428,8 @@ def create_resident_full_context_fork(
         )
         record = source.record
         ensure_resident_supports_forks(record)
-        registry = resident_lineage.snapshot(record)
         child = _create_resident_by_full_context_fork(
             record,
-            registry,
             actor_id,
             lineage_source=lineage_source or "fork:full_context",
             backend_route_id=backend_route_id,
@@ -469,10 +463,8 @@ def create_resident_compacted_context_fork(
         )
         record = source.record
         ensure_resident_supports_forks(record)
-        registry = resident_lineage.snapshot(record)
         child = _create_resident_by_full_context_fork(
             record,
-            registry,
             actor_id,
             lineage_source=lineage_source or "fork:compacted-context",
             backend_route_id=backend_route_id,
@@ -499,7 +491,7 @@ def _fork_provider_context_snapshot(
 ) -> dict[str, Any]:
     return execution_port.agent_context_snapshot(resident_domain_common.record_resident_id(record),
         through_message_id=through_message_id, through_turn_id=through_turn_id,
-        recent_turns=recent_turns, require_round_count=require_round_count)
+        recent_turns=recent_turns, require_round_count=require_round_count, references_only=True)
 
 
 @_creation_request
@@ -526,7 +518,6 @@ def create_resident_fork_from_message(
         )
         record = source.record
         ensure_resident_supports_forks(record)
-        registry = resident_lineage.snapshot(record)
         ensure_resident_visible_to_actor(record, actor_id)
         messages = resident_conversation_stream.get_repository().messages_through_turn(
             source.resident_id,
@@ -549,7 +540,6 @@ def create_resident_fork_from_message(
         target_message_id = str(target_item.get("message_id") or "")
         target_id = str(target_lineage_resident_id or "").strip()
         target_record = record
-        target_registry = registry
         if target_id and target_id != str(record.get("resident_id") or ""):
             target_record = resident_record_domain.find_resident(target_id)
             if not target_record:
@@ -557,16 +547,10 @@ def create_resident_fork_from_message(
             ensure_resident_visible_to_actor(target_record, actor_id)
             if not resident_access.can_manage(target_record, actor_id):
                 raise manage_refusal(target_record)
-            target_registry = resident_lineage.snapshot(target_record)
         target_owner = resident_access.can_manage(target_record, actor_id)
-        derived_residents = resident_runtime_domain.managed_derived_residents(
-            target_record,
-            target_registry,
-            actor_id,
-        )
         now = resident_domain_common.now_iso()
         target_resident_id = _fork_resident_id()
-        sequence = len(derived_residents) + 1
+
         snapshot = _fork_provider_context_snapshot(
             record,
             through_message_id=target_message_id,
@@ -580,7 +564,7 @@ def create_resident_fork_from_message(
         child = {
             "resident_id": target_resident_id,
             "title": str(fork_title or "").strip()
-            or f"Fork from here {sequence} · {resident_domain_common.date_part(now)}",
+            or f"Fork from here {_next_fork_number(target_record, actor_id)} · {resident_domain_common.date_part(now)}",
             "title_origin": "custom" if str(fork_title or "").strip() else "generated",
             "session_state": "active",
             "created_by": actor_id,
@@ -622,8 +606,7 @@ def create_resident_fork_from_message(
             source.resident_id,
             segment_ids=[item["segment_id"] for item in segments],
         )
-        target_registry["residents"].append(child)
-        child = _ensure_derived_resident_session(target_record, target_registry, child, actor_id)
+        child = _ensure_derived_resident_session(target_record, child, actor_id)
     return _derived_resident_creation_result(target_record, child, actor_id)
 
 
@@ -652,25 +635,19 @@ def create_resident_context_fork(
         )
         record = source.record
         ensure_resident_supports_forks(record)
-        registry = resident_lineage.snapshot(record)
         ensure_resident_visible_to_actor(record, actor_id)
         owner = _can_manage_resident(record, actor_id)
         context_snapshot = _fork_provider_context_snapshot(record, recent_turns=turn_count, require_round_count=True)
         if not context_snapshot:
             raise ValueError("Fork 来源缺少有效模型上下文")
         segments = context_snapshot["segments"]
-        derived_residents = resident_runtime_domain.managed_derived_residents(
-            record,
-            registry,
-            actor_id,
-        )
         now = resident_domain_common.now_iso()
         target_resident_id = _fork_resident_id()
-        sequence = len(derived_residents) + 1
+
         child = {
             "resident_id": target_resident_id,
             "title": str(fork_title or "").strip()
-            or f"Fork-{turn_count} {sequence} · {resident_domain_common.date_part(now)}",
+            or f"Fork-{turn_count} {_next_fork_number(record, actor_id)} · {resident_domain_common.date_part(now)}",
             "title_origin": "custom" if str(fork_title or "").strip() else "generated",
             "session_state": "active",
             "created_by": actor_id,
@@ -708,8 +685,7 @@ def create_resident_context_fork(
         )
         stage_agent_data_fork(child, source.resident_id,
             segment_ids=[item["segment_id"] for item in segments])
-        registry["residents"].append(child)
-        child = _ensure_derived_resident_session(record, registry, child, actor_id)
+        child = _ensure_derived_resident_session(record, child, actor_id)
     return _derived_resident_creation_result(record, child, actor_id)
 
 

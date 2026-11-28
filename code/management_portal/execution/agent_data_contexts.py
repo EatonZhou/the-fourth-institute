@@ -181,7 +181,7 @@ def attach_provider_turns(connection, segments):
 def read_agent_context(
     connection: Any, agent_id: str, *, before_message_id: str = "", through_message_id: str = "",
     through_turn_id: str = "", provider_session_ref: str = "", respect_latest_reset: bool = False,
-    recent_turns: int = 0, require_round_count: bool = False, binding_id: str = "",
+    recent_turns: int = 0, require_round_count: bool = False, binding_id: str = "", references_only: bool = False,
 ) -> dict[str, Any]:
     trace = agent_trace(connection, agent_id)
     if trace is None:
@@ -271,6 +271,8 @@ def read_agent_context(
 
                 segments = [s for s in _snapshot(connection, rows)["segments"] if not is_display_only_reasoning(s)]
                 return {"segments": segments, "empty_context": not segments}
+    if references_only:
+        return {"segments": [{"segment_id": row["segment_id"]} for row in rows], "empty_context": not rows}
     return _snapshot(connection, rows)
 
 
@@ -379,7 +381,7 @@ class AgentContexts:
     def agent_context_snapshot(
         self, agent_id: str, *, before_message_id: str = "", through_message_id: str = "",
         through_turn_id: str = "", provider_session_ref: str = "", recent_turns: int = 0,
-        require_round_count: bool = False,
+        require_round_count: bool = False, references_only: bool = False,
     ) -> dict[str, Any]:
         """The Agent's own effective window, including a Fork with no session yet.
 
@@ -394,7 +396,7 @@ class AgentContexts:
             return read_agent_context(
                 connection, agent_id, before_message_id=before_message_id, through_message_id=through_message_id,
                 through_turn_id=through_turn_id, provider_session_ref=provider_session_ref,
-                recent_turns=recent_turns, require_round_count=require_round_count,
+                recent_turns=recent_turns, require_round_count=require_round_count, references_only=references_only,
             )
 
     def delivery_context_snapshot(self, agent_id: str, *, message_id: str, binding_id: str = "") -> dict[str, Any]:

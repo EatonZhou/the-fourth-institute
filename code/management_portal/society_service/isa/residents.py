@@ -31,7 +31,7 @@ def _family_to_join(lineage_id: str, inv: Invocation) -> str:
     from management_portal.society_service import family_familize
 
     requested = str(inv.argument("family_id") or "")
-    lineage = lineage_aggregate.read_lineage(lineage_id, actor=inv.caller)
+    lineage = lineage_aggregate.read_lineage(lineage_id, actor=inv.caller, include_runtime=False)
     try:
         instance = family_familize.family_for_new_resident(lineage, inv.caller, requested)
     except ValueError as exc:

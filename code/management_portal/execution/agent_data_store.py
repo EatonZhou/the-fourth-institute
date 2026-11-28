@@ -462,12 +462,12 @@ class AgentDataStore:
     def agent_context_snapshot(
         self, agent_id: str, *, before_message_id: str = "", through_message_id: str = "",
         through_turn_id: str = "", provider_session_ref: str = "", recent_turns: int = 0,
-        require_round_count: bool = False,
+        require_round_count: bool = False, references_only: bool = False,
     ) -> dict[str, Any]:
         return self.contexts.agent_context_snapshot(
             agent_id, before_message_id=before_message_id, through_message_id=through_message_id,
             through_turn_id=through_turn_id, provider_session_ref=provider_session_ref,
-            recent_turns=recent_turns, require_round_count=require_round_count,
+            recent_turns=recent_turns, require_round_count=require_round_count, references_only=references_only,
         )
 
     def delivery_context_snapshot(self, agent_id: str, *, message_id: str, binding_id: str = "") -> dict[str, Any]:
