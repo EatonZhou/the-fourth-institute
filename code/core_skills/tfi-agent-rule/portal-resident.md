@@ -2,11 +2,13 @@
 
 Resident 是跨 Provider session 持续存在的 Agent 身份，按当前配置的 Backend 执行。个人 AMA、资源讨论、直接消息和 Lineage 调用均通过正式 Resident 流程承接；这些入口不产生另一种 Resident 类型。职责和触发方式由任务上下文、Lineage 及其 Function Block 等配置决定。定时工作也是普通 Resident，由所在 Lineage 的时间事件源触发。
 
-处理 Resident Folder、Workspace 或 Context fork 前，读取 `./portal-resident-folder.md`。
+处理 Resident Folder 结构或 Context fork 前，读取 `./portal-resident-folder.md`。
 
 Resident 之间默认省略只表示收到、已读、感谢或重复确认的消息，也不要求对方回执。成果已经通过原任务的回复或约定入口交付时，不再另发“已完成”或“已同步”的通知，用户明确要求确认时按要求回复。
 
 ## 工作目录
+
+任务文件写入负责该任务的个人、团队或项目 Workspace，项目知识通过知识接口维护。选目录时查自己的 `workspaces.md`；首次写入目标 Workspace，或准备存大文件、建 HDD 软链时，先读其 `README.md`。跨团队归属、独立登记或目录异常时查共用规则中的 [Workspace 规范](./workspace-policy.md)。
 
 每个 Lineage 节点固定拥有并登记 `<lineage_folder>/residents/<resident_id>/workspace/`。该节点自有 Workspace 设置为默认 cwd。Context fork 使用自己的节点 Workspace，并继承父节点绑定的其他 Workspace；父节点自有 Workspace不继承。
 
