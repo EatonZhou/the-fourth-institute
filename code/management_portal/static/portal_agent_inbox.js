@@ -721,6 +721,20 @@
     return runtime;
   }
 
+  function showNotificationText(element, text) {
+    element.replaceChildren();
+    let offset = 0;
+    for (const match of text.matchAll(/\bresident_[0-9a-f]{12}\b/g)) {
+      element.append(text.slice(offset, match.index));
+      const link = document.createElement("a");
+      link.href = "/lineage?resident=" + encodeURIComponent(match[0]);
+      link.textContent = match[0];
+      element.append(link);
+      offset = match.index + match[0].length;
+    }
+    element.append(text.slice(offset));
+  }
+
   function activateEntry(entry) {
     if (!isNotification(entry)) return navigateToEntry(entry);
     if (entry.kind === "notice-board-mention") {
@@ -744,12 +758,12 @@
     overlay.querySelector("[data-agent-notification-origin]").textContent = detail.lineage_title || (detail.lineage_id ? "Lineage" : "Portal");
     const sender = detail.created_by === "portal" ? window.PortalI18n.t("Portal 系统") : detail.created_by;
     const senderLabel = overlay.querySelector("[data-agent-notification-sender]");
-    senderLabel.textContent = sender ? window.PortalI18n.text`发送者：${sender}` : "";
+    showNotificationText(senderLabel, sender ? window.PortalI18n.text`发送者：${sender}` : "");
     senderLabel.hidden = !sender;
     const time = overlay.querySelector("[data-agent-notification-time]");
     time.dateTime = detail.created_at || entry.updated_at || "";
     time.textContent = window.PortalUI.formatDateTime(time.dateTime);
-    overlay.querySelector("[data-agent-notification-message]").textContent = detail.message;
+    showNotificationText(overlay.querySelector("[data-agent-notification-message]"), detail.message);
     const sourceButton = overlay.querySelector("[data-agent-notification-source]");
     sourceButton.textContent = detail.lineage_id ? window.PortalI18n.t("打开所属 Lineage") : window.PortalI18n.t("打开来源页面");
     sourceButton.hidden = !runtime.entry.url;
