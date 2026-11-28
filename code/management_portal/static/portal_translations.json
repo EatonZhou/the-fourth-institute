@@ -91,288 +91,1098 @@
     "en": "Unable to save proxy settings. Try again.",
     "zh-CN": "无法保存代理设置，请重试"
   },
-  "模板工坊": {"en":"Template workshop","zh-CN":"模板工坊"},
-  "打开模板": {"en":"Open template","zh-CN":"打开模板"},
-  "返回": {"en":"Back","zh-CN":"返回"},
-  "模板标题": {"en":"Template title","zh-CN":"模板标题"},
-  "工坊助手": {"en":"Workshop assistant","zh-CN":"工坊助手"},
-  "当前用户没有 My Lineage，无法使用工坊助手": {"en":"This user has no My Lineage, so the workshop assistant is unavailable","zh-CN":"当前用户没有 My Lineage，无法使用工坊助手"},
-  "和工坊助手一起编辑模板": {"en":"Edit templates with the workshop assistant","zh-CN":"和工坊助手一起编辑模板"},
-  "工坊助手创建结果尚未确认，请重试": {"en":"Assistant creation is not confirmed yet. Please retry.","zh-CN":"工坊助手创建结果尚未确认，请重试"},
-  "工坊助手模板尚未安装": {"en":"The workshop assistant template is not installed yet","zh-CN":"工坊助手模板尚未安装"},
-  "工坊助手没有可读取的工作区": {"en":"The workshop assistant has no readable workspace","zh-CN":"工坊助手没有可读取的工作区"},
-  "当前工作台无法打开模板工坊": {"en":"This workbench cannot open the template workshop","zh-CN":"当前工作台无法打开模板工坊"},
-  "更多画布工具": {"en":"More canvas tools","zh-CN":"更多画布工具"},
-  "图例": {"en":"Legend","zh-CN":"图例"},
-  "请先打开职责模板": {"en":"Open a duty template first","zh-CN":"请先打开职责模板"},
-  "请用 Save As 保存为自己的模板": {"en":"Use Save As to create your own template","zh-CN":"请用 Save As 保存为自己的模板"},
-  "关闭模板工坊？": {"en":"Close the template workshop?","zh-CN":"关闭模板工坊？"},
-  "模板有未保存的修改": {"en":"The template has unsaved changes","zh-CN":"模板有未保存的修改"},
-  "离开": {"en":"Leave","zh-CN":"离开"},
-  "助手草稿已就绪": {"en":"Assistant draft ready","zh-CN":"助手草稿已就绪"},
-  "画布有未保存的修改，是否使用助手版本？": {"en":"The canvas has unsaved changes. Use the assistant's version?","zh-CN":"画布有未保存的修改，是否使用助手版本？"},
-  "使用助手版本": {"en":"Use assistant version","zh-CN":"使用助手版本"},
-  "保留我的版本": {"en":"Keep my version","zh-CN":"保留我的版本"},
-  "助手草稿不是完整模板对象": {"en":"The assistant draft is not a complete template object","zh-CN":"助手草稿不是完整模板对象"},
-  "模板 kind 不可修改；请另存为副本": {"en":"The template kind cannot change; save a copy instead","zh-CN":"模板 kind 不可修改；请另存为副本"},
-  "助手看到的是上次保存的版本": {"en":"The assistant sees the last saved version","zh-CN":"助手看到的是上次保存的版本"},
-  "Portal 系统": {"en":"Portal system","zh-CN":"Portal 系统"},
-  "账号详情": {"en":"Account details","zh-CN":"账号详情"},
-  "自动暂停接单": {"en":"Pause intake automatically","zh-CN":"自动暂停接单"},
-  "额度与 Credits 说明": {"en":"Quota and credits explained","zh-CN":"额度与 Credits 说明"},
-  "中国区": {"en":"China","zh-CN":"中国区"},
-  "国际区": {"en":"International","zh-CN":"国际区"},
-  "标准月价；实际扣款以账单为准": {"en":"Standard monthly price; actual charges follow billing","zh-CN":"标准月价；实际扣款以账单为准"},
-  "{p0}{p1}/月": {"en":"{p0}{p1}/month","zh-CN":"{p0}{p1}/月"},
-  "更新文件": {"en":"Updating file","zh-CN":"更新文件"},
-  "创建文件": {"en":"Creating file","zh-CN":"创建文件"},
-  "移动文件": {"en":"Moving file","zh-CN":"移动文件"},
-  "次数未知": {"en":"Count unknown","zh-CN":"次数未知"},
-  "暂无刷新卡": {"en":"No resets available","zh-CN":"暂无刷新卡"},
-  "明细未提供": {"en":"Details unavailable","zh-CN":"明细未提供"},
-  "部分明细": {"en":"Partial details","zh-CN":"部分明细"},
-  "上次读数": {"en":"Last reading","zh-CN":"上次读数"},
-  "当前原生接口未提供刷新卡次数": {"en":"The current native interface did not provide the reset count","zh-CN":"当前原生接口未提供刷新卡次数"},
-  "套餐档位": {"en":"Tier","zh-CN":"套餐档位"},
-  "刷新卡次数": {"en":"Resets","zh-CN":"刷新卡次数"},
-  "刷新卡": {"en":"Reset credit","zh-CN":"刷新卡"},
-  "发放时间": {"en":"Granted at","zh-CN":"发放时间"},
-  "有效期至": {"en":"Expires at","zh-CN":"有效期至"},
-  "未提供": {"en":"Not provided","zh-CN":"未提供"},
-  "上游未提供刷新卡明细": {"en":"Reset credit details were not provided by the service","zh-CN":"上游未提供刷新卡明细"},
-  "上游仅返回部分刷新卡明细": {"en":"The service returned only some reset credit details","zh-CN":"上游仅返回部分刷新卡明细"},
-  "采样时间": {"en":"Observed at","zh-CN":"采样时间"},
-  "关联类型无效。": {"en":"Invalid relation type.","zh-CN":"关联类型无效。"},
-  "单条内容过长，请精简判断，完整材料通过来源关联。": {"en":"This entry is too long. Shorten the judgment and link the full material as a source.","zh-CN":"单条内容过长，请精简判断，完整材料通过来源关联。"},
-  "适应": {"en":"Fit","zh-CN":"适应"},
-  "适应全图 (F)": {"en":"Fit the whole graph (F)","zh-CN":"适应全图 (F)"},
-  "撤销上次节点移动": {"en":"Undo the last node move","zh-CN":"撤销上次节点移动"},
-  "恢复自动布局": {"en":"Restore automatic layout","zh-CN":"恢复自动布局"},
-  "搜索问题、工作线": {"en":"Search questions and work lines","zh-CN":"搜索问题、工作线"},
-  "局部": {"en":"Focus","zh-CN":"局部"},
-  "需要决定": {"en":"Decision needed","zh-CN":"需要决定"},
-  "正在推进": {"en":"In progress","zh-CN":"正在推进"},
-  "留待探索": {"en":"To explore","zh-CN":"留待探索"},
-  "稍后关注": {"en":"Later","zh-CN":"稍后关注"},
-  "结果与历史": {"en":"Results and history","zh-CN":"结果与历史"},
-  "发展": {"en":"Development","zh-CN":"发展"},
-  "汇合": {"en":"Convergence","zh-CN":"汇合"},
-  "团队关联": {"en":"Team relation","zh-CN":"团队关联"},
-  "核对 · 手动刷新": {"en":"Checked · refresh manually","zh-CN":"核对 · 手动刷新"},
-  "拖动画布 · 滚轮缩放 · 点击节点查看": {"en":"Drag to pan · scroll to zoom · click a node to inspect","zh-CN":"拖动画布 · 滚轮缩放 · 点击节点查看"},
-  "团队探索": {"en":"Team exploration","zh-CN":"团队探索"},
-  "从一个问题或判断开始": {"en":"Start with a question or judgment","zh-CN":"从一个问题或判断开始"},
-  "全部 Workspace 关系": {"en":"All Workspace relations","zh-CN":"全部 Workspace 关系"},
-  "文件与关系": {"en":"Files and relations","zh-CN":"文件与关系"},
-  "对话与展示": {"en":"Conversation and display","zh-CN":"对话与展示"},
-  "按住拖动到左侧或右侧": {"en":"Hold and drag to the left or right","zh-CN":"按住拖动到左侧或右侧"},
-  "我的 Mailbox · 按住拖动到左侧或右侧": {"en":"My Mailbox · hold and drag to the left or right","zh-CN":"我的 Mailbox · 按住拖动到左侧或右侧"},
-  "待办 · 按住拖动到左侧或右侧": {"en":"To do · hold and drag to the left or right","zh-CN":"待办 · 按住拖动到左侧或右侧"},
-  "正在核对来源与工作状态…": {"en":"Checking sources and work status…","zh-CN":"正在核对来源与工作状态…"},
-  "部分团队当前不可读；仅显示已核对的工作线。": {"en":"Some teams are unavailable; only verified work lines are shown.","zh-CN":"部分团队当前不可读；仅显示已核对的工作线。"},
-  "在此阅读": {"en":"Read here","zh-CN":"在此阅读"},
-  "此来源需在原页面打开完整文件。": {"en":"Open the original page to read this source in full.","zh-CN":"此来源需在原页面打开完整文件。"},
-  "暂不指定": {"en":"Unassigned","zh-CN":"暂不指定"},
-  "独立线索": {"en":"Independent lead","zh-CN":"独立线索"},
-  "重试同一次投递": {"en":"Retry this delivery","zh-CN":"重试同一次投递"},
-  "确认交给 Agent": {"en":"Confirm delivery to Agent","zh-CN":"确认交给 Agent"},
-  "来源原文": {"en":"Source text","zh-CN":"来源原文"},
-  "围绕一个推进目标持续更新，让下一次思考有所依据。": {"en":"Keep a goal up to date to inform the next step.","zh-CN":"围绕一个推进目标持续更新，让下一次思考有所依据。"},
-  "正在探索什么": {"en":"What are you exploring?","zh-CN":"正在探索什么"},
-  "一个值得继续追问的问题": {"en":"A question worth pursuing","zh-CN":"一个值得继续追问的问题"},
-  "工作线": {"en":"Work line","zh-CN":"工作线"},
-  "例如：长期研究判断": {"en":"For example: a long-term research judgment","zh-CN":"例如：长期研究判断"},
-  "介入要求": {"en":"Attention needed","zh-CN":"介入要求"},
-  "可以介入 · 已授权工作继续": {"en":"Optional input · authorized work continues","zh-CN":"可以介入 · 已授权工作继续"},
-  "需要决定 · 对应选择等待": {"en":"Decision needed · waiting for a choice","zh-CN":"需要决定 · 对应选择等待"},
-  "留待探索 · 尚未启动": {"en":"To explore · not started","zh-CN":"留待探索 · 尚未启动"},
-  "已经推进到哪里": {"en":"Progress so far","zh-CN":"已经推进到哪里"},
-  "为什么值得继续": {"en":"Why continue?","zh-CN":"为什么值得继续"},
-  "它可能带来什么新认识？哪些判断还需要检验？": {"en":"What could we learn? Which judgments still need testing?","zh-CN":"它可能带来什么新认识？哪些判断还需要检验？"},
-  "下一步 / 需要作出的选择": {"en":"Next step / decision to make","zh-CN":"下一步 / 需要作出的选择"},
-  "依据（资源地址，每行一个）": {"en":"Sources (one resource address per line)","zh-CN":"依据（资源地址，每行一个）"},
-  "负责 Agent": {"en":"Responsible Agent","zh-CN":"负责 Agent"},
-  "从它发展": {"en":"Build on it","zh-CN":"从它发展"},
-  "依赖它": {"en":"Depend on it","zh-CN":"依赖它"},
-  "与它汇合": {"en":"Converge with it","zh-CN":"与它汇合"},
-  "入口状态": {"en":"Entry status","zh-CN":"入口状态"},
-  "仍可展开": {"en":"Open","zh-CN":"仍可展开"},
-  "你的判断或希望探索的下一步": {"en":"Your judgment or next step to explore","zh-CN":"你的判断或希望探索的下一步"},
-  "全图导航": {"en":"Graph overview","zh-CN":"全图导航"},
-  "项目目标": {"en":"Project goal","zh-CN":"项目目标"},
-  "方向关系": {"en":"Direction relation","zh-CN":"方向关系"},
-  "条工作线": {"en":"work lines","zh-CN":"条工作线"},
-  "项目团队": {"en":"Project team","zh-CN":"项目团队"},
-  "个其他团队": {"en":"other teams","zh-CN":"个其他团队"},
-  "其他团队": {"en":"Other teams","zh-CN":"其他团队"},
-  "个探索位置": {"en":"exploration entries","zh-CN":"个探索位置"},
-  "＋ 展开工作线": {"en":"＋ Expand work line","zh-CN":"＋ 展开工作线"},
-  "− 收起工作线": {"en":"− Collapse work line","zh-CN":"− 收起工作线"},
-  "可以介入": {"en":"Optional input","zh-CN":"可以介入"},
-  "尚未投递": {"en":"Not delivered","zh-CN":"尚未投递"},
-  "待核实": {"en":"To verify","zh-CN":"待核实"},
-  "已有回复": {"en":"Reply available","zh-CN":"已有回复"},
-  "投递成功不代表任务完成。": {"en":"Delivery does not mean the task is complete.","zh-CN":"投递成功不代表任务完成。"},
-  "已收到回复，结论请以原对话和产物为准。": {"en":"A reply is available. Refer to the original conversation and artifacts.","zh-CN":"已收到回复，结论请以原对话和产物为准。"},
-  "恢复关注": {"en":"Follow again","zh-CN":"恢复关注"},
-  "查看 / 重试投递": {"en":"Inspect / retry delivery","zh-CN":"查看 / 重试投递"},
-  "交给 Agent": {"en":"Hand to Agent","zh-CN":"交给 Agent"},
-  "有来源无法读取，请核对地址或访问权限。": {"en":"A source could not be read. Check its address and access permissions.","zh-CN":"有来源无法读取，请核对地址或访问权限。"},
-  "来源当前不可读，无法投递。": {"en":"The source is unavailable; delivery is blocked.","zh-CN":"来源当前不可读，无法投递。"},
-  "来源已更新，请关闭此窗口，刷新并核对后再投递。": {"en":"The source changed. Close this window, refresh and verify it before delivery.","zh-CN":"来源已更新，请关闭此窗口，刷新并核对后再投递。"},
-  "请选择负责 Agent。": {"en":"Select the responsible Agent.","zh-CN":"请选择负责 Agent。"},
-  "管理研究方向": {"en":"Manage research directions","zh-CN":"管理研究方向"},
-  "团队的工作线与探索问题在右侧展开。": {"en":"Team work lines and exploration questions expand on the right.","zh-CN":"团队的工作线与探索问题在右侧展开。"},
-  "画布引擎加载失败，请刷新。": {"en":"The graph engine could not load. Refresh the page.","zh-CN":"画布引擎加载失败，请刷新。"},
-  "内容向本团队共享；请只填写可在此范围分享的判断。来源正文按当前访问权限打开。": {"en":"Shared with this team. Include only judgments that can be shared here. Sources follow current access permissions.","zh-CN":"内容向本团队共享；请只填写可在此范围分享的判断。来源正文按当前访问权限打开。"},
-  "确认后发送真实消息。接收、执行和结果将分开显示；重复提交同一请求不会重复启动。": {"en":"Confirmation sends a message. Acceptance, execution and results are shown separately; resubmitting the same request will not start it twice.","zh-CN":"确认后发送真实消息。接收、执行和结果将分开显示；重复提交同一请求不会重复启动。"},
-  "依据与来路": {"en":"Sources and provenance","zh-CN":"依据与来路"},
-  "这次交付": {"en":"This delivery","zh-CN":"这次交付"},
-  "打开负责 Agent 的对话与结果 ↗": {"en":"Open the Agent's conversation and results ↗","zh-CN":"打开负责 Agent 的对话与结果 ↗"},
-  "进入团队继续 ↗": {"en":"Continue in the team ↗","zh-CN":"进入团队继续 ↗"},
-  "{p0} 个 Map 节点的来源暂不可读，内容已隐藏。刷新可重新核对权限或来源状态。": {"en":"Sources for {p0} Map nodes are unavailable; their content is hidden. Refresh to recheck access and source status.","zh-CN":"{p0} 个 Map 节点的来源暂不可读，内容已隐藏。刷新可重新核对权限或来源状态。"},
-  "请填写问题、工作线、进展、理由和下一步。": {"en":"Enter the question, work line, progress, rationale and next step.","zh-CN":"请填写问题、工作线、进展、理由和下一步。"},
-  "请选择介入要求。": {"en":"Select the attention requirement.","zh-CN":"请选择介入要求。"},
-  "正在加载页面…": {"zh-CN": "正在加载页面…", "en": "Loading the page…"},
-  "等待网络连接…": {"zh-CN": "等待网络连接…", "en": "Waiting for a connection…"},
-  "页面暂时未能打开": {"zh-CN": "页面暂时未能打开", "en": "The page could not open yet"},
-  "查看技术详情": {"zh-CN": "查看技术详情", "en": "Technical details"},
-  "请先保留未保存的内容，再重新加载。": {"zh-CN": "请先保留未保存的内容，再重新加载。", "en": "Keep any unsaved content before reloading."},
-  "请稍后重试，或检查网络连接。": {"zh-CN": "请稍后重试，或检查网络连接。", "en": "Try again shortly, or check your connection."},
-  "连接恢复后将继续加载。": {"zh-CN": "连接恢复后将继续加载。", "en": "Loading will continue when the connection returns."},
-  "正在准备页面，请稍候。": {"zh-CN": "正在准备页面，请稍候。", "en": "Preparing the page. Please wait."},
-  "正在准备 Resident…": {"zh-CN": "正在准备 Resident…", "en": "Preparing the Resident…"},
-  "连接中断，正在确认 Resident…": {"zh-CN": "连接中断，正在确认 Resident…", "en": "Connection lost; confirming the Resident…"},
-  "Resident 已准备，正在重新加载对话…": {"zh-CN": "Resident 已准备，正在重新加载对话…", "en": "Resident ready; reloading the conversation…"},
-  "未能取得对话的 Resident，请重试。": {"zh-CN": "未能取得对话的 Resident，请重试。", "en": "Could not get the conversation's Resident. Please try again."},
-  "Resident 已准备，但对话加载失败；请重试：{p0}": {"zh-CN": "Resident 已准备，但对话加载失败；请重试：{p0}", "en": "Resident ready, but the conversation failed to load; please try again: {p0}"},
-  "Resident 准备失败，结果未确认；请重试：{p0}": {"zh-CN": "Resident 准备失败，结果未确认；请重试：{p0}", "en": "Resident preparation failed and the result is unconfirmed; please try again: {p0}"},
-  "加载请求未完成": {"zh-CN": "加载请求未完成", "en": "The load request did not finish"},
-  "准备请求未完成": {"zh-CN": "准备请求未完成", "en": "The preparation request did not finish"},
-  "附件上传中...": {"zh-CN": "附件上传中...", "en": "Uploading attachments..."},
-  "有附件上传失败": {"zh-CN": "有附件上传失败", "en": "Some attachments failed to upload"},
-  "账号切换": {"zh-CN": "账号切换", "en": "Account switch"},
-  "重新开始会话": {"zh-CN": "重新开始会话", "en": "Session restart"},
-  "会话操作": {"zh-CN": "会话操作", "en": "Session operation"},
-  "{p0}：{p1} · {p2}": {"zh-CN": "{p0}：{p1} · {p2}", "en": "{p0}: {p1} · {p2}"},
-  "操作未完成，仍使用 {p0}，原会话已保留。": {"zh-CN": "操作未完成，仍使用 {p0}，原会话已保留。", "en": "The operation did not finish; still using {p0}, and the original session is kept."},
-  "关闭窗口不会取消操作；需要终止时请使用“取消操作”。": {"zh-CN": "关闭窗口不会取消操作；需要终止时请使用“取消操作”。", "en": "Closing the window does not cancel the operation; use \"Cancel operation\" to stop it."},
-  "取消请求已受理，原会话将继续保留。": {"zh-CN": "取消请求已受理，原会话将继续保留。", "en": "The cancel request was accepted; the original session stays."},
-  "已知悉，关闭本次操作失败提示": {"zh-CN": "已知悉，关闭本次操作失败提示", "en": "Acknowledge and close this failure notice"},
-  "操作未完成，请在诊断中核对当前绑定和原错误。": {"zh-CN": "操作未完成，请在诊断中核对当前绑定和原错误。", "en": "The operation did not finish; check the current binding and the original error in the diagnostics."},
-  "查看操作进度": {"zh-CN": "查看操作进度", "en": "View progress"},
-  "正在准备会话": {"zh-CN": "正在准备会话", "en": "Preparing the session"},
-  "正在提交绑定": {"zh-CN": "正在提交绑定", "en": "Committing the binding"},
-  "正在核对上下文与能力": {"zh-CN": "正在核对上下文与能力", "en": "Checking context and capabilities"},
-  "等待当前工作完成": {"zh-CN": "等待当前工作完成", "en": "Waiting for current work to finish"},
-  "{p0} 小时": {"zh-CN": "{p0} 小时", "en": "{p0} h"},
-  "{p0} 分": {"zh-CN": "{p0} 分", "en": "{p0} min"},
-  "展开 To Do": {"zh-CN": "展开 To Do", "en": "Open To Do"},
-  "收起 To Do": {"zh-CN": "收起 To Do", "en": "Collapse To Do"},
-  "刷新 To Do": {"zh-CN": "刷新 To Do", "en": "Refresh To Do"},
-  "关闭 To Do 并返回当前页面": {"zh-CN": "关闭 To Do 并返回当前页面", "en": "Close To Do and return to the page"},
-  "To Do · 按住拖动到左侧或右侧": {"zh-CN": "To Do · 按住拖动到左侧或右侧", "en": "To Do · Drag to the left or right edge"},
-  "派发间隔（秒）": {"en": "Dispatch interval (seconds)", "zh-CN": "派发间隔（秒）"},
-  "最小秒数": {"en": "Minimum seconds", "zh-CN": "最小秒数"},
-  "最大秒数": {"en": "Maximum seconds", "zh-CN": "最大秒数"},
-  "最小派发间隔不能大于最大派发间隔": {"en": "Minimum dispatch interval cannot exceed maximum", "zh-CN": "最小派发间隔不能大于最大派发间隔"},
-  "保存派发间隔": {"en": "Save dispatch interval", "zh-CN": "保存派发间隔"},
-  "原始对话": {"en": "Original conversation", "zh-CN": "原始对话"},
-  "对话记录视图": {"en": "Conversation history view", "zh-CN": "对话记录视图"},
-  "按次记录": {"en": "Task attempts", "zh-CN": "按次记录"},
-  "更早记录": {"en": "Earlier attempts", "zh-CN": "更早记录"},
-  "本次输入": {"en": "Attempt input", "zh-CN": "本次输入"},
-  "没有可见的按次记录；旧消息请查看原始对话。": {"en": "No visible task attempts. Earlier messages remain in the original conversation.", "zh-CN": "没有可见的按次记录；旧消息请查看原始对话。"},
-  "等待接收": {"zh-CN": "等待接收", "en": "Waiting for receipt"},
-  "已接收": {"zh-CN": "已接收", "en": "Received"},
-  "直接丢弃": {"zh-CN":"直接丢弃","en":"Discard directly"},
-  "按顺序排队（默认）": {"zh-CN":"按顺序排队（默认）","en":"Queue in order (default)"},
-  "账号额度受限；发送的消息将排队，系统会按自动切换策略处理，请勿重复发送。": {"zh-CN":"账号额度受限；发送的消息将排队，系统会按自动切换策略处理，请勿重复发送。","en":"Account quota is limited. Sent messages will queue while the automatic switching policy is applied. Do not resend."},
-  "这个 Resident 已删除，不能发送消息。": {"zh-CN":"这个 Resident 已删除，不能发送消息。","en":"This Resident has been deleted and cannot receive messages."},
-  "正在保存其他设置，请等待完成后重试。": {"zh-CN":"正在保存其他设置，请等待完成后重试。","en":"Other settings are being saved. Wait for completion, then retry."},
+  "模板工坊": {
+    "en": "Template workshop",
+    "zh-CN": "模板工坊"
+  },
+  "打开模板": {
+    "en": "Open template",
+    "zh-CN": "打开模板"
+  },
+  "返回": {
+    "en": "Back",
+    "zh-CN": "返回"
+  },
+  "模板标题": {
+    "en": "Template title",
+    "zh-CN": "模板标题"
+  },
+  "工坊助手": {
+    "en": "Workshop assistant",
+    "zh-CN": "工坊助手"
+  },
+  "当前用户没有 My Lineage，无法使用工坊助手": {
+    "en": "This user has no My Lineage, so the workshop assistant is unavailable",
+    "zh-CN": "当前用户没有 My Lineage，无法使用工坊助手"
+  },
+  "和工坊助手一起编辑模板": {
+    "en": "Edit templates with the workshop assistant",
+    "zh-CN": "和工坊助手一起编辑模板"
+  },
+  "工坊助手创建结果尚未确认，请重试": {
+    "en": "Assistant creation is not confirmed yet. Please retry.",
+    "zh-CN": "工坊助手创建结果尚未确认，请重试"
+  },
+  "工坊助手模板尚未安装": {
+    "en": "The workshop assistant template is not installed yet",
+    "zh-CN": "工坊助手模板尚未安装"
+  },
+  "工坊助手没有可读取的工作区": {
+    "en": "The workshop assistant has no readable workspace",
+    "zh-CN": "工坊助手没有可读取的工作区"
+  },
+  "当前工作台无法打开模板工坊": {
+    "en": "This workbench cannot open the template workshop",
+    "zh-CN": "当前工作台无法打开模板工坊"
+  },
+  "更多画布工具": {
+    "en": "More canvas tools",
+    "zh-CN": "更多画布工具"
+  },
+  "图例": {
+    "en": "Legend",
+    "zh-CN": "图例"
+  },
+  "请先打开职责模板": {
+    "en": "Open a duty template first",
+    "zh-CN": "请先打开职责模板"
+  },
+  "请用 Save As 保存为自己的模板": {
+    "en": "Use Save As to create your own template",
+    "zh-CN": "请用 Save As 保存为自己的模板"
+  },
+  "关闭模板工坊？": {
+    "en": "Close the template workshop?",
+    "zh-CN": "关闭模板工坊？"
+  },
+  "模板有未保存的修改": {
+    "en": "The template has unsaved changes",
+    "zh-CN": "模板有未保存的修改"
+  },
+  "离开": {
+    "en": "Leave",
+    "zh-CN": "离开"
+  },
+  "助手草稿已就绪": {
+    "en": "Assistant draft ready",
+    "zh-CN": "助手草稿已就绪"
+  },
+  "画布有未保存的修改，是否使用助手版本？": {
+    "en": "The canvas has unsaved changes. Use the assistant's version?",
+    "zh-CN": "画布有未保存的修改，是否使用助手版本？"
+  },
+  "使用助手版本": {
+    "en": "Use assistant version",
+    "zh-CN": "使用助手版本"
+  },
+  "保留我的版本": {
+    "en": "Keep my version",
+    "zh-CN": "保留我的版本"
+  },
+  "助手草稿不是完整模板对象": {
+    "en": "The assistant draft is not a complete template object",
+    "zh-CN": "助手草稿不是完整模板对象"
+  },
+  "模板 kind 不可修改；请另存为副本": {
+    "en": "The template kind cannot change; save a copy instead",
+    "zh-CN": "模板 kind 不可修改；请另存为副本"
+  },
+  "助手看到的是上次保存的版本": {
+    "en": "The assistant sees the last saved version",
+    "zh-CN": "助手看到的是上次保存的版本"
+  },
+  "Portal 系统": {
+    "en": "Portal system",
+    "zh-CN": "Portal 系统"
+  },
+  "账号详情": {
+    "en": "Account details",
+    "zh-CN": "账号详情"
+  },
+  "自动暂停接单": {
+    "en": "Pause intake automatically",
+    "zh-CN": "自动暂停接单"
+  },
+  "额度与 Credits 说明": {
+    "en": "Quota and credits explained",
+    "zh-CN": "额度与 Credits 说明"
+  },
+  "中国区": {
+    "zh-CN": "中国区",
+    "en": "Mainland China"
+  },
+  "国际区": {
+    "zh-CN": "国际区",
+    "en": "International"
+  },
+  "标准月价；实际扣款以账单为准": {
+    "en": "Standard monthly price; actual charges follow billing",
+    "zh-CN": "标准月价；实际扣款以账单为准"
+  },
+  "{p0}{p1}/月": {
+    "en": "{p0}{p1}/month",
+    "zh-CN": "{p0}{p1}/月"
+  },
+  "更新文件": {
+    "en": "Updating file",
+    "zh-CN": "更新文件"
+  },
+  "创建文件": {
+    "en": "Creating file",
+    "zh-CN": "创建文件"
+  },
+  "移动文件": {
+    "en": "Moving file",
+    "zh-CN": "移动文件"
+  },
+  "次数未知": {
+    "en": "Count unknown",
+    "zh-CN": "次数未知"
+  },
+  "暂无刷新卡": {
+    "en": "No resets available",
+    "zh-CN": "暂无刷新卡"
+  },
+  "明细未提供": {
+    "en": "Details unavailable",
+    "zh-CN": "明细未提供"
+  },
+  "部分明细": {
+    "en": "Partial details",
+    "zh-CN": "部分明细"
+  },
+  "上次读数": {
+    "en": "Last reading",
+    "zh-CN": "上次读数"
+  },
+  "当前原生接口未提供刷新卡次数": {
+    "en": "The current native interface did not provide the reset count",
+    "zh-CN": "当前原生接口未提供刷新卡次数"
+  },
+  "套餐档位": {
+    "en": "Tier",
+    "zh-CN": "套餐档位"
+  },
+  "刷新卡次数": {
+    "en": "Resets",
+    "zh-CN": "刷新卡次数"
+  },
+  "刷新卡": {
+    "en": "Reset credit",
+    "zh-CN": "刷新卡"
+  },
+  "发放时间": {
+    "en": "Granted at",
+    "zh-CN": "发放时间"
+  },
+  "有效期至": {
+    "en": "Expires at",
+    "zh-CN": "有效期至"
+  },
+  "未提供": {
+    "en": "Not provided",
+    "zh-CN": "未提供"
+  },
+  "上游未提供刷新卡明细": {
+    "en": "Reset credit details were not provided by the service",
+    "zh-CN": "上游未提供刷新卡明细"
+  },
+  "上游仅返回部分刷新卡明细": {
+    "en": "The service returned only some reset credit details",
+    "zh-CN": "上游仅返回部分刷新卡明细"
+  },
+  "采样时间": {
+    "en": "Observed at",
+    "zh-CN": "采样时间"
+  },
+  "关联类型无效。": {
+    "en": "Invalid relation type.",
+    "zh-CN": "关联类型无效。"
+  },
+  "单条内容过长，请精简判断，完整材料通过来源关联。": {
+    "en": "This entry is too long. Shorten the judgment and link the full material as a source.",
+    "zh-CN": "单条内容过长，请精简判断，完整材料通过来源关联。"
+  },
+  "适应": {
+    "en": "Fit",
+    "zh-CN": "适应"
+  },
+  "适应全图 (F)": {
+    "en": "Fit the whole graph (F)",
+    "zh-CN": "适应全图 (F)"
+  },
+  "撤销上次节点移动": {
+    "en": "Undo the last node move",
+    "zh-CN": "撤销上次节点移动"
+  },
+  "恢复自动布局": {
+    "en": "Restore automatic layout",
+    "zh-CN": "恢复自动布局"
+  },
+  "搜索问题、工作线": {
+    "en": "Search questions and work lines",
+    "zh-CN": "搜索问题、工作线"
+  },
+  "局部": {
+    "en": "Focus",
+    "zh-CN": "局部"
+  },
+  "需要决定": {
+    "en": "Decision needed",
+    "zh-CN": "需要决定"
+  },
+  "正在推进": {
+    "en": "In progress",
+    "zh-CN": "正在推进"
+  },
+  "留待探索": {
+    "en": "To explore",
+    "zh-CN": "留待探索"
+  },
+  "稍后关注": {
+    "en": "Later",
+    "zh-CN": "稍后关注"
+  },
+  "结果与历史": {
+    "en": "Results and history",
+    "zh-CN": "结果与历史"
+  },
+  "发展": {
+    "en": "Development",
+    "zh-CN": "发展"
+  },
+  "汇合": {
+    "en": "Convergence",
+    "zh-CN": "汇合"
+  },
+  "团队关联": {
+    "en": "Team relation",
+    "zh-CN": "团队关联"
+  },
+  "核对 · 手动刷新": {
+    "en": "Checked · refresh manually",
+    "zh-CN": "核对 · 手动刷新"
+  },
+  "拖动画布 · 滚轮缩放 · 点击节点查看": {
+    "en": "Drag to pan · scroll to zoom · click a node to inspect",
+    "zh-CN": "拖动画布 · 滚轮缩放 · 点击节点查看"
+  },
+  "团队探索": {
+    "en": "Team exploration",
+    "zh-CN": "团队探索"
+  },
+  "从一个问题或判断开始": {
+    "en": "Start with a question or judgment",
+    "zh-CN": "从一个问题或判断开始"
+  },
+  "全部 Workspace 关系": {
+    "en": "All Workspace relations",
+    "zh-CN": "全部 Workspace 关系"
+  },
+  "文件与关系": {
+    "en": "Files and relations",
+    "zh-CN": "文件与关系"
+  },
+  "对话与展示": {
+    "en": "Conversation and display",
+    "zh-CN": "对话与展示"
+  },
+  "按住拖动到左侧或右侧": {
+    "en": "Hold and drag to the left or right",
+    "zh-CN": "按住拖动到左侧或右侧"
+  },
+  "我的 Mailbox · 按住拖动到左侧或右侧": {
+    "en": "My Mailbox · hold and drag to the left or right",
+    "zh-CN": "我的 Mailbox · 按住拖动到左侧或右侧"
+  },
+  "待办 · 按住拖动到左侧或右侧": {
+    "en": "To do · hold and drag to the left or right",
+    "zh-CN": "待办 · 按住拖动到左侧或右侧"
+  },
+  "正在核对来源与工作状态…": {
+    "en": "Checking sources and work status…",
+    "zh-CN": "正在核对来源与工作状态…"
+  },
+  "部分团队当前不可读；仅显示已核对的工作线。": {
+    "en": "Some teams are unavailable; only verified work lines are shown.",
+    "zh-CN": "部分团队当前不可读；仅显示已核对的工作线。"
+  },
+  "在此阅读": {
+    "en": "Read here",
+    "zh-CN": "在此阅读"
+  },
+  "此来源需在原页面打开完整文件。": {
+    "en": "Open the original page to read this source in full.",
+    "zh-CN": "此来源需在原页面打开完整文件。"
+  },
+  "暂不指定": {
+    "en": "Unassigned",
+    "zh-CN": "暂不指定"
+  },
+  "独立线索": {
+    "en": "Independent lead",
+    "zh-CN": "独立线索"
+  },
+  "重试同一次投递": {
+    "en": "Retry this delivery",
+    "zh-CN": "重试同一次投递"
+  },
+  "确认交给 Agent": {
+    "en": "Confirm delivery to Agent",
+    "zh-CN": "确认交给 Agent"
+  },
+  "来源原文": {
+    "en": "Source text",
+    "zh-CN": "来源原文"
+  },
+  "围绕一个推进目标持续更新，让下一次思考有所依据。": {
+    "en": "Keep a goal up to date to inform the next step.",
+    "zh-CN": "围绕一个推进目标持续更新，让下一次思考有所依据。"
+  },
+  "正在探索什么": {
+    "en": "What are you exploring?",
+    "zh-CN": "正在探索什么"
+  },
+  "一个值得继续追问的问题": {
+    "en": "A question worth pursuing",
+    "zh-CN": "一个值得继续追问的问题"
+  },
+  "工作线": {
+    "en": "Work line",
+    "zh-CN": "工作线"
+  },
+  "例如：长期研究判断": {
+    "en": "For example: a long-term research judgment",
+    "zh-CN": "例如：长期研究判断"
+  },
+  "介入要求": {
+    "en": "Attention needed",
+    "zh-CN": "介入要求"
+  },
+  "可以介入 · 已授权工作继续": {
+    "en": "Optional input · authorized work continues",
+    "zh-CN": "可以介入 · 已授权工作继续"
+  },
+  "需要决定 · 对应选择等待": {
+    "en": "Decision needed · waiting for a choice",
+    "zh-CN": "需要决定 · 对应选择等待"
+  },
+  "留待探索 · 尚未启动": {
+    "en": "To explore · not started",
+    "zh-CN": "留待探索 · 尚未启动"
+  },
+  "已经推进到哪里": {
+    "en": "Progress so far",
+    "zh-CN": "已经推进到哪里"
+  },
+  "为什么值得继续": {
+    "en": "Why continue?",
+    "zh-CN": "为什么值得继续"
+  },
+  "它可能带来什么新认识？哪些判断还需要检验？": {
+    "en": "What could we learn? Which judgments still need testing?",
+    "zh-CN": "它可能带来什么新认识？哪些判断还需要检验？"
+  },
+  "下一步 / 需要作出的选择": {
+    "en": "Next step / decision to make",
+    "zh-CN": "下一步 / 需要作出的选择"
+  },
+  "依据（资源地址，每行一个）": {
+    "en": "Sources (one resource address per line)",
+    "zh-CN": "依据（资源地址，每行一个）"
+  },
+  "负责 Agent": {
+    "en": "Responsible Agent",
+    "zh-CN": "负责 Agent"
+  },
+  "从它发展": {
+    "en": "Build on it",
+    "zh-CN": "从它发展"
+  },
+  "依赖它": {
+    "en": "Depend on it",
+    "zh-CN": "依赖它"
+  },
+  "与它汇合": {
+    "en": "Converge with it",
+    "zh-CN": "与它汇合"
+  },
+  "入口状态": {
+    "en": "Entry status",
+    "zh-CN": "入口状态"
+  },
+  "仍可展开": {
+    "en": "Open",
+    "zh-CN": "仍可展开"
+  },
+  "你的判断或希望探索的下一步": {
+    "en": "Your judgment or next step to explore",
+    "zh-CN": "你的判断或希望探索的下一步"
+  },
+  "全图导航": {
+    "en": "Graph overview",
+    "zh-CN": "全图导航"
+  },
+  "项目目标": {
+    "en": "Project goal",
+    "zh-CN": "项目目标"
+  },
+  "方向关系": {
+    "en": "Direction relation",
+    "zh-CN": "方向关系"
+  },
+  "条工作线": {
+    "en": "work lines",
+    "zh-CN": "条工作线"
+  },
+  "项目团队": {
+    "en": "Project team",
+    "zh-CN": "项目团队"
+  },
+  "个其他团队": {
+    "en": "other teams",
+    "zh-CN": "个其他团队"
+  },
+  "其他团队": {
+    "en": "Other teams",
+    "zh-CN": "其他团队"
+  },
+  "个探索位置": {
+    "en": "exploration entries",
+    "zh-CN": "个探索位置"
+  },
+  "＋ 展开工作线": {
+    "en": "＋ Expand work line",
+    "zh-CN": "＋ 展开工作线"
+  },
+  "− 收起工作线": {
+    "en": "− Collapse work line",
+    "zh-CN": "− 收起工作线"
+  },
+  "可以介入": {
+    "en": "Optional input",
+    "zh-CN": "可以介入"
+  },
+  "尚未投递": {
+    "en": "Not delivered",
+    "zh-CN": "尚未投递"
+  },
+  "待核实": {
+    "en": "To verify",
+    "zh-CN": "待核实"
+  },
+  "已有回复": {
+    "en": "Reply available",
+    "zh-CN": "已有回复"
+  },
+  "投递成功不代表任务完成。": {
+    "en": "Delivery does not mean the task is complete.",
+    "zh-CN": "投递成功不代表任务完成。"
+  },
+  "已收到回复，结论请以原对话和产物为准。": {
+    "en": "A reply is available. Refer to the original conversation and artifacts.",
+    "zh-CN": "已收到回复，结论请以原对话和产物为准。"
+  },
+  "恢复关注": {
+    "en": "Follow again",
+    "zh-CN": "恢复关注"
+  },
+  "查看 / 重试投递": {
+    "en": "Inspect / retry delivery",
+    "zh-CN": "查看 / 重试投递"
+  },
+  "交给 Agent": {
+    "en": "Hand to Agent",
+    "zh-CN": "交给 Agent"
+  },
+  "有来源无法读取，请核对地址或访问权限。": {
+    "en": "A source could not be read. Check its address and access permissions.",
+    "zh-CN": "有来源无法读取，请核对地址或访问权限。"
+  },
+  "来源当前不可读，无法投递。": {
+    "en": "The source is unavailable; delivery is blocked.",
+    "zh-CN": "来源当前不可读，无法投递。"
+  },
+  "来源已更新，请关闭此窗口，刷新并核对后再投递。": {
+    "en": "The source changed. Close this window, refresh and verify it before delivery.",
+    "zh-CN": "来源已更新，请关闭此窗口，刷新并核对后再投递。"
+  },
+  "请选择负责 Agent。": {
+    "en": "Select the responsible Agent.",
+    "zh-CN": "请选择负责 Agent。"
+  },
+  "管理研究方向": {
+    "en": "Manage research directions",
+    "zh-CN": "管理研究方向"
+  },
+  "团队的工作线与探索问题在右侧展开。": {
+    "en": "Team work lines and exploration questions expand on the right.",
+    "zh-CN": "团队的工作线与探索问题在右侧展开。"
+  },
+  "画布引擎加载失败，请刷新。": {
+    "en": "The graph engine could not load. Refresh the page.",
+    "zh-CN": "画布引擎加载失败，请刷新。"
+  },
+  "内容向本团队共享；请只填写可在此范围分享的判断。来源正文按当前访问权限打开。": {
+    "en": "Shared with this team. Include only judgments that can be shared here. Sources follow current access permissions.",
+    "zh-CN": "内容向本团队共享；请只填写可在此范围分享的判断。来源正文按当前访问权限打开。"
+  },
+  "确认后发送真实消息。接收、执行和结果将分开显示；重复提交同一请求不会重复启动。": {
+    "en": "Confirmation sends a message. Acceptance, execution and results are shown separately; resubmitting the same request will not start it twice.",
+    "zh-CN": "确认后发送真实消息。接收、执行和结果将分开显示；重复提交同一请求不会重复启动。"
+  },
+  "依据与来路": {
+    "en": "Sources and provenance",
+    "zh-CN": "依据与来路"
+  },
+  "这次交付": {
+    "en": "This delivery",
+    "zh-CN": "这次交付"
+  },
+  "打开负责 Agent 的对话与结果 ↗": {
+    "en": "Open the Agent's conversation and results ↗",
+    "zh-CN": "打开负责 Agent 的对话与结果 ↗"
+  },
+  "进入团队继续 ↗": {
+    "en": "Continue in the team ↗",
+    "zh-CN": "进入团队继续 ↗"
+  },
+  "{p0} 个 Map 节点的来源暂不可读，内容已隐藏。刷新可重新核对权限或来源状态。": {
+    "en": "Sources for {p0} Map nodes are unavailable; their content is hidden. Refresh to recheck access and source status.",
+    "zh-CN": "{p0} 个 Map 节点的来源暂不可读，内容已隐藏。刷新可重新核对权限或来源状态。"
+  },
+  "请填写问题、工作线、进展、理由和下一步。": {
+    "en": "Enter the question, work line, progress, rationale and next step.",
+    "zh-CN": "请填写问题、工作线、进展、理由和下一步。"
+  },
+  "请选择介入要求。": {
+    "en": "Select the attention requirement.",
+    "zh-CN": "请选择介入要求。"
+  },
+  "正在加载页面…": {
+    "zh-CN": "正在加载页面…",
+    "en": "Loading the page…"
+  },
+  "等待网络连接…": {
+    "zh-CN": "等待网络连接…",
+    "en": "Waiting for a connection…"
+  },
+  "页面暂时未能打开": {
+    "zh-CN": "页面暂时未能打开",
+    "en": "The page could not open yet"
+  },
+  "查看技术详情": {
+    "zh-CN": "查看技术详情",
+    "en": "Technical details"
+  },
+  "请先保留未保存的内容，再重新加载。": {
+    "zh-CN": "请先保留未保存的内容，再重新加载。",
+    "en": "Keep any unsaved content before reloading."
+  },
+  "请稍后重试，或检查网络连接。": {
+    "zh-CN": "请稍后重试，或检查网络连接。",
+    "en": "Try again shortly, or check your connection."
+  },
+  "连接恢复后将继续加载。": {
+    "zh-CN": "连接恢复后将继续加载。",
+    "en": "Loading will continue when the connection returns."
+  },
+  "正在准备页面，请稍候。": {
+    "zh-CN": "正在准备页面，请稍候。",
+    "en": "Preparing the page. Please wait."
+  },
+  "正在准备 Resident…": {
+    "zh-CN": "正在准备 Resident…",
+    "en": "Preparing the Resident…"
+  },
+  "连接中断，正在确认 Resident…": {
+    "zh-CN": "连接中断，正在确认 Resident…",
+    "en": "Connection lost; confirming the Resident…"
+  },
+  "Resident 已准备，正在重新加载对话…": {
+    "zh-CN": "Resident 已准备，正在重新加载对话…",
+    "en": "Resident ready; reloading the conversation…"
+  },
+  "未能取得对话的 Resident，请重试。": {
+    "zh-CN": "未能取得对话的 Resident，请重试。",
+    "en": "Could not get the conversation's Resident. Please try again."
+  },
+  "Resident 已准备，但对话加载失败；请重试：{p0}": {
+    "zh-CN": "Resident 已准备，但对话加载失败；请重试：{p0}",
+    "en": "Resident ready, but the conversation failed to load; please try again: {p0}"
+  },
+  "Resident 准备失败，结果未确认；请重试：{p0}": {
+    "zh-CN": "Resident 准备失败，结果未确认；请重试：{p0}",
+    "en": "Resident preparation failed and the result is unconfirmed; please try again: {p0}"
+  },
+  "加载请求未完成": {
+    "zh-CN": "加载请求未完成",
+    "en": "The load request did not finish"
+  },
+  "准备请求未完成": {
+    "zh-CN": "准备请求未完成",
+    "en": "The preparation request did not finish"
+  },
+  "附件上传中...": {
+    "zh-CN": "附件上传中...",
+    "en": "Uploading attachments..."
+  },
+  "有附件上传失败": {
+    "zh-CN": "有附件上传失败",
+    "en": "Some attachments failed to upload"
+  },
+  "账号切换": {
+    "zh-CN": "账号切换",
+    "en": "Account switch"
+  },
+  "重新开始会话": {
+    "zh-CN": "重新开始会话",
+    "en": "Session restart"
+  },
+  "会话操作": {
+    "zh-CN": "会话操作",
+    "en": "Session operation"
+  },
+  "{p0}：{p1} · {p2}": {
+    "zh-CN": "{p0}：{p1} · {p2}",
+    "en": "{p0}: {p1} · {p2}"
+  },
+  "操作未完成，仍使用 {p0}，原会话已保留。": {
+    "zh-CN": "操作未完成，仍使用 {p0}，原会话已保留。",
+    "en": "The operation did not finish; still using {p0}, and the original session is kept."
+  },
+  "关闭窗口不会取消操作；需要终止时请使用“取消操作”。": {
+    "zh-CN": "关闭窗口不会取消操作；需要终止时请使用“取消操作”。",
+    "en": "Closing the window does not cancel the operation; use \"Cancel operation\" to stop it."
+  },
+  "取消请求已受理，原会话将继续保留。": {
+    "zh-CN": "取消请求已受理，原会话将继续保留。",
+    "en": "The cancel request was accepted; the original session stays."
+  },
+  "已知悉，关闭本次操作失败提示": {
+    "zh-CN": "已知悉，关闭本次操作失败提示",
+    "en": "Acknowledge and close this failure notice"
+  },
+  "操作未完成，请在诊断中核对当前绑定和原错误。": {
+    "zh-CN": "操作未完成，请在诊断中核对当前绑定和原错误。",
+    "en": "The operation did not finish; check the current binding and the original error in the diagnostics."
+  },
+  "查看操作进度": {
+    "zh-CN": "查看操作进度",
+    "en": "View progress"
+  },
+  "正在准备会话": {
+    "zh-CN": "正在准备会话",
+    "en": "Preparing the session"
+  },
+  "正在提交绑定": {
+    "zh-CN": "正在提交绑定",
+    "en": "Committing the binding"
+  },
+  "正在核对上下文与能力": {
+    "zh-CN": "正在核对上下文与能力",
+    "en": "Checking context and capabilities"
+  },
+  "等待当前工作完成": {
+    "zh-CN": "等待当前工作完成",
+    "en": "Waiting for current work to finish"
+  },
+  "{p0} 小时": {
+    "zh-CN": "{p0} 小时",
+    "en": "{p0} h"
+  },
+  "{p0} 分": {
+    "zh-CN": "{p0} 分",
+    "en": "{p0} min"
+  },
+  "展开 To Do": {
+    "zh-CN": "展开 To Do",
+    "en": "Open To Do"
+  },
+  "收起 To Do": {
+    "zh-CN": "收起 To Do",
+    "en": "Collapse To Do"
+  },
+  "刷新 To Do": {
+    "zh-CN": "刷新 To Do",
+    "en": "Refresh To Do"
+  },
+  "关闭 To Do 并返回当前页面": {
+    "zh-CN": "关闭 To Do 并返回当前页面",
+    "en": "Close To Do and return to the page"
+  },
+  "To Do · 按住拖动到左侧或右侧": {
+    "zh-CN": "To Do · 按住拖动到左侧或右侧",
+    "en": "To Do · Drag to the left or right edge"
+  },
+  "派发间隔（秒）": {
+    "en": "Dispatch interval (seconds)",
+    "zh-CN": "派发间隔（秒）"
+  },
+  "最小秒数": {
+    "en": "Minimum seconds",
+    "zh-CN": "最小秒数"
+  },
+  "最大秒数": {
+    "en": "Maximum seconds",
+    "zh-CN": "最大秒数"
+  },
+  "最小派发间隔不能大于最大派发间隔": {
+    "en": "Minimum dispatch interval cannot exceed maximum",
+    "zh-CN": "最小派发间隔不能大于最大派发间隔"
+  },
+  "保存派发间隔": {
+    "en": "Save dispatch interval",
+    "zh-CN": "保存派发间隔"
+  },
+  "原始对话": {
+    "en": "Original conversation",
+    "zh-CN": "原始对话"
+  },
+  "对话记录视图": {
+    "en": "Conversation history view",
+    "zh-CN": "对话记录视图"
+  },
+  "按次记录": {
+    "en": "Task attempts",
+    "zh-CN": "按次记录"
+  },
+  "更早记录": {
+    "en": "Earlier attempts",
+    "zh-CN": "更早记录"
+  },
+  "本次输入": {
+    "en": "Attempt input",
+    "zh-CN": "本次输入"
+  },
+  "没有可见的按次记录；旧消息请查看原始对话。": {
+    "en": "No visible task attempts. Earlier messages remain in the original conversation.",
+    "zh-CN": "没有可见的按次记录；旧消息请查看原始对话。"
+  },
+  "等待接收": {
+    "zh-CN": "等待接收",
+    "en": "Waiting for receipt"
+  },
+  "已接收": {
+    "zh-CN": "已接收",
+    "en": "Received"
+  },
+  "直接丢弃": {
+    "zh-CN": "直接丢弃",
+    "en": "Discard directly"
+  },
+  "按顺序排队（默认）": {
+    "zh-CN": "按顺序排队（默认）",
+    "en": "Queue in order (default)"
+  },
+  "账号额度受限；发送的消息将排队，系统会按自动切换策略处理，请勿重复发送。": {
+    "zh-CN": "账号额度受限；发送的消息将排队，系统会按自动切换策略处理，请勿重复发送。",
+    "en": "Account quota is limited. Sent messages will queue while the automatic switching policy is applied. Do not resend."
+  },
+  "这个 Resident 已删除，不能发送消息。": {
+    "zh-CN": "这个 Resident 已删除，不能发送消息。",
+    "en": "This Resident has been deleted and cannot receive messages."
+  },
+  "正在保存其他设置，请等待完成后重试。": {
+    "zh-CN": "正在保存其他设置，请等待完成后重试。",
+    "en": "Other settings are being saved. Wait for completion, then retry."
+  },
   "例如：接收方 Resident 尚未空闲；筛选、分支或归并节点的上一轮投递还未完成；本连线还有更早的内容等待投递。": {
     "en": "Examples: the receiving Resident is not idle yet; a Filter, Selector or Reducer still has a delivery in progress; or earlier content is waiting on this wire.",
     "zh-CN": "例如：接收方 Resident 尚未空闲；筛选、分支或归并节点的上一轮投递还未完成；本连线还有更早的内容等待投递。"
   },
-  "成员显式开启自动切换时，先找同类型同模型账号，再按站点默认排序回退。未单独设置的成员继承 Family 开关。": {"zh-CN":"成员显式开启自动切换时，先找同类型同模型账号，再按站点默认排序回退。未单独设置的成员继承 Family 开关。","en":"Members who explicitly enable switching try the same account type and model first, then the site order. Members without an explicit setting inherit the Family switch."},
-  "Resident 已开启自动切换。先找同类型同模型账号，再按站点默认排序回退。": {"zh-CN":"Resident 已开启自动切换。先找同类型同模型账号，再按站点默认排序回退。","en":"This Resident has enabled automatic switching. Try the same account type and model first, then the site order."},
-  "来源：Resident 显式关闭；不会自动切换账号。": {"zh-CN":"来源：Resident 显式关闭；不会自动切换账号。","en":"Source: explicitly disabled for this Resident; accounts will not switch automatically."},
-  "继承 Family 开关。开启时先找同类型同模型账号，再按 Family 排序回退。": {"zh-CN":"继承 Family 开关。开启时先找同类型同模型账号，再按 Family 排序回退。","en":"Inherits the Family switch. When enabled, try the same account type and model first, then the Family order."},
-  "来源：沿用既有账号选择策略。": {"zh-CN":"来源：沿用既有账号选择策略。","en":"Source: existing account selection policy."},
+  "成员显式开启自动切换时，先找同类型同模型账号，再按站点默认排序回退。未单独设置的成员继承 Family 开关。": {
+    "zh-CN": "成员显式开启自动切换时，先找同类型同模型账号，再按站点默认排序回退。未单独设置的成员继承 Family 开关。",
+    "en": "Members who explicitly enable switching try the same account type and model first, then the site order. Members without an explicit setting inherit the Family switch."
+  },
+  "Resident 已开启自动切换。先找同类型同模型账号，再按站点默认排序回退。": {
+    "zh-CN": "Resident 已开启自动切换。先找同类型同模型账号，再按站点默认排序回退。",
+    "en": "This Resident has enabled automatic switching. Try the same account type and model first, then the site order."
+  },
+  "来源：Resident 显式关闭；不会自动切换账号。": {
+    "zh-CN": "来源：Resident 显式关闭；不会自动切换账号。",
+    "en": "Source: explicitly disabled for this Resident; accounts will not switch automatically."
+  },
+  "继承 Family 开关。开启时先找同类型同模型账号，再按 Family 排序回退。": {
+    "zh-CN": "继承 Family 开关。开启时先找同类型同模型账号，再按 Family 排序回退。",
+    "en": "Inherits the Family switch. When enabled, try the same account type and model first, then the Family order."
+  },
+  "来源：沿用既有账号选择策略。": {
+    "zh-CN": "来源：沿用既有账号选择策略。",
+    "en": "Source: existing account selection policy."
+  },
   "队列已满时，丢弃新到的内容；已排队的内容保留原顺序。": {
     "en": "When the queue is full, new content is discarded. Already queued content keeps its order.",
     "zh-CN": "队列已满时，丢弃新到的内容；已排队的内容保留原顺序。"
   },
-  "排序仅表示候选优先级，不保证切换成功。目标仍需有可用额度和兼容模型；自动切换优先完整保留上下文，无法直接保留时自动整理交接；待目标就绪后切换并继续原输入，旧会话历史保留。": {"zh-CN":"排序仅表示候选优先级，不保证切换成功。目标仍需有可用额度和兼容模型；自动切换优先完整保留上下文，无法直接保留时自动整理交接；待目标就绪后切换并继续原输入，旧会话历史保留。","en":"The order expresses candidate priority, not a guarantee of a successful switch. The target still needs available quota and a compatible model. Automatic switching preserves the full context where possible; otherwise it automatically prepares a handoff. It switches and continues the original input only after the target is ready. The old session history is retained."},
-  "保存后恢复站点默认帐号选择排序。下列仅为排序草稿，不代表站点当前生效顺序。": {"zh-CN":"保存后恢复站点默认帐号选择排序。下列仅为排序草稿，不代表站点当前生效顺序。","en":"Saving restores the site's default account order. The list below is only an editable draft, not the site's current effective order."},
-  "已自定义 Family 排序；未排序的订阅种类按默认顺序追加。": {"zh-CN":"已自定义 Family 排序；未排序的订阅种类按默认顺序追加。","en":"This Family uses a custom order. Unordered subscription kinds are appended in default order."},
-  "当前继承站点默认帐号选择排序。下列仅为可编辑草稿，不代表站点当前生效顺序；保存后改为 Family 自定义排序。": {"zh-CN":"当前继承站点默认帐号选择排序。下列仅为可编辑草稿，不代表站点当前生效顺序；保存后改为 Family 自定义排序。","en":"Currently inheriting the site's default account order. The list below is only an editable draft, not the site's current effective order. Saving applies a custom Family order."},
-  "继承 Family 开关的成员使用此回退顺序。显式开启额度自动切换的成员使用站点回退顺序。": {"zh-CN":"继承 Family 开关的成员使用此回退顺序。显式开启额度自动切换的成员使用站点回退顺序。","en":"Members inheriting the Family switch use this fallback order. Members who explicitly enable quota switching use the site fallback order."},
-  "先选支持当前模型的同类型账号，再按下列顺序回退。跨类型使用 API 或服务账号须在此明确允许。": {"zh-CN":"先选支持当前模型的同类型账号，再按下列顺序回退。跨类型使用 API 或服务账号须在此明确允许。","en":"Try available accounts of the same type that support the current model, then follow the order below. Switching to an API or service account of another type requires explicit permission here."},
-  "不开启": {"zh-CN":"不开启","en":"Off"},
-  "字符串资源地址，或 {workspace_id|repo_id|article_id, relative_path} 文件引用；上传文件推荐 {upload_id: 原上传句柄}，也接受 /api/uploads/<句柄> 或本实例正式 public/internal origin 或显式登记的 public_origin_aliases 的完整URL（可加 download=1，不接受其他参数或片段）。上传句柄不是资源ID，沿用所有已认证User/Resident可读规则；relative_path 不接受绝对路径或 ..": {"zh-CN":"字符串资源地址，或 {workspace_id|repo_id|article_id, relative_path} 文件引用；上传文件推荐 {upload_id: 原上传句柄}，也接受 /api/uploads/<句柄> 或本实例正式 public/internal origin 或显式登记的 public_origin_aliases 的完整URL（可加 download=1，不接受其他参数或片段）。上传句柄不是资源ID，沿用所有已认证User/Resident可读规则；relative_path 不接受绝对路径或 ..","en":"A resource address string or a {workspace_id|repo_id|article_id, relative_path} file reference. For uploads, prefer {upload_id: original upload handle}; /api/uploads/<handle> and full URLs using this instance's official public/internal origin or explicitly registered public_origin_aliases are also accepted (only download=1 is allowed; other query parameters and fragments are rejected). An upload handle is not a resource ID; uploads remain readable by all authenticated Users and Residents. relative_path must not be absolute or contain .."},
-  "字符串资源地址，或 {workspace_id|repo_id|article_id, relative_path} 文件引用；上传文件推荐 {upload_id: 原上传句柄}，也接受 /api/uploads/<句柄> 或本实例正式 public/internal origin 或显式登记的 public_origin_aliases 的完整URL（可加 download=1，不接受其他参数或片段）。上传文件对所有已认证User/Resident可读，支持meta_only、preview和超限下载；普通资源权限保持不变": {"zh-CN":"字符串资源地址，或 {workspace_id|repo_id|article_id, relative_path} 文件引用；上传文件推荐 {upload_id: 原上传句柄}，也接受 /api/uploads/<句柄> 或本实例正式 public/internal origin 或显式登记的 public_origin_aliases 的完整URL（可加 download=1，不接受其他参数或片段）。上传文件对所有已认证User/Resident可读，支持meta_only、preview和超限下载；普通资源权限保持不变","en":"A resource address string or a {workspace_id|repo_id|article_id, relative_path} file reference. For uploads, prefer {upload_id: original upload handle}; /api/uploads/<handle> and full URLs using this instance's official public/internal origin or explicitly registered public_origin_aliases are also accepted (only download=1 is allowed; other query parameters and fragments are rejected). Uploads are readable by all authenticated Users and Residents, supporting meta_only, preview, and download when content exceeds the read limit. Permissions for ordinary resources are unchanged."},
-  "选择后自动保存": {"zh-CN":"选择后自动保存","en":"Changes save automatically"},
-  "重试保存": {"zh-CN":"重试保存","en":"Retry save"},
-  "已加载当前保存的设置。": {"zh-CN":"已加载当前保存的设置。","en":"Current saved settings loaded."},
-  "设置已提交，暂时无法确认结果，请重试读取。": {"zh-CN":"设置已提交，暂时无法确认结果，请重试读取。","en":"Settings were submitted. Retry reading to confirm the result."},
-  "保存结果待确认，请重试原设置。": {"zh-CN":"保存结果待确认，请重试原设置。","en":"The save result is unconfirmed. Retry the same settings."},
-  "汇报设置未保存：{p0}": {"zh-CN":"汇报设置未保存：{p0}","en":"Reporting settings were not saved: {p0}"},
-  "不主动": {"zh-CN":"不主动","en":"Off"},
-  "汇报主动性说明": {"zh-CN":"汇报主动性说明","en":"About reporting initiative"},
-  "汇报质量说明": {"zh-CN":"汇报质量说明","en":"About reporting quality"},
-  "直接输出 Markdown": {"zh-CN":"直接输出 Markdown","en":"A Markdown response"},
-  "使用网页交互模板": {"zh-CN":"使用网页交互模板","en":"An interactive web template"},
-  "独立 Resident 审查与修改直至达标": {"zh-CN":"独立 Resident 审查与修改直至达标","en":"Independent Resident review and revisions until the quality standard is met"},
-  "Lineage Map": {"zh-CN":"Lineage Map","en":"Lineage Map"},
-  "查看 Lineage Map": {"zh-CN":"查看 Lineage Map","en":"View Lineage Map"},
-  "团队 Map": {"zh-CN":"团队 Map","en":"Team Map"},
-  "研究地图中的 Map 图层": {"zh-CN":"研究地图中的 Map 图层","en":"Research Map exploration layer"},
-  "搜索 Map": {"zh-CN":"搜索 Map","en":"Search Map"},
-  "Map 筛选": {"zh-CN":"Map 筛选","en":"Map filters"},
-  "新增 Map 节点": {"zh-CN":"新增 Map 节点","en":"Add map node"},
-  "添加第一个 Map 节点": {"zh-CN":"添加第一个 Map 节点","en":"Add the first map node"},
-  "选择一个项目，打开它的 Map。": {"zh-CN":"选择一个项目，打开它的 Map。","en":"Select a project to open its Map."},
-  "Map 节点局部标识无效。": {"zh-CN":"Map 节点局部标识无效。","en":"Invalid local map node ID."},
-  "这条来源下已有同一问题，请更新原 Map 节点。": {"zh-CN":"这条来源下已有同一问题，请更新原 Map 节点。","en":"This question already exists for these sources. Update the existing map node."},
-  "Map 节点数据格式不受支持。": {"zh-CN":"Map 节点数据格式不受支持。","en":"Unsupported map node data format."},
-  "进入团队 Map": {"zh-CN":"进入团队 Map","en":"Open team Map"},
-  "通过负责团队展开 Map 节点。团队关联不表示每个 Map 节点都直接属于该方向。": {"zh-CN":"通过负责团队展开 Map 节点。团队关联不表示每个 Map 节点都直接属于该方向。","en":"Explore map nodes through the responsible team. A team link does not make every node a direct part of this direction."},
-  "这些团队当前没有可展示的 Map 节点。可以进入团队查看或记录新的问题；部分读取失败时以顶部提示为准。": {"zh-CN":"这些团队当前没有可展示的 Map 节点。可以进入团队查看或记录新的问题；部分读取失败时以顶部提示为准。","en":"These teams have no map nodes to display. Open a team to explore or record a new question; check the notice above for any read failures."},
-  "正在切换 AI 后端": {"zh-CN": "正在切换 AI 后端", "en": "Switching AI backend"},
-  "额度自动切换由 Family 设置管理": {"zh-CN": "额度自动切换由 Family 设置管理", "en": "Quota auto-switching is managed in Family settings"},
-  "全屏观看": {"zh-CN":"全屏观看","en":"Watch fullscreen"},
-  "退出全屏": {"zh-CN":"退出全屏","en":"Exit fullscreen"},
-  "播放位置": {"zh-CN":"播放位置","en":"Playback position"},
-  "静音": {"zh-CN":"静音","en":"Mute"},
-  "取消静音": {"zh-CN":"取消静音","en":"Unmute"},
-  "音量": {"zh-CN":"音量","en":"Volume"},
-  "编辑已保留，正在读取最新汇报设置…": {"zh-CN":"编辑已保留，正在读取最新汇报设置…","en":"Your edits are preserved. Reading the latest reporting settings…"},
-  "当前已保存：主动性 {p0}；质量 {p1}。请核对后选择。": {"zh-CN":"当前已保存：主动性 {p0}；质量 {p1}。请核对后选择。","en":"Currently saved: initiative {p0}; quality {p1}. Review before choosing."},
-  "加载最新设置，替换当前编辑": {"zh-CN":"加载最新设置，替换当前编辑","en":"Load latest settings and replace these edits"},
-  "已加载最新设置，尚未提交修改。": {"zh-CN":"已加载最新设置，尚未提交修改。","en":"Latest settings loaded. No changes have been submitted."},
-  "保留当前编辑，按最新版本重试保存": {"zh-CN":"保留当前编辑，按最新版本重试保存","en":"Keep these edits and retry saving against the latest version"},
-  "重新读取最新设置": {"zh-CN":"重新读取最新设置","en":"Read the latest settings again"},
+  "排序仅表示候选优先级，不保证切换成功。目标仍需有可用额度和兼容模型；自动切换优先完整保留上下文，无法直接保留时自动整理交接；待目标就绪后切换并继续原输入，旧会话历史保留。": {
+    "zh-CN": "排序仅表示候选优先级，不保证切换成功。目标仍需有可用额度和兼容模型；自动切换优先完整保留上下文，无法直接保留时自动整理交接；待目标就绪后切换并继续原输入，旧会话历史保留。",
+    "en": "The order expresses candidate priority, not a guarantee of a successful switch. The target still needs available quota and a compatible model. Automatic switching preserves the full context where possible; otherwise it automatically prepares a handoff. It switches and continues the original input only after the target is ready. The old session history is retained."
+  },
+  "保存后恢复站点默认帐号选择排序。下列仅为排序草稿，不代表站点当前生效顺序。": {
+    "zh-CN": "保存后恢复站点默认帐号选择排序。下列仅为排序草稿，不代表站点当前生效顺序。",
+    "en": "Saving restores the site's default account order. The list below is only an editable draft, not the site's current effective order."
+  },
+  "已自定义 Family 排序；未排序的订阅种类按默认顺序追加。": {
+    "zh-CN": "已自定义 Family 排序；未排序的订阅种类按默认顺序追加。",
+    "en": "This Family uses a custom order. Unordered subscription kinds are appended in default order."
+  },
+  "当前继承站点默认帐号选择排序。下列仅为可编辑草稿，不代表站点当前生效顺序；保存后改为 Family 自定义排序。": {
+    "zh-CN": "当前继承站点默认帐号选择排序。下列仅为可编辑草稿，不代表站点当前生效顺序；保存后改为 Family 自定义排序。",
+    "en": "Currently inheriting the site's default account order. The list below is only an editable draft, not the site's current effective order. Saving applies a custom Family order."
+  },
+  "继承 Family 开关的成员使用此回退顺序。显式开启额度自动切换的成员使用站点回退顺序。": {
+    "zh-CN": "继承 Family 开关的成员使用此回退顺序。显式开启额度自动切换的成员使用站点回退顺序。",
+    "en": "Members inheriting the Family switch use this fallback order. Members who explicitly enable quota switching use the site fallback order."
+  },
+  "先选支持当前模型的同类型账号，再按下列顺序回退。跨类型使用 API 或服务账号须在此明确允许。": {
+    "zh-CN": "先选支持当前模型的同类型账号，再按下列顺序回退。跨类型使用 API 或服务账号须在此明确允许。",
+    "en": "Try available accounts of the same type that support the current model, then follow the order below. Switching to an API or service account of another type requires explicit permission here."
+  },
+  "不开启": {
+    "zh-CN": "不开启",
+    "en": "Off"
+  },
+  "字符串资源地址，或 {workspace_id|repo_id|article_id, relative_path} 文件引用；上传文件推荐 {upload_id: 原上传句柄}，也接受 /api/uploads/<句柄> 或本实例正式 public/internal origin 或显式登记的 public_origin_aliases 的完整URL（可加 download=1，不接受其他参数或片段）。上传句柄不是资源ID，沿用所有已认证User/Resident可读规则；relative_path 不接受绝对路径或 ..": {
+    "zh-CN": "字符串资源地址，或 {workspace_id|repo_id|article_id, relative_path} 文件引用；上传文件推荐 {upload_id: 原上传句柄}，也接受 /api/uploads/<句柄> 或本实例正式 public/internal origin 或显式登记的 public_origin_aliases 的完整URL（可加 download=1，不接受其他参数或片段）。上传句柄不是资源ID，沿用所有已认证User/Resident可读规则；relative_path 不接受绝对路径或 ..",
+    "en": "A resource address string or a {workspace_id|repo_id|article_id, relative_path} file reference. For uploads, prefer {upload_id: original upload handle}; /api/uploads/<handle> and full URLs using this instance's official public/internal origin or explicitly registered public_origin_aliases are also accepted (only download=1 is allowed; other query parameters and fragments are rejected). An upload handle is not a resource ID; uploads remain readable by all authenticated Users and Residents. relative_path must not be absolute or contain .."
+  },
+  "字符串资源地址，或 {workspace_id|repo_id|article_id, relative_path} 文件引用；上传文件推荐 {upload_id: 原上传句柄}，也接受 /api/uploads/<句柄> 或本实例正式 public/internal origin 或显式登记的 public_origin_aliases 的完整URL（可加 download=1，不接受其他参数或片段）。上传文件对所有已认证User/Resident可读，支持meta_only、preview和超限下载；普通资源权限保持不变": {
+    "zh-CN": "字符串资源地址，或 {workspace_id|repo_id|article_id, relative_path} 文件引用；上传文件推荐 {upload_id: 原上传句柄}，也接受 /api/uploads/<句柄> 或本实例正式 public/internal origin 或显式登记的 public_origin_aliases 的完整URL（可加 download=1，不接受其他参数或片段）。上传文件对所有已认证User/Resident可读，支持meta_only、preview和超限下载；普通资源权限保持不变",
+    "en": "A resource address string or a {workspace_id|repo_id|article_id, relative_path} file reference. For uploads, prefer {upload_id: original upload handle}; /api/uploads/<handle> and full URLs using this instance's official public/internal origin or explicitly registered public_origin_aliases are also accepted (only download=1 is allowed; other query parameters and fragments are rejected). Uploads are readable by all authenticated Users and Residents, supporting meta_only, preview, and download when content exceeds the read limit. Permissions for ordinary resources are unchanged."
+  },
+  "选择后自动保存": {
+    "zh-CN": "选择后自动保存",
+    "en": "Changes save automatically"
+  },
+  "重试保存": {
+    "zh-CN": "重试保存",
+    "en": "Retry save"
+  },
+  "已加载当前保存的设置。": {
+    "zh-CN": "已加载当前保存的设置。",
+    "en": "Current saved settings loaded."
+  },
+  "设置已提交，暂时无法确认结果，请重试读取。": {
+    "zh-CN": "设置已提交，暂时无法确认结果，请重试读取。",
+    "en": "Settings were submitted. Retry reading to confirm the result."
+  },
+  "保存结果待确认，请重试原设置。": {
+    "zh-CN": "保存结果待确认，请重试原设置。",
+    "en": "The save result is unconfirmed. Retry the same settings."
+  },
+  "汇报设置未保存：{p0}": {
+    "zh-CN": "汇报设置未保存：{p0}",
+    "en": "Reporting settings were not saved: {p0}"
+  },
+  "不主动": {
+    "zh-CN": "不主动",
+    "en": "Off"
+  },
+  "汇报主动性说明": {
+    "zh-CN": "汇报主动性说明",
+    "en": "About reporting initiative"
+  },
+  "汇报质量说明": {
+    "zh-CN": "汇报质量说明",
+    "en": "About reporting quality"
+  },
+  "直接输出 Markdown": {
+    "zh-CN": "直接输出 Markdown",
+    "en": "A Markdown response"
+  },
+  "使用网页交互模板": {
+    "zh-CN": "使用网页交互模板",
+    "en": "An interactive web template"
+  },
+  "独立 Resident 审查与修改直至达标": {
+    "zh-CN": "独立 Resident 审查与修改直至达标",
+    "en": "Independent Resident review and revisions until the quality standard is met"
+  },
+  "Lineage Map": {
+    "zh-CN": "Lineage Map",
+    "en": "Lineage Map"
+  },
+  "查看 Lineage Map": {
+    "zh-CN": "查看 Lineage Map",
+    "en": "View Lineage Map"
+  },
+  "团队 Map": {
+    "zh-CN": "团队 Map",
+    "en": "Team Map"
+  },
+  "研究地图中的 Map 图层": {
+    "zh-CN": "研究地图中的 Map 图层",
+    "en": "Research Map exploration layer"
+  },
+  "搜索 Map": {
+    "zh-CN": "搜索 Map",
+    "en": "Search Map"
+  },
+  "Map 筛选": {
+    "zh-CN": "Map 筛选",
+    "en": "Map filters"
+  },
+  "新增 Map 节点": {
+    "zh-CN": "新增 Map 节点",
+    "en": "Add map node"
+  },
+  "添加第一个 Map 节点": {
+    "zh-CN": "添加第一个 Map 节点",
+    "en": "Add the first map node"
+  },
+  "选择一个项目，打开它的 Map。": {
+    "zh-CN": "选择一个项目，打开它的 Map。",
+    "en": "Select a project to open its Map."
+  },
+  "Map 节点局部标识无效。": {
+    "zh-CN": "Map 节点局部标识无效。",
+    "en": "Invalid local map node ID."
+  },
+  "这条来源下已有同一问题，请更新原 Map 节点。": {
+    "zh-CN": "这条来源下已有同一问题，请更新原 Map 节点。",
+    "en": "This question already exists for these sources. Update the existing map node."
+  },
+  "Map 节点数据格式不受支持。": {
+    "zh-CN": "Map 节点数据格式不受支持。",
+    "en": "Unsupported map node data format."
+  },
+  "进入团队 Map": {
+    "zh-CN": "进入团队 Map",
+    "en": "Open team Map"
+  },
+  "通过负责团队展开 Map 节点。团队关联不表示每个 Map 节点都直接属于该方向。": {
+    "zh-CN": "通过负责团队展开 Map 节点。团队关联不表示每个 Map 节点都直接属于该方向。",
+    "en": "Explore map nodes through the responsible team. A team link does not make every node a direct part of this direction."
+  },
+  "这些团队当前没有可展示的 Map 节点。可以进入团队查看或记录新的问题；部分读取失败时以顶部提示为准。": {
+    "zh-CN": "这些团队当前没有可展示的 Map 节点。可以进入团队查看或记录新的问题；部分读取失败时以顶部提示为准。",
+    "en": "These teams have no map nodes to display. Open a team to explore or record a new question; check the notice above for any read failures."
+  },
+  "正在切换 AI 后端": {
+    "zh-CN": "正在切换 AI 后端",
+    "en": "Switching AI backend"
+  },
+  "额度自动切换由 Family 设置管理": {
+    "zh-CN": "额度自动切换由 Family 设置管理",
+    "en": "Quota auto-switching is managed in Family settings"
+  },
+  "全屏观看": {
+    "zh-CN": "全屏观看",
+    "en": "Watch fullscreen"
+  },
+  "退出全屏": {
+    "zh-CN": "退出全屏",
+    "en": "Exit fullscreen"
+  },
+  "播放位置": {
+    "zh-CN": "播放位置",
+    "en": "Playback position"
+  },
+  "静音": {
+    "zh-CN": "静音",
+    "en": "Mute"
+  },
+  "取消静音": {
+    "zh-CN": "取消静音",
+    "en": "Unmute"
+  },
+  "音量": {
+    "zh-CN": "音量",
+    "en": "Volume"
+  },
+  "编辑已保留，正在读取最新汇报设置…": {
+    "zh-CN": "编辑已保留，正在读取最新汇报设置…",
+    "en": "Your edits are preserved. Reading the latest reporting settings…"
+  },
+  "当前已保存：主动性 {p0}；质量 {p1}。请核对后选择。": {
+    "zh-CN": "当前已保存：主动性 {p0}；质量 {p1}。请核对后选择。",
+    "en": "Currently saved: initiative {p0}; quality {p1}. Review before choosing."
+  },
+  "加载最新设置，替换当前编辑": {
+    "zh-CN": "加载最新设置，替换当前编辑",
+    "en": "Load latest settings and replace these edits"
+  },
+  "已加载最新设置，尚未提交修改。": {
+    "zh-CN": "已加载最新设置，尚未提交修改。",
+    "en": "Latest settings loaded. No changes have been submitted."
+  },
+  "保留当前编辑，按最新版本重试保存": {
+    "zh-CN": "保留当前编辑，按最新版本重试保存",
+    "en": "Keep these edits and retry saving against the latest version"
+  },
+  "重新读取最新设置": {
+    "zh-CN": "重新读取最新设置",
+    "en": "Read the latest settings again"
+  },
   "成员的回复显示在这里。当前没有可显示的门面对话；Solo/Mute 会影响这里显示的往来，直接发给成员的对话在各成员自己的对话里。": {
     "zh-CN": "成员的回复显示在这里。当前没有可显示的门面对话；Solo/Mute 会影响这里显示的往来，直接发给成员的对话在各成员自己的对话里。",
     "en": "Members' replies appear here. There are currently no facade conversations to display. Solo/Mute affects which exchanges are shown here; conversations sent directly to members appear in their own chats."
   },
-  "汇报设置": {"zh-CN":"汇报设置","en":"Reporting settings"},
-  "汇报主动性": {"zh-CN":"汇报主动性","en":"Reporting initiative"},
-  "汇报质量": {"zh-CN":"汇报质量","en":"Report quality"},
-  "正在读取汇报设置…": {"zh-CN":"正在读取汇报设置…","en":"Loading reporting settings…"},
-  "汇报设置暂不可用，请重试。": {"zh-CN":"汇报设置暂不可用，请重试。","en":"Reporting settings are unavailable. Please retry."},
-  "0（不主动汇报）": {"zh-CN":"0（不主动汇报）","en":"0 (no proactive reports)"},
-  "低 · Markdown": {"zh-CN":"低 · Markdown","en":"Low · Markdown"},
-  "中 · 交互网页": {"zh-CN":"中 · 交互网页","en":"Medium · interactive webpage"},
-  "高 · 独立 Resident 审查与修改直至达标": {"zh-CN":"高 · 独立 Resident 审查与修改直至达标","en":"High · independent Resident review and revision until the standard is met"},
-  "主动性只影响主动汇报；用户明确要求的汇报仍会执行。高主动性也按实际价值判断，不保证每次请求都生成汇报。": {"zh-CN":"主动性只影响主动汇报；用户明确要求的汇报仍会执行。高主动性也按实际价值判断，不保证每次请求都生成汇报。","en":"Initiative only affects proactive reports; explicit report requests are still fulfilled. High initiative still depends on actual value and does not produce a report for every request."},
-  "保存汇报设置": {"zh-CN":"保存汇报设置","en":"Save reporting settings"},
-  "汇报设置已保存。": {"zh-CN":"汇报设置已保存。","en":"Reporting settings saved."},
-  "上次保存结果待确认，请先重试原设置。": {"zh-CN":"上次保存结果待确认，请先重试原设置。","en":"The previous save is unconfirmed. Retry those settings first."},
-  "设置已提交，回读失败；再次保存只重试读取。": {"zh-CN":"设置已提交，回读失败；再次保存只重试读取。","en":"Settings were submitted, but could not be read back. Saving again only retries the read."},
-  "评审、提问、构思或监督职责": {"zh-CN": "评审、提问、构思或监督职责", "en": "Reviewing, questioning, ideation, or supervision role"},
-  "自动迁移": {"zh-CN": "自动迁移", "en": "Automatic migration"},
+  "汇报设置": {
+    "zh-CN": "汇报设置",
+    "en": "Reporting settings"
+  },
+  "汇报主动性": {
+    "zh-CN": "汇报主动性",
+    "en": "Reporting initiative"
+  },
+  "汇报质量": {
+    "zh-CN": "汇报质量",
+    "en": "Report quality"
+  },
+  "正在读取汇报设置…": {
+    "zh-CN": "正在读取汇报设置…",
+    "en": "Loading reporting settings…"
+  },
+  "汇报设置暂不可用，请重试。": {
+    "zh-CN": "汇报设置暂不可用，请重试。",
+    "en": "Reporting settings are unavailable. Please retry."
+  },
+  "0（不主动汇报）": {
+    "zh-CN": "0（不主动汇报）",
+    "en": "0 (no proactive reports)"
+  },
+  "低 · Markdown": {
+    "zh-CN": "低 · Markdown",
+    "en": "Low · Markdown"
+  },
+  "中 · 交互网页": {
+    "zh-CN": "中 · 交互网页",
+    "en": "Medium · interactive webpage"
+  },
+  "高 · 独立 Resident 审查与修改直至达标": {
+    "zh-CN": "高 · 独立 Resident 审查与修改直至达标",
+    "en": "High · independent Resident review and revision until the standard is met"
+  },
+  "主动性只影响主动汇报；用户明确要求的汇报仍会执行。高主动性也按实际价值判断，不保证每次请求都生成汇报。": {
+    "zh-CN": "主动性只影响主动汇报；用户明确要求的汇报仍会执行。高主动性也按实际价值判断，不保证每次请求都生成汇报。",
+    "en": "Initiative only affects proactive reports; explicit report requests are still fulfilled. High initiative still depends on actual value and does not produce a report for every request."
+  },
+  "保存汇报设置": {
+    "zh-CN": "保存汇报设置",
+    "en": "Save reporting settings"
+  },
+  "汇报设置已保存。": {
+    "zh-CN": "汇报设置已保存。",
+    "en": "Reporting settings saved."
+  },
+  "上次保存结果待确认，请先重试原设置。": {
+    "zh-CN": "上次保存结果待确认，请先重试原设置。",
+    "en": "The previous save is unconfirmed. Retry those settings first."
+  },
+  "设置已提交，回读失败；再次保存只重试读取。": {
+    "zh-CN": "设置已提交，回读失败；再次保存只重试读取。",
+    "en": "Settings were submitted, but could not be read back. Saving again only retries the read."
+  },
+  "评审、提问、构思或监督职责": {
+    "zh-CN": "评审、提问、构思或监督职责",
+    "en": "Reviewing, questioning, ideation, or supervision role"
+  },
+  "自动迁移": {
+    "zh-CN": "自动迁移",
+    "en": "Automatic migration"
+  },
   "提问": {
     "en": "Questioning",
     "zh-CN": "提问"
@@ -485,76 +1295,322 @@
     "en": "Maximum number of rounds",
     "zh-CN": "最多循环轮数"
   },
-"Flag":{"zh-CN":"Flag","en":"Flag"},
-"取消Flag":{"zh-CN":"取消Flag","en":"Unflag"},
-"选择标记":{"zh-CN":"选择标记","en":"Choose marker"},
-"旗帜":{"zh-CN":"旗帜","en":"Flag"},
-"星星":{"zh-CN":"星星","en":"Star"},
-"乌龟":{"zh-CN":"乌龟","en":"Turtle"},
-"章鱼":{"zh-CN":"章鱼","en":"Octopus"},
-"地图":{"zh-CN":"地图","en":"Map"},
-"Lineage 地图":{"zh-CN":"Lineage 地图","en":"Lineage Map"},
-"查看 Lineage 地图":{"zh-CN":"查看 Lineage 地图","en":"View Lineage Map"},
-"团队地图":{"zh-CN":"团队地图","en":"Team Map"},
-"研究地图探索图层":{"zh-CN":"研究地图探索图层","en":"Research Map exploration layer"},
-"搜索地图":{"zh-CN":"搜索地图","en":"Search Map"},
-"地图筛选":{"zh-CN":"地图筛选","en":"Map filters"},
-"节点详情":{"zh-CN":"节点详情","en":"Node details"},
-"新增地图节点":{"zh-CN":"新增地图节点","en":"Add map node"},
-"添加第一个地图节点":{"zh-CN":"添加第一个地图节点","en":"Add the first map node"},
-"新节点":{"zh-CN":"新节点","en":"New node"},
-"＋ 节点":{"zh-CN":"＋ 节点","en":"+ Node"},
-"关联节点":{"zh-CN":"关联节点","en":"Related node"},
-"更新节点":{"zh-CN":"更新节点","en":"Update node"},
-"保存节点":{"zh-CN":"保存节点","en":"Save node"},
-"推进这个节点":{"zh-CN":"推进这个节点","en":"Continue this node"},
-"全部节点":{"zh-CN":"全部节点","en":"All nodes"},
-"当前未展示节点 · 点击浏览":{"zh-CN":"当前未展示节点 · 点击浏览","en":"No nodes shown · Browse"},
-"选择一个项目，打开它的地图。":{"zh-CN":"选择一个项目，打开它的地图。","en":"Select a project to open its Map."},
-"地图节点局部标识无效。":{"zh-CN":"地图节点局部标识无效。","en":"Invalid local map node ID."},
-"关联节点不存在或指向自身。":{"zh-CN":"关联节点不存在或指向自身。","en":"The related node does not exist or refers to itself."},
-"这条来源下已有同一问题，请更新原地图节点。":{"zh-CN":"这条来源下已有同一问题，请更新原地图节点。","en":"This question already exists for these sources. Update the existing map node."},
-"地图节点数据格式不受支持。":{"zh-CN":"地图节点数据格式不受支持。","en":"Unsupported map node data format."},
-"已接收。执行与结果可在节点详情中查看。":{"zh-CN":"已接收。执行与结果可在节点详情中查看。","en":"Accepted. View execution and results in the node details."},
-"进入团队地图":{"zh-CN":"进入团队地图","en":"Open team Map"},
-"通过负责团队展开地图节点。团队关联不表示每个地图节点都直接属于该方向。":{"zh-CN":"通过负责团队展开地图节点。团队关联不表示每个地图节点都直接属于该方向。","en":"Explore map nodes through the responsible team. A team link does not make every node a direct part of this direction."},
-"这些团队当前没有可展示的地图节点。可以进入团队查看或记录新的问题；部分读取失败时以顶部提示为准。":{"zh-CN":"这些团队当前没有可展示的地图节点。可以进入团队查看或记录新的问题；部分读取失败时以顶部提示为准。","en":"These teams have no map nodes to display. Open a team to explore or record a new question; check the notice above for any read failures."},
-"未选择展示":{"zh-CN":"未选择展示","en":"No display selected"},
-"待打开":{"zh-CN":"待打开","en":"Not opened"},
-"目标文件":{"zh-CN":"目标文件","en":"Target file"},
-"查看错误详情":{"zh-CN":"查看错误详情","en":"View error details"},
-"打开其他内容":{"zh-CN":"打开其他内容","en":"Open other content"},
-"关闭此展示":{"zh-CN":"关闭此展示","en":"Close this display"},
-"暂时无法访问此文件":{"zh-CN":"暂时无法访问此文件","en":"This file is currently inaccessible"},
-"找不到这个文件":{"zh-CN":"找不到这个文件","en":"File not found"},
-"暂时无法展示此文件":{"zh-CN":"暂时无法展示此文件","en":"Unable to display this file right now"},
-"当前账号未获准读取这个文件。权限或文件地址更新后，可以重试；也可以打开其他内容。":{"zh-CN":"当前账号未获准读取这个文件。权限或文件地址更新后，可以重试；也可以打开其他内容。","en":"Your account cannot read this file. Retry after its permissions or address are updated, or open other content."},
-"文件可能已移动或删除。请核对下方地址，或打开其他内容。":{"zh-CN":"文件可能已移动或删除。请核对下方地址，或打开其他内容。","en":"The file may have been moved or deleted. Check the address below, or open other content."},
-"读取未完成。可以重试，或打开其他内容继续使用展示区。":{"zh-CN":"读取未完成。可以重试，或打开其他内容继续使用展示区。","en":"The file could not be loaded. Retry, or open other content to continue using this area."},
-"选择文件夹":{"zh-CN":"选择文件夹","en":"Select folder"},"后退":{"zh-CN":"后退","en":"Back"},"前进":{"zh-CN":"前进","en":"Forward"},"编辑路径":{"zh-CN":"编辑路径","en":"Edit location"},"筛选文件夹":{"zh-CN":"筛选文件夹","en":"Filter folders"},"文件夹":{"zh-CN":"文件夹","en":"Folders"},"待选路径":{"zh-CN":"待选路径","en":"Selected folder"},"选择当前目录":{"zh-CN":"选择当前目录","en":"Select current folder"},"尚未选择目录":{"zh-CN":"尚未选择目录","en":"No folder selected"},"没有匹配的文件夹。":{"zh-CN":"没有匹配的文件夹。","en":"No matching folders."},
-"选择 Portal 主机目录": {"zh-CN":"选择 Portal 主机目录","en":"Choose a directory on the Portal host"},
-"目录路径": {"zh-CN":"目录路径","en":"Directory path"},
-"选择此目录": {"zh-CN":"选择此目录","en":"Select this directory"},
-"上一级": {"zh-CN":"上一级","en":"Parent directory"},
-"主目录": {"zh-CN":"主目录","en":"Home directory"},
-"打开目录": {"zh-CN":"打开目录","en":"Open directory"},
-"浏览": {"zh-CN":"浏览","en":"Browse"},
-"浏览 Portal 所在主机的目录。": {"zh-CN":"浏览 Portal 所在主机的目录。","en":"Browse directories on the host running Portal."},
-"正在读取目录…": {"zh-CN":"正在读取目录…","en":"Reading directory…"},
-"目录较多，仅显示部分；可输入完整路径。": {"zh-CN":"目录较多，仅显示部分；可输入完整路径。","en":"Only some directories are shown. You can enter the full path."},
-"此目录没有子目录。": {"zh-CN":"此目录没有子目录。","en":"This directory has no subdirectories."},
-"使用本机已有登录": {"zh-CN":"使用本机已有登录","en":"Use an existing login on this host"},
-"选择 Portal 主机上已有登录的目录，也可以手动输入。候选目录的登录状态将在接入后验证。": {"zh-CN":"选择 Portal 主机上已有登录的目录，也可以手动输入。候选目录的登录状态将在接入后验证。","en":"Select an existing login directory on the Portal host, or enter a path manually. Login status will be checked after connecting."},
-"已自动填写待创建目录，可直接继续；保存后创建目录并引导登录。目录可修改。": {"zh-CN":"已自动填写待创建目录，可直接继续；保存后创建目录并引导登录。目录可修改。","en":"A directory to create is already filled in. Continue to create it and sign in after saving. You can edit the directory."},
-"正在查找本机账号目录…": {"zh-CN":"正在查找本机账号目录…","en":"Looking for account directories on this host…"},
-"选择一个候选目录，或手动输入。登录状态尚未验证。": {"zh-CN":"选择一个候选目录，或手动输入。登录状态尚未验证。","en":"Select a candidate directory or enter a path manually. Login status has not been verified."},
-"未找到候选目录，可手动输入或浏览主机目录。": {"zh-CN":"未找到候选目录，可手动输入或浏览主机目录。","en":"No candidate directories found. Enter a path manually or browse this host."},
-"仅显示部分扫描结果。": {"zh-CN":"仅显示部分扫描结果。","en":"Only some scan results are shown."},
-"扫描失败，可手动输入或浏览主机目录。": {"zh-CN":"扫描失败，可手动输入或浏览主机目录。","en":"Scanning failed. Enter a path manually or browse this host."},
-"重新扫描": {"zh-CN":"重新扫描","en":"Scan again"},
-  "打开外部应用": {"zh-CN": "打开外部应用", "en": "Open external application"},
-  "将在新标签页打开下列地址。Portal 不会转交登录凭据，也不确认应用是否正在运行。": {"zh-CN": "将在新标签页打开下列地址。Portal 不会转交登录凭据，也不确认应用是否正在运行。", "en": "Open this address in a new tab. Portal does not forward login credentials or verify that the application is running."},
-  "打开应用": {"zh-CN": "打开应用", "en": "Open application"},
+  "Flag": {
+    "zh-CN": "Flag",
+    "en": "Flag"
+  },
+  "取消Flag": {
+    "zh-CN": "取消Flag",
+    "en": "Unflag"
+  },
+  "选择标记": {
+    "zh-CN": "选择标记",
+    "en": "Choose marker"
+  },
+  "旗帜": {
+    "zh-CN": "旗帜",
+    "en": "Flag"
+  },
+  "星星": {
+    "zh-CN": "星星",
+    "en": "Star"
+  },
+  "乌龟": {
+    "zh-CN": "乌龟",
+    "en": "Turtle"
+  },
+  "章鱼": {
+    "zh-CN": "章鱼",
+    "en": "Octopus"
+  },
+  "地图": {
+    "zh-CN": "地图",
+    "en": "Map"
+  },
+  "Lineage 地图": {
+    "zh-CN": "Lineage 地图",
+    "en": "Lineage Map"
+  },
+  "查看 Lineage 地图": {
+    "zh-CN": "查看 Lineage 地图",
+    "en": "View Lineage Map"
+  },
+  "团队地图": {
+    "zh-CN": "团队地图",
+    "en": "Team Map"
+  },
+  "研究地图探索图层": {
+    "zh-CN": "研究地图探索图层",
+    "en": "Research Map exploration layer"
+  },
+  "搜索地图": {
+    "zh-CN": "搜索地图",
+    "en": "Search Map"
+  },
+  "地图筛选": {
+    "zh-CN": "地图筛选",
+    "en": "Map filters"
+  },
+  "节点详情": {
+    "zh-CN": "节点详情",
+    "en": "Node details"
+  },
+  "新增地图节点": {
+    "zh-CN": "新增地图节点",
+    "en": "Add map node"
+  },
+  "添加第一个地图节点": {
+    "zh-CN": "添加第一个地图节点",
+    "en": "Add the first map node"
+  },
+  "新节点": {
+    "en": "New node",
+    "zh-CN": "新节点"
+  },
+  "＋ 节点": {
+    "zh-CN": "＋ 节点",
+    "en": "+ Node"
+  },
+  "关联节点": {
+    "zh-CN": "关联节点",
+    "en": "Related node"
+  },
+  "更新节点": {
+    "zh-CN": "更新节点",
+    "en": "Update node"
+  },
+  "保存节点": {
+    "zh-CN": "保存节点",
+    "en": "Save node"
+  },
+  "推进这个节点": {
+    "zh-CN": "推进这个节点",
+    "en": "Continue this node"
+  },
+  "全部节点": {
+    "zh-CN": "全部节点",
+    "en": "All nodes"
+  },
+  "当前未展示节点 · 点击浏览": {
+    "zh-CN": "当前未展示节点 · 点击浏览",
+    "en": "No nodes shown · Browse"
+  },
+  "选择一个项目，打开它的地图。": {
+    "zh-CN": "选择一个项目，打开它的地图。",
+    "en": "Select a project to open its Map."
+  },
+  "地图节点局部标识无效。": {
+    "zh-CN": "地图节点局部标识无效。",
+    "en": "Invalid local map node ID."
+  },
+  "关联节点不存在或指向自身。": {
+    "zh-CN": "关联节点不存在或指向自身。",
+    "en": "The related node does not exist or refers to itself."
+  },
+  "这条来源下已有同一问题，请更新原地图节点。": {
+    "zh-CN": "这条来源下已有同一问题，请更新原地图节点。",
+    "en": "This question already exists for these sources. Update the existing map node."
+  },
+  "地图节点数据格式不受支持。": {
+    "zh-CN": "地图节点数据格式不受支持。",
+    "en": "Unsupported map node data format."
+  },
+  "已接收。执行与结果可在节点详情中查看。": {
+    "zh-CN": "已接收。执行与结果可在节点详情中查看。",
+    "en": "Accepted. View execution and results in the node details."
+  },
+  "进入团队地图": {
+    "zh-CN": "进入团队地图",
+    "en": "Open team Map"
+  },
+  "通过负责团队展开地图节点。团队关联不表示每个地图节点都直接属于该方向。": {
+    "zh-CN": "通过负责团队展开地图节点。团队关联不表示每个地图节点都直接属于该方向。",
+    "en": "Explore map nodes through the responsible team. A team link does not make every node a direct part of this direction."
+  },
+  "这些团队当前没有可展示的地图节点。可以进入团队查看或记录新的问题；部分读取失败时以顶部提示为准。": {
+    "zh-CN": "这些团队当前没有可展示的地图节点。可以进入团队查看或记录新的问题；部分读取失败时以顶部提示为准。",
+    "en": "These teams have no map nodes to display. Open a team to explore or record a new question; check the notice above for any read failures."
+  },
+  "未选择展示": {
+    "zh-CN": "未选择展示",
+    "en": "No display selected"
+  },
+  "待打开": {
+    "zh-CN": "待打开",
+    "en": "Not opened"
+  },
+  "目标文件": {
+    "zh-CN": "目标文件",
+    "en": "Target file"
+  },
+  "查看错误详情": {
+    "zh-CN": "查看错误详情",
+    "en": "View error details"
+  },
+  "打开其他内容": {
+    "zh-CN": "打开其他内容",
+    "en": "Open other content"
+  },
+  "关闭此展示": {
+    "zh-CN": "关闭此展示",
+    "en": "Close this display"
+  },
+  "暂时无法访问此文件": {
+    "zh-CN": "暂时无法访问此文件",
+    "en": "This file is currently inaccessible"
+  },
+  "找不到这个文件": {
+    "zh-CN": "找不到这个文件",
+    "en": "File not found"
+  },
+  "暂时无法展示此文件": {
+    "zh-CN": "暂时无法展示此文件",
+    "en": "Unable to display this file right now"
+  },
+  "当前账号未获准读取这个文件。权限或文件地址更新后，可以重试；也可以打开其他内容。": {
+    "zh-CN": "当前账号未获准读取这个文件。权限或文件地址更新后，可以重试；也可以打开其他内容。",
+    "en": "Your account cannot read this file. Retry after its permissions or address are updated, or open other content."
+  },
+  "文件可能已移动或删除。请核对下方地址，或打开其他内容。": {
+    "zh-CN": "文件可能已移动或删除。请核对下方地址，或打开其他内容。",
+    "en": "The file may have been moved or deleted. Check the address below, or open other content."
+  },
+  "读取未完成。可以重试，或打开其他内容继续使用展示区。": {
+    "zh-CN": "读取未完成。可以重试，或打开其他内容继续使用展示区。",
+    "en": "The file could not be loaded. Retry, or open other content to continue using this area."
+  },
+  "选择文件夹": {
+    "zh-CN": "选择文件夹",
+    "en": "Select folder"
+  },
+  "后退": {
+    "zh-CN": "后退",
+    "en": "Back"
+  },
+  "前进": {
+    "zh-CN": "前进",
+    "en": "Forward"
+  },
+  "编辑路径": {
+    "zh-CN": "编辑路径",
+    "en": "Edit location"
+  },
+  "筛选文件夹": {
+    "zh-CN": "筛选文件夹",
+    "en": "Filter folders"
+  },
+  "文件夹": {
+    "zh-CN": "文件夹",
+    "en": "Folders"
+  },
+  "待选路径": {
+    "zh-CN": "待选路径",
+    "en": "Selected folder"
+  },
+  "选择当前目录": {
+    "zh-CN": "选择当前目录",
+    "en": "Select current folder"
+  },
+  "尚未选择目录": {
+    "zh-CN": "尚未选择目录",
+    "en": "No folder selected"
+  },
+  "没有匹配的文件夹。": {
+    "zh-CN": "没有匹配的文件夹。",
+    "en": "No matching folders."
+  },
+  "选择 Portal 主机目录": {
+    "zh-CN": "选择 Portal 主机目录",
+    "en": "Choose a directory on the Portal host"
+  },
+  "目录路径": {
+    "zh-CN": "目录路径",
+    "en": "Directory path"
+  },
+  "选择此目录": {
+    "zh-CN": "选择此目录",
+    "en": "Select this directory"
+  },
+  "上一级": {
+    "zh-CN": "上一级",
+    "en": "Parent directory"
+  },
+  "主目录": {
+    "zh-CN": "主目录",
+    "en": "Home directory"
+  },
+  "打开目录": {
+    "zh-CN": "打开目录",
+    "en": "Open directory"
+  },
+  "浏览": {
+    "zh-CN": "浏览",
+    "en": "Browse"
+  },
+  "浏览 Portal 所在主机的目录。": {
+    "zh-CN": "浏览 Portal 所在主机的目录。",
+    "en": "Browse directories on the host running Portal."
+  },
+  "正在读取目录…": {
+    "zh-CN": "正在读取目录…",
+    "en": "Reading directory…"
+  },
+  "目录较多，仅显示部分；可输入完整路径。": {
+    "zh-CN": "目录较多，仅显示部分；可输入完整路径。",
+    "en": "Only some directories are shown. You can enter the full path."
+  },
+  "此目录没有子目录。": {
+    "zh-CN": "此目录没有子目录。",
+    "en": "This directory has no subdirectories."
+  },
+  "使用本机已有登录": {
+    "zh-CN": "使用本机已有登录",
+    "en": "Use an existing login on this host"
+  },
+  "选择 Portal 主机上已有登录的目录，也可以手动输入。候选目录的登录状态将在接入后验证。": {
+    "zh-CN": "选择 Portal 主机上已有登录的目录，也可以手动输入。候选目录的登录状态将在接入后验证。",
+    "en": "Select an existing login directory on the Portal host, or enter a path manually. Login status will be checked after connecting."
+  },
+  "已自动填写待创建目录，可直接继续；保存后创建目录并引导登录。目录可修改。": {
+    "zh-CN": "已自动填写待创建目录，可直接继续；保存后创建目录并引导登录。目录可修改。",
+    "en": "A directory to create is already filled in. Continue to create it and sign in after saving. You can edit the directory."
+  },
+  "正在查找本机账号目录…": {
+    "zh-CN": "正在查找本机账号目录…",
+    "en": "Looking for account directories on this host…"
+  },
+  "选择一个候选目录，或手动输入。登录状态尚未验证。": {
+    "zh-CN": "选择一个候选目录，或手动输入。登录状态尚未验证。",
+    "en": "Select a candidate directory or enter a path manually. Login status has not been verified."
+  },
+  "未找到候选目录，可手动输入或浏览主机目录。": {
+    "zh-CN": "未找到候选目录，可手动输入或浏览主机目录。",
+    "en": "No candidate directories found. Enter a path manually or browse this host."
+  },
+  "仅显示部分扫描结果。": {
+    "zh-CN": "仅显示部分扫描结果。",
+    "en": "Only some scan results are shown."
+  },
+  "扫描失败，可手动输入或浏览主机目录。": {
+    "zh-CN": "扫描失败，可手动输入或浏览主机目录。",
+    "en": "Scanning failed. Enter a path manually or browse this host."
+  },
+  "重新扫描": {
+    "zh-CN": "重新扫描",
+    "en": "Scan again"
+  },
+  "打开外部应用": {
+    "zh-CN": "打开外部应用",
+    "en": "Open external application"
+  },
+  "将在新标签页打开下列地址。Portal 不会转交登录凭据，也不确认应用是否正在运行。": {
+    "zh-CN": "将在新标签页打开下列地址。Portal 不会转交登录凭据，也不确认应用是否正在运行。",
+    "en": "Open this address in a new tab. Portal does not forward login credentials or verify that the application is running."
+  },
+  "打开应用": {
+    "zh-CN": "打开应用",
+    "en": "Open application"
+  },
   "Expires in days (leave blank for no expiry)": {
     "zh-CN": "过期天数（留空则不过期）",
     "en": "Expires in days (leave blank for no expiry)"
@@ -563,15 +1619,42 @@
     "zh-CN": "不过期",
     "en": "Never expires"
   },
-  "尚未取得该账号的新鲜完整额度读数，测试正在等待额度确认。": {"zh-CN": "尚未取得该账号的新鲜完整额度读数，测试正在等待额度确认。", "en": "The test is waiting for a fresh, complete quota reading for this account."},
-  "等待账号监控刷新；若持续无更新，请检查账号监控服务。": {"zh-CN": "等待账号监控刷新；若持续无更新，请检查账号监控服务。", "en": "Wait for the account monitor to refresh. If updates remain unavailable, check the account monitoring service."},
-  "该账号的订阅额度已用完，测试正在等待额度恢复。": {"zh-CN": "该账号的订阅额度已用完，测试正在等待额度恢复。", "en": "This account's subscription quota is exhausted. The test is waiting for quota to recover."},
-  "等待服务商额度恢复，或选择其他有额度的账号。": {"zh-CN": "等待服务商额度恢复，或选择其他有额度的账号。", "en": "Wait for the provider quota to recover, or choose another account with quota available."},
-  "该账号剩余额度已达到保护阈值，测试正在等待额度恢复。": {"zh-CN": "该账号剩余额度已达到保护阈值，测试正在等待额度恢复。", "en": "This account's remaining quota has reached its protection threshold. The test is waiting for quota to recover."},
-  "等待额度恢复到保护阈值以上，或选择其他账号。": {"zh-CN": "等待额度恢复到保护阈值以上，或选择其他账号。", "en": "Wait for quota to rise above the protection threshold, or choose another account."},
-  "添加 AI 后端": {"zh-CN": "添加 AI 后端", "en": "Add an AI backend"},
-  "接入订阅帐号": {"zh-CN": "接入订阅帐号", "en": "Connect subscription account"},
-  "新增 API Key": {"zh-CN": "新增 API Key", "en": "Add API Key"},
+  "尚未取得该账号的新鲜完整额度读数，测试正在等待额度确认。": {
+    "zh-CN": "尚未取得该账号的新鲜完整额度读数，测试正在等待额度确认。",
+    "en": "The test is waiting for a fresh, complete quota reading for this account."
+  },
+  "等待账号监控刷新；若持续无更新，请检查账号监控服务。": {
+    "zh-CN": "等待账号监控刷新；若持续无更新，请检查账号监控服务。",
+    "en": "Wait for the account monitor to refresh. If updates remain unavailable, check the account monitoring service."
+  },
+  "该账号的订阅额度已用完，测试正在等待额度恢复。": {
+    "zh-CN": "该账号的订阅额度已用完，测试正在等待额度恢复。",
+    "en": "This account's subscription quota is exhausted. The test is waiting for quota to recover."
+  },
+  "等待服务商额度恢复，或选择其他有额度的账号。": {
+    "zh-CN": "等待服务商额度恢复，或选择其他有额度的账号。",
+    "en": "Wait for the provider quota to recover, or choose another account with quota available."
+  },
+  "该账号剩余额度已达到保护阈值，测试正在等待额度恢复。": {
+    "zh-CN": "该账号剩余额度已达到保护阈值，测试正在等待额度恢复。",
+    "en": "This account's remaining quota has reached its protection threshold. The test is waiting for quota to recover."
+  },
+  "等待额度恢复到保护阈值以上，或选择其他账号。": {
+    "zh-CN": "等待额度恢复到保护阈值以上，或选择其他账号。",
+    "en": "Wait for quota to rise above the protection threshold, or choose another account."
+  },
+  "添加 AI 后端": {
+    "zh-CN": "添加 AI 后端",
+    "en": "Add an AI backend"
+  },
+  "接入订阅帐号": {
+    "zh-CN": "接入订阅帐号",
+    "en": "Connect subscription account"
+  },
+  "新增 API Key": {
+    "zh-CN": "新增 API Key",
+    "en": "Add API Key"
+  },
   "图刷新失败，本次修改尚未提交。请刷新后重试。": {
     "zh-CN": "图刷新失败，本次修改尚未提交。请刷新后重试。",
     "en": "Graph refresh failed; this change was not submitted. Refresh and try again."
@@ -847,14 +1930,6 @@
   "每月编程额度": {
     "zh-CN": "每月编程额度",
     "en": "Monthly coding quota"
-  },
-  "中国区": {
-    "zh-CN": "中国区",
-    "en": "Mainland China"
-  },
-  "国际区": {
-    "zh-CN": "国际区",
-    "en": "International"
   },
   "账号所属区域": {
     "zh-CN": "账号所属区域",
@@ -19213,8 +20288,8 @@
     "en": "{p0}"
   },
   "{p0} 个 Effect": {
-    "en": "{p0} Effects",
-    "zh-CN": "{p0} 个 Effect"
+    "zh-CN": "{p0} 个 Effect",
+    "en": "{p0} Effects"
   },
   "{p0} 个 Lineage · {p1} 个 Resident · {p2} 个脚本 Effect · {p3} 个事件源": {
     "en": "{p0} Lineage · {p1} Resident · {p2} script Effect · {p3} event sources",
@@ -23520,8 +24595,14 @@
     "en": "Load more results",
     "zh-CN": "加载更多结果"
   },
-  "已加载更早消息": {"zh-CN": "已加载更早消息", "en": "Earlier messages loaded"},
-  "没有更早消息": {"zh-CN": "没有更早消息", "en": "No earlier messages"},
+  "已加载更早消息": {
+    "zh-CN": "已加载更早消息",
+    "en": "Earlier messages loaded"
+  },
+  "没有更早消息": {
+    "zh-CN": "没有更早消息",
+    "en": "No earlier messages"
+  },
   "加载更早消息": {
     "en": "Load earlier messages",
     "zh-CN": "加载更早消息"
@@ -29522,10 +30603,6 @@
     "en": "New project directory",
     "zh-CN": "新的项目目录"
   },
-  "新节点": {
-    "en": "New node",
-    "zh-CN": "新节点"
-  },
   "新节点：创建独立 Agent，或通过 Resident ID 加入已有 Resident": {
     "en": "New node: create an independent Agent, or add an existing Resident by ID",
     "zh-CN": "新节点：创建独立 Agent，或通过 Resident ID 加入已有 Resident"
@@ -30521,10 +31598,6 @@
   "未提交的权限表单会被清空；资源归属草案保留。": {
     "en": "Unsubmitted permission forms will be cleared; resource ownership drafts are retained.",
     "zh-CN": "未提交的权限表单会被清空；资源归属草案保留。"
-  },
-  "未提供": {
-    "en": "Not provided",
-    "zh-CN": "未提供"
   },
   "未提供可用的余额或额度单位，暂不可设置": {
     "en": "No available balance or quota unit was provided, so it cannot be set for now",
@@ -41958,30 +43031,102 @@
     "zh-CN": "继续当前初始化，保留继承的上下文及已排队的消息。credits 确认只适用于这次初始化及它创建的 Session。",
     "en": "Continue the current initialization, preserving inherited context and queued messages. Credits consent applies only to this initialization and the Session it creates."
   },
-  "仅显示已加载范围；可加载更早消息": {"zh-CN": "仅显示已加载范围；可加载更早消息", "en": "Showing loaded history; load earlier messages to see more"},
-  "保存未确认": {"zh-CN": "保存未确认", "en": "Save could not be confirmed"},
-  "关注未保存，请重试": {"zh-CN": "关注未保存，请重试", "en": "Could not save the flag. Please try again."},
-  "取消本轮关注": {"zh-CN": "取消本轮关注", "en": "Remove flag from this request"},
-  "定位失败": {"zh-CN": "定位失败", "en": "Could not locate message"},
-  "已关注": {"zh-CN": "已关注", "en": "Flagged"},
-  "已加载轮次": {"zh-CN": "已加载轮次", "en": "Loaded requests"},
-  "恢复中": {"zh-CN": "恢复中", "en": "Recovering"},
-  "无法定位这条消息，请重试": {"zh-CN": "无法定位这条消息，请重试", "en": "Could not locate this message. Please try again."},
-  "暂无已加载轮次": {"zh-CN": "暂无已加载轮次", "en": "No requests loaded"},
-  "查找结果": {"zh-CN": "查找结果", "en": "Search results"},
-  "标记本轮关注": {"zh-CN": "标记本轮关注", "en": "Flag this request"},
-  "正在分派": {"zh-CN": "正在分派", "en": "Routing"},
-  "正在转交": {"zh-CN": "正在转交", "en": "Delivering"},
-  "浏览已加载轮次": {"zh-CN": "浏览已加载轮次", "en": "Browse loaded requests"},
-  "滚动对话": {"zh-CN": "滚动对话", "en": "Scroll conversation"},
-  "状态待确认": {"zh-CN": "状态待确认", "en": "Status not confirmed"},
-  "等待分工": {"zh-CN": "等待分工", "en": "Waiting for assignment"},
-  "等待成员": {"zh-CN": "等待成员", "en": "Waiting for members"},
-  "请先登录": {"zh-CN": "请先登录", "en": "Please sign in"},
-  "轮次": {"zh-CN": "轮次", "en": "Requests"},
-  "轮次导航": {"zh-CN": "轮次导航", "en": "Request navigation"},
-  "轮次预览": {"zh-CN": "轮次预览", "en": "Request preview"},
-  "附件消息": {"zh-CN": "附件消息", "en": "Message with attachments"},
+  "仅显示已加载范围；可加载更早消息": {
+    "zh-CN": "仅显示已加载范围；可加载更早消息",
+    "en": "Showing loaded history; load earlier messages to see more"
+  },
+  "保存未确认": {
+    "zh-CN": "保存未确认",
+    "en": "Save could not be confirmed"
+  },
+  "关注未保存，请重试": {
+    "zh-CN": "关注未保存，请重试",
+    "en": "Could not save the flag. Please try again."
+  },
+  "取消本轮关注": {
+    "zh-CN": "取消本轮关注",
+    "en": "Remove flag from this request"
+  },
+  "定位失败": {
+    "zh-CN": "定位失败",
+    "en": "Could not locate message"
+  },
+  "已关注": {
+    "zh-CN": "已关注",
+    "en": "Flagged"
+  },
+  "已加载轮次": {
+    "zh-CN": "已加载轮次",
+    "en": "Loaded requests"
+  },
+  "恢复中": {
+    "zh-CN": "恢复中",
+    "en": "Recovering"
+  },
+  "无法定位这条消息，请重试": {
+    "zh-CN": "无法定位这条消息，请重试",
+    "en": "Could not locate this message. Please try again."
+  },
+  "暂无已加载轮次": {
+    "zh-CN": "暂无已加载轮次",
+    "en": "No requests loaded"
+  },
+  "查找结果": {
+    "zh-CN": "查找结果",
+    "en": "Search results"
+  },
+  "标记本轮关注": {
+    "zh-CN": "标记本轮关注",
+    "en": "Flag this request"
+  },
+  "正在分派": {
+    "zh-CN": "正在分派",
+    "en": "Routing"
+  },
+  "正在转交": {
+    "zh-CN": "正在转交",
+    "en": "Delivering"
+  },
+  "浏览已加载轮次": {
+    "zh-CN": "浏览已加载轮次",
+    "en": "Browse loaded requests"
+  },
+  "滚动对话": {
+    "zh-CN": "滚动对话",
+    "en": "Scroll conversation"
+  },
+  "状态待确认": {
+    "zh-CN": "状态待确认",
+    "en": "Status not confirmed"
+  },
+  "等待分工": {
+    "zh-CN": "等待分工",
+    "en": "Waiting for assignment"
+  },
+  "等待成员": {
+    "zh-CN": "等待成员",
+    "en": "Waiting for members"
+  },
+  "请先登录": {
+    "zh-CN": "请先登录",
+    "en": "Please sign in"
+  },
+  "轮次": {
+    "zh-CN": "轮次",
+    "en": "Requests"
+  },
+  "轮次导航": {
+    "zh-CN": "轮次导航",
+    "en": "Request navigation"
+  },
+  "轮次预览": {
+    "zh-CN": "轮次预览",
+    "en": "Request preview"
+  },
+  "附件消息": {
+    "zh-CN": "附件消息",
+    "en": "Message with attachments"
+  },
   "定位消息": {
     "zh-CN": "定位消息",
     "en": "Locate message"
@@ -42006,22 +43151,70 @@
     "zh-CN": "音频",
     "en": "Audio"
   },
-  "搜索聊天室": {"zh-CN":"搜索聊天室","en":"Search chatrooms"},
-  "搜索聊天室名称、成员或消息": {"zh-CN":"搜索聊天室名称、成员或消息","en":"Search chatroom names, members or messages"},
-  "没有匹配“{p0}”的聊天室。": {"zh-CN":"没有匹配“{p0}”的聊天室。","en":"No chatroom matches “{p0}”."},
-  "@我": {"zh-CN":"@我","en":"@me"},
-  "{p0} 条未读 @ 消息": {"zh-CN":"{p0} 条未读 @ 消息","en":"{p0} unread @ mentions"},
-  "帮你找合适的 Resident": {"zh-CN":"帮你找合适的 Resident","en":"Finds the right Resident for you"},
-  "运行设置": {"zh-CN":"运行设置","en":"Run settings"},
-  "还原": {"zh-CN":"还原","en":"Revert"},
-  "切换账号": {"zh-CN":"切换账号","en":"Switch account"},
-  "交接并切换": {"zh-CN":"交接并切换","en":"Hand off and switch"},
-  "取消操作": {"zh-CN":"取消操作","en":"Cancel operation"},
-  "保存运行参数": {"zh-CN":"保存运行参数","en":"Save run settings"},
-  "本次目标账号：": {"zh-CN":"本次目标账号：","en":"Target account: "},
-  "请选择目标 Provider 的模型。": {"zh-CN":"请选择目标 Provider 的模型。","en":"Choose a model for the target Provider."},
-  "等待正在运行的工作完成后切换；切换失败时保留原会话。": {"zh-CN":"等待正在运行的工作完成后切换；切换失败时保留原会话。","en":"Switches after the running work finishes; if the switch fails, the current Session is kept."},
-  "参数从下一轮生效，不会重新开始会话。": {"zh-CN":"参数从下一轮生效，不会重新开始会话。","en":"Takes effect from the next turn; the Session is not restarted."},
+  "搜索聊天室": {
+    "zh-CN": "搜索聊天室",
+    "en": "Search chatrooms"
+  },
+  "搜索聊天室名称、成员或消息": {
+    "zh-CN": "搜索聊天室名称、成员或消息",
+    "en": "Search chatroom names, members or messages"
+  },
+  "没有匹配“{p0}”的聊天室。": {
+    "zh-CN": "没有匹配“{p0}”的聊天室。",
+    "en": "No chatroom matches “{p0}”."
+  },
+  "@我": {
+    "zh-CN": "@我",
+    "en": "@me"
+  },
+  "{p0} 条未读 @ 消息": {
+    "zh-CN": "{p0} 条未读 @ 消息",
+    "en": "{p0} unread @ mentions"
+  },
+  "帮你找合适的 Resident": {
+    "zh-CN": "帮你找合适的 Resident",
+    "en": "Finds the right Resident for you"
+  },
+  "运行设置": {
+    "zh-CN": "运行设置",
+    "en": "Run settings"
+  },
+  "还原": {
+    "zh-CN": "还原",
+    "en": "Revert"
+  },
+  "切换账号": {
+    "zh-CN": "切换账号",
+    "en": "Switch account"
+  },
+  "交接并切换": {
+    "zh-CN": "交接并切换",
+    "en": "Hand off and switch"
+  },
+  "取消操作": {
+    "zh-CN": "取消操作",
+    "en": "Cancel operation"
+  },
+  "保存运行参数": {
+    "zh-CN": "保存运行参数",
+    "en": "Save run settings"
+  },
+  "本次目标账号：": {
+    "zh-CN": "本次目标账号：",
+    "en": "Target account: "
+  },
+  "请选择目标 Provider 的模型。": {
+    "zh-CN": "请选择目标 Provider 的模型。",
+    "en": "Choose a model for the target Provider."
+  },
+  "等待正在运行的工作完成后切换；切换失败时保留原会话。": {
+    "zh-CN": "等待正在运行的工作完成后切换；切换失败时保留原会话。",
+    "en": "Switches after the running work finishes; if the switch fails, the current Session is kept."
+  },
+  "参数从下一轮生效，不会重新开始会话。": {
+    "zh-CN": "参数从下一轮生效，不会重新开始会话。",
+    "en": "Takes effect from the next turn; the Session is not restarted."
+  },
   "聊天室提及提醒": {
     "zh-CN": "聊天室提及提醒",
     "en": "Chatroom mentions"
@@ -42074,73 +43267,270 @@
     "zh-CN": "额外用量",
     "en": "Extra usage"
   },
-  "Duties": {"zh-CN": "职责", "en": "Duties"},
-  "常用": {"zh-CN": "常用", "en": "Common"},
-  "过滤": {"zh-CN": "过滤", "en": "Filter"},
-  "来自：{p0}": {"zh-CN": "来自：{p0}", "en": "From: {p0}"},
-  "上移": {"zh-CN": "上移", "en": "Move up"},
-  "下移": {"zh-CN": "下移", "en": "Move down"},
-  "撤下": {"zh-CN": "撤下", "en": "Remove"},
-  "已开启": {"zh-CN": "已开启", "en": "On"},
-  "无法读取": {"zh-CN": "无法读取", "en": "Unavailable"},
-  "额度不足时自动切换账号": {"zh-CN": "额度不足时自动切换账号", "en": "Switch accounts automatically when quota runs out"},
-  "在 Settings 中修改": {"zh-CN": "在 Settings 中修改", "en": "Change in Settings"},
-  "每条职责一行；展开可查看结构和提示词，打开详情可查看职责的内部对象。": {"zh-CN": "每条职责一行；展开可查看结构和提示词，打开详情可查看职责的内部对象。", "en": "One row per duty; expand to read its structure and prompt, or open details to view its internal objects."},
-  "{p0} 个事件": {"zh-CN": "{p0} 个事件", "en": "{p0} events"},
-  "{p0} 个 Effect": {"zh-CN": "{p0} 个 Effect", "en": "{p0} Effects"},
-  "{p0} 条连线": {"zh-CN": "{p0} 条连线", "en": "{p0} wires"},
-  "{p0} 个其他元素": {"zh-CN": "{p0} 个其他元素", "en": "{p0} other elements"},
-  "仅含提示词": {"zh-CN": "仅含提示词", "en": "Prompt only"},
-  "没有结构元素": {"zh-CN": "没有结构元素", "en": "No structural elements"},
-  "还没有职责。": {"zh-CN": "还没有职责。", "en": "No duties yet."},
-  "系统职责": {"zh-CN": "系统职责", "en": "System duties"},
-  "正在读取职责…": {"zh-CN": "正在读取职责…", "en": "Loading duties…"},
-  "职责读取失败：{p0}": {"zh-CN": "职责读取失败：{p0}", "en": "Could not load duties: {p0}"},
-  "职责顺序已更新。": {"zh-CN": "职责顺序已更新。", "en": "Duty order updated."},
-  "撤下这条职责？": {"zh-CN": "撤下这条职责？", "en": "Remove this duty?"},
-  "“{p0}”连接的 {p1} 个元素会从图上删除；这个 Resident 和它的其他职责不受影响。": {"zh-CN": "“{p0}”连接的 {p1} 个元素会从图上删除；这个 Resident 和它的其他职责不受影响。", "en": "The {p1} elements connected by “{p0}” will be deleted from the graph; this Resident and its other duties stay as they are."},
-  "职责已撤下。": {"zh-CN": "职责已撤下。", "en": "Duty removed."},
-  "持有者：{p0}": {"zh-CN": "持有者：{p0}", "en": "Holder: {p0}"},
-  "本组织的职责": {"zh-CN": "本组织的职责", "en": "This organization's duties"},
-  "触发时": {"zh-CN": "触发时", "en": "On trigger"},
-  "每轮": {"zh-CN": "每轮", "en": "Every turn"},
-  "会话开始和压缩后": {"zh-CN": "会话开始和压缩后", "en": "Session start and after compaction"},
-  "提示词 · {p0}": {"zh-CN": "提示词 · {p0}", "en": "Prompt · {p0}"},
-  "这条职责没有提示词。": {"zh-CN": "这条职责没有提示词。", "en": "This duty has no prompt."},
-  "提示词": {"zh-CN": "提示词", "en": "Prompt"},
-  "Memory": {"zh-CN": "记忆", "en": "Memory"},
-  "只在相应连线触发这个 Resident 的那一轮": {"zh-CN": "只在相应连线触发这个 Resident 的那一轮", "en": "Only in the turn a matching wire triggers this Resident"},
-  "每一轮都在，越少越好": {"zh-CN": "每一轮都在，越少越好", "en": "In every turn; keep it short"},
-  "会话启动、重置和压缩之后": {"zh-CN": "会话启动、重置和压缩之后", "en": "When the session starts, resets or is compacted"},
-  "平台写入 Workspace 的 duty-manuals.md，Resident 需要时自己读；职责清单里留一行指针": {"zh-CN": "平台写入 Workspace 的 duty-manuals.md，Resident 需要时自己读；职责清单里留一行指针", "en": "Written to duty-manuals.md in the Workspace for the Resident to read when needed; the duty list keeps a one-line pointer"},
-  "平台规则": {"zh-CN": "平台规则", "en": "Platform rules"},
-  "平台": {"zh-CN": "平台", "en": "Platform"},
-  "消息要求的 Skill": {"zh-CN": "消息要求的 Skill", "en": "Skills the message asks for"},
-  "业务说明": {"zh-CN": "业务说明", "en": "Business instructions"},
-  "汇报策略": {"zh-CN": "汇报策略", "en": "Reporting policy"},
-  "（触发事件带来的内容）": {"zh-CN": "（触发事件带来的内容）", "en": "(content brought by the triggering event)"},
-  "{p0} 触发": {"zh-CN": "{p0} 触发", "en": "Triggered by {p0}"},
-  "连线 · 职责“{p0}”": {"zh-CN": "连线 · 职责“{p0}”", "en": "Wire · duty “{p0}”"},
-  "（这条连线没有写任务说明，送达时使用默认提示）": {"zh-CN": "（这条连线没有写任务说明，送达时使用默认提示）", "en": "(This wire has no task; the default prompt is sent)"},
-  "职责清单（平台生成，含“会话开始”职责的提示词）": {"zh-CN": "职责清单（平台生成，含“会话开始”职责的提示词）", "en": "Duty list (generated, with the prompts of session-start duties)"},
-  "职责记录": {"zh-CN": "职责记录", "en": "Duty records"},
-  "在职责页查看": {"zh-CN": "在职责页查看", "en": "View in Duties"},
-  "在 Harness 中调整发送时机": {"zh-CN": "在 Harness 中调整发送时机", "en": "Change timing in Harness"},
-  "按四级列出进入这个 Resident 上下文的内容和来源，越靠上的层级占用上下文越多。展开一项可看到正文。": {"zh-CN": "按四级列出进入这个 Resident 上下文的内容和来源，越靠上的层级占用上下文越多。展开一项可看到正文。", "en": "What enters this Resident's context and where it comes from, by four memory levels; higher levels take more context. Expand an item to read it."},
-  "没有内容。": {"zh-CN": "没有内容。", "en": "Nothing here."},
-  "正在读取记忆…": {"zh-CN": "正在读取记忆…", "en": "Loading memory…"},
-  "记忆读取失败：{p0}": {"zh-CN": "记忆读取失败：{p0}", "en": "Could not load memory: {p0}"},
-  "工具箱": {"zh-CN": "工具箱", "en": "Toolbox"},
-  "组织": {"zh-CN": "组织", "en": "Organizations"},
-  "拖到聊天输入框或 Resident 节点，填入草稿后编辑发送": {"zh-CN": "拖到聊天输入框或 Resident 节点，填入草稿后编辑发送", "en": "Drag onto the chat input or a Resident, then edit and send the draft"},
-  "交办": {"zh-CN": "交办", "en": "Errands"},
-  "还没有角色模板": {"zh-CN": "还没有角色模板", "en": "No role templates yet"},
-  "暂无模板": {"zh-CN": "暂无模板", "en": "No templates yet"},
-  "商店": {"zh-CN": "商店", "en": "Store"},
-  "商店即将上线": {"zh-CN": "商店即将上线", "en": "Store coming soon"},
-  "新职责模板": {"zh-CN": "新职责模板", "en": "New duty template"},
-  "单击拿起，双击在工坊中打开；按 Escape 或右键取消": {"zh-CN": "单击拿起，双击在工坊中打开；按 Escape 或右键取消", "en": "Click to pick up, double-click to open in workshop; press Escape or right-click to cancel"},
-  "{p0} · 拖到 {p1}": {"zh-CN": "{p0} · 拖到 {p1}", "en": "{p0} · Drag onto {p1}"},
+  "Duties": {
+    "zh-CN": "职责",
+    "en": "Duties"
+  },
+  "常用": {
+    "zh-CN": "常用",
+    "en": "Common"
+  },
+  "过滤": {
+    "zh-CN": "过滤",
+    "en": "Filter"
+  },
+  "来自：{p0}": {
+    "zh-CN": "来自：{p0}",
+    "en": "From: {p0}"
+  },
+  "上移": {
+    "zh-CN": "上移",
+    "en": "Move up"
+  },
+  "下移": {
+    "zh-CN": "下移",
+    "en": "Move down"
+  },
+  "撤下": {
+    "zh-CN": "撤下",
+    "en": "Remove"
+  },
+  "已开启": {
+    "zh-CN": "已开启",
+    "en": "On"
+  },
+  "无法读取": {
+    "zh-CN": "无法读取",
+    "en": "Unavailable"
+  },
+  "额度不足时自动切换账号": {
+    "zh-CN": "额度不足时自动切换账号",
+    "en": "Switch accounts automatically when quota runs out"
+  },
+  "在 Settings 中修改": {
+    "zh-CN": "在 Settings 中修改",
+    "en": "Change in Settings"
+  },
+  "每条职责一行；展开可查看结构和提示词，打开详情可查看职责的内部对象。": {
+    "zh-CN": "每条职责一行；展开可查看结构和提示词，打开详情可查看职责的内部对象。",
+    "en": "One row per duty; expand to read its structure and prompt, or open details to view its internal objects."
+  },
+  "{p0} 个事件": {
+    "zh-CN": "{p0} 个事件",
+    "en": "{p0} events"
+  },
+  "{p0} 条连线": {
+    "zh-CN": "{p0} 条连线",
+    "en": "{p0} wires"
+  },
+  "{p0} 个其他元素": {
+    "zh-CN": "{p0} 个其他元素",
+    "en": "{p0} other elements"
+  },
+  "仅含提示词": {
+    "zh-CN": "仅含提示词",
+    "en": "Prompt only"
+  },
+  "没有结构元素": {
+    "zh-CN": "没有结构元素",
+    "en": "No structural elements"
+  },
+  "还没有职责。": {
+    "zh-CN": "还没有职责。",
+    "en": "No duties yet."
+  },
+  "系统职责": {
+    "zh-CN": "系统职责",
+    "en": "System duties"
+  },
+  "正在读取职责…": {
+    "zh-CN": "正在读取职责…",
+    "en": "Loading duties…"
+  },
+  "职责读取失败：{p0}": {
+    "zh-CN": "职责读取失败：{p0}",
+    "en": "Could not load duties: {p0}"
+  },
+  "职责顺序已更新。": {
+    "zh-CN": "职责顺序已更新。",
+    "en": "Duty order updated."
+  },
+  "撤下这条职责？": {
+    "zh-CN": "撤下这条职责？",
+    "en": "Remove this duty?"
+  },
+  "“{p0}”连接的 {p1} 个元素会从图上删除；这个 Resident 和它的其他职责不受影响。": {
+    "zh-CN": "“{p0}”连接的 {p1} 个元素会从图上删除；这个 Resident 和它的其他职责不受影响。",
+    "en": "The {p1} elements connected by “{p0}” will be deleted from the graph; this Resident and its other duties stay as they are."
+  },
+  "职责已撤下。": {
+    "zh-CN": "职责已撤下。",
+    "en": "Duty removed."
+  },
+  "持有者：{p0}": {
+    "zh-CN": "持有者：{p0}",
+    "en": "Holder: {p0}"
+  },
+  "本组织的职责": {
+    "zh-CN": "本组织的职责",
+    "en": "This organization's duties"
+  },
+  "触发时": {
+    "zh-CN": "触发时",
+    "en": "On trigger"
+  },
+  "每轮": {
+    "zh-CN": "每轮",
+    "en": "Every turn"
+  },
+  "会话开始和压缩后": {
+    "zh-CN": "会话开始和压缩后",
+    "en": "Session start and after compaction"
+  },
+  "提示词 · {p0}": {
+    "zh-CN": "提示词 · {p0}",
+    "en": "Prompt · {p0}"
+  },
+  "这条职责没有提示词。": {
+    "zh-CN": "这条职责没有提示词。",
+    "en": "This duty has no prompt."
+  },
+  "提示词": {
+    "zh-CN": "提示词",
+    "en": "Prompt"
+  },
+  "Memory": {
+    "zh-CN": "记忆",
+    "en": "Memory"
+  },
+  "只在相应连线触发这个 Resident 的那一轮": {
+    "zh-CN": "只在相应连线触发这个 Resident 的那一轮",
+    "en": "Only in the turn a matching wire triggers this Resident"
+  },
+  "每一轮都在，越少越好": {
+    "zh-CN": "每一轮都在，越少越好",
+    "en": "In every turn; keep it short"
+  },
+  "会话启动、重置和压缩之后": {
+    "zh-CN": "会话启动、重置和压缩之后",
+    "en": "When the session starts, resets or is compacted"
+  },
+  "平台写入 Workspace 的 duty-manuals.md，Resident 需要时自己读；职责清单里留一行指针": {
+    "zh-CN": "平台写入 Workspace 的 duty-manuals.md，Resident 需要时自己读；职责清单里留一行指针",
+    "en": "Written to duty-manuals.md in the Workspace for the Resident to read when needed; the duty list keeps a one-line pointer"
+  },
+  "平台规则": {
+    "zh-CN": "平台规则",
+    "en": "Platform rules"
+  },
+  "平台": {
+    "zh-CN": "平台",
+    "en": "Platform"
+  },
+  "消息要求的 Skill": {
+    "zh-CN": "消息要求的 Skill",
+    "en": "Skills the message asks for"
+  },
+  "业务说明": {
+    "zh-CN": "业务说明",
+    "en": "Business instructions"
+  },
+  "汇报策略": {
+    "zh-CN": "汇报策略",
+    "en": "Reporting policy"
+  },
+  "（触发事件带来的内容）": {
+    "zh-CN": "（触发事件带来的内容）",
+    "en": "(content brought by the triggering event)"
+  },
+  "{p0} 触发": {
+    "zh-CN": "{p0} 触发",
+    "en": "Triggered by {p0}"
+  },
+  "连线 · 职责“{p0}”": {
+    "zh-CN": "连线 · 职责“{p0}”",
+    "en": "Wire · duty “{p0}”"
+  },
+  "（这条连线没有写任务说明，送达时使用默认提示）": {
+    "zh-CN": "（这条连线没有写任务说明，送达时使用默认提示）",
+    "en": "(This wire has no task; the default prompt is sent)"
+  },
+  "职责清单（平台生成，含“会话开始”职责的提示词）": {
+    "zh-CN": "职责清单（平台生成，含“会话开始”职责的提示词）",
+    "en": "Duty list (generated, with the prompts of session-start duties)"
+  },
+  "职责记录": {
+    "zh-CN": "职责记录",
+    "en": "Duty records"
+  },
+  "在职责页查看": {
+    "zh-CN": "在职责页查看",
+    "en": "View in Duties"
+  },
+  "在 Harness 中调整发送时机": {
+    "zh-CN": "在 Harness 中调整发送时机",
+    "en": "Change timing in Harness"
+  },
+  "按四级列出进入这个 Resident 上下文的内容和来源，越靠上的层级占用上下文越多。展开一项可看到正文。": {
+    "zh-CN": "按四级列出进入这个 Resident 上下文的内容和来源，越靠上的层级占用上下文越多。展开一项可看到正文。",
+    "en": "What enters this Resident's context and where it comes from, by four memory levels; higher levels take more context. Expand an item to read it."
+  },
+  "没有内容。": {
+    "zh-CN": "没有内容。",
+    "en": "Nothing here."
+  },
+  "正在读取记忆…": {
+    "zh-CN": "正在读取记忆…",
+    "en": "Loading memory…"
+  },
+  "记忆读取失败：{p0}": {
+    "zh-CN": "记忆读取失败：{p0}",
+    "en": "Could not load memory: {p0}"
+  },
+  "工具箱": {
+    "zh-CN": "工具箱",
+    "en": "Toolbox"
+  },
+  "组织": {
+    "zh-CN": "组织",
+    "en": "Organizations"
+  },
+  "拖到聊天输入框或 Resident 节点，填入草稿后编辑发送": {
+    "zh-CN": "拖到聊天输入框或 Resident 节点，填入草稿后编辑发送",
+    "en": "Drag onto the chat input or a Resident, then edit and send the draft"
+  },
+  "交办": {
+    "zh-CN": "交办",
+    "en": "Errands"
+  },
+  "还没有角色模板": {
+    "zh-CN": "还没有角色模板",
+    "en": "No role templates yet"
+  },
+  "暂无模板": {
+    "zh-CN": "暂无模板",
+    "en": "No templates yet"
+  },
+  "商店": {
+    "zh-CN": "商店",
+    "en": "Store"
+  },
+  "商店即将上线": {
+    "zh-CN": "商店即将上线",
+    "en": "Store coming soon"
+  },
+  "新职责模板": {
+    "zh-CN": "新职责模板",
+    "en": "New duty template"
+  },
+  "单击拿起，双击在工坊中打开；按 Escape 或右键取消": {
+    "zh-CN": "单击拿起，双击在工坊中打开；按 Escape 或右键取消",
+    "en": "Click to pick up, double-click to open in workshop; press Escape or right-click to cancel"
+  },
+  "{p0} · 拖到 {p1}": {
+    "zh-CN": "{p0} · 拖到 {p1}",
+    "en": "{p0} · Drag onto {p1}"
+  },
   "UpdatePostMarks": {
     "en": "UpdatePostMarks",
     "zh-CN": "UpdatePostMarks"
@@ -42353,231 +43743,906 @@
     "en": "New blackboard",
     "zh-CN": "新黑板"
   },
-  "状态读取失败": {"zh-CN": "状态读取失败", "en": "Failed to read status"},
-  "查看共同回复": {"zh-CN": "查看共同回复", "en": "View shared replies"},
-  "Provider 未提供可核对的文件改动详情。": {"zh-CN": "Provider 未提供可核对的文件改动详情。", "en": "The Provider did not supply verifiable file change details."},
-  "Provider 未提供此文件的差异内容。": {"zh-CN": "Provider 未提供此文件的差异内容。", "en": "The Provider did not supply the diff for this file."},
-  "账号配置已保存，交接材料已冻结；上下文将在首条真实输入时交接，该输入仍需满足目标账号的额度要求。": {"zh-CN": "账号配置已保存，交接材料已冻结；上下文将在首条真实输入时交接，该输入仍需满足目标账号的额度要求。", "en": "Account settings saved. The handover material is frozen; the context is handed over with the first real input, which must still meet the target account's quota requirements."},
-  "账号配置已保存，上下文已完整保留。": {"zh-CN": "账号配置已保存，上下文已完整保留。", "en": "Account settings saved. The context is fully retained."},
-  "账号配置已保存，将在下一条真实输入时创建空白 Session。": {"zh-CN": "账号配置已保存，将在下一条真实输入时创建空白 Session。", "en": "Account settings saved. A blank Session will be created on the next real input."},
-  "账号配置已保存，请刷新查看上下文状态。": {"zh-CN": "账号配置已保存，请刷新查看上下文状态。", "en": "Account settings saved. Refresh to check the context status."},
-  "账号配置已保存，等待首条真实输入交接": {"zh-CN": "账号配置已保存，等待首条真实输入交接", "en": "Account settings saved; waiting for the first real input to hand over"},
-  "请选择目标后端的模型。": {"zh-CN": "请选择目标后端的模型。", "en": "Choose a model for the target backend."},
-  "正在加载工作区…": {"zh-CN": "正在加载工作区…", "en": "Loading workspace…"},
-  "工作区未能完成初始化，请刷新后重试。": {"zh-CN": "工作区未能完成初始化，请刷新后重试。", "en": "The workspace could not finish initializing. Refresh and try again."},
-  "模板商店": {"zh-CN": "模板商店", "en": "Template Store"},
-  "Workspace 视图暂未恢复：节点 Binding 尚未完整到齐，请重试。": {"zh-CN": "Workspace 视图暂未恢复：节点 Binding 尚未完整到齐，请重试。", "en": "The Workspace view is not restored yet: the node Bindings are not all available. Try again."},
-  "HATG 模板版本不匹配，请刷新页面后重试。": {"zh-CN": "HATG 模板版本不匹配，请刷新页面后重试。", "en": "The HATG template version does not match. Refresh the page and try again."},
-  "请把提示词模板拖到一个可访问的 Resident 节点或聊天输入框": {"zh-CN": "请把提示词模板拖到一个可访问的 Resident 节点或聊天输入框", "en": "Drag the prompt template onto an accessible Resident node or a chat input."},
-  "状态已保存": {"zh-CN": "状态已保存", "en": "Status saved"},
-  "没有可用模型": {"zh-CN": "没有可用模型", "en": "No models available"},
-  "其他额度待确认": {"zh-CN": "其他额度待确认", "en": "Other quotas pending confirmation"},
-  "其他额度已耗尽": {"zh-CN": "其他额度已耗尽", "en": "Other quotas exhausted"},
-  "摘要只显示部分额度，模型专属或其他周期的限额仍可能阻止调用。": {"zh-CN": "摘要只显示部分额度，模型专属或其他周期的限额仍可能阻止调用。", "en": "The summary shows only some quotas; model-specific or other-period limits may still block calls."},
-  "剩余 0%*，上次读数，待刷新确认": {"zh-CN": "剩余 0%*，上次读数，待刷新确认", "en": "0% left*, last reading, pending refresh"},
-  "剩余 0%": {"zh-CN": "剩余 0%", "en": "0% left"},
-  "见详情": {"zh-CN": "见详情", "en": "See details"},
-  "余额暂不可用": {"zh-CN": "余额暂不可用", "en": "Balance temporarily unavailable"},
-  "最大并行数": {"zh-CN": "最大并行数", "en": "Max parallelism"},
-  "保存并行数": {"zh-CN": "保存并行数", "en": "Save parallelism"},
-  "读取 Close 阈值": {"zh-CN": "读取 Close 阈值", "en": "Read Close threshold"},
-  "保存 Close 阈值": {"zh-CN": "保存 Close 阈值", "en": "Save Close threshold"},
-  "Mailbox 排队：待更新": {"zh-CN": "Mailbox 排队：待更新", "en": "Mailbox queue: pending update"},
-  "已提交，正在刷新状态": {"zh-CN": "已提交，正在刷新状态", "en": "Submitted; refreshing status"},
-  "删除结果未确认，请刷新后核对条目状态。": {"zh-CN": "删除结果未确认，请刷新后核对条目状态。", "en": "The deletion result is not confirmed. Refresh and check the entry status."},
-  "图已被其他操作修改，Watchboard 操作未提交。请检查最新状态后重新操作。": {"zh-CN": "图已被其他操作修改，Watchboard 操作未提交。请检查最新状态后重新操作。", "en": "The graph was changed by another operation, so the Watchboard operation was not submitted. Check the latest state and try again."},
-  "Watchboard 操作未提交，最新状态读取失败。请刷新后重新操作。": {"zh-CN": "Watchboard 操作未提交，最新状态读取失败。请刷新后重新操作。", "en": "The Watchboard operation was not submitted and the latest state could not be read. Refresh and try again."},
-  "预览失败": {"zh-CN": "预览失败", "en": "Preview failed"},
-  "暂无可访问的 Project。": {"zh-CN": "暂无可访问的 Project。", "en": "No accessible Projects."},
-  "正在读取聊天室。": {"zh-CN": "正在读取聊天室。", "en": "Loading chatrooms."},
-  "无法确认 Resident 状态，请稍后重试。": {"zh-CN": "无法确认 Resident 状态，请稍后重试。", "en": "Unable to confirm the Resident status. Try again later."},
-  "设置消息免打扰失败": {"zh-CN": "设置消息免打扰失败", "en": "Failed to set mute"},
-  "Solo 视图以外的成员不受影响。": {"zh-CN": "Solo 视图以外的成员不受影响。", "en": "Members outside the Solo view are not affected."},
-  "访问地址已复制。": {"zh-CN": "访问地址已复制。", "en": "Access address copied."},
-  "无法自动复制，请手动选择地址复制。": {"zh-CN": "无法自动复制，请手动选择地址复制。", "en": "Unable to copy automatically. Select the address and copy it manually."},
-  "此实例已禁用应用代理": {"zh-CN": "此实例已禁用应用代理", "en": "The application proxy is disabled for this instance"},
-  "正在读取解释页…": {"zh-CN": "正在读取解释页…", "en": "Loading the explanation page…"},
-  "汇报版本与资源地址不一致，请刷新后重试。": {"zh-CN": "汇报版本与资源地址不一致，请刷新后重试。", "en": "The report version does not match the resource address. Refresh and try again."},
-  "正在加载文档预览…": {"zh-CN": "正在加载文档预览…", "en": "Loading document preview…"},
-  "文档预览失败，请稍后重试或下载原文件查看。": {"zh-CN": "文档预览失败，请稍后重试或下载原文件查看。", "en": "Document preview failed. Try again later or download the original file."},
-  "Family 已变化，请重新打开菜单。": {"zh-CN": "Family 已变化，请重新打开菜单。", "en": "The Family changed. Reopen the menu."},
-  "在当前帐号额度用完时是否自动切换": {"zh-CN": "在当前帐号额度用完时是否自动切换", "en": "Whether to switch automatically when the current account's quota runs out"},
-  "开启后先找同类型同模型账号，再按站点默认排序回退。关闭时，额度不足会打开手动选择。": {"zh-CN": "开启后先找同类型同模型账号，再按站点默认排序回退。关闭时，额度不足会打开手动选择。", "en": "When enabled, try the same account type and model first, then the site order. When disabled, reaching the quota opens manual selection."},
-  "无权限": {"zh-CN": "无权限", "en": "No permission"},
-  "成员的 Backend 或账号已变更，请重新打开设置。": {"zh-CN": "成员的 Backend 或账号已变更，请重新打开设置。", "en": "The member's Backend or account changed. Reopen the settings."},
-  "额度自动切换设置已保存。": {"zh-CN": "额度自动切换设置已保存。", "en": "Quota auto-switch setting saved."},
-  "Session 切换结果尚未确认，请刷新查看状态": {"zh-CN": "Session 切换结果尚未确认，请刷新查看状态", "en": "The Session switch result is not confirmed yet. Refresh to check the status."},
-  "Lineage 已创建，但 Familize 未完成。": {"zh-CN": "Lineage 已创建，但 Familize 未完成。", "en": "Lineage created, but Familize did not complete."},
-  "关闭工坊？": {"zh-CN": "关闭工坊？", "en": "Close the workshop?"},
-  "有未保存的修改": {"zh-CN": "有未保存的修改", "en": "There are unsaved changes"},
-  "保存失败，未保存的修改仍保留在编辑器中。": {"zh-CN": "保存失败，未保存的修改仍保留在编辑器中。", "en": "Save failed. The unsaved changes remain in the editor."},
-  "团队对话": {"zh-CN": "团队对话", "en": "Team chat"},
-  "无法确认这条授权回答的准备状态": {"zh-CN": "无法确认这条授权回答的准备状态", "en": "Unable to confirm the readiness of this authorization answer"},
-  "无法确认这条回答的任务凭证": {"zh-CN": "无法确认这条回答的任务凭证", "en": "Unable to confirm the task credential of this answer"},
-  "按需云算力": {"zh-CN": "按需云算力", "en": "On-demand cloud compute"},
-  "云存储": {"zh-CN": "云存储", "en": "Cloud storage"},
-  "RTL 仿真与 FPGA 设计": {"zh-CN": "RTL 仿真与 FPGA 设计", "en": "RTL simulation and FPGA design"},
-  "ASIC 后端与门级后仿": {"zh-CN": "ASIC 后端与门级后仿", "en": "ASIC backend and gate-level post-simulation"},
-  "FPGA 板卡下载与实板验证": {"zh-CN": "FPGA 板卡下载与实板验证", "en": "FPGA board download and on-board verification"},
-  "剩余计算单元": {"zh-CN": "剩余计算单元", "en": "Remaining compute units"},
-  "每小时消耗": {"zh-CN": "每小时消耗", "en": "Hourly burn"},
-  "活跃运行时": {"zh-CN": "活跃运行时", "en": "Active runtimes"},
-  "总容量": {"zh-CN": "总容量", "en": "Total capacity"},
-  "已用容量": {"zh-CN": "已用容量", "en": "Used capacity"},
-  "可用容量": {"zh-CN": "可用容量", "en": "Available capacity"},
-  "请选择团队": {"zh-CN": "请选择团队", "en": "Choose a team"},
-  "团队成员": {"zh-CN": "团队成员", "en": "Team members"},
-  "团队暂无成员": {"zh-CN": "团队暂无成员", "en": "The team has no members yet"},
-  "团队读取失败，请重试。": {"zh-CN": "团队读取失败，请重试。", "en": "Failed to read the team. Try again."},
-  "<span class=\"chatroomPinnedMark\" data-portal-icon=\"pin\" role=\"img\" aria-label=\"已置顶\" title=\"已置顶\"></span>": {"zh-CN": "<span class=\"chatroomPinnedMark\" data-portal-icon=\"pin\" role=\"img\" aria-label=\"已置顶\" title=\"已置顶\"></span>", "en": "<span class=\"chatroomPinnedMark\" data-portal-icon=\"pin\" role=\"img\" aria-label=\"Pinned\" title=\"Pinned\"></span>"},
-  "<span class=\"portalDocumentTabPin\" data-portal-icon=\"pin\" aria-label=\"已锁定\"></span>": {"zh-CN": "<span class=\"portalDocumentTabPin\" data-portal-icon=\"pin\" aria-label=\"已锁定\"></span>", "en": "<span class=\"portalDocumentTabPin\" data-portal-icon=\"pin\" aria-label=\"Locked\"></span>"},
-  "这是 Family「{p0}」的门面。发到这里的消息由 Family Router 交给最合适的成员处理，": {"zh-CN": "这是 Family「{p0}」的门面。发到这里的消息由 Family Router 交给最合适的成员处理，", "en": "This is the facade of Family “{p0}”. Messages sent here are handed by the Family Router to the most suitable member. "},
-  "成员：{p0}。": {"zh-CN": "成员：{p0}。", "en": "Members: {p0}."},
-  "{p0} 的工作期间": {"zh-CN": "{p0} 的工作期间", "en": "{p0}'s work period"},
-  "最近 {p0} 轮": {"zh-CN": "最近 {p0} 轮", "en": "Last {p0} rounds"},
-  "同意后，以下权限只交给提问成员：{p0}": {"zh-CN": "同意后，以下权限只交给提问成员：{p0}", "en": "If approved, the following permissions go only to the asking member: {p0}"},
-  "{p0} 条消息": {"zh-CN": "{p0} 条消息", "en": "{p0} messages"},
-  "此设置由 {p0} 个场景共用。": {"zh-CN": "此设置由 {p0} 个场景共用。", "en": "This setting is shared by {p0} scenarios."},
-  "Resident 已删除，图刷新失败，请刷新查看，勿重复删除：{p0}": {"zh-CN": "Resident 已删除，图刷新失败，请刷新查看，勿重复删除：{p0}", "en": "Resident deleted, but the graph failed to refresh. Refresh to check and do not delete again: {p0}"},
-  "{p0}已完成，但画布布局未保存：{p1}": {"zh-CN": "{p0}已完成，但画布布局未保存：{p1}", "en": "{p0} completed, but the canvas layout was not saved: {p1}"},
-  "预计重置 {p0}": {"zh-CN": "预计重置 {p0}", "en": "Estimated reset {p0}"},
-  "本窗口剩余 {p0}%{p1}": {"zh-CN": "本窗口剩余 {p0}%{p1}", "en": "{p0}% left in this window{p1}"},
-  "{p0} 最大并行数": {"zh-CN": "{p0} 最大并行数", "en": "{p0} max parallelism"},
-  "{p0} Close 阈值 ({p1})": {"zh-CN": "{p0} Close 阈值 ({p1})", "en": "{p0} Close threshold ({p1})"},
-  "Mailbox 排队：{p0} 条": {"zh-CN": "Mailbox 排队：{p0} 条", "en": "Mailbox queue: {p0}"},
-  "索引加载失败：{p0}。请点击刷新后重试。": {"zh-CN": "索引加载失败：{p0}。请点击刷新后重试。", "en": "Failed to load the index: {p0}. Click Refresh and try again."},
-  "已加载 {p0}/{p1} · 索引加载失败": {"zh-CN": "已加载 {p0}/{p1} · 索引加载失败", "en": "Loaded {p0}/{p1} · index failed to load"},
-  "Watchboard 已更新，但图刷新失败；请刷新查看，勿重复安装：{p0}": {"zh-CN": "Watchboard 已更新，但图刷新失败；请刷新查看，勿重复安装：{p0}", "en": "Watchboard updated, but the graph failed to refresh. Refresh to check and do not install again: {p0}"},
-  "Watchboard 已更新，但画布布局未保存：{p0}": {"zh-CN": "Watchboard 已更新，但画布布局未保存：{p0}", "en": "Watchboard updated, but the canvas layout was not saved: {p0}"},
-  "分支已创建，但画布布局未保存：{p0}": {"zh-CN": "分支已创建，但画布布局未保存：{p0}", "en": "Branch created, but the canvas layout was not saved: {p0}"},
-  "正在处理… {p0}": {"zh-CN": "正在处理… {p0}", "en": "Processing… {p0}"},
-  "无法打开 {p0}：{p1}": {"zh-CN": "无法打开 {p0}：{p1}", "en": "Unable to open {p0}: {p1}"},
-  "工具设置加载失败：{p0}": {"zh-CN": "工具设置加载失败：{p0}", "en": "Failed to load tool settings: {p0}"},
-  "{p0} 台服务器 · {p1} 项云算力": {"zh-CN": "{p0} 台服务器 · {p1} 项云算力", "en": "{p0} servers · {p1} cloud compute items"},
-  "{p0} 台服务器": {"zh-CN": "{p0} 台服务器", "en": "{p0} servers"},
-  "{p0} · {p1} 位成员": {"zh-CN": "{p0} · {p1} 位成员", "en": "{p0} · {p1} members"},
-  "正在校验或保存，请稍候": {"zh-CN": "正在校验或保存，请稍候", "en": "Validating or saving; please wait"},
-  "请先保存职责草稿，再确认此版本": {"zh-CN": "请先保存职责草稿，再确认此版本", "en": "Save the duty draft before confirming this version"},
-  "请重新读取候选脚本": {"zh-CN": "请重新读取候选脚本", "en": "Reload the candidate script"},
-  "外部对象只读。通过连线引用，配置由对象所属范围管理。": {"zh-CN": "外部对象只读。通过连线引用，配置由对象所属范围管理。", "en": "External objects are read-only. They are referenced through wires, and their configuration is managed by the scope that owns the object."},
-  "配置必须是 JSON 对象": {"zh-CN": "配置必须是 JSON 对象", "en": "The configuration must be a JSON object"},
-  "职责实例": {"zh-CN": "职责实例", "en": "Duty instance"},
-  "职责名称": {"zh-CN": "职责名称", "en": "Duty name"},
-  "预览并保存": {"zh-CN": "预览并保存", "en": "Preview and save"},
-  "草稿历史": {"zh-CN": "草稿历史", "en": "Draft history"},
-  "职责说明与记忆": {"zh-CN": "职责说明与记忆", "en": "Duty description and memory"},
-  "职责提示词": {"zh-CN": "职责提示词", "en": "Duty prompt"},
-  "触发提示词": {"zh-CN": "触发提示词", "en": "Trigger prompt"},
-  "记忆层": {"zh-CN": "记忆层", "en": "Memory layer"},
-  "此处只编辑当前职责。Resident 的其他记忆与职责保持独立。": {"zh-CN": "此处只编辑当前职责。Resident 的其他记忆与职责保持独立。", "en": "Only the current duty is edited here. The Resident's other memory and duties stay independent."},
-  "引用已有对象": {"zh-CN": "引用已有对象", "en": "Reference an existing object"},
-  "选择对象": {"zh-CN": "选择对象", "en": "Choose an object"},
-  "请先修正表单中的错误": {"zh-CN": "请先修正表单中的错误", "en": "Fix the errors in the form first"},
-  "保存职责变更？": {"zh-CN": "保存职责变更？", "en": "Save duty changes?"},
-  "助手草稿的职责或版本不匹配，请基于当前版本重新生成": {"zh-CN": "助手草稿的职责或版本不匹配，请基于当前版本重新生成", "en": "The assistant draft's duty or version does not match. Regenerate it from the current version."},
-  "载入助手草稿？": {"zh-CN": "载入助手草稿？", "en": "Load the assistant draft?"},
-  "将替换当前未保存的职责修改": {"zh-CN": "将替换当前未保存的职责修改", "en": "This replaces the current unsaved duty changes"},
-  "载入": {"zh-CN": "载入", "en": "Load"},
-  "重新载入职责？": {"zh-CN": "重新载入职责？", "en": "Reload the duty?"},
-  "将丢弃当前草稿": {"zh-CN": "将丢弃当前草稿", "en": "This discards the current draft"},
-  "请先保存职责，再存为模板": {"zh-CN": "请先保存职责，再存为模板", "en": "Save the duty before saving it as a template"},
-  "职责工坊": {"zh-CN": "职责工坊", "en": "Duty workshop"},
-  "原脚本继续运行": {"zh-CN": "原脚本继续运行", "en": "The original script keeps running"},
-  "模板 Resident": {"zh-CN": "模板 Resident", "en": "Template Resident"},
-  "画布视图": {"zh-CN": "画布视图", "en": "Canvas view"},
-  "当前比例": {"zh-CN": "当前比例", "en": "Current zoom"},
-  "回到100%": {"zh-CN": "回到100%", "en": "Reset to 100%"},
-  "模板 Resident 菜单": {"zh-CN": "模板 Resident 菜单", "en": "Template Resident menu"},
-  "外部对象只读，请编辑引用它的连线": {"zh-CN": "外部对象只读，请编辑引用它的连线", "en": "External objects are read-only; edit the wire that references it"},
-  "打开模板 Resident 菜单": {"zh-CN": "打开模板 Resident 菜单", "en": "Open the template Resident menu"},
-  "模板草稿": {"zh-CN": "模板草稿", "en": "Template draft"},
-  "编辑角色源模板": {"zh-CN": "编辑角色源模板", "en": "Edit the role source template"},
-  "展开内部结构": {"zh-CN": "展开内部结构", "en": "Expand internal structure"},
-  "查看职责图": {"zh-CN": "查看职责图", "en": "View duty graph"},
-  "编辑职责参数": {"zh-CN": "编辑职责参数", "en": "Edit duty parameters"},
-  "角色记忆": {"zh-CN": "角色记忆", "en": "Role memory"},
-  "职责指南": {"zh-CN": "职责指南", "en": "Duty guide"},
-  "职责触发提示词": {"zh-CN": "职责触发提示词", "en": "Duty trigger prompt"},
-  "记忆层级": {"zh-CN": "记忆层级", "en": "Memory levels"},
-  "编辑节点配置": {"zh-CN": "编辑节点配置", "en": "Edit node configuration"},
-  "这里只配置模板；施加后产生的会话和运行状态不属于模板草稿。": {"zh-CN": "这里只配置模板；施加后产生的会话和运行状态不属于模板草稿。", "en": "Only the template is configured here; sessions and run state created after applying are not part of the template draft."},
-  "请输入有效 JSON 对象": {"zh-CN": "请输入有效 JSON 对象", "en": "Enter a valid JSON object"},
-  "切换模板？": {"zh-CN": "切换模板？", "en": "Switch template?"},
-  "当前模板有未保存的修改，切换后将放弃这些修改。": {"zh-CN": "当前模板有未保存的修改，切换后将放弃这些修改。", "en": "The current template has unsaved changes; switching discards them."},
-  "放弃修改并切换": {"zh-CN": "放弃修改并切换", "en": "Discard changes and switch"},
-  "请先 Save 保存草稿，再确认此版本": {"zh-CN": "请先 Save 保存草稿，再确认此版本", "en": "Save the draft first, then confirm this version"},
-  "视图": {"zh-CN": "视图", "en": "View"},
-  "模板操作": {"zh-CN": "模板操作", "en": "Template actions"},
-  "安装": {"zh-CN": "安装", "en": "Install"},
-  "请先 Save 保存当前模板": {"zh-CN": "请先 Save 保存当前模板", "en": "Save the current template first"},
-  "请切换到图视图后插入": {"zh-CN": "请切换到图视图后插入", "en": "Switch to the graph view to insert"},
-  "当前编辑器不支持自由添加结构": {"zh-CN": "当前编辑器不支持自由添加结构", "en": "The current editor does not support adding structure freely"},
-  "此模板不支持拖入组合，请单击打开": {"zh-CN": "此模板不支持拖入组合，请单击打开", "en": "This template cannot be dragged in to combine; click to open it"},
-  "商店模板不存在或已下架": {"zh-CN": "商店模板不存在或已下架", "en": "The store template does not exist or has been unpublished"},
-  "待办分页未继续。": {"zh-CN": "待办分页未继续。", "en": "The To Do pagination did not continue."},
-  "请先重新读取待办。": {"zh-CN": "请先重新读取待办。", "en": "Reload the To Do items first."},
-  "请先修改引用该账号的 Backend 角色": {"zh-CN": "请先修改引用该账号的 Backend 角色", "en": "First change the Backend roles that reference this account"},
-  "请填写 Claude 默认模型。": {"zh-CN": "请填写 Claude 默认模型。", "en": "Enter the Claude default model."},
-  "模型目录的模型 ID 必须非空且不重复，enabled 必须是 boolean。": {"zh-CN": "模型目录的模型 ID 必须非空且不重复，enabled 必须是 boolean。", "en": "Model IDs in the model catalog must be non-empty and unique, and enabled must be a boolean."},
-  "Claude 路由的 default_model 必须是已启用的模型": {"zh-CN": "Claude 路由的 default_model 必须是已启用的模型", "en": "The Claude route's default_model must be an enabled model"},
-  "需要协议": {"zh-CN": "需要协议", "en": "Protocol required"},
-  "自动（按顺序和可用额度）": {"zh-CN": "自动（按顺序和可用额度）", "en": "Automatic (by order and available quota)"},
-  "手动固定账号": {"zh-CN": "手动固定账号", "en": "Manually pinned account"},
-  "AI 后端优先级": {"zh-CN": "AI 后端优先级", "en": "AI backend priority"},
-  "新会话按从上到下的顺序选择。额度不足时，先选支持当前模型的同类型账号，再按此顺序回退并保留上下文。": {"zh-CN": "新会话按从上到下的顺序选择。额度不足时，先选支持当前模型的同类型账号，再按此顺序回退并保留上下文。", "en": "New sessions use the order shown. On quota exhaustion, try the same account type and model first, then follow this order and preserve context."},
-  "（当前不可用）": {"zh-CN": "（当前不可用）", "en": "(currently unavailable)"},
-  "尚未保存跨后端自动切换顺序。可点击“恢复推荐顺序”后保存。": {"zh-CN": "尚未保存跨后端自动切换顺序。可点击“恢复推荐顺序”后保存。", "en": "The cross-backend auto-switch order has not been saved. Click “Restore recommended order” and save."},
-  "其他后端仅在加入后参与选择和切换；API 用量将按对应账户计费。": {"zh-CN": "其他后端仅在加入后参与选择和切换；API 用量将按对应账户计费。", "en": "Other backends take part in selection and switching only after they are added; API usage is billed to the corresponding account."},
-  "加入排序": {"zh-CN": "加入排序", "en": "Add to order"},
-  "使用账号默认模型": {"zh-CN": "使用账号默认模型", "en": "Use the account default model"},
-  "使用模型默认强度": {"zh-CN": "使用模型默认强度", "en": "Use the model default effort"},
-  "当前不可用": {"zh-CN": "当前不可用", "en": "Currently unavailable"},
-  "请选择当前账号支持的选项，或使用默认值。": {"zh-CN": "请选择当前账号支持的选项，或使用默认值。", "en": "Choose an option the current account supports, or use the default."},
-  "正在读取账号支持的模型…": {"zh-CN": "正在读取账号支持的模型…", "en": "Reading the models the account supports…"},
-  "请先选择模型偏好参考账号。": {"zh-CN": "请先选择模型偏好参考账号。", "en": "Choose the model preference reference account first."},
-  "该账号尚未提供可选模型，可使用账号默认值或重新加载。": {"zh-CN": "该账号尚未提供可选模型，可使用账号默认值或重新加载。", "en": "This account has not provided selectable models. Use the account default or reload."},
-  "不同种类 AI 后端默认选择/自动切换的排序可手动调整，同种 AI 后端的选择由当前额度自动选择": {"zh-CN": "不同种类 AI 后端默认选择/自动切换的排序可手动调整，同种 AI 后端的选择由当前额度自动选择", "en": "The default selection / auto-switch order across kinds of AI backend can be adjusted manually; among backends of the same kind, the account is chosen automatically by current quota"},
-  "尚未配置默认模型偏好。请在账号的“设置与测试”中完成接入，或打开“默认帐号选择排序”。": {"zh-CN": "尚未配置默认模型偏好。请在账号的“设置与测试”中完成接入，或打开“默认帐号选择排序”。", "en": "No default model preference is configured. Finish onboarding in the account's “Settings and test”, or open “Default account selection order”."},
-  "同一 API 可通过不同运行器使用；每个执行账号的状态可分别管理，账号选择由统一策略决定。": {"zh-CN": "同一 API 可通过不同运行器使用；每个执行账号的状态可分别管理，账号选择由统一策略决定。", "en": "The same API can be used through different runners; the state of each execution account can be managed separately, and account choice is decided by the unified policy."},
-  "账号种类优先级": {"zh-CN": "账号种类优先级", "en": "Account kind priority"},
-  "保存顺序": {"zh-CN": "保存顺序", "en": "Save order"},
-  "Family 已不存在，请重新打开菜单。": {"zh-CN": "Family 已不存在，请重新打开菜单。", "en": "The Family no longer exists. Reopen the menu."},
-  "顺序已被其他人修改，请重新打开菜单后保存。": {"zh-CN": "顺序已被其他人修改，请重新打开菜单后保存。", "en": "The order was changed by someone else. Reopen the menu and save again."},
-  "正在读取账号种类…": {"zh-CN": "正在读取账号种类…", "en": "Reading account kinds…"},
-  "正在读取状态…": {"zh-CN": "正在读取状态…", "en": "Reading status…"},
-  "资源 ID 或资源文件地址": {"zh-CN": "资源 ID 或资源文件地址", "en": "Resource ID or resource file address"},
-  "放弃未保存的工具修改？": {"zh-CN": "放弃未保存的工具修改？", "en": "Discard unsaved tool changes?"},
-  "重新加载将清除尚未保存的工具修改。": {"zh-CN": "重新加载将清除尚未保存的工具修改。", "en": "Reloading clears the tool changes that are not saved yet."},
-  "Workspace 概览": {"zh-CN": "Workspace 概览", "en": "Workspace overview"},
-  "描述": {"zh-CN": "描述", "en": "Description"},
-  "这个 Workspace 用来做什么": {"zh-CN": "这个 Workspace 用来做什么", "en": "What this Workspace is for"},
-  "目录状态": {"zh-CN": "目录状态", "en": "Directory status"},
-  "打开 Workspace": {"zh-CN": "打开 Workspace", "en": "Open Workspace"},
-  "保存更改": {"zh-CN": "保存更改", "en": "Save changes"},
-  "目录可用": {"zh-CN": "目录可用", "en": "Directory available"},
-  "目录不存在": {"zh-CN": "目录不存在", "en": "Directory does not exist"},
-  "路径不是目录": {"zh-CN": "路径不是目录", "en": "The path is not a directory"},
-  "无法检查目录": {"zh-CN": "无法检查目录", "en": "Unable to check the directory"},
-  "已读取最新信息，草稿已保留；请确认后再保存。": {"zh-CN": "已读取最新信息，草稿已保留；请确认后再保存。", "en": "Latest information loaded; your draft is kept. Review it before saving."},
-  "已读取最新信息，画布刷新失败：": {"zh-CN": "已读取最新信息，画布刷新失败：", "en": "Latest information loaded, but the canvas failed to refresh: "},
-  "描述不能超过 2000 字。": {"zh-CN": "描述不能超过 2000 字。", "en": "The description cannot exceed 2000 characters."},
-  "更改已保存，画布刷新失败：": {"zh-CN": "更改已保存，画布刷新失败：", "en": "Changes saved, but the canvas failed to refresh: "},
-  "Workspace 已被更新。请重新读取最新信息，草稿将保留。": {"zh-CN": "Workspace 已被更新。请重新读取最新信息，草稿将保留。", "en": "The Workspace was updated. Reload the latest information; your draft will be kept."},
-  "。请重新读取确认后再保存。": {"zh-CN": "。请重新读取确认后再保存。", "en": ". Reload to confirm before saving."},
-  "浏览器拒绝复制": {"zh-CN": "浏览器拒绝复制", "en": "The browser refused to copy"},
-  "复制失败：": {"zh-CN": "复制失败：", "en": "Copy failed: "},
-  "请先保存或取消更改，再打开 Workspace。": {"zh-CN": "请先保存或取消更改，再打开 Workspace。", "en": "Save or cancel your changes before opening the Workspace."},
-  "打开 Workspace 失败：": {"zh-CN": "打开 Workspace 失败：", "en": "Failed to open Workspace: "},
-  "仅显示当前图中的 Workspace 绑定；这里不是完整的使用者或权限列表。": {"zh-CN": "仅显示当前图中的 Workspace 绑定；这里不是完整的使用者或权限列表。", "en": "Only the Workspace bindings in the current graph are shown; this is not a complete list of users or permissions."},
-  "当前图中没有使用者。": {"zh-CN": "当前图中没有使用者。", "en": "No users in the current graph."},
-  "发布到商店": {"zh-CN": "发布到商店", "en": "Publish to store"},
-  "版本说明（可选）": {"zh-CN": "版本说明（可选）", "en": "Release notes (optional)"},
-  "搜索模板": {"zh-CN": "搜索模板", "en": "Search templates"},
-  "我发布": {"zh-CN": "我发布", "en": "Published by me"},
-  "施加时调用的指令": {"zh-CN": "施加时调用的指令", "en": "Instruction called on apply"},
-  "在工坊中打开": {"zh-CN": "在工坊中打开", "en": "Open in the workshop"},
-  "下架": {"zh-CN": "下架", "en": "Unpublish"},
-  "下架模板？": {"zh-CN": "下架模板？", "en": "Unpublish the template?"},
+  "状态读取失败": {
+    "zh-CN": "状态读取失败",
+    "en": "Failed to read status"
+  },
+  "查看共同回复": {
+    "zh-CN": "查看共同回复",
+    "en": "View shared replies"
+  },
+  "Provider 未提供可核对的文件改动详情。": {
+    "zh-CN": "Provider 未提供可核对的文件改动详情。",
+    "en": "The Provider did not supply verifiable file change details."
+  },
+  "Provider 未提供此文件的差异内容。": {
+    "zh-CN": "Provider 未提供此文件的差异内容。",
+    "en": "The Provider did not supply the diff for this file."
+  },
+  "账号配置已保存，交接材料已冻结；上下文将在首条真实输入时交接，该输入仍需满足目标账号的额度要求。": {
+    "zh-CN": "账号配置已保存，交接材料已冻结；上下文将在首条真实输入时交接，该输入仍需满足目标账号的额度要求。",
+    "en": "Account settings saved. The handover material is frozen; the context is handed over with the first real input, which must still meet the target account's quota requirements."
+  },
+  "账号配置已保存，上下文已完整保留。": {
+    "zh-CN": "账号配置已保存，上下文已完整保留。",
+    "en": "Account settings saved. The context is fully retained."
+  },
+  "账号配置已保存，将在下一条真实输入时创建空白 Session。": {
+    "zh-CN": "账号配置已保存，将在下一条真实输入时创建空白 Session。",
+    "en": "Account settings saved. A blank Session will be created on the next real input."
+  },
+  "账号配置已保存，请刷新查看上下文状态。": {
+    "zh-CN": "账号配置已保存，请刷新查看上下文状态。",
+    "en": "Account settings saved. Refresh to check the context status."
+  },
+  "账号配置已保存，等待首条真实输入交接": {
+    "zh-CN": "账号配置已保存，等待首条真实输入交接",
+    "en": "Account settings saved; waiting for the first real input to hand over"
+  },
+  "请选择目标后端的模型。": {
+    "zh-CN": "请选择目标后端的模型。",
+    "en": "Choose a model for the target backend."
+  },
+  "正在加载工作区…": {
+    "zh-CN": "正在加载工作区…",
+    "en": "Loading workspace…"
+  },
+  "工作区未能完成初始化，请刷新后重试。": {
+    "zh-CN": "工作区未能完成初始化，请刷新后重试。",
+    "en": "The workspace could not finish initializing. Refresh and try again."
+  },
+  "模板商店": {
+    "zh-CN": "模板商店",
+    "en": "Template Store"
+  },
+  "Workspace 视图暂未恢复：节点 Binding 尚未完整到齐，请重试。": {
+    "zh-CN": "Workspace 视图暂未恢复：节点 Binding 尚未完整到齐，请重试。",
+    "en": "The Workspace view is not restored yet: the node Bindings are not all available. Try again."
+  },
+  "HATG 模板版本不匹配，请刷新页面后重试。": {
+    "zh-CN": "HATG 模板版本不匹配，请刷新页面后重试。",
+    "en": "The HATG template version does not match. Refresh the page and try again."
+  },
+  "请把提示词模板拖到一个可访问的 Resident 节点或聊天输入框": {
+    "zh-CN": "请把提示词模板拖到一个可访问的 Resident 节点或聊天输入框",
+    "en": "Drag the prompt template onto an accessible Resident node or a chat input."
+  },
+  "状态已保存": {
+    "zh-CN": "状态已保存",
+    "en": "Status saved"
+  },
+  "没有可用模型": {
+    "zh-CN": "没有可用模型",
+    "en": "No models available"
+  },
+  "其他额度待确认": {
+    "zh-CN": "其他额度待确认",
+    "en": "Other quotas pending confirmation"
+  },
+  "其他额度已耗尽": {
+    "zh-CN": "其他额度已耗尽",
+    "en": "Other quotas exhausted"
+  },
+  "摘要只显示部分额度，模型专属或其他周期的限额仍可能阻止调用。": {
+    "zh-CN": "摘要只显示部分额度，模型专属或其他周期的限额仍可能阻止调用。",
+    "en": "The summary shows only some quotas; model-specific or other-period limits may still block calls."
+  },
+  "剩余 0%*，上次读数，待刷新确认": {
+    "zh-CN": "剩余 0%*，上次读数，待刷新确认",
+    "en": "0% left*, last reading, pending refresh"
+  },
+  "剩余 0%": {
+    "zh-CN": "剩余 0%",
+    "en": "0% left"
+  },
+  "见详情": {
+    "zh-CN": "见详情",
+    "en": "See details"
+  },
+  "余额暂不可用": {
+    "zh-CN": "余额暂不可用",
+    "en": "Balance temporarily unavailable"
+  },
+  "最大并行数": {
+    "zh-CN": "最大并行数",
+    "en": "Max parallelism"
+  },
+  "保存并行数": {
+    "zh-CN": "保存并行数",
+    "en": "Save parallelism"
+  },
+  "读取 Close 阈值": {
+    "zh-CN": "读取 Close 阈值",
+    "en": "Read Close threshold"
+  },
+  "保存 Close 阈值": {
+    "zh-CN": "保存 Close 阈值",
+    "en": "Save Close threshold"
+  },
+  "Mailbox 排队：待更新": {
+    "zh-CN": "Mailbox 排队：待更新",
+    "en": "Mailbox queue: pending update"
+  },
+  "已提交，正在刷新状态": {
+    "zh-CN": "已提交，正在刷新状态",
+    "en": "Submitted; refreshing status"
+  },
+  "删除结果未确认，请刷新后核对条目状态。": {
+    "zh-CN": "删除结果未确认，请刷新后核对条目状态。",
+    "en": "The deletion result is not confirmed. Refresh and check the entry status."
+  },
+  "图已被其他操作修改，Watchboard 操作未提交。请检查最新状态后重新操作。": {
+    "zh-CN": "图已被其他操作修改，Watchboard 操作未提交。请检查最新状态后重新操作。",
+    "en": "The graph was changed by another operation, so the Watchboard operation was not submitted. Check the latest state and try again."
+  },
+  "Watchboard 操作未提交，最新状态读取失败。请刷新后重新操作。": {
+    "zh-CN": "Watchboard 操作未提交，最新状态读取失败。请刷新后重新操作。",
+    "en": "The Watchboard operation was not submitted and the latest state could not be read. Refresh and try again."
+  },
+  "预览失败": {
+    "zh-CN": "预览失败",
+    "en": "Preview failed"
+  },
+  "暂无可访问的 Project。": {
+    "zh-CN": "暂无可访问的 Project。",
+    "en": "No accessible Projects."
+  },
+  "正在读取聊天室。": {
+    "zh-CN": "正在读取聊天室。",
+    "en": "Loading chatrooms."
+  },
+  "无法确认 Resident 状态，请稍后重试。": {
+    "zh-CN": "无法确认 Resident 状态，请稍后重试。",
+    "en": "Unable to confirm the Resident status. Try again later."
+  },
+  "设置消息免打扰失败": {
+    "zh-CN": "设置消息免打扰失败",
+    "en": "Failed to set mute"
+  },
+  "Solo 视图以外的成员不受影响。": {
+    "zh-CN": "Solo 视图以外的成员不受影响。",
+    "en": "Members outside the Solo view are not affected."
+  },
+  "访问地址已复制。": {
+    "zh-CN": "访问地址已复制。",
+    "en": "Access address copied."
+  },
+  "无法自动复制，请手动选择地址复制。": {
+    "zh-CN": "无法自动复制，请手动选择地址复制。",
+    "en": "Unable to copy automatically. Select the address and copy it manually."
+  },
+  "此实例已禁用应用代理": {
+    "zh-CN": "此实例已禁用应用代理",
+    "en": "The application proxy is disabled for this instance"
+  },
+  "正在读取解释页…": {
+    "zh-CN": "正在读取解释页…",
+    "en": "Loading the explanation page…"
+  },
+  "汇报版本与资源地址不一致，请刷新后重试。": {
+    "zh-CN": "汇报版本与资源地址不一致，请刷新后重试。",
+    "en": "The report version does not match the resource address. Refresh and try again."
+  },
+  "正在加载文档预览…": {
+    "zh-CN": "正在加载文档预览…",
+    "en": "Loading document preview…"
+  },
+  "文档预览失败，请稍后重试或下载原文件查看。": {
+    "zh-CN": "文档预览失败，请稍后重试或下载原文件查看。",
+    "en": "Document preview failed. Try again later or download the original file."
+  },
+  "Family 已变化，请重新打开菜单。": {
+    "zh-CN": "Family 已变化，请重新打开菜单。",
+    "en": "The Family changed. Reopen the menu."
+  },
+  "在当前帐号额度用完时是否自动切换": {
+    "zh-CN": "在当前帐号额度用完时是否自动切换",
+    "en": "Whether to switch automatically when the current account's quota runs out"
+  },
+  "开启后先找同类型同模型账号，再按站点默认排序回退。关闭时，额度不足会打开手动选择。": {
+    "zh-CN": "开启后先找同类型同模型账号，再按站点默认排序回退。关闭时，额度不足会打开手动选择。",
+    "en": "When enabled, try the same account type and model first, then the site order. When disabled, reaching the quota opens manual selection."
+  },
+  "无权限": {
+    "zh-CN": "无权限",
+    "en": "No permission"
+  },
+  "成员的 Backend 或账号已变更，请重新打开设置。": {
+    "zh-CN": "成员的 Backend 或账号已变更，请重新打开设置。",
+    "en": "The member's Backend or account changed. Reopen the settings."
+  },
+  "额度自动切换设置已保存。": {
+    "zh-CN": "额度自动切换设置已保存。",
+    "en": "Quota auto-switch setting saved."
+  },
+  "Session 切换结果尚未确认，请刷新查看状态": {
+    "zh-CN": "Session 切换结果尚未确认，请刷新查看状态",
+    "en": "The Session switch result is not confirmed yet. Refresh to check the status."
+  },
+  "Lineage 已创建，但 Familize 未完成。": {
+    "zh-CN": "Lineage 已创建，但 Familize 未完成。",
+    "en": "Lineage created, but Familize did not complete."
+  },
+  "关闭工坊？": {
+    "zh-CN": "关闭工坊？",
+    "en": "Close the workshop?"
+  },
+  "有未保存的修改": {
+    "zh-CN": "有未保存的修改",
+    "en": "There are unsaved changes"
+  },
+  "保存失败，未保存的修改仍保留在编辑器中。": {
+    "zh-CN": "保存失败，未保存的修改仍保留在编辑器中。",
+    "en": "Save failed. The unsaved changes remain in the editor."
+  },
+  "团队对话": {
+    "zh-CN": "团队对话",
+    "en": "Team chat"
+  },
+  "无法确认这条授权回答的准备状态": {
+    "zh-CN": "无法确认这条授权回答的准备状态",
+    "en": "Unable to confirm the readiness of this authorization answer"
+  },
+  "无法确认这条回答的任务凭证": {
+    "zh-CN": "无法确认这条回答的任务凭证",
+    "en": "Unable to confirm the task credential of this answer"
+  },
+  "按需云算力": {
+    "zh-CN": "按需云算力",
+    "en": "On-demand cloud compute"
+  },
+  "云存储": {
+    "zh-CN": "云存储",
+    "en": "Cloud storage"
+  },
+  "RTL 仿真与 FPGA 设计": {
+    "zh-CN": "RTL 仿真与 FPGA 设计",
+    "en": "RTL simulation and FPGA design"
+  },
+  "ASIC 后端与门级后仿": {
+    "zh-CN": "ASIC 后端与门级后仿",
+    "en": "ASIC backend and gate-level post-simulation"
+  },
+  "FPGA 板卡下载与实板验证": {
+    "zh-CN": "FPGA 板卡下载与实板验证",
+    "en": "FPGA board download and on-board verification"
+  },
+  "剩余计算单元": {
+    "zh-CN": "剩余计算单元",
+    "en": "Remaining compute units"
+  },
+  "每小时消耗": {
+    "zh-CN": "每小时消耗",
+    "en": "Hourly burn"
+  },
+  "活跃运行时": {
+    "zh-CN": "活跃运行时",
+    "en": "Active runtimes"
+  },
+  "总容量": {
+    "zh-CN": "总容量",
+    "en": "Total capacity"
+  },
+  "已用容量": {
+    "zh-CN": "已用容量",
+    "en": "Used capacity"
+  },
+  "可用容量": {
+    "zh-CN": "可用容量",
+    "en": "Available capacity"
+  },
+  "请选择团队": {
+    "zh-CN": "请选择团队",
+    "en": "Choose a team"
+  },
+  "团队成员": {
+    "zh-CN": "团队成员",
+    "en": "Team members"
+  },
+  "团队暂无成员": {
+    "zh-CN": "团队暂无成员",
+    "en": "The team has no members yet"
+  },
+  "团队读取失败，请重试。": {
+    "zh-CN": "团队读取失败，请重试。",
+    "en": "Failed to read the team. Try again."
+  },
+  "<span class=\"chatroomPinnedMark\" data-portal-icon=\"pin\" role=\"img\" aria-label=\"已置顶\" title=\"已置顶\"></span>": {
+    "zh-CN": "<span class=\"chatroomPinnedMark\" data-portal-icon=\"pin\" role=\"img\" aria-label=\"已置顶\" title=\"已置顶\"></span>",
+    "en": "<span class=\"chatroomPinnedMark\" data-portal-icon=\"pin\" role=\"img\" aria-label=\"Pinned\" title=\"Pinned\"></span>"
+  },
+  "<span class=\"portalDocumentTabPin\" data-portal-icon=\"pin\" aria-label=\"已锁定\"></span>": {
+    "zh-CN": "<span class=\"portalDocumentTabPin\" data-portal-icon=\"pin\" aria-label=\"已锁定\"></span>",
+    "en": "<span class=\"portalDocumentTabPin\" data-portal-icon=\"pin\" aria-label=\"Locked\"></span>"
+  },
+  "这是 Family「{p0}」的门面。发到这里的消息由 Family Router 交给最合适的成员处理，": {
+    "zh-CN": "这是 Family「{p0}」的门面。发到这里的消息由 Family Router 交给最合适的成员处理，",
+    "en": "This is the facade of Family “{p0}”. Messages sent here are handed by the Family Router to the most suitable member. "
+  },
+  "成员：{p0}。": {
+    "zh-CN": "成员：{p0}。",
+    "en": "Members: {p0}."
+  },
+  "{p0} 的工作期间": {
+    "zh-CN": "{p0} 的工作期间",
+    "en": "{p0}'s work period"
+  },
+  "最近 {p0} 轮": {
+    "zh-CN": "最近 {p0} 轮",
+    "en": "Last {p0} rounds"
+  },
+  "同意后，以下权限只交给提问成员：{p0}": {
+    "zh-CN": "同意后，以下权限只交给提问成员：{p0}",
+    "en": "If approved, the following permissions go only to the asking member: {p0}"
+  },
+  "{p0} 条消息": {
+    "zh-CN": "{p0} 条消息",
+    "en": "{p0} messages"
+  },
+  "此设置由 {p0} 个场景共用。": {
+    "zh-CN": "此设置由 {p0} 个场景共用。",
+    "en": "This setting is shared by {p0} scenarios."
+  },
+  "Resident 已删除，图刷新失败，请刷新查看，勿重复删除：{p0}": {
+    "zh-CN": "Resident 已删除，图刷新失败，请刷新查看，勿重复删除：{p0}",
+    "en": "Resident deleted, but the graph failed to refresh. Refresh to check and do not delete again: {p0}"
+  },
+  "{p0}已完成，但画布布局未保存：{p1}": {
+    "zh-CN": "{p0}已完成，但画布布局未保存：{p1}",
+    "en": "{p0} completed, but the canvas layout was not saved: {p1}"
+  },
+  "预计重置 {p0}": {
+    "zh-CN": "预计重置 {p0}",
+    "en": "Estimated reset {p0}"
+  },
+  "本窗口剩余 {p0}%{p1}": {
+    "zh-CN": "本窗口剩余 {p0}%{p1}",
+    "en": "{p0}% left in this window{p1}"
+  },
+  "{p0} 最大并行数": {
+    "zh-CN": "{p0} 最大并行数",
+    "en": "{p0} max parallelism"
+  },
+  "{p0} Close 阈值 ({p1})": {
+    "zh-CN": "{p0} Close 阈值 ({p1})",
+    "en": "{p0} Close threshold ({p1})"
+  },
+  "Mailbox 排队：{p0} 条": {
+    "zh-CN": "Mailbox 排队：{p0} 条",
+    "en": "Mailbox queue: {p0}"
+  },
+  "索引加载失败：{p0}。请点击刷新后重试。": {
+    "zh-CN": "索引加载失败：{p0}。请点击刷新后重试。",
+    "en": "Failed to load the index: {p0}. Click Refresh and try again."
+  },
+  "已加载 {p0}/{p1} · 索引加载失败": {
+    "zh-CN": "已加载 {p0}/{p1} · 索引加载失败",
+    "en": "Loaded {p0}/{p1} · index failed to load"
+  },
+  "Watchboard 已更新，但图刷新失败；请刷新查看，勿重复安装：{p0}": {
+    "zh-CN": "Watchboard 已更新，但图刷新失败；请刷新查看，勿重复安装：{p0}",
+    "en": "Watchboard updated, but the graph failed to refresh. Refresh to check and do not install again: {p0}"
+  },
+  "Watchboard 已更新，但画布布局未保存：{p0}": {
+    "zh-CN": "Watchboard 已更新，但画布布局未保存：{p0}",
+    "en": "Watchboard updated, but the canvas layout was not saved: {p0}"
+  },
+  "分支已创建，但画布布局未保存：{p0}": {
+    "zh-CN": "分支已创建，但画布布局未保存：{p0}",
+    "en": "Branch created, but the canvas layout was not saved: {p0}"
+  },
+  "正在处理… {p0}": {
+    "zh-CN": "正在处理… {p0}",
+    "en": "Processing… {p0}"
+  },
+  "无法打开 {p0}：{p1}": {
+    "zh-CN": "无法打开 {p0}：{p1}",
+    "en": "Unable to open {p0}: {p1}"
+  },
+  "工具设置加载失败：{p0}": {
+    "zh-CN": "工具设置加载失败：{p0}",
+    "en": "Failed to load tool settings: {p0}"
+  },
+  "{p0} 台服务器 · {p1} 项云算力": {
+    "zh-CN": "{p0} 台服务器 · {p1} 项云算力",
+    "en": "{p0} servers · {p1} cloud compute items"
+  },
+  "{p0} 台服务器": {
+    "zh-CN": "{p0} 台服务器",
+    "en": "{p0} servers"
+  },
+  "{p0} · {p1} 位成员": {
+    "zh-CN": "{p0} · {p1} 位成员",
+    "en": "{p0} · {p1} members"
+  },
+  "正在校验或保存，请稍候": {
+    "zh-CN": "正在校验或保存，请稍候",
+    "en": "Validating or saving; please wait"
+  },
+  "请先保存职责草稿，再确认此版本": {
+    "zh-CN": "请先保存职责草稿，再确认此版本",
+    "en": "Save the duty draft before confirming this version"
+  },
+  "请重新读取候选脚本": {
+    "zh-CN": "请重新读取候选脚本",
+    "en": "Reload the candidate script"
+  },
+  "外部对象只读。通过连线引用，配置由对象所属范围管理。": {
+    "zh-CN": "外部对象只读。通过连线引用，配置由对象所属范围管理。",
+    "en": "External objects are read-only. They are referenced through wires, and their configuration is managed by the scope that owns the object."
+  },
+  "配置必须是 JSON 对象": {
+    "zh-CN": "配置必须是 JSON 对象",
+    "en": "The configuration must be a JSON object"
+  },
+  "职责实例": {
+    "zh-CN": "职责实例",
+    "en": "Duty instance"
+  },
+  "职责名称": {
+    "zh-CN": "职责名称",
+    "en": "Duty name"
+  },
+  "预览并保存": {
+    "zh-CN": "预览并保存",
+    "en": "Preview and save"
+  },
+  "草稿历史": {
+    "zh-CN": "草稿历史",
+    "en": "Draft history"
+  },
+  "职责说明与记忆": {
+    "zh-CN": "职责说明与记忆",
+    "en": "Duty description and memory"
+  },
+  "职责提示词": {
+    "zh-CN": "职责提示词",
+    "en": "Duty prompt"
+  },
+  "触发提示词": {
+    "zh-CN": "触发提示词",
+    "en": "Trigger prompt"
+  },
+  "记忆层": {
+    "zh-CN": "记忆层",
+    "en": "Memory layer"
+  },
+  "此处只编辑当前职责。Resident 的其他记忆与职责保持独立。": {
+    "zh-CN": "此处只编辑当前职责。Resident 的其他记忆与职责保持独立。",
+    "en": "Only the current duty is edited here. The Resident's other memory and duties stay independent."
+  },
+  "引用已有对象": {
+    "zh-CN": "引用已有对象",
+    "en": "Reference an existing object"
+  },
+  "选择对象": {
+    "zh-CN": "选择对象",
+    "en": "Choose an object"
+  },
+  "请先修正表单中的错误": {
+    "zh-CN": "请先修正表单中的错误",
+    "en": "Fix the errors in the form first"
+  },
+  "保存职责变更？": {
+    "zh-CN": "保存职责变更？",
+    "en": "Save duty changes?"
+  },
+  "助手草稿的职责或版本不匹配，请基于当前版本重新生成": {
+    "zh-CN": "助手草稿的职责或版本不匹配，请基于当前版本重新生成",
+    "en": "The assistant draft's duty or version does not match. Regenerate it from the current version."
+  },
+  "载入助手草稿？": {
+    "zh-CN": "载入助手草稿？",
+    "en": "Load the assistant draft?"
+  },
+  "将替换当前未保存的职责修改": {
+    "zh-CN": "将替换当前未保存的职责修改",
+    "en": "This replaces the current unsaved duty changes"
+  },
+  "载入": {
+    "zh-CN": "载入",
+    "en": "Load"
+  },
+  "重新载入职责？": {
+    "zh-CN": "重新载入职责？",
+    "en": "Reload the duty?"
+  },
+  "将丢弃当前草稿": {
+    "zh-CN": "将丢弃当前草稿",
+    "en": "This discards the current draft"
+  },
+  "请先保存职责，再存为模板": {
+    "zh-CN": "请先保存职责，再存为模板",
+    "en": "Save the duty before saving it as a template"
+  },
+  "职责工坊": {
+    "zh-CN": "职责工坊",
+    "en": "Duty workshop"
+  },
+  "原脚本继续运行": {
+    "zh-CN": "原脚本继续运行",
+    "en": "The original script keeps running"
+  },
+  "模板 Resident": {
+    "zh-CN": "模板 Resident",
+    "en": "Template Resident"
+  },
+  "画布视图": {
+    "zh-CN": "画布视图",
+    "en": "Canvas view"
+  },
+  "当前比例": {
+    "zh-CN": "当前比例",
+    "en": "Current zoom"
+  },
+  "回到100%": {
+    "zh-CN": "回到100%",
+    "en": "Reset to 100%"
+  },
+  "模板 Resident 菜单": {
+    "zh-CN": "模板 Resident 菜单",
+    "en": "Template Resident menu"
+  },
+  "外部对象只读，请编辑引用它的连线": {
+    "zh-CN": "外部对象只读，请编辑引用它的连线",
+    "en": "External objects are read-only; edit the wire that references it"
+  },
+  "打开模板 Resident 菜单": {
+    "zh-CN": "打开模板 Resident 菜单",
+    "en": "Open the template Resident menu"
+  },
+  "模板草稿": {
+    "zh-CN": "模板草稿",
+    "en": "Template draft"
+  },
+  "编辑角色源模板": {
+    "zh-CN": "编辑角色源模板",
+    "en": "Edit the role source template"
+  },
+  "展开内部结构": {
+    "zh-CN": "展开内部结构",
+    "en": "Expand internal structure"
+  },
+  "查看职责图": {
+    "zh-CN": "查看职责图",
+    "en": "View duty graph"
+  },
+  "编辑职责参数": {
+    "zh-CN": "编辑职责参数",
+    "en": "Edit duty parameters"
+  },
+  "角色记忆": {
+    "zh-CN": "角色记忆",
+    "en": "Role memory"
+  },
+  "职责指南": {
+    "zh-CN": "职责指南",
+    "en": "Duty guide"
+  },
+  "职责触发提示词": {
+    "zh-CN": "职责触发提示词",
+    "en": "Duty trigger prompt"
+  },
+  "记忆层级": {
+    "zh-CN": "记忆层级",
+    "en": "Memory levels"
+  },
+  "编辑节点配置": {
+    "zh-CN": "编辑节点配置",
+    "en": "Edit node configuration"
+  },
+  "这里只配置模板；施加后产生的会话和运行状态不属于模板草稿。": {
+    "zh-CN": "这里只配置模板；施加后产生的会话和运行状态不属于模板草稿。",
+    "en": "Only the template is configured here; sessions and run state created after applying are not part of the template draft."
+  },
+  "请输入有效 JSON 对象": {
+    "zh-CN": "请输入有效 JSON 对象",
+    "en": "Enter a valid JSON object"
+  },
+  "切换模板？": {
+    "zh-CN": "切换模板？",
+    "en": "Switch template?"
+  },
+  "当前模板有未保存的修改，切换后将放弃这些修改。": {
+    "zh-CN": "当前模板有未保存的修改，切换后将放弃这些修改。",
+    "en": "The current template has unsaved changes; switching discards them."
+  },
+  "放弃修改并切换": {
+    "zh-CN": "放弃修改并切换",
+    "en": "Discard changes and switch"
+  },
+  "请先 Save 保存草稿，再确认此版本": {
+    "zh-CN": "请先 Save 保存草稿，再确认此版本",
+    "en": "Save the draft first, then confirm this version"
+  },
+  "视图": {
+    "zh-CN": "视图",
+    "en": "View"
+  },
+  "模板操作": {
+    "zh-CN": "模板操作",
+    "en": "Template actions"
+  },
+  "安装": {
+    "zh-CN": "安装",
+    "en": "Install"
+  },
+  "请先 Save 保存当前模板": {
+    "zh-CN": "请先 Save 保存当前模板",
+    "en": "Save the current template first"
+  },
+  "请切换到图视图后插入": {
+    "zh-CN": "请切换到图视图后插入",
+    "en": "Switch to the graph view to insert"
+  },
+  "当前编辑器不支持自由添加结构": {
+    "zh-CN": "当前编辑器不支持自由添加结构",
+    "en": "The current editor does not support adding structure freely"
+  },
+  "此模板不支持拖入组合，请单击打开": {
+    "zh-CN": "此模板不支持拖入组合，请单击打开",
+    "en": "This template cannot be dragged in to combine; click to open it"
+  },
+  "商店模板不存在或已下架": {
+    "zh-CN": "商店模板不存在或已下架",
+    "en": "The store template does not exist or has been unpublished"
+  },
+  "待办分页未继续。": {
+    "zh-CN": "待办分页未继续。",
+    "en": "The To Do pagination did not continue."
+  },
+  "请先重新读取待办。": {
+    "zh-CN": "请先重新读取待办。",
+    "en": "Reload the To Do items first."
+  },
+  "请先修改引用该账号的 Backend 角色": {
+    "zh-CN": "请先修改引用该账号的 Backend 角色",
+    "en": "First change the Backend roles that reference this account"
+  },
+  "请填写 Claude 默认模型。": {
+    "zh-CN": "请填写 Claude 默认模型。",
+    "en": "Enter the Claude default model."
+  },
+  "模型目录的模型 ID 必须非空且不重复，enabled 必须是 boolean。": {
+    "zh-CN": "模型目录的模型 ID 必须非空且不重复，enabled 必须是 boolean。",
+    "en": "Model IDs in the model catalog must be non-empty and unique, and enabled must be a boolean."
+  },
+  "Claude 路由的 default_model 必须是已启用的模型": {
+    "zh-CN": "Claude 路由的 default_model 必须是已启用的模型",
+    "en": "The Claude route's default_model must be an enabled model"
+  },
+  "需要协议": {
+    "zh-CN": "需要协议",
+    "en": "Protocol required"
+  },
+  "自动（按顺序和可用额度）": {
+    "zh-CN": "自动（按顺序和可用额度）",
+    "en": "Automatic (by order and available quota)"
+  },
+  "手动固定账号": {
+    "zh-CN": "手动固定账号",
+    "en": "Manually pinned account"
+  },
+  "AI 后端优先级": {
+    "zh-CN": "AI 后端优先级",
+    "en": "AI backend priority"
+  },
+  "新会话按从上到下的顺序选择。额度不足时，先选支持当前模型的同类型账号，再按此顺序回退并保留上下文。": {
+    "zh-CN": "新会话按从上到下的顺序选择。额度不足时，先选支持当前模型的同类型账号，再按此顺序回退并保留上下文。",
+    "en": "New sessions use the order shown. On quota exhaustion, try the same account type and model first, then follow this order and preserve context."
+  },
+  "（当前不可用）": {
+    "zh-CN": "（当前不可用）",
+    "en": "(currently unavailable)"
+  },
+  "尚未保存跨后端自动切换顺序。可点击“恢复推荐顺序”后保存。": {
+    "zh-CN": "尚未保存跨后端自动切换顺序。可点击“恢复推荐顺序”后保存。",
+    "en": "The cross-backend auto-switch order has not been saved. Click “Restore recommended order” and save."
+  },
+  "其他后端仅在加入后参与选择和切换；API 用量将按对应账户计费。": {
+    "zh-CN": "其他后端仅在加入后参与选择和切换；API 用量将按对应账户计费。",
+    "en": "Other backends take part in selection and switching only after they are added; API usage is billed to the corresponding account."
+  },
+  "加入排序": {
+    "zh-CN": "加入排序",
+    "en": "Add to order"
+  },
+  "使用账号默认模型": {
+    "zh-CN": "使用账号默认模型",
+    "en": "Use the account default model"
+  },
+  "使用模型默认强度": {
+    "zh-CN": "使用模型默认强度",
+    "en": "Use the model default effort"
+  },
+  "当前不可用": {
+    "zh-CN": "当前不可用",
+    "en": "Currently unavailable"
+  },
+  "请选择当前账号支持的选项，或使用默认值。": {
+    "zh-CN": "请选择当前账号支持的选项，或使用默认值。",
+    "en": "Choose an option the current account supports, or use the default."
+  },
+  "正在读取账号支持的模型…": {
+    "zh-CN": "正在读取账号支持的模型…",
+    "en": "Reading the models the account supports…"
+  },
+  "请先选择模型偏好参考账号。": {
+    "zh-CN": "请先选择模型偏好参考账号。",
+    "en": "Choose the model preference reference account first."
+  },
+  "该账号尚未提供可选模型，可使用账号默认值或重新加载。": {
+    "zh-CN": "该账号尚未提供可选模型，可使用账号默认值或重新加载。",
+    "en": "This account has not provided selectable models. Use the account default or reload."
+  },
+  "不同种类 AI 后端默认选择/自动切换的排序可手动调整，同种 AI 后端的选择由当前额度自动选择": {
+    "zh-CN": "不同种类 AI 后端默认选择/自动切换的排序可手动调整，同种 AI 后端的选择由当前额度自动选择",
+    "en": "The default selection / auto-switch order across kinds of AI backend can be adjusted manually; among backends of the same kind, the account is chosen automatically by current quota"
+  },
+  "尚未配置默认模型偏好。请在账号的“设置与测试”中完成接入，或打开“默认帐号选择排序”。": {
+    "zh-CN": "尚未配置默认模型偏好。请在账号的“设置与测试”中完成接入，或打开“默认帐号选择排序”。",
+    "en": "No default model preference is configured. Finish onboarding in the account's “Settings and test”, or open “Default account selection order”."
+  },
+  "同一 API 可通过不同运行器使用；每个执行账号的状态可分别管理，账号选择由统一策略决定。": {
+    "zh-CN": "同一 API 可通过不同运行器使用；每个执行账号的状态可分别管理，账号选择由统一策略决定。",
+    "en": "The same API can be used through different runners; the state of each execution account can be managed separately, and account choice is decided by the unified policy."
+  },
+  "账号种类优先级": {
+    "zh-CN": "账号种类优先级",
+    "en": "Account kind priority"
+  },
+  "保存顺序": {
+    "zh-CN": "保存顺序",
+    "en": "Save order"
+  },
+  "Family 已不存在，请重新打开菜单。": {
+    "zh-CN": "Family 已不存在，请重新打开菜单。",
+    "en": "The Family no longer exists. Reopen the menu."
+  },
+  "顺序已被其他人修改，请重新打开菜单后保存。": {
+    "zh-CN": "顺序已被其他人修改，请重新打开菜单后保存。",
+    "en": "The order was changed by someone else. Reopen the menu and save again."
+  },
+  "正在读取账号种类…": {
+    "zh-CN": "正在读取账号种类…",
+    "en": "Reading account kinds…"
+  },
+  "正在读取状态…": {
+    "zh-CN": "正在读取状态…",
+    "en": "Reading status…"
+  },
+  "资源 ID 或资源文件地址": {
+    "zh-CN": "资源 ID 或资源文件地址",
+    "en": "Resource ID or resource file address"
+  },
+  "放弃未保存的工具修改？": {
+    "zh-CN": "放弃未保存的工具修改？",
+    "en": "Discard unsaved tool changes?"
+  },
+  "重新加载将清除尚未保存的工具修改。": {
+    "zh-CN": "重新加载将清除尚未保存的工具修改。",
+    "en": "Reloading clears the tool changes that are not saved yet."
+  },
+  "Workspace 概览": {
+    "zh-CN": "Workspace 概览",
+    "en": "Workspace overview"
+  },
+  "描述": {
+    "zh-CN": "描述",
+    "en": "Description"
+  },
+  "这个 Workspace 用来做什么": {
+    "zh-CN": "这个 Workspace 用来做什么",
+    "en": "What this Workspace is for"
+  },
+  "目录状态": {
+    "zh-CN": "目录状态",
+    "en": "Directory status"
+  },
+  "打开 Workspace": {
+    "zh-CN": "打开 Workspace",
+    "en": "Open Workspace"
+  },
+  "保存更改": {
+    "zh-CN": "保存更改",
+    "en": "Save changes"
+  },
+  "目录可用": {
+    "zh-CN": "目录可用",
+    "en": "Directory available"
+  },
+  "目录不存在": {
+    "zh-CN": "目录不存在",
+    "en": "Directory does not exist"
+  },
+  "路径不是目录": {
+    "zh-CN": "路径不是目录",
+    "en": "The path is not a directory"
+  },
+  "无法检查目录": {
+    "zh-CN": "无法检查目录",
+    "en": "Unable to check the directory"
+  },
+  "已读取最新信息，草稿已保留；请确认后再保存。": {
+    "zh-CN": "已读取最新信息，草稿已保留；请确认后再保存。",
+    "en": "Latest information loaded; your draft is kept. Review it before saving."
+  },
+  "已读取最新信息，画布刷新失败：": {
+    "zh-CN": "已读取最新信息，画布刷新失败：",
+    "en": "Latest information loaded, but the canvas failed to refresh: "
+  },
+  "描述不能超过 2000 字。": {
+    "zh-CN": "描述不能超过 2000 字。",
+    "en": "The description cannot exceed 2000 characters."
+  },
+  "更改已保存，画布刷新失败：": {
+    "zh-CN": "更改已保存，画布刷新失败：",
+    "en": "Changes saved, but the canvas failed to refresh: "
+  },
+  "Workspace 已被更新。请重新读取最新信息，草稿将保留。": {
+    "zh-CN": "Workspace 已被更新。请重新读取最新信息，草稿将保留。",
+    "en": "The Workspace was updated. Reload the latest information; your draft will be kept."
+  },
+  "。请重新读取确认后再保存。": {
+    "zh-CN": "。请重新读取确认后再保存。",
+    "en": ". Reload to confirm before saving."
+  },
+  "浏览器拒绝复制": {
+    "zh-CN": "浏览器拒绝复制",
+    "en": "The browser refused to copy"
+  },
+  "复制失败：": {
+    "zh-CN": "复制失败：",
+    "en": "Copy failed: "
+  },
+  "请先保存或取消更改，再打开 Workspace。": {
+    "zh-CN": "请先保存或取消更改，再打开 Workspace。",
+    "en": "Save or cancel your changes before opening the Workspace."
+  },
+  "打开 Workspace 失败：": {
+    "zh-CN": "打开 Workspace 失败：",
+    "en": "Failed to open Workspace: "
+  },
+  "仅显示当前图中的 Workspace 绑定；这里不是完整的使用者或权限列表。": {
+    "zh-CN": "仅显示当前图中的 Workspace 绑定；这里不是完整的使用者或权限列表。",
+    "en": "Only the Workspace bindings in the current graph are shown; this is not a complete list of users or permissions."
+  },
+  "当前图中没有使用者。": {
+    "zh-CN": "当前图中没有使用者。",
+    "en": "No users in the current graph."
+  },
+  "发布到商店": {
+    "zh-CN": "发布到商店",
+    "en": "Publish to store"
+  },
+  "版本说明（可选）": {
+    "zh-CN": "版本说明（可选）",
+    "en": "Release notes (optional)"
+  },
+  "搜索模板": {
+    "zh-CN": "搜索模板",
+    "en": "Search templates"
+  },
+  "我发布": {
+    "zh-CN": "我发布",
+    "en": "Published by me"
+  },
+  "施加时调用的指令": {
+    "zh-CN": "施加时调用的指令",
+    "en": "Instruction called on apply"
+  },
+  "在工坊中打开": {
+    "zh-CN": "在工坊中打开",
+    "en": "Open in the workshop"
+  },
+  "下架": {
+    "zh-CN": "下架",
+    "en": "Unpublish"
+  },
+  "下架模板？": {
+    "zh-CN": "下架模板？",
+    "en": "Unpublish the template?"
+  },
   "同类型同模型自动换号": {
     "zh-CN": "同类型同模型自动换号",
     "en": "Switch accounts within the same type and model"
@@ -42625,5 +44690,29 @@
   "此处配置新会话的起始后端。额度不足时的换号规则在各 Resident 的设置中配置。": {
     "zh-CN": "此处配置新会话的起始后端。额度不足时的换号规则在各 Resident 的设置中配置。",
     "en": "Configure the starting backend for new sessions here. Set quota fallback in each Resident’s settings."
+  },
+  "新会话默认后端": {
+    "zh-CN": "新会话默认后端",
+    "en": "Default backend for new sessions"
+  },
+  "尚未配置默认模型偏好。请在账号的“设置与测试”中完成接入，或选择“新会话默认后端”。": {
+    "zh-CN": "尚未配置默认模型偏好。请在账号的“设置与测试”中完成接入，或选择“新会话默认后端”。",
+    "en": "Choose a default backend for new sessions, or set one in account setup."
+  },
+  "该账号是新会话的默认账号。请先选择另一个默认账号。": {
+    "zh-CN": "该账号是新会话的默认账号。请先选择另一个默认账号。",
+    "en": "This account is the default for new sessions. Choose another default account first."
+  },
+  "以下后端配置正在使用此账号：{p0}。可在“新会话默认后端”调整 default，其他配置可通过 UpdateBackendRole 调整。": {
+    "zh-CN": "以下后端配置正在使用此账号：{p0}。可在“新会话默认后端”调整 default，其他配置可通过 UpdateBackendRole 调整。",
+    "en": "This account is in use by the following backend configurations: {p0}. Change default under Default backend for new sessions. Use UpdateBackendRole for other configurations."
+  },
+  "请先更改引用此账号的后端配置。": {
+    "zh-CN": "请先更改引用此账号的后端配置。",
+    "en": "Change the backend configuration that uses this account first."
+  },
+  "请选择默认账号。": {
+    "zh-CN": "请选择默认账号。",
+    "en": "Choose a default account."
   }
 }

@@ -161,9 +161,13 @@ function errorText(error) {
   if (error.details?.reason === "model_api.routes_incomplete") return t("接口已保存，运行器配置未完成。请重试保存；不会重复创建接口或账号。");
   if (error.details?.reason === "account.busy") return t("账号仍关联 {p0} 个会话、{p1} 个排队或运行中的执行。请先迁移会话并等待或取消执行；也可先停用账号。", {
     p0: error.details?.session_count ?? "—", p1: error.details?.execution_count ?? "—"});
-  if (error.details?.reason === "account.role_in_use") return error.details.roles?.length
-    ? t("无法删除：Backend 角色 {p0} 仍引用该账号。请先将这些角色改用其他已启用账号。", {p0: error.details.roles.join("、")})
-    : t("请先修改引用该账号的 Backend 角色");
+  if (error.details?.reason === "account.role_in_use") {
+    const references = error.details.roles || [];
+    if (references.length === 1 && references[0] === "default") return t("该账号是新会话的默认账号。请先选择另一个默认账号。");
+    return references.length
+      ? t("以下后端配置正在使用此账号：{p0}。可在“新会话默认后端”调整 default，其他配置可通过 UpdateBackendRole 调整。", {p0: references.join("、")})
+      : t("请先更改引用此账号的后端配置。");
+  }
   if (error.details?.reason === "account.api_in_use") return t("无法删除：执行账号 {p0} 仍使用此模型 API。请先处理这些账号的引用，再删除接口。", {
     p0: (error.details.account_ids || []).join("、") || "—"});
   return error.message ? t(error.message) : t("操作失败，请重试。");
@@ -565,6 +569,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
   let pendingAccountId = accountId;
   const abort = new AbortController();
   const canWrite = me.access?.permission_system === "open" || me.access?.allows?.UpdateProviderAccount === true;
+  const canSetDefault = me.access?.permission_system === "open" || me.access?.allows?.UpdateBackendRole === true;
   const canRegister = me.access?.permission_system === "open" || me.access?.allows?.RegisterProviderAccount === true;
   const canDeleteAccount = me.access?.permission_system === "open" || me.access?.allows?.DeleteProviderAccount === true;
   const canDeleteApi = me.access?.permission_system === "open" || me.access?.allows?.DeleteModelApi === true;
@@ -583,7 +588,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
   introduction.append(node("h2", t("添加 AI 后端")), addSubscription, addApi); root.append(introduction);
   const management = advanced(root);
   const sections = {};
-  for (const [key, title] of [["accounts", "已接入的 AI"], ["providers", "Provider"], ["apis", "模型 API"], ["roles", "Backend 角色"]]) {
+  for (const [key, title] of [["accounts", "已接入的 AI"], ["providers", "Provider"], ["apis", "模型 API"]]) {
     const section = node("section", undefined, {class: "settingsSection", "data-backend-section": key, "aria-label": t(title)});
     const header = node("header"), actions = node("div", undefined, {class: "backendActions"});
     header.append(node("h2", t(title)), actions);
@@ -627,7 +632,12 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
   function deleteControl(title, id, instruction, argument, reload, disabled, disabledReason = "当前身份没有删除权限。") {
     const control = node("div", undefined, {class: "backendDelete"});
     const feedback = node("p", "", {role: "alert", tabindex: "-1", hidden: true});
-    const recovery = button("查看 Backend 角色", async () => {
+    const recovery = button("查看已接入的 AI", async () => {
+      if (recovery.dataset.section === "default") {
+        await refresh("roles");
+        if (!destroyed && rolesReady) defaultBackendEditor();
+        return;
+      }
       await refresh(recovery.dataset.section);
       if (destroyed) return;
       const target = sections[recovery.dataset.section].output.parentElement;
@@ -640,11 +650,11 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       if (!await confirm(title, id)) { notice.textContent = t("已取消删除"); return false; }
       await execute(instruction, {[argument]: id}); await reload();
     }, false, {success: "已删除", errorTarget: feedback, onError: error => {
-      const section = error.details?.reason === "account.role_in_use" ? "roles"
+      const section = error.details?.reason === "account.role_in_use" && canSetDefault && error.details.roles?.includes("default") ? "default"
         : error.details?.reason === "account.api_in_use" ? "accounts" : "";
       if (section) {
         recovery.dataset.section = section;
-        recovery.textContent = t(section === "roles" ? "查看 Backend 角色" : "查看已接入的 AI");
+        recovery.textContent = t(section === "default" ? "新会话默认后端" : "查看已接入的 AI");
         recovery.hidden = false;
       }
     }}), disabled);
@@ -761,8 +771,9 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     model.setAttribute("list", choices.id); form.append(choices);
     const useDefault = field(form, "用作默认模型偏好", "use_default", "", {type: "checkbox"});
     const defaultRole = state.roles.find(role => role.role === "default");
-    useDefault.checked = requestedDefault || !defaultRole?.account_id || defaultRole.account_id === accountId;
-    hint(useDefault, "测试通过后保存后端与模型偏好；新会话会在同类兼容账号中按可用额度自动选择，不自动跨后端或转用其他付费 API。");
+    useDefault.disabled = !canSetDefault;
+    useDefault.checked = canSetDefault && (requestedDefault || !defaultRole?.account_id || defaultRole.account_id === accountId);
+    hint(useDefault, "测试通过后，Ask Me Anything 和未配置后端的 Resident 将使用此账号。仅保存接口或设置默认路线不会启用默认 AI。");
     const authorize = button("登录", () => {
       login = openLogin(accountId, {onChanged: () => { login?.close(); void perform(reload); }});
     }, true);
@@ -787,7 +798,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         const receipt = await execute("CheckProviderAccount", {account_id: accountId, model: model.value.trim()});
         if (closed) return;
         await pollCheck(receipt.execution_id);
-      } catch (error) { checking = false; model.disabled = false; useDefault.disabled = false; throw error; }
+      } catch (error) { checking = false; model.disabled = false; useDefault.disabled = !canSetDefault; throw error; }
     }, "正在启动本地后台并检查连接，请稍候…"), true);
     form.append(capabilities, status, nextStep, checkDetail, actions(authorize, retry, editConnection, editModels, test, showLog), checkLog);
     form.addEventListener("submit", event => event.preventDefault());
@@ -951,7 +962,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
           progressMessage = "测试通过，正在设为默认 AI…";
           status.textContent = t(progressMessage);
           const currentDefault = state.roles.find(role => role.role === "default");
-          await execute("UpdateBackendRole", {backend_role: "default", account_id: accountId, account_selection: "auto",
+          await execute("UpdateBackendRole", {backend_role: "default", account_id: accountId, account_selection: "fixed", backend_priority: [],
             model: result.check.model, verification_execution_id: executionId,
             ...(currentDefault?.account_id === accountId && currentDefault.model === result.check.model
               ? {reasoning_effort: currentDefault.reasoning_effort || ""} : {})}, {expectedVersion: currentDefault?.version || 0});
@@ -959,14 +970,14 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
           await refresh("roles");
         }
         stopProgress();
-        checking = false; model.disabled = false; useDefault.disabled = false; setButtons();
+        checking = false; model.disabled = false; useDefault.disabled = !canSetDefault; setButtons();
         if (result.check.passed && !closed) {
-          notice.textContent = t(useDefault.checked ? "测试通过，已保存模型偏好并启用自动选择账号。" : "测试通过，AI 接入已完成。");
+          notice.textContent = t(useDefault.checked ? "测试通过，已设为默认 AI。" : "测试通过，AI 接入已完成。");
           view.close();
         }
       } catch (error) {
         stopProgress();
-        if (!closed) { checking = false; model.disabled = false; useDefault.disabled = false; status.textContent = errorText(error); setButtons(); }
+        if (!closed) { checking = false; model.disabled = false; useDefault.disabled = !canSetDefault; status.textContent = errorText(error); setButtons(); }
       }
     }
     void perform(reload);
@@ -1277,72 +1288,19 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       }, Boolean(changes.secret), {success: register?.checked ? "接口已保存，请点击“测试并完成”启用 AI。" : "已保存"});
     });
   }
-  function roleEditor(role = null) {
+  function defaultBackendEditor() {
+    const role = state.roles.find(row => row.role === "default");
     const catalogAbort = new AbortController();
-    const {view, form} = newEditor(role?.role === "default" ? "默认帐号选择排序" : role ? "编辑 Backend 角色" : "新增 Backend 角色", () => catalogAbort.abort());
+    const {view, form} = newEditor("新会话默认后端", () => catalogAbort.abort());
     form.classList.add("backendSelectionForm");
-    const name = field(form, "角色", "role", role?.role || "", {required: true, readOnly: Boolean(role)});
-    if (role?.role === "default") name.parentElement.hidden = true;
-    const selection = select(form, "选择方式", "account_selection", [["auto", t("自动（按顺序和可用额度）")], ["fixed", t("手动固定账号")]], role?.account_selection || "auto");
-    const types = new Map(state.accounts.filter(a => a.migration_type && a.provider !== "provider_api")
-      .map(a => [a.migration_type.id, a.migration_type]));
-    const defaults = [...types.values()].filter(a => a.id.split(":")[1] === "subscription_login")
-      .sort((a, b) => a.default_priority - b.default_priority || a.id.localeCompare(b.id)).map(a => a.id);
-    let order = Array.isArray(role?.backend_priority) ? [...role.backend_priority] : defaults;
-    const priority = node("fieldset", undefined, {class: "backendPriority", "data-backend-priority": ""});
-    priority.append(node("legend", t("AI 后端优先级")), node("p", t("此顺序用于新会话。已有会话的换号规则在各 Resident 的设置中配置。"), {class: "backendHint"}));
-    const list = node("ol", undefined, {class: "backendPriorityList"});
-    const other = node("div", undefined, {class: "backendPriorityOther"});
-    const reset = button("恢复推荐顺序", () => { order = [...defaults]; draw(); });
-    priority.append(list, other, reset); form.append(priority);
-    const label = key => types.get(key)?.label || key + t("（当前不可用）");
-    const draw = () => {
-      list.replaceChildren(); other.replaceChildren();
-      for (const [i, key] of order.entries()) {
-        const row = node("li", undefined, {"data-backend-priority-kind": key});
-        const title = node("span", label(key), {class: "backendPriorityName"});
-        const controls = node("div", undefined, {class: "backendPriorityControls"});
-        for (const [direction, text] of [[-1, "上移"], [1, "下移"]]) {
-          const move = button(direction < 0 ? "↑" : "↓", () => {
-            const j = i + direction; [order[i], order[j]] = [order[j], order[i]]; draw();
-            list.children[j]?.querySelector(`[data-direction="${direction}"]`)?.focus();
-          }, i + direction < 0 || i + direction >= order.length);
-          move.dataset.direction = String(direction); move.setAttribute("aria-label", t(text) + " " + label(key)); controls.append(move);
-        }
-        if (key.split(":")[1] !== "subscription_login") controls.append(button("移除", () => { order = order.filter(k => k !== key); draw(); }));
-        row.append(node("span", String(i + 1), {class: "backendPriorityNumber", "aria-hidden": "true"}), title, controls); list.append(row);
-      }
-      if (!order.length) list.append(node("p", t("新会话选择顺序为空。"), {class: "backendHint"}));
-      const others = [...types.values()].filter(a => !order.includes(a.id));
-      if (others.length) {
-        other.append(node("p", t("添加可用于新会话的后端；API 用量按对应账户计费。"), {class: "backendHint"}));
-        for (const item of others) {
-          const row = node("div", undefined, {class: "backendPriorityOptional"});
-          const add = button("加入排序", () => { order.push(item.id); draw(); });
-          add.setAttribute("aria-label", t("加入排序") + " " + item.label);
-          row.append(node("span", item.label), add); other.append(row);
-        }
-      }
-    };
-    draw();
-    const options = advanced(form);
-    options.parentElement.open = true;
-    const account = select(options, "模型偏好参考账号", "account_id", [["", t("选择账号")], ...state.accounts.filter(a => a.enabled !== false || a.account_id === role?.account_id).map(a => [a.account_id, a.account_id])], role?.account_id);
+    const account = select(form, "默认账号", "account_id", [["", t("选择账号")], ...state.accounts.filter(a => a.enabled !== false || a.account_id === role?.account_id).map(a => [a.account_id, a.account_id])], role?.account_id);
     account.required = true;
-    const syncSelection = () => {
-      priority.hidden = selection.value === "fixed";
-      priority.disabled = priority.hidden;
-      priority.dataset.disabled = String(priority.disabled);
-      account.parentElement.querySelector("span").textContent = t(selection.value === "fixed" ? "固定账号" : "模型偏好参考账号");
-    };
-    selection.addEventListener("change", syncSelection); syncSelection();
-    hint(account, "新会话使用这里的模型偏好；其他种类使用各自默认模型。");
-    const model = select(options, "模型偏好（可选）", "model", [["", t("使用账号默认模型")]]);
-    const effort = select(options, "推理强度（可选）", "reasoning_effort", [["", t("使用模型默认强度")]]);
+    const model = select(form, "模型偏好（可选）", "model", [["", t("使用账号默认模型")]]);
+    const effort = select(form, "推理强度（可选）", "reasoning_effort", [["", t("使用模型默认强度")]]);
     const catalogStatus = node("p", "", {class: "backendHint", role: "status", "data-backend-role-catalog": ""});
     const reloadCatalog = button("重新加载模型列表", () => void loadCatalog(
       catalogFailed ? requestedPreference.model : model.value, catalogFailed ? requestedPreference.effort : effort.value));
-    options.append(catalogStatus, reloadCatalog);
+    form.append(catalogStatus, reloadCatalog);
     saveButton(form);
     const save = form.querySelector('[type="submit"]');
     let catalog = {}, catalogRequest = 0, catalogLoading = false, catalogFailed = false;
@@ -1371,7 +1329,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         if (!account.value) {
           catalog = {};
           choices(model, [], "", "使用账号默认模型"); syncEfforts();
-          catalogStatus.textContent = t("请先选择模型偏好参考账号。");
+          catalogStatus.textContent = t("请选择默认账号。");
           return;
         }
         // Use the same account runtime catalog as Resident Settings; do not
@@ -1402,13 +1360,15 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     effort.addEventListener("change", () => effort.setCustomValidity(""));
     account.addEventListener("change", () => void loadCatalog());
     void loadCatalog(role?.model || "", role?.reasoning_effort || "");
-    form.addEventListener("submit", event => { event.preventDefault();
+    form.addEventListener("submit", event => {
+      event.preventDefault();
       if (catalogLoading || catalogFailed || !form.reportValidity()) return;
       void run(async () => {
-      await execute("UpdateBackendRole", {backend_role: name.value.trim(), account_id: account.value, account_selection: selection.value,
-        backend_priority: order, model: model.value.trim(), reasoning_effort: effort.value.trim()}, {expectedVersion: role?.version || 0});
-      view.close(); await refresh("roles");
-    }); });
+        await execute("UpdateBackendRole", {backend_role: "default", account_id: account.value, account_selection: "fixed",
+          backend_priority: [], model: model.value.trim(), reasoning_effort: effort.value.trim()}, {expectedVersion: role?.version || 0});
+        view.close(); await refresh("roles");
+      });
+    });
   }
   const runnerTitle = provider => provider === "provider_api" ? t("直连模型（只对话，不执行工具）")
     : state.providers.find(item => item.provider === provider)?.title || provider;
@@ -1471,14 +1431,13 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       .filter(details => details.open).map(details => details.dataset.backendApiAccounts));
     output.replaceChildren();
     if (rolesReady) {
-      const role = state.roles.find(row => row.role === "default") || {role: "default", version: 0};
       const summary = node("div", undefined, {class: "backendSelectionSummary", "data-backend-account-selection": ""});
       summary.append(node("p", t("此处配置新会话的起始后端。额度不足时的换号规则在各 Resident 的设置中配置。"), {class: "backendHint"}),
-        button("默认帐号选择排序", () => roleEditor(role), !canWrite));
+        button("新会话默认后端", defaultBackendEditor, !canSetDefault));
       output.append(summary);
     }
     if (rolesReady && !state.roles.some(role => role.role === "default" && role.account_id)) {
-      output.append(node("p", t("尚未配置默认模型偏好。请在账号的“设置与测试”中完成接入，或打开“默认帐号选择排序”。"), {class: "backendHint", "data-backend-default-missing": "", role: "status"}));
+      output.append(node("p", t("尚未配置默认模型偏好。请在账号的“设置与测试”中完成接入，或选择“新会话默认后端”。"), {class: "backendHint", "data-backend-default-missing": "", role: "status"}));
     }
     if (!state.accounts.length) { output.append(node("p", t("暂无登记"))); return; }
     const standalone = [], groups = new Map();
@@ -1528,9 +1487,6 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         button("编辑", () => apiEditor(api), !canWrite), test, result,
         deleteControl("删除模型 API？", api.api_id, "DeleteModelApi", "api_id", () => refresh("apis"), !canDeleteApi))]};
     })),
-    roles: () => table("roles", ["角色", "账号选择", "参考账号", "模型", "推理强度", "版本", "操作"],
-      (state.roles.some(r => r.role === "default") ? state.roles : [{role: "default", version: 0}, ...state.roles]).map(role => ({cells: [role.role, t(role.account_selection === "fixed" ? "手动固定" : "自动（按可用额度）"), role.account_id || t("尚未配置"), role.model || "—", role.reasoning_effort || "—", role.version,
-        button("编辑", () => roleEditor(role), !canWrite)]}))),
   };
   const instructions = {providers: "ListProviders", accounts: "ListProviderAccounts", apis: "ListModelApis", roles: "ListBackendRoles"};
   async function refresh(key, args = {}) {
@@ -1541,10 +1497,13 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       } : account) : result[key] || [];
       if (key === "providers") providersReady = true;
       if (key === "roles") rolesReady = true;
-      renderers[key]();
+      if (key !== "roles") renderers[key]();
       if (key === "apis" || key === "providers" || key === "roles") renderers.accounts();
       if (key === "accounts" && pendingAccountId) focusAccount(pendingAccountId);
-    } catch (error) { if (!destroyed) sections[key].output.replaceChildren(node("p", errorText(error), {role: "alert"})); }
+    } catch (error) { if (!destroyed) {
+      if (key === "roles") { rolesReady = false; notice.textContent = errorText(error); renderAccounts(); }
+      else sections[key].output.replaceChildren(node("p", errorText(error), {role: "alert"}));
+    } }
     finally { if (!destroyed) syncAccountButton(); }
   }
   management.prepend(addAccount);
@@ -1555,7 +1514,6 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
   }, !canWrite);
   sections.providers.actions.append(checkUpdates);
   sections.apis.actions.append(button("新增模型 API", () => apiEditor(), !canWrite));
-  sections.roles.actions.append(button("新增 Backend 角色", () => roleEditor(), !canWrite));
   for (const key of Object.keys(sections)) sections[key].actions.append(button("刷新", () => void refresh(key)));
   // Opening registration needs the catalog, not runtime probes or account health.
   const catalogReady = refresh("providers", {include_runtime: false});
@@ -1569,7 +1527,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     if (row) {
       pendingAccountId = "";
       const details = row.closest("details"); if (details) details.open = true;
-      row.scrollIntoView({block: "center"}); row.focus({preventScroll: true});
+      row.scrollIntoView?.({block: "center"}); row.focus({preventScroll: true});
     }
   }
   focusAccount(accountId);

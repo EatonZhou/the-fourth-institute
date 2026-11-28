@@ -121,7 +121,7 @@ def test_tau_fixture_isolation_preserves_existing_family_policy_and_members(line
     fixture = resident(lineage, "Current TAU fixture")
     family = ok("Familize", {"lineage_id": lineage, "resident_ids": [kept, fixture]})
     ok("UpdateFamily", {"lineage_id": lineage, "family_id": family["family_id"],
-                        "auto_migrate": True, "route_threshold": 73})
+                        "route_threshold": 73})
     before = graph(lineage)
     original = deepcopy(next(b for b in before["function_blocks"] if b["id"] == family["family_id"]))
     ok("UpdateFamily", {"lineage_id": lineage, "family_id": family["family_id"],
@@ -131,7 +131,7 @@ def test_tau_fixture_isolation_preserves_existing_family_policy_and_members(line
     expected = deepcopy(original["family"])
     expected["members"] = [rid for rid in expected["members"] if rid != fixture]
     assert remaining["family"] == expected
-    assert remaining["family"]["auto_migrate"] is True
+    assert remaining["family"]["route_threshold"] == 73
     assert {n["id"] for n in after["nodes"]} == {n["id"] for n in before["nodes"]}
     assert not any(fixture in b.get("family", {}).get("members", []) for b in after["function_blocks"])
     assert ok("GetResident", {"resident_id": fixture})["resident"]["resident_id"] == fixture
@@ -178,8 +178,8 @@ assert.throws(()=>read(data.created,{residentId:data.fixture}),/missing from for
 
 
 @pytest.mark.parametrize('default_migration', [True, False])
-def test_tau_family_template_disables_migration_before_first_delivery(lineage, charters, monkeypatch, default_migration):
-    """原生模板接受创建时关闭迁移，首次投递前生效，默认模板不变。"""
+def test_legacy_family_template_omits_migration_before_first_delivery(lineage, charters, monkeypatch, default_migration):
+    """历史 Family 模板的换号设置不会再出现在表单和首次投递中。"""
     from management_portal.society_service import templates, resident_intake_domain
     import json
     from pathlib import Path
@@ -190,18 +190,18 @@ def test_tau_family_template_disables_migration_before_first_delivery(lineage, c
         "description": "Edited Family policy", "body": {**source["body"], "auto_migrate": default_migration}})["template"]
     assert source["parameters"] == []
     parameter = next((p for p in source.get("application_parameters", []) if p["name"] == "auto_migrate"), None)
-    assert parameter and parameter["type"] == "boolean" and parameter["default"] is default_migration
+    assert parameter is None
     script = Path(__file__).with_name('javascript') / 'tau_family_creation.cjs'
     form = subprocess.run(['node', str(script)], input=json.dumps(source),
                           capture_output=True, text=True, timeout=30)
     assert form.returncode == 0, form.stderr
     parameters = json.loads(form.stdout)
-    assert parameters == {"auto_migrate": False}
+    assert parameters == {}
     member = resident(lineage, "Fixture member")
     deliveries = []
     def delivery(resident_id, actor, content, **options):
         families = [b["family"] for b in graph(lineage)["function_blocks"] if b.get("family")]
-        assert families and all(f["auto_migrate"] is False for f in families)
+        assert families and all("auto_migrate" not in f for f in families)
         deliveries.append(resident_id)
         return {}
     monkeypatch.setattr(resident_intake_domain, "deliver_resident_message_content", delivery)
@@ -209,7 +209,10 @@ def test_tau_family_template_disables_migration_before_first_delivery(lineage, c
                                   "parameters": parameters,
                                   "target": {"kind": "selection", "resident_ids": [member]}})
     assert applied["steward_resident_id"] in deliveries
-    assert templates.get(source["template_id"]) == source
+    stored = templates.get(source["template_id"])
+    assert stored["version"] == source["version"]
+    assert stored["body"] == source["body"]
+    assert stored["application_parameters"] == source["application_parameters"]
     ok("Unfamilize", {"lineage_id": lineage, "family_id": applied["family_id"]})
 
 

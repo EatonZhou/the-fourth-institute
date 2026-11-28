@@ -8,6 +8,9 @@ const flush = async () => { for (let i = 0; i < 5; i++) await new Promise(resolv
   let panel;
   try {
     if (!w.PortalOverlay) w.eval(fs.readFileSync('management_portal/static/portal_overlay.js', 'utf8'));
+    // jsdom does not implement the native dialog lifecycle.
+    w.HTMLDialogElement.prototype.showModal = function () { this.open = true; };
+    w.HTMLDialogElement.prototype.close = function () { this.open = false; };
     const calls = [];
     let accounts = [{account_id: 'my-ai', provider: 'provider_api', kind: 'api_profile', enabled: true,
       registration_version: 1, config: {api_id: 'my-api'}, registration: {version: 1, enabled: true, config: {api_id: 'my-api'}}}];
@@ -52,12 +55,16 @@ const flush = async () => { for (let i = 0; i < 5; i++) await new Promise(resolv
     assert.equal(accounts.length, 1);
     await flush();
     assert(alert.isConnected && !alert.hidden, 'refusal and recovery stay visible after background work settles');
-    const rolesLink = [...section('accounts').querySelectorAll('button')].find(b => b.textContent === '查看 Backend 角色');
+    const rolesLink = [...section('accounts').querySelectorAll('button')].find(b => b.textContent === '新会话默认后端' && !b.hidden && b.parentElement.classList.contains('backendDelete'));
     const roleReads = calls.filter(c => c.name === 'ListBackendRoles').length;
     assert(rolesLink); rolesLink.click(); await flush();
     assert(calls.filter(c => c.name === 'ListBackendRoles').length > roleReads,
       'explicit recovery loads current role references before navigating');
-    assert(section('roles').closest('details').open, 'referencing roles can be reached from the refusal');
+    assert(!section('roles'));
+    const dialog = d.querySelector('dialog');
+    assert(dialog, [d.querySelector('[data-backend-notice]').textContent, ...h.errors].join(' / '));
+    assert(dialog.querySelector('[name=account_id]'));
+    [...dialog.querySelectorAll('button')].find(b => b.textContent === '关闭').click();
 
     rejection = {reason: 'account.busy', session_count: 2, execution_count: 1};
     deleteButton('accounts').click(); await flush(); await choose(true);

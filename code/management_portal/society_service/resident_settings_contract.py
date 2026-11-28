@@ -40,6 +40,7 @@ def normalize_reporting(value: Any) -> dict[str, str]:
 def split_runtime_settings(settings: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
     from management_portal.execution import resident_runtime_settings
 
+    settings = {k: v for k, v in settings.items() if k != "quota_switch_strategy"}
     unknown = set(settings) - RUNTIME_SETTING_FIELDS
     if unknown:
         raise ValueError("Unsupported Resident execution settings: " + ", ".join(sorted(unknown)))
@@ -53,6 +54,8 @@ def runtime_settings_from_parts(
 ) -> dict[str, Any]:
     from management_portal.execution import resident_runtime_settings
 
+    # Stored settings and archived sessions may predate per-Resident switches.
+    execution_settings = {k: v for k, v in execution_settings.items() if k != "quota_switch_strategy"}
     unknown = set(execution_settings) - EXECUTION_SETTING_FIELDS
     if unknown:
         raise ValueError("Unsupported Resident execution settings: " + ", ".join(sorted(unknown)))

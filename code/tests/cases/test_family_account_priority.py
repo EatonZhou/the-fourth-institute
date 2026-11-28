@@ -37,15 +37,9 @@ def test_priority_same_kind_and_unavailable_accounts():
     assert pick(['claude_two'])==codex
 
 
-@pytest.mark.parametrize('value', ['codex', ['codex:subscription_login']*2, ['bad key'], [42]])
-def test_invalid_priority_rejected(value):
-    with pytest.raises(ValueError):
-        _values({'auto_migrate_priority':value})
-
-
-def test_priority_round_trip_values():
-    order=['codex:subscription_login','claude:api_profile:deepseek_primary']
-    assert _values({'auto_migrate_priority':order})['auto_migrate_priority']==order
+def test_old_family_recipe_discards_switch_options():
+    config = _values({'auto_migrate_priority': ['codex:subscription_login'], 'auto_migrate': True})
+    assert 'auto_migrate' not in config and 'auto_migrate_priority' not in config
 
 
 def test_family_custom_order_appends_subscriptions_without_new_billing_kinds():
@@ -89,19 +83,15 @@ def test_different_api_on_same_harness_uses_its_own_model(monkeypatch):
 from tests.cases.test_family_familize import lineage, charters, resident, graph, ok, future_creation_store
 
 
-def test_priority_persists_and_unrelated_update_preserves_it(lineage, charters):
+def test_family_updates_expose_no_account_switch_policy(lineage, charters):
     from management_portal.society_service.family_quota import auto_migration_priority
     from management_portal.society_service.resident_record_domain import find_resident
     member = resident(lineage, 'Member')
     result = ok('Familize', {'lineage_id': lineage, 'resident_ids': [member]})
     family_id = result['family_id']
-    order = ['kimi:service', 'codex:subscription_login', 'claude:api_profile:deleted_api']
-    assert next(b['family'] for b in graph(lineage)['function_blocks'] if b['id'] == family_id)['auto_migrate_priority'] == []
-    ok('UpdateFamily', {'lineage_id': lineage, 'family_id': family_id, 'auto_migrate_priority': order})
     ok('UpdateFamily', {'lineage_id': lineage, 'family_id': family_id, 'goal': 'New goal'})
-    assert auto_migration_priority(find_resident(member)) == []
-    assert next(b['family'] for b in graph(lineage)['function_blocks'] if b['id'] == family_id)['auto_migrate_priority'] == order
-    ok('UpdateFamily', {'lineage_id': lineage, 'family_id': family_id, 'auto_migrate_priority': []})
+    family = next(b['family'] for b in graph(lineage)['function_blocks'] if b['id'] == family_id)
+    assert 'auto_migrate_priority' not in family and 'auto_migrate' not in family
     assert auto_migration_priority(find_resident(member)) == []
 
 from tests.cases.test_family_quota import quota_family, team, owners, _record

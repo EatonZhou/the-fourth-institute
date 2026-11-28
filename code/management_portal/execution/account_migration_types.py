@@ -37,5 +37,5 @@ def validate_priority(value):
             or any(not isinstance(key, str) or len(key) > 256
                    or not re.fullmatch(r"[a-zA-Z0-9_.-]+:(?:subscription_login|service|unknown|api_profile:[a-zA-Z0-9_.-]+)", key)
                    for key in value) or len(set(value)) != len(value)):
-        raise ValueError("auto_migrate_priority 必须是不重复的账号种类 ID 数组")
+        raise ValueError("替换顺序必须是不重复的账号种类 ID 数组")
     return list(value)

@@ -123,7 +123,7 @@ const click = text => {const b = [...window.document.querySelectorAll('button')]
   checkFails = false;
   click('测试并完成'); await flush(); assert(!window.document.querySelector('dialog'));
   const defaultUpdate = calls.find(c => c.name === 'UpdateBackendRole');
-  assert.deepEqual(defaultUpdate.args, {backend_role: 'default', account_id: 'example-api', account_selection: 'auto', model: 'example-model', verification_execution_id: 'execution_api_check'});
+  assert.deepEqual(defaultUpdate.args, {backend_role: 'default', account_id: 'example-api', account_selection: 'fixed', backend_priority: [], model: 'example-model', verification_execution_id: 'execution_api_check'});
   assert.equal(defaultUpdate.expectedVersion, 1);
   assert(!window.document.querySelector('[data-backend-default-missing]'));
   assert(window.document.querySelector('[data-backend-account-selection]'), 'default selection remains visible in its shared policy control');

@@ -421,42 +421,20 @@ const openSetup = async () => {
   assert.equal(timers.size, 0); assert.equal(intervals.size, 0);
   // One selector replaces the two conflicting default buttons.
   assert(![...window.document.querySelectorAll('button')].some(el => ['设为默认路线', '设为默认 AI'].includes(el.textContent)));
-  assert.match(window.document.querySelector('[data-backend-account-selection]').textContent, /不同种类 AI 后端默认选择\/自动切换的排序可手动调整/);
-  for (const policy of ['fixed', 'auto']) {
-    click('默认帐号选择排序'); await flush();
-    const form = window.document.querySelector('dialog form');
-    form.elements.account_id.value = 'existing';
-    form.elements.account_id.dispatchEvent(new window.Event('change')); await flush();
-    form.elements.model.value = '';
-    form.elements.model.dispatchEvent(new window.Event('change'));
-    form.elements.account_selection.value = policy;
-    form.elements.account_selection.dispatchEvent(new window.Event('change'));
-    assert.match(form.elements.account_id.parentElement.textContent, policy === 'fixed' ? /固定账号/ : /参考账号/);
-    const priority = form.querySelector('[data-backend-priority]');
-    assert.equal(priority.disabled, policy === 'fixed');
-    if (policy === 'auto') {
-      form.querySelector('[data-backend-priority-kind="codex:subscription_login"] [data-direction="-1"]').click();
-      assert.equal(form.querySelector('[data-backend-priority-kind]').dataset.backendPriorityKind, 'codex:subscription_login');
-      [...form.querySelectorAll('button')].find(b => b.textContent === '加入排序').click();
-    }
-    form.dispatchEvent(new window.Event('submit', {bubbles: true, cancelable: true})); await flush();
-    const saved = calls.filter(call => call.name === 'UpdateBackendRole').at(-1);
-    assert(saved, 'a valid role saves after its account catalog loads');
-    assert.equal(saved.args.account_selection, policy);
-    assert.equal(saved.options.expectedVersion, roles[0].version - 1);
-    if (policy === 'auto') assert.deepEqual(Array.from(saved.args.backend_priority), ['codex:subscription_login', 'claude:subscription_login', 'claude:api_profile:api']);
-  }
-  click('默认帐号选择排序'); await flush();
-  assert.equal(window.document.querySelector('[data-backend-priority-kind]').dataset.backendPriorityKind, 'codex:subscription_login');
-  const beforeCancel = calls.filter(call => call.name === 'UpdateBackendRole').length;
-  window.document.querySelector('[data-backend-priority-kind] [data-direction="1"]').click();
-  click('关闭'); await flush();
-  assert.equal(calls.filter(call => call.name === 'UpdateBackendRole').length, beforeCancel);
-  click('默认帐号选择排序'); await flush();
-  assert.equal(window.document.querySelector('[data-backend-priority-kind]').dataset.backendPriorityKind, 'codex:subscription_login');
-  click('关闭');
+  assert(!window.document.querySelector('[data-backend-section="roles"]'));
+  click('新会话默认后端'); await flush();
+  const initial = window.document.querySelector('dialog form');
+  assert(!initial.querySelector('[data-backend-priority], [name=role]'));
+  initial.elements.account_id.value = 'existing';
+  initial.elements.account_id.dispatchEvent(new window.Event('change')); await flush();
+  initial.dispatchEvent(new window.Event('submit', {bubbles: true, cancelable: true})); await flush();
+  const saved = calls.filter(call => call.name === 'UpdateBackendRole').at(-1);
+  assert.equal(saved.args.account_selection, 'fixed');
+  assert.equal(saved.args.backend_role, 'default');
+  assert.deepEqual(Array.from(saved.args.backend_priority), []);
+  assert.equal(saved.options.expectedVersion, roles[0].version - 1);
   // Models and efforts come from the selected account's shared runtime catalog.
-  click('默认帐号选择排序'); await flush();
+  click('新会话默认后端'); await flush();
   const roleForm = window.document.querySelector('dialog form');
   const modelSelect = roleForm.elements.model, effortSelect = roleForm.elements.reasoning_effort;
   const accountSelect = roleForm.elements.account_id;
@@ -475,7 +453,7 @@ const openSetup = async () => {
   roleForm.dispatchEvent(new window.Event('submit', {bubbles: true, cancelable: true})); await flush();
   let savedRole = calls.filter(call => call.name === 'UpdateBackendRole').at(-1);
   assert.equal(savedRole.args.model, 'codex-model'); assert.equal(savedRole.args.reasoning_effort, 'xhigh');
-  click('默认帐号选择排序'); await flush();
+  click('新会话默认后端'); await flush();
   let form = window.document.querySelector('dialog form');
   assert.equal(form.elements.model.value, 'codex-model'); assert.equal(form.elements.reasoning_effort.value, 'xhigh');
   // A late response for an earlier account must not replace the current choices.
@@ -493,7 +471,7 @@ const openSetup = async () => {
   assert(catalogRequests.at(-1).signal.aborted, 'closing cancels catalog reads');
   // A failed load is retryable and keeps the saved preferences for that retry.
   catalogError = true;
-  click('默认帐号选择排序'); await flush();
+  click('新会话默认后端'); await flush();
   form = window.document.querySelector('dialog form');
   assert.match(form.querySelector('[data-backend-role-catalog]').textContent, /模型目录读取失败/);
   assert(form.querySelector('[type=submit]').disabled);
@@ -503,21 +481,12 @@ const openSetup = async () => {
   click('关闭');
   // Removed catalog entries are visible but cannot silently be resubmitted.
   runtimeCatalogs.codex = {models: ['replacement'], default_model: 'replacement', efforts_by_model: {}};
-  click('默认帐号选择排序'); await flush();
+  click('新会话默认后端'); await flush();
   form = window.document.querySelector('dialog form');
   assert(!form.elements.model.checkValidity());
   assert(form.elements.model.selectedOptions[0].disabled);
   change(form.elements.model, '');
   assert(form.reportValidity());
-  click('关闭');
-  // A stored empty priority is displayed as empty, never as an unsaved recommendation.
-  roles[0].backend_priority = [];
-  click('默认帐号选择排序'); await flush();
-  form = window.document.querySelector('dialog form');
-  assert.equal(form.querySelectorAll('[data-backend-priority-kind]').length, 0);
-  assert.match(form.querySelector('[data-backend-priority]').textContent, /尚未保存跨后端自动切换顺序/);
-  click('恢复推荐顺序');
-  assert(form.querySelectorAll('[data-backend-priority-kind]').length > 0);
   click('关闭');
   click('原生账号配置'); await flush();
   form = window.document.querySelector('dialog form');

@@ -460,7 +460,7 @@ def familize(lineage_id: str, resident_ids: Iterable[str], actor: str, *, title:
 
 
 def update_family(lineage_id: str, family_id: str, actor: str, *, add_member_ids=(), remove_member_ids=(),
-                  title=None, goal=None, route_threshold=None, review_interval_seconds=None, auto_migrate=None, auto_migrate_priority=None,
+                  title=None, goal=None, route_threshold=None, review_interval_seconds=None,
                   add_element_ids=(), remove_element_ids=()) -> dict:
     _, selected = facts.read_family(lineage_id, family_id, actor)
     family_id = selected["id"]
@@ -474,7 +474,7 @@ def update_family(lineage_id: str, family_id: str, actor: str, *, add_member_ids
         members = list(dict.fromkeys([rid for rid in family["members"] if rid not in removed] + added))
         validate_members(body, members, family_id=family_id)
         values = _values({key: family.get(key, []) if value is None else value for key, value in
-                          (("goal", goal), ("route_threshold", route_threshold), ("review_interval_seconds", review_interval_seconds), ("auto_migrate", auto_migrate), ("auto_migrate_priority", auto_migrate_priority))})
+                          (("goal", goal), ("route_threshold", route_threshold), ("review_interval_seconds", review_interval_seconds))})
         if title is not None and not str(title).strip():
             raise TemplateError("Family 名称不能为空")
         grouping = {"lineage_scope": family.get("lineage_scope", False), "family_id": family_id}
@@ -495,7 +495,7 @@ def update_family(lineage_id: str, family_id: str, actor: str, *, add_member_ids
                                 collect=bool(actually_added))
         ownership_only = bool(add_element_ids or remove_element_ids) and not (
             add_member_ids or remove_member_ids or any(value is not None for value in
-            (title, goal, route_threshold, review_interval_seconds, auto_migrate, auto_migrate_priority)))
+            (title, goal, route_threshold, review_interval_seconds)))
         if not ownership_only:
             reconcile_in_body(body, block, actor)
             if review_interval_seconds is not None:
@@ -665,12 +665,8 @@ class FamilizeKind:
                 "persistent": True, "roles": [{**copy.deepcopy(role), **settings[role["key"]]} for role in RESIDENT_ROLES]}
 
     def application_parameters(self, template: dict) -> list[dict]:
-        parameters = copy.deepcopy(template["parameters"])
-        if not any(parameter["name"] == "auto_migrate" for parameter in parameters):
-            parameters.append({"name": "auto_migrate", "type": "boolean",
-                               "default": template["body"].get("auto_migrate", True),
-                               "description": "自动迁移"})
-        return parameters
+        return [copy.deepcopy(p) for p in template["parameters"]
+                if p["name"] not in {"auto_migrate", "auto_migrate_priority"}]
 
     def editor(self) -> dict:
         return {"resident_roles": copy.deepcopy(RESIDENT_ROLES), "fields": [{"name": "role_templates", "type": "json", "label": "角色模板引用"}, {"name": "goal", "type": "text", "label": "共同目标"},

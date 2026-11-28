@@ -33,14 +33,10 @@ const template = JSON.parse(fs.readFileSync(0, 'utf8'));
       });
       await controller.apply(template.template_id,{kind:'selection',resident_ids:['resident_fixture']});
     }, template);
-    const checkbox = page.locator('[data-apply-parameter="auto_migrate"]');
-    assert.equal(await checkbox.count(), 1);
-    assert.equal(await checkbox.isChecked(), template.body.auto_migrate);
-    await checkbox.uncheck();
-    await page.locator('[data-template-dialog="apply"] button[type="submit"]').click();
+    assert.equal(await page.locator('[data-apply-parameter="auto_migrate"]').count(), 0);
     await page.waitForFunction(()=>applied.length===1);
-    assert.equal(await page.evaluate(()=>applied[0].parameters.auto_migrate), false);
+    assert.equal(await page.evaluate(()=>applied[0].parameters), undefined);
     assert.deepEqual(errors, []);
-    console.log(JSON.stringify(await page.evaluate(()=>applied[0].parameters)));
+    console.log(JSON.stringify(await page.evaluate(()=>applied[0].parameters || {})));
   } finally { await browser.close(); }
 })().catch(error=>{console.error(error);process.exitCode=1;});

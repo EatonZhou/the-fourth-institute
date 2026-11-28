@@ -25,14 +25,12 @@ RESIDENT_ROLES = [
 
 
 def values(values: Mapping) -> dict:
-    unknown = set(values) - {"goal", "route_threshold", "review_interval_seconds", "auto_migrate", "auto_migrate_priority"}
+    # Older persisted recipes include these two retired Family parameters.
+    values = {k: v for k, v in values.items() if k not in {"auto_migrate", "auto_migrate_priority"}}
+    unknown = set(values) - {"goal", "route_threshold", "review_interval_seconds"}
     if unknown:
         raise TemplateError("未知 Family 参数：" + "、".join(sorted(unknown)))
-    resolved = {"goal": "", "route_threshold": 60, "review_interval_seconds": 86400, "auto_migrate": True, "auto_migrate_priority": [], **values}
-    from management_portal.execution.account_migration_types import validate_priority
-    resolved["auto_migrate_priority"] = validate_priority(resolved["auto_migrate_priority"])
-    if type(resolved["auto_migrate"]) is not bool:
-        raise TemplateError("auto_migrate 必须是布尔值")
+    resolved = {"goal": "", "route_threshold": 60, "review_interval_seconds": 86400, **values}
     for name in ("route_threshold", "review_interval_seconds"):
         if isinstance(resolved[name], bool) or not isinstance(resolved[name], int):
             raise TemplateError(f"{name} 必须是整数")

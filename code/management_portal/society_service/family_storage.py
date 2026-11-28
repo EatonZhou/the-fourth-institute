@@ -114,9 +114,9 @@ def store_program(connection: Any, lineage_id: str, definition: dict, now: str) 
             (family_id,lineage_id,family["title"],family.get("goal", ""),family.get("previous_leader_id", ""),
              family.get("human_familizer_id", ""),family.get("route_threshold", 60),family.get("review_interval_seconds", 86400),
              family.get("lineage_scope", False),resource_id,block.get("created_at") or now,now))
-        connection.execute("""UPDATE families SET personal_ama_id=%s,history_before=%s,history_before_ordinal=%s,auto_migrate=%s,auto_migrate_priority=%s,independent_duties=%s,role_bindings=%s
+        connection.execute("""UPDATE families SET personal_ama_id=%s,history_before=%s,history_before_ordinal=%s,independent_duties=%s,role_bindings=%s
             WHERE family_id=%s""", (family.get("personal_ama_id", ""), family.get("history_before", ""),
-                                     family.get("history_before_ordinal", 0), family.get("auto_migrate", True), family.get("auto_migrate_priority", []), family.get("independent_duties", []), json_text(family.get('role_bindings', {})), family_id))
+                                     family.get("history_before_ordinal", 0), family.get("independent_duties", []), json_text(family.get('role_bindings', {})), family_id))
         roster = [(rid, "member") for rid in family.get("members", [])]
         roster.extend((family[role], role) for role in ROLES[1:] if family.get(role))
         if family.get("facade"):
@@ -149,7 +149,7 @@ def hydrate_programs(connection: Any, definitions: dict[str, dict]) -> None:
     # Named columns: a prepared SELECT * breaks on long-lived connections when a column is added.
     rows = connection.execute(f"SELECT {','.join(COLUMNS['families'])} FROM families WHERE lineage_id=ANY(%s) AND deleted_at IS NULL", (list(definitions),)).fetchall()
     families = {row["family_id"]: {key: value for key, value in dict(row).items()
-                                 if key not in {"family_id", "lineage_id", "deleted_at", "created_at", "updated_at"}} for row in rows}
+                                 if key not in {"family_id", "lineage_id", "deleted_at", "created_at", "updated_at", "auto_migrate", "auto_migrate_priority"}} for row in rows}
     for family in families.values():
         family['role_bindings'] = json_value(family['role_bindings'])
         family.update(members=[], facade="", steward="", router="")

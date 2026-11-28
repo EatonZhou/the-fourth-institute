@@ -3894,14 +3894,6 @@
                 ],
                 "description": "账号选择策略：auto 自动选择，fixed 固定当前账号；保存策略不立即切换已有 Session"
               },
-              "quota_switch_strategy": {
-                "type": "string",
-                "enum": [
-                  "legacy",
-                  "same_provider_model"
-                ],
-                "description": "旧客户端兼容字段。换号由本 Resident 的两个开关控制。"
-              },
               "auto_switch_on_quota": {
                 "type": "boolean",
                 "description": "同类型同模型自动换号。超过 20% 时选最空闲账号，否则选剩余额度最高的可用账号。新建和 fork 默认关闭。"
@@ -4932,14 +4924,6 @@
                   "fixed"
                 ],
                 "description": "账号选择策略：auto 自动选择，fixed 固定当前账号；保存策略不立即切换已有 Session"
-              },
-              "quota_switch_strategy": {
-                "type": "string",
-                "enum": [
-                  "legacy",
-                  "same_provider_model"
-                ],
-                "description": "旧客户端兼容字段。换号由本 Resident 的两个开关控制。"
               },
               "auto_switch_on_quota": {
                 "type": "boolean",

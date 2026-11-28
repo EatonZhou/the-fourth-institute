@@ -54,7 +54,6 @@ SETTINGS_FIELDS = {
     },
     "allow_subagents": {"type": "boolean"},
     "account_selection": {"type": "string", "enum": ["auto", "fixed"], "description": "账号选择策略：auto 自动选择，fixed 固定当前账号；保存策略不立即切换已有 Session"},
-    "quota_switch_strategy": {"type": "string", "enum": ["legacy", "same_provider_model"], "description": "旧客户端兼容字段。换号由本 Resident 的两个开关控制。"},
     "auto_switch_on_quota": {"type": "boolean", "description": "同类型同模型自动换号。超过 20% 时选最空闲账号，否则选剩余额度最高的可用账号。新建和 fork 默认关闭。"},
     "emergency_switch_on_quota": {"type": "boolean", "description": "同类型同模型账号不可用时，按本 Resident 的应急顺序换号。新建和 fork 默认关闭。"},
     "emergency_switch_order": {"type": "array", "items": {"type": "string"}, "description": "本 Resident 允许的应急账号种类 ID，按使用顺序排列，默认空数组。"},

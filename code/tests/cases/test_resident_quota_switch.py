@@ -137,7 +137,7 @@ def test_different_model_or_unconfirmed_support_yields_to_user_order(switching):
 
 def test_pinned_quota_restart_preserves_model_and_reuses_operation(switching):
     f = switching
-    f.record["execution_settings"].update(account_selection="fixed", model="default", quota_switch_strategy="same_provider_model")
+    f.record["execution_settings"].update(account_selection="fixed", model="default")
     f.accounts[1]["enabled"] = True
     assert quota.ensure_role_reserve(f.record, f.accounts)
     assert f.calls[0]["target_provider"] == "codex"
