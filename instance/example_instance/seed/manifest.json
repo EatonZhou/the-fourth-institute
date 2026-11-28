@@ -15841,8 +15841,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261018__decision__HATG_ISA：Family_内部机制指令__decision_b77fde81e7a0.md",
-      "sha256": "8c3a9994ee623376f6cc97145b4d8d02860e52d6892fdf02b0c0fe15b6d1e98b",
-      "size": 12889
+      "sha256": "26e584a9adbad287dc61599c7415e9535bfe51f79275b268d722e0c1c4b02fb0",
+      "size": 13146
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261018__decision__HATG_ISA：Mailbox_指令__decision_c54e68a82d7a.md",
@@ -15866,8 +15866,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261019__decision__Family_Router_与_Steward：Event、Effect_与_Prompt__decision_89b9df038a95.md",
-      "sha256": "60aef0ebd41a9107c62a7153eb77efa36a105c02c1e679434345c4a615cae339",
-      "size": 49003
+      "sha256": "ce035f7668787e4b05cab5ffbd77ff2a98c333729388ec7a791213e4a5de7d5d",
+      "size": 49111
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261019__decision__Family_消息路由与对外对话__decision_9ad68dd077d4.md",
@@ -15876,8 +15876,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261019__decision__Family_运行维护：记忆、队列与故障恢复__decision_a64b3ea2c3c5.md",
-      "sha256": "b025caed3858dfa7fb767a80ec9451a2581d2ca73018fa0fcea02744d871e50b",
-      "size": 31276
+      "sha256": "c39b213c3b50ac244ffaaec5aaffa68d29764f64bbf2bb2414e57366709ff869",
+      "size": 31488
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261019__decision__Portal_运行维护：安装、检查、发布与恢复__decision_ab9880dc4c9d.md",

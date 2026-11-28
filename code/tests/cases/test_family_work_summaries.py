@@ -361,3 +361,35 @@ def test_rollup_recognizes_real_session_admission_and_new_fresh_delivery(lineage
     assert new["notification_delivery"] == {"resident_id": steward, "status": "unsubmitted"}
     result = ok("DeliverMessage", {**target, "message": new["notification"], "context_policy": "fresh"}, actor=facade)
     assert lineage_program_resident_inputs.delivery_profile(lineage, result["message_id"])["isolated"] is True
+
+
+@pytest.mark.parametrize("status,recheck_id,expected", [
+    ("accepted", "first", "already_accepted"),
+    ("accepted", "different", None),
+    ("conflict", "first", None),
+    ("unsubmitted", "first", None),
+])
+def test_rollup_checks_exact_receipt_after_delivery_loses_race(status, recheck_id, expected):
+    from management_portal.society_service.family_definition import FAMILY_SUMMARY_ROLLUP_SCRIPT
+    from tests.cases.test_family_router_script import _run
+
+    def overview(message_id, delivery):
+        return {
+            "needs_update": True,
+            "notification": {"message_id": message_id, "content_parts": [{"type": "text", "text": "Rollup"}]},
+            "notification_delivery": {"resident_id": B, "status": delivery},
+        }
+
+    replies = iter([overview("first", "unsubmitted"), overview(recheck_id, status)])
+    result, calls = _run(FAMILY_SUMMARY_ROLLUP_SCRIPT, {"arguments": {"facade": C, "steward": B}}, {
+        "ListResidentStates": {"states": [{"state": {"work_state": "idle", "queued_count": 0}}]},
+        "GetFacadeSummaryInputs": lambda _args: next(replies),
+    }, failing={"DeliverMessage": "instruction.invalid_arguments"})
+    assert [name for name, _args in calls] == [
+        "ListResidentStates", "GetFacadeSummaryInputs", "DeliverMessage", "GetFacadeSummaryInputs",
+    ]
+    if expected:
+        assert result.status == "succeeded"
+        assert result.outputs == {"status": expected, "message_id": "first"}
+    else:
+        assert result.status == "failed"

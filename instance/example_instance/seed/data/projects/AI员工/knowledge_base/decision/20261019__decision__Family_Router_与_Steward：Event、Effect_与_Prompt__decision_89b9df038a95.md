@@ -146,7 +146,7 @@ Steward 收到 recovery 后，先核对原输入当前接手者和状态。关�
 | 业务成员完成一轮 | `member_done: resident.work_finished` 只 Watch 业务成员 → `check_summary → summary_check`：`GetResidentSummaries(resident_ids=[事件主体], include_maintenance=true)`，完成输入出现在 `missing_message_ids` 中即漏写 | 漏写时以 `DeliverMessage`（`attach_to_next`、稳定消息 ID）附加一条下轮提醒；失败、取消、纯维护轮次及 Router／Steward 跳过；已覆盖且 `consolidation.due=true` 时才进入共用归纳检查；需要时发 **P-summary** |
 | 每小时补查 | `summary_timer: time.reached(interval_seconds=3600)` → `request_summary → summary_rollup` | 检查业务成员到期归纳及门面来源变化，按需发同一 **P-summary**；同材料只投递一次，不是要求成员每小时重写 |
 
-**共用归纳检查**：`ListResidentStates(steward)` 确认 idle 且无排队 → `GetFacadeSummaryInputs(facade, overview_only=true)` → 仅 `needs_update=true` 时以门面身份 `DeliverMessage` 向 Steward 投递 summary 任务（使用该读取返回的 `notification`）。忙碌或材料未变则结束，不消耗模型轮次；Steward 忙碌而未投出的到期工作由后续小时检查补偿。消息 ID 由材料决定，已完成、失败或被停止的同材料任务不重投。
+**共用归纳检查**先用 `ListResidentStates(steward)` 确认 idle 且无排队，再读取 `GetFacadeSummaryInputs(facade, overview_only=true)`。没有待维护材料时直接结束。同批已由当前 Steward 受理时返回 `already_accepted`，保留原消息和处理状态。新批以门面身份用 `DeliverMessage` 投递 `notification`。投递失败后只复读一次，只有同一 ID、同一 Steward 的受理回执才能结束为 `already_accepted`，其余保留失败。忙碌而未投的到期工作由后续周期补查。定时触发的新批复用连线的独立上下文策略。
 
 Steward 的提交顺序：
 

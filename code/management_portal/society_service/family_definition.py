@@ -267,8 +267,16 @@ if [ -n "${inputs.notification_delivery.resident_id}" ]; then
     fail "摘要任务的固定消息 ID 缺少匹配的受理证据"
   fi
 fi
-sent=$(DeliverMessage resident_id="${arguments.steward}" business_ref="duty/family-work-summary" message:=${inputs.notification})
-output status="requested" message_id="${sent.message_id}"'''
+if sent=$(DeliverMessage resident_id="${arguments.steward}" business_ref="duty/family-work-summary" message:=${inputs.notification}); then
+  output status="requested" message_id="${sent.message_id}"
+  exit
+fi
+confirmed=$(GetFacadeSummaryInputs resident_id="${arguments.facade}" overview_only:=true)
+if [ "${confirmed.notification.message_id}" = "${inputs.notification.message_id}" ] && [ "${confirmed.notification_delivery.resident_id}" = "${arguments.steward}" ] && [ "${confirmed.notification_delivery.status}" = "accepted" ]; then
+  output status="already_accepted" message_id="${inputs.notification.message_id}"
+  exit
+fi
+fail "摘要任务投递未获同一批次的受理回执，详情见 DeliverMessage 回执"'''
 
 FAMILY_SUMMARY_CHECK_SCRIPT = r'''member="${event.subject_resident_id}"
 mid="${event.payload.message_id}"

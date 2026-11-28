@@ -109,7 +109,7 @@ Family 的成员关系是登记来源之一：Familize、UpdateFamily 改变成�
 
 `GetFacadeSummaryInputs(resident_id, overview_only?)` 读取门面摘要的来源，只有门面本身和对门面有管理权的调用者能读。默认返回 `title`、`goal`、`members`、`notices`（门面收下的最近告知，含正文，其指纹计入 `source_versions`）、`previous_summary`、`source_versions`、`needs_update`、`facade_needs_update`、`consolidation_due`。`consolidation_due` 只列到期业务成员的 `resident_id`、`revision`、`level`、`reason`，不带成员各层全文；承担团队运转角色的转交对象不进入归纳清单。内层门面不进入外层归纳待办。
 
-`overview_only=true` 仅返回门面 ID、是否需要更新、归纳待办和 `notification`，不返回成员全文、门面旧摘要或来源列表。`notification` 是可交给 `DeliverMessage` 的短入口，同小时同材料复用消息 ID。`needs_update` 为门面来源变化或存在到期待办。成员来源版本考虑内容、缺失、标题、名单和目标。比较来源版本需要对整张映射求差，脚本没有这种能力，所以由这条读取指令完成。
+`overview_only=true` 返回门面 ID、是否需要更新、归纳待办和 `notification`，并在有待办且确定当前 Steward 时返回 `notification_delivery`。概览省略成员全文、门面旧摘要及来源列表。`notification` 可直接交给 `DeliverMessage`。同一批材料始终复用同一消息 ID，跨小时也保持不变。`notification_delivery` 包含 `resident_id` 和 `status`。`unsubmitted` 表示暂无受理记录，`accepted` 表示当前 Steward 已受理该门面的同批摘要任务，`conflict` 表示身份或受理证据不匹配。`needs_update` 表示门面来源有变化或有到期待办，与该批任务是否已受理分别判断。来源版本考虑内容、缺失、标题、名单和目标。
 
 ## 重开门面的失败输入
 
