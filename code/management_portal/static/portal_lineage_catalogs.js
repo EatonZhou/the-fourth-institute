@@ -179,6 +179,16 @@
     if (catalog.backends.some(row => row.backend === current)) select.value = current;
   }
 
+  function populateCreationRoutes(select, definition, requested, defaultAccount) {
+    const routes = definition.routes || [];
+    const initial = routes.find(row => defaultAccount && row.account_id?.toLowerCase() === defaultAccount) || routes[0];
+    const selected = requested === undefined ? initial : routes.find(row => row.backend_route_id === requested);
+    select.replaceChildren(...routes.map(row => new Option(row.label, row.backend_route_id)));
+    if (!selected && routes.length) select.prepend(new Option(window.PortalI18n.t("选择账号"), ""));
+    select.value = selected?.backend_route_id || "";
+    return selected;
+  }
+
   function populateCreationBackends(select, catalog) {
     populateBackends(select, catalog);
     const choice = catalog?.creation_default;
@@ -207,17 +217,19 @@
     const sourceRoute = providerSelect.value === sourceProvider
       ? routes.find(row => row.backend_route_id === sourceAccount || row.account_id === sourceAccount)
       : null;
-    const selected = routes.find(row => account !== undefined && row.backend_route_id === account)
-      || sourceRoute || routes.find(row => row.backend_route_id === definition?.default_route) || routes[0];
+    const selected = account === undefined
+      ? sourceRoute || routes.find(row => row.backend_route_id === definition?.default_route) || routes[0]
+      : routes.find(row => row.backend_route_id === account);
     accountSelect.replaceChildren(...routes.map(row => new Option(
       `${row.label || row.account_id || definition.label}${row === sourceRoute ? "（来源账号）" : ""}`,
       row.backend_route_id,
     )));
+    if (!selected && routes.length) accountSelect.prepend(new Option(window.PortalI18n.t("选择账号"), ""));
     accountSelect.value = selected?.backend_route_id || "";
     accountSelect.dataset.sourceAccount = sourceRoute?.backend_route_id || "";
     accountSelect.disabled = !routes.length;
     return { provider: providerSelect.value, account: accountSelect.value, definition,
-      available: !!definition && routes.length > 0 };
+      selected: !!selected, available: !!definition && routes.length > 0 };
   }
 
   function invalidate(targets = null) {
@@ -241,6 +253,7 @@
     agentBackends,
     populateBackends,
     populateCreationBackends,
+    populateCreationRoutes,
     populateServiceTiers,
     renderForkProvider,
     invalidate,

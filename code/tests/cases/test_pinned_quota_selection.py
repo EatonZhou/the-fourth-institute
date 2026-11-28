@@ -1,7 +1,7 @@
 """Pinned subscription recovery preserves model and excludes unknown quota."""
 from copy import deepcopy
 
-from management_portal.execution.account_selection import same_model_candidates
+from management_portal.execution.account_selection import recommend_backend_routes, same_model_candidates
 from management_portal.society_service.resident_account_policy import fallback_account
 from tests.cases.test_account_selection import account, api_account
 
@@ -12,6 +12,18 @@ def test_highest_limiting_window_and_stable_tie():
     assert same_model_candidates([source, busy, fuller], source, model="model", effort="high")[0] == fuller
     tie = account("tie", 80)
     assert same_model_candidates([tie, fuller], source, model="model")[0] == fuller
+
+
+def test_manual_backend_recommends_only_offered_routes_and_keeps_empty_accounts():
+    routes = [{"account_id": name, "backend_route_id": name + "-route"} for name in ("busy", "idle", "empty")]
+    backend = {"routes": routes}
+    for busy_quota, idle_quota, expected in [(95, 21, "idle-route"), (95, 20, "busy-route"),
+                                             (18, 19, "idle-route"), (0, 0, None)]:
+        busy = dict(account("busy", busy_quota), active_count=1, max_concurrency=2)
+        samples = [busy, account("idle", idle_quota), account("empty", 0), account("other", 100)]
+        recommend_backend_routes([backend], samples)
+        assert backend["recommended_route"] == expected
+        assert len(backend["routes"]) == 3
 
 
 def test_scope_and_evidence_are_required():

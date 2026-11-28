@@ -30,11 +30,11 @@ const service = window.PortalResidentService.createClient({api: {get: async () =
   let revision = 'r1', config, writes = [], settings = {model: 'm'};
   const controller = window.PortalResidentRuntimeController.create({service: {
     projection: async () => ({resident: {backend: 'codex'}, execution_account: {account_id: 'two'}, allows: {RestartSession: true, UpdateResidentSettings: true}, chat_workspace: {actions: {runtime_settings: {}}}}),
-    runtimeSettings: async () => ({settings, settings_revision: revision, application: {items: [{status: 'unknown'}]}}),
+    runtimeSettings: async () => ({settings, runtime_settings_access: 'available', runtime_settings_resident_id: 'r1', runtime_settings_revision: revision, application: {items: [{status: 'unknown'}]}}),
     runtimeCatalog: async () => ({models: ['m', 'm2']}), observeSessionRestart: () => () => {}, sessionRestartOptions: async () => ({source: {provider: 'codex', account_id: 'two'}}),
     updateRuntimeSettings: async (_id, changes, key, expected) => {
       writes.push({changes, key, expected}); if (expected !== revision) throw Object.assign(new Error('conflict'), {status: 409});
-      settings = {...settings, ...changes}; revision = 'r3'; return {settings, settings_revision: revision};
+      settings = {...settings, ...changes}; revision = 'r3'; return {settings, runtime_settings_access: 'available', runtime_settings_resident_id: 'r1', runtime_settings_revision: revision};
     },
   }, dialogs: {restart: () => ({open: value => {config = value;}, close() {}, destroy() {}})}});
   const handle = controller.bind('r1'); await handle.openSettings();

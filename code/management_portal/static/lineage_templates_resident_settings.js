@@ -93,7 +93,8 @@
           if (event.target.dataset.setting === 'provider') {
             if (event.target.value) chosen.provider = event.target.value;
             else delete chosen.provider;
-            chosen.account = ''; chosen.settings = {};
+            const backend = config.residentSettingsOptions?.()?.backends?.find(row => row.backend === chosen.provider);
+            chosen.account = backend?.recommended_route || ''; chosen.settings = {};
           }
           if (event.target.dataset.setting === 'account') { chosen.account = event.target.value; chosen.settings = {}; }
           if (['provider', 'account'].includes(event.target.dataset.setting)) {

@@ -3,6 +3,7 @@ const assert = require('node:assert/strict'), fs = require('node:fs'), path = re
 const {JSDOM} = require('jsdom');
 const w = new JSDOM('<body></body>', {url: 'https://fixture.invalid', runScripts: 'outside-only'}).window;
 const root = path.resolve(__dirname, '../../../management_portal/static');
+Object.defineProperty(w.navigator, 'languages', {value: ['zh-CN']});
 w.CSS = {escape: value => value};
 w.matchMedia = () => ({matches: false, addEventListener() {}, removeEventListener() {}});
 for (const name of ['portal_text', 'portal_state', 'portal_translations', 'portal_i18n', 'portal_ui_primitives', 'portal_overlay', 'portal_ui', 'portal_model_api_settings', 'chat_workspace_runtime_settings']) w.eval(fs.readFileSync(path.join(root, name + '.js'), 'utf8'));
@@ -40,13 +41,13 @@ w.PortalUI.toast = (message, tone) => toasts.push([message, tone]);
   w.PortalResidentService = {runtimeAccounts: async () => ({accounts: []}), runtimeCatalog: async () => catalog,
     observeSessionRestart: (_id, callback) => {observe = callback; return () => {};}};
   const config = {resident_id: 'fixture', runtime_settings: {model: 'm'}, runtime_catalog: catalog,
-    source: pending.source, providers: [{id: 'codex'}, {id: 'claude'}], accounts: {
+    source: pending.source, providers: [{id: 'codex', recommended_route: 'codex_two'}, {id: 'claude', recommended_route: 'claude_one'}], accounts: {
       codex: [{id: 'codex_two', context_options: [{id: 'preserve', label: '完整上下文', enabled: true}]}],
       claude: [{id: 'claude_one', context_options: [{id: 'preserve', enabled: true, description: '继承完整有效上下文。'}]}]}};
   for (const inline of [false, true]) {
     const selection = api.createRuntimePanel({inline});
     w.document.body.append(selection.element);
-    selection.open({...config, accounts: {...config.accounts, claude: [
+    selection.open({...config, providers: [{id: 'codex', recommended_route: 'codex_two'}, {id: 'claude', recommended_route: null}], accounts: {...config.accounts, claude: [
       {id: 'claude_one', context_options: [
         {id: 'preserve', label: '完整上下文', enabled: true, description: '首条真实输入继承完整上下文'}]},
       {id: 'claude_two', context_options: []},

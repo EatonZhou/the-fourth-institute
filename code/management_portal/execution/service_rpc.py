@@ -102,6 +102,14 @@ def runtime_catalog(server: Any, params: dict[str, Any]) -> Any:
         backend=str(params.get("backend") or ""),
         include_backends=bool(params.get("include_backends")),
     )
+    if catalog.get("backends"):
+        from .account_selection import recommend_backend_routes
+        try:
+            samples = server.quota_monitor.snapshot()["accounts"]
+        except Exception:  # The manual picker remains usable without monitor observations.
+            LOGGER.warning("Account recommendations unavailable", exc_info=True)
+            samples = []
+        recommend_backend_routes(catalog["backends"], samples)
     try:
         return provider_default_efforts.apply(server.scheduler.changes, catalog)
     except Exception:  # noqa: BLE001 - the catalog stands without the observed defaults

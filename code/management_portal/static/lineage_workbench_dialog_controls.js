@@ -112,7 +112,8 @@
     });
     $id("residentForkProviderInput").addEventListener("change", event => {
       state.residentForkCreate.provider = event.target.value;
-      state.residentForkCreate.backendRouteId = undefined;
+      const backend = state.residentForkCreate.catalog?.backends?.find(row => row.backend === event.target.value);
+      state.residentForkCreate.backendRouteId = backend?.recommended_route ?? null;
       renderResidentForkAccount();
     });
     $id("crossLineageForkForm").addEventListener("submit", submitCrossLineageFork);

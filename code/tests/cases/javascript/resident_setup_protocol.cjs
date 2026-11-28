@@ -26,7 +26,7 @@ const contextOptions = [
 ];
 const config = {resident_id: 'fixture', choose_runtime_settings: true, runtime_settings: {model: 'm'}, runtime_catalog: catalog,
   source: {provider: 'codex', account_id: 'two', has_session: true},
-  providers: [{id: 'codex', label: 'Codex'}, {id: 'claude', label: 'Claude'}],
+  providers: [{id: 'codex', label: 'Codex', recommended_route: 'three'}, {id: 'claude', label: 'Claude', recommended_route: null}],
   accounts: {codex: [{id: 'two', account_id: 'codex_two', label: 'two', context_options: contextOptions}, {id: 'three', account_id: 'codex_three', label: 'three', context_options: contextOptions}], claude: [{id: 'one', account_id: 'claude_one', label: 'one', context_options: contextOptions}]},
   onSave: async values => {saves.push(values); return {settings: values};}};
 const flush = async () => {for (let i = 0; i < 8; i++) await new Promise(resolve => setTimeout(resolve, 0));};
@@ -64,7 +64,13 @@ const plain = value => JSON.parse(JSON.stringify(value));
   assert.equal(saves[0].account_selection, undefined, 'unsupported account selection never reaches the mutation');
   assert.equal(Object.hasOwn(saves[0], 'permission_preset'), false, 'the shown default is not a change');
   dialog.open(config, async values => {changes.push(plain(values)); return {status: 'accepted', restart_id: 'op1'};}); await flush();
-  select('[data-session-target]', JSON.stringify(['codex', 'three'])); await flush();
+  select('[data-session-backend]', 'claude'); await flush();
+  const target = w.document.querySelector('[data-session-target]');
+  assert.equal(target.value, '', 'no positive quota leaves even a sole account unselected');
+  select('[data-session-target]', JSON.stringify(['claude', 'one'])); await flush();
+  assert.equal(submit.disabled, false, 'an explicit exhausted account is selectable');
+  select('[data-session-backend]', 'codex'); await flush();
+  assert.equal(target.value, JSON.stringify(['codex', 'three']), 'changing back uses the recommendation');
   assert.doesNotMatch(submit.textContent, /^(保存|Save)$/, 'another account turns the action into a switch');
   click('[data-session-restart-submit]'); await flush();
   assert.equal(changes.length, 1);

@@ -94,6 +94,31 @@ def account_load(account):
     return occupied / max(1, account.get("max_concurrency") or 1)
 
 
+def quota_rank(account: Mapping[str, Any]) -> tuple[int, float, float] | None:
+    """Rank accounts with a free slot and observed positive quota."""
+    if (not available(account) or
+            (account.get("kind") == "subscription_login" and account.get("login_state") != "logged_in")):
+        return None
+    remaining = headroom(account)
+    load = account_load(account)
+    if remaining is None or remaining <= 0 or load >= 1:
+        return None
+    threshold = (account.get("quota_reserve") or {}).get("close_threshold") or {}
+    if remaining > 20 and threshold.get("metric") != "balance":
+        return (0, load, -remaining)
+    return (1, -remaining, load)
+
+
+def recommend_backend_routes(backends: list[dict], accounts: list[dict]) -> None:
+    """Annotate each offered backend without removing manually selectable routes."""
+    ranks = {account["account_id"]: rank for account in accounts
+             if (rank := quota_rank(account)) is not None}
+    for backend in backends:
+        choices = [route for route in backend["routes"] if route["account_id"] in ranks]
+        selected = min(choices, key=lambda r: (ranks[r["account_id"]], r["account_id"]), default=None)
+        backend["recommended_route"] = selected["backend_route_id"] if selected else None
+
+
 def same_model_candidates(accounts: list[dict], source: Mapping[str, Any], *, model: str,
                           effort: str = "", excluded=()) -> list[dict]:
     """Prefer idle capacity above 20%; below that line conserve the fullest account."""
@@ -101,20 +126,13 @@ def same_model_candidates(accounts: list[dict], source: Mapping[str, Any], *, mo
     for account in accounts:
         catalog = account.get("selection_catalog") or {}
         if (not compatible(account, source) or account["account_id"] in excluded
-                or (account.get("kind") == "subscription_login" and account.get("login_state") != "logged_in")
-                or not available(account) or catalog.get("fresh") is not True
+                or catalog.get("fresh") is not True
                 or not model or model not in catalog.get("models", [])):
             continue
-        quota = account.get("quota_reserve") or {}
-        remaining = headroom(account)
-        load = account_load(account)
-        if remaining is None or remaining <= 0 or load >= 1:
+        rank = quota_rank(account)
+        if rank is None:
             continue
         other_effort = bool(effort and effort not in (catalog.get("efforts_by_model") or {}).get(model, []))
-        if remaining > 20 and (quota.get("close_threshold") or {}).get("metric") != "balance":
-            rank = (0, load, -remaining)
-        else:
-            rank = (1, -remaining, load)
         ranked.append(((*rank, other_effort, account["account_id"]), account))
     return [account for _, account in sorted(ranked, key=lambda item: item[0])]
 

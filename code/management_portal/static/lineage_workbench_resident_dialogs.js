@@ -143,7 +143,7 @@
       const definition = residentRuntimeDefinition();
       const routes = definition.routes || [];
       const selected = $id("residentRouteSelect")?.value || "";
-      const route = routes.find(row => row.backend_route_id === selected) || routes[0] || {};
+      const route = routes.find(row => row.backend_route_id === selected);
       return { ...definition, ...window.PortalLineageCatalogs.routeRuntimeCatalog(route, refreshOpenResidentRegistrationOptions) };
     }
 
@@ -205,16 +205,13 @@
       const fields = definition.runtime_settings || [];
       const routes = definition.routes || [];
       const routeSelect = $id("residentRouteSelect");
-      const previousRoute = residentCreationChoice?.backend_route_id || (state.residentRouteChosen ? routeSelect?.value || "" : "");
       if (routeSelect) {
-        routeSelect.replaceChildren(...routes.map(route => new Option(route.label, route.backend_route_id)));
-        // The route is the one account the Resident uses. Until the user picks one, a
-        // Codex Resident starts on the account a new session uses by default.
+        const changedBackend = event?.target === $id("residentBackendSelect");
+        const requested = changedBackend ? definition.recommended_route ?? null
+          : residentCreationChoice?.backend_route_id ?? (state.residentRouteChosen ? routeSelect.value : undefined);
+        if (changedBackend) state.residentRouteChosen = true;
         const defaultAccount = residentAccountConfig().enabled ? residentAccountConfig().defaultAccountId : "";
-        const preferred = routes.some(route => route.backend_route_id === previousRoute)
-          ? previousRoute
-          : routes.find(route => defaultAccount && String(route.account_id || "").toLowerCase() === defaultAccount)?.backend_route_id;
-        if (preferred) routeSelect.value = preferred;
+        window.PortalLineageCatalogs.populateCreationRoutes(routeSelect, definition, requested, defaultAccount);
         routeSelect.required = routes.some(row => row.backend_route_id);
         routeSelect.disabled = !routeSelect.required;
         $id("residentRouteField").hidden = !routeSelect.required;
@@ -474,9 +471,10 @@
         modal.backendRouteId = selection.account;
       }
       $id("residentForkCreateBody").querySelectorAll("[data-fork-create-action]").forEach(button => {
-        button.disabled = !ready || (button.dataset.forkCreateAction === "compacted" && !selection.definition?.seeded_compaction);
+        button.disabled = !ready || !selection.selected || (button.dataset.forkCreateAction === "compacted" && !selection.definition?.seeded_compaction);
       });
       hint.textContent = modal.loading ? window.PortalI18n.t("正在读取 Provider 和账号…")
+        : ready && !selection.selected ? window.PortalI18n.t("选择账号")
         : ready ? window.PortalI18n.t("在所选 Provider 和账号建立独立会话，继承所选上下文。")
           : window.PortalI18n.t("该 Provider 暂无可用账号。");
     }

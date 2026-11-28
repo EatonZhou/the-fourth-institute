@@ -387,4 +387,9 @@ def resolve_account_configuration(provider: str, backend_route_id: str = "", *, 
 
 
 def runtime_configuration_catalog() -> dict[str, Any]:
-    return default_execution_accounts(tolerate_unavailable=True).runtime_catalog(include_backends=True)
+    from .service import get_execution_service
+    from .transport import ExecutionServiceUnavailable
+    try:
+        return get_execution_service().runtime_catalog(include_backends=True)
+    except ExecutionServiceUnavailable:
+        return default_execution_accounts(tolerate_unavailable=True).runtime_catalog(include_backends=True)

@@ -668,20 +668,19 @@
         if (result?.configuration_only === true) window.PortalUI.toast(sessionConfigurationSavedText(result), "success");
         done({accepted: true});
       };
-      // The account list follows the chosen backend; returning to the current
-      // backend preselects the current account.
-      const fillAccounts = provider => {
+      const fillAccounts = (provider, backendChanged = false) => {
         const choices = (current.accounts?.[provider] || []).map(row =>
           new Option(row.label || row.account_id || row.id, JSON.stringify([provider, row.id])));
         target.replaceChildren(new Option(window.PortalI18n.t("选择账号"), ""), ...choices);
         const sourceAccount = provider === current.source?.provider
           && current.accounts?.[provider]?.find(row => row.id === current.source.account_id || row.account_id === current.source.account_id);
-        target.value = sourceAccount ? JSON.stringify([provider, sourceAccount.id])
-          : choices.length === 1 ? choices[0].value : "";
+        const recommended = current.providers?.find(row => row.id === provider)?.recommended_route;
+        const route = backendChanged ? recommended : sourceAccount?.id;
+        target.value = route ? JSON.stringify([provider, route]) : "";
       };
       element.addEventListener("change", event => {
         if (event.target === backend) {
-          fillAccounts(backend.value);
+          fillAccounts(backend.value, true);
           if (backend.value === "provider_api") policy.value = "fixed";
         }
         if (event.target === target || event.target === backend || event.target === policy) {

@@ -286,6 +286,7 @@ def get_resident_restart_options(
                                  "scope": "target_session"},
         "preservation_capabilities": preservation.preservation_capabilities(),
         "providers": [{"id": row["provider"], "label": row.get("label", row["provider"]),
+                       "recommended_route": row.get("recommended_route"),
                        "operations": row.get("operations", []), "account_selection": row.get("account_selection", {})} for row in catalog],
         "accounts": {row["provider"]: [{"id": route["backend_route_id"], "account_id": route.get("account_id", ""), "label": route["label"],
                                       "context_options": preservation.context_options(source_snapshot, row["provider"], route["backend_route_id"], has_context=has_context)} for route in row["routes"]]

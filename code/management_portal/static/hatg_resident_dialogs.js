@@ -68,16 +68,12 @@
       const model = $id("nodeModelSelect");
       const effort = $id("nodeEffortSelect");
       if (!route || !model || !effort) return;
-      const previousRoute = nodeCreationChoice?.backend_route_id || (state.nodeRouteChosen ? route.value : "");
-      route.replaceChildren(...routes.map(item => new Option(item.label, item.backend_route_id)));
-      // The route is the one account the new Resident uses. Until the user picks one, a
-      // Provider that selects accounts for Residents starts on the account a new session uses by default.
+      const changedBackend = event?.target === $id("nodeBackendSelect");
+      const requested = changedBackend ? definition.recommended_route ?? null
+        : nodeCreationChoice?.backend_route_id ?? (state.nodeRouteChosen ? route.value : undefined);
+      if (changedBackend) state.nodeRouteChosen = true;
       const defaultAccount = definition.account_selection?.enabled ? nodeAccountConfig().defaultAccountId : "";
-      const preferred = routes.some(item => item.backend_route_id === previousRoute)
-        ? previousRoute
-        : routes.find(item => defaultAccount && String(item.account_id || "").toLowerCase() === defaultAccount)?.backend_route_id;
-      if (preferred) route.value = preferred;
-      const selected = routes.find(item => item.backend_route_id === route.value);
+      const selected = window.PortalLineageCatalogs.populateCreationRoutes(route, definition, requested, defaultAccount);
       const selectedBackend = $id("nodeBackendSelect").value, selectedRoute = route.value;
       const catalog = window.PortalLineageCatalogs.routeRuntimeCatalog(selected, renderNodeProviderFields, error => {
         if ($id("nodeBackendSelect").value !== selectedBackend || route.value !== selectedRoute) return;
@@ -113,7 +109,7 @@
       status.textContent = window.PortalI18n.t("正在加载…");
       if (!state.nodeSubmitBusy) {
         $id("nodeFormError").hidden = true;
-        if (fields.includes("model") && !state.nodeCatalogPending && !model.value) {
+        if (selected && fields.includes("model") && !state.nodeCatalogPending && !model.value) {
           $id("nodeFormError").textContent = window.PortalI18n.t("没有可用模型");
           $id("nodeFormError").hidden = false;
         }
@@ -499,6 +495,11 @@
       if (!field || field.hidden || !select || !hint) return;
       const accountId = String(select.value || "").trim();
       const sourceAccountId = String(select.dataset.sourceAccount || "").trim();
+      $id("branchSubmitBtn").disabled = !accountId;
+      if (!accountId && select.options.length) {
+        hint.textContent = window.PortalI18n.t("选择账号");
+        return;
+      }
       if (!select.options.length) {
         hint.textContent = window.PortalI18n.t("该 Provider 暂无可用账号。");
         return;
@@ -526,6 +527,7 @@
       } : {provider};
       const selection = window.PortalLineageCatalogs.renderForkProvider({
         ...branchSourceSnapshot, ...initial,
+        ...(provider ? {account: catalog.backends.find(row => row.backend === provider)?.recommended_route ?? null} : {}),
         providerSelect: $id("branchProviderInput"), accountSelect: $id("branchAccountInput"),
       });
       const compacted = $id("branchModeChoices").querySelector('[value="compacted"]');

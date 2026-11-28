@@ -11,7 +11,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
 (async () => {
   const browser = await chromium.launch({headless: true, ...(process.env.PORTAL_TEST_CHROMIUM ? {executablePath: process.env.PORTAL_TEST_CHROMIUM} : {})});
   try {
-    const page = await browser.newPage({viewport: {width: 1200, height: 900}});
+    const page = await browser.newPage({locale: 'zh-CN', viewport: {width: 1200, height: 900}});
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.route('**/*', route => {
@@ -161,15 +161,17 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
         providers: [...config().providers, {id: 'antigravity'}, {id: 'provider_api'}].map(row => ({...row, account_selection: {enabled: row.id !== 'provider_api'}})),
         accounts: {...config().accounts, antigravity: [{id: 'antigravity_one', context_options: config().accounts.claude[0].context_options}],
           provider_api: [{id: 'api_one'}, {id: 'api_two'}]}});
-      openSettings(selectionConfig());
+      const initial = selectionConfig();
+      initial.providers.find(row => row.id === 'codex').recommended_route = 'two';
+      openSettings(initial);
     });
     await page.selectOption('[data-session-backend]', 'codex');
     await page.waitForFunction(() => !document.querySelector('[data-target-editor-host]').hidden);
-    assert.equal(await page.locator('[data-session-target]').inputValue(), '');
+    assert.equal(await page.locator('[data-session-target]').inputValue(), JSON.stringify(['codex', 'two']));
     assert.equal(await page.locator('[data-runtime-editor="current"]').isVisible(), false);
     assert.doesNotMatch(await page.locator('[data-runtime-editor="target"] [data-runtime-setting="model"]').innerText(), /gemini/);
     assert.match(await page.locator('[data-runtime-editor="target"] [data-runtime-setting="model"]').innerText(), /codex-model/);
-    assert.equal(await page.locator('[data-session-restart-submit]').isDisabled(), true, 'fixed mode requires an account');
+    assert.equal(await page.locator('[data-session-restart-submit]').isDisabled(), false, 'fixed mode can submit the preselected account');
     await page.selectOption('[data-session-policy]', 'auto');
     await page.waitForFunction(() => !document.querySelector('[data-session-restart-submit]').disabled);
     assert.equal(await page.locator('[data-session-target]').isVisible(), false, 'auto mode does not ask for an account');
