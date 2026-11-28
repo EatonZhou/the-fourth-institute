@@ -77,7 +77,7 @@ def test_schemes_stay_editable_while_the_permission_system_is_off(off):
     assert all(system["allows"].values())
     assert {key: system["scheme"][key] for key in ("scheme_id", "version", "builtin")} == {
         "scheme_id": "default", "version": 0, "builtin": True}
-    assert call("CreatePermissionScheme", scheme_id="team", rules=rules(), dry_run=True) == {
+    assert call("GetPermissionSchemeCreatePreview", scheme_id="team", rules=rules()) == {
         "valid": True, "errors": [], "unmapped": []}
     created = call("CreatePermissionScheme", scheme_id="team", rules=rules())
     assert (created["scheme_id"], created["version"]) == ("team", 1) and created["entries"] > 0
@@ -110,15 +110,15 @@ def test_schemes_stay_editable_while_the_permission_system_is_off(off):
 
 
 def test_changing_rules_regenerates_the_instance_and_reports_the_lost_edits(off):
-    """修改规则即重新生成实例，dry_run 报告增删与将丢失的手工修改
+    """修改规则即重新生成实例，预览 报告增删与将丢失的手工修改
 
-    删掉“全员可管理公共内容”规则后，dry_run 列出将删除的表项，以及手工加的、删掉的和停用的表项（重新生成时丢失），实例不变；
+    删掉“全员可管理公共内容”规则后，预览 列出将删除的表项，以及手工加的、删掉的和停用的表项（重新生成时丢失），实例不变；
     保存后实例按新规则生成：手工修改都不在了，临时凭证保留。只改标题不重新生成，手工修改保留。
     """
     call("CreatePermissionScheme", scheme_id="team", rules=rules())
     call("CreatePermissionEntry", scheme_id="team", p="carol", a="@viewer", r="personal_space:alice")
     fixed = call("ListPermissionEntries", scheme_id="team", p="@members", a="@admin", r="@projects")["entries"]
-    call("DeletePermissionEntry", scheme_id="team", entry_id=fixed[0]["entry_id"])
+    call("DeletePermissionEntry", scheme_id="team", entry_ids=[fixed[0]["entry_id"]])
     [own] = call("ListPermissionEntries", scheme_id="team", p=PROJECT, r=PROJECT)["entries"]
     call("UpdatePermissionEntry", scheme_id="team", entry_id=own["entry_id"], expected_version=1, disabled=True)
     store = off.schemes.store.scoped("team")
@@ -131,7 +131,7 @@ def test_changing_rules_regenerates_the_instance_and_reports_the_lost_edits(off)
     changed = rules(title="团队")
     del changed["entries"][position(changed, "everyone_manages_public")]
     before = contents("team")
-    report = call("UpdatePermissionScheme", scheme_id="team", rules=changed, dry_run=True)
+    report = call("GetPermissionSchemeUpdatePreview", scheme_id="team", rules=changed)
     assert report["valid"] is True and report["regenerates"] is True and contents("team") == before
     diff = report["diff"]
     assert {"effect": "permit", "p": "@principals", "a": "@admin", "r": "@public", "disabled": False} in diff["removed"]["items"]
@@ -146,7 +146,7 @@ def test_changing_rules_regenerates_the_instance_and_reports_the_lost_edits(off)
     assert ("permit", "@members", "@admin", "@projects") in after
     assert call("ListPermissionEntries", scheme_id="team", p=PROJECT, r=PROJECT)["entries"][0]["disabled"] is False
     assert call("ListPermissionEntries", scheme_id="team", temporary=True, **EVERYTHING)["total"] == 1
-    assert call("UpdatePermissionScheme", scheme_id="team", rules=changed, dry_run=True)["regenerates"] is False
+    assert call("GetPermissionSchemeUpdatePreview", scheme_id="team", rules=changed)["regenerates"] is False
 
 
 def test_entries_are_checked_for_nodes_only(off):
@@ -179,7 +179,7 @@ def test_entries_are_checked_for_nodes_only(off):
     loan = Entry(new_entry_id(), PERMIT, "carol", "@viewer", LINEAGE, expires_at=4102444800.0)
     with store.transaction() as connection:
         store.add(connection, [loan])
-    assert refused("DeletePermissionEntry", scheme_id="team", entry_id=loan.entry_id).code == "instruction.conflict"
+    assert refused("DeletePermissionEntry", scheme_id="team", entry_ids=[loan.entry_id]).code == "instruction.conflict"
 
 
 def test_entries_are_listed_by_node_and_scope(off):
@@ -224,22 +224,22 @@ def test_entries_are_listed_by_node_and_scope(off):
 
 
 def test_schemes_report_the_instructions_they_leave_unmapped(off):
-    """方案读取与 dry_run 列出没有映射的指令
+    """方案读取与 预览 列出没有映射的指令
 
-    默认方案映射全部指令；去掉两条映射后，dry_run 创建与启用、GetPermissionScheme 都按名称列出它们，编译失败的 dry_run 也列出。
+    默认方案映射全部指令；去掉两条映射后，预览 创建与启用、GetPermissionScheme 都按名称列出它们，编译失败的 预览 也列出。
     """
     assert call("GetPermissionScheme", scheme_id="default")["unmapped"] == []
     partial = rules()
-    del partial["instructions"]["RunScript"], partial["instructions"]["PublishRelease"]
-    assert call("CreatePermissionScheme", scheme_id="team", rules=partial, dry_run=True)["unmapped"] == ["PublishRelease", "RunScript"]
+    del partial["instructions"]["RunScript"], partial["instructions"]["CreateLineage"]
+    assert call("GetPermissionSchemeCreatePreview", scheme_id="team", rules=partial)["unmapped"] == ["CreateLineage", "RunScript"]
     broken = copy.deepcopy(partial)
     broken["entries"][0]["a"] = "@nowhere"
-    report = call("CreatePermissionScheme", scheme_id="team", rules=broken, dry_run=True)
-    assert report["valid"] is False and report["unmapped"] == ["PublishRelease", "RunScript"]
+    report = call("GetPermissionSchemeCreatePreview", scheme_id="team", rules=broken)
+    assert report["valid"] is False and report["unmapped"] == ["CreateLineage", "RunScript"]
     call("CreatePermissionScheme", scheme_id="team", rules=partial)
-    assert call("GetPermissionScheme", scheme_id="team")["unmapped"] == ["PublishRelease", "RunScript"]
-    assert call("UpdatePermissionScheme", scheme_id="team", rules=rules(), dry_run=True)["unmapped"] == []
-    assert call("ActivatePermissionScheme", scheme_id="team", dry_run=True)["unmapped"] == ["PublishRelease", "RunScript"]
+    assert call("GetPermissionScheme", scheme_id="team")["unmapped"] == ["CreateLineage", "RunScript"]
+    assert call("GetPermissionSchemeUpdatePreview", scheme_id="team", rules=rules())["unmapped"] == []
+    assert call("GetPermissionSchemeActivationPreview", scheme_id="team")["unmapped"] == ["CreateLineage", "RunScript"]
 
 
 def test_a_scheme_activated_while_off_is_completed_when_turned_on(off):
@@ -255,7 +255,7 @@ def test_a_scheme_activated_while_off_is_completed_when_turned_on(off):
     assert planned["activated"] is True and planned["regenerate"] is False
     assert (planned["added_nodes"], planned["removed_nodes"]) == (2, 0) and planned["added_entries"] > 0
     assert ("permit", "LaterProject", "@admin", "LaterProject") not in contents("team")
-    assert call("ActivatePermissionScheme", scheme_id="default", dry_run=True)["activated"] is False
+    assert call("GetPermissionSchemeActivationPreview", scheme_id="default")["activated"] is False
 
     assert call("GetPermissionSystem")["scheme"]["scheme_id"] == "team"
     current = call("GetPermissionScheme")
@@ -292,7 +292,7 @@ def test_a_builtin_scheme_is_used_as_it_is_and_a_release_keeps_its_edits(off, mo
     assert disabled["allows"] == {"UpdatePermissionEntry": True, "DeletePermissionEntry": True}
     call("UpdatePermissionEntry", scheme_id="default", entry_id=disabled["entry_id"], expected_version=1, disabled=True)
     [deleted] = call("ListPermissionEntries", scheme_id="default", p="@principals", a="@message", r="@portal")["entries"]
-    call("DeletePermissionEntry", scheme_id="default", entry_id=deleted["entry_id"])
+    call("DeletePermissionEntry", scheme_id="default", entry_ids=[deleted["entry_id"]])
     loan = call("CreateTemporaryCredential", principal_id="carol", a="@viewer", resource_id=LINEAGE, expires_in_seconds=3600)
     call("CreatePermissionScheme", scheme_id="team", source_scheme_id="default")
     copied = off.store.scoped("team").instance()
@@ -331,7 +331,7 @@ def test_a_builtin_scheme_is_used_as_it_is_and_a_release_keeps_its_edits(off, mo
 def test_activating_before_the_startup_merge_keeps_the_builtin_edits(off, monkeypatch):
     """启动写回之前（或写回失败后）启用内置方案或开启开关，同样写回实例中的编辑，记为 last_merge
 
-    发布改变默认方案的规则后，ResourceService 还没跟随（启动预热中，或跟随失败）时，ActivatePermissionScheme 的 dry_run
+    发布改变默认方案的规则后，ResourceService 还没跟随（启动预热中，或跟随失败）时，ActivatePermissionScheme 的 预览
     报告写回的结果而不写入；开启开关（prepare_active）按新规则重新生成并写回增加的行，写回连同授权差记为 last_merge，
     之后启动跟随无事可做。7a4a 审查 c6eb4deb 时复现：整套重新生成，增加的行丢失且没有记录。
     """
@@ -349,7 +349,7 @@ def test_activating_before_the_startup_merge_keeps_the_builtin_edits(off, monkey
     monkeypatch.setattr(permission_system, "_IMPLEMENTATION", PARPermissions())
     assert PARPermissions().stale_builtin() == ["default"]
 
-    preview = call("ActivatePermissionScheme", scheme_id="default", dry_run=True)
+    preview = call("GetPermissionSchemeActivationPreview", scheme_id="default")
     assert preview["regenerate"] is True and preview["unrestored"] == [] and preview["restored_entries"] >= 1
     assert PARPermissions().stale_builtin() == ["default"] and call("GetPermissionScheme", scheme_id="default").get("last_merge") is None
 
@@ -364,8 +364,7 @@ def test_activating_before_the_startup_merge_keeps_the_builtin_edits(off, monkey
     assert ResourceService.ensure_permission_instance(service) is None
 
 
-@pytest.mark.parametrize("dry_run", [False, True])
-def test_activating_while_another_process_follows_the_release_brings_the_instance_up_to_date(off, monkeypatch, dry_run):
+def test_activating_while_another_process_follows_the_release_brings_the_instance_up_to_date(off, monkeypatch):
     """启用或开启开关读到旧实例后，另一个进程先完成了启动跟随，这次启用改为补齐，不失败
 
     Dev 和 Release 共库，启动跟随和启用可能同时进行：prepare 读到实例还在旧规则上，拿到跟随锁时另一个进程已经写回，
@@ -400,10 +399,9 @@ def test_activating_while_another_process_follows_the_release_brings_the_instanc
         return original(*arguments, **options)
 
     monkeypatch.setattr(schemes_module, "follow_release", follow_release)
-    if dry_run:
-        report = call("ActivatePermissionScheme", scheme_id="default", dry_run=True)
-    else:
-        report = PARPermissions().prepare_active(facts())
+    # The activation preview is read-only and never follows a release (decision_22227d0ad075);
+    # the preview of a stale instance is covered above.
+    report = PARPermissions().prepare_active(facts())
     assert raced[1]["instance"]["restored_entries"] == 1
     assert report["regenerate"] is False
     assert ("permit", "carol", "@admin", "@operations") in contents("default")
@@ -506,7 +504,7 @@ def test_startup_merges_a_builtin_release_into_its_copy_and_keeps_hand_rows(off,
     [reads] = call("ListPermissionEntries", p="@principals", a="@viewer", r="@shared")["entries"]
     disabled = call("UpdatePermissionEntry", entry_id=reads["entry_id"], disabled=True)["entry"]
     [messages] = call("ListPermissionEntries", p="@principals", a="@message", r="@portal")["entries"]
-    call("DeletePermissionEntry", entry_id=messages["entry_id"])
+    call("DeletePermissionEntry", entry_ids=[messages["entry_id"]])
     store = off.store.scoped("team")
     loans = [Entry(new_entry_id(), PERMIT, "carol", "@viewer", resource, issued_by="alice", issued_at=1.0, expires_at=4102444800.0)
              for resource in (LINEAGE, "@papers")]
@@ -553,10 +551,10 @@ def test_startup_merges_a_builtin_release_into_its_copy_and_keeps_hand_rows(off,
 
 
 def test_a_merge_saved_in_the_editor_keeps_hand_rows_like_an_automatic_one(off):
-    """编辑器里带 source_digest 保存的合并和自动合并同一套写回，dry_run 报告不能写回的表项，保存后记为 last_merge
+    """编辑器里带 source_digest 保存的合并和自动合并同一套写回，预览 报告不能写回的表项，保存后记为 last_merge
 
     来源删掉一个节点、加一条表规则后，复制品按三方合并的规则保存：实例中的编辑（加的表项、停用的行）带原 ID 写回，人删掉的规则行仍删掉并列在
-    deleted_again，节点已不存在的编辑不写回、列在 unrestored；dry_run 报告同样的结果而不写入。不带 source_digest 的保存仍按 §5.3
+    deleted_again，节点已不存在的编辑不写回、列在 unrestored；预览 报告同样的结果而不写入。不带 source_digest 的保存仍按 §5.3
     重新生成，实例中的编辑随之丢弃。
     """
     from management_portal.permission_system.scheme.merge import merge
@@ -568,7 +566,7 @@ def test_a_merge_saved_in_the_editor_keeps_hand_rows_like_an_automatic_one(off):
     [reads] = call("ListPermissionEntries", scheme_id="team", p="@principals", a="@viewer", r="@shared")["entries"]
     disabled = call("UpdatePermissionEntry", scheme_id="team", entry_id=reads["entry_id"], disabled=True)["entry"]
     [messages] = call("ListPermissionEntries", scheme_id="team", p="@principals", a="@message", r="@portal")["entries"]
-    call("DeletePermissionEntry", scheme_id="team", entry_id=messages["entry_id"])
+    call("DeletePermissionEntry", scheme_id="team", entry_ids=[messages["entry_id"]])
 
     changed = rules("base")
     changed["entries"].append({"id": "members_read_public", "effect": "permit", "p": "@members", "a": "@viewer", "r": "@public"})
@@ -584,7 +582,7 @@ def test_a_merge_saved_in_the_editor_keeps_hand_rows_like_an_automatic_one(off):
     message_row = {"effect": "permit", "p": "@principals", "a": "@message", "r": "@portal"}
 
     before = call("ListPermissionEntries", scheme_id="team", limit=500, **EVERYTHING)["entries"]
-    preview = call("UpdatePermissionScheme", dry_run=True, **arguments)
+    preview = call("GetPermissionSchemeUpdatePreview", **arguments)
     assert [(item["entry_id"], item["missing"]) for item in preview["unrestored"]] == [(lost["entry_id"], ["R"])]
     assert preview["deleted_again"] == [message_row]
     assert [item["entry"]["r"] for item in preview["diff"]["lost_edits"]["items"]] == ["@papers"]

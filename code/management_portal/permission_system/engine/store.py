@@ -737,10 +737,11 @@ class ReadOnlyStore(Store):
             yield connection
             return
         import psycopg
-        from psycopg.rows import dict_row
-        from management_common.postgres_database import PostgresConnection
+        from management_common.postgres_database import PostgresConnection, _portal_row_factory
 
-        with psycopg.connect(self.database.dsn, row_factory=dict_row) as raw:
+        # The same rows as every Portal connection: the store reads columns
+        # by name and by position (count, table listings).
+        with psycopg.connect(self.database.dsn, row_factory=_portal_row_factory) as raw:
             raw.execute("SET TRANSACTION READ ONLY")
             yield PostgresConnection(raw)
 

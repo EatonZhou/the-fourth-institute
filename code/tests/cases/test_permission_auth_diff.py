@@ -61,11 +61,11 @@ def boxes(report):
 
 
 def test_a_merge_reports_the_workbenches_moving_under_their_project(off):
-    """来源把 Workbench 移到所属 Project 下，合并的 dry_run、保存结果和 last_merge 都报告同一份授权差
+    """来源把 Workbench 移到所属 Project 下，合并的 预览、保存结果和 last_merge 都报告同一份授权差
 
     原来没有 Lineage 的 Workbench 在“公共内容”下，人人可管理；移到 Project 下以后，sample_intern 凭实例中加的表项保留协作，
-    不属于该 Project 的其他主体（实习用户 bob、别的 Project 的 Resident）降为查看与发消息，Portal 管理员、一般用户和
-    Project 内的 Resident 不变。报告按盒子汇总，不展开到三元组，每组带主体数和资源数；diff_limit 限制列出的组数。
+    不属于该 Project 的其他主体降级：实习用户 bob 降为查看与发消息，别的 Project 的 Resident 另凭“所有 Resident 可使用所有设备”
+    保留使用设备，因此各成一组；Portal 管理员、一般用户和 Project 内的 Resident 不变。报告按盒子汇总，不展开到三元组，每组带主体数和资源数；diff_limit 限制列出的组数。
     """
     from management_portal.permission_system.scheme.merge import merge
 
@@ -77,21 +77,25 @@ def test_a_merge_reports_the_workbenches_moving_under_their_project(off):
     merged, _conflicts = merge(found["source"]["rules"], call("GetPermissionScheme", scheme_id="base")["rules"], found["rules"])
     arguments = {"scheme_id": "team", "rules": merged, "source_digest": found["source"]["current_digest"]}
 
-    preview = call("UpdatePermissionScheme", dry_run=True, **arguments)["auth_diff"]
+    preview = call("GetPermissionSchemeUpdatePreview", **arguments)["auth_diff"]
     team_workbenches = {"node": TEAM, "kinds": ["workbench"]}
     assert boxes(preview) == [
-        ("tightening", {"node": "@principals", "title": "全部主体", "except": ["@members", "@portal_admins", TEAM, "sample_intern"],
-                        "except_total": 4}, team_workbenches, ["@admin"], ["@viewer", "@message"], 2, 5),
+        ("tightening", {"node": "bob"}, team_workbenches, ["@admin"], ["@viewer", "@message"], 1, 5),
+        ("tightening", {"node": "resident_000000000002"}, team_workbenches, ["@admin"],
+         ["@viewer", "@message", "@use_device"], 1, 5),
         ("tightening", {"node": "sample_intern"}, team_workbenches, ["@admin"], ["@contributor"], 1, 5),
     ]
-    assert preview["groups"]["items"][1]["lost"] == ["@admin"] and preview["groups"]["items"][1]["gained"] == []
-    assert (preview["kind"], preview["complete"], preview["groups"]["total"]) == ("tightening", True, 2)
+    assert [item["lost"] for item in preview["groups"]["items"]] == [
+        ["@admin", "@contributor", "@use_device"], ["@admin", "@contributor"], ["@admin"]]
+    assert all(item["gained"] == [] for item in preview["groups"]["items"])
+    assert (preview["kind"], preview["complete"], preview["groups"]["total"]) == ("tightening", True, 3)
     assert preview["gained"] == {"triples": 0, "principals": 0, "resources": 0}
     assert preview["lost"]["principals"] == 3 and preview["lost"]["resources"] == 5
-    assert preview["lost"]["triples"] == 2 * 5 * 2 + 1 * 5 * 1
+    # Per Workbench: bob loses three elements, the other Project's Resident two (it keeps @use_device), sample_intern one.
+    assert preview["lost"]["triples"] == (3 + 2 + 1) * 5
 
-    limited = call("UpdatePermissionScheme", dry_run=True, diff_limit=1, **arguments)["auth_diff"]
-    assert limited["groups"]["total"] == 2 and boxes(limited) == boxes(preview)[:1]
+    limited = call("GetPermissionSchemeUpdatePreview", diff_limit=1, **arguments)["auth_diff"]
+    assert limited["groups"]["total"] == 3 and boxes(limited) == boxes(preview)[:1]
 
     saved = call("UpdatePermissionScheme", expected_version=found["version"], **arguments)
     assert saved["auth_diff"] == preview
@@ -99,7 +103,7 @@ def test_a_merge_reports_the_workbenches_moving_under_their_project(off):
 
 
 def test_saving_and_activating_report_against_the_instance_they_replace(off):
-    """保存规则对比被替换的实例，启用方案对比启用中方案的实例；dry_run 与正式结果相同
+    """保存规则对比被替换的实例，启用方案对比启用中方案的实例；预览 与正式结果相同
 
     去掉“一般用户管理全部 Project”后保存，一般用户 alice 在全部 Project 上从管理降为查看与发消息（收紧）；
     启用这个方案相对启用中的方案同样收紧，再启用一次是中性。只改指令映射时实例不变，授权仍随移动的元素改变，并列出要求改变的指令。
@@ -110,11 +114,11 @@ def test_saving_and_activating_report_against_the_instance_they_replace(off):
     strict = rules("strict", without={"members_manage_projects"})
     projects = ("tightening", {"node": "alice"}, {"node": "@projects", "title": "全部 Project"}, ["@admin"], ["@viewer", "@message"])
 
-    preview = call("UpdatePermissionScheme", scheme_id="strict", rules=strict, dry_run=True)["auth_diff"]
+    preview = call("GetPermissionSchemeUpdatePreview", scheme_id="strict", rules=strict)["auth_diff"]
     assert [item[:5] for item in boxes(preview)] == [projects] and preview["kind"] == "tightening"
     assert call("UpdatePermissionScheme", scheme_id="strict", rules=strict, expected_version=1)["auth_diff"] == preview
 
-    activating = call("ActivatePermissionScheme", scheme_id="strict", dry_run=True)
+    activating = call("GetPermissionSchemeActivationPreview", scheme_id="strict")
     assert activating["activated"] is False and activating["auth_diff"] == preview
     assert call("ActivatePermissionScheme", scheme_id="strict")["auth_diff"] == preview
     again = call("ActivatePermissionScheme", scheme_id="strict")["auth_diff"]
@@ -122,7 +126,7 @@ def test_saving_and_activating_report_against_the_instance_they_replace(off):
 
     remapped = copy.deepcopy(strict)
     remapped["instructions"]["ListPosts"] = {"a": "@admin", "r": "@shared"}
-    report = call("UpdatePermissionScheme", scheme_id="strict", rules=remapped, dry_run=True)
+    report = call("GetPermissionSchemeUpdatePreview", scheme_id="strict", rules=remapped)
     assert report["regenerates"] is False and report["auth_diff"]["kind"] == "tightening"
     assert [item["instruction"] for item in report["auth_diff"]["remapped"]["items"]] == ["ListPosts"]
     assert report["auth_diff"]["remapped"]["items"][0]["after"] == [{"element": "ListPosts", "a": "@admin", "resource": "@shared"}]
@@ -132,7 +136,7 @@ def test_moving_an_instruction_element_reports_what_it_grants_and_takes_away(off
     """改指令分类是移动 A 元素，授权随之改变：按元素报告得失，与实例变化的组一起计入类别和 diff_limit
 
     把 DeleteLineage 从 @admin 改到 @viewer，实例不变：能查看 Lineage 但不能管理它的主体获得这条指令，报告放宽，
-    每组都只有这个元素，资源只算 Lineage；保存结果与 dry_run 相同，remapped 照常列出。
+    每组都只有这个元素，资源只算 Lineage；保存结果与 预览 相同，remapped 照常列出。
     固定槽 ListPosts 从 @viewer 改到 @admin 时，对“共享”没有 @admin 的主体失去它（收紧），资源是固定槽的 R 节点。
     两处一起改报告混合；实例同时改变时，实例变化的组和元素的组一起排序、受 diff_limit 限制。
     """
@@ -140,7 +144,7 @@ def test_moving_an_instruction_element_reports_what_it_grants_and_takes_away(off
     looser = rules("team")
     looser["instructions"]["DeleteLineage"] = {"a": "@viewer"}
 
-    preview = call("UpdatePermissionScheme", scheme_id="team", rules=looser, dry_run=True)
+    preview = call("GetPermissionSchemeUpdatePreview", scheme_id="team", rules=looser)
     report = preview["auth_diff"]
     assert preview["regenerates"] is False
     assert report["kind"] == "loosening" and report["complete"] is True
@@ -165,7 +169,7 @@ def test_moving_an_instruction_element_reports_what_it_grants_and_takes_away(off
 
     stricter = copy.deepcopy(looser)
     stricter["instructions"]["ListPosts"] = {"a": "@admin", "r": "@shared"}
-    posts = call("UpdatePermissionScheme", scheme_id="team", rules=stricter, dry_run=True)["auth_diff"]
+    posts = call("GetPermissionSchemeUpdatePreview", scheme_id="team", rules=stricter)["auth_diff"]
     assert posts["kind"] == "tightening" and posts["gained"]["triples"] == 0
     for item in posts["groups"]["items"]:
         assert (item["element"], item["lost"], item["resources"]) == ("ListPosts", ["ListPosts"], 1)
@@ -178,18 +182,18 @@ def test_moving_an_instruction_element_reports_what_it_grants_and_takes_away(off
     both["instructions"]["DeleteLineage"] = {"a": "@viewer"}
     both["instructions"]["ListPosts"] = {"a": "@admin", "r": "@shared"}
     call("UpdatePermissionScheme", scheme_id="team", rules=rules("team"), expected_version=2)
-    mixed = call("UpdatePermissionScheme", scheme_id="team", rules=both, dry_run=True)["auth_diff"]
+    mixed = call("GetPermissionSchemeUpdatePreview", scheme_id="team", rules=both)["auth_diff"]
     assert mixed["kind"] == "mixed" and {item["element"] for item in mixed["groups"]["items"]} == {"DeleteLineage", "ListPosts"}
 
     changing = rules("team", without={"members_manage_projects"})
     changing["instructions"]["ListPosts"] = {"a": "@admin", "r": "@shared"}
-    together = call("UpdatePermissionScheme", scheme_id="team", rules=changing, dry_run=True)["auth_diff"]
+    together = call("GetPermissionSchemeUpdatePreview", scheme_id="team", rules=changing)["auth_diff"]
     assert together["groups"]["total"] == len(together["groups"]["items"])
     assert {item.get("element") for item in together["groups"]["items"]} == {None, "ListPosts"}
     sizes = [item["principals"] * item["resources"] * (len(item["gained"]) + len(item["lost"]))
              for item in together["groups"]["items"]]
     assert sizes == sorted(sizes, reverse=True)
-    limited = call("UpdatePermissionScheme", scheme_id="team", rules=changing, dry_run=True, diff_limit=1)["auth_diff"]
+    limited = call("GetPermissionSchemeUpdatePreview", scheme_id="team", rules=changing, diff_limit=1)["auth_diff"]
     assert limited["groups"]["total"] == together["groups"]["total"] and limited["groups"]["items"] == together["groups"]["items"][:1]
 
 
@@ -203,7 +207,7 @@ def test_moved_place_and_via_elements_count_only_what_they_can_judge(off):
     moved = rules("team")
     moved["instructions"]["RegisterResource"] = {"a": "@viewer"}
     moved["instructions"]["GetInstructionExecution:instruction_id"] = {"a": "@contributor"}
-    report = call("UpdatePermissionScheme", scheme_id="team", rules=moved, dry_run=True, diff_limit=100)["auth_diff"]
+    report = call("GetPermissionSchemeUpdatePreview", scheme_id="team", rules=moved, diff_limit=100)["auth_diff"]
     counted = {}
     for item in report["groups"]["items"]:
         counted.setdefault(item["element"], {})[item["r"]["node"]] = (item["kind"], item["resources"])
@@ -220,8 +224,7 @@ def test_caller_placement_diff_counts_only_each_residents_own_report_parent(off)
     call("CreatePermissionScheme", scheme_id="team", rules=original)
     changed = copy.deepcopy(original)
     changed["instructions"]["RegisterResource"] = {"a": "@viewer"}
-    report = call("UpdatePermissionScheme", scheme_id="team", rules=changed,
-                  dry_run=True, diff_limit=100)["auth_diff"]
+    report = call("GetPermissionSchemeUpdatePreview", scheme_id="team", rules=changed, diff_limit=100)["auth_diff"]
     for resident in ("resident_000000000001", "resident_000000000002"):
         groups = [item for item in report["groups"]["items"]
                   if item.get("element") == "RegisterResource" and item["r"]["node"] == resident]
@@ -240,7 +243,7 @@ def test_a_moved_place_slot_counts_only_the_class_nodes_a_registerable_type_land
     call("CreatePermissionScheme", scheme_id="team", rules=rules("team", without={"everyone_manages_public"}))
     moved = rules("team", without={"everyone_manages_public"})
     moved["instructions"]["RegisterResource"] = {"a": "@viewer"}
-    report = call("UpdatePermissionScheme", scheme_id="team", rules=moved, dry_run=True, diff_limit=100)["auth_diff"]
+    report = call("GetPermissionSchemeUpdatePreview", scheme_id="team", rules=moved, diff_limit=100)["auth_diff"]
     counted = {item["r"]["node"]: (item["kind"], item["resources"]) for item in report["groups"]["items"]
                if item["element"] == "RegisterResource"}
     assert counted == {TEAM: ("loosening", 1), OTHER: ("loosening", 1), "@public": ("loosening", 1),
@@ -258,7 +261,7 @@ def test_a_moved_slot_naming_any_node_counts_the_class_nodes(off):
     call("CreatePermissionScheme", scheme_id="team", rules=rules("team"))
     moved = rules("team")
     moved["instructions"]["UpdatePermissionEntry:entry_id"] = {"a": "@viewer"}
-    report = call("UpdatePermissionScheme", scheme_id="team", rules=moved, dry_run=True, diff_limit=100)["auth_diff"]
+    report = call("GetPermissionSchemeUpdatePreview", scheme_id="team", rules=moved, diff_limit=100)["auth_diff"]
     nodes = {item["r"]["node"] for item in report["groups"]["items"]
              if item["element"] == "UpdatePermissionEntry:entry_id" and item["resources"] == 1}
     assert {"@shared", "@operations", "@projects"} <= nodes

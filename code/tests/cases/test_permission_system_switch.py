@@ -128,7 +128,7 @@ def test_permission_instructions_run_unchecked_while_the_system_is_off(monkeypat
         permission_system.manage("RevokeTemporaryCredential", {"credential_id": loan["credential_id"]}, actor="bob")
     assert permission_system.manage("RevokeTemporaryCredential", {"credential_id": loan["credential_id"]},
                                     actor="carol") == {"revoked": loan["credential_id"]}
-    assert permission_system.manage("DeletePermissionEntry", {"entry_id": entry["entry_id"]}, actor="bob")["deleted"] == [entry["entry_id"]]
+    assert permission_system.manage("DeletePermissionEntry", {"entry_ids": [entry["entry_id"]]}, actor="bob")["deleted"] == [entry["entry_id"]]
 
 
 def test_the_system_tells_which_editor_instructions_the_caller_passes(monkeypatch):
