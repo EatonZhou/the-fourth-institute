@@ -34,6 +34,10 @@ def redirect(workspace):
 def prepare(workspace):
     # Isolated installation only, never a production repair or read fallback.
     get_lineage_data_store()
+    from management_portal.resources.creation import Creation
+    # A normally installed Creation store is part of the retirement evidence;
+    # the readonly classifier itself must never initialize missing storage.
+    Creation('resident_eeeeeeeeeeee', actor='alice', payload={}, operation_id='install-only')
     with workspace.store.database.transaction() as connection:
         migrate_dependencies(connection, identities=[])
 

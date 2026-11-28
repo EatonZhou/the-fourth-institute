@@ -142,15 +142,17 @@ def _persist_derived_resident(
     resident["owned_workspace"] = workspace_record["owned_workspace"]
     resident["default_cwd"] = workspace_record["default_cwd"]
 
-    from management_portal.resources.creation import Creation
+    from . import workspace_dependencies
     intent = _FORK_CREATION.get()
     if intent is None:
         raise RuntimeError('Derived registration requires its creation request')
     resident_payload = resident_record_domain.canonical_derived_resident_record(record, resident)
     resident_payload['schema'] = resident_storage.RESIDENT_RECORD_SCHEMA
     folder = resident_record_domain.resident_folder_path(resident_payload)
-    creation = Creation(target_resident_id, actor=str(resident_payload['created_by']),
-                        payload=intent.request, operation_id=intent.key)
+    creation = workspace_dependencies.resident_creation(
+        target_resident_id, actor=str(resident_payload['created_by']), intent=intent,
+        bindings=resident_payload['workspace_bindings'],
+    )
     with creation.prepare([(folder, 'directory')]):
         if creation.completed:
             existing = resident_catalog.get_catalog().get(target_resident_id)
@@ -172,6 +174,10 @@ def _persist_derived_resident(
         creation.publish(initialize)
         with resident_catalog.get_catalog().state_store.database.transaction() as connection:
             with creation.registration(connection):
+                workspace_dependencies.validate_creation_bindings(
+                    creation, resident_payload['workspace_bindings'], connection=connection,
+                    legacy=creation.workspace_dependencies is None,
+                )
                 resident_record_domain.save_resident_record(resident_payload)
                 intent.complete(connection)
                 if creation.lifecycle:

@@ -103,11 +103,15 @@ def replace_bindings(connection, resident_id, bindings):
     old = bindings_for_residents(connection, [resident_id])[resident_id]
     before = {item["workspace_id"]: item for item in old}
     after = {item["workspace_id"]: item for item in values}
+    changed = [item for wid, item in after.items() if before.get(wid) != item]
+    if changed:
+        from .workspace_dependencies import require_active_workspaces
+
+        require_active_workspaces((item["workspace_id"] for item in changed), connection=connection)
     removed = list(before.keys() - after.keys())
     if removed:
         connection.execute("DELETE FROM resident_workspace_bindings WHERE resident_id=%s AND workspace_id=ANY(%s)",
                            (resident_id, removed))
-    changed = [item for wid, item in after.items() if before.get(wid) != item]
     if changed:
         connection.executemany("INSERT INTO resident_workspace_bindings(resident_id,workspace_id,purpose) VALUES (%s,%s,%s) "
                                "ON CONFLICT(resident_id,workspace_id) DO UPDATE SET purpose=excluded.purpose",

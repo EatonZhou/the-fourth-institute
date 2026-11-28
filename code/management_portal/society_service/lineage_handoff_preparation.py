@@ -122,6 +122,10 @@ def prepare_items(
         transfer = item.get("transfer") if isinstance(item.get("transfer"), dict) else {}
         source = item.get("source") if isinstance(item.get("source"), dict) else {}
         source_workspace_id = str(source.get("workspace_id") or "")
+        direct = str(transfer.get("mode") or "direct") == "direct"
+        expected_workspace_id = source_workspace_id if direct else str(result["target_workspace_id"])
+        if not expected_workspace_id:
+            raise ValueError("Handoff requires a canonical Workspace identity")
         target_id = str(handoff.get("target") or "")
         target_workspaces = access.workspaces(lineage_id, target_id, actor)
         existing_root = next(
@@ -131,15 +135,16 @@ def prepare_items(
             ),
             None,
         )
+        if existing_root and existing_root.get("workspace_id") != expected_workspace_id:
+            raise ValueError("Handoff target path is bound to a different Workspace identity")
         assert_owned()
         mounted = (
             access.bind(
                 lineage_id, target_id, actor,
                 str(result.get("target_path") or ""),
-                workspace_id=(source_workspace_id if str(transfer.get("mode") or "direct") == "direct"
-                              else str(result['target_workspace_id'])),
+                workspace_id=expected_workspace_id,
             )
-            if str(transfer.get("mode") or "") == "direct" or not existing_root
+            if direct or not existing_root
             else {"workspace": target_workspaces}
         )
         assert_owned()
@@ -153,16 +158,8 @@ def prepare_items(
         if not bound_root:
             raise RuntimeError("目标 Workspace 已准备，但没有形成可验证的 Workspace Binding")
         target_workspace_id = str(bound_root.get("workspace_id") or "")
-        if not target_workspace_id:
-            raise RuntimeError("目标 Workspace 已绑定，但没有登记规范 Workspace")
-        if result.get('target_workspace_id') and target_workspace_id != result['target_workspace_id']:
-            raise RuntimeError('Handoff 副本绑定必须使用持久创建的 Workspace ID')
-        if (str(transfer.get("mode") or "") == "direct" and source_workspace_id
-                and target_workspace_id != source_workspace_id):
-            raise RuntimeError(
-                "direct Handoff 必须把同一个规范 Workspace 绑定给目标 Agent，"
-                "不能生成新的 workspace_id"
-            )
+        if target_workspace_id != expected_workspace_id:
+            raise RuntimeError("Handoff did not bind the expected Workspace identity")
         result["target_workspace_id"] = target_workspace_id
 
 

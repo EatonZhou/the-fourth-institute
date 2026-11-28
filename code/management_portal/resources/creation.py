@@ -141,6 +141,113 @@ def creation_operation_id(operation_id=''):
     return operation_id or _OPERATION.get() or uuid4().hex
 
 
+def creation_operation_key(actor, operation_id):
+    """Pure operation correlation for domain readers; does not initialize stores."""
+    if not operation_id:
+        raise ValueError('Creation operation correlation requires an operation ID')
+    return 'resource-create:' + hashlib.sha256((actor + '\0' + operation_id).encode()).hexdigest()
+
+
+class CreationDependencyUnknown(ValueError):
+    """No complete owner evidence exists; absence must not imply independence."""
+
+
+def _workspace_dependency_document(ids):
+    from management_common.resource_identity import get_resource_type_registry
+    if isinstance(ids, (str, bytes, dict)):
+        raise ValueError('Workspace dependencies must be an iterable of Workspace IDs')
+    values = list(ids)
+    registry = get_resource_type_registry()
+    for value in values:
+        if not isinstance(value, str) or value != value.strip():
+            raise ValueError('Workspace dependencies require canonical Workspace IDs')
+        registry.validate(value, 'workspace')
+    return {'version': 1, 'workspace_ids': sorted(set(values))}
+
+
+def creation_dependency_record(operation_id, *, connection):
+    """Read one target/staging operation in the caller's transaction, without DDL.
+
+    This is an internal owner contract, not an externally exposed journal. A
+    legacy NULL declaration remains unknown. Domain readers still interpret
+    their own frozen intent and final bindings; path containment is not proof.
+    """
+    from management_common.portal_database import _database_schema
+    table = '"' + _database_schema('directory_lifecycle') + '".resource_creations'
+    if connection.execute('SELECT to_regclass(%s)', (table,)).fetchone()[0] is None:
+        raise CreationDependencyUnknown('Creation dependency storage is unavailable')
+    columns = {row[0] for row in connection.execute(
+        'SELECT attname FROM pg_attribute WHERE attrelid=%s::regclass AND NOT attisdropped', (table,))}
+    if 'workspace_dependencies' not in columns:
+        raise CreationDependencyUnknown('Creation dependency schema is unavailable')
+    rows = connection.execute(f'SELECT operation_id,resource_id,actor,payload,scope_id,artifacts,'
+        f'completed,aborted,cleanup_complete,workspace_dependencies FROM {table} '
+        'WHERE operation_id=%s OR artifacts @> %s::jsonb',
+        (operation_id, json.dumps([{'stage_operation': operation_id}]))).fetchall()
+    if not rows:
+        return None
+    if len(rows) != 1:
+        raise CreationDependencyUnknown('Creation dependency operation is ambiguous')
+    result = dict(rows[0])
+    declaration = result['workspace_dependencies']
+    if declaration is not None:
+        try:
+            valid = (type(declaration) is dict and type(declaration.get('version')) is int
+                     and declaration == _workspace_dependency_document(declaration['workspace_ids']))
+        except (KeyError, TypeError, ValueError):
+            valid = False
+        if not valid:
+            raise CreationDependencyUnknown('Creation dependency declaration is invalid')
+    artifacts = result.pop('artifacts')
+    if not isinstance(artifacts, list) or any(not isinstance(a, dict) for a in artifacts):
+        raise CreationDependencyUnknown('Creation artifact correlation is invalid')
+    stages = [a['stage_operation'] for a in artifacts if 'stage_operation' in a]
+    if any(not isinstance(stage, str) or not stage for stage in stages):
+        raise CreationDependencyUnknown('Creation artifact correlation is invalid')
+    result['claim_operation_ids'] = sorted({result['operation_id'], *stages})
+    return result
+
+
+def pending_creation_workspace_dependency(workspace_id, *, connection):
+    """Classify all unpublished identity dependencies, including outside paths.
+
+    No owner initialization, payload interpretation, or hidden operation details
+    escape this internal read. Unknown old declarations cannot be treated as an
+    empty dependency set. A positive match takes precedence over unknown rows.
+    """
+    from management_common.portal_database import _database_schema
+    if not connection.in_transaction:
+        raise RuntimeError('Creation dependency classification requires the owner transaction')
+    _workspace_dependency_document([workspace_id])
+    table = '"' + _database_schema('directory_lifecycle') + '".resource_creations'
+    if connection.execute('SELECT to_regclass(%s)', (table,)).fetchone()[0] is None:
+        return 'unknown'
+    columns = {row[0] for row in connection.execute(
+        'SELECT attname FROM pg_attribute WHERE attrelid=%s::regclass AND NOT attisdropped', (table,))}
+    if not {'completed', 'aborted'} <= columns:
+        return 'unknown'
+    if 'workspace_dependencies' not in columns:
+        # The installed old terminal-state schema can prove there are no
+        # unpublished operations. Any old live row is still unknown; no DDL or
+        # invented empty declarations are needed on this read path.
+        pending = connection.execute(f'SELECT 1 FROM {table} WHERE NOT completed AND NOT aborted LIMIT 1').fetchone()
+        return 'unknown' if pending else 'independent'
+    unknown = False
+    for row in connection.execute(f'SELECT workspace_dependencies FROM {table} WHERE NOT completed AND NOT aborted'):
+        declaration = row['workspace_dependencies']
+        try:
+            if (type(declaration) is not dict or type(declaration.get('version')) is not int
+                    or declaration != _workspace_dependency_document(declaration['workspace_ids'])):
+                unknown = True
+                continue
+        except (KeyError, TypeError, ValueError):
+            unknown = True
+            continue
+        if workspace_id in declaration['workspace_ids']:
+            return 'dependent'
+    return 'unknown' if unknown else 'independent'
+
+
 @contextmanager
 def creation_operation(operation_id):
     token = _OPERATION.set(operation_id)
@@ -159,6 +266,10 @@ def initialize_creation_schema(connection, schema):
             'SELECT attname FROM pg_attribute WHERE attrelid=%s::regclass AND NOT attisdropped', (table,))}
         if not {'aborted', 'cleanup_complete'} <= columns:
             raise RuntimeError('Creation termination schema requires the offline maintenance window')
+        if 'workspace_dependencies' not in columns:
+            # Nullable additive metadata. Old operations retain unknown evidence;
+            # initialization must never invent a historical dependency closure.
+            connection.execute(f'ALTER TABLE {table} ADD COLUMN workspace_dependencies JSONB')
         from .directory_ownership_upgrade import upgrade_creations
         upgrade_creations(connection, schema)
         return
@@ -167,7 +278,8 @@ def initialize_creation_schema(connection, schema):
         actor TEXT NOT NULL, payload JSONB NOT NULL, scope_id TEXT NOT NULL,
         artifacts JSONB NOT NULL, completed BOOLEAN NOT NULL DEFAULT FALSE,
         aborted BOOLEAN NOT NULL DEFAULT FALSE,
-        cleanup_complete BOOLEAN NOT NULL DEFAULT FALSE
+        cleanup_complete BOOLEAN NOT NULL DEFAULT FALSE,
+        workspace_dependencies JSONB
     )''')
     from .directory_ownership_upgrade import upgrade_creations
     upgrade_creations(connection, schema)
@@ -276,12 +388,14 @@ class Creation:
                 connection.execute(f'DELETE FROM {self.table} WHERE operation_id=%s', (key,))
             yield archive
 
-    def __init__(self, resource_id, *, actor, payload, operation_id=''):
+    def __init__(self, resource_id, *, actor, payload, operation_id='', workspace_dependencies=None):
         operation_id = creation_operation_id(operation_id)
-        self.key = 'resource-create:' + hashlib.sha256((actor + '\0' + operation_id).encode()).hexdigest()
+        self.key = creation_operation_key(actor, operation_id)
         self.resource_id = resource_id
         self.actor = actor
         self.payload = dict(payload)
+        self.workspace_dependencies = (None if workspace_dependencies is None else
+                                       _workspace_dependency_document(workspace_dependencies))
         self.db = portal_database(schema='directory_lifecycle')
         self.table = f'"{self.db.schema}".resource_creations'
         self.queue = get_directory_cleanup_store()
@@ -312,6 +426,8 @@ class Creation:
                         raise ValueError('Creation operation ID was already used with different arguments')
                     if not row['completed'] and row['scope_id'] != current_lifecycle():
                         raise ValueError('Unfinished creation belongs to another resource lifecycle')
+                    if not row['completed'] and row['workspace_dependencies'] != self.workspace_dependencies:
+                        raise CreationDependencyUnknown('Creation Workspace dependency declaration changed')
                     self.artifacts = row['artifacts']
                     self.completed = row['completed']
                     self._check_identity(conn)
@@ -334,12 +450,15 @@ class Creation:
                         else:
                             raise ValueError('Unknown creation artifact kind: ' + kind)
                         self.artifacts.append({**artifact, 'path': cleanup_location(path), 'kind': kind})
-                    conn.execute(f'INSERT INTO {self.table} (operation_id,resource_id,actor,payload,scope_id,artifacts) '
-                                 'VALUES (%s,%s,%s,%s::jsonb,%s,%s::jsonb)',
+                    conn.execute(f'INSERT INTO {self.table} (operation_id,resource_id,actor,payload,scope_id,artifacts,workspace_dependencies) '
+                                 'VALUES (%s,%s,%s,%s::jsonb,%s,%s::jsonb,%s::jsonb)',
                                  (self.key, self.resource_id, self.actor, json.dumps(self.payload),
-                                  current_lifecycle(), json.dumps(self.artifacts)))
+                                  current_lifecycle(), json.dumps(self.artifacts),
+                                  json.dumps(self.workspace_dependencies) if self.workspace_dependencies is not None else None))
                     self.completed = False
                 if not self.completed:
+                    if self.workspace_dependencies is not None:
+                        self.assert_workspace_dependencies((), connection=conn)
                     for artifact in self.artifacts:
                         self.queue.reserve(cleanup_path(artifact['path']), operation_id=self.key, purpose='resource_creation', connection=conn)
                     self.writer.claim(self.artifacts, conn, new=row is None)
@@ -368,6 +487,25 @@ class Creation:
         if self.completed:
             raise RuntimeError('Completed creation is read-only')
         self.writer.check(connection)
+
+    def assert_workspace_dependencies(self, ids, *, connection):
+        """Fence declared references before claims and at the domain commit.
+
+        The caller owns proving its *complete* binding set and active rows,
+        including defaults/newly-created owned Workspaces. Existing declarations
+        are immutable and are never reconstructed from a retry's new payload.
+        """
+        self.queue.lock(connection)
+        record = creation_dependency_record(self.key, connection=connection)
+        declaration = record['workspace_dependencies'] if record else None
+        if declaration is None or declaration != self.workspace_dependencies:
+            raise CreationDependencyUnknown('Creation Workspace dependency declaration is missing or changed')
+        actual = _workspace_dependency_document(ids)['workspace_ids']
+        if not set(actual) <= set(declaration['workspace_ids']):
+            raise ValueError('Creation bindings exceed declared Workspace dependencies')
+        from .directory_registrations import is_deleted
+        if any(is_deleted(identity, connection=connection) for identity in declaration['workspace_ids']):
+            raise ValueError('Creation Workspace dependency was retired')
 
     def _assert_scope_open(self, connection):
         if self.lifecycle:
@@ -491,6 +629,8 @@ class Creation:
         self.assert_owned(connection)
         self.queue.lock(connection)
         self._check_identity(connection)
+        if self.workspace_dependencies is not None:
+            self.assert_workspace_dependencies((), connection=connection)
         if self.completed:
             raise RuntimeError('Completed creation must read its existing owner')
         for artifact in self.artifacts:

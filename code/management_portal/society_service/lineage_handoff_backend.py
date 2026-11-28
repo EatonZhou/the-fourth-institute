@@ -469,6 +469,18 @@ def materialize_handoff_item(
     if not source.get("workspace_id"):
         contents["source"]["path"] = str(source.get("path") or "")
     try:
+        # A formal Handoff copy depends on its source Workspace even though
+        # Creation only reserves its new destination. A legacy path-only call
+        # has no identity proof.
+        source_id = source.get("workspace_id")
+        dependency = {}
+        if source_id:
+            from .workspace_dependencies import recoverable_workspace_dependencies
+
+            dependency = {
+                "workspace_dependencies": [source_id],
+                "resolve_workspace_dependencies": recoverable_workspace_dependencies,
+            }
         row, result = WorkspaceCreationStore().materialize(
             path=target_root, actor=actor, operation_id=operation_id,
             # prepare_items passes its authoritative Lineage ID as parent_id.
@@ -476,6 +488,7 @@ def materialize_handoff_item(
             # cannot silently adopt a previously self-owned Workspace.
             parent_id=parent_id, owner_id=parent_id,
             title=str(target.get("label") or ""), contents=contents, initialize=initialize,
+            **dependency,
         )
     except subprocess.TimeoutExpired as exc:
         raise _command_timeout_error(exc) from exc

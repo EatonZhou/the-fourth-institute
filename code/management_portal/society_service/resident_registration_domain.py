@@ -16,6 +16,7 @@ from . import (
     resident_runtime_domain,
     resident_session_backend_domain,
     resident_workspace_domain,
+    workspace_dependencies,
 )
 from .domain_ports import resident_lineage_host_port
 from .resident_access import can_manage_resident as _can_manage_resident, manage_refusal
@@ -400,10 +401,11 @@ def _stage_registration(record, payload, workspace_path, runtime_settings, actor
     """Prepare recoverable folder, settings and Provider effects before locking the Lineage."""
     resident_id = record["resident_id"]
     resident_folder = resident_record_domain.resident_folder_path(record)
-    from management_portal.resources.creation import Creation
     folder_supplied = bool(str(payload.get("lineage_folder_path") or "").strip())
     target = resident_folder if folder_supplied else workspace_path
-    creation = Creation(resident_id, actor=actor_id, payload=intent.request, operation_id=intent.key)
+    creation = workspace_dependencies.resident_creation(
+        resident_id, actor=actor_id, intent=intent, bindings=record["workspace_bindings"],
+    )
     operations = resident_record_domain.lifecycle_operations()
     with creation.prepare([(target, 'directory')]), operations.prepare(resident_id, lambda operation_id: [{
         "kind": "registration_abort", "record": dict(record), "actor": actor_id,
@@ -497,6 +499,12 @@ def _commit_registration(
         from management_portal.resources.workspace_store import get_workspace_store
         from management_portal.workspace_seed import register_owned_workspace
         from .resident_workspace_storage import apply_binding_projection
+        workspace_dependencies.validate_creation_bindings(
+            creation, record["workspace_bindings"], connection=connection,
+            legacy=creation.workspace_dependencies is None,
+        )
+        workspaces = get_workspace_store()
+        workspaces.cleanup.lock(connection)
         team_workspace = Path(record["workspace_path"]) / "workspace"
         if joins_canonical_lineage:
             register_owned_workspace(lineage_id, team_workspace, creation, connection)
@@ -504,10 +512,20 @@ def _commit_registration(
         if registered_lineage and registered_lineage.get("leader_resident_id") == resident_id and record.get("project_id"):
             project_id = record["project_id"]
             defaults.append((project_id, project_folders.project_root_for_id(project_id) / "workspace"))
+        late_dependencies = set()
         for owner_id, path in defaults:
-            binding = get_workspace_store().owned_binding(owner_id, path, connection=connection)
-            if binding and all(item["workspace_id"] != binding["workspace_id"] for item in record["workspace_bindings"]):
+            binding = workspaces.owned_binding(owner_id, path, connection=connection)
+            if binding is None:
+                continue
+            # The exact owner and path are fixed by the registration. These
+            # late defaults cannot adopt a self-owned Workspace.
+            workspace_id = binding["workspace_id"]
+            if workspace_id == owner_id:
+                raise ValueError("A default Workspace must be owned by its Lineage or Project")
+            late_dependencies.add(workspace_id)
+            if all(item["workspace_id"] != workspace_id for item in record["workspace_bindings"]):
                 record["workspace_bindings"].append(binding)
+        workspace_dependencies.require_active_workspaces(late_dependencies, connection=connection)
         apply_binding_projection(record)
         resident_record_domain.save_resident_record(record)
         if creation_key:

@@ -627,6 +627,7 @@ modules:
       - "management_portal/society_service/permission_facts_projection.py"
       - "management_portal/society_service/resident_workspace_domain.py"
       - "management_portal/society_service/resident_workspace_storage.py"
+      - "management_portal/society_service/workspace_dependencies.py"
       - "management_portal/society_service/lineage_handoff_backend.py"
       - "management_portal/society_service/lineage_handoff_execution.py"
       - "management_portal/society_service/lineage_handoff_preparation.py"

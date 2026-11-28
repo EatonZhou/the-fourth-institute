@@ -4,10 +4,38 @@ from contextvars import ContextVar
 import hashlib
 import json
 
+from management_common.directory_cleanup_store import get_directory_cleanup_store
 from management_common.resource_lifecycle import current_lifecycle
 from management_portal.resources.creation import creation_operation_id
 
 _DIRECTORY_CREATION = ContextVar('society_directory_creation', default='')
+WORKSPACE_INTENT_KINDS = (
+    'resident', 'create_resident_full_context_fork', 'create_resident_compacted_context_fork',
+    'create_resident_fork_from_message', 'create_resident_context_fork',
+)
+
+
+def pending_resident_workspace_intents(connection):
+    from management_common.portal_database import _database_schema
+
+    table = f'"{_database_schema("directory_lifecycle")}".society_creation_intents'
+    if connection.execute('SELECT to_regclass(%s)', (table,)).fetchone()[0] is None:
+        return ()
+    return connection.execute(
+        f"SELECT operation_id,request,scope_id,"
+        "jsonb_build_object("
+        "'resident_id',snapshot#>'{record,resident_id}',"
+        "'created_by',snapshot#>'{record,created_by}',"
+        "'workspace_bindings',snapshot#>'{record,workspace_bindings}',"
+        "'workspace_path',snapshot#>'{record,workspace_path}',"
+        "'lineage_id',snapshot#>'{record,lineage_id}',"
+        f"'project_id',snapshot#>'{{record,project_id}}') AS record FROM {table} "
+        "WHERE split_part(operation_id, ':', 1)=ANY(%s) "
+        "AND snapshot->'completed' IS DISTINCT FROM 'true'::jsonb "
+        "AND snapshot->'workspace_preclaim_failed' IS DISTINCT FROM 'true'::jsonb "
+        "AND NOT (snapshot ? 'cancellation')",
+        (list(WORKSPACE_INTENT_KINDS),),
+    ).fetchall()
 
 
 def current_directory_creation():
@@ -66,12 +94,26 @@ class CreationIntent:
                     raise ValueError('Creation operation was cancelled')
                 if not self.snapshot.get('completed') and row['scope_id'] != current_lifecycle():
                     raise ValueError('Unfinished creation belongs to another resource lifecycle')
+                if self.snapshot.pop('workspace_preclaim_failed', False):
+                    self.save()
             else:
                 self.snapshot = allocate()
-                self.db.write(lambda conn: conn.execute(
-                    'INSERT INTO society_creation_intents VALUES (%s,%s::jsonb,%s,%s::jsonb)',
-                    (self.key, json.dumps(self.request), current_lifecycle(), json.dumps(self.snapshot))))
-            yield self
+                def insert(connection):
+                    self._lock_workspace_dependencies(connection)
+                    connection.execute(
+                        'INSERT INTO society_creation_intents VALUES (%s,%s::jsonb,%s,%s::jsonb)',
+                        (self.key, json.dumps(self.request), current_lifecycle(), json.dumps(self.snapshot)),
+                    )
+                self.db.write(insert)
+            try:
+                yield self
+            except Exception:
+                if self.key.partition(':')[0] in WORKSPACE_INTENT_KINDS and not self.snapshot.get('record'):
+                    # Rejection before freezing any Resident may be retried.
+                    # An admitted request with a frozen record stays visible.
+                    self.snapshot['workspace_preclaim_failed'] = True
+                    self.save()
+                raise
 
     def save(self):
         self.db.write(self._save_open)
@@ -86,11 +128,16 @@ class CreationIntent:
         self.snapshot = row['snapshot']
 
     def _save_open(self, connection):
+        self._lock_workspace_dependencies(connection)
         cursor = connection.execute(
             f"UPDATE {self.table} SET snapshot=%s::jsonb WHERE operation_id=%s AND NOT (snapshot ? 'cancellation')",
             (json.dumps(self.snapshot), self.key))
         if cursor.rowcount != 1:
             raise ValueError('Creation operation was cancelled or removed')
+
+    def _lock_workspace_dependencies(self, connection):
+        if self.key.partition(':')[0] in WORKSPACE_INTENT_KINDS:
+            get_directory_cleanup_store().lock(connection)
 
     def complete(self, connection):
         self.snapshot['completed'] = True

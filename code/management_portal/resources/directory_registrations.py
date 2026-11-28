@@ -185,12 +185,12 @@ def unregister_nested(roots, *, connection, actor):
     return unregister_tree(roots, connection=connection, actor=actor)['resource_ids']
 
 
-def retire_workspace_registration(row, *, connection, actor):
+def retire_workspace_registration(row, *, connection, actor, pending_dependency='unknown'):
     """Retire only this Workspace identity, preserving independent registrations.
 
     The Workspace owner has locked/authorized the row and checked its usage
     bindings in this transaction. Installed owner dependencies prove that this
-    exact identity has no remaining owned artifacts or overlapping operations.
+    exact identity has no remaining owned artifacts or dependent operations.
     Physical containment does not establish ownership: independent registrations
     and their bindings stay untouched, including registrations at the same path.
     No paths are rewritten and no physical cleanup is scheduled, even if the
@@ -198,7 +198,8 @@ def retire_workspace_registration(row, *, connection, actor):
     """
     import json
     from management_common import directory_dependencies as deps
-    from management_common.directory_paths import cleanup_location, lexical_path
+    from management_common.directory_paths import cleanup_location, cleanup_path, lexical_path, DirectoryComparison
+    from .creation import creation_dependency_record, CreationDependencyUnknown
     from .workspace_store import get_workspace_store, now
 
     identity = row['workspace_id']
@@ -224,11 +225,36 @@ def retire_workspace_registration(row, *, connection, actor):
         (identity, identity)).fetchone()
     if owned:
         raise ValueError('Workspace still has other owned directories or dependent operations')
-    claim = connection.execute(f'SELECT 1 FROM {deps.schema()}.directory_dependencies '
+    if pending_dependency == 'dependent':
+        raise ValueError('Workspace has pending identity dependencies')
+    if pending_dependency != 'independent':
+        raise ValueError('Workspace has unknown pending identity dependencies or operation claims')
+    claims = connection.execute(f'SELECT kind,object_id,owner_id,location FROM {deps.schema()}.directory_dependencies '
         "WHERE disposition='claim' AND (path_key=ANY(%s::text[]) "
-        'OR ancestors && %s::text[]) LIMIT 1', (ancestors, keys)).fetchone()
-    if claim:
-        raise ValueError('Workspace overlaps pending directory cleanup or operation claims')
+        'OR ancestors && %s::text[])', (ancestors, keys))
+    comparison = DirectoryComparison()
+    for claim in claims:
+        path = cleanup_path(claim['location'])
+        strict_child = all(
+            any(comparison.contains(root, candidate) for root in roots)
+            and not any(comparison.contains(candidate, root) for root in roots)
+            for candidate in (path, path.resolve(strict=False)))
+        independent = False
+        if strict_child and claim['kind'] == 'cleanup':
+            # Existing independent cleanup remains its owner's responsibility;
+            # this operation neither consumes nor creates its work.
+            independent = bool(claim['owner_id'] and claim['owner_id'] != identity)
+        elif strict_child and claim['kind'] == 'reservation':
+            try:
+                evidence = creation_dependency_record(claim['object_id'], connection=connection)
+            except CreationDependencyUnknown:
+                evidence = None
+            independent = bool(evidence and not evidence['completed'] and not evidence['aborted']
+                and evidence['workspace_dependencies'] is not None
+                and identity not in evidence['workspace_dependencies']['workspace_ids']
+                and claim['object_id'] in evidence['claim_operation_ids'])
+        if not independent:
+            raise ValueError('Workspace overlaps pending directory cleanup or operation claims')
     store = get_workspace_store()
     timestamp = now()
     plan = {'plan_id': 'workspace-retirement:' + identity, 'mode': 'registration_only',
@@ -237,6 +263,7 @@ def retire_workspace_registration(row, *, connection, actor):
             'workspace_paths': [str(root)], 'preserved_paths': [str(path) for path in roots],
             'binding_count': 0, 'retired_nested_count': 0,
             'preserves_independent_registrations': True, 'preserves_projections': True,
+            'preserves_independent_claims': True,
             'cleanup_roots': [], 'cleanup_ids': []}
     store.mark_deleted(identity, deleted_at=timestamp, deleted_by=actor, connection=connection)
     # Discussion projection release can delete its Resident and owned files.
