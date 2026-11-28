@@ -161,6 +161,7 @@ class ResourceService:
         *,
         register: Any = None,
         unregister: Any = None,
+        unregister_preserving_files: Any = None,
         update: Any = None,
         content_updatable: bool = False,
         service_managed_registration: bool = False,
@@ -173,6 +174,7 @@ class ResourceService:
     ) -> None:
         service_providers.register_mutation_provider(
             self, resource_types, register=register, unregister=unregister, update=update,
+            unregister_preserving_files=unregister_preserving_files,
             content_updatable=content_updatable, service_managed_registration=service_managed_registration,
             owner_managed_unregistration=owner_managed_unregistration,
             update_workbench_page=update_workbench_page,
@@ -282,10 +284,12 @@ class ResourceService:
         wait_for_index: bool = False,
         index_timeout: float = 45.0,
         expected_version: object = None,
+        preserve_files: bool = False,
     ) -> dict[str, Any]:
         return service_mutations.unregister(
             self, resource_id, actor=actor, resource_type=resource_type, wait_for_index=wait_for_index,
             index_timeout=index_timeout, expected_version=expected_version,
+            preserve_files=preserve_files,
         )
 
     def _named_operation_target(self, resource_id, resource_types, *, actor, instruction,

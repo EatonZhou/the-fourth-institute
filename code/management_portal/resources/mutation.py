@@ -29,6 +29,7 @@ class ResourceMutationProvider:
     update_workbench_reverse_plan: Callable[..., dict[str, Any]] | None = None
     register_contract: Mapping[str, Any] | None = None
     update_contract: Mapping[str, Any] | None = None
+    unregister_preserving_files: UnregisterHandler | None = None
 
 
 def _copy_contracts(provider):
@@ -61,7 +62,8 @@ class MutationProviderRegistry:
         if not clean_types or any(not value for value in clean_types):
             raise ValueError("at least one resource type is required")
         handlers = (provider.register, provider.unregister, provider.update,
-                    provider.update_workbench_page, provider.update_workbench_reverse_plan)
+                    provider.update_workbench_page, provider.update_workbench_reverse_plan,
+                    provider.unregister_preserving_files)
         if not any(handler is not None for handler in handlers):
             raise TypeError("resource mutation provider requires a handler")
         if any(

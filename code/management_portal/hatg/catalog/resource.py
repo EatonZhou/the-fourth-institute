@@ -112,6 +112,7 @@ DECLARATIONS = (
     ), mutates=True, target="resource_id"),
     _d("UnregisterResource", (On("resource_id"),), "以 @admin 权限撤销资源登记。按资源归属先注销身份、嵌套登记和绑定，再在后台删除该资源拥有的文件；共享目录中的其他文件保留。区域内外位置不决定删除方式，文件清理失败不恢复已注销身份。", (
         R("resource_id", description="资源统一 ID"),
+        P("preserve_files", "boolean", "显式保留文件，仅 Workspace 支持；默认 false。要求自身持有目录所有权、无 Resident 绑定及其他同址/嵌套登记、占位和所属产物；拒绝时不降级。成功仅撤销登记，不删除目录、软链接或目标，不产生文件清理任务。"),
     ), (
         R("resource_id", description="被撤销的统一 ID"),
         P("index_projection", "object", "若索引通知未完成，保留未确认状态及原因；登记注销已提交"),

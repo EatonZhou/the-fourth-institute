@@ -376,6 +376,7 @@ def update_resource(inv: Invocation) -> dict[str, Any]:
 def unregister_resource(inv: Invocation) -> dict[str, Any]:
     with _registry_errors():
         record = _service().unregister(inv.argument("resource_id"), actor=inv.caller,
+                                       preserve_files=inv.arguments.get("preserve_files", False),
                                        expected_version=inv.expected_version_for(inv.argument("resource_id")),
                                        **INDEX_WAIT)
     return {**record, "resource_id": inv.argument("resource_id")}

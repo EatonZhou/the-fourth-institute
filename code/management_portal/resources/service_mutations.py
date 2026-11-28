@@ -347,14 +347,19 @@ def unregister(
     wait_for_index: bool = False,
     index_timeout: float = 45.0,
     expected_version: object = None,
+    preserve_files: bool = False,
 ) -> dict[str, Any]:
+    if type(preserve_files) is not bool:
+        raise ValueError('preserve_files must be a boolean')
     identity = service._existing_identity(resource_id, resource_type, actor=actor)
     service._ensure_mutation_providers(identity.resource_type)
     provider = service._mutation_providers.provider_for(identity.resource_type)
     service._require_mutation_actor(actor)
-    if provider.unregister is None:
+    unregister = provider.unregister_preserving_files if preserve_files else provider.unregister
+    if unregister is None:
         raise ValueError(
-            f"{identity.resource_type} resources do not support unregistration"
+            f"{identity.resource_type} resources do not support "
+            + ("unregistration preserving files" if preserve_files else "unregistration")
         )
     # Remote domain owners serialize their own deletion and confirm it by
     # calling our projection endpoint on a different thread. Holding the index
@@ -370,7 +375,7 @@ def unregister(
             if current != str(expected_version):
                 raise ResourceVersionConflict(f"{identity.resource_id} 的版本已经变化",
                                               expected_version=expected_version, current_version=current)
-        result = provider.unregister(identity.resource_id, actor=str(actor or ""))
+        result = unregister(identity.resource_id, actor=str(actor or ""))
         with mutation_projection_scope(identity.resource_id):
             return service._complete_mutation(
                 result, resource_type=identity.resource_type, expected_id=identity.resource_id,

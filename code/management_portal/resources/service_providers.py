@@ -103,6 +103,7 @@ def register_mutation_provider(
     *,
     register: Any = None,
     unregister: Any = None,
+    unregister_preserving_files: Any = None,
     update: Any = None,
     content_updatable: bool = False,
     service_managed_registration: bool = False,
@@ -127,6 +128,7 @@ def register_mutation_provider(
         ResourceMutationProvider(
             register=register,
             unregister=unregister,
+            unregister_preserving_files=unregister_preserving_files,
             update=update,
             content_updatable=bool(content_updatable),
             service_managed_registration=bool(service_managed_registration),

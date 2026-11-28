@@ -163,12 +163,13 @@ def install_resolver(service: "ResourceService") -> None:
 
 
 def install_mutation_provider(service: "ResourceService") -> None:
-    def unregister_workspace_resource(resource_id, *, actor, authorize):
+    def unregister_workspace_resource(resource_id, *, actor, authorize, preserve_files=False):
         from management_portal.society_service.state_store import get_lineage_data_store
         from management_portal.society_service.resident_workspace_deletion import unregister_workspace
 
         with get_lineage_data_store().database.transaction() as connection:
-            return unregister_workspace(resource_id, connection=connection, actor=actor, authorize=authorize)
+            return unregister_workspace(resource_id, connection=connection, actor=actor,
+                                        authorize=authorize, preserve_files=preserve_files)
 
     workspace.install_mutation_provider(service, unregister_workspace=unregister_workspace_resource)
     from management_portal import isa_client

@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-07-26'
 version:
-  number: 44
+  number: 46
   created_at: "2026-07-26"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-02T22:06:17Z"
+  updated_at: "2026-11-28T04:21:40Z"
   updated_by:
     user: ""
-    agent: "resident_dbcd3920b7cc"
+    agent: "resident_83d75ad3a6c7"
 importance: 9
 metaness: 2
 ai_generated: false
@@ -103,6 +103,10 @@ UnbindWorkspace 通过 workspace_id 或明确路径选择额外绑定，只删�
 
 ### 删除 Resident、Lineage 与关联 Workspace
 
+Workspace 的生命周期按创建或交接时登记的 owner 决定。Resident 的自有引用与 Workspace owner 必须一致，额外绑定只表达使用；删除 Resident 通过 owner 索引取其拥有的 Workspace 清单，并移除其全部使用绑定。属于其他对象或 Workspace 自己的目录保留，不能以无人引用为由删除。目标拥有的 Workspace 即使被别人绑定也随目标注销，其他使用者只失去绑定。
+
+登记、移动、归属交接与注销同事务维护精确归属和目录保护关系。独立资源根不属于该 Workspace 的可清理内容；旧嵌套关系须在升级中明确登记保护边界，不能在 DeleteResident 中扫描全部 Workspace 或资源根。详见 decision_4aa13bc21e8e「Resident 删除清单」。
+
 **删除通过权限系统授权后，Workspace 的存在或被引用不会额外拒绝 Resident 或 Lineage 删除。** Resident、Lineage 和 Project 删除涉及的执行终止、目录来源、整树删除、嵌套登记与绑定按《目录与路径协议》（decision_4aa13bc21e8e）处理。UnbindWorkspace 只解除关系，不触发目录回收；授权始终由权限系统决定。
 
 注册注销、后台文件清理、持久重试与删除期间的新引用按《目录与路径协议》（decision_4aa13bc21e8e）处理。文件系统错误不复活已删除身份；系统不提供回收站。
@@ -159,6 +163,14 @@ Workspace 支持 `UnregisterResource(resource_id=workspace_id)`，要求目标 W
 
 Workspace 注销的来源、区域内外目录与嵌套登记范围按《目录与路径协议》（decision_4aa13bc21e8e）处理。注销写入 deleted_at/deleted_by 并推进 updated_at，已删除身份不得复活；目录已不存在时只注销登记。不能用此入口删除区域根目录，也不沿子符号链接删除外部文件。
 
-Workspace 注销提交、后台文件清理、持久重试与进度回执按《目录与路径协议》（decision_4aa13bc21e8e）处理。提交前在事务中锁定 Workspace 表与目标行并重新鉴权，其他目录资源从权威注册表及 Lineage 表读取，不以搜索索引判断；提交后的索引确认继续使用通用 ResourceService 回执。
+Workspace 注销提交、后台文件清理、持久重试与进度回执按《目录与路径协议》（decision_4aa13bc21e8e）处理。提交前在事务中仅锁定精确目标活态行并重新鉴权，不锁整张 Workspace 表；范围与依赖由领域权威记录取得，不以搜索索引判断；提交后的索引确认继续使用通用 ResourceService 回执。
 
 实现与测试：`resources/providers/workspace.py`、`resources/workspace_dependencies.py`、`society_service/resident_workspace_deletion.py`、`tests/cases/test_workspace_unregistration.py`。
+
+### 显式保留文件的 Workspace 注销
+
+`UnregisterResource(resource_id=workspace_id, preserve_files=true)` 表达仅撤销登记、保留全部文件的明确意图；省略 `preserve_files` 或指定 `false` 仍走普通注销与后台文件清理。此选项只接受布尔值，只对支持保留文件的 Workspace 提供；其他类型、非法值或核验失败均拒绝，不退回普通删除，也不在普通删除遇到路径错误时自动切换模式。
+
+保留模式仍要求真实调用者对目标拥有 `@admin`，并遵守个人私有边界和版本前提。在目录协调锁和目标行锁内重新核验：Workspace 仍活跃且目录属于自身，没有 Resident 自有引用或额外使用绑定，目录依赖完整就绪；原登记位置及当前解析位置没有其他同址或嵌套登记、待清理及操作占位，也没有覆盖它们的祖先占位或该 Workspace 拥有的其他目录产物。关系来自当前领域权威登记，不以搜索结果或目录为空替代；不级联移除其他对象，不解除他人绑定。任何不满足项均在提交前失败。
+
+成功在同一事务中退休这一身份、撤销其权限资源登记并记录投影清理事件，保存调用者、时间、原位置、当前解析位置及保留文件决定；清理范围和文件清理任务均为空。不会删除、移动或改写目录、符号链接及链接目标，后来恢复原路径也不会补排删除。保留文件不意味着保留旧 Workspace 访问能力：已注销身份不能打开、绑定或复活。提交前失败整体回滚；提交后的索引确认及同请求幂等重放沿原通用合同，索引未确认不得冒称注销回滚。

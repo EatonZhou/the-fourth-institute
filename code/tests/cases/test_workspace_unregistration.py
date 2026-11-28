@@ -79,7 +79,7 @@ def test_unregister_compares_the_token_in_the_service_mutation(workspace):
 
     def unregister(token):
         return isa.unregister_resource(SimpleNamespace(
-            argument={'resource_id': WID}.get, caller='alice', expected_version_for=lambda _object_id: token))
+            arguments={'resource_id': WID}, argument={'resource_id': WID}.get, caller='alice', expected_version_for=lambda _object_id: token))
 
     with pytest.raises(InstructionError) as raised:
         unregister(stale)

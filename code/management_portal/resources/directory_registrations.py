@@ -184,6 +184,59 @@ def unregister_nested(roots, *, connection, actor):
     return unregister_tree(roots, connection=connection, actor=actor)['resource_ids']
 
 
+def retire_workspace_registration(row, *, connection, actor):
+    """Explicitly retire an isolated Workspace identity while preserving files.
+
+    The Workspace owner has locked/authorized the row and checked its usage
+    bindings in this transaction. Installed owner dependencies prove that this
+    exact registration has no remaining owned artifacts or nested registrations.
+    No paths are rewritten and no physical cleanup is scheduled, even if the
+    original parent is later restored. Keep that decision in the retirement log.
+    """
+    import json
+    from management_common import directory_dependencies as deps
+    from management_common.directory_paths import cleanup_location, lexical_path
+    from .workspace_store import get_workspace_store, now
+
+    identity = row['workspace_id']
+    if row['owner_id'] != identity:
+        raise ValueError('Workspace is still owned by another identity')
+    queue = get_directory_cleanup_store()
+    queue.lock(connection)
+    deps.require_ready(connection)
+    root = lexical_path(located_path(row['path']))
+    location = cleanup_location(root)
+    own = connection.execute(f'SELECT * FROM {deps.schema()}.directory_dependencies '
+                            "WHERE kind='workspace' AND object_id=%s", (identity,)).fetchall()
+    if (len(own) != 1 or own[0]['owner_id'] != identity or own[0]['location'] != location
+            or own[0]['disposition'] != 'owned'):
+        raise deps.DirectoryDependenciesMissing('Workspace directory ownership evidence is incomplete')
+    # Conservative lexical candidates include case aliases. Check both the
+    # former location and today's target, without traversing either file tree.
+    roots = list(dict.fromkeys((root, root.resolve(strict=False))))
+    keys = [deps.path_keys(path)[0] for path in roots]
+    ancestors = sorted({key for path in roots for key in deps.path_keys(path)[1]})
+    other = connection.execute(f'SELECT 1 FROM {deps.schema()}.directory_dependencies '
+        'WHERE (owner_id=%s OR path_key=ANY(%s::text[]) OR ancestors && %s::text[] '
+        "OR (disposition='claim' AND path_key=ANY(%s::text[]))) "
+        "AND NOT (kind='workspace' AND object_id=%s) LIMIT 1",
+        (identity, keys, keys, ancestors, identity)).fetchone()
+    if other:
+        raise ValueError('Workspace has nested registrations, claims or other owned directories')
+    store = get_workspace_store()
+    timestamp = now()
+    plan = {'plan_id': 'workspace-retirement:' + identity, 'mode': 'registration_only',
+            'reason': 'preserve_files', 'actor': actor, 'retired_at': timestamp,
+            'resource_ids': [identity], 'workspace_ids': [identity],
+            'workspace_paths': [str(root)], 'preserved_paths': [str(path) for path in roots],
+            'binding_count': 0, 'nested_count': 0, 'cleanup_roots': [], 'cleanup_ids': []}
+    store.mark_deleted(identity, deleted_at=timestamp, deleted_by=actor, connection=connection)
+    _unregister_identity_metadata(identity, connection=connection, actor=actor)
+    connection.execute(f'INSERT INTO {deps.schema()}.identity_retirements(identity,root,plan) '
+                       'VALUES (%s,%s,%s::jsonb)', (identity, location, json.dumps(plan)))
+    return plan
+
+
 
 def unregister_tree(roots=(), *, connection, actor, workspace_ids=(), owner_ids=(), deleted_at=None,
                     cleanup_owner=enqueue_directory_cleanup, preserve_resources=False):

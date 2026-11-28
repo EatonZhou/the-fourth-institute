@@ -19,7 +19,7 @@ def delete_workspaces(connection, *, workspace_ids=(), paths=(), owner_ids=(), d
     return result['workspace_paths']
 
 
-def unregister_workspace(workspace_id, *, connection, actor, authorize):
+def unregister_workspace(workspace_id, *, connection, actor, authorize, preserve_files=False):
     store = get_workspace_store()
     store.cleanup.lock(connection)
     connection.execute(f'SELECT workspace_id FROM {store.table} '
@@ -29,9 +29,24 @@ def unregister_workspace(workspace_id, *, connection, actor, authorize):
     if row is None:
         raise KeyError(workspace_id)
     authorize(store.descriptor(row))
-    delete_workspaces(connection, workspace_ids=[workspace_id], deleted_at=now(), deleted_by=actor)
+    retirement = None
+    if preserve_files:
+        # The FOR UPDATE above also excludes new FK bindings until commit.
+        # Existing bindings, including deleted owners awaiting cleanup, remain
+        # evidence of use; a redirected path must never become a cascade.
+        bound = connection.execute('SELECT 1 FROM resident_workspace_bindings WHERE workspace_id=%s '
+            'UNION ALL SELECT 1 FROM residents WHERE owned_workspace_id=%s LIMIT 1',
+            (workspace_id, workspace_id)).fetchone()
+        if bound:
+            raise ValueError('Workspace still has Resident bindings; cannot preserve files on unregistration')
+        from management_portal.resources.directory_registrations import retire_workspace_registration
+        retirement = retire_workspace_registration(row, connection=connection, actor=actor)
+    else:
+        delete_workspaces(connection, workspace_ids=[workspace_id], deleted_at=now(), deleted_by=actor)
     descriptor = store.descriptor(store.rows([workspace_id], connection=connection, include_deleted=True)[workspace_id])
     descriptor['attributes']['directory_cleanup'] = store.cleanup.status(owner_id=workspace_id, connection=connection)
+    if retirement is not None:
+        descriptor['attributes']['directory_retirement'] = retirement
     return descriptor
 
 

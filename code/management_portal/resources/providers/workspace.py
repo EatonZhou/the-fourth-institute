@@ -114,7 +114,7 @@ def install_mutation_provider(service: "ResourceService", *, unregister_workspac
         )
         return descriptor_resource_record(descriptor)
 
-    def unregister(resource_id, *, actor=""):
+    def unregister(resource_id, *, actor="", preserve_files=False):
 
         def authorize(descriptor):
             record = descriptor_resource_record(descriptor)
@@ -123,9 +123,12 @@ def install_mutation_provider(service: "ResourceService", *, unregister_workspac
             if resource_id not in permission_system.permitted_ids(actor, "UnregisterResource", "resource_id", [resource_id]):
                 raise PermissionError("Workspace unregistration requires @admin")
 
+        options = {"preserve_files": True} if preserve_files else {}
         return descriptor_resource_record(unregister_workspace(
-            resource_id, actor=actor, authorize=authorize,
+            resource_id, actor=actor, authorize=authorize, **options,
         ))
 
     service.register_mutation_provider("workspace", update=update, unregister=unregister,
+                                      unregister_preserving_files=lambda resource_id, *, actor="":
+                                          unregister(resource_id, actor=actor, preserve_files=True),
                                       update_contract=UPDATE_CONTRACT)
