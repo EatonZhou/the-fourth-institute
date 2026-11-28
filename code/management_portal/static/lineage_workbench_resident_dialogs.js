@@ -147,21 +147,9 @@
       return { ...definition, ...window.PortalLineageCatalogs.routeRuntimeCatalog(route, refreshOpenResidentRegistrationOptions) };
     }
 
-    function residentEffortsForModel(model) {
-      return [...(residentRuntimeCatalog()?.efforts_by_model?.[String(model || "").trim()] || [])];
-    }
-
-    function syncResidentEffortSelect(modelSelectId, effortSelectId, requestedValue = "") {
-      const model = String($id(modelSelectId)?.value || "").trim();
+    function syncResidentEffortSelect(modelSelectId, effortSelectId, requestedValue = "", catalog = residentRuntimeCatalog()) {
       const select = $id(effortSelectId);
-      if (!select) return;
-      const efforts = residentEffortsForModel(model);
-      const requested = String(requestedValue || "").trim();
-      const options = [
-        { value: "", label: "default" },
-        ...efforts.map(effort => ({ value: effort, label: effort })),
-      ];
-      replaceSelectOptions(select, options, efforts.includes(requested) ? requested : "");
+      if (select) window.PortalLineageCatalogs.populateCreationEfforts(select, catalog, $id(modelSelectId).value, requestedValue);
     }
 
     function resetResidentRuntimeSettings(settings = {}) {
@@ -170,7 +158,7 @@
       const catalog = residentRuntimeCatalog();
       const model = settings.model || catalog.default_model || "";
       if (catalog.models?.includes(model)) $id("residentRuntimeModelSelect").value = model;
-      syncResidentEffortSelect("residentRuntimeModelSelect", "residentRuntimeEffortSelect", settings.reasoning_effort || "");
+      syncResidentEffortSelect("residentRuntimeModelSelect", "residentRuntimeEffortSelect", settings.reasoning_effort || "", catalog);
       syncResidentTierSelect(catalog, settings.service_tier || "");
       setSelectValue("residentRuntimePermissionSelect",
         runtimePermissionPreset(settings) || residentRuntimeDefinition().runtime_capabilities?.default_permission_preset);
@@ -237,7 +225,7 @@
         const row = $id(id)?.closest(".residentFormRow");
         if (row) { row.hidden = !fields.includes(field); row.style.display = row.hidden ? "none" : ""; }
       }
-      syncResidentEffortSelect("residentRuntimeModelSelect", "residentRuntimeEffortSelect", $id("residentRuntimeEffortSelect")?.value || "");
+      syncResidentEffortSelect("residentRuntimeModelSelect", "residentRuntimeEffortSelect", $id("residentRuntimeEffortSelect")?.value || "", catalog);
     }
 
     function setResidentWorkspaceAdvancedOpen(open) {

@@ -68,7 +68,8 @@ const ui = w.PortalHatgResidentDialogs.createResidentDialogs(deps);
     assert.match($id('nodeFormError').textContent,/current route unavailable/);
     assert.equal($id('nodeSubmitBtn').disabled,true);
     pending.set('codex_two',deferred());$id('nodeRouteSelect').value='two';ui.renderNodeProviderFields();
-    pending.get('codex_two').resolve({models:['model-x','model-y'],default_model:'model-x',efforts_by_model:{'model-x':['high']},
+    pending.get('codex_two').resolve({models:['model-x','model-y'],default_model:'model-x',default_reasoning_effort:'low',
+      default_efforts_by_model:{'model-x':'medium'},efforts_by_model:{'model-x':['low','medium','high']},
       service_tiers_by_model:{'model-x':['priority',{id:'ultrafast'}]}});
     await tick();
     assert.equal($id('nodeForm').getAttribute('aria-busy'),'false');
@@ -76,17 +77,25 @@ const ui = w.PortalHatgResidentDialogs.createResidentDialogs(deps);
     assert.equal($id('nodeSubmitBtn').disabled,false);
     assert.equal($id('nodeFormError').hidden,true);
     const tier = $id('nodeServiceTierInput');
+    const effort = $id('nodeEffortSelect');
+    assert.equal(effort.selectedOptions[0].text, 'medium（默认）');
     assert.deepEqual(Array.from(tier.options, option => option.text), ['Standard (default)', 'Fast', 'Ultra-fast']);
     tier.value = 'ultrafast';
     let submitted;
     state.graphController = {getPlacementGeometry: () => ({})};
     deps.societyService.createNode = async request => { submitted = request; throw Error('fixture write outcome'); };
     await ui.submitNodeForm({preventDefault(){}});
+    assert.equal(submitted.settings.reasoning_effort, '');
     assert.equal(submitted.settings.service_tier, 'ultrafast');
+    effort.value = 'high';
+    ui.renderNodeProviderFields();
+    await ui.submitNodeForm({preventDefault(){}});
+    assert.equal(submitted.settings.reasoning_effort, 'high');
     $id('nodeModelSelect').value = 'model-y';
     ui.renderNodeProviderFields();
     assert.equal(tier.value, '');
     assert.equal(tier.disabled, true);
+    assert.equal(effort.selectedOptions[0].text, '默认（Provider 未报告档位）');
     state.agentBackendCatalog.creation_default = {backend:'codex', backend_route_id:'three', model:'remembered'};
     pending.set('codex_three',deferred());
     await ui.openNodeModal();

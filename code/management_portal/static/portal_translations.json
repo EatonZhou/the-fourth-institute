@@ -44714,5 +44714,25 @@
   "请选择默认账号。": {
     "zh-CN": "请选择默认账号。",
     "en": "Choose a default account."
+  },
+  "会话建立时使用的账号": {
+    "zh-CN": "会话建立时使用的账号",
+    "en": "Account at session start"
+  },
+  "使用下方所选账号": {
+    "zh-CN": "使用下方所选账号",
+    "en": "Use the account selected below"
+  },
+  "自动选择同后端、同模型的可用账号": {
+    "zh-CN": "自动选择同后端、同模型的可用账号",
+    "en": "Automatically select an available account for this backend and model"
+  },
+  "{p0}（默认）": {
+    "zh-CN": "{p0}（默认）",
+    "en": "{p0} (default)"
+  },
+  "默认（Provider 未报告档位）": {
+    "zh-CN": "默认（Provider 未报告档位）",
+    "en": "Default (level not reported by provider)"
   }
 }

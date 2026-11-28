@@ -28,6 +28,16 @@
     };
   }
 
+  function populateCreationEfforts(select, catalog, model, requested = select.value) {
+    const efforts = catalog?.efforts_by_model?.[model] || [];
+    const defaultEffort = catalog?.default_efforts_by_model?.[model]
+      || (model && model === catalog?.default_model ? catalog.default_reasoning_effort : "");
+    const label = defaultEffort ? window.PortalI18n.text`${defaultEffort}（默认）`
+      : window.PortalI18n.t("默认（Provider 未报告档位）");
+    select.replaceChildren(new Option(label, ""), ...efforts.map(value => new Option(value, value)));
+    select.value = efforts.includes(requested) ? requested : "";
+  }
+
   function populateServiceTiers(select, catalog, model, fields, requested = select.value) {
     const tiers = fields.includes("service_tier") ? catalog?.service_tiers_by_model?.[model] || [] : [];
     const options = [new Option("Standard (default)", "")];
@@ -255,6 +265,7 @@
     populateBackends,
     populateCreationBackends,
     populateCreationRoutes,
+    populateCreationEfforts,
     populateServiceTiers,
     renderForkProvider,
     invalidate,

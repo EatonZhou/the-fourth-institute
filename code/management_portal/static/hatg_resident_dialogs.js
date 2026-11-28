@@ -89,10 +89,7 @@
       const models = catalog?.models || [];
       model.replaceChildren(...models.map(item => new Option(item, item)));
       model.value = models.includes(previousModel) ? previousModel : catalog?.default_model || "";
-      const previousEffort = effort.value;
-      const efforts = catalog?.efforts_by_model?.[model.value] || [];
-      effort.replaceChildren(new Option("Provider default", ""), ...efforts.map(item => new Option(item, item)));
-      effort.value = efforts.includes(previousEffort) ? previousEffort : "";
+      window.PortalLineageCatalogs.populateCreationEfforts(effort, catalog, model.value);
       for (const input of [route, model, effort]) {
         const enabled = input === route ? routes.some(row => row.backend_route_id) : fields.includes(input === model ? "model" : "reasoning_effort");
         input.closest("[data-node-provider-setting]").hidden = !enabled;
