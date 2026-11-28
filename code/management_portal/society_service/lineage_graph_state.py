@@ -12,7 +12,7 @@ from .lineage_primitives import now_iso as _now_iso
 
 STATE_SCHEMA = "tfi.hatg-graph-state.v1"
 MAX_STATE_CELLS = 4096
-MAX_VALUE_BYTES = 64 * 1024
+MAX_VALUE_BYTES = 128 * 1024
 MAX_STATE_BYTES = 2 * 1024 * 1024
 _EXPECTED_VALUE_UNSET = object()
 MAX_TTL_SECONDS = 2**31 - 1
@@ -50,7 +50,7 @@ def _value(value: object) -> Any:
     except (TypeError, ValueError) as exc:
         raise ValueError("Graph State value 必须是 JSON 值") from exc
     if len(encoded) > MAX_VALUE_BYTES:
-        raise ValueError("单个 Graph State value 不能超过 64 KiB")
+        raise ValueError(f"单个 Graph State value 不能超过 {MAX_VALUE_BYTES // 1024} KiB")
     return json.loads(encoded.decode("utf-8"))
 
 

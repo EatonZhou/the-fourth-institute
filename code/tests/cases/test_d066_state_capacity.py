@@ -16,8 +16,10 @@ def test_many_small_cells_remain_bounded_by_count_value_and_document_bytes():
     assert state._normalize({"cells": cells})["cells"] == cells
     with pytest.raises(ValueError, match="4096"):
         state._normalize({"cells": {str(i): None for i in range(4097)}})
-    with pytest.raises(ValueError, match="64 KiB"):
-        state._normalize({"cells": {"large": "x" * (64 * 1024)}})
+    boundary = "界" * ((128 * 1024 - 2) // 3)
+    assert state._normalize({"cells": {"large": boundary}})["cells"]["large"] == boundary
+    with pytest.raises(ValueError, match="128 KiB"):
+        state._normalize({"cells": {"large": boundary + "x"}})
     with pytest.raises(ValueError, match="2 MiB"):
         state._normalize({"cells": {str(i): "x" * 60000 for i in range(36)}})
 

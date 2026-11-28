@@ -19,7 +19,7 @@ DECLARATIONS = (
     _d("UpdateSharedState", "写入一个状态单元；附带期望值时，只在当前值等于期望值时写入（不存在的状态单元按 null 比较）。", (
         R("lineage_id", description="共享状态所属的 Lineage"),
         R("key", description="状态单元名，1–160 字符，不含控制字符"),
-        R("value", "any", "要写入的 JSON 值，不超过 64 KiB"),
+        R("value", "any", "要写入的 JSON 值，不超过 128 KiB"),
         P("expected_value", "any", "写入前要求的当前值；省略时直接写入"),
         P("ttl_seconds", "integer", "本次匹配写入后的存活秒数；省略时长期保存", minimum=1, maximum=2147483647),
     ), (

@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-07-29'
 version:
-  number: 181
+  number: 194
   created_at: "2026-07-29"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-09T08:55:10Z"
+  updated_at: "2026-11-28T06:34:45Z"
   updated_by:
     user: ""
-    agent: "resident_877ef3f99082"
+    agent: "resident_2e9ea0072551"
 importance: 10
 metaness: 3
 ai_generated: false
@@ -111,7 +111,7 @@ HATG 是 Human–Agent Trajectory Graph 的缩写，中文叫"人机协同 Agent
 
 | 概念 | 含义 |
 | --- | --- |
-| 图对象 | 画布上有类型、配置和端口的对象：Resident、Event Source、Effect、Filter、Selector、Reducer、Loop、Seed 和 Function Block 实例 |
+| 图对象 | 画布上有类型、配置和端口的对象：Resident、Event Source、Effect、Filter、Selector、Reducer、Loop、Seed、Blackboard 和 Function Block 实例 |
 | 端口 | 图对象上带名称、方向和数据种类的连接点，声明对象能接收什么、输出什么 |
 | 连线（wire） | 有向的激活路线或对象绑定；激活到输入端口，绑定到对象本身 |
 | Event Source | 观察某类事实，事实发生时产生 Event 的组件 |
@@ -125,6 +125,7 @@ HATG 是 Human–Agent Trajectory Graph 的缩写，中文叫"人机协同 Agent
 | Program | HATG 的可执行定义及其编译后的运行模型，随 Lineage 保存并由服务端执行 |
 | 图代次（graph generation） | 每次编译产生的新编号；旧代次的迟到结果不能推进新 Program |
 | Graph State | Program 可读写的少量键值数据（cell），在多次激活之间保存轻量状态 |
+| Blackboard | Lineage 内 Resident 共用的读写消息板；Resident 经 `attach` 连线按读或写权限连接，写入不激活任何人（decision_ed2c1ed5c245） |
 | Function Block | 可以反复放进 Lineage 的一段协作结构 |
 | Workspace Handoff | 把一个 Resident 工作区中允许的内容交接给另一个 Resident |
 | Trigger Path | 一次 Event 发生或独立 Effect 激活发起的流程，在 Resident 交付处截止 |
@@ -144,13 +145,14 @@ Event Source ──Route──> Resident ──Route──> Filter / Selector / 
                    观察型 Event Source 产生新 Event
 ```
 
-Program 连线共有三种类型：
+Program 连线共有四种类型：
 
 | 类型 | 作用 | 是否触发执行 |
 | --- | --- | --- |
 | `route` | 传输 Packet，接收者处理消息、事件或混合内容 | 是 |
 | `target` | 指定 Effect 的操作对象 | 否 |
 | `watch` | 指定 Event Source 观察的对象 | 否 |
+| `attach` | 把 Resident 连到 Blackboard，配置 `access`（`read`、`write`、`read_write`）；Resident 经此获得读或写该黑板的资格 | 否 |
 
 `route` 是激活连线，可以配置本次调用的参数（见"一次激活的输入"）。`watch` 与 `target` 是被动对象绑定。继承、吸收、交接和候选 Fork 继续保存各自的业务关系。
 
@@ -492,8 +494,13 @@ done
 ### Graph State、Function Block、Seed 与 Workspace Handoff
 
 **Graph State：**
-- 每个 Lineage 最多 4096 个 cell，单值最大 64 KiB，合计最大 2 MiB。共享状态指令和容量契约见 decision_71ba0494b93e。
+- 每个 Lineage 最多 4096 个 cell，单值最大 128 KiB，合计最大 2 MiB。共享状态指令和容量契约见 decision_71ba0494b93e。
 - 使用独立的 revision，与图的 revision 无关。
+
+**Blackboard：**
+- 没有输入输出端口，不参与 Packet 传播；Resident 经被动的 `attach` 连线连接，不触发执行。
+- 条目是追加后不可改的记录，保留策略写在黑板配置里，由黑板按策略清理；条目写入不改变 Lineage 定义版本，也不属于 Graph State。
+- 条目读写、撤回与已读位置由 `CreateBoardEntry`、`ListBoardEntries`、`WatchBoard`、`SetBoardReadPosition`、`DeleteBoardEntry` 提供，规则见 decision_ed2c1ed5c245。
 
 **Function Block：**
 - 实例拥有按定义展开出的内部组件。
@@ -514,7 +521,7 @@ done
 **Workspace Handoff：**
 - 只能在两个不同的 Resident 之间进行。
 - 不交接 secret、缓存和符号链接；最多 60,000 个文件、总计 2 GiB。
-- 准备命令默认超时 5400 秒（90 分钟）。环境变量 `PORTAL_HANDOFF_COMMAND_TIMEOUT_SECONDS` 只有在是有限正数时才生效。
+- 准备命令默认超时 1800 秒（30 分钟）。环境变量 `PORTAL_HANDOFF_COMMAND_TIMEOUT_SECONDS` 只有在是有限正数时才生效。
 - 页面直接创建的交接只准备和绑定工作区，不自动启动接收方。后续工作要由 `workspace_handoff.ready` Event Source 接到激活连线或 Effect。
 
 **删除 Resident：** 画布和通过 `ApplyLineageChanges` 删除 Resident 的 Effect 使用同一条完整删除路径，规则见 decision_6fc653d55c79。删除 Selector、Reducer 组件只解除它与执行者的绑定，不删除执行者 Resident。
@@ -869,6 +876,7 @@ flowchart LR
 | `lineage.changed` | 当前 Lineage 的版本变化 | 无 |
 | `state.changed` | 某个共享状态键的值实际改变或到期清除，不论由谁写入 | `key` |
 | `state.condition_met` | 某个 Graph State cell 的条件从不成立变为成立。到期清除按条件不成立处理 | `key`、`operator`、`expected_value`、`fire_on_initial_match`（可选） |
+| `blackboard.entry_created` | 所选 Blackboard 上写入了一个新条目，每个条目一次；payload 含 `entry_id`、`seq`、`author_id`、`kind`，不含正文 | `watch.subject`（Blackboard）、`kind`（可选，只响应该 `kind` 的条目） |
 | `budget.exhausted` | 所选 Event Source 达到最大触发次数 | `watch.subject` |
 | `event.delivery_failed` | 所选 Event Source 或它的一条 Event 连线投递失败 | `watch.subject` |
 | `event.delivery_expired` | 所选 Event Source 或它的一条 Event 连线上的排队事件过期 | `watch.subject` |
