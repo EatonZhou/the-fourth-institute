@@ -102,9 +102,9 @@ def test_closed_test_project_cleanup_checks_both_registries(tmp_path, monkeypatc
     scope = allocate(tmp_path, pid)
     if owner != 'open_scope':
         LifecycleStore().request_close(scope)
-    monkeypatch.setattr(project_registry, 'project', lambda _id: {'id': pid} if owner == 'registered' else None)
+    monkeypatch.setattr(project_registry, 'projects_readonly', lambda: [{'id': pid}] if owner == 'registered' else [])
     entry = {'effects': {'status': 'pending'}} if owner == 'pending' else None
-    registry = SimpleNamespace(database=SimpleNamespace(snapshot=nullcontext), get=lambda *_: entry)
+    registry = SimpleNamespace(readonly_snapshot=lambda _: (1, {pid: entry} if entry is not None else {}))
     monkeypatch.setattr(project_deletion_effects, 'get_registry_store', lambda: registry)
     monkeypatch.setattr(project_deletion_effects, 'exclusive', lambda _id: nullcontext())
     monkeypatch.setattr(wall_backend, 'projects', lambda actor: {
@@ -194,8 +194,12 @@ def test_named_project_cleanup_reaches_real_owner(tmp_path, monkeypatch):
     from tests.cases.test_project_deletion import _configure_project
     from management_common.directory_cleanup_store import get_directory_cleanup_store
     from management_portal import project_registry
+    from management_portal.resources.project_deletion_effects import registration_release_complete
     project_root, _, _, _ = _configure_project(monkeypatch, tmp_path)
+    assert not registration_release_complete('Example')
     tau_fixtures._release_resource('Example', 'real-project-owner')
+    monkeypatch.setattr(project_registry, '_cache', None)
+    assert registration_release_complete('Example')
     assert project_registry.project('Example') is None
     get_directory_cleanup_store().run_pending()
     assert not project_root.exists()

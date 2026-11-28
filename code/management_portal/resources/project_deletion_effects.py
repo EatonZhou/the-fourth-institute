@@ -38,10 +38,11 @@ def registration_release_complete(project_id):
     from management_portal import project_registry
 
     registry = get_registry_store()
-    with exclusive(project_id), registry.database.snapshot():
-        if project_registry.project(project_id) is not None:
+    with exclusive(project_id):
+        if any(item['id'] == project_id for item in project_registry.projects_readonly()):
             return False
-        entry = registry.get(COLLECTION, project_id)
+        _, deletions = registry.readonly_snapshot(COLLECTION)
+        entry = deletions.get(project_id)
         return entry is None or entry.get('effects', {}).get('status') == 'complete'
 
 
