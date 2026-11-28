@@ -78,6 +78,12 @@ def test_router_projection_contains_the_real_relay_without_moving_runtime_owners
     assert {'router','route_relay'} <= {c['key'] for c in view['components']}
     assert next(w for w in view['wires'] if w['key']=='relay')['source']=='router_resident'
     assert meta['owners']['route_relay']==meta['owners']['relay']=='router_resident'
+    assert meta['owners']['facade_inbox']=='facade_resident'
+    assert meta['expansion_owners']['facade_inbox']=='router_resident'
+    event=next(c for c in view['components'] if c['key']=='facade_inbox')
+    assert event['title']=='门面收到消息' and event['config']['event_type']=='resident.message_received'
+    assert any(r['kind']=='watch' and r['source']=='facade_resident' and r['target']=='facade_inbox' for r in meta['interactions'])
+    assert next(w for w in view['wires'] if w['key']=='route')['source']=='facade_inbox'
     assert {'route_relay','relay'} <= set(meta['residents']['router_resident']['duties'][0]['members'])
     assert any(r['source']=='route_relay' and r['target']=='member_resident' for r in meta['interactions'])
     assert any('格式无效' in r['label'] for r in meta['interactions'] if r['target']=='steward_resident')

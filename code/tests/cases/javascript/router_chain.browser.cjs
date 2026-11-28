@@ -28,10 +28,17 @@ const {chromium}=require('../../../management_portal/test_framework/tau_runtime/
   const graph=await page.evaluate(()=>LineageTemplateGraph.project(workshop.template().editor.graph.body,{workshop:true}));
   assert.ok(graph.edges.some(edge=>edge.source==='facade_resident'&&edge.target==='router_resident'));
   assert.ok(graph.edges.some(edge=>edge.source==='router_resident'&&edge.target==='member_resident'&&edge.label==='转交所选成员'));
+  assert.equal(graph.nodes.some(node=>node.id==='facade_inbox'),false);
+  assert.equal(graph.edges.some(edge=>edge.id==='interaction:facade_resident:facade_inbox'),false);
   assert.equal(await root.locator('.templateBinding[data-binding-key="family"],.templateBinding[data-binding-key="member_done"]').count(),0);
   await page.mouse.move(5,5);await page.waitForTimeout(400);await page.screenshot({path:`${folder}/router-complete-collapsed.png`});
   await open('router');await menu.locator('[data-template-menu-expand]').click();await collapse('router').waitFor({state:'visible'});
   assert.equal(await root.locator('.hatgNode[data-node-id="router"]').isVisible(),true);assert.equal(await root.locator('.hatgNode[data-node-id="route_relay"]').isVisible(),true);
+  const expandedGraph=await page.evaluate(()=>LineageTemplateGraph.project(workshop.template().editor.graph.body,{workshop:true,expanded:['router_resident']}));
+  assert.ok(expandedGraph.nodes.some(node=>node.id==='facade_inbox'&&node._template.config.event_type==='resident.message_received'));
+  assert.ok(expandedGraph.edges.some(edge=>edge.type==='watch'&&edge.source==='facade_resident'&&edge.target==='facade_inbox'));
+  assert.ok(expandedGraph.edges.some(edge=>edge.id==='route'&&edge.source==='facade_inbox'&&edge.target==='router'));
+  assert.equal(await root.locator('.hatgNode[data-node-id="facade_inbox"]').isVisible(),true);
   await page.evaluate(()=>{window.beforeBody=JSON.stringify(LineageTemplateWorkshopDraft.payload(workshop.template()));});
   for(const theme of ['auto','liquid-glass','dark'])for(const width of [1440,600]){
    await page.setViewportSize({width,height:1000});await page.evaluate(theme=>PortalTheme.setMode(theme),theme);await root.locator('[data-graph-fit]').click();await page.mouse.move(5,5);await page.waitForTimeout(400);await page.screenshot({path:`${folder}/router-expanded-${theme}-${width}.png`});

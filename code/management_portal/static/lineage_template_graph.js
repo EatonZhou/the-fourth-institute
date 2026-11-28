@@ -291,12 +291,14 @@
         edge.target_port = wanted.map(type => ports.find(port => port.type === type)).find(Boolean)?.port_id || '';
       }
     });
-    graph.edges.push(...(source.presentation?.interactions || []).map(row=>({
-      id:row.key,source:row.source,target:row.target,type:row.kind,label:row.label,_template_interaction:true,_template_collapsed_label:row.collapsed_label,
+    const expandedIds = new Set(expanded);
+    graph.edges.push(...(source.presentation?.interactions || []).filter(row=>!row.expanded_only||expandedIds.has(row.owner)||scope?.includes(row.owner)).map(row=>({
+      id:row.key,source:row.source,target:row.target,type:row.kind,label:row.label,_template_interaction:true,_template_collapsed_label:row.collapsed_label,_template_owner:row.owner,
     })));
     const representative = new Map(), grouped = [];
-    const expandedIds = new Set(expanded);
     if (source.presentation && !scope) for (const [key,owner] of Object.entries(source.presentation.owners)) {
+      const expansionOwner=source.presentation.expansion_owners?.[key];
+      if (expansionOwner && expandedIds.has(expansionOwner)) continue;
       if (!expandedIds.has(owner)) representative.set(key,owner);
     }
     for (const group of (source.presentation ? [] : groups).filter(group => !group.expanded)) {
@@ -325,7 +327,7 @@
       for(const [key,binding] of Object.entries(bindingRows)){
         if(binding.uses?.some(use=>wanted.has(use.component)))selected.add(key);
       }
-      visibleEdges=edges.filter(edge=>wanted.has(edge.id) || wanted.has(edge.source)&&wanted.has(edge.target) || edge._template_interaction&&wanted.has(edge.source));
+      visibleEdges=edges.filter(edge=>wanted.has(edge.id) || wanted.has(edge.source)&&wanted.has(edge.target) || edge._template_interaction&&(wanted.has(edge.source)||wanted.has(edge._template_owner)));
       for (const edge of visibleEdges) {selected.add(edge.source);selected.add(edge.target);}
       nodes=nodes.filter(node=>selected.has(node.id));
       // A local duty may observe a shared wire outside its ownership. Expose a

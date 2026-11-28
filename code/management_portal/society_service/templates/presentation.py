@@ -127,8 +127,19 @@ def annotate(projection, body, parent, roles, scopes, keys, *, source=None, role
     runtime_owners = dict(owners)
     router = residents.get('router_resident')
     interactions = []
+    expansion_owners = {}
     if router:
         route = next((d for d in router['duties'] if d['key'] == 'route'), None)
+        if 'facade_inbox' in visible:
+            # Keep the event folded into the external facade by default, but
+            # expose the real subscription when the routing duty is unfolded.
+            expansion_owners['facade_inbox'] = 'router_resident'
+            router['members'].append('facade_inbox')
+            if route and 'facade_inbox' not in route['members']:
+                route['members'].append('facade_inbox')
+            interactions.append({'key':'interaction:facade_resident:facade_inbox',
+                'source':'facade_resident','target':'facade_inbox','kind':'watch',
+                'label':'监听 resident.message_received','owner':'router_resident','expanded_only':True})
         for local in ('route_relay', 'relay'):
             if local in visible or any(w['key'] == local for w in graph['wires']):
                 owners[local] = 'router_resident'
@@ -194,7 +205,7 @@ def annotate(projection, body, parent, roles, scopes, keys, *, source=None, role
                     owners[wire['key']] = shared
     graph['presentation'] = {'level': 'duty' if duty else 'role' if role_key else 'organization',
                              'residents': residents, 'bindings': bindings, 'owners': owners,
-                             'interactions': interactions}
+                             'interactions': interactions, 'expansion_owners': expansion_owners}
     for local, binding in bindings.items():
         binding['uses'] = used.get(local, [])
         incoming = any(owners.get(w['target'], w['target']) == local for w in graph['wires'])
@@ -236,7 +247,7 @@ def annotate(projection, body, parent, roles, scopes, keys, *, source=None, role
         # The role's expanded view reads left-to-right through the actual
         # selection and relay stages; the Steward is a side recipient.
         layout.update({key:{'x':x,'y':y} for key,x,y in (
-            ('facade_resident',12,50),('router',32,50),('router_resident',52,50),
+            ('facade_resident',12,50),('facade_inbox',26,50),('router',40,50),('router_resident',52,50),
             ('route_relay',72,50),('member_resident',92,50),('steward_resident',72,84),
         ) if key in visible})
     graph['layout'] = layout

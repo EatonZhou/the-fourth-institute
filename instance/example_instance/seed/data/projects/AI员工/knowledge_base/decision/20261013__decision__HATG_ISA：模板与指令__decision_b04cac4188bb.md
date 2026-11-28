@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-10-13'
 version:
-  number: 54
+  number: 55
   created_at: "2026-10-13"
   created_by:
     user: ""
     agent: "resident_e8fc8c899f00"
-  updated_at: "2026-11-28T06:44:57Z"
+  updated_at: "2026-11-28T07:00:06Z"
   updated_by:
     user: ""
     agent: "resident_021703e3659a"
@@ -497,7 +497,7 @@ Router／Steward 接口保持原协议：target 仅本层直属成员或本 Fami
 
 职责层呈现真实原语及连线；角色/组织层以模板实际拥有的 Resident 和必需接口呈现，内部职责由 Resident Menu 逐项进入局部图。单角色展开后，在图上该 Resident 边界提供收起控件；Menu 的展开／收起文案和状态来自同一面板展开集合。工具栏支持全部展开／全部收起，并以 mixed 状态反映部分展开。角色之间和多面板互不串状态；展开、收起、局部图与相机都只是视图，不 dirty、不进入正文历史。菜单适配当前模板草稿，名称、指南、触发提示词、分层记忆和节点配置沿现有 schema 编辑并进入同一 Undo/Redo/Save/Save As 链；无效 JSON 保留和保护。模板上下文不实例化 live Resident 控制器、不伪造 ID 查询状态、设置或注入预览；会话、运行、Mailbox 与 Harness 禁用。结构配方的拓扑写入能力仍由既有契约决定。每条职责以原可编辑 title 为唯一的一句话说明，描述起因、行动与结果；Router 默认为“门面收到消息后，将消息路由到最合适的成员处”，Steward 逐条按真实行为补齐，Event 短标题仍描述事件。仅更新未定制的内置默认，不猜测重写自定义文字。Resident 悬停和键盘焦点自动展示全部实际职责的一条一句有序清单，过长可滚动，空职责诚实显示空态；鼠标可移入卡片，触屏及菜单有等价入口。清单、Menu、当前草稿与撤销重做同源，不请求虚构 live 数据、不抢节点拖动或双击，多面板隔离。
 
-组织对角色保持源引用。菜单显示职责和记忆来源；修改共享角色经未保存保护进入源模板，或显式另存并改引用。Family Save 不暗中保存角色来源。Router 视图使用 Family 的真实 facade_inbox、router Effect、Router Resident、relay 和 route_relay，按门面事件→Router 选人／直达→转交成员集合呈现。relay 与 route_relay 在展示归属上纳入 Router 路由职责，运行所有权、ID、脚本及单份共享结构保持。Effect 中 DeliverMessage／RelayMessage 等动作以 presentation.interactions 展示为有用途标签的关系，不写入 program.wires，也不构造可执行连线。默认收起视图显示门面单绑定、Router、成员集合，Steward 是有招募／额度／路由复核用途的外部接收方；未用 family／member_done 不补圈。展开显示真实两段 Effect 和中间 Router Resident，支持单角色再收起。预览中的 body.presentation 是派生的归属/绑定/局部图元数据，不是一份独立可写正文，也不改变编译或投递。Router Effect 的 route 调用参数必须包含同一 Family 的 steward，供直达目标不可用／额度不足分支使用；新建、既有角色职责 reconcile 及既有标准定义归一都补齐缺失项，保留既有 ID、脚本和自定义值，不重建已撤下结构。空的旧绑定会导致 DeliverMessage 的 resident_id 为空并被正式指令拒绝；修复只补参数，不改变原请求、取消、续谈、权限或幂等协议。
+组织对角色保持源引用。菜单显示职责和记忆来源；修改共享角色经未保存保护进入源模板，或显式另存并改引用。Family Save 不暗中保存角色来源。Router 视图使用 Family 的真实 facade_inbox、router Effect、Router Resident、relay 和 route_relay，按门面事件→Router 选人／直达→转交成员集合呈现。relay 与 route_relay 在展示归属上纳入 Router 路由职责，运行所有权、ID、脚本及单份共享结构保持。Effect 中 DeliverMessage／RelayMessage 等动作以 presentation.interactions 展示为有用途标签的关系，不写入 program.wires，也不构造可执行连线。默认收起视图显示门面单绑定、Router、成员集合，Steward 是有招募／额度／路由复核用途的外部接收方；未用 family／member_done 不补圈。展开时独立显示真实事件节点“门面收到消息”（facade_inbox，resident.message_received），由门面单绑定虚线圈经 watch 关系指向事件，再由原 route 连线进入 Family Router Effect，继续呈现 Router Resident、转交所选成员 Effect 和成员集合。watch 仅为订阅用途的展示关系，不增加运行连线；收起时事件继续归并门面，保持原收起视图与 Family 安装布局。展开显示真实两段 Effect 和中间 Router Resident，支持单角色再收起。预览中的 body.presentation 是派生的归属/绑定/局部图元数据，不是一份独立可写正文，也不改变编译或投递。Router Effect 的 route 调用参数必须包含同一 Family 的 steward，供直达目标不可用／额度不足分支使用；新建、既有角色职责 reconcile 及既有标准定义归一都补齐缺失项，保留既有 ID、脚本和自定义值，不重建已撤下结构。空的旧绑定会导致 DeliverMessage 的 resident_id 为空并被正式指令拒绝；修复只补参数，不改变原请求、取消、续谈、权限或幂等协议。
 
 外部虚线圈仅投影模板完整组件／职责实际监听、作用或执行配置显式引用的接口，穿透收起职责和组合；每个可见接口保留使用组件与路径依据，不以 bindings 配置项存在或提示词中提及为依据。未使用安装上下文保留配置但不补节点／假连线，Router 未消费的 member_done 不显示，Steward 的共享事件消费仍保留。真实使用而尚未绑定的端口仍显示，集合保持单个集合端点。目标、成员集合、peer、所属 Family 与共享对象保留稳定 key、类型、方向、单/多和必需性；纯执行参数引用明确标为 reference，不伪称监听输入；不伪装为自有 Resident 或 Lineage Leader。外部占位打开绑定信息；只有实际拥有的 Resident 打开模板 Menu。预览、局部图及拖放共用投影/布局，职责拖出保留原语，角色/组织默认收起。可见目标锚点经同一相机吸附已有 Resident；集合映射真实选择，不创建伪成员；取消无副作用。Family 正式落地位置从同一角色组合投影推导。
 
