@@ -267,8 +267,15 @@ class WorkspaceStore:
                            (workspace_id, stored, title or Path(absolute).name,
                             owner_id or workspace_id, None if child_of_operation else operation_id, timestamp, timestamp))
         # The real actor that asked for this registration; Portal's own registrations pass none.
-        self._record_registrant(connection, workspace_id, registrant)
+        registered = self._record_registrant(connection, workspace_id, registrant)
         self.refresh_directory_dependency(workspace_id, connection=connection)
+        if registered:
+            # The Workspace and its registrant's @admin enter the permission
+            # instance with the registration (relation rule "Workspace 登记人").
+            # Portal-made Workspaces keep their place through their owner.
+            from management_portal import permission_system
+            descriptor = self.descriptor(self.rows([workspace_id], connection=connection)[workspace_id])
+            permission_system.sync_resource(descriptor, resource_type="workspace", connection=connection)
 
     def _location(self, connection, absolute):
         # One target key for this locked decision. Never retain native-case

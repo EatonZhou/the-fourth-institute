@@ -82,3 +82,18 @@ def test_registrant_gets_admin_on_the_workspace_and_portal_workspaces_give_none(
     assert ("permit", "alice", "@admin", "workspace_0123456789ab") in rows
     portal = fact_from_record({"resource_id": "workspace_ba9876543210", "status": "active", "attributes": {}}, "workspace")
     assert not [row for row in instance.derive(portal) if row[2] == "@admin"]
+
+
+def test_a_registration_enters_the_permission_instance_with_its_registrant(tmp_path, service, monkeypatch):
+    """登记即把 Workspace 和登记人的 @admin 同步进权限实例；Portal 自己的登记不同步"""
+    from management_portal import permission_system
+
+    synced = []
+    monkeypatch.setattr(permission_system, "sync_resource",
+                        lambda record, *, resource_type, connection=None: synced.append((resource_type, record)) or True)
+    bound, portal_made = tmp_path / "bound", tmp_path / "portal"
+    bound.mkdir(), portal_made.mkdir()
+    wid = service.workspace_id_for_path(bound, registrant="resident_0123456789ab")
+    service.workspace_id_for_path(portal_made)
+    assert [(kind, record["resource_id"], record["attributes"]["created_by"]) for kind, record in synced] == [
+        ("workspace", wid, "resident_0123456789ab")]
