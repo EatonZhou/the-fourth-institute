@@ -179,6 +179,15 @@
     if (catalog.backends.some(row => row.backend === current)) select.value = current;
   }
 
+  function populateCreationBackends(select, catalog) {
+    populateBackends(select, catalog);
+    const choice = catalog?.creation_default;
+    const backend = catalog?.backends?.find(row => row.backend === choice?.backend
+      && row.routes?.some(route => route.backend_route_id === choice.backend_route_id));
+    select.value = backend?.backend || catalog?.backends?.find(row => row.routes?.length)?.backend || "";
+    return backend ? choice : null;
+  }
+
   // { projects: [{ project_id, status, project_type, ... }], status_vocab } from ListProjects.
   function projectCatalog(options = {}) {
     return readLoader("projects", "ListProjects", () => window.PortalInstructionClient.execute("ListProjects", {}), options);
@@ -231,6 +240,7 @@
   window.PortalLineageCatalogs = Object.freeze({
     agentBackends,
     populateBackends,
+    populateCreationBackends,
     populateServiceTiers,
     renderForkProvider,
     invalidate,

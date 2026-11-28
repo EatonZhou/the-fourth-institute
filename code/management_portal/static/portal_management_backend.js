@@ -1432,7 +1432,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     output.replaceChildren();
     if (rolesReady) {
       const summary = node("div", undefined, {class: "backendSelectionSummary", "data-backend-account-selection": ""});
-      summary.append(node("p", t("此处配置新会话的起始后端。额度不足时的换号规则在各 Resident 的设置中配置。"), {class: "backendHint"}),
+      summary.append(node("p", t("新会话沿用当前用户上次新建时的账号和模型。首次新建或上次账号不可用时，使用这里的默认值。"), {class: "backendHint"}),
         button("新会话默认后端", defaultBackendEditor, !canSetDefault));
       output.append(summary);
     }

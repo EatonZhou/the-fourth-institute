@@ -44687,9 +44687,9 @@
     "zh-CN": "新会话使用这里的模型偏好；其他种类使用各自默认模型。",
     "en": "New sessions use these model preferences. Other types use their own default model."
   },
-  "此处配置新会话的起始后端。额度不足时的换号规则在各 Resident 的设置中配置。": {
-    "zh-CN": "此处配置新会话的起始后端。额度不足时的换号规则在各 Resident 的设置中配置。",
-    "en": "Configure the starting backend for new sessions here. Set quota fallback in each Resident’s settings."
+  "新会话沿用当前用户上次新建时的账号和模型。首次新建或上次账号不可用时，使用这里的默认值。": {
+    "zh-CN": "新会话沿用当前用户上次新建时的账号和模型。首次新建或上次账号不可用时，使用这里的默认值。",
+    "en": "New sessions reuse the account and model you last created a session with. These defaults apply to your first session or when that account is unavailable."
   },
   "新会话默认后端": {
     "zh-CN": "新会话默认后端",

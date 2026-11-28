@@ -58,7 +58,9 @@
       };
     }
 
-    function renderNodeProviderFields() {
+    let nodeCreationChoice = null;
+    function renderNodeProviderFields(event) {
+      if (event?.type === "change") nodeCreationChoice = null;
       const definition = state.agentBackendCatalog?.backends?.find(row => row.backend === $id("nodeBackendSelect")?.value) || {};
       const fields = definition.runtime_settings || [];
       const routes = definition.routes || [];
@@ -66,7 +68,7 @@
       const model = $id("nodeModelSelect");
       const effort = $id("nodeEffortSelect");
       if (!route || !model || !effort) return;
-      const previousRoute = state.nodeRouteChosen ? route.value : "";
+      const previousRoute = nodeCreationChoice?.backend_route_id || (state.nodeRouteChosen ? route.value : "");
       route.replaceChildren(...routes.map(item => new Option(item.label, item.backend_route_id)));
       // The route is the one account the new Resident uses. Until the user picks one, a
       // Provider that selects accounts for Residents starts on the account a new session uses by default.
@@ -86,7 +88,8 @@
         $id("nodeFormError").hidden = false;
         $id("nodeSubmitBtn").disabled = true;
       });
-      const previousModel = model.value;
+      const previousModel = nodeCreationChoice?.model || model.value;
+      if (Array.isArray(catalog?.models)) nodeCreationChoice = null;
       const models = catalog?.models || [];
       model.replaceChildren(...models.map(item => new Option(item, item)));
       model.value = models.includes(previousModel) ? previousModel : catalog?.default_model || "";
@@ -119,15 +122,26 @@
         || (model.required && !model.value) || (route.required && !route.value));
     }
 
-    function openNodeModal() {
-      if (!state.lineage) return;
+    async function openNodeModal() {
+      const lineageId = state.lineage?.lineage_id;
+      if (!lineageId) return;
+      let catalog;
+      try {
+        catalog = await window.PortalLineageCatalogs.agentBackends({force: true});
+      } catch (error) {
+        toast(window.PortalI18n.text`读取 Provider 和账号失败：${error.message || error}`, "error");
+        return;
+      }
+      if (lineageId !== state.lineage?.lineage_id) return;
+      state.agentBackendCatalog = catalog;
       $id("nodeFormError").hidden = true;
       $id("nodeFormError").textContent = "";
       $id("nodeTitleInput").value = "";
       $id("nodeServiceTierInput").value = "";
-      // A new Resident starts on the first Provider of the server's catalog.
-      $id("nodeBackendSelect").selectedIndex = 0;
-      state.nodeRouteChosen = false;
+      nodeCreationChoice = window.PortalLineageCatalogs.populateCreationBackends($id("nodeBackendSelect"), catalog);
+      state.nodeRouteChosen = Boolean(nodeCreationChoice);
+      $id("nodeModelSelect").replaceChildren();
+      $id("nodeEffortSelect").replaceChildren();
       if ($id("nodeAccountSelection")) $id("nodeAccountSelection").value = "fixed";
       $id("nodeTitleInput").required = true;
       renderNodeProviderFields();
@@ -475,6 +489,7 @@
       const mode = state.branchMessageContext
         ? "message"
         : ($id("branchModeChoices").querySelector('input[name="branchMode"]:checked')?.value || "full");
+      $id("branchModeChoices").dataset.mode = mode;
       $id("branchSubmitBtn").textContent = mode === "new-session"
         ? window.PortalI18n.t("创建 new session")
         : (mode === "message" ? window.PortalI18n.t("从这里创建分支") : window.PortalI18n.t("创建继承分支"));
@@ -501,9 +516,17 @@
 
     function configureBranchProvider(provider) {
       if (!branchSourceSnapshot) return;
+      const fresh = $id("branchModeChoices").querySelector('[value="new-session"]')?.checked;
+      const {catalog} = branchSourceSnapshot;
+      const preferred = catalog.creation_default;
+      const initial = fresh ? {
+        source: null, detail: null,
+        provider: provider || preferred?.backend || catalog.backends.find(row => row.routes?.length)?.backend,
+        account: provider ? undefined : preferred?.backend_route_id,
+      } : {provider};
       const selection = window.PortalLineageCatalogs.renderForkProvider({
-        ...branchSourceSnapshot,
-        providerSelect: $id("branchProviderInput"), accountSelect: $id("branchAccountInput"), provider,
+        ...branchSourceSnapshot, ...initial,
+        providerSelect: $id("branchProviderInput"), accountSelect: $id("branchAccountInput"),
       });
       const compacted = $id("branchModeChoices").querySelector('[value="compacted"]');
       compacted.disabled = !!branchSourceSnapshot.message || !selection.definition?.seeded_compaction;
@@ -540,7 +563,7 @@
           sourceDetail || societyService.loadNodeMetadata({
             lineageId: state.lineage?.lineage_id,
             residentId: node.id,
-          }), window.PortalLineageCatalogs.agentBackends(),
+          }), window.PortalLineageCatalogs.agentBackends({force: true}),
         ]);
       } catch (error) {
         if (requestSeq !== branchModalRequestSeq) return;
@@ -619,9 +642,7 @@
         const payload = {
           lineage_id: state.lineage.lineage_id,
           ...(!fresh ? { expected_version: sourceRevision } : {}),
-          ...(fresh
-            ? { provider: options.provider || source.backend }
-            : { source_resident_id: source.id, fork_mode: mode }),
+          ...(!fresh ? { source_resident_id: source.id, fork_mode: mode } : {}),
           title: String(options.title || "").trim() || `${source.title || source.id} · ${fresh ? window.PortalI18n.t("new session") : window.PortalI18n.t("分支")}`,
           near_resident_id: source.id,
           placement: residentPlacementGeometry(source, options),

@@ -75,6 +75,7 @@ def test_society_page_catalog_and_file_download_keep_principal(entry, monkeypatc
     e.shortcuts.assert_called_once_with(principal)
     assert e.call('/api/agent-workbench/residents/navigation-target?id=' + RESIDENT)[0] == 200
     e.resident.resolve_resident_identity.assert_called_once_with(RESIDENT, principal)
+    e.execution.runtime_catalog.return_value = {"backends": []}
     e.resident.get_resident_runtime_route.return_value = {'account_id': 'codex_fixture'}
     assert e.call('/api/agent-workbench/agent-backends?resident_id=' + RESIDENT)[0] == 200
     e.resident.get_resident_runtime_route.assert_called_once_with(RESIDENT, principal)

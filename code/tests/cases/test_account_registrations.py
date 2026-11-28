@@ -432,6 +432,48 @@ def test_create_resident_resolves_role_and_keeps_explicit_settings(tmp_path, mon
     assert result["backend_role_fallback"] == settings["backend_role_fallback"] == {"requested": "missing", "used": "default"}
 
 
+def test_new_resident_uses_last_successful_creation_per_user(monkeypatch):
+    from management_portal import resident_creation_defaults as defaults
+    from management_portal.execution import accounts, account_registrations
+    from management_portal.society_service.isa import residents
+    from management_portal.user_preferences import _set_portal_user_preferences
+
+    routes = [{"backend_route_id": route, "models": ["standard", "large"], "default_model": "standard"}
+              for route in ("one", "two")]
+    catalog = {"backends": [{"backend": "claude", "routes": routes}]}
+    site = {"backend": "claude", "backend_route_id": "one", "runtime_settings": {"model": "standard"}}
+    monkeypatch.setattr(accounts, "default_execution_accounts", lambda **kw: SimpleNamespace(runtime_catalog=lambda **kw: catalog))
+    monkeypatch.setattr(account_registrations, "role_configuration", lambda *args: site)
+    monkeypatch.setattr(residents, "_family_to_join", lambda *args: "")
+    monkeypatch.setattr(residents, "placement", lambda *args: {})
+    created = []
+
+    def create(lineage, payload, actor):
+        if payload["title"] == "fail":
+            raise ValueError("creation failed")
+        created.append((payload["backend_route_id"], payload["runtime_settings"]["model"]))
+        return {"resident": {"resident_id": "resident_000000000001", **payload}}
+
+    monkeypatch.setattr(residents, "lineage_resident_nodes", lambda: SimpleNamespace(create_lineage_resident=create))
+
+    def submit(actor, **args):
+        residents.create_resident(SimpleNamespace(caller=actor, argument=args.get))
+
+    submit("alice", provider="claude", account_id="two", settings={"model": "large", "permission_preset": "full-access"})
+    with pytest.raises(ValueError, match="creation failed"):
+        submit("alice", title="fail", provider="claude", account_id="one", settings={"model": "standard"})
+    _set_portal_user_preferences("alice", {"appearance": {"motion": "reduce"}})
+    assert defaults.form_default("alice", catalog) == {"backend": "claude", "backend_route_id": "two", "model": "large"}
+    submit("bob")
+    submit("alice")
+    assert created[-2:] == [("one", "standard"), ("two", "large")]
+    submit("alice", settings={"model": "standard"})
+    assert created[-1] == ("two", "standard")
+    routes.pop()
+    submit("alice")
+    assert created[-1] == ("one", "standard")
+
+
 def test_disabling_account_prevents_queued_work_dispatch(tmp_path):
     """停用立即阻止该账号的排队工作，重新启用后可继续派发。"""
     from management_portal.execution import account_registrations as store

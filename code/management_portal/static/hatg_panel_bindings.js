@@ -185,7 +185,10 @@
       $id("branchAccountInput").addEventListener("change", updateBranchAccountHint);
       $id("branchProviderInput").addEventListener("change", event => configureBranchProvider(event.target.value));
       $id("branchModeChoices").querySelectorAll('input[name="branchMode"]').forEach(input => {
-        input.addEventListener("change", updateBranchAccountHint);
+        input.addEventListener("change", () => {
+          if (input.value === "new-session" || $id("branchModeChoices").dataset.mode === "new-session") configureBranchProvider();
+          else updateBranchAccountHint();
+        });
       });
       $id("handoffModeBtn").addEventListener("click", () => {
         state.handoffPreset = "direct";

@@ -17,7 +17,7 @@ const pending = new Map();
 const deferred = () => {let resolve, reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return {promise,resolve,reject};};
 const tick = async () => {for(let i=0;i<6;i++)await new Promise(resolve=>setImmediate(resolve));};
 w.PortalI18n = {t:String,text:(parts,...values)=>parts.reduce((out,p,i)=>out+p+(values[i]??''),'')};
-w.PortalAPI = {get:url=>{const id=new URL(url,'http://fixture').searchParams.get('account_id');return pending.get(id).promise;}};
+w.PortalAPI = {get:url=>{if(url.endsWith('/agent-backends')) return Promise.resolve(state.agentBackendCatalog);const id=new URL(url,'http://fixture').searchParams.get('account_id');return pending.get(id).promise;}};
 for (const name of ['portal_lineage_catalogs.js','hatg_resident_dialogs.js']) {
   w.eval(fs.readFileSync(path.resolve(__dirname,'../../../management_portal/static',name),'utf8'));
 }
@@ -34,10 +34,10 @@ const ui = w.PortalHatgResidentDialogs.createResidentDialogs(deps);
 (async()=>{
   try {
     pending.set('codex_two',deferred());pending.set('codex_three',deferred());
-    ui.openNodeModal();
+    await ui.openNodeModal();
     assert.equal($id('nodeAccountSelection').value,'fixed','opening creation defaults to manual, even after previous auto choice');
     $id('nodeAccountSelection').value='auto';
-    ui.openNodeModal();
+    await ui.openNodeModal();
     assert.equal($id('nodeAccountSelection').value,'fixed');
     $id('nodeTitleInput').value='Fixture';
     state.nodeRouteChosen=true; // User route changes below follow the normal change listener.
@@ -80,6 +80,15 @@ const ui = w.PortalHatgResidentDialogs.createResidentDialogs(deps);
     ui.renderNodeProviderFields();
     assert.equal(tier.value, '');
     assert.equal(tier.disabled, true);
+    state.agentBackendCatalog.creation_default = {backend:'codex', backend_route_id:'three', model:'remembered'};
+    pending.set('codex_three',deferred());
+    await ui.openNodeModal();
+    assert.equal($id('nodeRouteSelect').value,'three');
+    pending.get('codex_three').resolve({models:['first','remembered'],default_model:'first'});
+    await tick();
+    assert.equal($id('nodeModelSelect').value,'remembered');
+    $id('nodeModelSelect').value='first';ui.renderNodeProviderFields({type:'change'});
+    assert.equal($id('nodeModelSelect').value,'first');
     state.nodeSubmitBusy=true;ui.renderNodeProviderFields();
     assert.equal($id('nodeSubmitBtn').disabled,true,'catalog refresh cannot enable a second write');
     assert.equal($id('nodeForm').getAttribute('aria-busy'),'true');

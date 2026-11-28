@@ -126,9 +126,9 @@
       renderCrossLineageForkModal();
     });
     $id("residentBackendSelect").addEventListener("change", syncResidentBackendRuntimeFields);
-    $id("residentRouteSelect").addEventListener("change", () => {
+    $id("residentRouteSelect").addEventListener("change", event => {
       state.residentRouteChosen = true;
-      syncResidentBackendRuntimeFields();
+      syncResidentBackendRuntimeFields(event);
     });
     $id("residentRuntimeModelSelect").addEventListener("change", syncResidentBackendRuntimeFields);
 

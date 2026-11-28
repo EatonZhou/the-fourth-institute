@@ -198,12 +198,14 @@
       row.style.display = row.hidden ? "none" : "";
     }
 
-    function syncResidentBackendRuntimeFields() {
+    let residentCreationChoice = null;
+    function syncResidentBackendRuntimeFields(event) {
+      if (event?.type === "change") residentCreationChoice = null;
       const definition = residentRuntimeDefinition();
       const fields = definition.runtime_settings || [];
       const routes = definition.routes || [];
       const routeSelect = $id("residentRouteSelect");
-      const previousRoute = state.residentRouteChosen ? routeSelect?.value || "" : "";
+      const previousRoute = residentCreationChoice?.backend_route_id || (state.residentRouteChosen ? routeSelect?.value || "" : "");
       if (routeSelect) {
         routeSelect.replaceChildren(...routes.map(route => new Option(route.label, route.backend_route_id)));
         // The route is the one account the Resident uses. Until the user picks one, a
@@ -219,7 +221,8 @@
       }
       const catalog = residentRuntimeCatalog();
       const modelSelect = $id("residentRuntimeModelSelect");
-      const previous = modelSelect?.value || "";
+      const previous = residentCreationChoice?.model || modelSelect?.value || "";
+      if (Array.isArray(catalog.models)) residentCreationChoice = null;
       if (modelSelect) {
         modelSelect.replaceChildren(...(catalog.models || []).map(value => new Option(value, value)));
         modelSelect.value = catalog.models?.includes(previous) ? previous : catalog.default_model || "";
@@ -324,9 +327,19 @@
       renderResidentAttachChoiceModal();
     }
 
-    function openAttachResidentModal(item) {
+    async function openAttachResidentModal(item) {
+      const activeAtOpen = activeLineageId();
       const lineageId = lineageIdForResident(item);
       if (!lineageId) return;
+      let catalog;
+      try {
+        catalog = await window.PortalLineageCatalogs.agentBackends({force: true});
+      } catch (error) {
+        window.PortalUI.toast(window.PortalI18n.text`读取 Provider 和账号失败：${error.message || error}`, "error");
+        return;
+      }
+      if (activeLineageId() !== activeAtOpen) return;
+      state.agentBackendCatalog = catalog;
       restoreResidentRegisterForm();
       const sourceTitle = item?.lineage?.title || item.lineage_title || item.title || item.resident_id || "Lineage";
       state.residentAttachSource = {
@@ -337,11 +350,11 @@
       $id("residentRegisterTitle").textContent = window.PortalI18n.text`Attach to Lineage · ${sourceTitle}`;
       $id("residentRegisterSubmit").textContent = window.PortalI18n.t("附加");
       $id("residentTitleInput").value = `${sourceTitle} Resident`;
-      // A new Resident starts on the first Provider of the server's catalog.
-      $id("residentBackendSelect").selectedIndex = 0;
-      state.residentRouteChosen = false;
+      residentCreationChoice = window.PortalLineageCatalogs.populateCreationBackends($id("residentBackendSelect"), catalog);
+      state.residentRouteChosen = Boolean(residentCreationChoice);
+      $id("residentRuntimeModelSelect").replaceChildren();
       $id("residentAdditionalWorkspacesInput").value = "";
-      resetResidentRuntimeSettings();
+      resetResidentRuntimeSettings({model: residentCreationChoice?.model});
       setResidentWorkspaceAdvancedOpen(false);
       syncResidentBackendRuntimeFields();
       setAgentDialogOpen("residentRegisterOverlay", true);

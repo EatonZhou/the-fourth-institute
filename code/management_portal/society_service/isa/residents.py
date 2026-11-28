@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from management_portal import resident_creation_defaults
 from management_portal.hatg.contracts import InstructionError, invalid
 from management_portal.hatg.catalog.resident import SETTINGS_FIELDS
 from management_portal.hatg.kernel import Invocation
@@ -51,7 +52,19 @@ def create_resident(inv: Invocation) -> dict[str, Any]:
     lineage_id = inv.argument("lineage_id")
     family = _family_to_join(lineage_id, inv)
     role_settings, role_provider, role_account, fallback = {}, "", "", None
-    requested_role = inv.argument("backend_role") or ("default" if not inv.argument("provider") and not inv.argument("account_id") else "")
+    requested_role = inv.argument("backend_role")
+    selected_provider, selected_account = inv.argument("provider"), inv.argument("account_id")
+    settings = inv.argument("settings") or {}
+    choice = {} if requested_role else resident_creation_defaults.for_creation(
+        inv.caller, selected_provider, selected_account, settings,
+    )
+    if choice:
+        role_provider, role_account = choice["backend"], choice["backend_route_id"]
+        role_settings = {"account_selection": "fixed"}
+        if choice["model"]:
+            role_settings["model"] = choice["model"]
+    elif not requested_role and not selected_provider and not selected_account:
+        requested_role = "default"
     if requested_role:
         from management_portal.execution.account_registrations import role_configuration
         configured = role_configuration(requested_role)
@@ -59,28 +72,39 @@ def create_resident(inv: Invocation) -> dict[str, Any]:
         role_account = configured["backend_route_id"]
         role_settings = configured["runtime_settings"]
         fallback = role_settings.get("backend_role_fallback")
-    provider = inv.argument("provider") or role_provider or "codex"
+    provider = selected_provider or role_provider or "codex"
     payload: dict[str, Any] = {
         "title": inv.argument("title"),
         "backend": provider,
         **placement(inv, lineage_id),
     }
-    account = inv.argument("account_id") or (role_account if provider == role_provider else "") or caller_account(inv, provider)
+    account = selected_account or (role_account if provider == role_provider else "") or caller_account(inv, provider)
     if account:
         payload["backend_route_id"] = account
-    if inv.argument("account_id"):
+    if selected_account:
         role_settings["account_selection"] = "fixed"
-    if inv.argument("settings") or role_settings:
-        payload["runtime_settings"] = {**role_settings, **(inv.argument("settings") or {})}
+    if settings or role_settings:
+        payload["runtime_settings"] = {**role_settings, **settings}
     if inv.argument("workspace_paths"):
         payload["workspace_paths"] = inv.argument("workspace_paths")
     result = lineage_resident_nodes().create_lineage_resident(lineage_id, payload, inv.caller)
     resident = result.get("resident") or {}
     resident_id = str(resident.get("resident_id") or (result.get("node") or {}).get("id") or "")
+    membership = _join_family(lineage_id, resident_id, family, inv)
+    if resident_id:
+        try:
+            applied = payload.get("runtime_settings") or {}
+            if resident.get("resident_id") and resident.get("backend") and not applied.get("model"):
+                from management_portal.society_service.resident_runtime_domain import read_resident_runtime_settings
+                applied = read_resident_runtime_settings(resident)
+            resident_creation_defaults.remember(inv.caller, {**payload, **resident}, applied)
+        except Exception:
+            # Creation is committed. A preference-store failure must not invite a duplicate create.
+            LOGGER.exception("Could not remember backend for newly created %s", resident_id)
     return {
         "resident_id": resident_id,
         "lineage_id": lineage_id,
-        **_join_family(lineage_id, resident_id, family, inv),
+        **membership,
         **({"backend_role_fallback": fallback} if fallback else {}),
     }
 

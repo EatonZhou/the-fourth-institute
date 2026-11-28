@@ -81,6 +81,8 @@ def _normalize_portal_user_preferences(value: object) -> dict:
     prefs = _default_portal_user_preferences()
     if not isinstance(value, dict):
         return prefs
+    if isinstance(value.get("last_resident_creation"), dict):
+        prefs["last_resident_creation"] = value["last_resident_creation"]
     appearance = value.get("appearance") if isinstance(value.get("appearance"), dict) else {}
     prefs["appearance"]["motion"] = _portal_motion_preference(appearance.get("motion"))
     from management_portal.localization import normalize_language

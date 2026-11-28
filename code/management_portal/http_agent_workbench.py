@@ -142,6 +142,9 @@ class AgentWorkbenchHttp:
                 backend=str(runtime_route.get("backend") or (query.get("backend") or [""])[0]),
                 include_backends=include_backends,
             )
+            if include_backends:
+                from management_portal.resident_creation_defaults import form_default
+                catalog = {**catalog, "creation_default": form_default(actor, catalog)}
             return self.respond(request, 200, catalog)
         except Exception as exc:
             return self.error(request, exc)
