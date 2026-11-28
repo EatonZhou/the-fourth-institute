@@ -140,11 +140,36 @@ def expected_build_id(deployment: PortalDeployment, source_root: Path) -> str:
             commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=source_root,
                                              text=True, stderr=subprocess.DEVNULL, timeout=10).strip()
             if re.fullmatch(r'[0-9a-f]{40,64}', commit):
+                activated = _static_successor_build(source_root)
+                if activated:
+                    return 'dev-' + activated[:12]
                 return 'dev-' + commit[:12]
         except (OSError, subprocess.SubprocessError):
             pass
         raise DevTargetError('无法核对所选 Dev 源码版本。')
     return deployment.build_id
+
+
+def _static_successor_build(source_root: Path) -> str:
+    """A no-activate static publication does not change a process's build ID."""
+    from management_common.instance_manifest import load
+    try:
+        instance=load()
+        code=instance.code_root('dev').resolve()
+        if source_root.resolve() not in {code,code.parent}:
+            return ''
+        record=json.loads((instance.root/'runtime/development-activation.json').read_text())
+        commit=record.get('commit','')
+        if not record.get('ok') or 'dev-web' not in record.get('components',[]) or not re.fullmatch(r'[0-9a-f]{40,64}',commit):
+            return ''
+        subprocess.check_output(['git','merge-base','--is-ancestor',commit,'HEAD'],cwd=source_root,stderr=subprocess.DEVNULL,timeout=10)
+        changed=subprocess.check_output(['git','diff','--name-only','-z',commit,'HEAD'],cwd=source_root,text=True,stderr=subprocess.DEVNULL,timeout=10)
+        paths=list(filter(None,changed.split('\0')))
+        if all(path.startswith(('code/management_portal/static/','code/tests/','instance/example_instance/seed/')) or path.endswith('.md') for path in paths):
+            return commit
+    except (OSError,ValueError,KeyError,subprocess.SubprocessError):
+        pass
+    return ''
 
 
 def _http_get(url: str, headers: dict[str, str]) -> bytes:

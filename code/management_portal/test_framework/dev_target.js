@@ -36,9 +36,10 @@ function resolveTestTarget() {
   }
   let expectedBuildId=String(item.build_id).trim().slice(0,240);
   if(item.kind==='dev' && expectedBuildId==='development'){
-    const commit=execFileSync('git',['rev-parse','HEAD'],{cwd:path.resolve(__dirname,'../../..'),encoding:'utf8',stdio:['ignore','pipe','ignore']}).trim();
-    if(!/^[0-9a-f]{40,64}$/.test(commit))throw new Error('Cannot verify selected Dev source identity');
-    expectedBuildId='dev-'+commit.slice(0,12);
+    // The Python verifier owns the source/activation contract for both clients.
+    expectedBuildId=execFileSync('python3',['-c',
+      'import sys,json;from pathlib import Path;sys.path.insert(0,sys.argv[1]);from management_portal.test_framework.dev_target import expected_build_id;from management_portal.portal_deployment_registry import PortalDeployment;print(expected_build_id(PortalDeployment.from_payload(json.loads(sys.argv[2])),Path(sys.argv[1])))',
+      path.resolve(__dirname,'../..'),JSON.stringify(item)],{encoding:'utf8',timeout:15000,stdio:['ignore','pipe','ignore']}).trim();
   }
   return { deployment: String(item.id).trim().toLowerCase(), origin: url.origin, browserOrigin: browser.origin, expectedBuildId };
 }

@@ -14,6 +14,27 @@ def test_development_target_uses_local_source_identity_without_trusting_health(m
     pinned=replace(target,build_id='candidate-123')
     assert dev_target.expected_build_id(pinned,tmp_path)=='candidate-123'
 
+
+def test_development_static_successor_uses_verified_activation_but_backend_successor_does_not(monkeypatch,tmp_path):
+    from types import SimpleNamespace
+    from management_portal.test_framework import dev_target
+    from management_common import instance_manifest
+    from management_portal.portal_deployment_registry import PortalDeployment
+    root=tmp_path/'instance';(root/'runtime').mkdir(parents=True)
+    activated='a'*40;head='b'*40
+    (root/'runtime/development-activation.json').write_text(json.dumps({'ok':True,'commit':activated,'components':['dev-web']}))
+    monkeypatch.setattr(instance_manifest,'load',lambda:SimpleNamespace(root=root,code_root=lambda _:tmp_path/'code'))
+    changes=['code/management_portal/static/template_workshop.css']
+    def git(arguments,**options):
+        if arguments[1]=='rev-parse':return head
+        if arguments[1]=='merge-base':return b''
+        return '\0'.join(changes)+'\0'
+    monkeypatch.setattr(dev_target.subprocess,'check_output',git)
+    target=PortalDeployment.from_payload({'id':'dev','kind':'dev','label':'Dev','origin':'http://127.0.0.1:28401','build_id':'development'})
+    assert dev_target.expected_build_id(target,tmp_path)=='dev-'+activated[:12]
+    changes[:]=['code/management_portal/society_service/family_tasks.py']
+    assert dev_target.expected_build_id(target,tmp_path)=='dev-'+head[:12]
+
 from management_portal.test_framework.dev_target import (
     DevTargetError, DevTargetVerifier, resolve_test_target,
 )
