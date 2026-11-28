@@ -200,7 +200,7 @@
       parallelEdgeLane, refreshParallelEdgeLanes, rememberEdgeGeometry, resolveEdgeLabelCollisions, validEdges,
     } = graphPart("PortalHatgGraphEdgeRoutes").createEdgeRoutes({
       clamp, edgeLabelElement, graphGeometry, nodeHalfExtents, nodePosition, number, portPosition, portsForNode,
-      state, worldSize,
+      state, worldSize, routeEdge: options.routeEdge,
     });
 
     const {

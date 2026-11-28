@@ -90,6 +90,39 @@
 .templateWorkshop .templateGraphWorkspace > .templateGraphInspector { max-width:calc(100% - 80px); max-height:calc(100% - 80px); }
 .templateRecipeGraph .templateGraphInspector { right:64px; top:64px; }
 .templateGraph .hatgCanvas[data-lod="compact"] .edgeLabelBtn { display:block; }
+
+.templateDutyLanes { position:absolute; inset:0; pointer-events:none; }
+.templateDutyLane {
+  position:absolute; box-sizing:border-box; border:1px solid var(--border);
+  border-radius:10px; background:color-mix(in srgb,var(--panel) 65%,transparent);
+}
+.templateDutyLaneToggle {
+  position:relative; z-index:3;
+  display:flex; align-items:center; gap:10px; width:100%; min-height:46px;
+  border:0; border-radius:inherit; background:var(--panel); color:var(--text);
+  padding:4px 12px; font:inherit; font-size:18px; font-weight:600; line-height:1.05;
+  text-align:start; cursor:pointer; pointer-events:auto;
+}
+.templateDutyLaneToggle:hover { background:color-mix(in srgb,var(--border) 34%,var(--panel)); }
+.templateDutyLaneToggle:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
+.templateDutyLaneToggle span:nth-child(2) { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; }
+.templateDutyLaneToggle small { margin-inline-start:auto; color:var(--muted); font-weight:400; }
+.templateDutyLane p { margin:0 34px; color:var(--muted); font-size:14px; }
+.templateDutyInterfaces {
+  position:absolute; top:22px; width:154px; transform:translateX(-50%);
+  color:var(--muted); text-align:center; font-size:15px;
+}
+.templateWorkshop .has-duty-lanes .hatgNode:not(.is-template-binding):not(:has(.templateBinding)) {
+  box-sizing:border-box; width:156px; height:110px; min-height:0; padding:8px 12px;
+}
+.templateWorkshop .has-duty-lanes .hatgNode[data-node-kind] > strong {
+  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden;
+  font-size:16px; line-height:1.2;
+}
+.templateWorkshop .has-duty-lanes .hatgNode .programNodeDetail { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.templateWorkshop .has-duty-lanes .hatgEdge[data-routing="waypoints"] { stroke-opacity:.68; }
+.templateWorkshop .has-duty-lanes .hatgEdge[data-routing="waypoints"].selected { stroke-opacity:1; }
+.templateWorkshop .has-duty-lanes .edgeLabelBtn.is-duty-watch:not(:hover):not(:focus-visible) { opacity:0; }
 .workshopAssistantDock { position:absolute; width:36px; height:36px; z-index:35; }
 .workshopAssistantDock>[data-workshop-assistant] { position:relative; z-index:2; touch-action:manipulation; border-radius:50%; width:36px; height:36px; background:var(--panel); box-shadow:0 3px 12px #0002; color:var(--accent); }
 .workshopChatColumn { position:absolute; z-index:1; min-width:0; min-height:0; border:1px solid var(--border); border-radius:var(--portal-radius-lg,12px); box-shadow:0 8px 30px #0003; background:var(--panel); display:flex; flex-direction:column; overflow:hidden; }

@@ -80,6 +80,7 @@
       let projection = draft.editor.graph;
       const viewState = editorState.graphViews[draft.template_id || draft.kind] ||= {};
       const expanded = new Set(viewState.expanded || []);
+      let dutyExpansion = viewState.dutyExpansion || {};
       let localScope = null;
       editorState.recipeMenu?.destroy();
       editorState.graph?.destroy();
@@ -121,32 +122,56 @@
         button.onclick=()=>openMenu('@organization');bodyPage.querySelector('.templateRecipeToolbar').prepend(button);
       }
       function openMenu(key){readDraft();inspector.hidden=true;inspector.innerHTML='';editorState.recipeMenu.open(key);}
-      const expandable=()=>Object.keys(projection.body.presentation?.residents || {}).filter(key=>Object.values(projection.body.presentation?.owners || {}).includes(key) || Object.values(projection.body.presentation?.expansion_owners || {}).includes(key));
+      const duties=()=>window.LineageTemplateGraph.dutyGroups(projection.body.presentation,[...expanded],dutyExpansion,draft);
+      const isExpanded=key=>duties().filter(duty=>duty.owner===key).some(duty=>duty.open);
       function syncExpansion(){
         viewState.expanded=[...expanded];
-        const keys=expandable(),all=keys.length>0&&keys.every(key=>expanded.has(key)),some=keys.some(key=>expanded.has(key));
+        viewState.dutyExpansion=dutyExpansion;
+        const rows=duties(),all=rows.length>0&&rows.every(duty=>duty.open),some=rows.some(duty=>duty.open);
         const button=bodyPage.querySelector('[data-recipe-expand]');
         button.setAttribute('aria-expanded',String(all));button.setAttribute('aria-pressed',all?'true':some?'mixed':'false');
         button.textContent=t(all?'收起全部内部结构':'全部内部结构');
       }
       function leaveLocalGraph(){localScope=null;bodyPage.querySelector('[data-recipe-back]').hidden=true;bodyPage.querySelector('[data-recipe-breadcrumb]').textContent='';}
-      function toggleRole(key){leaveLocalGraph();if(expanded.has(key))expanded.delete(key);else expanded.add(key);syncExpansion();editorState.graph.render();editorState.graph.fit();}
+      function showExpansion(dutyId){syncExpansion();editorState.graph.render();editorState.graph.fit(dutyId);}
+      function toggleRole(key){
+        leaveLocalGraph();
+        if(isExpanded(key))expanded.delete(key);else expanded.add(key);
+        for(const duty of duties().filter(duty=>duty.owner===key))delete dutyExpansion[duty.id];
+        showExpansion(duties().find(duty=>duty.owner===key&&duty.open)?.id);
+      }
+      function toggleDuty(id){
+        const duty=duties().find(row=>row.id===id);
+        if(!duty)return;
+        leaveLocalGraph();
+        dutyExpansion[id]=!duty.open;
+        showExpansion(id);
+      }
       editorState.graph = window.LineageTemplateGraph.mount({root:bodyPage.querySelector('[data-template-graph]'), body:() => projection.body,
-        workshop:true, readOnly:true, viewState, expanded:()=>[...expanded],scope:()=>localScope, onSelect:inspect,onOpenResident:openMenu,
-        onToggleRole:toggleRole,
+        workshop:true, readOnly:true, viewState, expanded:()=>[...expanded],duties,scope:()=>localScope, onSelect:inspect,onOpenResident:openMenu,
+        onToggleRole:toggleRole,onToggleDuty:toggleDuty,
         residentInfo:key=>{const meta=projection.body.presentation?.residents[key];return meta && {...meta,duties:draft.kind==='role'?draft.body.duties:meta.duties};}});
       const menu=window.LineageTemplateResidentMenu.create({root:bodyPage,draft,editorState,projection:()=>projection,readDraft,onChange:schedulePreview,onInspect:inspect,
-        onSource:id=>editorState.openTemplate?.(id),isExpanded:key=>expanded.has(key),onExpand:toggleRole,
+        onSource:id=>editorState.openTemplate?.(id),isExpanded,onExpand:toggleRole,
+        isDutyExpanded:(owner,key)=>duties().some(duty=>duty.owner===owner&&duty.key===key&&duty.open),
+        onToggleDuty:(owner,key)=>toggleDuty(JSON.stringify([owner,key])),
         onLocalGraph:(key,duty)=>{localScope=[key,...(duty?.members || [])];inspector.hidden=true;inspector.innerHTML='';bodyPage.querySelector('[data-recipe-back]').hidden=false;bodyPage.querySelector('[data-recipe-breadcrumb]').textContent=`${projection.body.presentation.residents[key]?.title || projection.body.presentation.organization?.title} / ${duty?.title || ''}`;editorState.graph.render();editorState.graph.fit();}});
       editorState.recipeMenu=menu;
       bodyPage.querySelector('[data-recipe-back]').addEventListener('click',()=>{localScope=null;bodyPage.querySelector('[data-recipe-back]').hidden=true;bodyPage.querySelector('[data-recipe-breadcrumb]').textContent='';editorState.graph.render();editorState.graph.fit();});
-      bodyPage.querySelector('[data-recipe-expand]').addEventListener('click',()=>{leaveLocalGraph();const keys=expandable(),all=keys.length>0&&keys.every(key=>expanded.has(key));expanded.clear();if(!all)keys.forEach(key=>expanded.add(key));syncExpansion();editorState.graph.render();editorState.graph.fit();});
+      bodyPage.querySelector('[data-recipe-expand]').addEventListener('click',()=>{
+        leaveLocalGraph();
+        const rows=duties(),all=rows.length>0&&rows.every(duty=>duty.open);
+        expanded.clear();dutyExpansion={};
+        if(!all)rows.forEach(duty=>expanded.add(duty.owner));
+        showExpansion();
+      });
       select.addEventListener('change', () => {
-        const key=select.value,owner=projection.body.presentation?.owners?.[key];
-        if(owner)expanded.add(owner);
+        const key=select.value,duty=duties().find(row=>row.members.includes(key));
+        if(duty)dutyExpansion[duty.id]=true;
         syncExpansion();
         localScope=null;bodyPage.querySelector('[data-recipe-back]').hidden=true;bodyPage.querySelector('[data-recipe-breadcrumb]').textContent='';
         editorState.graph.select(key);
+        if(key)editorState.graph.reveal(key);
       });
       editorState.refreshRecipeGraph = graph => {
         if (!graph) return;

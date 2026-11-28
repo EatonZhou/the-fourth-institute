@@ -66,6 +66,7 @@
         edge.type || "",
         edge.source_port || "",
         edge.target_port || "",
+        edge.route_key ?? "",
       ].join(":")).join("|");
     }
 

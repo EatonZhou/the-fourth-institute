@@ -356,6 +356,17 @@
       const source = endpointById(edge?.source);
       const target = endpointById(edge?.target);
       if (!source || !target) return null;
+      const route = dependencies.routeEdge?.(edge,source,target,nodeHalfExtents(source),nodeHalfExtents(target));
+      if (route) {
+        const {points,label} = route;
+        const first = points[0], last = points.at(-1);
+        return {
+          x1:first.x,y1:first.y,x2:last.x,y2:last.y,
+          labelX:label.x,labelY:label.y,labelPathPoints:points,
+          routing:'waypoints',
+          d:points.map(({x,y},i)=>`${i?'L':'M'} ${x} ${y}`).join(' '),
+        };
+      }
       if (source.id === target.id && !edge.watch_subject_wire_id) {
         const position = nodePosition(source);
         const half = nodeHalfExtents(source);

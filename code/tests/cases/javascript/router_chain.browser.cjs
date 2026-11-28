@@ -14,7 +14,17 @@ const {chromium}=require('../../../management_portal/test_framework/tau_runtime/
    const list=(await execute('ListTemplates')).templates;window.family=list.find(t=>t.builtin_key==='family');window.router=list.find(t=>t.builtin_key==='family_role_router');await workshop.openTemplate(family.template_id);
   },process.env.WORKSHOP_TEST_LINEAGE);
   const root=page.locator('#templateWorkshop'),menu=root.locator('.templateResidentOverlay'),toolbar=root.locator('[data-recipe-expand]');
-  const open=async key=>{await root.locator(`[data-template-resident-menu="${key}_resident"]`).click();await menu.waitFor({state:'visible'});};
+  const reveal=async key=>root.locator('[data-recipe-select]').selectOption(`${key}_resident`);
+  const open=async key=>{
+    const button=root.locator(`[data-template-resident-menu="${key}_resident"]`);
+    const inCanvas=await button.evaluate(node=>{
+      const bounds=node.closest('.templateGraph').getBoundingClientRect(),box=node.getBoundingClientRect();
+      return box.top>=bounds.top && box.bottom<=bounds.bottom && box.left>=bounds.left && box.right<=bounds.right;
+    });
+    if(inCanvas)await button.click();
+    else{await reveal(key);await root.locator(`[data-open-template-menu="${key}_resident"]`).click();}
+    await menu.waitFor({state:'visible'});
+  };
   const clean=async()=>{assert.equal(await page.evaluate(()=>workshop.dirty()),false);assert.equal(await root.locator('[data-workshop-history="undo"]').isDisabled(),true);assert.equal(await root.locator('[data-workshop-history="redo"]').isDisabled(),true);};
   await open('router');assert.equal(await menu.locator('[data-template-menu-expand]').innerText(),'展开内部结构');await menu.locator('[data-template-menu-expand]').click();
   const collapse=key=>root.locator(`[data-collapse-role="${key}_resident"]`);
@@ -23,7 +33,7 @@ const {chromium}=require('../../../management_portal/test_framework/tau_runtime/
   await page.waitForTimeout(400);await page.screenshot({path:`${folder}/family-router-expanded.png`});await collapse('router').tap();assert.equal(await collapse('router').count(),0);await clean();
   await open('steward');await menu.locator('[data-template-menu-expand]').click();await open('router');await menu.locator('[data-template-menu-expand]').click();await open('router');assert.equal(await menu.locator('[data-template-menu-expand]').innerText(),'收起内部结构');await menu.locator('[data-template-menu-expand]').click();assert.equal(await collapse('steward').isVisible(),true);await clean();
   await open('router');await menu.locator('.residentMenuDuty summary').first().click();await menu.locator('[data-template-duty-graph]').first().click();assert.equal(await root.locator('[data-recipe-back]').isVisible(),true);
-  await toolbar.click();assert.equal(await root.locator('[data-recipe-back]').isVisible(),false);assert.equal(await toolbar.getAttribute('aria-expanded'),'true');await collapse('router').waitFor({state:'visible'});await toolbar.click();assert.equal(await toolbar.getAttribute('aria-expanded'),'false');assert.equal(await root.locator('[data-collapse-role]').count(),0);await clean();
+  await toolbar.click();assert.equal(await root.locator('[data-recipe-back]').isVisible(),false);assert.equal(await toolbar.getAttribute('aria-expanded'),'true');await reveal('router');await collapse('router').waitFor({state:'visible'});await toolbar.click();assert.equal(await toolbar.getAttribute('aria-expanded'),'false');assert.equal(await root.locator('[data-collapse-role]').count(),0);await clean();
   await page.evaluate(()=>workshop.openTemplate(router.template_id));
   const graph=await page.evaluate(()=>LineageTemplateGraph.project(workshop.template().editor.graph.body,{workshop:true}));
   assert.ok(graph.edges.some(edge=>edge.source==='facade_resident'&&edge.target==='router_resident'));

@@ -6,7 +6,7 @@
 
   // The adapter owns presentation only. All editable values are read from and
   // written to the editor's draft, through its normal history/validation path.
-  function create({root,draft,editorState,projection,readDraft,onChange,onLocalGraph,onSource,onInspect,onExpand,isExpanded=()=>false}) {
+  function create({root,draft,editorState,projection,readDraft,onChange,onLocalGraph,onSource,onInspect,onExpand,isExpanded=()=>false,onToggleDuty,isDutyExpanded=()=>false}) {
     const overlay=document.createElement('div');
     overlay.className='portalDetailOverlay templateResidentOverlay';overlay.hidden=true;
     overlay.innerHTML=`<section class="portalDetailSurface nodeSettingsSurface" role="dialog" aria-modal="true" aria-label="${esc(t('模板 Resident 菜单'))}">
@@ -17,7 +17,7 @@
     let selected='',tab='duties';
     const metadata=()=>selected==='@organization' ? projection().body.presentation?.organization : projection().body.presentation?.residents?.[selected];
     const editable=()=>!!metadata()?.editable && draft.kind==='role';
-    const duties=()=>editable() ? draft.body.duties.map(row=>({...row,...metadata().duties.find(item=>item.key===row.key),...row})) : metadata()?.duties || [];
+    const duties=()=>window.LineageTemplateGraph.residentDuties(metadata(),draft);
     const memories=()=>editable() ? draft.body.memories : metadata()?.memories || [];
     const field=(label,value,attributes)=>{label=label==='名称'?'一句话职责说明':label;return `<label class="templateField"><span>${esc(t(label))}</span><textarea rows="4" aria-label="${esc(t(label))}" ${attributes}>${esc(value)}</textarea></label>`;};
     function render() {
@@ -46,6 +46,15 @@
       } else if(tab==='settings'&&organization) rows.innerHTML=(meta.roles||[]).map(role=>`<button type="button" class="portalButton" data-organization-role="${esc(role.key)}">${esc(role.title)}</button>`).join('');
       else if(tab==='settings') rows.innerHTML=sourceLink+(editable()?field('节点配置 JSON',editorState.invalidTemplateMenu?.resident===selected?editorState.invalidTemplateMenu.text:JSON.stringify(draft.body.resident,null,2),'data-template-resident-config'):`<pre>${esc(JSON.stringify(meta.settings || {},null,2))}</pre>${meta.structure ? `<button type="button" class="portalButton" data-template-resident-inspect>${esc(t('编辑节点配置'))}</button>` : ''}`) + `<p class="paneNote">${esc(t('这里只配置模板；施加后产生的会话和运行状态不属于模板草稿。'))}</p>`;
       else rows.innerHTML=Object.values(window.LineageTemplateGraph.bindings(projection().body)).map(binding=>`<section class="residentMenuDuty"><strong>${esc(binding.key)}</strong><p>${esc(binding.type)} · ${esc(binding.direction)} · ${esc(binding.cardinality)} · ${esc(t(binding.required?'必需':'可选'))}</p></section>`).join('');
+      if(tab==='duties' && onToggleDuty) for(const graph of rows.querySelectorAll('[data-template-duty-graph]')){
+        const key=graph.dataset.templateDutyGraph;
+        const open=isDutyExpanded(selected,key);
+        const toggle=document.createElement('button');
+        toggle.type='button';toggle.className='portalButton is-compact';toggle.dataset.templateDutyToggle=key;
+        toggle.setAttribute('aria-expanded',String(open));
+        toggle.textContent=t(open?'在总图中收起':'在总图中展开');
+        graph.before(toggle);
+      }
     }
     overlay.addEventListener('click',event=>{
       if(event.target.closest('[data-menu-close]')){dialog.close();return;}
@@ -54,6 +63,8 @@
       if(event.target.closest('[data-template-menu-source]')){dialog.close();void onSource?.(metadata().source.template_id);return;}
       if(event.target.closest('[data-template-menu-expand]')){dialog.close();onExpand(selected);return;}
       if(event.target.closest('[data-template-resident-inspect]')){dialog.close();onInspect(selected);return;}
+      const toggle=event.target.closest('[data-template-duty-toggle]');
+      if(toggle){dialog.close();onToggleDuty(selected,toggle.dataset.templateDutyToggle);return;}
       const graph=event.target.closest('[data-template-duty-graph]');
       if(graph){const duty=metadata().duties.find(duty=>duty.key===graph.dataset.templateDutyGraph);dialog.close();onLocalGraph(selected,duty);return;}
       const control=event.target.closest('[data-template-duty-control]');if(control){dialog.close();onInspect(control.dataset.templateDutyControl);}

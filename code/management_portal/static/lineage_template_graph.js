@@ -255,7 +255,24 @@
       {key:role.key,title:role.title || role.key,structure:true,duties:[],memories:[],settings:role.settings || {}}]));
   }
 
-  function project(body, {workshop = false, groups = [], expanded = [], scope = null} = {}) {
+  function residentDuties(meta,draft) {
+    if(meta?.editable && draft.kind==='role'){
+      return draft.body.duties.map(row=>({...meta.duties.find(item=>item.key===row.key),...row}));
+    }
+    return meta?.duties || [];
+  }
+
+  function dutyGroups(presentation, expanded, overrides, draft) {
+    if (!presentation || presentation.level === 'duty') return [];
+    const owners = Object.values(presentation.residents || {});
+    if (presentation.organization) owners.push({...presentation.organization,key:'@organization'});
+    return owners.flatMap(owner => residentDuties(owner,draft).map(duty => {
+      const id = JSON.stringify([owner.key,duty.key]);
+      return {...duty,members:duty.members || [],id,owner:owner.key,holder:owner.title,open:overrides[id] ?? expanded.includes(owner.key)};
+    }));
+  }
+
+  function project(body, {workshop = false, groups = [], expanded = [], duties = [], scope = null} = {}) {
     const program = window.PortalLineageProgram;
     const source = collections(JSON.parse(JSON.stringify(body)));
     const saved = source.layout || {};
@@ -292,14 +309,16 @@
       }
     });
     const expandedIds = new Set(expanded);
-    graph.edges.push(...(source.presentation?.interactions || []).filter(row=>!row.expanded_only||expandedIds.has(row.owner)||scope?.includes(row.owner)).map(row=>({
+    const dutyMembers = new Map();
+    for (const duty of duties) for (const key of duty.members) dutyMembers.set(key,duty);
+    const isOpen = (key,owner) => dutyMembers.get(key)?.open ?? expandedIds.has(owner);
+    graph.edges.push(...(source.presentation?.interactions || []).filter(row=>!row.expanded_only||isOpen(row.target,row.owner)||scope?.includes(row.owner)).map(row=>({
       id:row.key,source:row.source,target:row.target,type:row.kind,label:row.label,_template_interaction:true,_template_collapsed_label:row.collapsed_label,_template_owner:row.owner,
     })));
     const representative = new Map(), grouped = [];
     if (source.presentation && !scope) for (const [key,owner] of Object.entries(source.presentation.owners)) {
       const expansionOwner=source.presentation.expansion_owners?.[key];
-      if (expansionOwner && expandedIds.has(expansionOwner)) continue;
-      if (!expandedIds.has(owner)) representative.set(key,owner);
+      if (!isOpen(key,expansionOwner || owner)) representative.set(key,owner);
     }
     for (const group of (source.presentation ? [] : groups).filter(group => !group.expanded)) {
       const resident = nodesById.get(group.resident);
@@ -354,6 +373,114 @@
     visibleEdges=visibleEdges.filter(edge=>visibleIds.has(edge.source) && visibleIds.has(edge.target));
     if(workshop)visibleEdges.forEach(edge=>{edge._template_inner_route=true;});
     return { nodes, edges:visibleEdges, wires: program.normalizeProgram(authored).wires };
+  }
+
+  const graphWorld = {width:1280,height:900};
+  const toWorld = ({x,y}) => ({x:x*100/graphWorld.width,y:y*100/graphWorld.height});
+  const toPixels = ({x,y}) => ({x:x*graphWorld.width/100,y:y*graphWorld.height/100});
+
+  function dutyColumns(nodes, edges) {
+    // Rank triggers, actions and the holder from actual forward dependencies.
+    // A watch points from the observer to its subject, so it is not a step.
+    const incoming = new Map(nodes.map(node=>[node.id,new Set()]));
+    for (const edge of edges) {
+      if (edge.type !== 'watch' && incoming.has(edge.source)) incoming.get(edge.target)?.add(edge.source);
+    }
+    const columns = new Map(nodes.map(node=>[node.id,node.kind==='agent'?2:node.kind==='event_source'?0:1]));
+    while (incoming.size) {
+      const next = [...incoming].find(([,sources])=>!sources.size);
+      if (!next) break; // Cyclic steps retain their current column.
+      const [id] = next;
+      incoming.delete(id);
+      for (const [target,sources] of incoming) {
+        if (sources.delete(id)) columns.set(target,Math.max(columns.get(target),columns.get(id)+1));
+      }
+    }
+    return columns;
+  }
+
+  function layoutDuties(graph, duties) {
+    const groups = new Map(), memberOf = new Map();
+    const nodes = new Map(graph.nodes.map(node=>[node.id,node]));
+    for (const duty of duties.filter(duty=>duty.open)) {
+      for (const id of duty.members) {
+        if (nodes.has(id) && !nodes.get(id)._template_binding) memberOf.set(id,duty.id);
+      }
+      // A single-duty role's actual Resident belongs in its sequence. A
+      // holder shared between several duties stays on the interface rail.
+      if (nodes.has(duty.owner) && duties.filter(other=>other.owner===duty.owner).length===1) {
+        memberOf.set(duty.owner,duty.id);
+      }
+    }
+    const assignments = new Map(duties.map(duty=>[duty.id,[]]));
+    for (const [id,duty] of memberOf) assignments.get(duty).push(nodes.get(id));
+    const columns = new Map([...assignments].map(([id,members])=>[id,dutyColumns(members,graph.edges)]));
+    const columnCount = Math.max(3,1+Math.max(0,...[...columns.values()].flatMap(map=>[...map.values()])));
+    const pitch = 184, left = 20, right = left+columnCount*pitch;
+    const positions = new Map(), rowChannels = new Map();
+    let top = 22;
+    for (const duty of duties) {
+      const members = assignments.get(duty.id);
+      const stacks = Array.from({length:columnCount},()=>[]);
+      for (const node of members) stacks[columns.get(duty.id).get(node.id)].push(node);
+      const rows = Math.max(0,...stacks.map(stack=>stack.length));
+      const height = rows ? 64+rows*136 : duty.open ? 85 : 48;
+      groups.set(duty.id,{...duty,left,top,right,bottom:top+height,empty:!rows});
+      stacks.forEach((stack,column)=>stack.forEach((node,row)=>{
+        const index = row+Math.floor((rows-stack.length)/2);
+        const channel = top+56+index*136;
+        positions.set(node.id,{x:left+(column+.5)*pitch,y:channel+64});
+        rowChannels.set(node.id,channel);
+      }));
+      top += height+18;
+    }
+    const shared = graph.nodes.filter(node=>!memberOf.has(node.id));
+    const firstUse = new Map(shared.map(node=>[node.id,Infinity]));
+    for (const {source,target} of graph.edges) {
+      for (const [id,other] of [[source,target],[target,source]]) {
+        if (firstUse.has(id) && positions.has(other)) firstUse.set(id,Math.min(firstUse.get(id),positions.get(other).y));
+      }
+    }
+    const realHolder = node => !!node._template_menu;
+    shared.sort((a,b)=>Number(realHolder(b))-Number(realHolder(a)) || firstUse.get(a.id)-firstUse.get(b.id));
+    let sharedX = right+200;
+    let sharedY = 120;
+    for (const node of shared) {
+      const first = firstUse.get(node.id);
+      if (!realHolder(node) && Number.isFinite(first)) sharedY = Math.max(sharedY,first);
+      positions.set(node.id,{x:sharedX,y:sharedY});
+      sharedY += 180;
+    }
+    const tracks = new Map();
+    for (const edge of graph.edges) {
+      const from = memberOf.get(edge.source), to = memberOf.get(edge.target);
+      if (from && from===to) continue;
+      const key = from && to ? [from,to].sort().join('|') : from ? edge.target : edge.source;
+      if (!tracks.has(key)) tracks.set(key,tracks.size);
+      edge.route_key = tracks.get(key);
+    }
+    sharedX = right+Math.max(200,106+7*tracks.size);
+    for (const node of shared) positions.get(node.id).x=sharedX;
+    function route(edge, source, target, sourceHalf, targetHalf) {
+      if (edge.route_key == null) return null;
+      const outerOnly = !memberOf.has(source.id) && !memberOf.has(target.id);
+      const trackX = outerOnly ? sharedX+106+edge.route_key*5 : right+16+edge.route_key*7;
+      function endpoint(node, half) {
+        const {x,y} = toPixels(node);
+        const extent = toPixels(half);
+        const channel = rowChannels.get(node.id);
+        if (channel != null) return [{x,y:y-extent.y},{x,y:channel}];
+        const side = outerOnly ? 1 : -1;
+        const offset = (edge.route_key%5-2)*5;
+        return [{x:x+side*extent.x,y:y+offset},{x:trackX,y:y+offset}];
+      }
+      const from=endpoint(source,sourceHalf), to=endpoint(target,targetHalf);
+      const start=from[1], end=to[1];
+      const points=[...from,{x:trackX,y:start.y},{x:trackX,y:end.y},...to.reverse()];
+      return {points:points.map(toWorld),label:toWorld({x:trackX,y:(start.y+end.y)/2})};
+    }
+    return {groups,positions,route,sharedX:shared.length?sharedX:null,
+      bounds:{left,top:22,right:shared.length?sharedX+Math.max(90,110+5*tracks.size):right,bottom:Math.max(top-18,sharedY-96)}};
   }
 
   function placement(body) {
@@ -418,13 +545,14 @@
     return {move,destroy(){destroyed=true;observer.disconnect();controller.destroy();root.remove();}};
   }
 
-  function mount({ root, body, workshop = false, readOnly = false, viewState = {}, groups = () => [], expanded = () => [], scope = () => null, residentInfo = () => null, onOpenResident = () => {}, onToggleRole = () => {}, isReadonly = () => false, onBeforeChange = () => {}, onChange = () => {}, onSelect = () => {} }) {
+  function mount({ root, body, workshop = false, readOnly = false, viewState = {}, groups = () => [], expanded = () => [], duties = () => [], scope = () => null, residentInfo = () => null, onOpenResident = () => {}, onToggleRole = () => {}, onToggleDuty = () => {}, isReadonly = () => false, onBeforeChange = () => {}, onChange = () => {}, onSelect = () => {} }) {
     const program = window.PortalLineageProgram;
     const factory = window.PortalHatgGraph?.createGraph;
     if (!program || !factory) throw new Error(t('HATG 图形引擎未加载'));
     let selected = '';
     let wireDraft = null;
     let current = { nodes: [], edges: [], wires: [] };
+    let dutyLayout = null;
     let validateWireTarget;
     let currentNodesById = new Map();
     let hintTimer = null;
@@ -442,7 +570,7 @@
       <div class="templateGraphStage">
         <div class="hatgCanvas templateGraphCanvas" tabindex="0" aria-label="${esc(t('模板结构图：拖动节点调整位置，先点输出端口再点输入端口连线'))}">
           <div class="hatgWorld"><svg class="hatgEdges" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><defs>${WIRE_KINDS.map(kind => `<marker id="templateGraph-${kind}-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/></marker>`).join('')}</defs><g data-layer="edges"></g><g data-layer="effects"></g></svg>
-            <div class="hatgEdgeLabels"></div><div class="hatgNodes"></div></div>
+            <div class="templateDutyLanes"></div><div class="hatgEdgeLabels"></div><div class="hatgNodes"></div></div>
         </div>
         <div class="templateGraphNavigation" role="toolbar" aria-label="${esc(t('画布视图'))}">
           <button type="button" class="portalButton is-icon" data-graph-zoom-out aria-label="${esc(t('缩小'))}" data-portal-icon="minus"></button>
@@ -451,11 +579,14 @@
           <button type="button" class="portalButton is-compact" data-graph-reset aria-label="${esc(t('回到100%'))}" title="${esc(t('回到100%'))}">1:1</button>
           <button type="button" class="portalButton is-icon" data-graph-fit aria-label="${esc(t('适合窗口'))}" title="${esc(t('适合窗口'))}" data-portal-icon="fit-view"></button>
           <button type="button" class="portalButton is-compact" data-graph-arrange>${esc(t('整理'))}</button>
+          <button type="button" class="portalButton is-compact" data-graph-interfaces hidden>${esc(t('共享接口'))}</button>
         </div>
         <p class="templateGraphEmpty">${esc(t('从上方添加角色或组件，开始搭建结构。'))}</p>
         <p class="templateGraphHint" data-graph-hint role="status" hidden></p>
       </div>`;
     const canvas = root.querySelector('.hatgCanvas');
+    const lanes = canvas.querySelector('.templateDutyLanes');
+    const interfaceJump = root.querySelector('[data-graph-interfaces]');
     const roleControls=document.createElement('div');roleControls.className='templateRoleViewControls';root.append(roleControls);
     function positionRoleControls(){
       const bounds=root.getBoundingClientRect();
@@ -463,8 +594,12 @@
         const node=canvas.querySelector(`[data-node-id="${CSS.escape(button.dataset.collapseRole)}"]`);
         button.hidden=!node;if(!node)return;
         const card=node.getBoundingClientRect();
+        const top=dutyLayout ? card.bottom-bounds.top+3 : card.top-bounds.top-button.offsetHeight-10;
+        if(dutyLayout && (card.right<bounds.left || card.left>bounds.right || top<52 || top+button.offsetHeight>bounds.height-8)){
+          button.hidden=true;return;
+        }
         button.style.left=`${Math.max(8,Math.min(bounds.width-button.offsetWidth-8,card.left-bounds.left))}px`;
-        button.style.top=`${Math.max(52,Math.min(bounds.height-button.offsetHeight-8,card.top-bounds.top-button.offsetHeight-10))}px`;
+        button.style.top=`${Math.max(52,Math.min(bounds.height-button.offsetHeight-8,top))}px`;
       });
     }
     let summaryBindings=[],summaryResume='';
@@ -509,14 +644,44 @@
     };
 
 
+    function renderDuties() {
+      canvas.classList.toggle('has-duty-lanes',!!dutyLayout);
+      // Keep the focused control in place while a duty's contents unfold.
+      const focused=lanes.contains(document.activeElement)?document.activeElement.dataset.dutyGroup:null;
+      lanes.innerHTML = dutyLayout ? [...dutyLayout.groups.values()].map(group=>{
+        const {x,y}=toWorld({x:group.left,y:group.top});
+        const size=toWorld({x:group.right-group.left,y:group.bottom-group.top});
+        return `<section class="templateDutyLane" data-duty-lane="${esc(group.id)}" style="left:${x}%;top:${y}%;width:${size.x}%;height:${size.y}%">
+          <button type="button" class="templateDutyLaneToggle" data-duty-group="${esc(group.id)}" aria-expanded="${group.open}">
+            <span aria-hidden="true">${group.open?'−':'+'}</span><span>${esc(group.title)}</span><small>${esc(group.holder)}</small>
+          </button>${group.open&&group.empty?`<p>${esc(t('此职责没有独立原语'))}</p>`:''}</section>`;
+      }).join('') : '';
+      if(dutyLayout?.sharedX!=null){
+        const heading=document.createElement('strong');
+        heading.className='templateDutyInterfaces';
+        heading.style.left=`${toWorld({x:dutyLayout.sharedX,y:0}).x}%`;
+        heading.textContent=t('共享接口与承担者');
+        lanes.append(heading);
+      }
+      if(focused)lanes.querySelector(`[data-duty-group="${CSS.escape(focused)}"]`)?.focus({preventScroll:true});
+    }
+
     function render() {
       summaryResume='';
       summaryBindings.forEach(binding=>binding.destroy());summaryBindings=[];
-      current = project(body(), {workshop,groups:groups(),expanded:expanded(),scope:scope()});
+      const visibleDuties = scope() ? [] : duties();
+      const grouped = visibleDuties.some(duty=>duty.open) ? visibleDuties : [];
+      current = project(body(), {workshop,groups:groups(),expanded:expanded(),duties:grouped,scope:scope()});
+      dutyLayout = grouped.length ? layoutDuties(current,grouped) : null;
+      renderDuties();
       if (readOnly) {
-        const positions=viewState.positions ||= {};
         const automatic=arrangedPositions();
-        current.nodes.forEach(node=>Object.assign(node,positions[node.id] || automatic.get(node.id)));
+        const positions=viewState.positions ||= {};
+        current.nodes.forEach(node=>{
+          const pos=automatic.get(node.id);
+          const offset=dutyLayout && viewState.dutyPositions?.[node.id];
+          Object.assign(node,dutyLayout ? {x:pos.x+(offset?.x||0),y:pos.y+(offset?.y||0)} : positions[node.id] || pos);
+        });
       }
       currentNodesById = new Map(current.nodes.map(node => [node.id, node]));
       const selectedEdge = current.edges.some(edge => edge.id === selected);
@@ -529,14 +694,20 @@
         selectedEdgeId: selectedEdge ? selected : '',
         wireDraft,
       });
+      canvas.querySelectorAll('.edgeLabelBtn').forEach(label=>{
+        const edge=current.edges.find(row=>row.id===label.dataset.edgeId);
+        label.classList.toggle('is-duty-watch',edge?.route_key!=null && edge.type==='watch' && !edge._template_interaction && selected!==edge.id);
+      });
       canvas.querySelectorAll('[data-node-id]').forEach(element=>{
         const node=currentNodesById.get(element.dataset.nodeId);
         element.classList.toggle('is-template-binding',!!node?._template_binding);
         if(node?._template_menu){element.tabIndex=0;element.setAttribute('aria-label',`${node.title} · ${t('模板 Resident 菜单')}`);element.removeAttribute('title');element.querySelectorAll('[title]').forEach(n=>n.removeAttribute('title'));bindDutySummary(element,node);}
       });
       canvas.querySelectorAll('[data-node-open-menu]').forEach(button=>{button.dataset.templateResidentMenu=button.dataset.nodeOpenMenu;});
-      roleControls.innerHTML=expanded().filter(key=>body().presentation?.residents[key]).map(key=>`<button type="button" class="portalButton is-compact" data-collapse-role="${esc(key)}" aria-label="${esc(t('收起内部结构'))} · ${esc(body().presentation.residents[key].title)}">${esc(t('收起内部结构'))}</button>`).join('');
+      const roles=dutyLayout ? [...new Set(grouped.filter(duty=>duty.open).map(duty=>duty.owner))] : expanded();
+      roleControls.innerHTML=roles.filter(key=>body().presentation?.residents[key]).map(key=>`<button type="button" class="portalButton is-compact" data-collapse-role="${esc(key)}" aria-label="${esc(t('收起内部结构'))} · ${esc(body().presentation.residents[key].title)}">${esc(t('收起内部结构'))}</button>`).join('');
       positionRoleControls();
+      syncInterfaceJump();
       summaryResume='';
       root.dataset.graphEmpty = String(!current.nodes.length);
     }
@@ -560,6 +731,7 @@
 
     const point = position => ({ x: Math.round(position.x * 100) / 100, y: Math.round(position.y * 100) / 100 });
     function arrangedPositions(){
+      if(dutyLayout) return new Map([...dutyLayout.positions].map(([id,p])=>[id,toWorld(p)]));
       const result=window.PortalHatgGraph.computeBranchAwareLayout(current.nodes,current.edges,{horizontalGap:24,verticalGap:22,nodeWidth:17,nodeHeight:14,feedbackEdgeTypes:['watch','target'],componentGap:24});
       const chain=body().presentation?.main_chain?.filter(key=>current.nodes.some(node=>node.id===key));
       if(chain?.length){chain.forEach((key,index)=>result.set(key,{x:12+index*24,y:50}));
@@ -567,17 +739,50 @@
       return result;
     }
     function moveEnd(moved){
-      if(readOnly){const nodes=Array.isArray(moved)?moved:[moved];viewState.positions={...viewState.positions,...Object.fromEntries(nodes.filter(Boolean).map(node=>[node.id,point(node)]))};render();}
-      else change(keepPlaces);
+      if(!readOnly){change(keepPlaces);return;}
+      const nodes=(Array.isArray(moved)?moved:[moved]).filter(Boolean);
+      if(dutyLayout){
+        const positions=viewState.dutyPositions ||= {};
+        const limit=toWorld({x:12,y:7});
+        for(const node of nodes){
+          const base=dutyLayout.positions.get(node.id),start=toWorld(base);
+          positions[node.id]=point({
+            x:Math.max(-limit.x,Math.min(limit.x,node.x-start.x)),
+            y:Math.max(-limit.y,Math.min(limit.y,node.y-start.y))
+          });
+        }
+      }else for(const node of nodes)viewState.positions[node.id]=point(node);
+      render();
     }
     function arrange(){
       const positions=Object.fromEntries(arrangedPositions());
-      if(readOnly){viewState.positions={};render();}
+      if(readOnly){if(dutyLayout)viewState.dutyPositions={};else viewState.positions={};render();}
       else change(source=>{source.layout={...source.layout,...positions};});
       fit();
     }
     const fitOptions={duration:0,maxScale:workshop?1:1.1,...(workshop?{minScale:.6,padding:40}:{})};
-    function fit(){controller.fit(fitOptions);}
+    function fit(dutyId){
+      if(!dutyLayout || !canvas.clientWidth || !canvas.clientHeight){controller.fit(fitOptions);return;}
+      const {left,top,right,bottom}=dutyLayout.bounds;
+      const width=canvas.clientWidth-36,height=canvas.clientHeight-72;
+      const k=Math.max(.6,Math.min(1,width/(right-left),height/(bottom-top)));
+      const target=dutyLayout.groups.get(dutyId);
+      const focusTop=height<(bottom-top)*k && target ? target.top : top;
+      controller.setTransform({
+        x:18+Math.max(0,(width-(right-left)*k)/2)-left*k,
+        y:56+Math.max(0,(height-(bottom-top)*k)/2)-focusTop*k,k
+      },{duration:0});
+    }
+
+    function syncInterfaceJump(){
+      const {x,k}=controller.getTransform();
+      const sharedX=dutyLayout?.sharedX;
+      const narrow=sharedX!=null && (sharedX+86-dutyLayout.bounds.left)*k>canvas.clientWidth-36;
+      const onRail=narrow && x+(sharedX+86)*k<=canvas.clientWidth-8;
+      interfaceJump.hidden=!narrow;
+      interfaceJump.textContent=t(onRail?'职责':'共享接口');
+      interfaceJump.setAttribute('aria-pressed',String(onRail));
+    }
 
     // Once anything is placed by hand, every node keeps the place it is drawn at.
     function keepPlaces(source) {
@@ -682,14 +887,15 @@
       effectLayer: canvas.querySelector('[data-layer="effects"]'),
       labelLayer: canvas.querySelector('.hatgEdgeLabels'),
       nodeLayer: canvas.querySelector('.hatgNodes'),
-      worldWidth: 1280,
-      worldHeight: 900,
+      worldWidth: graphWorld.width,
+      worldHeight: graphWorld.height,
+      routeEdge:(...args)=>dutyLayout?.route(...args),
       scaleExtent: [0.2, 2],
       zoomValue: root.querySelector('[data-graph-zoom]'),
       zoomInButton: null,
       zoomOutButton: null,
       resetButton: root.querySelector('[data-graph-reset]'),
-      fitButton: root.querySelector('[data-graph-fit]'),
+      fitButton: null,
       fitOptions,
       nodeContent,
       nodeOpenMenu:node=>node._template_menu ? {label:t('打开模板 Resident 菜单')} : null,
@@ -709,11 +915,32 @@
     });
 
     const abort = new AbortController();
+    lanes.addEventListener('click',event=>{
+      const id=event.target.closest('[data-duty-group]')?.dataset.dutyGroup;
+      if(id)onToggleDuty(id);
+    },{signal:abort.signal});
     roleControls.addEventListener('click',event=>{const key=event.target.closest('[data-collapse-role]')?.dataset.collapseRole;if(key){event.stopPropagation();onToggleRole(key);canvas.querySelector(`[data-node-id="${CSS.escape(key)}"]`)?.focus({preventScroll:true});}},{signal:abort.signal});
-    const roleCamera=new MutationObserver(()=>{positionRoleControls();if(readOnly)viewState.camera=controller.getTransform();});roleCamera.observe(canvas.querySelector('.hatgWorld'),{attributes:true,attributeFilter:['style']});
-    const summaryResize=new ResizeObserver(()=>{positionRoleControls();root.querySelectorAll('.templateDutySummary').forEach(panel=>{panel.hidden=true;});});summaryResize.observe(root);
+    const roleCamera=new MutationObserver(()=>{
+      positionRoleControls();
+      syncInterfaceJump();
+      if(readOnly){viewState.camera=controller.getTransform();viewState.dutyLayout=!!dutyLayout;}
+    });
+    roleCamera.observe(canvas.querySelector('.hatgWorld'),{attributes:true,attributeFilter:['style']});
+    const summaryResize=new ResizeObserver(()=>{
+      positionRoleControls();syncInterfaceJump();
+      root.querySelectorAll('.templateDutySummary').forEach(panel=>{panel.hidden=true;});
+    });
+    summaryResize.observe(root);
     root.addEventListener('click', event => {
       if(event.target.closest('[data-graph-arrange]')){arrange();return;}
+      if(event.target.closest('[data-graph-fit]')){fit();return;}
+      if(event.target.closest('[data-graph-interfaces]') && dutyLayout?.sharedX!=null){
+        const {y,k}=controller.getTransform();
+        const onRail=interfaceJump.getAttribute('aria-pressed')==='true';
+        const x=onRail ? 18-dutyLayout.bounds.left*k : canvas.clientWidth-18-(dutyLayout.sharedX+86)*k;
+        controller.setTransform({x,y,k},{duration:0});
+        return;
+      }
       const zoom=event.target.closest('[data-graph-zoom-in],[data-graph-zoom-out]');
       if(zoom){const old=controller.getTransform(),k=Math.max(.2,Math.min(2,old.k*(zoom.hasAttribute('data-graph-zoom-in')?1.25:.8))),ratio=k/old.k;
         controller.setTransform({x:canvas.clientWidth/2-(canvas.clientWidth/2-old.x)*ratio,y:canvas.clientHeight/2-(canvas.clientHeight/2-old.y)*ratio,k},{duration:0});return;}
@@ -738,9 +965,9 @@
     }, { signal: abort.signal });
 
     render();
-    if(readOnly&&viewState.camera)controller.setTransform(viewState.camera,{duration:0});else fit();
+    if(readOnly&&viewState.camera&&(!dutyLayout||viewState.dutyLayout))controller.setTransform(viewState.camera,{duration:0});else fit();
     return Object.freeze({
-      render, select, addComponent, insertionPosition:center,
+      render, select, reveal:key=>controller.ensureNodeVisible(key), addComponent, insertionPosition:center,
       position: event => controller.screenToPosition(event.clientX, event.clientY),
       placementView: () => ({root:canvas,controller}),
       selected: () => selected,
@@ -778,5 +1005,5 @@
     },{signal:abort.signal});
     return {setEnabled(enabled) {root.querySelectorAll('[data-template-id]').forEach(button=>{button.disabled=!enabled;button.draggable=enabled;});},destroy(){abort.abort();root.replaceChildren();}};
   }
-  window.LineageTemplateGraph = Object.freeze({ mount, project, bindings, residentContexts, placement, placementPreview, thumbnail, removeElement, renameKey, effectiveConfig, isWireKind, authoringItems, mountTools });
+  window.LineageTemplateGraph = Object.freeze({ mount, project, bindings, residentContexts, residentDuties, dutyGroups, placement, placementPreview, thumbnail, removeElement, renameKey, effectiveConfig, isWireKind, authoringItems, mountTools });
 })();
