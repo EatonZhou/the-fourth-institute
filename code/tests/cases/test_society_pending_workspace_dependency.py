@@ -31,6 +31,82 @@ class TestWorkspaceDependency(unittest.TestCase):
                 )
             reader.assert_called_once_with(PARENT, connection=connection)
 
+    def test_unknown_diagnostics_merge_only_safe_deduplicated_reasons(self):
+        from management_portal.resources import creation
+        from management_portal.society_service import creation_intents
+
+        connection = Mock()
+        connection.execute.return_value.fetchone.return_value = ("work", "edges", None)
+        incomplete = {"record": {"created_by": "hidden-actor"}}
+        record = {"resident_id": "resident_0123456789ab", "created_by": "hidden-actor"}
+        intent = {
+            "record": record, "operation_id": "resident:hidden-operation", "scope_id": "hidden-scope",
+            "request": {"path": "/hidden/path"},
+        }
+        lookup_error = creation.CreationDependencyUnknown("hidden-operation")
+
+        def resource_reader(workspace_id, *, connection, diagnostics):
+            diagnostics.extend([
+                {"source": "resource_creation", "reason": "missing_declaration", "actor": "hidden-actor"},
+                {"source": "resource_creation", "reason": "missing_declaration"},
+                {"source": "resource_creation", "reason": "/hidden/path"},
+            ])
+            return "unknown"
+
+        diagnostics = []
+        with patch.object(creation, "pending_creation_workspace_dependency", side_effect=resource_reader) as reader, patch.object(
+            creation_intents, "pending_resident_workspace_intents",
+            return_value=[incomplete, intent, intent, intent],
+        ) as intents, patch.object(
+            creation, "creation_dependency_record",
+            side_effect=[None, lookup_error, dict.fromkeys(("operation_id", "resource_id", "actor", "scope_id", "payload"))],
+        ):
+            self.assertEqual(deps.pending_workspace_dependency(PARENT, connection=connection, diagnostics=diagnostics), "unknown")
+        reader.assert_called_once()
+        self.assertIs(reader.call_args.kwargs["connection"], connection)
+        intents.assert_called_once_with(connection)
+        self.assertEqual(diagnostics, [
+            {"source": "resource_creation", "reason": "missing_declaration"},
+            {"source": "resident_creation_intent", "reason": "creation_association_mismatch"},
+            {"source": "resident_creation_intent", "reason": "creation_association_unavailable"},
+            {"source": "resident_creation_intent", "reason": "intent_snapshot_incomplete"},
+            {"source": "resident_creation_intent", "reason": "workspace_binding_evidence_invalid"},
+            {"source": "workspace_handoff", "reason": "handoff_store_incomplete"},
+        ])
+
+    def test_unknown_without_a_known_reason_uses_fixed_fallback(self):
+        from management_portal.resources import creation
+
+        def report_unknown(workspace_id, *, connection, diagnostics):
+            diagnostics.extend(["hidden-operation", {"reason": "hidden-actor"}])
+            return "unknown"
+
+        diagnostics = []
+        with patch.object(creation, "pending_creation_workspace_dependency", side_effect=report_unknown), patch.object(
+            deps, "_pending_resident_dependency", return_value="independent",
+        ), patch.object(deps, "_pending_handoff_dependency", return_value="independent"):
+            self.assertEqual(deps.pending_workspace_dependency(PARENT, connection=object(), diagnostics=diagnostics), "unknown")
+        self.assertEqual(diagnostics, [{"source": "resource_creation", "reason": "evidence_unavailable"}])
+
+    def test_affirmative_dependency_suppresses_unrelated_unknown_diagnostics(self):
+        from management_portal.resources import creation
+
+        def report_unknown(workspace_id, *, connection, diagnostics):
+            diagnostics.append({"source": "resource_creation", "reason": "missing_declaration"})
+            return "unknown"
+
+        connection = Mock()
+        connection.execute.return_value.fetchone.return_value = ("work", "edges", "items")
+        connection.execute.return_value.__iter__ = Mock(
+            return_value=iter([{"source_workspace_id": PARENT, "target_workspace_id": None}]),
+        )
+        diagnostics = []
+        with patch.object(creation, "pending_creation_workspace_dependency", side_effect=report_unknown), patch.object(
+            deps, "_pending_resident_dependency", return_value="independent",
+        ):
+            self.assertEqual(deps.pending_workspace_dependency(PARENT, connection=connection, diagnostics=diagnostics), "dependent")
+        self.assertEqual(diagnostics, [])
+
     def test_commit_checks_actual_canonical_ids_in_original_transaction(self):
         connection = object()
         creation = SimpleNamespace(assert_workspace_dependencies=Mock())
@@ -104,7 +180,9 @@ def test_legacy_creation_has_unknown_dependency(directory_owners, tmp_path):
     with creation.prepare([(tmp_path / "old-target", "directory")]):
         with directory_owners.database.transaction() as connection:
             get_workspace_store().cleanup.lock(connection)
-            assert deps.pending_workspace_dependency(PARENT, connection=connection) == "unknown"
+            diagnostics = []
+            assert deps.pending_workspace_dependency(PARENT, connection=connection, diagnostics=diagnostics) == "unknown"
+            assert diagnostics == [{"source": "resource_creation", "reason": "missing_declaration"}]
 
 
 def test_copy_handoff_declares_source_before_materializing(directory_owners, tmp_path, monkeypatch):

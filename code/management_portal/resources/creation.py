@@ -208,7 +208,7 @@ def creation_dependency_record(operation_id, *, connection):
     return result
 
 
-def pending_creation_workspace_dependency(workspace_id, *, connection):
+def pending_creation_workspace_dependency(workspace_id, *, connection, diagnostics=None):
     """Classify all unpublished identity dependencies, including outside paths.
 
     No owner initialization, payload interpretation, or hidden operation details
@@ -216,34 +216,51 @@ def pending_creation_workspace_dependency(workspace_id, *, connection):
     empty dependency set. A positive match takes precedence over unknown rows.
     """
     from management_common.portal_database import _database_schema
+    def note(reason):
+        # This bounded public diagnostic names a proof category, never an
+        # operation, path, actor, or count from another owner's private state.
+        item = {'source': 'resource_creation', 'reason': reason}
+        if diagnostics is not None and item not in diagnostics:
+            diagnostics.append(item)
     if not connection.in_transaction:
         raise RuntimeError('Creation dependency classification requires the owner transaction')
     _workspace_dependency_document([workspace_id])
     table = '"' + _database_schema('directory_lifecycle') + '".resource_creations'
     if connection.execute('SELECT to_regclass(%s)', (table,)).fetchone()[0] is None:
+        note('schema_unavailable')
         return 'unknown'
     columns = {row[0] for row in connection.execute(
         'SELECT attname FROM pg_attribute WHERE attrelid=%s::regclass AND NOT attisdropped', (table,))}
     if not {'completed', 'aborted'} <= columns:
+        note('terminal_state_unavailable')
         return 'unknown'
     if 'workspace_dependencies' not in columns:
         # The installed old terminal-state schema can prove there are no
         # unpublished operations. Any old live row is still unknown; no DDL or
         # invented empty declarations are needed on this read path.
         pending = connection.execute(f'SELECT 1 FROM {table} WHERE NOT completed AND NOT aborted LIMIT 1').fetchone()
+        if pending:
+            note('legacy_schema_missing_declaration')
         return 'unknown' if pending else 'independent'
     unknown = False
     for row in connection.execute(f'SELECT workspace_dependencies FROM {table} WHERE NOT completed AND NOT aborted'):
         declaration = row['workspace_dependencies']
+        if declaration is None:
+            note('missing_declaration')
+            unknown = True
+            continue
         try:
             if (type(declaration) is not dict or type(declaration.get('version')) is not int
                     or declaration != _workspace_dependency_document(declaration['workspace_ids'])):
                 unknown = True
+                note('invalid_declaration')
                 continue
         except (KeyError, TypeError, ValueError):
             unknown = True
+            note('invalid_declaration')
             continue
         if workspace_id in declaration['workspace_ids']:
+            note('declared_reference')
             return 'dependent'
     return 'unknown' if unknown else 'independent'
 

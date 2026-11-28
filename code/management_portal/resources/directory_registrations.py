@@ -185,7 +185,8 @@ def unregister_nested(roots, *, connection, actor):
     return unregister_tree(roots, connection=connection, actor=actor)['resource_ids']
 
 
-def retire_workspace_registration(row, *, connection, actor, pending_dependency='unknown'):
+def retire_workspace_registration(row, *, connection, actor, pending_dependency='unknown',
+                                  pending_diagnostics=()):
     """Retire only this Workspace identity, preserving independent registrations.
 
     The Workspace owner has locked/authorized the row and checked its usage
@@ -225,10 +226,17 @@ def retire_workspace_registration(row, *, connection, actor, pending_dependency=
         (identity, identity)).fetchone()
     if owned:
         raise ValueError('Workspace still has other owned directories or dependent operations')
-    if pending_dependency == 'dependent':
-        raise ValueError('Workspace has pending identity dependencies')
     if pending_dependency != 'independent':
-        raise ValueError('Workspace has unknown pending identity dependencies or operation claims')
+        from .errors import ResourceOperationError
+        present = pending_dependency == 'dependent'
+        error = ResourceOperationError('instruction.invalid_arguments',
+            'Workspace has pending identity dependencies' if present else
+            'Workspace has unknown pending identity dependencies or operation claims', details={
+                'reason': 'workspace_dependency_present' if present else 'workspace_dependency_unknown',
+                'dependency_diagnostics': list(pending_diagnostics),
+            })
+        error.commit_state = 'not_committed'
+        raise error
     claims = connection.execute(f'SELECT kind,object_id,owner_id,location FROM {deps.schema()}.directory_dependencies '
         "WHERE disposition='claim' AND (path_key=ANY(%s::text[]) "
         'OR ancestors && %s::text[])', (ancestors, keys))

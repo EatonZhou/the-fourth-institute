@@ -8,19 +8,51 @@ from management_portal.resources.workspace_store import get_workspace_store
 from .identity_contract import validate_id
 
 
-def pending_workspace_dependency(workspace_id, *, connection):
-    """Classify durable Society intents and Creations under the caller's directory lock."""
+_RESOURCE_UNKNOWN_REASONS = frozenset({
+    "schema_unavailable", "terminal_state_unavailable", "legacy_schema_missing_declaration",
+    "missing_declaration", "invalid_declaration",
+})
+
+
+def pending_workspace_dependency(workspace_id, *, connection, diagnostics=None):
+    """Classify under the caller's directory lock, with optional safe reason pairs.
+
+    The authorized caller may pass an empty list. Only an unknown result adds
+    source and reason fields, with no row data or counts.
+    """
     from management_portal.resources.creation import pending_creation_workspace_dependency
 
     validate_id(workspace_id, "workspace")
-    resource = pending_creation_workspace_dependency(workspace_id, connection=connection)
+    resource_notes = []
+    resource_options = {"diagnostics": resource_notes} if diagnostics is not None else {}
+    resource = pending_creation_workspace_dependency(workspace_id, connection=connection, **resource_options)
     if resource == "dependent":
         return resource
-    resident = _pending_resident_dependency(workspace_id, connection=connection)
-    handoff = _pending_handoff_dependency(workspace_id, connection=connection)
+    resident_reasons, handoff_reasons = set(), set()
+    resident = _pending_resident_dependency(workspace_id, connection=connection, unknown_reasons=resident_reasons)
+    handoff = _pending_handoff_dependency(workspace_id, connection=connection, unknown_reasons=handoff_reasons)
     if "dependent" in (resident, handoff):
         return "dependent"
-    return "unknown" if "unknown" in (resource, resident, handoff) else "independent"
+    if "unknown" not in (resource, resident, handoff):
+        return "independent"
+    if diagnostics is not None:
+        resource_reasons = {
+            reason for note in resource_notes
+            if isinstance(note, dict)
+            and isinstance(reason := note.get("reason"), str)
+            and reason in _RESOURCE_UNKNOWN_REASONS
+        }
+        for source, status, reasons in (
+            ("resource_creation", resource, resource_reasons),
+            ("resident_creation_intent", resident, resident_reasons),
+            ("workspace_handoff", handoff, handoff_reasons),
+        ):
+            if status == "unknown":
+                diagnostics.extend(
+                    {"source": source, "reason": reason}
+                    for reason in sorted(reasons or {"evidence_unavailable"})
+                )
+    return "unknown"
 
 
 def _matches_creation(row, *, key, resource_id, actor, scope_id, payload):
@@ -29,19 +61,18 @@ def _matches_creation(row, *, key, resource_id, actor, scope_id, payload):
     ) == (key, resource_id, actor, scope_id, payload)
 
 
-def _pending_resident_dependency(workspace_id, *, connection):
+def _pending_resident_dependency(workspace_id, *, connection, unknown_reasons):
     from management_portal.resources.creation import (
         CreationDependencyUnknown, creation_dependency_record, creation_operation_key,
     )
     from .creation_intents import pending_resident_workspace_intents
 
-    unknown = False
     for row in pending_resident_workspace_intents(connection):
         record = row["record"]
         if not isinstance(record, dict) or any(
             not isinstance(record.get(field), str) or not record[field] for field in ("resident_id", "created_by")
         ):
-            unknown = True
+            unknown_reasons.add("intent_snapshot_incomplete")
             continue
         actor, resource_id = record["created_by"], record["resident_id"]
         key = creation_operation_key(actor, row["operation_id"])
@@ -50,12 +81,12 @@ def _pending_resident_dependency(workspace_id, *, connection):
             if creation:
                 if not _matches_creation(creation, key=key, resource_id=resource_id, actor=actor,
                                          scope_id=row["scope_id"], payload=row["request"]):
-                    unknown = True
+                    unknown_reasons.add("creation_association_mismatch")
                 # The Resource reader owns declarations once a creation exists,
                 # including the unknown status of any matching legacy NULL row.
                 continue
         except CreationDependencyUnknown:
-            unknown = True
+            unknown_reasons.add("creation_association_unavailable")
             continue
         try:
             ids = binding_workspace_ids(record["workspace_bindings"])
@@ -66,11 +97,11 @@ def _pending_resident_dependency(workspace_id, *, connection):
                 and _possible_default_workspace(workspace_id, record, connection=connection)
             )
         except (KeyError, TypeError, ValueError):
-            unknown = True
+            unknown_reasons.add("workspace_binding_evidence_invalid")
             continue
         if depends:
             return "dependent"
-    return "unknown" if unknown else "independent"
+    return "unknown" if unknown_reasons else "independent"
 
 
 def _possible_default_workspace(workspace_id, record, *, connection):
@@ -92,7 +123,7 @@ def _possible_default_workspace(workspace_id, record, *, connection):
     return row["owner_id"] == record.get("project_id") and cleanup_path(row["path"]).name == "workspace"
 
 
-def _pending_handoff_dependency(workspace_id, *, connection):
+def _pending_handoff_dependency(workspace_id, *, connection, unknown_reasons):
     schema = _database_schema("lineage")
     work = f'"{schema}".workspace_handoff_work'
     items = f'"{schema}".lineage_handoff_items'
@@ -103,6 +134,7 @@ def _pending_handoff_dependency(workspace_id, *, connection):
     if tables[0] is None:
         return "independent"
     if tables[1] is None or tables[2] is None:
+        unknown_reasons.add("handoff_store_incomplete")
         return "unknown"
     rows = connection.execute(
         f"SELECT i.source_workspace_id,i.target_workspace_id FROM {work} w "
@@ -111,7 +143,6 @@ def _pending_handoff_dependency(workspace_id, *, connection):
         "WHERE w.progress_json::jsonb->>'status'='preparing' "
         "AND e.edge_type='handoff' AND e.deleted_at IS NULL",
     )
-    unknown = False
     for row in rows:
         sources = (row["source_workspace_id"], row["target_workspace_id"])
         if workspace_id in sources:
@@ -119,8 +150,8 @@ def _pending_handoff_dependency(workspace_id, *, connection):
         try:
             validate_id(row["source_workspace_id"], "workspace")
         except (ValueError, TypeError):
-            unknown = True
-    return "unknown" if unknown else "independent"
+            unknown_reasons.add("handoff_source_invalid")
+    return "unknown" if unknown_reasons else "independent"
 
 
 def recoverable_workspace_dependencies(resource_id, *, actor, operation_id, payload, workspace_ids):

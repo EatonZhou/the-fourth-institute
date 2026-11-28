@@ -41,8 +41,10 @@ def unregister_workspace(workspace_id, *, connection, actor, authorize, preserve
             raise ValueError('Workspace still has Resident bindings; cannot preserve files on unregistration')
         from management_portal.resources.directory_registrations import retire_workspace_registration
         from .workspace_dependencies import pending_workspace_dependency
+        diagnostics = []
+        dependency = pending_workspace_dependency(workspace_id, connection=connection, diagnostics=diagnostics)
         retirement = retire_workspace_registration(row, connection=connection, actor=actor,
-            pending_dependency=pending_workspace_dependency(workspace_id, connection=connection))
+            pending_dependency=dependency, pending_diagnostics=diagnostics)
     else:
         delete_workspaces(connection, workspace_ids=[workspace_id], deleted_at=now(), deleted_by=actor)
     descriptor = store.descriptor(store.rows([workspace_id], connection=connection, include_deleted=True)[workspace_id])
