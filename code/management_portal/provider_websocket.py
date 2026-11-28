@@ -6,8 +6,12 @@ import hashlib
 import os
 import socket
 import struct
+import threading
 
 _WEBSOCKET_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+
+_TEXT_FRAGMENT_BYTES = 4 * 1024 * 1024
+
 
 class WebSocketUnavailable(OSError):
     pass
@@ -16,6 +20,8 @@ class WebSocketUnavailable(OSError):
 class WebSocketTransport:
     def __init__(self, sock: socket.socket, *, host: str = "localhost", path: str = "/",
                  bearer_token: str | None = None) -> None:
+        self._message_lock = threading.Lock()
+        self._frame_lock = threading.Lock()
         self.sock = sock
         self.host = host
         self.path = path
@@ -77,19 +83,29 @@ class WebSocketTransport:
         return value
 
     def send_text(self, text: str) -> None:
-        self._send_frame(0x1, text.encode("utf-8"))
+        payload = text.encode("utf-8")
+        with self._message_lock:
+            if len(payload) <= _TEXT_FRAGMENT_BYTES:
+                self._send_frame(0x1, payload)
+                return
+            for start in range(0, len(payload), _TEXT_FRAGMENT_BYTES):
+                end = start + _TEXT_FRAGMENT_BYTES
+                self._send_frame(0x1 if start == 0 else 0x0, payload[start:end],
+                                 final=end >= len(payload))
 
-    def _send_frame(self, opcode: int, payload: bytes) -> None:
+    def _send_frame(self, opcode: int, payload: bytes, *, final: bool = True) -> None:
+        first = opcode | (0x80 if final else 0)
         mask = os.urandom(4)
         length = len(payload)
         if length < 126:
-            header = bytes((0x80 | opcode, 0x80 | length))
+            header = bytes((first, 0x80 | length))
         elif length <= 0xFFFF:
-            header = bytes((0x80 | opcode, 0x80 | 126)) + struct.pack("!H", length)
+            header = bytes((first, 0x80 | 126)) + struct.pack("!H", length)
         else:
-            header = bytes((0x80 | opcode, 0x80 | 127)) + struct.pack("!Q", length)
+            header = bytes((first, 0x80 | 127)) + struct.pack("!Q", length)
         masked = bytes(value ^ mask[index % 4] for index, value in enumerate(payload))
-        self.sock.sendall(header + mask + masked)
+        with self._frame_lock:
+            self.sock.sendall(header + mask + masked)
 
     def recv_text(self) -> str:
         fragments = bytearray()
