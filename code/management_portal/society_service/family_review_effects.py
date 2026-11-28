@@ -1,6 +1,9 @@
 """Built-in Family review Effects and their shared-state bindings."""
 
-RECORD_ACTIVITY = r'''member="${event.subject_resident_id}"
+# The leading newline distinguishes this activity script from journals whose
+# writes were admitted before retention was installed.
+RECORD_ACTIVITY = r'''
+member="${event.subject_resident_id}"
 mid="${event.payload.message_id}"
 if [ -z "$member" ] || [ -z "$mid" ]; then
   output status="skipped"
@@ -29,7 +32,8 @@ done
 fail "并发更新 Family 回顾活动，请重查原完成输入"'''
 
 
-NOTICE = r'''lineage="${arguments.lineage_id}"
+NOTICE = r'''
+lineage="${arguments.lineage_id}"
 key="${arguments.review_key}"
 steward="${arguments.steward}"
 ledger=$(GetSharedState lineage_id="$lineage" key="$key")
@@ -52,9 +56,22 @@ if [ -z "${pending.message_id}" ]; then
   mid="msg_d066000000000007${event.id:6}"
   brief="Family 门面 ${arguments.facade} 的周期回顾。活动位置：${ledger.value.activity}。${arguments.family_tasks.review.prompt}\n${arguments.family_tasks.review.guide}"
   pending:={"message_id":${mid},"steward":${steward},"activity":${ledger.value.activity},"envelope":{"message_id":${mid},"content_parts":[{"type":"text","text":${brief}}]}}
-  next=$(json_set value:=${ledger.value} path:=["pending"] item:=${pending})
-  committed=$(UpdateSharedState lineage_id="$lineage" key="$key" value:=${next.value} expected_value:=${ledger.value})
-  if [ "${committed.matched}" != "true" ]; then
+  reserved="false"
+  for retry in 1 2; do
+    if [ "$reserved" != "true" ]; then
+      next=$(json_set value:=${ledger.value} path:=["pending"] item:=${pending})
+      committed=$(UpdateSharedState lineage_id="$lineage" key="$key" value:=${next.value} expected_value:=${ledger.value})
+      reserved="${committed.matched}"
+      if [ "$reserved" != "true" ]; then
+        ledger=$(GetSharedState lineage_id="$lineage" key="$key")
+        if [ -n "${ledger.value.pending.message_id}" ] || [ "${ledger.value.activity}" != "${pending.activity}" ]; then
+          output status="busy"
+          exit
+        fi
+      fi
+    fi
+  done
+  if [ "$reserved" != "true" ]; then
     output status="busy"
     exit
   fi

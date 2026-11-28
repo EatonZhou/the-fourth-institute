@@ -61,7 +61,7 @@ if [ "$member" = "true" ] && [ -n "$mid" ] && [ "$mid" != "${ledger.value.notice
           committed=$(UpdateSharedState lineage_id="$lineage" key="$key" value:=${next.value} expected_value:=${ledger.value})
           if [ "${committed.matched}" = "true" ]; then
             registered="true"
-            ledger:={"value":${next.value}}
+            ledger:={"value":${committed.value}}
           elif [ "$retry" != "3" ]; then
             ledger=$(GetSharedState lineage_id="$lineage" key="$key")
           fi
@@ -138,13 +138,29 @@ if [ "$resolved" = "true" ] || [ "${item.value.attempts}" -ge 3 ] || [ "$rid" = 
     status="escalated"
   fi
   updated=$(json_set value:=${item.value} path:=["status"] item:=$status)
-  next=$(json_set value:=${ledger.value} path:=["incidents",$head] item:=${updated.value})
-  if [ "$head" = "${ledger.value.head}" ]; then
-    next=$(json_set value:=${next.value} path:=["head"] item:=${item.value.previous})
-  fi
-  next=$(json_set value:=${next.value} path:=["notice"] item:=null)
-  UpdateSharedState lineage_id="$lineage" key="$key" value:=${next.value} expected_value:=${ledger.value}
-  output status="$status" message_id="$mid"
+  for retry in 1 2; do
+    next=$(json_set value:=${ledger.value} path:=["incidents",$head] item:=${updated.value})
+    if [ "$head" = "${ledger.value.head}" ]; then
+      next=$(json_set value:=${next.value} path:=["head"] item:=${item.value.previous})
+    fi
+    next=$(json_set value:=${next.value} path:=["notice"] item:=null)
+    committed=$(UpdateSharedState lineage_id="$lineage" key="$key" value:=${next.value} expected_value:=${ledger.value})
+    if [ "${committed.matched}" = "true" ]; then
+      output status="$status" message_id="$mid"
+      exit
+    fi
+    if [ "$retry" = "2" ]; then
+      output status="busy"
+      exit
+    fi
+    ledger=$(GetSharedState lineage_id="$lineage" key="$key")
+    current=$(json_get value:=${ledger.value} path:=["incidents",$head])
+    if [ "${current.value}" != "${item.value}" ] || [ "${ledger.value.notice}" != "$notice" ]; then
+      output status="busy"
+      exit
+    fi
+  done
+  output status="busy"
   exit
 fi
 steward_state=$(ListResidentStates resident_ids:=[$steward] include_viewer_state:=false)
@@ -160,17 +176,30 @@ elif [ "${item.value.attempts}" = "2" ]; then
 fi
 notice_id="msg_d066000000000008${event.id:6}"
 brief="请核对 Family 原请求 $mid 的状态，当前承接者 $rid。保留原请求和审计记录。第 $attempt 轮恢复。\n${arguments.family_tasks.recovery.prompt}\n${arguments.family_tasks.recovery.guide}"
+previous_notice:=${notice}
 notice:={"message_id":$notice_id,"steward":$steward,"incident_keys":[$head],"envelope":{"message_id":$notice_id,"content_parts":[{"type":"text","text":$brief}]}}
 updated=$(json_set value:=${item.value} path:=["attempts"] item:=${attempt})
-next=$(json_set value:=${ledger.value} path:=["incidents",$head] item:=${updated.value})
-next=$(json_set value:=${next.value} path:=["notice"] item:=${notice})
-reserved=$(UpdateSharedState lineage_id="$lineage" key="$key" value:=${next.value} expected_value:=${ledger.value})
-if [ "${reserved.matched}" != "true" ]; then
-  output status="busy"
-  exit
-fi
-DeliverMessage resident_id="$steward" business_ref="duty/family-recovery" message:=${notice.envelope}
-output status="requested" message_id="$notice_id"'''
+for retry in 1 2; do
+  next=$(json_set value:=${ledger.value} path:=["incidents",$head] item:=${updated.value})
+  next=$(json_set value:=${next.value} path:=["notice"] item:=${notice})
+  reserved=$(UpdateSharedState lineage_id="$lineage" key="$key" value:=${next.value} expected_value:=${ledger.value})
+  if [ "${reserved.matched}" = "true" ]; then
+    DeliverMessage resident_id="$steward" business_ref="duty/family-recovery" message:=${notice.envelope}
+    output status="requested" message_id="$notice_id"
+    exit
+  fi
+  if [ "$retry" = "2" ]; then
+    output status="busy"
+    exit
+  fi
+  ledger=$(GetSharedState lineage_id="$lineage" key="$key")
+  current=$(json_get value:=${ledger.value} path:=["incidents",$head])
+  if [ "${current.value}" != "${item.value}" ] || [ "${ledger.value.notice}" != "$previous_notice" ]; then
+    output status="busy"
+    exit
+  fi
+done
+output status="busy"'''
 
 
 def bindings(lineage_id, family_id, family):

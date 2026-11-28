@@ -229,9 +229,11 @@ def test_review_retains_member_cursors_and_freezes_the_outbound_notice():
 def test_family_recovery_keeps_one_durable_steward_notice():
     from copy import deepcopy
     from management_portal.society_service import family_recovery_effects
+    from management_portal.society_service.family_ledger_retention import compact_recovery
     from management_portal.society_service.lineage_effect_script import CallResult, Interpreter, analyze, parse
 
-    ledger = None
+    ledger = {"incidents": {f"old-{i}": {"status": "completed", "previous": None, "detail": "x" * 1000}
+                            for i in range(70)}}
     counts = {"notice": 0, "cas_conflicts": 1}
     states = {REQUEST: "failed"}
     family = {"facade": FACADE, "steward": ROUTER, "router": ROUTER, "members": [MEMBER]}
@@ -250,8 +252,8 @@ def test_family_recovery_keeps_one_durable_steward_notice():
                 counts["cas_conflicts"] -= 1
                 return CallResult(True, {"matched": False})
             assert arguments["expected_value"] == ledger
-            ledger = arguments["value"]
-            return CallResult(True, {"matched": True})
+            ledger = compact_recovery(arguments["value"], ledger, "2026-11-28T06:00:00Z")
+            return CallResult(True, {"matched": True, "value": deepcopy(ledger)})
         if request.instruction == "GetInputState":
             state = states.get(arguments["message_id"])
             return CallResult(bool(state), {"input_state": {"state": state}})
@@ -273,13 +275,65 @@ def test_family_recovery_keeps_one_durable_steward_notice():
 
     first = run("resident.work_failed", "a", {"resident_id": MEMBER, "message_id": REQUEST})
     assert first["status"] == "requested"
+    assert len(ledger["incidents"]) == 33
     assert run("time.reached", "b", {}) == {"status": "waiting", "message_id": first["message_id"]}
     assert counts["notice"] == 1
     states[first["message_id"]] = "completed"
     states[REQUEST] = "completed"
+    counts["cas_conflicts"] = 1
     assert run("resident.work_finished", "c", {"resident_id": MEMBER, "message_id": REQUEST})["status"] == "completed"
     assert ledger["notice"] is None and ledger["head"] is None
     assert run("time.reached", "d", {})["status"] == "unchanged"
+
+
+def test_family_recovery_retention_preserves_pending_links():
+    from management_portal.society_service.family_ledger_retention import compact_recovery
+
+    ledger = {"head": "open", "notice": {"incident_keys": ["pinned"]}, "incidents": {
+        "open": {"status": "open", "previous": "stale"},
+        "stale": {"status": "completed", "settled_at": "2026-11-01T00:00:00Z", "previous": "older"},
+        "older": {"status": "missing_creator", "previous": None},
+        "pinned": {"status": "cancelled", "settled_at": "2026-11-01T00:00:00Z"},
+        "recent": {"status": "completed", "settled_at": "2026-11-26T00:00:00Z"},
+    }}
+    value = compact_recovery(ledger, ledger, "2026-11-28T06:00:00Z")
+    assert value["head"] == ledger["head"]
+    assert value["notice"] == ledger["notice"]
+    assert value["incidents"] == {
+        "open": {"status": "open", "previous": "older"},
+        **{key: ledger["incidents"][key] for key in ("older", "pinned", "recent")},
+    }
+    assert ledger["incidents"]["open"]["previous"] == "stale"
+
+
+def test_family_recovery_retention_bounds_repeated_settlement():
+    from datetime import datetime, timedelta, timezone
+    from management_portal.society_service.family_ledger_retention import compact_recovery
+
+    now = datetime(2026, 11, 28, tzinfo=timezone.utc)
+    ledger = {"incidents": {}}
+    for i in range(150):
+        key = f"incident-{i}"
+        pending = {"head": key, "incidents": {**ledger["incidents"], key: {"status": "open"}}}
+        next_value = {"incidents": {**pending["incidents"], key: {"status": "completed"}}}
+        ledger = compact_recovery(next_value, pending, (now + timedelta(minutes=i)).isoformat())
+        assert len(ledger["incidents"]) == min(i + 1, 32)
+        assert key in ledger["incidents"]
+    assert "incident-0" not in ledger["incidents"]
+
+
+def test_family_review_retention_keeps_current_watermarks_and_pending_notice():
+    from management_portal.society_service.family_ledger_retention import compact_review
+
+    review = {
+        "activity": {"current": [7, "a"], "departed": [2, "b"], "unread": [8, "c"], "pending": [3, "d"]},
+        "reviewed": {"current": [7, "a"], "departed": [2, "b"], "unread": [1, "e"], "pending": [3, "d"]},
+        "pending": {"message_id": "notice", "activity": {"pending": [3, "d"]}},
+    }
+    value = compact_review(review, {"current"})
+    assert value["pending"] == review["pending"]
+    assert value["activity"] == {k: v for k, v in review["activity"].items() if k != "departed"}
+    assert value["reviewed"] == {k: v for k, v in review["reviewed"].items() if k != "departed"}
 
 
 def test_effect_shared_json_is_copy_based_and_budgeted():

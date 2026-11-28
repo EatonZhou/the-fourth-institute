@@ -64,6 +64,33 @@ FAMILY_POLICY_CELLS = {
 }
 
 
+def _managed_ledger_writer(lineage, effect_id, source):
+    """Match a generated role, its exact stock script and its own cell."""
+    from . import family_definition, family_familize, family_ledger_retention, family_recovery_effects, family_review_effects
+
+    versions = {
+        "recovery_check": ("recovery", family_recovery_effects.RECOVERY),
+        "review_activity": ("review", family_review_effects.RECORD_ACTIVITY),
+        "notify_periodic_review_task": ("review", family_review_effects.NOTICE),
+    }
+    old_role = family_ledger_retention.legacy_role(source)
+    if not old_role and all(source != script for _, script in versions.values()):
+        return None
+    block = family_familize.component_family(lineage, effect_id)
+    if not block:
+        return None
+    role = next((element.get("key") for element in family_definition.family_elements(lineage, block)
+                 if element["id"] == effect_id), "")
+    if role not in versions:
+        return None
+    kind, script = versions[role]
+    if source != script and old_role != role:
+        return None
+    members = set(family_familize.member_ids(block))
+    members.update(family_familize.role_of(block, name) for name in ("facade", "router", "steward"))
+    return script, f"family.{block['id']}.{kind}", kind, members
+
+
 def _family_note_context(
     lineage: dict[str, Any], effect_id: str, instruction: str, arguments: object, context: Any, *, lineage_id: str,
     event: lineage_primitives.LineageEvent | None = None,
@@ -71,7 +98,7 @@ def _family_note_context(
     """Bind generated Family calls to the particular role, event and request they serve."""
     from management_common.actor_identity import same_actor
 
-    from . import family_definition, family_facade, family_familize, family_recovery_effects, resident_conversation_stream
+    from . import family_definition, family_facade, family_familize, family_ledger_retention, family_recovery_effects, resident_conversation_stream
 
     if context.entry != "lineage" or not isinstance(arguments, dict):
         return context
@@ -103,7 +130,10 @@ def _family_note_context(
     if key in {"role_availability", "recovery_check"}:
         role_ids = {roles["steward"], roles["router"]} - {""}
         recovery = key == "recovery_check" and any(
-            item.get("id") == effect_id and (item.get("config") or {}).get("script") == family_recovery_effects.RECOVERY
+            item.get("id") == effect_id and (
+                (source := str((item.get("config") or {}).get("script") or "")) == family_recovery_effects.RECOVERY
+                or family_ledger_retention.legacy_role(source) == "recovery_check"
+            )
             for item in (lineage.get("program") or {}).get("components", [])
         )
         if instruction == "ListResidentStates":
@@ -432,6 +462,7 @@ class _EffectRun:
         self.activation_key = effect_idempotency_key(self.lineage_id, effect_id, invocation)
         self.registrations: list[dict[str, Any]] = []
         self.journal: dict[str, Any] = {}
+        self.family_ledger: tuple[str, str, str, set[str]] | None = None
         self.journal_open = False
         self.calls: dict[str, dict[str, Any]] = {}
         self.sequence = 0
@@ -501,6 +532,15 @@ class _EffectRun:
         validate_effect_route(self.effect_id, self.event.payload.get("route_path"))
         definition = effect_definition(self.plan, self.effect_id)
         script_text = str(definition["script"])
+        self.family_ledger = _managed_ledger_writer(self.lineage, self.effect_id, script_text)
+        if self.family_ledger is not None:
+            managed_script = self.family_ledger[0]
+            if managed_script != script_text:
+                previous = lineage_effect_script_journal.load(self.lineage_id, self.activation_key)
+                if previous.get("script_sha") == hashlib.sha256(script_text.encode("utf-8")).hexdigest():
+                    self.family_ledger = None
+                else:
+                    script_text = managed_script
         script = _parsed_script(script_text)
         event = self.event
         from .lineage_event_dispatch_rules import _program_event_delivery_profile
@@ -602,6 +642,17 @@ class _EffectRun:
 
         try:
             arguments = prepare_call_arguments(request.instruction, request.arguments, self.invocation)
+            if self.family_ledger and request.instruction == "UpdateSharedState":
+                _, cell, kind, members = self.family_ledger
+                if (arguments.get("lineage_id") == self.lineage_id and arguments.get("key") == cell
+                        and "expected_value" in arguments):
+                    from . import family_ledger_retention
+
+                    value = arguments["value"]
+                    arguments["value"] = (
+                        family_ledger_retention.compact_recovery(value, arguments["expected_value"], self.event.occurred_at)
+                        if kind == "recovery" else family_ledger_retention.compact_review(value, members)
+                    )
             # The activation freezes its policy before any call can be accepted.
             # Reclaiming it after a wire edit must not change an existing input.
             if (request.instruction in DELIVERY_INTENT_INSTRUCTIONS and arguments.get("resident_id")
