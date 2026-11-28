@@ -23,19 +23,25 @@
   }
   async function openInWorkbench(workbench, resource = {}, sourcePanelId = '') {
     const panels = workbench.getPanelsByType('workshop');
+    if (!resource.template_id && !resource.store_id && !resource.function_block_id && !resource.newDraft && panels.length) {
+      const existing=panels[0];workbench.focusPanel(existing.id);return existing;
+    }
     const same = panels.find(panel => resource.function_block_id
       ? panel.target().function_block_id === resource.function_block_id && panel.target().lineage_id === resource.lineage_id
       : resource.template_id ? panel.target().template_id === resource.template_id : resource.store_id && panel.target().store_id === resource.store_id);
     if (same) { workbench.focusPanel(same.id); return same; }
     const hidden = workbench.getState().hidden;
     const sibling = panels.find(panel => !hidden.includes(panel.id));
-    return workbench.openResource({type:'workshop',mode:sibling ? 'new-tab' : 'side',side:'right',
+    const opened=await workbench.openResource({type:'workshop',mode:sibling ? 'new-tab' : 'side',side:'right',
       targetInstanceId:sibling?.id || sourcePanelId,resource:{...resource,kind:'workshop'}});
+    const openedId=opened?.instanceId || opened?.id;if(openedId)workbench.focusPanel(openedId);
+    return opened;
   }
   function create(options = {}) {
     const root = options.root, id = options.panelId || options.id || window.PortalUIPrimitives.randomUUID();
     let target = {...options.target}, workshop = null, chat = null, pending = null, destroyed = false;
     let visible = false, needsFit = true, navigation = 0;
+    let graphViews = {};
     root.classList.add('workshopPanelHost');
     async function mount() {
       if (pending) return pending;
@@ -48,7 +54,7 @@
         host.querySelectorAll('[id]').forEach(node => { node.dataset.workshopId = node.id; node.id = `${id}-${node.id}`; });
         window.PortalI18n.renderStatic(host);
         const factory = target.function_block_id ? window.LineageDutyWorkshop : window.LineageTemplateWorkshop;
-        workshop = factory.mount({root:host,lineageId:target.lineage_id || '',functionBlockId:target.function_block_id || '',templateId:target.template_id || '',storeId:target.store_id || '',
+        workshop = factory.mount({root:host,graphViews,lineageId:target.lineage_id || '',functionBlockId:target.function_block_id || '',templateId:target.template_id || '',storeId:target.store_id || '',
           onSwitchTemplate:async resource => {
             const serial = ++navigation, previous = workshop;
             if (!await panelCanClose() || destroyed || serial !== navigation || previous !== workshop) return;
@@ -81,7 +87,7 @@
         chat = window.LineageTemplateWorkshopChat.mount({root:host,workshop,execute:options.execute,listLineages:options.listLineages});
         await chat.load();
         if (destroyed) { chat.destroy(); return; }
-        if (visible) { workshop.fit(); needsFit = false; }
+        if (visible && needsFit) { workshop.fit(); needsFit = false; }
       })().catch(error => { root.textContent = window.PortalI18n.message(error.message || error); throw error; });
       return pending;
     }
@@ -104,10 +110,12 @@
       async openResource(resource) {
         return {accepted:resource.lineage_id === target.lineage_id && ['template_id','store_id','function_block_id'].every(key => (resource[key] || '') === (target[key] || ''))};
       },
-      snapshot:() => ({...target,dirty:workshop?.dirty() || false}),
+      snapshot:() => ({...target,graphViews:workshop?.viewState?.() || graphViews,dirty:workshop?.dirty() || false}),
       restore(value) {
         if (!pending) {
-          const {dirty, ...resource} = value;
+          const {dirty, graphViews:restoredViews, ...resource} = value;
+          graphViews=restoredViews || {};
+          needsFit=!Object.keys(graphViews).length;
           target = {...target,...resource};
         }
       },

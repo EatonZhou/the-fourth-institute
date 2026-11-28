@@ -34,6 +34,7 @@
     // 图视图 edits the structure as a HATG graph; 列表视图 and JSON 视图 edit the same body.
     function showStructure(mode) {
       editorState.structureMode = mode;
+      bodyPage.closest('.templateWorkshop')?.querySelector('.workshopTools')?.toggleAttribute('hidden', mode !== 'graph');
       editorState.recipeMenu?.destroy();editorState.recipeMenu=null;
       disposeCode(); editorState.graph?.destroy(); editorState.graph = null;
       bodyPage.closest('form').querySelectorAll('[data-structure-view]').forEach(item => item.setAttribute('aria-pressed', String(item.dataset.structureView === mode)));
@@ -77,7 +78,8 @@
 
     function renderRecipeGraph() {
       let projection = draft.editor.graph;
-      const expanded = new Set();
+      const viewState = editorState.graphViews[draft.template_id || draft.kind] ||= {};
+      const expanded = new Set(viewState.expanded || []);
       let localScope = null;
       editorState.recipeMenu?.destroy();
       editorState.graph?.destroy();
@@ -114,9 +116,14 @@
       });
       inspector.addEventListener('click', event=>{if(event.target.closest('[data-close-recipe-inspector]')){inspector.hidden=true;inspector.innerHTML='';}const menu=event.target.closest('[data-open-template-menu]');if(menu)openMenu(menu.dataset.openTemplateMenu);});
       bodyPage.querySelector('[data-recipe-parameters]').addEventListener('click',()=>inspect(''));
+      if(projection.body.presentation?.organization){
+        const button=document.createElement('button');button.type='button';button.className='portalButton is-compact';button.dataset.organizationMenu='';button.textContent=t('组织菜单');
+        button.onclick=()=>openMenu('@organization');bodyPage.querySelector('.templateRecipeToolbar').prepend(button);
+      }
       function openMenu(key){readDraft();inspector.hidden=true;inspector.innerHTML='';editorState.recipeMenu.open(key);}
-      const expandable=()=>[...new Set(Object.values(projection.body.presentation?.owners || {}))];
+      const expandable=()=>Object.keys(projection.body.presentation?.residents || {}).filter(key=>Object.values(projection.body.presentation?.owners || {}).includes(key) || Object.values(projection.body.presentation?.expansion_owners || {}).includes(key));
       function syncExpansion(){
+        viewState.expanded=[...expanded];
         const keys=expandable(),all=keys.length>0&&keys.every(key=>expanded.has(key)),some=keys.some(key=>expanded.has(key));
         const button=bodyPage.querySelector('[data-recipe-expand]');
         button.setAttribute('aria-expanded',String(all));button.setAttribute('aria-pressed',all?'true':some?'mixed':'false');
@@ -125,12 +132,12 @@
       function leaveLocalGraph(){localScope=null;bodyPage.querySelector('[data-recipe-back]').hidden=true;bodyPage.querySelector('[data-recipe-breadcrumb]').textContent='';}
       function toggleRole(key){leaveLocalGraph();if(expanded.has(key))expanded.delete(key);else expanded.add(key);syncExpansion();editorState.graph.render();editorState.graph.fit();}
       editorState.graph = window.LineageTemplateGraph.mount({root:bodyPage.querySelector('[data-template-graph]'), body:() => projection.body,
-        workshop:true, readOnly:true, expanded:()=>[...expanded],scope:()=>localScope, onSelect:inspect,onOpenResident:openMenu,
+        workshop:true, readOnly:true, viewState, expanded:()=>[...expanded],scope:()=>localScope, onSelect:inspect,onOpenResident:openMenu,
         onToggleRole:toggleRole,
         residentInfo:key=>{const meta=projection.body.presentation?.residents[key];return meta && {...meta,duties:draft.kind==='role'?draft.body.duties:meta.duties};}});
       const menu=window.LineageTemplateResidentMenu.create({root:bodyPage,draft,editorState,projection:()=>projection,readDraft,onChange:schedulePreview,onInspect:inspect,
         onSource:id=>editorState.openTemplate?.(id),isExpanded:key=>expanded.has(key),onExpand:toggleRole,
-        onLocalGraph:(key,duty)=>{localScope=[key,...(duty?.members || [])];inspector.hidden=true;inspector.innerHTML='';bodyPage.querySelector('[data-recipe-back]').hidden=false;bodyPage.querySelector('[data-recipe-breadcrumb]').textContent=`${projection.body.presentation.residents[key].title} / ${duty?.title || ''}`;editorState.graph.render();editorState.graph.fit();}});
+        onLocalGraph:(key,duty)=>{localScope=[key,...(duty?.members || [])];inspector.hidden=true;inspector.innerHTML='';bodyPage.querySelector('[data-recipe-back]').hidden=false;bodyPage.querySelector('[data-recipe-breadcrumb]').textContent=`${projection.body.presentation.residents[key]?.title || projection.body.presentation.organization?.title} / ${duty?.title || ''}`;editorState.graph.render();editorState.graph.fit();}});
       editorState.recipeMenu=menu;
       bodyPage.querySelector('[data-recipe-back]').addEventListener('click',()=>{localScope=null;bodyPage.querySelector('[data-recipe-back]').hidden=true;bodyPage.querySelector('[data-recipe-breadcrumb]').textContent='';editorState.graph.render();editorState.graph.fit();});
       bodyPage.querySelector('[data-recipe-expand]').addEventListener('click',()=>{leaveLocalGraph();const keys=expandable(),all=keys.length>0&&keys.every(key=>expanded.has(key));expanded.clear();if(!all)keys.forEach(key=>expanded.add(key));syncExpansion();editorState.graph.render();editorState.graph.fit();});
@@ -149,7 +156,6 @@
         editorState.graph.render();
       };
       syncExpansion();
-      if (draft.kind !== 'role' && !(draft.kind === 'familize' && Object.keys(draft.body.role_templates || {}).length)) inspect('');
     }
 
     function renderStructureLists() {
@@ -158,6 +164,10 @@
           <header><h3>${esc(t(label))} <small>${(draft.body[key] || []).length}</small></h3><button type="button" class="portalButton is-compact" data-add-row="${key}">+ ${esc(t('添加'))}</button></header>
           ${(draft.body[key] || []).map((row, index) => `<details data-structure-row="${index}" data-row-key="${esc(row.key)}"><summary><code>${esc(row.key)}</code><span>${esc(row.title || row.from || row.kind || '')}</span></summary><div class="templateRowFields">${rowFields(key, row)}${button('移除', 'remove-row', 'is-danger')}</div></details>`).join('')}
         </section>`).join('') + functionBlockField();
+      container.querySelectorAll('[data-row-field]').forEach(input => {
+        const row=input.closest('[data-structure-row]'),list=row.closest('[data-structure-list]').dataset.structureList;
+        if (!Object.hasOwn(draft.body[list][Number(row.dataset.structureRow)], input.dataset.rowField)) input.dataset.rowInitial=input.value;
+      });
     }
 
     function renderParameters() {
@@ -165,8 +175,8 @@
           <div class="templateParameterTable"><table><thead><tr>${['参数标识', '类型', '默认值', '必填', '选项（每行一个）', '显示名称', ''].map(label => `<th>${esc(t(label))}</th>`).join('')}</tr></thead><tbody>
           ${draft.parameters.map((parameter, index) => `<tr data-parameter-row="${index}">
             <td><input data-parameter-field="name" aria-label="${esc(t('参数标识'))}" value="${esc(parameter.name)}" required pattern="[A-Za-z_][A-Za-z0-9_]*"></td>
-            <td><select data-parameter-field="type" aria-label="${esc(t('类型'))}">${optionsHtml(['text', 'integer', 'number', 'boolean', 'enum', 'duration'], parameter.type)}</select></td>
-            <td><textarea rows="2" data-parameter-field="default" aria-label="${esc(t('默认值'))}">${esc(parameter.default ?? '')}</textarea></td>
+            <td><select data-parameter-field="type" aria-label="${esc(t('类型'))}">${optionsHtml(['text', 'time', 'integer', 'number', 'boolean', 'enum', 'duration'], parameter.type)}</select></td>
+            <td>${parameter.type==='time'?`<input type="time" data-parameter-field="default" aria-label="${esc(t('默认值'))}" value="${esc(parameter.default ?? '')}">`:`<textarea rows="2" data-parameter-field="default" aria-label="${esc(t('默认值'))}">${esc(parameter.default ?? '')}</textarea>`}</td>
             <td><input type="checkbox" data-parameter-field="required" aria-label="${esc(t('必填'))}" ${parameter.required ? 'checked' : ''}></td>
             <td><textarea rows="2" data-parameter-field="options" aria-label="${esc(t('选项（每行一个）'))}">${esc((parameter.options || []).join('\n'))}</textarea></td>
             <td><input data-parameter-field="description" aria-label="${esc(t('显示名称'))}" value="${esc(parameter.description || '')}"></td>

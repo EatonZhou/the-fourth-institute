@@ -19,7 +19,7 @@ def test_store_chromium(lineage):
     page = re.sub(r'<script\b[^>]*>.*?</script>', '', page, flags=re.S)
     groups = json.loads((ROOT / 'management_portal/script_groups.json').read_text())
     scripts = list(dict.fromkeys(groups['portal-foundation'] + groups['portal-shell'] + [
-        '/static/portal_hatg_loader.js', '/static/lineage_template_workshop_draft.js', '/static/lineage_template_workshop.js']))
+        '/static/portal_hatg_loader.js', '/static/lineage_template_workshop_draft.js', '/static/template_workshop_surface.js', '/static/lineage_template_workshop.js']))
     page = page.replace('</head>', ''.join(f'<script src="{src}"></script>' for src in scripts) + '</head>')
     hatg = (ROOT / 'management_portal/hatg-panel.html').read_text()
     workshop = (ROOT / 'management_portal/static/template_workshop_panel.html').read_text()

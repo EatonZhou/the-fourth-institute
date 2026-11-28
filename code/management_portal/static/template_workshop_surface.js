@@ -4,7 +4,7 @@
   function mount({root}) {
     const dock = root.querySelector('[data-workshop-dock]'), icon = root.querySelector('[data-workshop-assistant]');
     const panel = dock.querySelector('.workshopChatColumn'), abort = new AbortController();
-    let region = null, disposed = false, wasOpen = false;
+    let region = null, disposed = false;
     const interactions = new Set();
     const listen = (node,type,handler,options = {}) => node.addEventListener(type,handler,{...options,signal:abort.signal});
     const within = node => node instanceof Node && dock.contains(node);
@@ -30,13 +30,12 @@
       else {interactions.delete(source);setTimeout(()=>{if(!disposed&&!interactions.size&&!within(document.activeElement)&&!dock.matches(':hover'))hide();},0);}
     });
     listen(dock,'focusin',show);
-    listen(icon,'click',()=>{if(wasOpen)hide();else show();});
+    listen(icon,'click',show);
     listen(root,'click',event=>{if(event.target.closest('[data-workshop-chat]')){hide();icon.focus({preventScroll:true});hide();}});
     listen(dock,'keydown',event=>{
       if(event.key==='Escape'){event.stopPropagation();hide();icon.focus({preventScroll:true});hide();}
       else if(event.target===icon && ['Enter',' '].includes(event.key)) {event.preventDefault();if(panel.hidden)show();else hide();}
     });
-    listen(icon,'pointerdown',event=>{if(event.button===0)wasOpen=!panel.hidden;});
     const observer = new ResizeObserver(()=>{if(!disposed)place();});observer.observe(root);
     function syncRegion() {
       const next = root.querySelector('.workshopEditorContent > [data-page="body"], .dutyWorkshopContent');

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import subprocess
 import threading
 from concurrent.futures import Future
 from dataclasses import dataclass
@@ -130,6 +131,22 @@ def resolve_unique_dev(
 HttpGet = Callable[[str, dict[str, str]], bytes]
 
 
+def expected_build_id(deployment: PortalDeployment, source_root: Path) -> str:
+    # The explicitly selected development target follows the same local HEAD
+    # identity as service_runtime.build_identity. Never learn an expectation
+    # from the remote health response; pinned candidate/release builds stay pinned.
+    if deployment.kind == 'dev' and deployment.build_id == 'development':
+        try:
+            commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=source_root,
+                                             text=True, stderr=subprocess.DEVNULL, timeout=10).strip()
+            if re.fullmatch(r'[0-9a-f]{40,64}', commit):
+                return 'dev-' + commit[:12]
+        except (OSError, subprocess.SubprocessError):
+            pass
+        raise DevTargetError('无法核对所选 Dev 源码版本。')
+    return deployment.build_id
+
+
 def _http_get(url: str, headers: dict[str, str]) -> bytes:
     request = Request(url, headers={"Accept": "application/json, text/html", **headers})
     with urlopen(request, timeout=60) as response:
@@ -188,7 +205,7 @@ class DevTargetVerifier:
     def verify(self, storage_state: Path) -> VerifiedDevTarget:
         expected_identity = test_identity()
         deployment = resolve_unique_dev(self.registry_path)
-        expected_build = self.build_id(self.source_root) if self.build_id else deployment.build_id
+        expected_build = self.build_id(self.source_root) if self.build_id else expected_build_id(deployment,self.source_root)
         storage_state = Path(storage_state)
         try:
             state = storage_state.stat()

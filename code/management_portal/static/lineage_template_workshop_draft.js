@@ -40,6 +40,16 @@
     const source = clone(incoming);
     const geometry=window.LineageTemplateGraph.placement(source);
     source.layout=geometry.layout;
+    const existing=Object.values(window.LineageTemplateGraph.placement(body).layout);
+    const incomingPoints=Object.values(geometry.layout);
+    const anchor={...position};
+    // Keep the composed topology intact while moving the entire insertion to
+    // the first free slot. A click/drop never stacks a new node on an old one.
+    for(let attempt=0;attempt<200;attempt++){
+      const occupied=incomingPoints.some(p=>existing.some(q=>Math.abs(anchor.x+p.x-geometry.anchor.x-q.x)<18 && Math.abs(anchor.y+p.y-geometry.anchor.y-q.y)<16));
+      if(!occupied)break;
+      anchor.x=position.x+(attempt%5-2)*22;anchor.y=position.y+(Math.floor(attempt/5)+1)*19;
+    }
     const used = new Set(lists.flatMap(list => (body[list] || []).map(row => row.key)));
     const renamed = new Map();
     const sourceKeys = lists.flatMap(list => (source[list] || []).map(row => row.key));
@@ -72,7 +82,7 @@
         body[list].push(row);
         if (list === 'wires' || window.LineageTemplateGraph.isWireKind(row.kind)) return;
         const origin = layout[row.key] || {x: 50 + (index % 3) * 18, y: 50 + Math.floor(index++ / 3) * 15};
-        body.layout[row.key] = {x: position.x + origin.x - center.x, y: position.y + origin.y - center.y};
+        body.layout[row.key] = {x: anchor.x + origin.x - center.x, y: anchor.y + origin.y - center.y};
       });
     });
     return renamed.values().next().value;

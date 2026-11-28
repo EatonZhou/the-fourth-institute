@@ -4,7 +4,7 @@
   const esc = text => window.PortalUIPrimitives.escapeHtml(String(text ?? ''));
   const clone = value => JSON.parse(JSON.stringify(value));
   const request = (name, args, options) => window.PortalInstructionClient.execute(name, args, options);
-  function mount({root, lineageId, templateId = '', storeId = '', execute = request, onSaved, onDeleted, onOpenWorkshop, onOpened}) {
+  function mount({root, lineageId, templateId = '', storeId = '', execute = request, onSaved, onDeleted, onOpenWorkshop, onOpened, graphViews = {}}) {
     root.querySelectorAll('[id]').forEach(node => { node.dataset.workshopId ||= node.id; });
     const element = id => root.querySelector(`[data-workshop-id="${id}"],#${id}`);
     let form = element('workshopEditor');
@@ -64,11 +64,19 @@
       try { return JSON.stringify(runtime.readDraft()) !== base; }
       catch (_) { return true; }
     };
+    const saveAllowed = () => {
+      if(!runtime || previewItem || runtime.view.working) return false;
+      if(runtime.draft.template_id && (runtime.draft.builtin_key || runtime.draft.created_by !== window.PortalIdentity.username()))return false;
+      try {const value=runtime.readDraft();return value.kind!=='structure' || ['roles','components','wires','match'].some(key=>value.body[key]?.length) || !!value.body.duty?.memory;}
+      catch {return false;}
+    };
     const changed = (group = '') => {
       if (!runtime) return;
       editVersion += 1;
       if (!restoring) history.record(runtime.snapshot(),group);
       element('workshopUnsaved').hidden = !dirty();
+      const saveButton=form.querySelector('[data-workshop-save]');if(saveButton)saveButton.disabled=!saveAllowed();
+      element('workshopChatSave').disabled=!saveAllowed();
       root.dispatchEvent(new CustomEvent('workshop:draft-changed'));
     };
     root.addEventListener('workshop:review-effect',event => void runtime.view.busy(async () => {
@@ -113,7 +121,7 @@
           <footer aria-label="${esc(t('模板操作'))}"></footer></header><main class="workshopEditorContent"></main>`;
         const cleanups = [], view = {
           root: form, form, content: form.querySelector('main'), footer: form.querySelector('footer'), cleanups,
-          workshop: true, error, onChange: changed, save, openTemplate,
+          workshop: true, graphViews, error, onChange: changed, save, openTemplate,
           deleted() { removed = true; onDeleted?.(); },
           close() { cleanups.forEach(cleanup => cleanup()); form.replaceChildren(); },
           async busy(work) {
@@ -125,7 +133,7 @@
             finally {
               view.working = false; buttons.forEach(button => { button.disabled = false; });
               const saveButton = view.root.querySelector('[data-workshop-save]');
-              if (saveButton && runtime) saveButton.disabled = !!previewItem || (!!runtime.draft.template_id && (!!runtime.draft.builtin_key || runtime.draft.created_by !== window.PortalIdentity.username()));
+              if (saveButton && runtime) saveButton.disabled = !saveAllowed();
               const state = history.state();
               root.querySelectorAll('[data-workshop-history]').forEach(button=>{button.disabled=!state[button.dataset.workshopHistory];});
             }
@@ -138,6 +146,7 @@
         templates.render();
         root.dataset.templateKind = runtime.draft.kind;
         tools.setEnabled(runtime.draft.kind === 'structure');
+        palette.hidden = runtime.draft.kind !== 'structure';
         base = JSON.stringify(runtime.readDraft());
         const snapshot = runtime.snapshot();
         if (initialization === 'saved') history.saved(snapshot);
@@ -218,6 +227,7 @@
     const controller = {
       sessionId, lineageId, dirty, openTemplate, documentKey: () => `${sessionId}:${documentRevision}`,
       fit: () => runtime?.editorState.graph?.fit(),
+      viewState: () => clone(graphViews),
       save: () => runtime.view.busy(() => save(runtime.readDraft())), template: () => runtime?.draft,
       async acceptDraft(value) {
         const payload = window.LineageTemplateWorkshopDraft.payload({...runtime.draft,...value});

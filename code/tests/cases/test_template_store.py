@@ -73,7 +73,7 @@ def test_snapshot_install_update_conflicts_and_unpublish(lineage, users):
 
 
 @pytest.mark.parametrize('kind,body,group,used',[
-    ('structure', {'roles':[{'key':'worker','from':'new','settings':{}}]}, 'duty',['CreateResident','Functionalize']),
+    ('structure', {'roles':[{'key':'worker','from':'new','settings':{}}]}, 'organization',['CreateResident','Functionalize']),
     ('familize', {}, 'organization',['Familize']),
     ('prompt', {'message':'hello'}, 'task',['DeliverMessage']),
     ('script', {'script':'ListTemplates\nGetTemplate template_id=template_0123456789ab\nListTemplates','endpoints':[]}, 'task',['ListTemplates','GetTemplate']),

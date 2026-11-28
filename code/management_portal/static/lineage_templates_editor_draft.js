@@ -71,7 +71,8 @@
         if (!initialRowFields.has(item)) initialRowFields.set(item, new Set(Object.keys(item)));
         // Inspecting an omitted optional field, or undoing its edit, keeps it
         // omitted rather than adding an empty value to the authored content.
-        if (value === undefined || (value === '' && !initialRowFields.get(item).has(input.dataset.rowField))) delete item[input.dataset.rowField];
+        if (value === undefined || (Object.hasOwn(input.dataset,'rowInitial') && input.value === input.dataset.rowInitial)
+          || (value === '' && !initialRowFields.get(item).has(input.dataset.rowField))) delete item[input.dataset.rowField];
         else item[input.dataset.rowField] = value;
       });
       if (draft.kind === 'structure') for (const role of draft.body.roles || []) {
@@ -113,7 +114,7 @@
           { ...(draft.template_id ? { template_id: draft.template_id } : {}), template: payload });
         if (serial !== editorState.revision || !view.root.isConnected) return;
         editorState.refreshRecipeGraph?.(result.template.editor?.graph);
-        view.root.querySelector('[data-template-behavior]').innerHTML = behaviorHtml(result.template.behavior, {}, result.template.kind);
+        view.root.querySelector('[data-template-behavior]').innerHTML = behaviorHtml(result.template.behavior, Object.fromEntries(draft.parameters.map(p=>[p.name,p.default ?? `〈${p.description || p.name}〉`])), result.template.kind);
         status.textContent = t('预览已更新'); status.dataset.state = 'valid';
       } catch (error) {
         if (serial !== editorState.revision || !view.root.isConnected) return;

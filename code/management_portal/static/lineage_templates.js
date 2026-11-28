@@ -22,7 +22,7 @@
     critic: '评审', questioner: '提问', ideator: '构思', supervisor: '监督',
     queue: '排队发送', attach_to_next: '附加到下一轮',
     idea: '想法', plan: '方案', other: '其他',
-    text: '文本', integer: '整数', number: '数值', boolean: '开关', enum: '枚举选项', duration: '时长（秒）',
+    text: '文本', time: '时间', integer: '整数', number: '数值', boolean: '开关', enum: '枚举选项', duration: '时长（秒）',
     target: '目标', lineage_leader: '当前 Lineage 的负责人', new: '新建', fork: '派生',
     full: '完整上下文', compacted: '压缩后的上下文', recent: '最近几轮',
     event_source: '事件源', effect: '执行动作', loop: '循环', filter: '筛选', selector: '选择', reducer: '汇总', seed: '种子',
@@ -41,7 +41,8 @@
     let control;
     if (type === 'boolean') control = `<input type="checkbox" ${attrs} ${value ? 'checked' : ''}>`;
     else if (type === 'enum' || type === 'select') control = `<select ${attrs}>${optionsHtml(schema.options || [], value)}</select>`;
-    else if (['integer', 'number', 'duration'].includes(type)) control = `<input type="number" step="${type === 'number' ? 'any' : '1'}" ${attrs} value="${esc(value ?? '')}">`;
+    else if (type === 'time') control = `<input type="time" ${attrs} value="${esc(value ?? '')}">`;
+    else if (['integer', 'number', 'duration'].includes(type)) control = `<input type="${/\{\{/.test(String(value))?'text':'number'}" step="${type === 'number' ? 'any' : '1'}" ${attrs} value="${esc(value ?? '')}">`;
     else if (schema.multiline === false) control = `<input ${attrs} value="${esc(value ?? '')}">`;
     else control = `<textarea rows="${type === 'json' ? 4 : 3}" ${attrs} ${type === 'json' ? 'spellcheck="false"' : ''}>${esc(type === 'json' ? JSON.stringify(value ?? {}, null, 2) : value ?? '')}</textarea>`;
     return `<label class="templateField ${type === 'boolean' ? 'templateCheck' : ''}"><span>${esc(t(title))}</span>${control}${label && description ? `<small>${esc(t(description))}</small>` : ''}</label>`;
@@ -50,6 +51,7 @@
   function readField(input, type) {
     if (type === 'boolean') return input.checked;
     if (['integer', 'number', 'duration'].includes(type)) {
+      if (/\{\{[^{}]+\}\}/.test(input.value)) return input.value;
       if (!input.value.trim()) return undefined;
       const value = Number(input.value);
       if (!Number.isFinite(value) || (type !== 'number' && !Number.isInteger(value))) throw new Error(t('请输入有效数值'));
@@ -62,7 +64,8 @@
   function behaviorHtml(behavior = {}, parameters = {}, kind = '') {
     if (kind === 'prompt') return `<p>${esc(t('拖到聊天输入框或 Resident 节点，填入草稿后编辑发送'))}</p>`;
     const describe = step => window.PortalI18n.message(step).replace(/\{\{param\.([A-Za-z_][A-Za-z0-9_]*)\}\}/g,
-      (token, name) => Object.hasOwn(parameters, name) && parameters[name] !== '' ? String(parameters[name]) : token);
+      (token, name) => Object.hasOwn(parameters, name) && parameters[name] !== '' ? String(parameters[name]) : `〈${t(name)}〉`)
+      .replace(/\broute\b/g,t('传递')).replace(/\bwatch\b/g,t('监听')).replace(/\{\{role\.([^.}]+)\.title\}\}/g,(_,key)=>`〈${key==='target'?t('目标'):key}〉`);
     return `<h3>${esc(t('施加后会做什么'))}</h3><ol>${(behavior.steps || []).map(step => `<li>${esc(describe(step))}</li>`).join('')}</ol>
       <p class="templateOutcome">${esc(t(behavior.persistent ? '结果保留为 Function Block' : '一次性操作'))}</p>`;
   }

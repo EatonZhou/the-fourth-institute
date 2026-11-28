@@ -3,6 +3,17 @@ import json
 
 import pytest
 
+
+def test_development_target_uses_local_source_identity_without_trusting_health(monkeypatch,tmp_path):
+    from management_portal.test_framework import dev_target
+    from management_portal.portal_deployment_registry import PortalDeployment
+    target=PortalDeployment.from_payload({'id':'dev','kind':'dev','label':'Dev','origin':'http://127.0.0.1:28401','build_id':'development'})
+    monkeypatch.setattr(dev_target.subprocess,'check_output',lambda *a,**kw:'a'*40)
+    assert dev_target.expected_build_id(target,tmp_path)=='dev-'+'a'*12
+    from dataclasses import replace
+    pinned=replace(target,build_id='candidate-123')
+    assert dev_target.expected_build_id(pinned,tmp_path)=='candidate-123'
+
 from management_portal.test_framework.dev_target import (
     DevTargetError, DevTargetVerifier, resolve_test_target,
 )

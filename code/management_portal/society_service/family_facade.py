@@ -260,10 +260,12 @@ def tell_steward(facade_id: str, steward_id: str, initiated_by: str, content: st
     from management_common.principal import OperationIdentity
 
     if not options.pop("_family_rendered", False):
-        from .family_tasks import render
+        from .family_tasks import render, TASKS
         from . import resident_record_domain
         record = resident_record_domain.find_resident(steward_id)
-        trigger = options.pop("task_trigger", "organization")
+        trigger = options.pop("task_trigger", None)
+        if trigger not in TASKS or TASKS[trigger][1] != "steward":
+            raise ValueError("投递给 Steward 必须明确 task_trigger 职责")
         facts = options.pop("task_facts", {"change": content})
         if record and (record.get("family") or {}).get("role") == "steward":
             content = render(record, trigger, facts)
@@ -301,10 +303,11 @@ def forward_info(facade: Mapping[str, Any], message: Mapping[str, Any], actor: s
             actor,
             text,
             message_id=forward_id,
+            task_trigger="info_forward",
+            task_facts={"info_message_id":info_id,"sender":actor,"content":text},
             runtime_context=(
                 f"这是 {actor} 发给 Family 门面 {facade_id} 的 info 消息（背景更新），门面已把它转给你。"
-                "只处理与你的分工、图维护、队列和恢复职责相关的事项；工作资料由工作者维护，"
-                "你不承担记忆同步或消息广播，不回复发送者。"
+                "按背景转达职责判断哪些成员需要此告知，仅向相关成员定向转告；不广播，不回复原发送者。"
             ),
             business_ref=f"{facade_id}/info/{info_id}",
             channel=(message.get("origin", {}).get("channel") or {}).get("kind", ""),
@@ -1716,6 +1719,6 @@ def announce_member_retitle(resident_id: str, previous: str, title: str, actor: 
             f"（{resident_id}）的标题改为「{title}」。成员标题代表明确分工，Router 下次读取当前标题；"
             "请核对受影响成员的职责和协作关系，必要时挂一条下一轮背景更新，不撰写重复的路由指引。"
             + ("owner 改过的标题以 owner 为准，不要改回。" if not renamer_id.startswith("resident_") else "")
-        ))
+        ), task_trigger="organization")
         return True
     return False

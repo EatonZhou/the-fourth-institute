@@ -8,6 +8,13 @@ import re
 from . import structure_layout
 
 
+def trigger_label(key):
+    return {'route':'事件','queue':'条件','summary':'定时／交接自摘要登记提醒',
+            'review':'定时','organization':'事件','info_forward':'收到告知',
+            'recruit':'交接自路由','route_review':'交接自路由','quota':'交接自路由',
+            'recovery':'事件／定时'}.get(key, '事件')
+
+
 def references(value, path='config'):
     """Executable references, never prose mentioning an identity."""
     if isinstance(value, dict):
@@ -125,8 +132,49 @@ def annotate(projection, body, parent, roles, scopes, keys, *, source=None, role
         bindings[local] = {'key': key, 'type': kind, 'direction': 'both', 'cardinality': cardinality, 'required': required}
 
     runtime_owners = dict(owners)
+    organization_keys={'summary_check','check_summary','role_intake','role_availability','check_role_intake','recheck_role_availability'}
+    if role_key=='steward':
+        shared=[key for key in organization_keys if key in visible or any(w['key']==key for w in graph['wires'])]
+        if shared:
+            interface('binding_family','family','所属 Family','family')
+            for key in shared:
+                owners[key]='binding_family'
+                for resident in residents.values():
+                    resident['members']=[m for m in resident['members'] if m!=key]
+                    for record in resident['duties']:record['members']=[m for m in record['members'] if m!=key]
+            used.setdefault('binding_family',[]).append({'component':'steward_resident','path':'DispatchFamilyTask.summary','purpose':'交接自摘要登记提醒'})
+    for resident in residents.values():
+        for item in resident['duties']:
+            item['trigger'] = trigger_label(item['key'])
+    organization = None
+    if not role_key and not duty:
+        organization_duties = [
+            {'key':'summary_registration','title':'成员做完一轮而没有登记工作摘要时，提醒该成员补登记',
+             'trigger':'事件／条件','members':['member_done','summary_check','check_summary']},
+            {'key':'role_intake_assurance','title':'门面开放期间 Router 或 Steward 关闭接单时，自动重新打开，保证门面请求始终有人承接',
+             'trigger':'事件／定时','members':['role_intake','watch_role_intake','role_availability','check_role_intake','recovery_timer','recheck_role_availability']},
+        ]
+        all_keys = visible | {w['key'] for w in graph['wires']}
+        for item in organization_duties:
+            prefixes=('watch_member_done:',) if item['key']=='summary_registration' else ('watch_role_intake:',)
+            item['members'] = [k for k in all_keys if k in item['members'] or k.startswith(prefixes)]
+            for key in item['members']:
+                if key=='recovery_timer':
+                    continue  # one shared timer, also referenced by recovery
+                owners[key]='binding_platform'
+                for resident in residents.values():
+                    resident['members'] = [m for m in resident['members'] if m != key]
+                    for record in resident['duties']:
+                        record['members'] = [m for m in record['members'] if m != key]
+        organization={'title':'Family','duties':organization_duties,'members':[], 'roles':list(residents.values())}
     router = residents.get('router_resident')
     interactions = []
+    if role_key=='steward' and 'binding_family' in bindings:
+        interactions.append({'key':'handoff:organization:summary','source':'binding_family','target':'steward_resident',
+                             'kind':'handoff','label':'归纳到期→摘要归纳'})
+    if organization:
+        interactions.append({'key':'handoff:summary_check:summary','source':'summary_check','target':'steward_resident',
+                             'kind':'handoff','label':'归纳到期→摘要归纳','collapsed_label':'归纳到期→摘要归纳'})
     expansion_owners = {}
     if router:
         route = next((d for d in router['duties'] if d['key'] == 'route'), None)
@@ -206,6 +254,22 @@ def annotate(projection, body, parent, roles, scopes, keys, *, source=None, role
     graph['presentation'] = {'level': 'duty' if duty else 'role' if role_key else 'organization',
                              'residents': residents, 'bindings': bindings, 'owners': owners,
                              'interactions': interactions, 'expansion_owners': expansion_owners}
+    if duty:
+        wires_by_key={w['key']:w for w in graph['wires']}
+        connected={(w['source'],w['target']) for w in graph['wires']}
+        for local in bindings:
+            for use in used.get(local, []):
+                component=use['component']
+                source_key=wires_by_key[component]['target'] if component in wires_by_key else component
+                if source_key not in visible or source_key==local or (source_key,local) in connected:
+                    continue
+                connected.add((source_key,local))
+                interactions.append({'key':'reference:'+source_key+':'+local,'source':source_key,'target':local,
+                                     'kind':'reference','label':use.get('purpose','配置引用')})
+    if organization:
+        graph['presentation']['organization']=organization
+    if role_key=='router':
+        graph['presentation']['main_chain']=['facade_resident','facade_inbox','router','router_resident','route_relay','member_resident']
     for local, binding in bindings.items():
         binding['uses'] = used.get(local, [])
         incoming = any(owners.get(w['target'], w['target']) == local for w in graph['wires'])

@@ -10,7 +10,7 @@ from .registry import TemplateError
 
 NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*\Z")
 TOKEN = re.compile(r"\{\{\s*([^{}]+?)\s*\}\}")
-TYPES = {"text", "integer", "number", "boolean", "enum", "duration"}
+TYPES = {"text", "time", "integer", "number", "boolean", "enum", "duration"}
 
 
 def _value(spec: dict, value):
@@ -18,6 +18,8 @@ def _value(spec: dict, value):
     valid = (
         isinstance(value, str)
         if kind == "text"
+        else isinstance(value, str) and bool(re.fullmatch(r'(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?', value))
+        if kind == 'time'
         else isinstance(value, bool)
         if kind == "boolean"
         else isinstance(value, int) and not isinstance(value, bool)

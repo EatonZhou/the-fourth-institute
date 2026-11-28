@@ -409,6 +409,17 @@ def definitions():
     templates.extend({'builtin_key': 'family_role_' + key, 'kind': 'role', 'category': 'structure',
                       'title': key.title(), 'description': '所属 Family 的独立角色；共享对象通过外部绑定接入。',
                       'targets': ['resident'], 'parameters': [], 'body': role.definition(key)} for key in role.KEYS)
+    descriptions = {
+        'leader_pulse':'检查周期到期时，提醒 Lineage 负责人检查当前目标与工作进度',
+        'fixed_reminder':'目标完成一轮且尚未达到轮数上限时，发送提醒以推进下一轮工作',
+        'scheduled_work':'到达设定时间或用户手动触发时，把约定的工作交给目标 Resident',
+    }
+    for item in templates:
+        if item['builtin_key'] in descriptions:
+            item['body']['duty']={'description':descriptions[item['builtin_key']], 'category':'common'}
+        if item['builtin_key']=='scheduled_work':
+            next(p for p in item['parameters'] if p['name']=='calendar_time')['type']='time'
+        item['title']={'agent_loop':'循环评审','leader_pulse':'定期检查进展'}.get(item['builtin_key'],item['title'])
     return [
         {**item, "template_id": template_id(item["builtin_key"])} for item in templates
     ]

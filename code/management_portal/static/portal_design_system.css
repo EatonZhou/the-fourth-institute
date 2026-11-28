@@ -321,6 +321,8 @@ button, input, select, textarea { font-family: var(--portal-font); }
   border-bottom: 0;
   border-right: 0;
 }
+.portalButtonTooltip[data-placement="right"]::after { left:-5px; top:var(--portal-tooltip-arrow-y,50%); transform:translateY(-50%) rotate(45deg); }
+.portalButtonTooltip[data-placement="left"]::after { left:auto; right:-5px; top:var(--portal-tooltip-arrow-y,50%); transform:translateY(-50%) rotate(45deg); }
 
 .portalStatus {
   --portal-status-color: var(--muted, #64748b);

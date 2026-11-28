@@ -28,6 +28,16 @@ def ensure_builtins():
             template_id = raw["template_id"]
             source = content_hash(template)
             previous = rows.get(template_id)
+            if key == 'family_role_steward' and previous is not None:
+                marker = 'family_role_steward:info_forward'
+                if marker not in installed:
+                    connection.execute('INSERT INTO installed_builtins(builtin_key,installed_at) VALUES (%s,%s)', (marker, now()))
+                    if previous['builtin_source'] != content_hash(previous):
+                        from .role_recipes import add_info_forward
+                        updated=add_info_forward(previous['body'],template['body'])
+                        if updated != previous['body']:
+                            previous={**previous,'body':updated,'version':previous['version']+1,'updated_at':now(),'updated_by':'portal'}
+                            rows[template_id]=previous
             if key not in installed:
                 connection.execute(
                     "INSERT INTO installed_builtins(builtin_key,installed_at) VALUES (%s,%s)",

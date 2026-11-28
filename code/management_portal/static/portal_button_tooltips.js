@@ -374,6 +374,12 @@
       ? targetBounds.top - tooltipBounds.height - TARGET_GAP
       : targetBounds.bottom + TARGET_GAP;
     let left = targetBounds.left + (targetBounds.width - tooltipBounds.width) / 2;
+    if(['left','right'].includes(preferred)){
+      const fitsRight=targetBounds.right+TARGET_GAP+tooltipBounds.width<=viewportWidth-VIEWPORT_MARGIN;
+      placement=fitsRight?'right':'left';
+      left=placement==='right'?targetBounds.right+TARGET_GAP:targetBounds.left-TARGET_GAP-tooltipBounds.width;
+      top=targetBounds.top+(targetBounds.height-tooltipBounds.height)/2;
+    }
     top = clamp(top, VIEWPORT_MARGIN, Math.max(VIEWPORT_MARGIN, viewportHeight - tooltipBounds.height - VIEWPORT_MARGIN));
     left = clamp(left, VIEWPORT_MARGIN, Math.max(VIEWPORT_MARGIN, viewportWidth - tooltipBounds.width - VIEWPORT_MARGIN));
 
@@ -383,6 +389,7 @@
     tooltip.style.top = `${Math.round(top)}px`;
     tooltip.style.setProperty("--portal-tooltip-arrow-x", `${Math.round(arrowX)}px`);
     tooltip.dataset.placement = placement;
+    tooltip.style.setProperty('--portal-tooltip-arrow-y',`${clamp(targetBounds.top+targetBounds.height/2-top,12,Math.max(12,tooltipBounds.height-12))}px`);
     tooltip.dataset.portalOverlayLayer = overlayLayerFor(activeButton);
     tooltip.style.setProperty("--portal-overlay-order", "90");
     tooltip.dataset.open = "true";

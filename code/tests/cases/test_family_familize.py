@@ -726,7 +726,8 @@ def test_the_steward_hears_its_notes_from_the_facade_and_stays_out_of_the_owners
     texts = ["".join(part.get("text") or "" for part in item["content_parts"]) for item in notes]
     assert len(notes) == 2
     assert "Family 已创建" in texts[0] and "family-work-guide.md" in texts[0]
-    assert '"change": "登录页改到周五上线。"' in texts[1] and "family-work-guide.md" in texts[1]
+    assert '"content": "登录页改到周五上线。"' in texts[1] and "family-work-guide.md" in texts[1]
+    assert '定向转告' in texts[1]
     assert {(item["origin"]["sender"]["id"], item["origin"]["initiated_by"]["id"]) for item in notes} == {
         (facade, ACTOR),
     }

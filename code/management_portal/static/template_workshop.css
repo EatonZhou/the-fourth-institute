@@ -6,7 +6,7 @@
 .workshopLibrary { grid-column:1; grid-row:2 / -1; min-height:0; overflow:auto; overscroll-behavior:contain; border-right:1px solid var(--border); background:var(--panel); }
 .workshopTools { grid-column:2; grid-row:2; min-width:0; display:flex; overflow-x:auto; overscroll-behavior-inline:contain; gap:12px; padding:6px 10px; border-bottom:1px solid var(--border); background:var(--panel); }
 .workshopToolGroup { display:flex; flex:none; align-items:center; gap:4px; }
-.workshopToolGroup small { color:var(--muted); font-size:11px; writing-mode:vertical-rl; }
+.workshopToolGroup small { color:var(--muted); font-size:12px; white-space:nowrap; }
 .workshopToolGroup + .workshopToolGroup { border-left:1px solid var(--border); padding-left:12px; }
 .workshopToolGroup button { flex:none; }
 [data-portal-theme="liquid-glass"] .workshopLibrary { background:var(--lg-surface-panel-glass,var(--panel)); backdrop-filter:blur(16px); }
@@ -17,7 +17,7 @@
 @supports not (backdrop-filter:blur(1px)) {
   [data-portal-theme="liquid-glass"] .workshopLibrary,[data-portal-theme="liquid-glass"] .workshopTools { background:var(--panel); }
 }
-.templateRecipeGraph { height:100%; display:flex; flex-direction:column; min-height:480px; }
+.templateRecipeGraph { height:100%; display:flex; flex-direction:column; min-height:0; }
 .templateRecipeToolbar { display:flex; gap:8px; align-items:center; padding:6px 12px; font-size:12px; overflow-x:auto; }
 .templateRecipeToolbar button { flex:none; }
 .templateRecipeToolbar select { min-width:0; max-width:50%; }
@@ -32,7 +32,7 @@
 .templateWorkshop [hidden] { display:none !important; }
 .workshopCanvas,[data-workshop-id="workshopEditor"] { display:contents; }
 .workshopBar { grid-column:1 / -1; grid-row:1; min-width:0; min-height:44px; display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:6px 10px; border-bottom:1px solid var(--border); background:var(--panel); }
-.workshopBar input { flex:1; min-width:50px; font-size:16px; background:transparent; border:0; color:inherit; }
+.workshopBar input { flex:1; min-width:50px; font-size:16px; background:var(--panel-2,var(--panel)); border:1px solid var(--border); border-radius:6px; padding:5px 8px; color:inherit; }
 .workshopBar footer,.workshopViewGroup,.workshopHistoryGroup { display:flex; flex-wrap:wrap; align-items:center; gap:4px; }
 .workshopBar footer { border-left:1px solid var(--border); padding-left:8px; }
 .workshopViewGroup { flex-wrap:nowrap; }
@@ -57,6 +57,37 @@
 .templateDutySummary li { margin:6px 0; white-space:normal; overflow-wrap:anywhere; }
 .templateDutySummary ol { padding-inline-start:22px; }
 .templateRoleViewControls > button { position:absolute; z-index:25; }
+.templateWorkshop .templateGraphWorkspace { position:relative; display:block; height:100%; min-height:0; overflow:hidden; }
+.templateWorkshop .templateGraphHost { height:100%; }
+.templateWorkshop .templateGraphWorkspace > .templateGraphInspector { position:absolute; width:320px; max-width:calc(100% - 24px); max-height:calc(100% - 24px); overflow:auto; z-index:30; background:var(--lg-surface-popover,var(--panel)); box-sizing:border-box; }
+.templateWorkshop .templateGraphInspector :is(input,select,textarea) { max-width:100%; background:var(--panel); color:var(--text); border:1px solid var(--border); border-radius:6px; }
+.templateWorkshop [data-structure-content] { height:100%; min-height:0; }
+.templateWorkshop .templateCodeEditor { height:100%; min-height:180px; }
+.templateWorkshop[data-template-kind="explore"] [data-page="body"],.templateWorkshop[data-template-kind="prompt"] [data-page="body"],.templateWorkshop[data-template-kind="script"] [data-page="body"] { padding:16px 24px 64px; box-sizing:border-box; }
+.templateWorkshop .templateStructureList { padding:8px 18px; }
+.templateWorkshop [data-structure-content]:has(.templateStructureList) { padding-bottom:60px; box-sizing:border-box; }
+.templateWorkshop .portalButton:disabled { opacity:.38; box-shadow:none; background:var(--panel-2,var(--panel)); color:var(--muted); border-color:var(--border); cursor:default; }
+.templateWorkshop .templateBinding { min-width:126px; }
+.templateWorkshop .hatgNode strong { white-space:normal; overflow-wrap:anywhere; }
+.templateWorkshop .edgeLabelBtn { min-width:86px; width:max-content; max-width:240px; white-space:normal; overflow:visible; text-overflow:clip; font-size:11px; line-height:1.4; }
+.templateResidentOverlay .nodeSettingsSurface { display:flex; flex-direction:column; width:min(720px,calc(100% - 24px)); min-height:0; height:auto; max-height:calc(100% - 24px); }
+.templateResidentOverlay .nodeSettingsSurface::before { display:none; }
+.templateResidentOverlay .residentMenuHeader { display:flex; flex-direction:row; align-items:flex-start; justify-content:space-between; padding:12px; }
+.templateResidentOverlay .residentMenuHeader > button { flex:none; margin-left:auto; }
+.templateResidentOverlay .nodeSettingsBody { min-height:0; padding:12px; }
+.templateResidentOverlay.is-compact-menu .nodeSettingsSurface { width:min(580px,calc(100% - 24px)); }
+.templateResidentOverlay .residentMenuDutyCategory { white-space:normal; }
+.workshopInfoBody .templateParameterTable { overflow:auto; }
+.workshopInfoBody .templateParameterTable input[data-parameter-field="description"] { min-width:210px; }
+.workshopInfoBody .templateParameterTable input[data-parameter-field="name"] { min-width:120px; }
+.templateWorkshop .workshopBar .portalButton.is-primary:disabled { opacity:.35; background:var(--panel); color:var(--muted); filter:saturate(0); }
+.templateModuleGlyph > .portalIcon { width:44px; height:44px; }
+.portalWorkbenchStack:has(.workshopPanelHost):not(.is-collapsed) { grid-template-rows:26px minmax(0,1fr); }
+.portalWorkbenchStack:has(.workshopPanelHost):not(.is-collapsed) > .portalWorkbenchTabs { position:relative; top:auto; left:auto; transform:none; justify-self:center; opacity:1; max-width:100%; }
+.portalWorkbenchStack:has(.workshopPanelHost) .portalWorkbenchTabSlot { min-width:100px; }
+.templateWorkshop .templateStructureList { padding-inline-end:64px; }
+.templateWorkshop .templateGraphWorkspace > .templateGraphInspector { max-width:calc(100% - 80px); max-height:calc(100% - 80px); }
+.templateRecipeGraph .templateGraphInspector { right:64px; top:64px; }
 .workshopAssistantDock { position:absolute; width:36px; height:36px; z-index:35; }
 .workshopAssistantDock>[data-workshop-assistant] { position:relative; z-index:2; touch-action:manipulation; border-radius:50%; width:36px; height:36px; background:var(--panel); box-shadow:0 3px 12px #0002; color:var(--accent); }
 .workshopChatColumn { position:absolute; z-index:1; min-width:0; min-height:0; border:1px solid var(--border); border-radius:var(--portal-radius-lg,12px); box-shadow:0 8px 30px #0003; background:var(--panel); display:flex; flex-direction:column; overflow:hidden; }

@@ -177,8 +177,8 @@
         if (key) requestAnimationFrame(() => {
           const anchor = [...bodyPage.querySelectorAll('[data-node-id], [data-edge-id]')].find(node => node.dataset.nodeId === key || node.dataset.edgeId === key);
           const bounds = bodyPage.getBoundingClientRect(), box = anchor?.getBoundingClientRect();
-          host.style.left = `${Math.max(8, Math.min((box?.right || bounds.left) - bounds.left + 10, bounds.width - 340))}px`;
-          host.style.top = `${Math.max(8, Math.min((box?.top || bounds.top) - bounds.top, bounds.height - 230))}px`;
+          host.style.left = `${Math.max(8, Math.min((box?.right || bounds.left) - bounds.left + 10, bounds.width - Math.min(320,bounds.width-80) - 64))}px`;
+          host.style.top = `${Math.max(64, Math.min((box?.top || bounds.top) - bounds.top, bounds.height - Math.min(host.scrollHeight+24,bounds.height-80)))}px`;
         });
       }
       const list = Object.keys(listLabels).find(name => (draft.body[name] || []).some(row => row.key === key));
@@ -199,9 +199,10 @@
       // A deleted found element, a found Resident and found Watch wires
       // have nothing to patch; the others edit the config they would have.
       const editable = !found || (row.op !== 'delete' && (isWire(row) ? UPDATABLE_WIRES.includes(row.kind) : row.kind !== 'resident'));
-      const settings = !editable ? '' : found
+      const rawSettings = !editable ? '' : found
         ? elementSettingsHtml(isWire(row) ? 'wires' : 'components', { ...row, config: graphTools().effectiveConfig(row) })
         : elementSettingsHtml(list, row);
+      const settings=rawSettings.replace(/<input\b[^>]*>/g,html=>/value="[^"]*\{\{/.test(html)?html.replace(/type="number"/,'type="text"'):html);
       const extra = `${found ? foundFieldsHtml(row) : ''}${wireNatureHtml(list, row)}${configFromHtml(list, row)}`;
       host.innerHTML = `<div data-structure-list="${list}"><div class="templateInspectorElement" data-structure-row="${index}" data-row-key="${esc(key)}" ${found ? `data-template-state="${esc(row.op || 'keep')}"` : ''}>
           <header><strong>${found ? `${esc(t('已有'))} · ` : ''}${esc(elementLabel(list, row))}</strong><code>${esc(key)}</code>${button(found ? '移出查找' : '移除', 'remove-row', 'is-danger')}</header>

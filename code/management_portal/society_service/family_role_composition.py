@@ -65,6 +65,8 @@ def assemble(body, parent, sources, actor):
 
 def reconcile(body, parent, actor, generate, *, installing=False):
     """Refresh roster references in installed duties, never reinstall a missing one."""
+    from .family_duty_upgrade import upgrade
+    upgrade(body)
     roles = {b['role']['key']: b for b in role_blocks(body, parent)}
     owned = {(key, name): duty for key, role in roles.items() for duty in duties(body, role)
              for name, bid in role['role']['duties'].items() if bid == duty['id']}

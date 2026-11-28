@@ -217,6 +217,14 @@
       };
       const blockers = routeBlockingNodes(edge, [originalSegment]);
       if (!blockers.length) return baseGeometry;
+      // Template diagrams prefer free tracks between layers over a detour
+      // around the entire graph. Ordinary HATG routing keeps its existing policy.
+      const innerTracks = edge._template_inner_route ? (()=>{
+        const bands=state.model.nodes.map(node=>{const p=nodePosition(node),half=nodeHalfExtents(node);return {top:p.y-half.y,bottom:p.y+half.y};}).sort((a,b)=>a.top-b.top);
+        const tracks=[];let bottom=bands[0]?.bottom;
+        for(const band of bands.slice(1)){if(band.top-bottom>3)tracks.push((band.top+bottom)/2);bottom=Math.max(bottom,band.bottom);}
+        return tracks;
+      })() : [];
       if (isProgramWire(edge) && (edge.wire_type || edge.type) === "route"
           && blockers.some(node => node.id === edge.source || node.id === edge.target)) {
         // Program Route ports face right (output) and left (input), regardless
@@ -227,7 +235,7 @@
           return [Math.min(...boxes.map(box => box.position.y - box.half.y)) - 2,
             Math.max(...boxes.map(box => box.position.y + box.half.y)) + 2];
         });
-        const candidates = tracks.map(trackY => {
+        const candidates = [...innerTracks,...tracks].map(trackY => {
           const segments = detourSegments(originalSegment, originalSegment.x1 + 2, originalSegment.x2 - 2, trackY);
           return {segments, blocked: routeBlockingNodes(edge, segments).length, distance: routeLength(segments)};
         }).sort((left, right) => left.blocked - right.blocked || left.distance - right.distance);
@@ -267,7 +275,7 @@
       const clearance = Math.max(1.35, labelClearance + 0.65);
       const top = Math.min(...blockerDetails.map(detail => detail.position.y - detail.half.y)) - clearance;
       const bottom = Math.max(...blockerDetails.map(detail => detail.position.y + detail.half.y)) + clearance;
-      const candidates = [top, bottom].map(trackY => {
+      const candidates = [...(vertical?[]:innerTracks),top, bottom].map(trackY => {
         const routeSegments = detourSegments(baseSegment, entryX, exitX, trackY);
         const segments = vertical ? routeSegments.map(transposeSegment) : routeSegments;
         const blocked = routeBlockingNodes(edge, segments).length;

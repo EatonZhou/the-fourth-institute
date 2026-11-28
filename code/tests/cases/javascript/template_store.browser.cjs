@@ -108,9 +108,9 @@ const {chromium} = require(path.join(repo,'management_portal/test_framework/tau_
       await shelf.load();
     });
     await page.locator('#hatgToolboxToggle').click();
-    await page.locator('[data-store-update]').waitFor();
+    await page.locator('#testHatg [data-store-update]').waitFor();
     await shot('toolbox-update');
-    await page.locator('[data-store-update]').click();
+    await page.locator('#testHatg [data-store-update]').click();
     await page.getByRole('button',{name:'另存新版副本（保留我的修改）',exact:true}).waitFor();
     await shot('local-conflict');
     await page.getByRole('button',{name:'另存新版副本（保留我的修改）',exact:true}).click();
@@ -134,10 +134,8 @@ const {chromium} = require(path.join(repo,'management_portal/test_framework/tau_
     assert.equal(await page.locator('[data-workshop-save]').isDisabled(),true);
     assert.equal(await page.locator('[data-action=copy]').isEnabled(),true);
     assert.equal(await page.locator('[data-workshop-install]').isVisible(),true);
-    await page.locator('.workshopToolboxButton').hover();
-    assert.equal(await page.locator('[data-workshop-id=workshopToolbox]').isVisible(),true);
-    await page.mouse.move(900,20);
-    await page.waitForFunction(()=>document.querySelector('[data-workshop-id=workshopToolbox]').hidden);
+    assert.equal(await page.locator('#testWorkshop .workshopLibrary').isVisible(),true);
+    assert.equal(await page.locator('#testWorkshop .workshopToolboxButton').count(),0);
     // UI geometry uses short and long content; publishing/installing is covered above.
     await page.evaluate(()=>{
       const base={...storeItem,instructions_used:['CreateComponent'],application_parameters:[],is_publisher:false};
@@ -158,14 +156,21 @@ const {chromium} = require(path.join(repo,'management_portal/test_framework/tau_
     assert.deepEqual(await dimensions(),initial);
     assert.equal(await page.locator('.templateStoreDetails').evaluate(node=>node.scrollHeight>node.clientHeight),true);
     await shot('store-fixed-size');
-    await page.locator('[data-store-back]').click();
+    assert.equal(await page.locator('[data-store-back]').isVisible(),false);
+    assert.equal(await page.locator('[data-store-id="long"]').evaluate(n=>n.classList.contains('is-selected')),true);
+    assert.match(await page.locator('.templateStoreDetails').innerText(),/模板说明/);
     assert.deepEqual(await dimensions(),initial);
     await page.setViewportSize({width:390,height:740});
     const narrow=(await dimensions()).dialog;
+    await page.locator('[data-store-back]').click();
     await page.locator('[data-store-select=long]').click();
     assert.deepEqual((await dimensions()).dialog,narrow);
     assert.ok(narrow[0]<=390-32);
     await shot('store-fixed-size-mobile');
+    for(const theme of ['auto','liquid-glass','dark'])for(const width of [1440,600]){
+      await page.setViewportSize({width,height:960});await page.evaluate(theme=>PortalTheme.setMode(theme),theme);
+      await shot(`store-v29-${theme}-${width}`);
+    }
     assert.deepEqual(errors,[]);
     console.log('Chromium store interactions and screenshots verified');
   } finally { await browser.close(); }

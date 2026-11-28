@@ -40,7 +40,7 @@
 
     function openWorkshop(id = '') {
       if (!onOpenWorkshop) throw new Error(t('当前工作台无法打开模板工坊'));
-      return Promise.resolve(onOpenWorkshop({kind:'workshop',template_id:id,lineage_id:getContext?.().lineage_id || ''}));
+      return Promise.resolve(onOpenWorkshop({kind:'workshop',template_id:id,newDraft:!id,lineage_id:getContext?.().lineage_id || ''}));
     }
 
     // edit opens the template editor on a copy of a template. Its parts:
@@ -63,6 +63,7 @@
       // The state the parts share: the pending check and its revision, the
       // code editor and its generation, the graph and the role settings.
       const editorState = {
+        graphViews: view.graphViews || {},
         timer: null, revision: 0, codeEditor: null, codeGeneration: 0, graph: null, roleSettings: null, workshop: !!editorHost, openTemplate:view.openTemplate,
       };
       const templateRoles = draft.kind === 'familize' && !editorHost ? residentRoles(draft) : [];
@@ -89,15 +90,12 @@
       const status = view.root.querySelector('[data-preview-status]');
       if (editorHost) {
         const overlay = view.content.querySelector('.workshopInfoOverlay');
-        const title = view.root.querySelector('[data-meta="title"]'), home = title.parentNode, next = title.nextSibling;
         const info = window.PortalUI.createDialogController({modal:overlay,escapeClose:true,backdropClose:true});
-        const returnTitle = () => home.insertBefore(title,next);
-        // Move the actual draft control, never copy it into a second form.
-        view.openInfo = () => {overlay.querySelector('[data-template-info-fields]').prepend(title); info.open();};
+        // The title stays in the stable header; the card edits the same draft's
+        // metadata and parameters without reflowing the underlying component.
+        view.openInfo = () => info.open();
         overlay.querySelector('[data-close-template-info]').onclick = () => info.close();
-        const observer = new MutationObserver(()=>{if(!overlay.classList.contains('open'))returnTitle();});
-        observer.observe(overlay,{attributes:true,attributeFilter:['class']});
-        view.cleanups.push(()=>{observer.disconnect();returnTitle();info.destroy();});
+        view.cleanups.push(()=>info.destroy());
       }
 
       const {

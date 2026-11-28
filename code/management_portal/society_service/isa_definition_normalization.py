@@ -252,6 +252,8 @@ def _check_custom_family_text(value, reject, path):
 
 
 def _normalize_definition(definition, *, diagnostics=None, script_path=None):
+    from .family_duty_upgrade import upgrade
+    upgrade(definition)
     def normalize(config, identity, normalizer):
         try:
             return normalizer(config)

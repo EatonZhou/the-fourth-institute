@@ -174,7 +174,7 @@ def _migrate_lineage(lineage_id):
                 family_strategy_state.migrate_family_state(connection, lineage_id)
             lineage_state._persist_lineage_state_transaction(
                 before, after, "Migrate current ISA instruction contracts",
-                synchronize_resource_identities=False,
+                synchronize_resource_identities={b['id'] for b in after.get('function_blocks', [])} != {b['id'] for b in before.get('function_blocks', [])},
                 synchronize_resident_identities=False,
             )
             return True

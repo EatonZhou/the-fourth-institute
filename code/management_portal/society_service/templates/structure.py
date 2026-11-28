@@ -409,7 +409,7 @@ class StructureKind:
                 raise TemplateError("职责说明必须为文本")
             if "memory" in duty:
                 duty["memory"] = normalize_memory(duty["memory"])
-            if not body["function_block"] or not any(role["from"] == "target" for role in body["roles"]):
+            if not body["function_block"] or not any(role["from"] in {"target","lineage_leader"} for role in body["roles"]):
                 raise TemplateError("职责模板需要目标 Resident 空位和 Function Block")
             if (duty.get("memory") or {}).get("level") == "trigger":
                 targets = {role["key"] for role in body["roles"] if role["from"] == "target"}
@@ -493,8 +493,13 @@ class StructureKind:
                 steps.append(f"收到 {event} 时触发后续连线。")
             elif component["kind"] == "loop":
                 steps.append(f"最多推进 {config.get('max_rounds', '')} 轮。")
+        labels={r['key']:r.get('title') or {'target':'目标 Resident','lineage_leader':'Lineage 负责人'}.get(r['from'],'新 Resident') for r in body['roles']}
+        labels.update({c['key']:c.get('title') or c['kind'] for c in body['components']})
         for wire in body["wires"]:
-            steps.append(f"{wire['source']} → {wire['target']}（{wire['kind']}）。")
+            source,target=labels.get(wire['source'],wire['source']),labels.get(wire['target'],wire['target'])
+            steps.append(f'“{source}”监听“{target}”。' if wire['kind']=='watch' else
+                         f'“{source}”引用“{target}”。' if wire['kind']=='target' else
+                         f'“{source}”触发后，把输出交给“{target}”。')
         # A template that only changes existing elements leaves no block behind.
         creates = bool(
             body["components"]
@@ -691,7 +696,7 @@ class StructureKind:
                         edit=edit,
                         x=ctx.target.get("x"),
                         y=ctx.target.get("y"),
-                        duty=_duty(ctx, target, roles),
+                        duty=_duty(ctx, target or (leader if body.get('duty') and any(r['from']=='lineage_leader' for r in body['roles']) else None), roles),
                         placement_request=placement_request,
                     )
                     outcome["function_block_ids"].append(block["id"])

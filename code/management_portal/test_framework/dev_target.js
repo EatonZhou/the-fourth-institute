@@ -2,6 +2,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const net = require('node:net');
+const {execFileSync} = require('node:child_process');
 
 function targetFile() {
   if (process.env.PORTAL_TEST_TARGET_FILE) return process.env.PORTAL_TEST_TARGET_FILE;
@@ -33,8 +34,13 @@ function resolveTestTarget() {
   if (browser.username || browser.password || browser.search || browser.hash || browser.pathname !== '/') {
     throw new Error('Invalid TAU browser origin');
   }
-  return { deployment: String(item.id).trim().toLowerCase(), origin: url.origin, browserOrigin: browser.origin,
-    expectedBuildId: String(item.build_id).trim().slice(0, 240) };
+  let expectedBuildId=String(item.build_id).trim().slice(0,240);
+  if(item.kind==='dev' && expectedBuildId==='development'){
+    const commit=execFileSync('git',['rev-parse','HEAD'],{cwd:path.resolve(__dirname,'../../..'),encoding:'utf8',stdio:['ignore','pipe','ignore']}).trim();
+    if(!/^[0-9a-f]{40,64}$/.test(commit))throw new Error('Cannot verify selected Dev source identity');
+    expectedBuildId='dev-'+commit.slice(0,12);
+  }
+  return { deployment: String(item.id).trim().toLowerCase(), origin: url.origin, browserOrigin: browser.origin, expectedBuildId };
 }
 function resolveDevOrigin() { return resolveTestTarget().origin; }
 module.exports = { targetFile, resolveTestTarget, resolveDevTarget: resolveTestTarget, resolveDevOrigin };

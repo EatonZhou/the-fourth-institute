@@ -450,6 +450,7 @@ def familize(lineage_id: str, resident_ids: Iterable[str], actor: str, *, title:
             family_facade.tell_steward(
                 roles["facade"], roles["steward"], actor, "Family 已创建，检查分工并等待工作触发。",
                 message_id=message_id, business_ref="duty/family-organization",
+                task_trigger="organization",
             )
     return result(f"已创建 Family「{title}」", **outcome, resource_id=block["family"]["resource_id"], function_block_ids=[block["id"]],
         facade_resident_id=roles["facade"], steward_resident_id=roles["steward"], router_resident_id=roles["router"],
@@ -518,7 +519,7 @@ def update_family(lineage_id: str, family_id: str, actor: str, *, add_member_ids
         creator = f"成员 {maker}（{creator_id}）" if maker else creator_id
         joined = "、".join(f"{facts.find_record(rid).get('title') or rid}（{rid}）" for rid in outcome["added"])
         family_facade.tell_steward(family["facade"], family["steward"], actor,
-            f"结构信号：{creator} 加入的 {joined} 已加入 Family。请明确它的职责和协作关系；工作摘要由成员本人维护，遗漏由 Effect 挂到下一轮提醒。")
+            f"结构信号：{creator} 加入的 {joined} 已加入 Family。请明确它的职责和协作关系；工作摘要由成员本人维护，遗漏由 Effect 挂到下一轮提醒。",task_trigger="organization")
     return {"family_id": family_id, "resource_id": block["family"]["resource_id"], "function_block": block}
 
 
@@ -710,7 +711,7 @@ def member_moved_out(block: Mapping[str, Any], resident_id: str, target: Mapping
         f"迁到 Lineage「{target.get('title') or target_id}」（{target_id}），它已离开 Family："
         "Router 不再选它。之前转交给它的请求仍由它完成，并照常经门面回复。"
         "请更新记忆中的成员与分工；它的职责需要有人接手时，先通过门面向所有者提出方案。"
-    ))
+    ),task_trigger="organization")
 
 
 def _member_title(members: list[str]) -> str:

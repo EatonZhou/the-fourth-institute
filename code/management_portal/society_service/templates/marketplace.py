@@ -15,6 +15,8 @@ INSTALL = ("installed_from_store_id", "installed_store_version", "installed_stor
 
 
 def group_for(template):
+    if template['kind'] == 'structure' and any(r.get('from') in {'new','fork'} for r in template['body'].get('roles', [])):
+        return 'organization'
     return {"structure": "duty", "family_duty": "duty", "familize": "organization", "role": "role"}.get(template["kind"], "task")
 
 
@@ -117,9 +119,12 @@ def _store_inventory(connection, actor, records):
 
 
 def _describe_item(item, actor, admin, own, installed):
+    from ..resident_record_domain import find_resident
+    publisher = find_resident(item['publisher']) if item['publisher'].startswith('resident_') else None
     local = installed.get(item["store_id"])
     status = local["store_status"] if local else {}
     return {**describe(item), "group": group_for(item),
+            'publisher_title': (publisher or {}).get('title') or ('Resident' if item['publisher'].startswith('resident_') else item['publisher']),
             "instructions_used": instructions_used(item), "is_publisher": item["publisher"] == actor,
             "can_unpublish": item["publisher"] == actor or admin,
             "source_available": item["source_template_id"] in own,

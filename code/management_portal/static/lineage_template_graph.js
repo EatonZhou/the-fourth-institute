@@ -199,8 +199,12 @@
     const kind = item.kind === 'event_source' ? 'EVENT' : String(item.kind || '').toUpperCase();
     const shown = node._template_found ? { ...item, config: effectiveConfig(item) } : item;
     return `<span class="programNodeTopline" data-node-drag-handle><span class="programNodeGlyph" aria-hidden="true" data-portal-icon="${esc(definition.icon || item.kind)}"></span><span class="programNodeKind">${esc(kind)}</span>${state}</span>
-      <strong title="${esc(item.title || item.key)}">${esc(item.title || item.key)}</strong>
-      <span class="programNodeDetail">${esc(componentDetail(shown))}</span>`;
+      <strong>${esc(node.title || item.title || item.key)}</strong>
+      <span class="programNodeDetail">${esc(readableText(componentDetail(shown)))}</span>`;
+  }
+  function readableText(value) {
+    const labels={target:'目标',role:'角色',max_rounds:'最多轮数',calendar_time:'时间',reminder:'提醒内容',interval_seconds:'间隔秒数'};
+    return String(value || '').replace(/\{\{\s*([^{}]+)\s*\}\}/g,(_,token)=>{const parts=token.split('.');const name=parts[0]==='role'?parts[1]:parts.at(-1);return `〈${t(labels[name] || name)}〉`;});
   }
 
   // Found wires are drawn dashed; deleted ones red and updated ones amber. The
@@ -256,17 +260,11 @@
     const source = collections(JSON.parse(JSON.stringify(body)));
     const saved = source.layout || {};
     const automatic = autoLayout(source);
-    if (workshop) {
-      const slots = [...source.roles.filter(row => ['target', 'lineage_leader'].includes(row.from)), ...foundNodes(source)];
-      const roles = new Set(source.roles);
-      slots.forEach((row, index) => {
-        automatic[row.key] = {x: roles.has(row) ? 8 : 90, y: 20 + index * 18};
-      });
-    }
     const place = key => (saved[key] ? { ...saved[key] } : { ...automatic[key] });
     const found = new Set(source.match.map(item => item.key));
     const roles = [...source.roles, ...foundNodes(source).filter(item => item.kind === 'resident')]
       .map(role => ({ id: role.key, kind: 'agent', title: role.title || role.key, ...place(role.key), _template: role, _template_role: true }));
+    roles.forEach(node=>{node.title=readableText(node.title);node._template.title=readableText(node._template.title);});
     const components = [...source.components, ...foundNodes(source).filter(item => item.kind !== 'resident')]
       .map(component => ({ ...component, ...(found.has(component.key) ? { config: effectiveConfig(component) } : {}), id: component.key, ...place(component.key) }));
     const labels = stateLabels();
@@ -279,6 +277,8 @@
     const bindingRows=bindings(source), residents=residentContexts(source);
     graph.nodes.forEach(node => { node._template = templates.get(node.id); node._template_found = found.has(node.id);
       node._template_binding=bindingRows[node.id]; node._template_menu=residents[node.id];
+      node.title=readableText(node.title);
+      if(node.title==='Family 触发失败')node.title=({router_failed:'Router 触发失败',relay_failed:'转交动作失败',route_failed:'选人任务投递失败',delivery_failed:'成员投递失败'})[node.id] || node.title;
     });
     // A wire without ports is drawn from the first ones that fit, as applying resolves it.
     graph.edges.forEach(edge => {
@@ -350,6 +350,9 @@
         wires:edges.map(edge=>({...edge,key:edge.id}))});
       nodes = nodes.map(node=>({...node,...compact[node.id]}));
     }
+    const visibleIds=new Set(nodes.map(node=>node.id));
+    visibleEdges=visibleEdges.filter(edge=>visibleIds.has(edge.source) && visibleIds.has(edge.target));
+    if(workshop)visibleEdges.forEach(edge=>{edge._template_inner_route=true;});
     return { nodes, edges:visibleEdges, wires: program.normalizeProgram(authored).wires };
   }
 
@@ -415,7 +418,7 @@
     return {move,destroy(){destroyed=true;observer.disconnect();controller.destroy();root.remove();}};
   }
 
-  function mount({ root, body, workshop = false, readOnly = false, groups = () => [], expanded = () => [], scope = () => null, residentInfo = () => null, onOpenResident = () => {}, onToggleRole = () => {}, isReadonly = () => false, onBeforeChange = () => {}, onChange = () => {}, onSelect = () => {} }) {
+  function mount({ root, body, workshop = false, readOnly = false, viewState = {}, groups = () => [], expanded = () => [], scope = () => null, residentInfo = () => null, onOpenResident = () => {}, onToggleRole = () => {}, isReadonly = () => false, onBeforeChange = () => {}, onChange = () => {}, onSelect = () => {} }) {
     const program = window.PortalLineageProgram;
     const factory = window.PortalHatgGraph?.createGraph;
     if (!program || !factory) throw new Error(t('HATG 图形引擎未加载'));
@@ -445,8 +448,9 @@
           <button type="button" class="portalButton is-icon" data-graph-zoom-out aria-label="${esc(t('缩小'))}" data-portal-icon="minus"></button>
           <output data-graph-zoom aria-label="${esc(t('当前比例'))}"></output>
           <button type="button" class="portalButton is-icon" data-graph-zoom-in aria-label="${esc(t('放大'))}" data-portal-icon="plus"></button>
-          <button type="button" class="portalButton is-compact" data-graph-reset aria-label="${esc(t('回到100%'))}">100%</button>
+          <button type="button" class="portalButton is-compact" data-graph-reset aria-label="${esc(t('回到100%'))}" title="${esc(t('回到100%'))}">1:1</button>
           <button type="button" class="portalButton is-icon" data-graph-fit aria-label="${esc(t('适合窗口'))}" title="${esc(t('适合窗口'))}" data-portal-icon="fit-view"></button>
+          <button type="button" class="portalButton is-compact" data-graph-arrange>${esc(t('整理'))}</button>
         </div>
         <p class="templateGraphEmpty">${esc(t('从上方添加角色或组件，开始搭建结构。'))}</p>
         <p class="templateGraphHint" data-graph-hint role="status" hidden></p>
@@ -460,7 +464,7 @@
         button.hidden=!node;if(!node)return;
         const card=node.getBoundingClientRect();
         button.style.left=`${Math.max(8,Math.min(bounds.width-button.offsetWidth-8,card.left-bounds.left))}px`;
-        button.style.top=`${Math.max(8,Math.min(bounds.height-button.offsetHeight-8,card.bottom-bounds.top+6))}px`;
+        button.style.top=`${Math.max(52,Math.min(bounds.height-button.offsetHeight-8,card.top-bounds.top-button.offsetHeight-10))}px`;
       });
     }
     let summaryBindings=[],summaryResume='';
@@ -494,7 +498,6 @@
       };
       const binding=window.PortalHatgPanelBindings.bindHoverPanel({trigger:element,panel:dutySummary,open:show,close:hide,isOpen:()=>!dutySummary.hidden});
       summaryBindings.push({destroy(){binding.destroy();dutySummary.remove();}});
-      if(summaryResume===node.id)binding.open();
     }
     const states = root.appendChild(document.createElement('style'));
     const hintNode = root.querySelector('[data-graph-hint]');
@@ -507,9 +510,14 @@
 
 
     function render() {
-      summaryResume=root.querySelector('.templateDutySummary:not([hidden])')?.dataset.residentSummary || '';
+      summaryResume='';
       summaryBindings.forEach(binding=>binding.destroy());summaryBindings=[];
       current = project(body(), {workshop,groups:groups(),expanded:expanded(),scope:scope()});
+      if (readOnly) {
+        const positions=viewState.positions ||= {};
+        const automatic=arrangedPositions();
+        current.nodes.forEach(node=>Object.assign(node,positions[node.id] || automatic.get(node.id)));
+      }
       currentNodesById = new Map(current.nodes.map(node => [node.id, node]));
       const selectedEdge = current.edges.some(edge => edge.id === selected);
       validateWireTarget = program.createConnectionValidator({ existingWires: current.wires, nodes: current.nodes });
@@ -524,7 +532,7 @@
       canvas.querySelectorAll('[data-node-id]').forEach(element=>{
         const node=currentNodesById.get(element.dataset.nodeId);
         element.classList.toggle('is-template-binding',!!node?._template_binding);
-        if(node?._template_menu){element.tabIndex=0;element.setAttribute('aria-label',`${node.title} · ${t('模板 Resident 菜单')}`);element.removeAttribute('title');bindDutySummary(element,node);}
+        if(node?._template_menu){element.tabIndex=0;element.setAttribute('aria-label',`${node.title} · ${t('模板 Resident 菜单')}`);element.removeAttribute('title');element.querySelectorAll('[title]').forEach(n=>n.removeAttribute('title'));bindDutySummary(element,node);}
       });
       canvas.querySelectorAll('[data-node-open-menu]').forEach(button=>{button.dataset.templateResidentMenu=button.dataset.nodeOpenMenu;});
       roleControls.innerHTML=expanded().filter(key=>body().presentation?.residents[key]).map(key=>`<button type="button" class="portalButton is-compact" data-collapse-role="${esc(key)}" aria-label="${esc(t('收起内部结构'))} · ${esc(body().presentation.residents[key].title)}">${esc(t('收起内部结构'))}</button>`).join('');
@@ -551,6 +559,25 @@
     }
 
     const point = position => ({ x: Math.round(position.x * 100) / 100, y: Math.round(position.y * 100) / 100 });
+    function arrangedPositions(){
+      const result=window.PortalHatgGraph.computeBranchAwareLayout(current.nodes,current.edges,{horizontalGap:24,verticalGap:22,nodeWidth:17,nodeHeight:14,feedbackEdgeTypes:['watch','target'],componentGap:24});
+      const chain=body().presentation?.main_chain?.filter(key=>current.nodes.some(node=>node.id===key));
+      if(chain?.length){chain.forEach((key,index)=>result.set(key,{x:12+index*24,y:50}));
+        const others=current.nodes.filter(node=>!chain.includes(node.id));others.forEach((node,index)=>result.set(node.id,{x:36+index*25,y:82}));}
+      return result;
+    }
+    function moveEnd(moved){
+      if(readOnly){const nodes=Array.isArray(moved)?moved:[moved];viewState.positions={...viewState.positions,...Object.fromEntries(nodes.filter(Boolean).map(node=>[node.id,point(node)]))};render();}
+      else change(keepPlaces);
+    }
+    function arrange(){
+      const positions=Object.fromEntries(arrangedPositions());
+      if(readOnly){viewState.positions={};render();}
+      else change(source=>{source.layout={...source.layout,...positions};});
+      fit();
+    }
+    const fitOptions={duration:0,maxScale:workshop?1:1.1,...(workshop?{minScale:.6,padding:40}:{})};
+    function fit(){controller.fit(fitOptions);}
 
     // Once anything is placed by hand, every node keeps the place it is drawn at.
     function keepPlaces(source) {
@@ -659,11 +686,11 @@
       worldHeight: 900,
       scaleExtent: [0.2, 2],
       zoomValue: root.querySelector('[data-graph-zoom]'),
-      zoomInButton: root.querySelector('[data-graph-zoom-in]'),
-      zoomOutButton: root.querySelector('[data-graph-zoom-out]'),
+      zoomInButton: null,
+      zoomOutButton: null,
       resetButton: root.querySelector('[data-graph-reset]'),
       fitButton: root.querySelector('[data-graph-fit]'),
-      fitOptions: {duration:0,maxScale:workshop ? 1 : 1.1},
+      fitOptions,
       nodeContent,
       nodeOpenMenu:node=>node._template_menu ? {label:t('打开模板 Resident 菜单')} : null,
       onNodeOpenMenu:node=>onOpenResident(node.id),
@@ -677,15 +704,19 @@
       onNodeDoubleClick: node => {select(node.id);if(node._template_menu)onOpenResident(node.id);},
       onEdgeClick: edge => select(edge.id),
       onBackgroundClick: () => { if (selected) select(''); },
-      onNodeMoveEnd: () => { change(keepPlaces); },
-      onNodesMoveEnd: () => { change(keepPlaces); },
+      onNodeMoveEnd: moveEnd,
+      onNodesMoveEnd: moveEnd,
     });
 
     const abort = new AbortController();
     roleControls.addEventListener('click',event=>{const key=event.target.closest('[data-collapse-role]')?.dataset.collapseRole;if(key){event.stopPropagation();onToggleRole(key);canvas.querySelector(`[data-node-id="${CSS.escape(key)}"]`)?.focus({preventScroll:true});}},{signal:abort.signal});
-    const roleCamera=new MutationObserver(positionRoleControls);roleCamera.observe(canvas.querySelector('.hatgWorld'),{attributes:true,attributeFilter:['style']});
+    const roleCamera=new MutationObserver(()=>{positionRoleControls();if(readOnly)viewState.camera=controller.getTransform();});roleCamera.observe(canvas.querySelector('.hatgWorld'),{attributes:true,attributeFilter:['style']});
     const summaryResize=new ResizeObserver(()=>{positionRoleControls();root.querySelectorAll('.templateDutySummary').forEach(panel=>{panel.hidden=true;});});summaryResize.observe(root);
     root.addEventListener('click', event => {
+      if(event.target.closest('[data-graph-arrange]')){arrange();return;}
+      const zoom=event.target.closest('[data-graph-zoom-in],[data-graph-zoom-out]');
+      if(zoom){const old=controller.getTransform(),k=Math.max(.2,Math.min(2,old.k*(zoom.hasAttribute('data-graph-zoom-in')?1.25:.8))),ratio=k/old.k;
+        controller.setTransform({x:canvas.clientWidth/2-(canvas.clientWidth/2-old.x)*ratio,y:canvas.clientHeight/2-(canvas.clientHeight/2-old.y)*ratio,k},{duration:0});return;}
       const chip = event.target.closest('[data-add-role], [data-add-component], [data-add-found]');
       if (!chip) return;
       if (chip.dataset.addRole) addRole(chip.dataset.addRole);
@@ -707,13 +738,13 @@
     }, { signal: abort.signal });
 
     render();
-    controller.fit({ duration: 0, maxScale: workshop ? 1 : 1.1 });
+    if(readOnly&&viewState.camera)controller.setTransform(viewState.camera,{duration:0});else fit();
     return Object.freeze({
       render, select, addComponent, insertionPosition:center,
       position: event => controller.screenToPosition(event.clientX, event.clientY),
       placementView: () => ({root:canvas,controller}),
       selected: () => selected,
-      fit: () => controller.fit({ duration: 0, maxScale: workshop ? 1 : 1.1 }),
+      fit, arrange,
       remove: key => { if (!isReadonly(key)) change(source => { removeElement(source, key); return ''; }); },
       destroy() { roleCamera.disconnect();summaryResize.disconnect();summaryBindings.forEach(binding=>binding.destroy());clearTimeout(hintTimer); abort.abort(); controller.destroy(); root.replaceChildren(); },
     });

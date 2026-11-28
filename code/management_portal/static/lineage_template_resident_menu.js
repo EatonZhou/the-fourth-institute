@@ -15,7 +15,7 @@
     root.append(overlay);
     const dialog=window.PortalUI.createDialogController({modal:overlay,escapeClose:true,backdropClose:true});
     let selected='',tab='duties';
-    const metadata=()=>projection().body.presentation?.residents?.[selected];
+    const metadata=()=>selected==='@organization' ? projection().body.presentation?.organization : projection().body.presentation?.residents?.[selected];
     const editable=()=>!!metadata()?.editable && draft.kind==='role';
     const duties=()=>editable() ? draft.body.duties.map(row=>({...row,...metadata().duties.find(item=>item.key===row.key),...row})) : metadata()?.duties || [];
     const memories=()=>editable() ? draft.body.memories : metadata()?.memories || [];
@@ -23,6 +23,13 @@
     function render() {
       try{readDraft();}catch(error){if(!editorState.invalidTemplateMenu)throw error;}
       const meta=metadata();if(!meta){dialog.close();return;}
+      const organization=selected==='@organization';
+      overlay.classList.toggle('is-organization',organization);
+      overlay.classList.toggle('is-compact-menu',!organization && duties().length<=2);
+      overlay.querySelector('[data-template-menu-tab="duties"]').textContent=t(organization?'组织职责':'职责');
+      overlay.querySelector('[data-template-menu-tab="settings"]').textContent=t(organization?'角色':'配置');
+      overlay.querySelector('[data-template-menu-tab="bindings"]').textContent=t(organization?'共享接口':'绑定');
+      overlay.querySelector('[data-template-menu-tab="memory"]').hidden=organization;
       overlay.querySelector('[data-template-menu-title]').textContent=meta.title;
       overlay.querySelector('[data-template-menu-provenance]').textContent=`${t('模板草稿')} · ${meta.source?.template_id || draft.template_id || t('未保存')}${meta.source?.version ? ` · v${meta.source.version}` : ''}`;
       overlay.querySelectorAll('[data-template-menu-tab]').forEach(button=>button.setAttribute('aria-selected',String(button.dataset.templateMenuTab===tab)));
@@ -30,17 +37,19 @@
       const expansionLabel=isExpanded(selected)?'收起内部结构':'展开内部结构';
       const source=meta.source?.template_id;
       const sourceLink=!editable()&&source ? `<button type="button" class="portalButton" data-template-menu-source>${esc(t('编辑角色源模板'))}</button>` : '';
-      if(tab==='duties') rows.innerHTML=sourceLink+`<button type="button" class="portalButton is-compact" data-template-menu-expand aria-expanded="${isExpanded(selected)}">${esc(t(expansionLabel))}</button><ol class="residentMenuDuties">${duties().map(duty=>`<li class="residentMenuDuty"><details><summary><span class="residentMenuDutyText">${esc(duty.title)}</span><span class="residentMenuDutyCategory">${esc(t('职责'))}</span></summary><div class="residentMenuDutyBody">${editable() ? field('名称',duty.title,`data-template-duty="${esc(duty.key)}" data-duty-field="title"`)+field('指南',duty.guide,`data-template-duty="${esc(duty.key)}" data-duty-field="guide"`)+field('触发提示词',duty.prompt,`data-template-duty="${esc(duty.key)}" data-duty-field="prompt"`) : `<pre class="residentMenuDutyPrompt">${esc(duty.memory?.prompt || duty.guide || '')}</pre><pre class="residentMenuDutyPrompt">${esc(duty.prompt || '')}</pre>`}<div class="residentMenuDutyActions"><button type="button" class="portalButton is-compact" data-template-duty-graph="${esc(duty.key)}">${esc(t('查看职责图'))}</button>${duty.control ? `<button type="button" class="portalButton is-compact" data-template-duty-control="${esc(duty.control)}">${esc(t('编辑职责参数'))}</button>` : ''}</div></div></details></li>`).join('')}</ol>`;
+      if(tab==='duties') rows.innerHTML=sourceLink+`${organization?'':`<button type="button" class="portalButton is-compact is-primary" data-template-menu-expand aria-expanded="${isExpanded(selected)}">${esc(t(expansionLabel))}</button>`}<ol class="residentMenuDuties">${duties().map(duty=>`<li class="residentMenuDuty"><details><summary><span class="residentMenuDutyText">${esc(duty.title)}</span><span class="residentMenuDutyCategory">${esc(t(duty.trigger || '事件'))}</span></summary><div class="residentMenuDutyBody">${editable() ? field('名称',duty.title,`data-template-duty="${esc(duty.key)}" data-duty-field="title"`)+field('指南',duty.guide,`data-template-duty="${esc(duty.key)}" data-duty-field="guide"`)+field('触发提示词',duty.prompt,`data-template-duty="${esc(duty.key)}" data-duty-field="prompt"`) : `<pre class="residentMenuDutyPrompt">${esc(duty.memory?.prompt || duty.guide || '')}</pre><pre class="residentMenuDutyPrompt">${esc(duty.prompt || '')}</pre>`}<div class="residentMenuDutyActions"><button type="button" class="portalButton is-compact" data-template-duty-graph="${esc(duty.key)}">${esc(t('查看职责图'))}</button>${duty.control ? `<button type="button" class="portalButton is-compact" data-template-duty-control="${esc(duty.control)}">${esc(t('编辑职责参数'))}</button>` : ''}</div></div></details></li>`).join('')}</ol>`;
       else if(tab==='memory') {
         const levels={trigger:[],turn:[],session:[],on_demand:[]};
         memories().forEach((memory,index)=>levels[memory.level]?.push({...memory,index,content:memory.prompt,source:t('角色记忆')}));
         duties().forEach(duty=>{if(duty.memory)levels[duty.memory.level]?.push({title:duty.title,content:editable()?duty.guide:duty.memory.prompt,source:t('职责指南')});if(duty.prompt)levels.trigger.push({title:duty.title,content:duty.prompt,source:t('职责触发提示词')});});
         rows.innerHTML=sourceLink+window.PortalResidentMenuMemory.levelsHtml(levels,item=>`<li class="residentMenuMemoryItem"><details><summary><span class="residentMenuDutyText">${esc(item.title || item.key)}</span><span class="residentMenuDutyCategory">${esc(item.source)}</span></summary><div class="residentMenuDutyBody">${editable()&&item.index!==undefined ? `<label class="templateField"><span>${esc(t('记忆层级'))}</span><select data-template-memory="${item.index}" data-memory-field="level">${['turn','session','on_demand'].map(level=>`<option ${level===item.level?'selected':''}>${level}</option>`).join('')}</select></label>`+field('内容',item.content,`data-template-memory="${item.index}" data-memory-field="prompt"`) : `<pre class="residentMenuDutyPrompt">${esc(item.content)}</pre>`}</div></details></li>`,{template:true});
-      } else if(tab==='settings') rows.innerHTML=sourceLink+(editable()?field('节点配置 JSON',editorState.invalidTemplateMenu?.resident===selected?editorState.invalidTemplateMenu.text:JSON.stringify(draft.body.resident,null,2),'data-template-resident-config'):`<pre>${esc(JSON.stringify(meta.settings || {},null,2))}</pre>${meta.structure ? `<button type="button" class="portalButton" data-template-resident-inspect>${esc(t('编辑节点配置'))}</button>` : ''}`) + `<p class="paneNote">${esc(t('这里只配置模板；施加后产生的会话和运行状态不属于模板草稿。'))}</p>`;
+      } else if(tab==='settings'&&organization) rows.innerHTML=(meta.roles||[]).map(role=>`<button type="button" class="portalButton" data-organization-role="${esc(role.key)}">${esc(role.title)}</button>`).join('');
+      else if(tab==='settings') rows.innerHTML=sourceLink+(editable()?field('节点配置 JSON',editorState.invalidTemplateMenu?.resident===selected?editorState.invalidTemplateMenu.text:JSON.stringify(draft.body.resident,null,2),'data-template-resident-config'):`<pre>${esc(JSON.stringify(meta.settings || {},null,2))}</pre>${meta.structure ? `<button type="button" class="portalButton" data-template-resident-inspect>${esc(t('编辑节点配置'))}</button>` : ''}`) + `<p class="paneNote">${esc(t('这里只配置模板；施加后产生的会话和运行状态不属于模板草稿。'))}</p>`;
       else rows.innerHTML=Object.values(window.LineageTemplateGraph.bindings(projection().body)).map(binding=>`<section class="residentMenuDuty"><strong>${esc(binding.key)}</strong><p>${esc(binding.type)} · ${esc(binding.direction)} · ${esc(binding.cardinality)} · ${esc(t(binding.required?'必需':'可选'))}</p></section>`).join('');
     }
     overlay.addEventListener('click',event=>{
       if(event.target.closest('[data-menu-close]')){dialog.close();return;}
+      const role=event.target.closest('[data-organization-role]');if(role){selected=role.dataset.organizationRole;tab='duties';render();return;}
       const button=event.target.closest('[data-template-menu-tab]');if(button){tab=button.dataset.templateMenuTab;render();return;}
       if(event.target.closest('[data-template-menu-source]')){dialog.close();void onSource?.(metadata().source.template_id);return;}
       if(event.target.closest('[data-template-menu-expand]')){dialog.close();onExpand(selected);return;}

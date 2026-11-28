@@ -7,8 +7,12 @@
     {key: 'organizations', label: '组织', kinds: ['familize']},
     {key: 'errands', label: '交办', kinds: ['prompt', 'explore', 'script']},
   ]);
-  const groupFor = kind => GROUPS.find(group => group.kinds.includes(kind))?.key || 'errands';
-  const storeGroupFor = kind => ({duties:'duty',roles:'role',organizations:'organization',errands:'task'})[groupFor(kind)];
+  const groupFor = item => {
+    const kind=typeof item==='string'?item:item.kind;
+    if(kind==='structure' && typeof item==='object' && item.body?.roles?.some(r=>['new','fork'].includes(r.from)))return 'organizations';
+    return GROUPS.find(group => group.kinds.includes(kind))?.key || 'errands';
+  };
+  const storeGroupFor = item => ({duties:'duty',roles:'role',organizations:'organization',errands:'task'})[groupFor(item)];
   const GLYPHS = Object.freeze({
     prompt: '<path d="M24 20h52v32H48L32 66V52h-8z"/>',
     familize: '<circle cx="50" cy="26" r="9"/><circle cx="28" cy="60" r="9"/><circle cx="72" cy="60" r="9"/><path d="M50 35v10H28v6m22-6h22v6"/>',
@@ -22,6 +26,11 @@
   ]);
   const OPTIONAL = Object.freeze(['canvas', 'getContext', 'request', 'resolveTarget', 'shelf', 'toast']);
   function thumbnail(item) {
+    if(item.kind==='role' || item.kind==='family_duty' || item.kind==='explore'){
+      const icons={router:'branch',steward:'shield-check',family_duty:'history',idea:'star',plan:'list'};
+      const icon=icons[item.body?.role_key || item.body?.seed_type || item.kind] || 'component';
+      return `<span class="templateThumbnail templateModuleGlyph" aria-hidden="true">${window.PortalUIPrimitives.iconHtml(icon)}</span>`;
+    }
     return item.kind === 'structure' ? window.LineageTemplateGraph.thumbnail(item.body || {})
       : `<svg class="templateThumbnail templateModuleGlyph" viewBox="0 0 100 84" aria-hidden="true">${GLYPHS[item.kind] || GLYPHS.script}</svg>`;
   }
@@ -90,12 +99,12 @@
       const visible = visibleTemplates(templatesState.templates, user);
       shelf.classList.toggle('templateShelfIcons', !!config.iconOnly);
       shelf.innerHTML = GROUPS.map(group => {
-        const rows = visible.filter(item => (item.toolbox_group || groupFor(item.kind)) === group.key);
+        const rows = visible.filter(item => (item.toolbox_group || groupFor(item)) === group.key);
         const cards = rows.map(item => `<div class="templateTileWrap"><button type="button" class="templateTile" draggable="true"
           data-template-id="${esc(item.template_id)}" aria-label="${esc(t(item.title))}"
+          data-portal-tooltip-placement="right"
           aria-current="${item.template_id === config.selectedTemplate?.()}"
-          data-portal-tooltip="${esc([t(item.title),t(item.description)].filter(Boolean).join('\n'))}"
-          title="${esc([t(item.title), t(item.description), t(config.onSelectTemplate ? '单击打开；拖入画布组合' : '单击拿起，双击在工坊中打开；按 Escape 或右键取消')].filter(Boolean).join('\n'))}">
+          data-portal-tooltip="${esc([t(item.title),t(item.description)].filter(Boolean).join(' — '))}">
           ${thumbnail(item)}<span class="templateTileTitle">${esc(t(item.title))}</span></button>${item.store_status?.has_update ? `<button type="button" class="templateUpdateBadge portalButton is-compact" data-store-update="${esc(item.template_id)}" aria-label="${esc(t('有更新'))}">${esc(config.iconOnly ? '↑' : t('有更新'))}</button>` : ''}</div>`).join('');
         return `<section class="templateToolboxGroup" data-toolbox-group="${group.key}"><h4>${config.collapsible ? `<button type="button" class="portalButton is-quiet is-compact" data-toolbox-collapse="${group.key}" aria-expanded="${!collapsed.has(group.key)}"><span data-portal-icon="chevron-${collapsed.has(group.key) ? 'right' : 'down'}" aria-hidden="true"></span>${esc(t(group.label))}</button>` : esc(t(group.label))}</h4>${
           rows.length ? `<div class="templateToolboxCards" ${collapsed.has(group.key) ? 'hidden' : ''}>${cards}</div>`

@@ -121,10 +121,15 @@ TASKS = {
         "用 CheckRelayTarget 核对拟转交对象的接单状态和额度，再用 RelayMessage(reason=理由) 继续原请求。"
         "Router 和 Steward 自身的可用性由运行时保障；无可用后端时通知实际创建人。",
         "评估额度受限成员，安排原请求继续执行。"),
-    "organization": ("recheck_recovery", "steward", "初始化、名册变更或背景更新",
-        "根据变化按需读取当前 Family、成员职责和原消息。仅处理与分工、运行、恢复有关的工作；"
-        "按相关性定向通知，不广播全部材料。初始化时检查分工，随后保持可用等待事件。",
-        "处理当前组织变化或背景更新。"),
+    "organization": ("recheck_recovery", "steward", "Family 初始化或名册变化",
+        "Family 初始化或名册变化时，按需读取当前 Family 和成员职责，核对分工完整且不重叠。"
+        "需要调整时先交接仍有效的任务，完成有依据的组织调整；不另造原业务请求。",
+        "核对当前组织变化，完成必要的分工交接或调整。"),
+    "info_forward": ("recheck_recovery", "steward", "门面收到告知",
+        "读取门面转来的告知，按需核对当前成员职责，判断哪些成员需要这条信息。"
+        "只向相关成员定向转告，保留消息来源和上下文；无人需要时不投递。"
+        "不广播全部材料，不将告知另造为业务请求，不回复原发送者。",
+        "判断本条告知与哪些成员有关，只向这些成员定向转告。"),
 }
 
 
@@ -242,6 +247,12 @@ def saved_fields(trigger: str, saved: dict) -> dict:
                 "progress": {"guide": _VERSIONED_PROGRESS_GUIDE}}.get(trigger, {})
     for field, value in list(fields.items()):
         if not isinstance(value, str):
+            continue
+        if trigger == 'organization' and hashlib.sha256(value.encode()).hexdigest() == {
+            'guide':'eb8fabb11d9d3c87e4114911968f059ac2906e597f69919873a05ea43ba91505',
+            'prompt':'d17b92a0b57c594da731bb77d5d63070ddeed369a23f90895185cdc8c84d0d9d',
+        }.get(field):
+            fields.pop(field)
             continue
         if hashlib.sha256(value.encode()).hexdigest() in _SHIPPED_BINDING_DIGESTS.get((trigger, field), ()):
             fields.pop(field)

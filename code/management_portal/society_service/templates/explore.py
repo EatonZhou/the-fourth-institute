@@ -254,7 +254,7 @@ class ExploreKind:
                     "label": "探索任务",
                     "multiline": True,
                 },
-                {"name": "count", "type": "text", "label": "候选数量或参数引用"},
+                {"name": "count", "type": "text", "label": "候选数量或参数引用", "multiline": False},
                 {
                     "name": "seed_type",
                     "type": "enum",
