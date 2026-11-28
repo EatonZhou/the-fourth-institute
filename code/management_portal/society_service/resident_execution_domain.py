@@ -1840,6 +1840,7 @@ def _build_resident_execution_request_unrestricted(
             "lineage_id": lineage_id,
             "filesystem_scope": copy.deepcopy(job.get("filesystem_scope") or {}),
             "fork_context_input": copy.deepcopy(job.get("fork_context_input") or {}),
+            **({"codex_history_reset": job["codex_history_reset"]} if not fresh_context and job.get("codex_history_reset") else {}),
             **({"antigravity_session_reset": session_reset} if session_reset else {}),
             "execution_id": str(job.get("execution_id") or ""),
             "project_id": str(record.get("project_id") or ""),
@@ -2092,10 +2093,23 @@ def _portable_context_execution(
     if resident_backend.execution_backend(record) == "provider_api":
         # Stateless requests attach their full snapshot in the API request builder.
         return prompt_job
-    snapshot = execution_port.delivery_context_snapshot(
-        resident_id, message_id=str(job.get("user_message_id") or ""),
-        binding_id=resident_backend.execution_binding_id(record),
-    )
+    from management_portal.execution.agent_data_contexts import SessionHistoryGap
+    message_id = str(job.get("user_message_id") or "")
+    prompt_job.pop("codex_history_reset", None)
+    try:
+        snapshot = execution_port.delivery_context_snapshot(
+            resident_id, message_id=message_id, binding_id=resident_backend.execution_binding_id(record),
+        )
+    except SessionHistoryGap as gap:
+        if gap.provider != "codex" or resident_backend.execution_backend(record) != "codex":
+            raise
+        from management_portal.execution.codex_history import response_items_from_segments
+        snapshot = gap.snapshot
+        try:
+            response_items_from_segments(snapshot["segments"])
+        except ValueError as error:
+            raise ValueError(f"Cannot rebuild Codex session with exact history: {error}") from error
+        prompt_job["codex_history_reset"] = gap.expected
     if snapshot["segments"]:
         prompt_job["fork_context_input"] = {
             "schema": "tfi.provider-context-seed.v1",

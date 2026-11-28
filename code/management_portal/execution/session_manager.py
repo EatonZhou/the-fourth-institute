@@ -252,11 +252,11 @@ class SessionManager:
                     destination.get("backend_route_id") or ""
                 ) or backend_route_id
                 session_context = destination
-        reset = request.metadata.get("antigravity_session_reset")
-        if request.provider == "antigravity" and reset:
+        reset = _replacement(request)
+        if reset:
             if (request.operation != "turn" or not backend_session_id or not isinstance(reset, dict)
                     or reset.get("session_id") != backend_session_id or reset.get("route") != backend_route_id):
-                raise ValueError("Antigravity session binding changed before reset")
+                raise ValueError("Provider session binding changed before reset")
             # Trace capture, context injection, tools and ACP must all start on the same fresh session.
             return RuntimeSession(options.mode, options.binding_id, "", True, backend_route_id)
         if options.context_source_binding_id and not destination_exists:
@@ -369,7 +369,7 @@ class SessionManager:
                 *tuple(harness_tool_names or ()),
             )),
         )
-        reset = request.metadata.get("antigravity_session_reset") if request.provider == "antigravity" else None
+        reset = _replacement(request)
         if not reset:
             self.bind_session(session.binding_id, **binding_fields)
             return
@@ -379,10 +379,20 @@ class SessionManager:
             if (current.get("backend_session_id") == backend_session_id and current.get("backend_route_id") == route_id
                     and current.get("provider") == request.provider):
                 return
-            if current.get("backend_session_id") != reset["session_id"] or current.get("backend_route_id") != reset["route"]:
-                raise RuntimeError("Antigravity session binding changed before replacement")
+            if (current.get("provider") != request.provider
+                    or current.get("backend_session_id") != reset["session_id"]
+                    or current.get("backend_route_id") != reset["route"]):
+                raise RuntimeError("Provider session binding changed before replacement")
             prepared = f"replacement:{request.execution_id}"
             self.bind_session(prepared, **binding_fields)
             self.replace_session(session.binding_id, prepared, expected_binding=current)
 
         self.agent_data.database.write(install_replacement)
+
+
+def _replacement(request):
+    if request.provider == "antigravity":
+        return request.metadata.get("antigravity_session_reset")
+    if request.provider == "codex" and (request.metadata.get("fork_context_input") or {}).get("segments"):
+        return request.metadata.get("codex_history_reset")
+    return None

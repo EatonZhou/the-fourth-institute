@@ -260,13 +260,28 @@ def read_agent_context(
         if len(starts) > recent_turns or (require_round_count and starts):
             rows = rows[starts[-recent_turns]:]
     if binding_id and rows:
-        rows = _undelivered_rows(connection, sequence_id, agent_id, binding_id, rows)
+        try:
+            rows = _undelivered_rows(connection, sequence_id, agent_id, binding_id, rows)
+        except SessionHistoryGap as gap:
+            if gap.provider == "codex":
+                gap.snapshot = _snapshot(connection, rows)
+            raise
     return _snapshot(connection, rows)
+
+
+class SessionHistoryGap(ValueError):
+    """Appending would put a missing segment after a later one."""
+
+    def __init__(self, binding):
+        super().__init__("Session context cannot append missing history before received segments")
+        self.provider = binding["provider"]
+        self.expected = {"session_id": binding["backend_session_id"], "route": binding["backend_route_id"]}
 
 
 def _undelivered_rows(connection, sequence_id, agent_id, binding_id, rows):
     binding = connection.execute(
-        "SELECT provider_session_ref FROM provider_bindings WHERE binding_id=%s", (binding_id,),
+        "SELECT s.provider_session_ref, s.provider, s.backend_session_id, s.backend_route_id "
+        "FROM provider_bindings b JOIN provider_sessions s USING(provider_session_ref) WHERE b.binding_id=%s", (binding_id,),
     ).fetchone()
     if binding is None:
         return rows
@@ -321,7 +336,7 @@ def _undelivered_rows(connection, sequence_id, agent_id, binding_id, rows):
     for row in rows:
         if row["segment_id"] in held:
             if pending:
-                raise ValueError("Session context cannot append missing history before received segments")
+                raise SessionHistoryGap(binding)
         else:
             pending.append(row)
     return pending
