@@ -78,7 +78,7 @@ def prepare_context_preservation(agent_id: str, **kwargs: Any) -> dict[str, Any]
     """In-process Execution owner port, like the other AgentData operations.
 
     The Resident domain has authorized and drained the source. Execution owns
-    native discovery, validation, immutable materialization and retry receipts.
+    validation of the ordered database window and its retry receipt.
     """
     from management_portal.execution.context_preservation import prepare_context_preservation
     return prepare_context_preservation(agent_id, **kwargs)

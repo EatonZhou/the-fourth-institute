@@ -484,9 +484,9 @@ def test_session_initialization_preserves_user_words_contracts(subtests, isolate
     """会话初始化保留用户原话且重启指令参数明确"""
     with subtests.test(contract='test_session_initialization_preserves_user_words'), isolated_portal_case() as case_path:
         content = '请解释 The user interrupted the previous turn on purpose. 的来源。'
-        from management_portal.society_service.resident_fork_context import seed_messages
-        messages = seed_messages({'segments': [{'segment_id': 'user-input', 'segment_type': 'input', 'content': content}]})
-        assert messages[0]['content_parts'][0]['text'] == content
+        from management_portal.execution.codex_history import response_items_from_segments
+        messages = response_items_from_segments([{'segment_id': 'user-input', 'segment_type': 'input', 'content': content}])
+        assert messages[0]['content'][0]['text'] == content
     with subtests.test(contract='test_restart_is_one_named_instruction'), isolated_portal_case() as case_path:
         restart = catalog.declaration('RestartSession')
         parameters = {parameter.name: parameter for parameter in restart.parameters}

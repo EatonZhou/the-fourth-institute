@@ -14,8 +14,6 @@
     element.className = 'portalModelApiSettings';
     element.hidden = true;
     element.innerHTML = html`<fieldset><legend>上下文</legend>
-      <label class="portalApiHistory"><input type="checkbox" data-api-history />携带会话历史</label>
-      <label class="portalRuntimeSettingsField"><span>历史预算（估算 token）</span><input data-api-budget type="number" min="256" max="200000" step="1" /></label>
       <p class="portalRuntimeSettingsHint">只携带预算内最近的完整问答，较早轮次会省略。使用保守估算，不等同于账单 token 数。关闭后仍发送固定指令及当前输入；独立调用始终隔离。</p>
       <details><summary>固定上下文</summary>
         <label class="portalRuntimeSettingsField"><span>系统提示词</span><textarea data-api-system rows="3"></textarea></label>
@@ -69,7 +67,6 @@
       sync(); find('[data-jev-questions]').append(row);
     }
     find('[data-jev-add]').addEventListener('click', () => addQuestion());
-    find('[data-api-history]').addEventListener('change', () => { find('[data-api-budget]').disabled = !find('[data-api-history]').checked; });
     function syncModel(model) {
       if (element.hidden) return;
       // Retain edits while switching models; compatibility is checked on save.
@@ -104,8 +101,6 @@
     }
     function read() {
       if (element.hidden) return {};
-      const history = {enabled: find('[data-api-history]').checked, max_tokens: Number(find('[data-api-budget]').value)};
-      if (!Number.isInteger(history.max_tokens) || history.max_tokens < 256 || history.max_tokens > 200000) throw new Error('历史预算必须是 256–200000 的整数。');
       let presets;
       try { presets = JSON.parse(find('[data-api-presets]').value || '[]'); } catch { throw new Error('预设消息：请输入有效 JSON 数组。'); }
       if (!Array.isArray(presets)) throw new Error('预设消息必须是 JSON 数组。');
@@ -141,7 +136,7 @@
         }
       }
       return {
-        prompt_context: {...(settings.prompt_context || {}), history, system_prompt: find('[data-api-system]').value, messages: presets},
+        prompt_context: {...(settings.prompt_context || {}), system_prompt: find('[data-api-system]').value, messages: presets},
         backend_options: {parameters, timeout_seconds: Number(find('[data-api-timeout]').value), max_retries: Number(find('[data-api-retries]').value)},
       };
     }
@@ -151,10 +146,6 @@
       element.querySelectorAll('input, select, textarea').forEach(input => { input.disabled = element.hidden; });
       controls = [];
       if (element.hidden) return;
-      const policy = settings.prompt_context?.history || {};
-      find('[data-api-history]').checked = !!policy.enabled;
-      find('[data-api-budget]').value = policy.max_tokens ?? catalog.api_settings.history_max_tokens;
-      find('[data-api-budget]').disabled = !policy.enabled;
       find('[data-api-system]').value = settings.prompt_context?.system_prompt || '';
       find('[data-api-presets]').value = JSON.stringify(settings.prompt_context?.messages || [], null, 2);
       find('[data-api-timeout]').max = catalog.api_settings.timeout_max;
