@@ -72,7 +72,8 @@
 .templateWorkshop .edgeLabelBtn { min-width:86px; width:max-content; max-width:240px; white-space:normal; overflow:visible; text-overflow:clip; font-size:11px; line-height:1.4; }
 .templateResidentOverlay .nodeSettingsSurface { display:flex; flex-direction:column; width:min(720px,calc(100% - 24px)); min-height:0; height:auto; max-height:calc(100% - 24px); }
 .templateResidentOverlay .nodeSettingsSurface::before { display:none; }
-.templateResidentOverlay .residentMenuHeader { display:flex; flex-direction:row; align-items:flex-start; justify-content:space-between; padding:12px; }
+.templateResidentOverlay .residentMenuHeader { display:flex; flex-direction:row; flex-wrap:nowrap; align-items:flex-start; justify-content:space-between; padding:12px; }
+.templateResidentOverlay .residentMenuHeading { flex:1; min-width:0; }
 .templateResidentOverlay .residentMenuHeader > button { flex:none; margin-left:auto; }
 .templateResidentOverlay .nodeSettingsBody { min-height:0; padding:12px; }
 .templateResidentOverlay.is-compact-menu .nodeSettingsSurface { width:min(580px,calc(100% - 24px)); }
@@ -88,6 +89,7 @@
 .templateWorkshop .templateStructureList { padding-inline-end:64px; }
 .templateWorkshop .templateGraphWorkspace > .templateGraphInspector { max-width:calc(100% - 80px); max-height:calc(100% - 80px); }
 .templateRecipeGraph .templateGraphInspector { right:64px; top:64px; }
+.templateGraph .hatgCanvas[data-lod="compact"] .edgeLabelBtn { display:block; }
 .workshopAssistantDock { position:absolute; width:36px; height:36px; z-index:35; }
 .workshopAssistantDock>[data-workshop-assistant] { position:relative; z-index:2; touch-action:manipulation; border-radius:50%; width:36px; height:36px; background:var(--panel); box-shadow:0 3px 12px #0002; color:var(--accent); }
 .workshopChatColumn { position:absolute; z-index:1; min-width:0; min-height:0; border:1px solid var(--border); border-radius:var(--portal-radius-lg,12px); box-shadow:0 8px 30px #0003; background:var(--panel); display:flex; flex-direction:column; overflow:hidden; }
