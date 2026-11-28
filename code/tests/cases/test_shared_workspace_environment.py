@@ -58,6 +58,13 @@ def test_shared_server_shell_sources_its_residents_current_workspace_variables(t
     assert _variables(_shell("env", cwd=tmp_path, env_dir=env_dir)) == {}
     assert (env_dir.stat().st_mode & 0o777) == 0o700
     assert ((env_dir / f"{RESIDENT}.sh").stat().st_mode & 0o777) == 0o600
+    # A deleted Resident's file ages out on a later write.
+    stale = env_dir / "resident_ba9876543210.sh"
+    stale.write_text("export PORTAL_RESIDENT_WORKSPACE=/gone\n")
+    old = stale.stat().st_mtime - shell.STALE_FILE_SECONDS - 60
+    os.utime(stale, (old, old))
+    shell.write_shared_workspace_environment(_identity(tmp_path))
+    assert not stale.exists() and (env_dir / f"{RESIDENT}.sh").exists()
 
 
 def test_hook_runs_in_a_top_level_shell_with_socket_stdio_like_kimis(tmp_path, env_dir, monkeypatch):

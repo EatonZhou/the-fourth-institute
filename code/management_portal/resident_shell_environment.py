@@ -105,7 +105,7 @@ def resident_identity_only(environment: Mapping[str, str]) -> dict[str, str]:
 # session or Resident (write_shared_workspace_environment).
 WORKSPACE_ENV_HOOK = Path(__file__).with_name("resident_workspace_env.bash")
 NATIVE_SESSION_KEY = re.compile(r"[A-Za-z0-9-]{1,80}")
-STALE_SESSION_FILE_SECONDS = 30 * 24 * 3600
+STALE_FILE_SECONDS = 30 * 24 * 3600
 
 
 def shared_workspace_environment_dir() -> Path:
@@ -149,13 +149,15 @@ def write_shared_workspace_environment(value: Mapping[str, str] | None, *, sessi
         if not NATIVE_SESSION_KEY.fullmatch(session_id):
             raise ValueError("Invalid native session identity")
         atomic_write_private_bytes(directory / f"session-{session_id}.sh", text.encode())
-        cutoff = time.time() - STALE_SESSION_FILE_SECONDS
-        for path in directory.glob("session-*.sh"):
-            try:
-                if path.stat().st_mtime < cutoff:
-                    path.unlink()
-            except FileNotFoundError:
-                pass
+    # Files of deleted Residents and ended sessions age out; a live Resident's
+    # file is rewritten before each of its turns.
+    cutoff = time.time() - STALE_FILE_SECONDS
+    for path in directory.glob("*.sh"):
+        try:
+            if path.stat().st_mtime < cutoff:
+                path.unlink()
+        except FileNotFoundError:
+            pass
 
 
 def resident_identity_fingerprint(value: Mapping[str, Any] | None) -> dict[str, str]:
