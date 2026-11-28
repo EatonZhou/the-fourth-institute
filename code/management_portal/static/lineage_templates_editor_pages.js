@@ -122,7 +122,8 @@
         button.setAttribute('aria-expanded',String(all));button.setAttribute('aria-pressed',all?'true':some?'mixed':'false');
         button.textContent=t(all?'收起全部内部结构':'全部内部结构');
       }
-      function toggleRole(key){if(expanded.has(key))expanded.delete(key);else expanded.add(key);syncExpansion();editorState.graph.render();editorState.graph.fit();}
+      function leaveLocalGraph(){localScope=null;bodyPage.querySelector('[data-recipe-back]').hidden=true;bodyPage.querySelector('[data-recipe-breadcrumb]').textContent='';}
+      function toggleRole(key){leaveLocalGraph();if(expanded.has(key))expanded.delete(key);else expanded.add(key);syncExpansion();editorState.graph.render();editorState.graph.fit();}
       editorState.graph = window.LineageTemplateGraph.mount({root:bodyPage.querySelector('[data-template-graph]'), body:() => projection.body,
         workshop:true, readOnly:true, expanded:()=>[...expanded],scope:()=>localScope, onSelect:inspect,onOpenResident:openMenu,
         onToggleRole:toggleRole,
@@ -132,7 +133,7 @@
         onLocalGraph:(key,duty)=>{localScope=[key,...(duty?.members || [])];inspector.hidden=true;inspector.innerHTML='';bodyPage.querySelector('[data-recipe-back]').hidden=false;bodyPage.querySelector('[data-recipe-breadcrumb]').textContent=`${projection.body.presentation.residents[key].title} / ${duty?.title || ''}`;editorState.graph.render();editorState.graph.fit();}});
       editorState.recipeMenu=menu;
       bodyPage.querySelector('[data-recipe-back]').addEventListener('click',()=>{localScope=null;bodyPage.querySelector('[data-recipe-back]').hidden=true;bodyPage.querySelector('[data-recipe-breadcrumb]').textContent='';editorState.graph.render();editorState.graph.fit();});
-      bodyPage.querySelector('[data-recipe-expand]').addEventListener('click',()=>{const keys=expandable(),all=keys.length>0&&keys.every(key=>expanded.has(key));expanded.clear();if(!all)keys.forEach(key=>expanded.add(key));syncExpansion();editorState.graph.render();editorState.graph.fit();});
+      bodyPage.querySelector('[data-recipe-expand]').addEventListener('click',()=>{leaveLocalGraph();const keys=expandable(),all=keys.length>0&&keys.every(key=>expanded.has(key));expanded.clear();if(!all)keys.forEach(key=>expanded.add(key));syncExpansion();editorState.graph.render();editorState.graph.fit();});
       select.addEventListener('change', () => {
         const key=select.value,owner=projection.body.presentation?.owners?.[key];
         if(owner)expanded.add(owner);
