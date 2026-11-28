@@ -93,6 +93,7 @@ def test_api_request_uses_unified_model_and_appends_current_input(monkeypatch):
     monkeypatch.setattr(execution.resident_input_scope, 'get', lambda *a: {})
     monkeypatch.setattr(execution, '_lineage_delivery_profile', lambda job: {})
     monkeypatch.setattr(execution, 'resident_system_instructions', lambda *a: SystemInstructions())
+    monkeypatch.setattr(execution.execution_port, 'delivery_context_snapshot', lambda *a, **kw: {'segments': []})
     request = execution._build_resident_execution_request(
         {'resident_id': 'resident_aaaaaaaaaaaa', 'lineage_id': 'lineage_bbbbbbbbbbbb', 'backend': 'provider_api', 'backend_route_id': 'api-a'},
         {'actor': 'alice', 'job_id': 'job-a', 'raw_message': 'new input'})

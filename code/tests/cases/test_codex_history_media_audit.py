@@ -92,14 +92,16 @@ def test_captured_native_media_and_failure_survive_history_replay(failed):
     assert captured["status"] == ("failed" if failed else "completed")
     assert captured["content"]["error"] is None
     original = copy.deepcopy(captured)
+    if failed:
+        with pytest.raises(ValueError, match="unsupported metadata"):
+            response_items_from_segments([captured])
+        assert captured == original
+        return
     output = response_items_from_segments([captured])[1]["output"]
     assert output[:2] == [
         {"type": "input_text", "text": "partial figure"},
         {"type": "input_image", "image_url": "data:image/png;base64,YWJj"},
     ]
-    if failed:
-        assert any(part["type"] == "input_text" and json.loads(part["text"]).get("status") == "failed"
-                   for part in output[2:])
     output[1]["image_url"] = "changed"
     assert captured == original
 
@@ -114,11 +116,8 @@ def test_dynamic_media_retains_result_error_and_sibling_metadata():
     result = {"result": {"contentItems": [{"type": "inputImage", "imageUrl": "https://example.test/a.png"}],
                          "success": False}, "stderr": "partial"}
     original = copy.deepcopy(result)
-    output = _replay(result, error={"code": "partial"})
-    assert output[0] == {"type": "input_image", "image_url": "https://example.test/a.png"}
-    assert [json.loads(part["text"]) for part in output[1:]] == [
-        {"success": False}, {"stderr": "partial"}, {"error": {"code": "partial"}},
-    ]
+    with pytest.raises(ValueError, match="unsupported metadata"):
+        _replay(result, error={"code": "partial"})
     assert result == original
 
 

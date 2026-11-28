@@ -16,7 +16,7 @@ from management_portal.antigravity_input_media import prompt_content
 from .turn_input_pump import TurnInputPump, text_input
 from . import antigravity_cli
 from .backend_contracts import BackendResult
-from .context_seed import realize_portable_seed
+from .context_seed import require_native_history_import
 from .native_harness_tools import prepare_tools
 from .antigravity_history import _read_steps, _latest_checkpoint
 from .provider_turn_usage import TOKEN_USAGE_KEYS, _CAMEL_KEYS, usage_payload
@@ -308,7 +308,7 @@ class AntigravityCliBackend:
             yield client, session_id, model
 
     def prepare_context_seed(self, invocation):
-        return realize_portable_seed(invocation)
+        return require_native_history_import(invocation)
 
     def execute(self, invocation, context):
         request, session = invocation.request, invocation.session

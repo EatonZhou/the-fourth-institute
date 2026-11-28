@@ -49,16 +49,15 @@ def test_compacted_multimodal_history_is_not_converted_to_user_text_contracts(su
         assert segments == original
         items[1]['content'][0]['text'] = 'mutated'
         assert segments == original
-    with subtests.test(contract='test_canonical_readable_reasoning_keeps_summary_and_content_parts'), isolated_portal_case() as case_path:
-        items = response_items_from_segments([{
-            'segment_id': 'reasoning-original', 'segment_type': 'model',
-            'metadata': {'kind': 'reasoning'},
-            'content': {'summary': ['first', {'type': 'summary_text', 'text': 'second'}],
-                        'text': ['reasoning body']},
+    with pytest.raises(ValueError, match="Cannot preserve reasoning"):
+        response_items_from_segments([{
+            'segment_type': 'model', 'metadata': {'kind': 'reasoning'},
+            'content': {'summary': ['first'], 'text': ['body']},
         }])
-        assert items == [{'type': 'message', 'role': 'assistant', 'phase': 'commentary',
-                          'content': [{'type': 'output_text',
-                                       'text': '[Historical reasoning]\nfirst\nsecond\nreasoning body'}]}]
+    assert [item['role'] for item in response_items_from_segments([
+        {'segment_type': 'input', 'metadata': {'role': role}, 'content': role}
+        for role in ('developer', 'system', 'user')
+    ])] == ['developer', 'system', 'user']
     with subtests.test(contract='test_unknown_segment_is_not_silently_dropped_or_stringified'), isolated_portal_case() as case_path:
         with pytest.raises(ValueError, match='unsupported'):
             response_items_from_segments([
@@ -98,7 +97,7 @@ def test_tools_keep_call_identity_arguments_and_multimodal_output(subtests, isol
 
 
 def test_reasoning_replay_never_requires_an_unpersisted_item(subtests, isolated_portal_case):
-    """重放推理时不引用未持久化的条目 ID，非加密推理转为历史推理文本"""
+    """重放推理时不引用未持久化的条目 ID，无法导入的推理显式报错"""
     for compacted in [False, True]:
         for encrypted in [False, True]:
             with subtests.test(compacted=compacted, encrypted=encrypted), isolated_portal_case() as case_path:
@@ -111,13 +110,11 @@ def test_reasoning_replay_never_requires_an_unpersisted_item(subtests, isolated_
                 segment = {'segment_id': 'reasoning', 'segment_type': 'model', 'content': item}
                 if compacted:
                     segment.update(segment_type='compaction', content={'replacement_history': [item]})
-                result = response_items_from_segments([segment])
                 if encrypted:
-                    assert result == [original]
+                    assert response_items_from_segments([segment]) == [original]
                 else:
-                    assert result[0]['type'] == 'message'
-                    assert 'id' not in result[0]
-                    assert result[0]['content'][0]['text'] == '[Historical reasoning]\noriginal summary\noriginal body'
+                    with pytest.raises(ValueError, match='Cannot preserve native reasoning'):
+                        response_items_from_segments([segment])
                 assert item == original
 
 
@@ -133,19 +130,14 @@ def test_reference_only_or_malformed_reasoning_fails_before_import(subtests, iso
 
 
 def test_canonical_reasoning_placeholder_only_replays_readable_summary(subtests, isolated_portal_case):
-    """加密推理记录有可读摘要时才作为历史推理重放，否则省略"""
+    """推理占位记录无法导入时报告错误"""
     for summary in [[], ['summary']]:
         with subtests.test(summary=summary), isolated_portal_case() as case_path:
-            result = response_items_from_segments([{
-                'segment_id': 'native-reasoning', 'segment_type': 'model',
-                'metadata': {'kind': 'reasoning'},
-                'content': {'encrypted': True, 'summary': summary},
-            }])
-            if summary:
-                assert result == [{'type': 'message', 'role': 'assistant', 'phase': 'commentary',
-                                   'content': [{'type': 'output_text', 'text': '[Historical reasoning]\nsummary'}]}]
-            else:
-                assert result == []
+            with pytest.raises(ValueError, match='Cannot preserve reasoning'):
+                response_items_from_segments([{
+                    'segment_type': 'model', 'metadata': {'kind': 'reasoning'},
+                    'content': {'encrypted': True, 'summary': summary},
+                }])
 
 
 def test_unrecoverable_compaction_fails_before_any_provider_call(subtests, isolated_portal_case):
@@ -179,8 +171,12 @@ def test_import_ack_survives_new_worker_and_new_execution_contracts(tmp_path, su
         _delivery(restarted, refs, lambda thread, items: sent.append((thread, items))).initialize('other-child')
         assert [thread for thread, _ in sent] == ['child', 'other-child']
         other = store.put_segment(segment_type='input', content='different window')
-        with pytest.raises(ValueError, match='different PostgreSQL'):
-            _delivery(store, [{'segment_id': other}], lambda *args: pytest.fail('changed import')).initialize('child')
+        extended = refs + [{'segment_id': other}]
+        _delivery(store, extended, lambda thread, items: sent.append((thread, items))).initialize('child')
+        assert [i['content'][0]['text'] for i in sent[-1][1]] == ['different window']
+        _delivery(store, extended[1:], lambda *args: pytest.fail('repeated suffix')).initialize('child')
+        with pytest.raises(ValueError, match='requested order'):
+            _delivery(store, list(reversed(extended)), lambda *args: pytest.fail('reordered')).initialize('child')
     with subtests.test(contract='test_lost_import_ack_is_not_blindly_retried'), isolated_portal_case() as case_path:
         tmp_path = case_path
         store = AgentDataStore()
@@ -218,8 +214,7 @@ def test_import_ack_survives_new_worker_and_new_execution_contracts(tmp_path, su
                         return_value=[{'type': 'reasoning', 'id': 'rs_legacy'}]):
             delivery.initialize('child')
         delivery.send = lambda *args: pytest.fail('must not append a second history')
-        with pytest.raises(ValueError, match='different PostgreSQL'):
-            delivery.initialize('child')
+        delivery.initialize('child')
     with subtests.test(contract='test_invalid_history_does_not_record_an_import_intent'), isolated_portal_case() as case_path:
         tmp_path = case_path
         store = AgentDataStore()

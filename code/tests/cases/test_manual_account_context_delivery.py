@@ -38,32 +38,39 @@ def delivery(monkeypatch):
     return record, observation
 
 
+def record_input(resident_id, message_id):
+    from management_portal.execution.agent_data_store import get_agent_data_store
+    get_agent_data_store().display_chat_message(resident_id, {
+        "message_id": message_id, "role": "user", "content_parts": [{"type": "text", "text": "actual user input"}],
+    })
+
+
 @pytest.mark.parametrize("strategy", ["compact", "visible"])
 def test_first_input_and_failed_delivery_retain_exact_material(delivery, strategy):
     record, seen = delivery
     record["session_restart"]["pending_handoff"]["strategy"] = strategy
+    from management_portal.execution.agent_data_store import get_agent_data_store
+    store = get_agent_data_store()
+    sid = store.put_segment(segment_type="model", content="retained model response")
+    store.append_agent_segments(record["resident_id"], [sid], actor_ref="test")
     original = deepcopy(record)
     job = {"user_message_id": "msg_first", "fork_context_input": {"prompt": "stale"}}
+    record_input(record["resident_id"], job["user_message_id"])
     first = domain._portable_context_execution(record, job)
     seed = first["fork_context_input"]
-    assert seed["segments"] == []
+    assert [s["segment_id"] for s in seed["segments"]] == [sid]
     assert seed["prompt"] == "actual user input"
-    assert "frozen bounded history" in seed["portable_prompt"]
-    assert seed["portable_prompt"].endswith("actual user input")
+    assert "portable_prompt" not in seed
     # A failed submission with no acceptance retries the identical seed.
     assert domain._portable_context_execution(record, job)["fork_context_input"] == seed
     assert record == original and job["fork_context_input"] == {"prompt": "stale"}
-    seen.accepted = True
-    seen.binding = {"provider": "claude", "backend_route_id": "claude_one"}
-    assert "fork_context_input" not in domain._portable_context_execution(record, job)
-    assert record == original
 
 
 @pytest.mark.parametrize("isolation", ["fresh", "scoped"])
 def test_independent_inputs_do_not_consume_session_material(delivery, monkeypatch, isolation):
     record, seen = delivery
     if isolation == "fresh":
-        monkeypatch.setattr(domain, "_lineage_delivery_profile", lambda job: {"context": "fresh"})
+        monkeypatch.setattr(domain, "_lineage_delivery_profile", lambda job: {"isolated": True})
     else:
         monkeypatch.setattr(domain.resident_input_scope, "get", lambda *args: object())
     job = {"user_message_id": "independent"}
@@ -88,13 +95,15 @@ def test_stale_material_is_rejected_even_when_a_binding_has_context(delivery, ch
         record["session_restart"]["pending_handoff"]["strategy"] = "fresh"
     else:
         seen.binding = {"provider": "codex", "backend_route_id": "one"}
+    from management_portal.society_service.resident_pending_session_context import validate_handoff
     with pytest.raises(ValueError, match="Pending session handoff"):
-        domain._portable_context_execution(record, {"user_message_id": "msg_next"})
+        validate_handoff(record)
 
 
 def test_explicit_clear_discards_handoff_without_blocking_new_input(delivery):
     record, seen = delivery
     record["context_reset_at"] = "2026-11-18T10:00:00Z"
+    record_input(record["resident_id"], "msg_new")
     prepared = domain._portable_context_execution(record, {"user_message_id": "msg_new"})
     assert "fork_context_input" not in prepared
     assert "frozen bounded history" not in prepared["actual_sent_prompt"]
@@ -116,12 +125,16 @@ def test_real_binding_acceptance_stops_injection_but_empty_session_does_not(deli
     monkeypatch.setattr(domain.execution_port, "sessions", lambda: SimpleNamespace(
         has_context=lambda binding, **kwargs: store.binding_has_context(binding, **kwargs)))
     seen.binding = store.provider_binding(binding_id)
+    sid = store.put_segment(segment_type="model", content="source material")
+    store.append_agent_segments(rid, [sid], actor_ref="test")
+    record_input(rid, "msg_pg")
     job = {"user_message_id": "msg_pg"}
     assert "fork_context_input" in domain._portable_context_execution(record, job)
     store.begin_execution(execution_id="execution-pending-context-test", agent_id=rid,
                           actor_ref="test", provider="claude", started_at="2026-11-18T10:00:00Z")
     store.bind_execution_provider_session("execution-pending-context-test", provider_session_ref=session["provider_session_ref"])
     store.record_input_acceptance("execution-pending-context-test", agent_id=rid, provider_turn_id="test-turn")
+    store.record_context_received(rid, session["provider_session_ref"], [sid], actor_ref="test")
     assert "fork_context_input" not in domain._portable_context_execution(record, job)
     # Another account's empty session cannot inherit acceptance of this one.
     other = store.ensure_provider_session(
@@ -135,53 +148,15 @@ def test_real_binding_acceptance_stops_injection_but_empty_session_does_not(deli
     assert "fork_context_input" in domain._portable_context_execution(record, job)
 
 
-def test_frozen_seed_is_realized_with_current_user_prompt(delivery):
-    from dataclasses import dataclass
-    from management_portal.execution.context_seed import realize_portable_seed
-
-    @dataclass
-    class Invocation:
-        request: object
-        user_prompt: str
-        checkpoint: dict
-
-    record, seen = delivery
-    prepared = domain._portable_context_execution(record, {"user_message_id": "msg_actual"})
-    invocation = Invocation(SimpleNamespace(metadata={"fork_context_input": prepared["fork_context_input"]}),
-                            "current runtime envelope and user input", {})
-    result = realize_portable_seed(invocation)
-    assert "frozen bounded history" in result.user_prompt
-    assert result.user_prompt.endswith(invocation.user_prompt)
-    assert result.user_prompt.count("frozen bounded history") == 1
-
-
 @pytest.mark.parametrize("adapter", ["codex", "claude"])
-@pytest.mark.parametrize("recovered", [False, True])
-def test_real_adapter_entry_receives_text_handoff_once(delivery, adapter, recovered):
-    from management_portal.execution.backend_contracts import BackendInvocation
-    from management_portal.execution.codex_backend import CodexBackend
-    from management_portal.execution.claude_backend import ClaudeBackend
+def test_legacy_text_handoff_requires_database_references(adapter):
     from management_portal.execution.context_seed import prepare_backend_context_seed
+    from management_portal.execution.backend_services import AgentSessionService
 
-    record, seen = delivery
-    record["backend"] = adapter
-    record["backend_route_id"] = adapter + "_one"
-    record["session_restart"]["pending_handoff"]["target"] = {"provider": adapter, "route": adapter + "_one"}
-    prepared = domain._portable_context_execution(record, {"user_message_id": "real-adapter"})
-    request = SimpleNamespace(metadata={"fork_context_input": prepared["fork_context_input"]})
-    checkpoint = {"turn_id": "accepted-turn", "backend_session_id": "accepted-session"} if recovered else {}
-    invocation = BackendInvocation(request=request, session=None,
-                                   user_prompt="runtime identity/authorization and actual user input",
-                                   system_context="unchanged system instructions", attach_system_context=True,
-                                   is_new_backend_session=not recovered, recovery_checkpoint=checkpoint)
-    implementation = CodexBackend if adapter == "codex" else ClaudeBackend
-    backend = implementation.__new__(implementation)
-    result = prepare_backend_context_seed(backend, invocation)
-    assert result.user_prompt.count("frozen bounded history") == (0 if recovered else 1)
-    assert result.user_prompt.count(invocation.user_prompt) == 1
-    assert result.user_prompt.endswith(invocation.user_prompt)
-    assert result.request is request
-    assert result.system_context == invocation.system_context
+    invocation = SimpleNamespace(request=SimpleNamespace(metadata={"fork_context_input": {
+        "segments": [], "prompt": "new input", "portable_prompt": "legacy history and new input"}}))
+    with pytest.raises(ValueError, match="Segment references"):
+        prepare_backend_context_seed(AgentSessionService().providers[adapter], invocation)
 
 
 def test_typed_history_still_uses_canonical_adapter():

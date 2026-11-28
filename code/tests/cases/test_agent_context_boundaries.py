@@ -93,8 +93,8 @@ def test_fork_delivery_uses_current_reset_window_on_same_id_requeue(monkeypatch,
     record_input('future-input')
     seed = send_input(following)['fork_context_input']
     assert new_context in {item['segment_id'] for item in seed['segments']}
-    assert 'parent prefix' not in seed['portable_prompt'] and 'future-input' not in seed['portable_prompt']
-    assert seed['portable_prompt'].count(following) == 1
+    assert [s['segment_id'] for s in seed['segments']] == [s['segment_id'] for s in store.agent_context_snapshot(child, before_message_id=following)['segments']]
+    assert seed['prompt'] == following
 
     if second_reset == 'fresh':
         store.reset_provider_context(child, reset_at='2026-11-19T09:30:00Z', actor_ref='test')
@@ -105,3 +105,36 @@ def test_fork_delivery_uses_current_reset_window_on_same_id_requeue(monkeypatch,
     assert 'fork_context_input' not in send_input(original)
     assert (store.chat_message(child, original) is not None) == (second_reset == 'fresh')
     assert store.agent_context_snapshot(child, before_message_id=original) == historical
+
+
+def test_native_and_stateless_delivery_preserve_the_same_frozen_history(monkeypatch):
+    from management_portal.execution.codex_history import response_items_from_segments
+    from management_portal.society_service.resident_api_context import api_history
+
+    store = get_agent_data_store()
+    rid = 'resident_123abc123abc'
+    record = {'resident_id': rid, 'backend': 'codex'}
+    image = {'type': 'input_image', 'image_url': 'data:image/png;base64,YQ==', 'detail': 'high'}
+    summary = {'type': 'message', 'role': 'user', 'content': [image]}
+    call = {'type': 'function_call', 'name': 'inspect', 'call_id': 'a', 'arguments': '{}'}
+    output = {'type': 'function_call_output', 'call_id': 'a', 'output': '  exact output\n'}
+    ids = [store.put_segment(segment_type=kind, content_type='application/json', content=content)
+           for kind, content in [('compaction', {'replacement_history': [summary]}),
+                                 ('model', call), ('tool', output)]]
+    store.append_agent_segments(rid, ids, actor_ref='test')
+    store.display_chat_message(rid, {'message_id': 'current', 'role': 'user',
+                                    'content_parts': [{'type': 'text', 'text': 'continue'}]})
+    job = {'user_message_id': 'current', 'message': 'continue'}
+    monkeypatch.setattr(delivery, '_prepare_resident_prompt', lambda _, j: {**j, 'actual_sent_prompt': j['message']})
+    def native_items():
+        prepared = delivery._portable_context_execution(record, job)
+        refs = prepared.get('fork_context_input', {}).get('segments', [])
+        return response_items_from_segments(store.fork_context_segments(refs)) if refs else []
+
+    assert native_items() == api_history(rid, 'current') == [summary, call, output]
+    session = store.ensure_provider_session(provider='codex', backend_route_id='one',
+                                            backend_session_id='target', agent_id=rid, actor_ref='test')
+    store.bind_provider_session(delivery.resident_backend.execution_binding_id(record), session['provider_session_ref'])
+    store.record_context_received(rid, session['provider_session_ref'], ids[:2], actor_ref='test')
+    assert native_items() == [output]
+    assert api_history(rid, 'current') == [summary, call, output]

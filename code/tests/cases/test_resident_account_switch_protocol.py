@@ -170,6 +170,7 @@ def test_switch_options_report_context_limits_without_reducing_context(monkeypat
     with isolated_portal_case():
         record, operations, saved = _restart_domain(monkeypatch)
         if not has_session:
+            record["backend_route_id"] = "zero"
             monkeypatch.setattr(resident_backend, 'session_record', lambda *_: {})
         monkeypatch.setattr(execution_port, 'latest_provider_session_ref', lambda *a, **kw: 'unbound-history' if previous_session else '')
         monkeypatch.setattr(domain, 'runtime_configuration_catalog', lambda: {'backends': [
@@ -203,7 +204,12 @@ def test_codex_empty_create_imports_and_records_effective_context(tmp_path, isol
         store, expected = _effective_history(agent_id)
         prepared = execution_port.prepare_context_preservation(agent_id, actor='alice',
             operation_id='preserving', source_binding={})
+        before = store.agent_context_snapshot(agent_id)
         seed = execution_port.commit_context_preservation(prepared)
+        assert seed['segments'] == [{'segment_id': row['segment_id'],
+                                     'provider_turn_id': row.get('provider_turn_id') or ''}
+                                    for row in before['segments']]
+        assert store.agent_context_snapshot(agent_id) == before
         request = replace(_turn_request('session-restart:preserving'), operation='create', metadata={
             'resident_id': agent_id, 'preserve_session_context': True, 'fork_context_input': seed,
         })

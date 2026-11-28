@@ -86,11 +86,11 @@ class ChatCompletionService:
         provider_id = request.provider
         item = self.provider_registry.get(provider_id)
         raw_messages = options.get("messages")
-        messages = [
-            dict(message)
-            for message in raw_messages
-            if isinstance(message, dict)
-        ] if isinstance(raw_messages, list) else []
+        if raw_messages is not None and (
+            not isinstance(raw_messages, list) or not all(isinstance(msg, dict) for msg in raw_messages)
+        ):
+            raise ValueError("Model API messages must be an ordered list of objects")
+        messages = [dict(msg) for msg in raw_messages or []]
         if invocation.attach_system_context:
             messages.insert(
                 0,
@@ -121,8 +121,6 @@ class ChatCompletionService:
         model = str(options.get("model") or item.get("default_model") or "").strip()
         if not model:
             raise ValueError(f"LLM provider model is missing: {provider_id}")
-        if options.get("context_history"):
-            context.emit("context_history", options["context_history"])
         result = adapter.execute(
             self.provider_registry, {**item, "id": provider_id}, model, messages, parameters,
             float(options.get("timeout_seconds") or 360), max(0, int(options.get("max_retries") or 0)),

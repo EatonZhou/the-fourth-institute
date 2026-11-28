@@ -1,110 +1,89 @@
-"""Native account-switch context, independently of the display transcript.
+"""Recover persisted account-switch receipts against the effective database trace.
 
 :module: execution.service
 :importance: P1
 """
-import json
-from types import SimpleNamespace
-
 import pytest
 
-from management_portal.execution.codex_preservation import read_native_window
-from management_portal.execution.context_preservation import prepare_context_preservation, commit_context_preservation
+from management_portal.execution import context_preservation as owner
+from management_portal.execution.agent_data_store import AgentDataStore, stable_segment_id, utc_now
+from management_portal.execution.agent_operations import put_operation
+from tests.cases.test_preservation_port import source
 
 
-def archive(tmp_path, records):
-    p = tmp_path/'rollout.jsonl'
-    p.write_text(''.join(json.dumps(x)+'\n' for x in records))
-    return p
+def legacy_receipt(store, agent, binding, refs, *, native):
+    key = stable_segment_id("session-preservation", agent, "switch")
+    receipt = {
+        "schema": owner.SCHEMA, "operation_id": "switch", "agent_id": agent, "actor": "alice",
+        "receipt_id": key, "source_binding": owner._identity(binding),
+        "source": owner._source(store, agent, binding), "native_boundary": native,
+        "seed": {"source_agent_id": agent, "schema": "tfi.provider-context-seed.v1",
+                 "segments": [{"segment_id": sid} for sid in refs], "empty_context": not refs},
+    }
+    metadata = {"kind": "session_preservation", "source": "execution", "prepared_sha256": owner._digest(receipt)}
+    if native:
+        # The original archive was on a worker that no longer exists.
+        metadata["native_evidence"] = {"path": "/retired/worker/rollout.jsonl", "fingerprint": [1, 2, 3, 4]}
+    store.put_operation_record(segment_id=key, segment_type="harness", created_by_agent_id=agent,
+                               content={"prepared": receipt}, metadata=metadata)
+    return receipt
 
 
-def record(kind, payload):
-    return {'type':kind, 'payload':payload}
+@pytest.mark.parametrize("committed", [False, True])
+@pytest.mark.parametrize("text_column", [False, True])
+def test_old_native_boundary_requires_database_commit(committed, text_column):
+    store = AgentDataStore()
+    agent, binding = source(store)
+    if text_column:
+        with store.database.transaction() as connection:
+            connection.execute("ALTER TABLE agent_operations ALTER COLUMN data_json TYPE TEXT USING data_json::text")
+    item = {"type": "reasoning", "encrypted_content": "opaque", "summary": []}
+    sid = store.put_segment(segment_type="compaction", content={"replacement_history": [item]},
+                            content_type="application/json")
+    prepared = legacy_receipt(store, agent, binding, [sid], native=True)
+    if committed:
+        store.append_agent_segments(agent, [sid], actor_ref="alice")
+        committed_source = owner._source(store, agent, binding)
+        with store.database.transaction() as connection:
+            put_operation(connection, operation_id=stable_segment_id("session-preservation-commit", prepared["receipt_id"]),
+                          kind="session_preserved", agent_id=agent, created_at=utc_now(),
+                          data={"source": committed_source, "receipt_id": prepared["receipt_id"]})
+    before = store.agent_context_snapshot(agent)
+    if committed:
+        assert owner.prepare_context_preservation(agent, actor="alice", operation_id="switch",
+                                                 source_binding=binding, store=store) == prepared
+        assert owner.commit_context_preservation(prepared, store=store) == prepared["seed"]
+        assert store.fork_context_segments(prepared["seed"]["segments"])[0]["content"]["replacement_history"] == [item]
+        store.append_agent_segments(agent, [store.put_segment(segment_type="input", content="later")], actor_ref="alice")
+        with pytest.raises(ValueError, match="source history changed"):
+            owner.commit_context_preservation(prepared, store=store)
+    else:
+        with pytest.raises(ValueError, match="never committed"):
+            owner.commit_context_preservation(prepared, store=store)
+        assert store.agent_context_snapshot(agent) == before
 
 
-def test_native_window_retains_compaction_ciphertext_and_tool_pairs(tmp_path):
-    reasoning={'type':'reasoning','encrypted_content':'ciphertext','summary':[]}
-    call={'type':'function_call','call_id':'call','name':'exec','arguments':'{}'}
-    output={'type':'function_call_output','call_id':'call','output':'done'}
-    p=archive(tmp_path,[record('session_meta',{'id':'thread'}),
-        record('response_item',{'type':'message','role':'user','content':'obsolete'}),
-        record('compacted',{'replacement_history':[reasoning]}),
-        record('response_item',call),record('response_item',output)])
-    assert read_native_window(p,'thread')==[reasoning,call,output]
+@pytest.mark.parametrize("window", ["complete", "partial", "reversed", "empty-native"])
+def test_old_receipt_must_match_full_trace_membership_and_order(window):
+    store = AgentDataStore()
+    agent, binding = source(store)
+    first = store.agent_context_snapshot(agent)["segments"][0]["segment_id"]
+    second = store.put_segment(segment_type="model", content="later answer")
+    store.append_agent_segments(agent, [second], actor_ref="alice")
+    refs = {"complete": [first, second], "partial": [first], "reversed": [second, first], "empty-native": []}[window]
+    prepared = legacy_receipt(store, agent, binding, refs, native=window == "empty-native")
+    if window == "complete":
+        assert owner.commit_context_preservation(prepared, store=store) == prepared["seed"]
+    else:
+        with pytest.raises(ValueError, match="differs from the effective Agent trace"):
+            owner.commit_context_preservation(prepared, store=store)
+    assert [s["segment_id"] for s in store.agent_context_snapshot(agent)["segments"]] == [first, second]
 
 
-def test_latest_native_boundary_supersedes_damaged_and_rolled_back_history(tmp_path):
-    reasoning = {'type': 'reasoning', 'encrypted_content': 'keep-exact', 'summary': []}
-    call = {'type': 'function_call', 'call_id': 'call', 'name': 'exec', 'arguments': '{"cmd":"run"}'}
-    output = {'type': 'function_call_output', 'call_id': 'call', 'output': 'keep output'}
-    p = archive(tmp_path, [record('session_meta', {'id': 'thread'}),
-        record('compacted', {'replacement_history': [{'type': 'message', 'content': 'old'}]}),
-        record('event_msg', {'type': 'thread_rolled_back'})])
-    with p.open('ab') as stream:
-        stream.write(b'{"time\n')
-        for row in [record('compacted', {'replacement_history': [reasoning]}),
-                    record('response_item', call), record('response_item', output)]:
-            stream.write((json.dumps(row) + '\n').encode())
-    assert read_native_window(p, 'thread') == [reasoning, call, output]
-    with pytest.raises(ValueError, match='another session'):
-        read_native_window(p, 'other')
-
-
-@pytest.mark.parametrize('compacted', [False, True])
-def test_damaged_effective_history_is_not_skipped_or_replaced_by_older_boundary(tmp_path, compacted):
-    rows = [record('session_meta', {'id': 'thread'})]
-    if compacted:
-        rows.append(record('compacted', {'replacement_history': []}))
-    p = archive(tmp_path, rows)
-    with p.open('ab') as stream:
-        stream.write(b'{"time\n')
-        stream.write((json.dumps(record('response_item', {'type': 'message', 'content': 'new'})) + '\n').encode())
-    with pytest.raises(ValueError, match='active native history contains an invalid JSON record'):
-        read_native_window(p, 'thread')
-
-
-def test_invalid_newest_native_boundary_never_falls_back_to_older_snapshot(tmp_path):
-    p = archive(tmp_path, [record('session_meta', {'id': 'thread'}),
-        record('compacted', {'replacement_history': []}), record('compacted', {})])
-    with pytest.raises(ValueError, match='compaction history is unavailable'):
-        read_native_window(p, 'thread')
-
-
-@pytest.mark.parametrize('change', ['wrong_session','missing_replacement','torn','rollback','missing_ciphertext'])
-def test_unknown_native_history_never_becomes_empty_success(tmp_path,change):
-    rows=[record('session_meta',{'id':'thread'})]
-    if change=='wrong_session':rows[0]['payload']['id']='other'
-    if change=='missing_replacement':rows.append(record('compacted',{}))
-    if change=='rollback':rows.append(record('event_msg',{'type':'thread_rolled_back'}))
-    if change=='missing_ciphertext':rows.append(record('response_item',{'type':'reasoning','summary':[]}))
-    p=archive(tmp_path,rows)
-    if change=='torn':p.write_text(p.read_text()+'{')
-    with pytest.raises(ValueError):read_native_window(p,'thread')
-
-
-def test_immutable_native_seed_is_idempotent_and_does_not_rewrite_chat(tmp_path,monkeypatch):
-    from management_portal.execution.agent_data_store import get_agent_data_store
-    store=get_agent_data_store()
-    item={'type':'reasoning','encrypted_content':'opaque','summary':[]}
-    path=archive(tmp_path,[record('session_meta',{'id':'thread'}),record('response_item',item)])
-    routes=SimpleNamespace(find_thread_rollout=lambda *a,**k:path)
-    session=store.ensure_provider_session(provider='codex',backend_route_id='one',backend_session_id='thread',agent_id='agent',actor_ref='test')
-    binding=store.bind_provider_session('resident:agent',session['provider_session_ref'])
-    prepared=prepare_context_preservation('agent',actor='test',operation_id='one',source_binding=binding,store=store,routes=routes)
-    first=commit_context_preservation(prepared,store=store)
-    assert prepare_context_preservation('agent',actor='test',operation_id='one',source_binding=binding,store=store,routes=routes)==prepared
-    assert commit_context_preservation(prepared,store=store)==first
-    assert store.fork_context_segments(first['segments'])[0]['content']=={'replacement_history':[item]}
-    from management_portal.execution.codex_history_delivery import CodexHistoryDelivery
-    delivered=[]
-    delivery=CodexHistoryDelivery(references=first['segments'],route_id='five',agent_id='agent',
-        actor='test',execution_id='switch',store=store,send=lambda tid,items:delivered.append((tid,items)))
-    delivery.initialize('target')
-    delivery.initialize('target')
-    assert delivered==[('target',[item])]
-    session=store.ensure_provider_session(provider='codex',backend_route_id='five',backend_session_id='target',agent_id='agent',actor_ref='test')
-    store.record_context_received(first['source_agent_id'],session['provider_session_ref'],
-        [r['segment_id'] for r in first['segments']],actor_ref='test')
-    assert store.provider_context_snapshot(provider_session_ref=session['provider_session_ref'],agent_id='agent')['segments'][0]['content']=={'replacement_history':[item]}
-    assert store.read_chat_messages('agent')==[]
-    assert len(store.agent_context_snapshot('agent')['segments'])==1
+def test_empty_legacy_native_receipt_after_database_reset():
+    store = AgentDataStore()
+    agent, binding = source(store)
+    store.reset_provider_context(agent, reset_at=utc_now(), actor_ref="alice")
+    prepared = legacy_receipt(store, agent, binding, [], native=True)
+    assert owner.commit_context_preservation(prepared, store=store) == prepared["seed"]
+    assert store.agent_context_snapshot(agent)["empty_context"] is True

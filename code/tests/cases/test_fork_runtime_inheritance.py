@@ -185,8 +185,8 @@ def test_cross_provider_fork_keeps_trace_and_uses_target_account(resident_record
         monkeypatch.setattr(execution, "resident_system_instructions", lambda *a: SystemInstructions())
         prepared = execution._portable_context_execution(child, {"actor": "CASE-A", "raw_message": "Continue"})
         request = execution._build_resident_execution_request(child, prepared)
-        assert "Keep the cross-provider marker" in request.runtime_options["messages"][-1]["content"]
-        assert request.runtime_options["messages"][-1]["content"].endswith("Continue")
+        assert any("Keep the cross-provider marker" in msg["content"] for msg in request.runtime_options["messages"][:-1])
+        assert request.runtime_options["messages"][-1] == {"role": "user", "content": "Continue"}
         assert request.provider == account.route_id
 
     if mode == "full":

@@ -27,8 +27,9 @@ pytestmark = pytest.mark.usefixtures("registered_execution_defaults")
 
 def test_model_api_fork_inherits_api_identity_without_native_route(monkeypatch):
     from management_portal.society_service import resident_runtime_domain as runtime
-    monkeypatch.setattr(runtime, 'resident_session_account_id', lambda record: '')
-    monkeypatch.setattr(resident_backend, 'execution_account', lambda record: {'backend_route_id': ''})
+    monkeypatch.setattr(resident_backend, 'session_record', lambda record: {})
+    monkeypatch.setattr(runtime, 'resident_session_account_id', lambda record, **kwargs: '')
+    monkeypatch.setattr(resident_backend, 'execution_account', lambda record, binding=None: {'backend_route_id': ''})
     monkeypatch.setattr(runtime, 'read_resident_runtime_settings', lambda record: {'model': 'api-model'})
     monkeypatch.setattr(runtime, 'resident_runtime_settings_from_register_payload',
                         lambda record, payload, *args: payload['runtime_settings'])
@@ -486,7 +487,7 @@ def test_send_now_into_a_forks_first_turn_does_not_repeat_its_inherited_context(
     )
     prepared = resident_execution_domain._portable_context_execution(
         resident_record, {"actor": "CASE-A", "raw_message": "补充检查移动端"})
-    assert "source question" in prepared["fork_context_input"]["portable_prompt"]
+    assert sid in [item["segment_id"] for item in prepared["fork_context_input"]["segments"]]
     resident_execution_work.write(resident_record, {
 
         "execution_id": "execution-333333333333333333333333",
@@ -741,8 +742,7 @@ def test_cross_account_codex_fork_uses_portable_context_seed(resident_record, mo
     snapshot = get_agent_data_store().agent_context_snapshot(child["resident_id"])
     assert [item["segment_id"] for item in snapshot["segments"]] == selected_ids
     prepared = resident_execution_domain._portable_context_execution(child, {"actor": "CASE-A", "raw_message": "continue"})
-    assert 'source question' in prepared['fork_context_input']['portable_prompt']
-    assert 'source answer' in prepared['fork_context_input']['portable_prompt']
+    assert [item['segment_id'] for item in prepared['fork_context_input']['segments']] == selected_ids
     assert 'source question' not in prepared['actual_sent_prompt']
 
 
@@ -760,7 +760,7 @@ def test_portal_fork_context_is_injected_until_provider_accepts_input(resident_r
     store.append_agent_segments(record["resident_id"], [sid], actor_ref="CASE-A")
     queued = {"actor": "CASE-A", "raw_message": "continue"}
     first = resident_execution_domain._portable_context_execution(record, queued)
-    assert 'source answer' in first['fork_context_input']['portable_prompt']
+    assert sid in [item['segment_id'] for item in first['fork_context_input']['segments']]
     assert 'continue' in first['actual_sent_prompt']
     _accept_child_context(record)
     later = resident_execution_domain._portable_context_execution(record, first)
@@ -773,6 +773,8 @@ def test_fork_intake_state_uses_protocol_state_and_holds_promoted_queue_item(
     monkeypatch,
 ) -> None:
     """分叉 Resident 的接收状态以协议状态为准"""
+    from tests.cases.directory_fixture_support import install_directory_owners
+    install_directory_owners()
     from management_portal.society_service import lineage_resident_nodes
     from management_portal.society_service import project_folders
     monkeypatch.setattr(project_folders, 'project_root_for_id', lambda _: Path(resident_record['workspace_path']))

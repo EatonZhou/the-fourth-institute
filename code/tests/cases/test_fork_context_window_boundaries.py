@@ -4,9 +4,6 @@ from __future__ import annotations
 import pytest
 
 from management_portal.execution.agent_data_store import AgentDataStore, chat_segment_id
-from management_portal.society_service.resident_fork_context import (
-    fit_to_window, seed_messages, select_segments,
-)
 
 
 AT = "2026-10-16T00:00:00Z"
@@ -51,8 +48,7 @@ def test_recent_materializes_complete_turns_and_nested_fork_freezes_them(recent,
     """近期上下文保留完整轮次且嵌套分叉冻结所选材料"""
     store = AgentDataStore()
     turns = {i: _turn(store, i, background=i in {2, 6, 7, 9, 11}) for i in range(1, 13)}
-    snapshot = store.agent_context_snapshot(SOURCE)
-    selected = select_segments(snapshot, recent_turns=recent)
+    selected = store.agent_context_snapshot(SOURCE, recent_turns=recent)["segments"]
     expected = [ref for i in range(first, 13) for ref in turns[i]]
     assert [item["segment_id"] for item in selected] == expected
     store.fork_agent(source_agent_id=SOURCE, target_agent_id="resident_window_child",
@@ -60,7 +56,7 @@ def test_recent_materializes_complete_turns_and_nested_fork_freezes_them(recent,
     _turn(store, 13, background=True)
     frozen = store.agent_context_snapshot("resident_window_child")
     store.fork_agent(source_agent_id="resident_window_child", target_agent_id="resident_window_nested",
-                     actor_ref="test-actor", segment_ids=[item["segment_id"] for item in select_segments(frozen)])
+                     actor_ref="test-actor", segment_ids=[item["segment_id"] for item in frozen["segments"]])
     assert [item["segment_id"] for item in store.agent_context_snapshot("resident_window_nested")["segments"]] == expected
     # A selected occurrence must still carry the same immutable body and identity.
     assert frozen["segments"] == selected
@@ -85,7 +81,7 @@ def test_unrecorded_input_is_still_a_turn_and_reminder_text_does_not_classify_it
                            business_ref="duty/work-summary-reminder")
     independent_reply = _message(store, "standalone-reply", "agent")
     last = _turn(store, 2)
-    selected = select_segments(store.agent_context_snapshot(SOURCE), recent_turns=2)
+    selected = store.agent_context_snapshot(SOURCE, recent_turns=2)["segments"]
     assert [item["segment_id"] for item in selected] == [independent, independent_reply] + last
     assert [item["segment_id"] for item in store.agent_context_snapshot(
         SOURCE, through_message_id="standalone-reminder")["segments"]][-2:] == [independent, independent_reply]
@@ -101,23 +97,63 @@ def test_attached_info_does_not_split_recorded_appended_inputs():
     store.append_agent_segments(SOURCE, [appended], actor_ref="test-actor")
     first += [appended, _message(store, "appended-reply", "agent")]
     last = _turn(store, 2)
-    snapshot = store.agent_context_snapshot(SOURCE)
-    assert [item["segment_id"] for item in select_segments(snapshot, recent_turns=2)] == first + last
+    snapshot = store.agent_context_snapshot(SOURCE, recent_turns=2)
+    assert [item["segment_id"] for item in snapshot["segments"]] == first + last
     assert [item["segment_id"] for item in store.agent_context_snapshot(
         SOURCE, through_message_id="question-1")["segments"]] == first
 
 
-def test_portable_budget_does_not_start_at_attached_info_or_appended_input():
-    """可迁移上下文预算不足时丢弃整轮材料"""
+def test_delivery_uses_receipts_and_native_turns_within_the_effective_window():
     store = AgentDataStore()
-    first = _turn(store, 1, background=True)
-    snapshot = store.agent_context_snapshot(SOURCE)
-    messages = seed_messages(snapshot)
-    assert [m["source_segment_id"] for m in messages] == first
-    assert messages[1]["role"] == "user"  # Background representation stays intact.
-    # The reply + background fit, but the carrier does not. Keep no partial turn.
-    messages[0]["content_parts"][0]["text"] = "x" * 10000
-    assert fit_to_window(messages, 200)[0] == []
+    session = store.ensure_provider_session(provider="codex", backend_route_id="zero",
+        backend_session_id="delivery-window", agent_id=SOURCE, actor_ref="test-actor")
+    ref = session["provider_session_ref"]
+    binding = "resident:" + SOURCE
+    store.bind_provider_session(binding, ref)
+
+    def append(kind, content, *, metadata=None, execution_id=""):
+        sid = store.put_segment(segment_type=kind, content=content, metadata=metadata,
+                                content_type="text/plain" if isinstance(content, str) else "application/json",
+                                execution_id=execution_id, created_by_agent_id=SOURCE)
+        store.append_agent_segments(SOURCE, [sid], actor_ref="test-actor")
+        return sid
+
+    def ids(binding_id=""):
+        return [s["segment_id"] for s in store.delivery_context_snapshot(
+            SOURCE, message_id="", binding_id=binding_id)["segments"]]
+
+    append("input", "before compaction")
+    summary = append("compaction", {"replacement_history": ["summary"]})
+    media = {"type": "input_image", "image_url": "data:image/png;base64,YWJj"}
+    picture = append("input", media, metadata={"kind": "provider_injected"})
+    logic = append("model", {"encrypted_content": "native-reasoning"})
+    store.record_context_received(SOURCE, ref, [summary], actor_ref="test-actor")
+    store.record_context_received(SOURCE, ref, [logic], actor_ref="test-actor")
+    store.begin_execution(execution_id="native", agent_id=SOURCE,
+                          actor_ref="test-actor", provider="codex", started_at=AT)
+    store.bind_execution_provider_session("native", provider_session_ref=ref)
+    native = append("model", "native response", execution_id="native")
+    startup = append("input", "developer instructions", metadata={"kind": "system_instructions"})
+    assert ids() == [summary, picture, logic, native, startup]
+    with pytest.raises(ValueError, match="before received segments"):
+        ids(binding)
+    store.record_context_received(SOURCE, ref, [picture], actor_ref="test-actor")
+    assert ids(binding) == [startup]
+    delta = store.delivery_context_snapshot(SOURCE, message_id="", binding_id=binding)["segments"]
+    assert [s["content"] for s in delta] == ["developer instructions"]
+    assert store.agent_context_snapshot(SOURCE)["segments"][1]["content"] == media
+    assert ids("unknown-binding") == ids()
+
+    store.record_context_received(SOURCE, ref, [summary, picture, logic], actor_ref="test-actor")
+    compacted = append("compaction", "native summary", execution_id="native")
+    store.place_in_trace_before(SOURCE, compacted, [logic], actor_ref="test-actor")
+    assert ids(binding) == [startup]
+    store.record_context_received(SOURCE, ref, [startup], actor_ref="test-actor")
+    new = append("input", "after compaction")
+    assert ids() == [compacted, logic, native, startup, new]
+    assert ids(binding) == [new]
+    store.reset_provider_context(SOURCE, reset_at=AT, actor_ref="test-actor")
+    assert ids() == ids(binding) == []
 
 
 def test_cutoff_scans_multiple_pages_without_losing_the_carrier_reply():

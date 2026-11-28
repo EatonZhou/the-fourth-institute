@@ -328,7 +328,7 @@ def _current_restart_view(record: Mapping[str, Any], binding: Mapping[str, Any])
     try:
         # Validate operation, target, reset boundary and actual binding before
         # attributing any acceptance. A merely created session is not enough.
-        resident_pending_session_context.context_seed(record, "", accepted=False)
+        resident_pending_session_context.validate_handoff(record)
         accepted = bool(binding) and execution_port.sessions().has_context(
             resident_backend.execution_binding_id(record),
             agent_id=resident_domain_common.record_resident_id(record),

@@ -37,6 +37,7 @@ from management_portal.codex_app_server_threads import codex_thread_execution_lo
 from .account_adapters import CodexAccountRoute
 from .backend_contracts import BackendContext, BackendInvocation, BackendResult, _live_context_usage
 from .codex_history_delivery import CodexHistoryDelivery
+from .context_seed import seed_reached_provider
 from .codex_recovery import CodexRecoveryBudget
 from .codex_rollout_history import CodexCompaction, read_codex_turn_error, read_codex_turn_input_recorded
 from .contracts import ExecutionRecoveryDeferred, ExecutionRequest
@@ -238,7 +239,7 @@ class CodexTurnRun:
         self.turn_options["detach_requested"] = self.context.is_handover
         self.previous_compaction = self.backend._latest_compaction(session.route, session.thread_id)
         fork_history = self.request.metadata.get("fork_context_input") or {}
-        if fork_history and not self.invocation.recovery_checkpoint.get("turn_id"):
+        if fork_history.get("segments") and not seed_reached_provider(self.invocation):
             self.history_delivery = session.history_delivery(fork_history["segments"])
         with self.backend._compaction_recorded_on_failure(
             context=self.context,

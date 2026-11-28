@@ -1,6 +1,5 @@
 """Legacy transcript observations retain evidence without invented tool work."""
 import copy
-import json
 from unittest.mock import Mock
 
 import pytest
@@ -24,12 +23,8 @@ def observation():
 def test_observation_replays_all_retained_fields_without_invented_call_or_outcome():
     original = observation()
     before = copy.deepcopy(original)
-    items = validate_codex_preservation([original])
-    assert len(items) == 1
-    assert items[0]['type'] == 'message'
-    text = items[0]['content'][0]['text']
-    assert 'arguments and outcome were not recorded' in text
-    assert json.loads(text.split('\n', 1)[1]) == original['content']
+    with pytest.raises(ValueError, match='requires name and call_id'):
+        validate_codex_preservation([original])
     assert original == before
 
 
@@ -63,10 +58,10 @@ def test_original_input_frozen_history_import_is_retryable_and_keeps_audit(isola
             return CodexHistoryDelivery(
                 references=refs, route_id='isolated', agent_id='resident-isolated',
                 actor='test-owner', execution_id=execution, send=sent, store=store)
-        delivery('same-input-attempt-1').initialize('same-thread')
-        delivery('same-input-attempt-2').initialize('same-thread')
-        sent.assert_called_once()
-        assert [item['type'] for item in sent.call_args.args[1]] == ['message', 'message']
+        for attempt in ('same-input-attempt-1', 'same-input-attempt-2'):
+            with pytest.raises(ValueError, match='requires name and call_id'):
+                delivery(attempt).initialize('same-thread')
+        sent.assert_not_called()
         assert store.fork_context_segments(refs) == before
 
 
@@ -102,13 +97,12 @@ def test_same_input_preparation_keeps_identity_and_isolated_delivery_skips_histo
     monkeypatch.setattr(domain.execution_port, 'sessions', lambda: Mock(has_context=Mock(return_value=False)))
     snapshot = Mock(return_value={'segments': [{'segment_id': 'retained-tool-observation'}]})
     monkeypatch.setattr(domain.execution_port, 'delivery_context_snapshot', snapshot)
-    monkeypatch.setattr(domain, 'resident_trace_context_text', lambda *args: 'historical observation')
     prepared = domain._portable_context_execution(record, job)
     assert prepared['user_message_id'] == job['user_message_id']
     assert ('fork_context_input' in prepared) is not isolated
     if isolated:
         snapshot.assert_not_called()
     else:
-        snapshot.assert_called_once_with(record['resident_id'], message_id=job['user_message_id'])
+        snapshot.assert_called_once_with(record['resident_id'], message_id=job['user_message_id'], binding_id='resident:resident-isolated')
         assert prepared['fork_context_input']['segments'] == [
             {'segment_id': 'retained-tool-observation', 'provider_turn_id': ''}]

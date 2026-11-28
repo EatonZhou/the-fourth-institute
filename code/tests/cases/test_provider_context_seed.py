@@ -34,7 +34,6 @@ def _invocation(provider: str) -> BackendInvocation:
                 "schema": CONTEXT_SEED_SCHEMA,
                 "segments": [{"segment_id": "segment-parent-window"}],
                 "prompt": "new question",
-                "portable_prompt": "<inherited>effective parent window</inherited>\n\nnew question",
             },
         },
     )
@@ -55,42 +54,23 @@ def _invocation(provider: str) -> BackendInvocation:
 
 @pytest.mark.parametrize("provider", tuple(AGENT_PROVIDERS))
 def test_every_agent_backend_implements_one_context_seed_contract(provider):
-    """每个 Provider 后端都实现上下文种子：codex 保留原提示，其余把继承记录放在提示前"""
-    service = AgentSessionService()
-    backend = service.providers[provider]
+    """每个后端导入结构化历史或在开始本轮前报告不支持。"""
+    backend = AgentSessionService().providers[provider]
     invocation = _invocation(provider)
-
-    prepared = prepare_backend_context_seed(backend, invocation)
-
-    assert context_seed(prepared.request)["schema"] == CONTEXT_SEED_SCHEMA
     if provider == "codex":
-        assert prepared.user_prompt == "new question"
+        assert prepare_backend_context_seed(backend, invocation) is invocation
     else:
-        assert prepared.user_prompt.startswith("<inherited>effective parent window")
-        assert prepared.request.prompt == "new question"
+        with pytest.raises(ValueError, match="cannot import structured historical segments"):
+            prepare_backend_context_seed(backend, invocation)
 
 
-@pytest.mark.parametrize("provider", [name for name in AGENT_PROVIDERS if name != "codex"])
-def test_a_portable_seed_keeps_what_portal_put_around_the_fork_targets_message(provider):
-    """可移植上下文种子保留 Fork 目标本轮的身份与授权上下文
-
-    继承记录放在本轮提示最前面，后面保留 Portal 为 Fork 目标放上的运行身份、消息和授权上下文。
-
-    :module: execution.providers
-    :importance: P1
-    :aspects: functional, behavior
-    :design: decision_276105b5d67b
-    """
-    # The Fork target's own identity and authorization context, as the injection plan placed them.
-    planned = (
-        "<resident-runtime-identity>resident_id: resident_child</resident-runtime-identity>\n\n"
-        "new question\n\n<portal-authorization-context>本轮执行者：resident_child</portal-authorization-context>"
-    )
-    invocation = replace(_invocation(provider), user_prompt=planned)
-
-    prepared = prepare_backend_context_seed(AgentSessionService().providers[provider], invocation)
-
-    assert prepared.user_prompt == "<inherited>effective parent window</inherited>\n\n" + planned
+@pytest.mark.parametrize("provider", tuple(AGENT_PROVIDERS))
+def test_empty_history_keeps_current_turn_envelope(provider):
+    invocation = _invocation(provider)
+    invocation = replace(invocation, user_prompt="current identity, authorization and message",
+                         request=replace(invocation.request, metadata={"fork_context_input": {
+                             "segments": [], "prompt": "new question"}}))
+    assert prepare_backend_context_seed(AgentSessionService().providers[provider], invocation) is invocation
 
 
 def test_context_seed_requires_adapter_support_without_provider_branching():

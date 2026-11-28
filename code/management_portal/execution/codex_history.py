@@ -40,18 +40,20 @@ def _output_part(part: Mapping[str, Any]) -> dict[str, Any]:
                                       for key in ("file_data", "file_id", "file_url"))
     ):
         return copy.deepcopy(dict(part))
-    if kind in {"text", "input_text", "output_text"} and isinstance(part.get("text"), str):
+    if kind in {"text", "input_text", "output_text"} and isinstance(part.get("text"), str) and set(part) <= {"type", "text"}:
         return {"type": "input_text", "text": part["text"]}
-    if kind == "image" and part.get("mimeType") and part.get("data"):
+    if kind == "image" and set(part) <= {"type", "mimeType", "data"} and part.get("mimeType") and part.get("data"):
         return {"type": "input_image", "image_url": f"data:{part['mimeType']};base64,{part['data']}"}
-    if kind == "image" and isinstance(part.get("source"), Mapping):
+    if kind == "image" and set(part) == {"type", "source"} and isinstance(part["source"], Mapping):
         source = part["source"]
-        if source.get("type") == "base64" and source.get("media_type") and source.get("data"):
+        if set(source) == {"type", "media_type", "data"} and source["type"] == "base64" and source.get("media_type") and source.get("data"):
             return {"type": "input_image", "image_url": f"data:{source['media_type']};base64,{source['data']}"}
-        if source.get("type") == "url" and isinstance(source.get("url"), str) and source["url"]:
+        if set(source) == {"type", "url"} and source["type"] == "url" and isinstance(source.get("url"), str) and source["url"]:
             return {"type": "input_image", "image_url": source["url"]}
-    if kind == "image_url":
-        image = part.get("image_url")
+    if kind == "image_url" and set(part) == {"type", "image_url"}:
+        image = part["image_url"]
+        if isinstance(image, Mapping) and set(image) - {"url", "detail"}:
+            raise ValueError("unsupported historical image metadata")
         url = image.get("url") if isinstance(image, Mapping) else image
         if isinstance(url, str) and url:
             result = {"type": "input_image", "image_url": url}
@@ -64,17 +66,15 @@ def _output_part(part: Mapping[str, Any]) -> dict[str, Any]:
 def _tool_output(value: Any) -> str | list[dict[str, Any]]:
     if isinstance(value, str):
         return value
+    if isinstance(value, list) and all(isinstance(part, Mapping) and "type" in part for part in value):
+        return [_output_part(part) for part in value]
     if isinstance(value, Mapping) and "result" in value:
         inner = _tool_output(value["result"])
         extra = {key: item for key, item in value.items() if key != "result"}
         if not extra:
             return inner
-        if isinstance(inner, list):
-            if _has_media(extra):
-                raise ValueError("unsupported media outside historical tool content")
-            return [*inner, {"type": "input_text", "text": _json(extra)}]
-        if _has_media(extra):
-            raise ValueError("unsupported media outside historical tool content")
+        if _has_media(value):
+            raise ValueError("unsupported metadata alongside historical tool media")
         return _json(value)
     # MCP uses content, Claude uses output, and common native tool events
     # use contentItems. Only
@@ -89,75 +89,13 @@ def _tool_output(value: Any) -> str | list[dict[str, Any]]:
         parts = [_output_part(part) for part in value[field]]
         extra = {key: item for key, item in value.items() if key != field}
         if extra:
-            if _has_media(extra):
-                raise ValueError("unsupported media outside historical tool content")
-            parts.append({"type": "input_text", "text": _json(extra)})
+            if _has_media(value):
+                raise ValueError("unsupported metadata alongside historical tool media")
+            return _json(value)
         return parts
     if _has_media(value):
         raise ValueError("unsupported historical tool media envelope")
     return _json(value)
-
-
-def _reasoning_parts(value: Any, kind: str) -> list[dict[str, str]]:
-    if value is None:
-        return []
-    if isinstance(value, str):
-        value = [value]
-    if not isinstance(value, list):
-        raise ValueError("unsupported historical reasoning content")
-    parts = []
-    for entry in value:
-        text = entry.get("text") if isinstance(entry, Mapping) else entry
-        if not isinstance(text, str):
-            raise ValueError("unsupported historical reasoning part")
-        parts.append({"type": kind, "text": text})
-    return parts
-
-
-def _portable_reasoning(item: dict[str, Any]) -> dict[str, Any]:
-    if item.get("type") != "reasoning" or item.get("encrypted_content"):
-        return item
-    summary = _reasoning_parts(item.get("summary"), "summary_text")
-    reasoning = _reasoning_parts(item.get("content"), "reasoning_text")
-    if not summary and not reasoning:
-        raise ValueError("Codex history reasoning requires encrypted content or readable text")
-    return {
-        "type": "message", "role": "assistant", "phase": "commentary",
-        "content": [{"type": "output_text", "text": "[Historical reasoning]\n" + "\n".join(
-            part["text"] for part in [*summary, *reasoning]
-        )}],
-    }
-
-
-def _tool_observation(segment: Mapping[str, Any]) -> dict[str, Any] | None:
-    """Replay the retained transcript index as an observation, never a tool call.
-
-    Early provider_transcript imports retained only this index, not arguments
-    or results. Its name is not a canonical tool_name and cannot justify
-    inventing a function_call/output pair. Preserve every recorded field and
-    make the missing evidence explicit without changing the stored Segment.
-    """
-    content = segment.get("content")
-    metadata = segment.get("metadata") or {}
-    if not (
-        segment.get("segment_type") == "tool"
-        and segment.get("status") == "observed"
-        and metadata.get("source") == "provider_transcript"
-        and metadata.get("kind") == "tool"
-        and isinstance(content, Mapping)
-        and content.get("kind") == "tool"
-        and all(isinstance(content.get(key), str) and content[key].strip()
-                for key in ("id", "name", "call_id"))
-        and set(content) <= {"id", "kind", "name", "namespace", "call_id", "turn_id",
-                             "created_at", "event_line", "segment_ordinal"}
-    ):
-        return None
-    return {
-        "type": "message", "role": "assistant", "phase": "commentary",
-        "content": [{"type": "output_text", "text":
-            "[Historical tool observation: arguments and outcome were not recorded]\n"
-            + _json(dict(content))}],
-    }
 
 
 def response_items_from_segments(segments: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
@@ -184,17 +122,19 @@ def response_items_from_segments(segments: Sequence[Mapping[str, Any]]) -> list[
             items.append(copy.deepcopy(dict(content)))
             continue
         if kind == "tool":
-            observation = _tool_observation(segment)
-            if observation is not None:
-                items.append(observation)
-                continue
             if not isinstance(content, Mapping):
                 raise ValueError("unsupported non-structured historical tool")
-            name = str(content.get("tool_name") or "").strip()
-            call_id = str(content.get("call_id") or "").strip()
-            if not name or not call_id:
+            name = content.get("tool_name")
+            call_id = content.get("call_id")
+            if not isinstance(name, str) or not name.strip() or not isinstance(call_id, str) or not call_id.strip():
                 raise ValueError("historical tool requires name and call_id")
-            namespace = str(content.get("tool_namespace") or "").strip()
+            if "input" not in content or not ("result" in content or content.get("error") is not None):
+                raise ValueError("historical tool requires recorded arguments and outcome")
+            if content.get("external_effect_refs") or set(content) - {
+                "tool_name", "tool_namespace", "call_id", "input", "result", "error", "external_effect_refs",
+            }:
+                raise ValueError("unsupported metadata on historical tool call")
+            namespace = content.get("tool_namespace") or ""
             arguments = content.get("input")
             if isinstance(arguments, Mapping) and set(arguments) == {"arguments"}:
                 arguments = arguments["arguments"]
@@ -213,21 +153,16 @@ def response_items_from_segments(segments: Sequence[Mapping[str, Any]]) -> list[
                 {"type": "function_call_output", "call_id": call_id, "output": _tool_output(output)},
             ])
             continue
-        if metadata.get("kind") == "reasoning" and isinstance(content, Mapping):
-            summary = _reasoning_parts(content.get("summary"), "summary_text")
-            reasoning = _reasoning_parts(content.get("text"), "reasoning_text")
-            if not summary and not reasoning and content.get("encrypted"):
-                continue  # Existing audit-only placeholder, not recoverable model content.
-            if not summary and not reasoning:
-                raise ValueError("unsupported historical reasoning content")
-            item = {"type": "reasoning", "summary": summary}
-            if reasoning:
-                item["content"] = reasoning
-            items.append(item)
-            continue
-        role = "assistant" if kind == "model" else "user"
-        if metadata.get("role") in {"system", "developer"}:
-            role = "developer"
+        if metadata.get("kind") == "reasoning":
+            raise ValueError("Cannot preserve reasoning without complete native history")
+        parts = (metadata.get("message") or {}).get("parts") or []
+        if any(part.get("type") != "text" for part in parts):
+            raise ValueError("Historical attachment lacks a frozen content block")
+        role = metadata.get("role") or {"input": "user", "model": "assistant"}.get(kind)
+        if role == "agent":
+            role = "assistant"
+        if role not in {"system", "developer", "user", "assistant"}:
+            raise ValueError(f"unsupported historical {kind} message role: {role}")
         if not isinstance(content, str):
             raise ValueError(f"unsupported historical {kind} content")
         item: dict[str, Any] = {
@@ -240,4 +175,7 @@ def response_items_from_segments(segments: Sequence[Mapping[str, Any]]) -> list[
         if role == "assistant" and phase in {"commentary", "final_answer"}:
             item["phase"] = phase
         items.append(item)
-    return [_portable_reasoning(item) for item in items]
+    for item in items:
+        if item.get("type") == "reasoning" and not item.get("encrypted_content"):
+            raise ValueError("Cannot preserve native reasoning without encrypted content")
+    return items

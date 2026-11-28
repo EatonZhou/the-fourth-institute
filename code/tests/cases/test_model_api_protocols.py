@@ -47,3 +47,23 @@ def test_direct_calls_use_the_registered_primary_protocol(kind, endpoint):
     assert path == endpoint and options['protocol'] == kind and payload['stream'] is False
     assert payload.get('max_tokens', payload.get('max_output_tokens')) == 123
     assert 'rules' in str(payload)
+
+def test_native_history_keeps_image_and_reasoning_or_fails_explicitly():
+    """结构化图像和推理按原序送入 Responses，其他协议遇到不可表示字段时说明原因。"""
+    messages = [{"type": "message", "role": "user", "content": [
+        {"type": "input_image", "image_url": "data:image/png;base64,AA==", "detail": "high"}]},
+        {"type": "reasoning", "encrypted_content": "opaque", "summary": []},
+        {"role": "user", "content": "next"}]
+    sent = []
+    def request(api_id, path, payload, **options):
+        sent.append(payload)
+        return {"output": [{"type": "message", "content": [{"type": "output_text", "text": "ok"}]}]}
+    args = (SimpleNamespace(request=request), {"id": "api"}, "model", messages, {},
+            10, 0, lambda: False, lambda report: None, lambda call: call())
+    assert protocol_adapter("openai_responses").execute(*args).content == "ok"
+    assert sent[0]["input"] == messages
+    with pytest.raises(ValueError, match="image detail"):
+        protocol_adapter("anthropic_messages").execute(*args)
+    with pytest.raises(ValueError, match="reasoning"):
+        protocol_adapter("openai_compatible_chat").execute(*args)
+    assert len(sent) == 1

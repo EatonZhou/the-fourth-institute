@@ -37,27 +37,46 @@ class CodexHistoryDelivery:
     def initialize(self, thread_id: str) -> None:
         if not self.references:
             return
-        # Resolve and validate every part before recording an external intent.
-        items = response_items_from_segments(self.store.fork_context_segments(self.references))
-        digest = hashlib.sha256(json.dumps(
-            items, sort_keys=True, ensure_ascii=False, separators=(",", ":"),
-        ).encode()).hexdigest()
+        # The first batch uses the original per-thread receipt key. Following
+        # batches have consecutive slots under the same thread execution lock.
         key = hashlib.sha256(f"codex\0{self.route_id}\0{thread_id}".encode()).hexdigest()[:32]
-        intent_id = f"segment_fork_import_{key}"
-        receipt_id = f"segment_fork_import_ack_{key}"
-        receipt = self._read(receipt_id)
-        if receipt is not None:
-            if receipt["content"]["history_sha256"] != digest:
-                raise ValueError("Codex thread already imported a different PostgreSQL Fork window")
-            return
+        delivered = []
+        batch = 0
+        while True:
+            slot = key if batch == 0 else f"{key}_{batch}"
+            intent_id = f"segment_fork_import_{slot}"
+            receipt_id = f"segment_fork_import_ack_{slot}"
+            receipt = self._read(receipt_id)
+            if receipt is None:
+                break
+            delivered.extend(ref["segment_id"] for ref in receipt["content"]["segments"])
+            batch += 1
         if self._read(intent_id) is not None:
             raise RuntimeError(
                 "Codex Fork history import outcome is unknown; refusing duplicate history injection"
             )
+
+        positions = {sid: index for index, sid in enumerate(delivered)}
+        pending = []
+        previous = -1
+        for ref in self.references:
+            position = positions.get(ref["segment_id"])
+            if position is None:
+                pending.append(ref)
+            elif pending or position <= previous:
+                raise ValueError("Codex history cannot be appended in the requested order")
+            else:
+                previous = position
+        if not pending:
+            return
+        items = response_items_from_segments(self.store.fork_context_segments(pending))
+        digest = hashlib.sha256(json.dumps(
+            items, sort_keys=True, ensure_ascii=False, separators=(",", ":"),
+        ).encode()).hexdigest()
         evidence = {
             "provider": "codex", "backend_route_id": self.route_id,
             "backend_session_id": thread_id, "history_sha256": digest,
-            "segments": self.references,
+            "segments": pending,
         }
 
         def record(identity: str, state: str) -> None:

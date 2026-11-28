@@ -483,8 +483,8 @@ def test_model_api_account_and_parameters_commit_atomically(resident_record, mon
     assert 'backend_route_id' in result['next_turn_fields']
 
 
-def test_api_history_reads_the_canonical_conversation_and_excludes_scoped_inputs(resident_record):
-    """provider_api 的历史上下文取自对话记录，排除带范围限定的输入
+def test_api_history_uses_trace_order_and_input_fence(resident_record):
+    """provider_api 逐项发送当前输入之前的数据库片段
 
     :module: resident.identity"""
     from management_portal.society_service import resident_api_context, resident_conversation_stream, resident_input_scope
@@ -497,6 +497,7 @@ def test_api_history_reads_the_canonical_conversation_and_excludes_scoped_inputs
         repository.set_input_state(rid, mid, 'completed')
     resident_input_scope.register(resident_id=rid, message_id='scoped', actor='CASE-A', profile={})
     repository.agent_data.display_chat_message(rid, _chat('now', 'user', 'Which color?', author_id='CASE-A'))
-    messages, report = resident_api_context.assemble_api_messages(rid, {'user_message_id': 'now'}, {'history': {'enabled': True, 'max_tokens': 8000}})
-    assert messages == [{'role': 'user', 'content': 'Remember GREEN'}, {'role': 'assistant', 'content': 'GREEN'}]
-    assert report['included_turns'] == 1
+    messages = resident_api_context.api_history(rid, 'now')
+    expected = repository.agent_data.delivery_context_snapshot(rid, message_id='now')["segments"]
+    assert [msg['content'][0]['text'] for msg in messages] == [segment['content'] for segment in expected]
+    assert messages and 'Which color?' not in str(messages)

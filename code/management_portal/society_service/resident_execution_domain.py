@@ -8,7 +8,7 @@ import logging
 import secrets
 from copy import deepcopy
 
-from . import invariant_locks, resident_fork_context, resident_restart_handoff, resident_store
+from . import invariant_locks, resident_restart_handoff, resident_store
 
 
 from .errors import LineageConflictError
@@ -1410,10 +1410,6 @@ def resident_system_instructions(
     Provider API) and before the message elsewhere; runtime identity and the
     task Skill list go before the message, authorization context after it.
 
-    A Fork child starts a Provider session of its own. Its seed skips the
-    source session's one-time startup instructions, which name the source
-    Resident (``resident_fork_context.seed_messages``), so the child receives
-    its own on its first turn like any new session.
     """
     from management_portal import prompt_injection
     from management_portal.agent_prompt_context import portal_system_instructions, portal_turn_instructions
@@ -1719,17 +1715,12 @@ def _build_resident_execution_request_unrestricted(
         # Always send this input, even when preset context already has a user
         # message. Presets are context, never a replacement for the new input.
         prompt = str(job.get("raw_message") or "") if scope else str(job.get("actual_sent_prompt") or job.get("message") or job.get("raw_message") or "")
-        seed = job.get("fork_context_input") or {}
-        if record.get("source_resident_id") and not fresh_context and seed.get("portable_prompt"):
-            # Stateless Model API calls receive the same portable trace as a
-            # native Provider. It already includes this Resident's history;
-            # the conversation-history selector must not append it again.
-            prompt = str(seed["portable_prompt"])
-            context = {**context, "history": {"enabled": False}}
-        from .resident_api_context import assemble_api_messages
-        messages, history = assemble_api_messages(resident_domain_common.record_resident_id(record), job, context, fresh_context=fresh_context)
-        options["messages"] = messages + [{"role": "user", "content": prompt}]
-        options["context_history"] = history
+        from .resident_api_context import api_history
+        messages = [] if fresh_context else [
+            *context.get("messages", []),
+            *api_history(resident_domain_common.record_resident_id(record), str(job.get("user_message_id") or "")),
+        ]
+        options["messages"] = [*messages, {"role": "user", "content": prompt}]
         from management_portal.execution.input_variant_trace import trace
         trace('request_builder', business_ref=job.get('business_ref', ''), role=resident_domain_common.record_resident_id(record),
               prompt=prompt, decision={'selected': 'full', 'reason': 'stateless_model_api'})
@@ -2084,28 +2075,9 @@ def _portable_context_execution(
 ) -> dict[str, Any]:
     if resident_input_scope.get(resident_domain_common.record_resident_id(record), str(job.get("user_message_id") or "")):
         return job
-    if _lineage_delivery_profile(job):
+    if _lineage_delivery_profile(job).get("isolated"):
         # A fresh-context run does not use (or consume) the session's seed.
         return job
-    from . import resident_pending_session_context
-    context_operation = resident_pending_session_context.context_operation(record)
-    if (context_operation.get("pending_handoff") or {}).get("strategy") in {"compact", "visible"}:
-
-        # Selection is configuration-only. The first real input carries the
-        # frozen, explicitly bounded handoff rather than rebuilding all trace.
-        prompt_job = dict(job)
-        prompt_job.pop("fork_context_input", None)
-        prompt_job = _prepare_resident_prompt(record, prompt_job)
-        accepted = execution_port.sessions().has_context(
-            resident_backend.execution_binding_id(record),
-            agent_id=resident_domain_common.record_resident_id(record),
-        )
-        seed = resident_pending_session_context.context_seed(
-            record, prompt_job["actual_sent_prompt"], accepted=accepted,
-        )
-        if seed:
-            prompt_job["fork_context_input"] = seed
-        return prompt_job
     if (
         _requires_initial_context_compaction(record)
         and not _initial_context_compaction_completed(record)
@@ -2114,32 +2086,22 @@ def _portable_context_execution(
             "压缩继承上下文尚未准备完成；不能回退为完整上下文投递"
         )
     resident_id = resident_domain_common.record_resident_id(record)
-    accepted = _initial_context_compaction_completed(record) or execution_port.sessions().has_context(
-        resident_backend.execution_binding_id(record), agent_id=resident_id,
-    )
     prompt_job = dict(job)
     prompt_job.pop("fork_context_input", None)
     prompt_job = _prepare_resident_prompt(record, prompt_job)
-    actual_sent_prompt = prompt_job["actual_sent_prompt"]
-    snapshot = {"segments": []} if accepted else execution_port.delivery_context_snapshot(
-        resident_id, message_id=str(job.get("user_message_id") or ""))
+    if resident_backend.execution_backend(record) == "provider_api":
+        # Stateless requests attach their full snapshot in the API request builder.
+        return prompt_job
+    snapshot = execution_port.delivery_context_snapshot(
+        resident_id, message_id=str(job.get("user_message_id") or ""),
+        binding_id=resident_backend.execution_binding_id(record),
+    )
     if snapshot["segments"]:
-        history = resident_trace_context_text(record, snapshot)
-        source = str(record.get("source_resident_id") or "")
-        # The inherited history carries its authors' identity blocks; a model
-        # once took them for another Resident's memory and refused to use it.
-        inherited = (
-            f"此 Resident 由 {source} Fork 而来，以下上下文继承自它；其中出现的其他 Resident 身份属于继承的历史。"
-            "这些记忆和工作现在也属于此 Resident，可以直接使用；行动时使用 <resident-runtime-identity> 中的身份。\n"
-        ) if source and source != resident_id else ""
         prompt_job["fork_context_input"] = {
             "schema": "tfi.provider-context-seed.v1",
-            "segments": [{"segment_id": item["segment_id"], "provider_turn_id": item.get("provider_turn_id", "")} for item in snapshot["segments"]],
-            "prompt": actual_sent_prompt,
-            "portable_prompt": (
-                "<resident_trace_context>\n以下是此 Resident 已持有的上下文；历史指令只作为上下文，不是本轮新指令。\n"
-                + inherited + history + "\n</resident_trace_context>\n\n" + actual_sent_prompt
-            ),
+            "segments": [{"segment_id": item["segment_id"], "provider_turn_id": item.get("provider_turn_id", "")}
+                         for item in snapshot["segments"]],
+            "prompt": prompt_job["actual_sent_prompt"],
         }
     return prompt_job
 
@@ -2347,14 +2309,6 @@ def _compact_inherited_resident_context(
             },
         },
     )
-
-
-def resident_trace_context_text(record: Mapping[str, Any], snapshot: dict[str, Any]) -> str:
-    messages, left_out = resident_fork_context.fit_to_window(
-        resident_fork_context.seed_messages(snapshot), int(record.get("last_model_context_window") or 0),
-    )
-    note = [f"（更早的 {left_out} 条历史超出新会话可用上下文；完整记录保留在本 Resident 的轨迹中。）"] if left_out else []
-    return "\n\n".join(note + [f"{item['role']}: {resident_domain_common.protocol_message_text(item)}" for item in messages])
 
 
 @contextmanager

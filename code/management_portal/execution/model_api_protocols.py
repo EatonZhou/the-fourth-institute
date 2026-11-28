@@ -19,6 +19,91 @@ class ApiResponse:
     structured: object = None
 
 
+def _content_blocks(content, *, anthropic=False):
+    if isinstance(content, str):
+        return content
+    if not isinstance(content, list):
+        raise ValueError("Model API message content must be text or content blocks")
+    parts = []
+    for part in content:
+        kind = part.get("type")
+        if kind in {"text", "input_text", "output_text"} and set(part) == {"type", "text"}:
+            parts.append({"type": "text", "text": part["text"]})
+        elif kind == "input_image" and set(part) <= {"type", "image_url", "detail"}:
+            image = {"url": part["image_url"]}
+            if "detail" in part:
+                image["detail"] = part["detail"]
+            if anthropic:
+                if "detail" in image:
+                    raise ValueError("Anthropic Messages cannot preserve image detail")
+                url = image["url"]
+                if url.startswith("data:"):
+                    mime, separator, data = url[5:].partition(";base64,")
+                    if not separator:
+                        raise ValueError("Anthropic Messages requires a base64 image data URL")
+                    source = {"type": "base64", "media_type": mime, "data": data}
+                else:
+                    source = {"type": "url", "url": url}
+                parts.append({"type": "image", "source": source})
+            else:
+                parts.append({"type": "image_url", "image_url": image})
+        else:
+            raise ValueError(f"Model API cannot preserve content block {kind} with fields {sorted(part)}")
+    return parts
+
+
+def _chat_message(item):
+    kind = item.get("type")
+    if kind is None:
+        return item
+    if kind == "message" and set(item) <= {"type", "role", "content"}:
+        return {"role": item["role"], "content": _content_blocks(item["content"])}
+    if kind == "function_call" and set(item) == {"type", "call_id", "name", "arguments"}:
+        return {"role": "assistant", "content": None, "tool_calls": [
+            {"type": "function", "id": item["call_id"],
+             "function": {"name": item["name"], "arguments": item["arguments"]}}]}
+    if kind == "function_call_output" and set(item) == {"type", "call_id", "output"}:
+        return {"role": "tool", "tool_call_id": item["call_id"], "content": _content_blocks(item["output"])}
+    raise ValueError(f"Chat Completions cannot preserve historical {kind} with fields {sorted(item)}")
+
+
+def _responses_message(msg):
+    # Native Responses items (including encrypted reasoning and compaction)
+    # are already valid input. Untyped chat messages may carry Chat image parts.
+    if "type" in msg or isinstance(msg["content"], str):
+        return msg
+    parts = []
+    for part in msg["content"]:
+        if part.get("type") == "text" and set(part) == {"type", "text"}:
+            parts.append({"type": "output_text" if msg["role"] == "assistant" else "input_text",
+                          "text": part["text"]})
+        elif part.get("type") == "image_url" and set(part) == {"type", "image_url"}:
+            image = part["image_url"]
+            if set(image) - {"url", "detail"}:
+                raise ValueError("Responses cannot preserve Chat image fields")
+            parts.append({"type": "input_image", "image_url": image["url"],
+                          **({"detail": image["detail"]} if "detail" in image else {})})
+        else:
+            raise ValueError(f"Responses cannot preserve Chat content block {part.get('type')}")
+    return {**msg, "content": parts}
+
+
+def _anthropic_messages(messages):
+    system, conversation = [], []
+    for msg in messages:
+        if msg.get("type", "message") != "message" or set(msg) - {"role", "content", "type"}:
+            raise ValueError("Anthropic Messages cannot preserve this historical item")
+        role = msg["role"]
+        content = _content_blocks(_responses_message(msg)["content"], anthropic=True)
+        if role == "system" and not conversation:
+            system.extend([{"type": "text", "text": content}] if isinstance(content, str) else content)
+        elif role in {"assistant", "user"}:
+            conversation.append({"role": role, "content": content})
+        else:
+            raise ValueError(f"Anthropic Messages cannot preserve the position or role of {role} input")
+    return {"messages": conversation, **({"system": system} if system else {})}
+
+
 class ChatProtocol:
     name = "openai_compatible_chat"
     settings_view = "chat"
@@ -37,7 +122,7 @@ class ChatProtocol:
         # Execution callers may use provider-specific generation parameters.
 
     def execute(self, registry, item, model, messages, parameters, timeout, retries, cancelled, observe, run):
-        payload = {**parameters, "model": model, "messages": messages}
+        payload = {**parameters, "model": model, "messages": [_chat_message(msg) for msg in messages]}
         for attempt in range(retries + 1):
             if cancelled():
                 raise InterruptedError("execution was cancelled before provider retry")
@@ -103,15 +188,18 @@ class ResponsesProtocol(ChatProtocol):
             raise ValueError(f"Unsupported {self.name} parameters: {sorted(set(parameters) - self.parameters)}")
 
     def execute(self, registry, item, model, messages, parameters, timeout, retries, cancelled, observe, run):
-        from management_portal.model_api_wire import blocks, encode
-        canonical = {**parameters, "model": model, "tools": [], "messages": [
-            {"role": message["role"], "content": blocks(message["content"], self.wire_protocol)} for message in messages]}
+        from management_portal.model_api_wire import encode
+        canonical = {**parameters, "model": model, "tools": [], "messages": []}
         canonical["max_tokens"] = parameters.get("max_completion_tokens", parameters.get("max_tokens"))
         fmt = parameters.get("response_format")
         if fmt:
             canonical["format"] = ({"type": "json_schema", **fmt["json_schema"]}
                                    if fmt.get("type") == "json_schema" else fmt)
         payload = {**encode(canonical, self.wire_protocol), "stream": False}
+        if self.wire_protocol == "anthropic_messages":
+            payload.update(_anthropic_messages(messages))
+        else:
+            payload["input"] = [_responses_message(msg) for msg in messages]
         for attempt in range(retries + 1):
             if cancelled():
                 raise InterruptedError("execution was cancelled before provider retry")

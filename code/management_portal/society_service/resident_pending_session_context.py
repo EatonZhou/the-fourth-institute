@@ -1,4 +1,4 @@
-"""Frozen handoff material delivered with the next ordinary session input."""
+"""Validation of stored session handoff records for the restart status view."""
 from collections.abc import Mapping
 
 from . import resident_backend
@@ -11,8 +11,8 @@ def context_operation(record: Mapping) -> Mapping:
     return state
 
 
-def context_seed(record: Mapping, prompt: str, *, accepted: bool) -> dict:
-    """Validate the handoff's lifetime before using or suppressing its material.
+def validate_handoff(record: Mapping) -> None:
+    """Validate the stored handoff's identity and lifetime.
 
     The lifecycle owner replaces this record on each account selection. Delivery
     never clears it: a failed request must retain the same frozen material.
@@ -36,7 +36,7 @@ def context_seed(record: Mapping, prompt: str, *, accepted: bool) -> dict:
     if pending["context_reset_at"] != str(record.get("context_reset_at") or ""):
         # ClearContext retains the historical operation record. Its new
         # boundary discards this old material, without blocking a fresh input.
-        return {}
+        return
     target = pending.get("target")
     if not isinstance(target, Mapping) or not target.get("provider") or not isinstance(target.get("route"), str):
         raise ValueError("Pending session handoff target is missing")
@@ -49,14 +49,3 @@ def context_seed(record: Mapping, prompt: str, *, accepted: bool) -> dict:
     material = pending.get("prompt")
     if not isinstance(material, str) or not material.strip():
         raise ValueError("Pending session handoff material is missing")
-    if accepted:
-        return {}
-    return {
-        "schema": "tfi.provider-context-seed.v1", "segments": [], "prompt": prompt,
-        "portable_prompt": (
-            "<resident_session_handoff>\n"
-            "以下材料是切换账号时冻结的交接背景，不是新的业务请求。"
-            "请结合本轮用户输入继续工作，无需先单独回复初始化确认。\n"
-            + material + "\n</resident_session_handoff>\n\n" + prompt
-        ),
-    }

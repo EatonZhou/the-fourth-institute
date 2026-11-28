@@ -21,21 +21,13 @@ from .agent_data_traces import (
     trace_rows,
 )
 from .agent_operations import put_operation
+from .context_seed import context_turn_starts, is_context_turn_input
 
 
 # The trace mark of what a Provider session's context began with.
 CONTEXT_SEED_KIND = "context_seed"
 # A reminder of the Harness loop governor that reached a running turn.
 HARNESS_CONTROL_KIND = "harness_control"
-# Historical Provider window facts remain readable in existing traces: its
-# reminders, attached files, base instructions, settings and the model's own
-# tool calls.  A session's context holds them; carried to another Provider
-# (a Fork, a seed) they stay behind.
-PROVIDER_INJECTED_KIND = "provider_injected"
-PROVIDER_TOOL_CALL_KIND = "provider_tool_call"
-PROVIDER_ONLY_KINDS = frozenset({PROVIDER_INJECTED_KIND, PROVIDER_TOOL_CALL_KIND})
-
-
 CONTEXT_EVIDENCE_POSITION_LIMIT = 2000
 
 
@@ -139,17 +131,7 @@ def read_session_context_ids(connection: Any, session_ref: str, *, agent_id: str
     if not window:
         return []
     sequence_id, first, last = window
-    ids: list[str] = []
-    before = last + 1
-    while True:
-        page = trace_rows(connection, sequence_id, first=first, before=before, newest_first=True, limit=256)
-        for row in page:
-            ids.append(str(row["segment_id"]))
-            if row["segment_type"] == "compaction":
-                return list(reversed(ids))
-        if len(page) < 256:
-            return list(reversed(ids))
-        before = int(page[-1]["ordinal"])
+    return [str(row["segment_id"]) for row in _context_rows(connection, sequence_id, first, last + 1)]
 
 
 def _context_seed_id(session_ref: str, agent_id: str, segment_ids: Sequence[str]) -> str:
@@ -199,6 +181,7 @@ def attach_provider_turns(connection, segments):
 def read_agent_context(
     connection: Any, agent_id: str, *, before_message_id: str = "", through_message_id: str = "",
     through_turn_id: str = "", provider_session_ref: str = "", respect_latest_reset: bool = False,
+    recent_turns: int = 0, require_round_count: bool = False, binding_id: str = "",
 ) -> dict[str, Any]:
     trace = agent_trace(connection, agent_id)
     if trace is None:
@@ -242,8 +225,6 @@ def read_agent_context(
         # Use the same turn boundary as recent Fork selection. Held-info
         # Segments carry released_with and stay with the carrier's answers;
         # an absent Provider receipt alone still starts a genuine user turn.
-        from .context_seed import is_context_turn_input
-
         next_ordinal = int(member["ordinal"]) + 1
         before = None
         while True:
@@ -268,15 +249,84 @@ def read_agent_context(
         if reset["ordinal"] is not None:
             before = min(before, int(reset["ordinal"])) if before is not None else int(reset["ordinal"])
     if through_turn_id:
-        cutoff = connection.execute(
-            "SELECT MAX(m.ordinal) AS ordinal FROM sequence_segments m JOIN segments segment USING(segment_id) "
-            "LEFT JOIN executions execution USING(execution_id) WHERE m.sequence_id=%s "
-            f"AND {PROVIDER_TURN_SQL}=%s",
-            (sequence_id, through_turn_id),
-        ).fetchone()
-        if cutoff["ordinal"] is None:
-            raise ValueError("Fork cutoff has no recorded context in this Agent trace")
-        before = int(cutoff["ordinal"]) + 1
+        before = _turn_end(connection, sequence_id, through_turn_id, first, before - 1 if before else None) + 1
+    rows = _context_rows(connection, sequence_id, first, before, respect_latest_reset)
+    if recent_turns:
+        starts = context_turn_starts([
+            {**row, "metadata": json_value(row["metadata_json"])} for row in rows
+        ])
+        if require_round_count and len(starts) < recent_turns:
+            raise ValueError(f"recent_rounds 超过来源会话有效轮数（{len(starts)}）")
+        if len(starts) > recent_turns or (require_round_count and starts):
+            rows = rows[starts[-recent_turns]:]
+    if binding_id and rows:
+        rows = _undelivered_rows(connection, sequence_id, agent_id, binding_id, rows)
+    return _snapshot(connection, rows)
+
+
+def _undelivered_rows(connection, sequence_id, agent_id, binding_id, rows):
+    binding = connection.execute(
+        "SELECT provider_session_ref FROM provider_bindings WHERE binding_id=%s", (binding_id,),
+    ).fetchone()
+    if binding is None:
+        return rows
+    session_ref = binding["provider_session_ref"]
+    # Seed receipts delimit ranges in this Agent's trace. Executions identify
+    # native work in this session, including compactions without a turn id.
+    receipts = connection.execute(
+        "SELECT op.operation_id, array_agg(member.segment_id ORDER BY member.ordinal) AS members, "
+        "array_agg(member.segment_id ORDER BY member.ordinal) FILTER (WHERE "
+        "segment.segment_type <> 'compaction' OR execution.provider_session_ref IS DISTINCT FROM op.session_ref) "
+        "AS original_members "
+        "FROM operation_positions position JOIN agent_operations op USING(operation_id) "
+        "JOIN sequence_segments first ON first.sequence_id=position.sequence_id "
+        "AND first.segment_id=op.data_json::jsonb->>'first_segment_id' "
+        "JOIN sequence_segments last ON last.sequence_id=position.sequence_id "
+        "AND last.segment_id=op.data_json::jsonb->>'last_segment_id' "
+        "JOIN sequence_segments member ON member.sequence_id=position.sequence_id "
+        "AND member.ordinal BETWEEN first.ordinal AND last.ordinal "
+        "JOIN segments segment ON segment.segment_id=member.segment_id "
+        "LEFT JOIN executions execution ON execution.execution_id=segment.execution_id "
+        "WHERE position.sequence_id=%s AND op.kind='context_received' "
+        "AND op.agent_id=%s AND op.session_ref=%s AND last.ordinal >= %s AND first.ordinal <= %s "
+        "GROUP BY op.operation_id",
+        (sequence_id, agent_id, session_ref, rows[0]["ordinal"], rows[-1]["ordinal"]),
+    ).fetchall()
+    held = set()
+    for receipt in receipts:
+        members = receipt["members"]
+        if _context_seed_id(session_ref, agent_id, members) != receipt["operation_id"]:
+            # Compaction may insert its own summary ahead of retained items.
+            members = receipt["original_members"] or []
+            if _context_seed_id(session_ref, agent_id, members) != receipt["operation_id"]:
+                raise ValueError("Session context receipt no longer matches its ordered trace interval")
+        held.update(members)
+    pending = []
+    for row in rows:
+        native = row["execution_session"] == session_ref and (
+            row["provider_turn_id"] or row["segment_type"] in {"compaction", "model", "tool"}
+        )
+        if row["segment_id"] in held or native:
+            if pending:
+                raise ValueError("Session context cannot append missing history before received segments")
+        else:
+            pending.append(row)
+    return pending
+
+
+def _turn_end(connection, sequence_id, turn_id, first, last):
+    cutoff = connection.execute(
+        "SELECT MAX(m.ordinal) AS ordinal FROM sequence_segments m JOIN segments segment USING(segment_id) "
+        "LEFT JOIN executions execution USING(execution_id) WHERE m.sequence_id=%s AND m.ordinal >= %s "
+        f"AND (%s::bigint IS NULL OR m.ordinal <= %s) AND {PROVIDER_TURN_SQL}=%s",
+        (sequence_id, first, last, last, turn_id),
+    ).fetchone()
+    if cutoff["ordinal"] is None:
+        raise ValueError("Fork cutoff has no recorded context in this Agent trace")
+    return int(cutoff["ordinal"])
+
+
+def _context_rows(connection, sequence_id, first, before, respect_latest_reset=False):
     reset_before = None if respect_latest_reset else before
     boundary = connection.execute(
         "SELECT COALESCE(MAX(p.ordinal),0) AS ordinal FROM operation_positions p "
@@ -299,14 +349,12 @@ def read_agent_context(
             break
         before = int(page[-1]["ordinal"])
     rows.reverse()
-    selected = []
-    for row in rows:
-        metadata = json_value(row["metadata_json"])
-        if metadata.get("kind") in PROVIDER_ONLY_KINDS | {"system_instructions"}:
-            continue
-        selected.append(row)
-    segments = read_segments(connection, [str(row["segment_id"]) for row in selected])
-    for item, row in zip(segments, selected):
+    return rows
+
+
+def _snapshot(connection, rows):
+    segments = read_segments(connection, [str(row["segment_id"]) for row in rows])
+    for item, row in zip(segments, rows):
         item["provider_turn_id"] = str(row["provider_turn_id"] or "")
     return {"segments": segments, "empty_context": not segments}
 
@@ -332,7 +380,11 @@ class AgentContexts:
                 (binding_id, agent_id),
             ).fetchone() is not None
 
-    def agent_context_snapshot(self, agent_id: str, *, before_message_id: str = "", through_message_id: str = "", through_turn_id: str = "", provider_session_ref: str = "") -> dict[str, Any]:
+    def agent_context_snapshot(
+        self, agent_id: str, *, before_message_id: str = "", through_message_id: str = "",
+        through_turn_id: str = "", provider_session_ref: str = "", recent_turns: int = 0,
+        require_round_count: bool = False,
+    ) -> dict[str, Any]:
         """The Agent's own effective window, including a Fork with no session yet.
 
         Walk backwards to the last compaction/reset. Read payloads only for the
@@ -343,15 +395,19 @@ class AgentContexts:
             # The boundary messages are found by the projection (chat_member).
             self.chat.chat_traces([agent_id])
         with self.database.snapshot() as connection:
-            return read_agent_context(connection, agent_id, before_message_id=before_message_id, through_message_id=through_message_id, through_turn_id=through_turn_id, provider_session_ref=provider_session_ref)
+            return read_agent_context(
+                connection, agent_id, before_message_id=before_message_id, through_message_id=through_message_id,
+                through_turn_id=through_turn_id, provider_session_ref=provider_session_ref,
+                recent_turns=recent_turns, require_round_count=require_round_count,
+            )
 
-    def delivery_context_snapshot(self, agent_id: str, *, message_id: str) -> dict[str, Any]:
+    def delivery_context_snapshot(self, agent_id: str, *, message_id: str, binding_id: str = "") -> dict[str, Any]:
         """Read contextual input predecessors within the current reset window."""
         if message_id:
             self.chat.chat_traces([agent_id])
         with self.database.snapshot() as connection:
             return read_agent_context(
-                connection, agent_id, before_message_id=message_id, respect_latest_reset=True,
+                connection, agent_id, before_message_id=message_id, respect_latest_reset=True, binding_id=binding_id,
             )
 
     def context_evidence_snapshot(self, agent_id: str) -> dict[str, Any]:
@@ -582,7 +638,7 @@ class AgentContexts:
         """Freeze model context, not the audit transcript, in one read snapshot.
 
         A historical cutoff is resolved in what the session held, read from
-        the Agent trace (``session_transcript_ids``), before applying its
+        the Agent trace within the session’s ordinal range, before applying its
         last compaction there. A later compaction must never leak future
         facts into a Fork-from-here snapshot.  An agent without a session is
         empty when it never ran, or when its context was cleared
@@ -600,50 +656,28 @@ class AgentContexts:
                     'SELECT * FROM provider_sessions WHERE provider=%s AND backend_route_id=%s AND backend_session_id=%s',
                     (provider, backend_route_id, backend_session_id),
                 ).fetchone()
-            context_ids = read_session_context_ids(
-                connection, str(session["provider_session_ref"]), agent_id=agent_id,
-            ) if session is not None and not through_turn_id else []
-            if not through_turn_id and (session is None or not context_ids):
-                if context_cleared or session is not None:
+            if session is None:
+                if context_cleared:
                     return {"segments": [], "empty_context": True}
-                if agent_id and not (backend_session_id or provider_session_ref):
+                if agent_id and not (backend_session_id or provider_session_ref or through_turn_id):
                     return read_agent_context(connection, agent_id)
                 return None
-            if session is None:
-                return None
-            if through_turn_id:
-                # A historical cutoff reads what the session held from its
-                # Agent trace, the one record of everything that happened.
-                member_ids = session_transcript_ids(
-                    connection, str(session["provider_session_ref"]), agent_id=agent_id,
-                )
-            else:
-                member_ids = context_ids
-            segments = read_segments(connection, member_ids)
-            attach_provider_turns(connection, segments)
-            if through_turn_id:
-                positions = [i for i, item in enumerate(segments)
-                             if item["provider_turn_id"] == through_turn_id]
-                if not positions:
+            window = _session_window(connection, str(session["provider_session_ref"]), agent_id)
+            if not window:
+                if through_turn_id:
                     raise ValueError("Fork cutoff has no recorded Provider context")
-                segments = segments[:positions[-1] + 1]
-                compactions = [i for i, item in enumerate(segments)
-                               if item["segment_type"] == "compaction"]
-                if compactions:
-                    segments = segments[compactions[-1]:]
-            # What the Provider's own process put in its window stays with it.
-            segments = [
-                item for item in segments
-                if (item.get("metadata") or {}).get("kind") not in PROVIDER_ONLY_KINDS
-            ]
+                return {"segments": [], "empty_context": True}
+            sequence_id, first, last = window
+            if through_turn_id:
+                last = _turn_end(connection, sequence_id, through_turn_id, first, last)
+            snapshot = _snapshot(connection, _context_rows(connection, sequence_id, first, last + 1))
             return {
                 "provider_session_ref": str(session["provider_session_ref"]),
                 "provider": str(session["provider"]),
                 "backend_session_id": str(session["backend_session_id"]),
                 "backend_route_id": str(session["backend_route_id"]),
                 "through_turn_id": through_turn_id,
-                "segments": segments,
-                "empty_context": not segments,
+                **snapshot,
             }
 
     def fork_context_segments(self, references: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:

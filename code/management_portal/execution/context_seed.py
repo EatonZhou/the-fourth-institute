@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import re
 
-from dataclasses import replace
 from typing import Any, Mapping, Protocol, Sequence, TypeVar
 
 
@@ -76,20 +75,20 @@ def context_seed(request: Any) -> dict[str, Any]:
     if not isinstance(references, list):
         raise ValueError("Provider context seed segments must be an array")
     for reference in references:
-        if not isinstance(reference, Mapping) or not str(reference.get("segment_id") or "").strip():
+        segment_id = reference.get("segment_id") if isinstance(reference, Mapping) else None
+        if not isinstance(segment_id, str) or not segment_id.strip():
             raise ValueError("Provider context seed contains an invalid Segment reference")
+    if len({ref["segment_id"] for ref in references}) != len(references):
+        raise ValueError("Provider context seed contains duplicate Segment references")
     prompt = value.get("prompt", "")
-    portable_prompt = value.get("portable_prompt", "")
     if prompt is not None and not isinstance(prompt, str):
         raise ValueError("Provider context seed prompt must be text")
-    if portable_prompt is not None and not isinstance(portable_prompt, str):
-        raise ValueError("Provider context seed portable prompt must be text")
+    if not references and value.get("portable_prompt") not in (None, "", prompt):
+        raise ValueError("Historical context requires database Segment references")
     return {
-        **dict(value),
         "schema": schema,
         "segments": [dict(item) for item in references],
         "prompt": str(prompt or ""),
-        "portable_prompt": str(portable_prompt or ""),
     }
 
 
@@ -111,31 +110,20 @@ def seed_reached_provider(invocation: object) -> bool:
     """
 
     checkpoint = getattr(invocation, "recovery_checkpoint", None) or {}
-    return bool(
-        str(checkpoint.get("turn_id") or "").strip()
-        and str(checkpoint.get("backend_session_id") or "").strip()
-    )
+    session_id = str(checkpoint.get("backend_session_id") or "").strip()
+    turn_id = str(checkpoint.get("turn_id") or "").strip()
+    active_id = getattr(getattr(invocation, "session", None), "backend_session_id", "")
+    if turn_id and session_id and active_id and active_id != session_id:
+        raise ValueError("Recovered turn belongs to a different Provider session")
+    return bool(turn_id and session_id)
 
 
-def realize_portable_seed(invocation: InvocationT) -> InvocationT:
-    """Realize the same seed through its provider-neutral transcript envelope.
-
-    The portable prompt is the inherited transcript followed by the seed's
-    prompt.  The transcript goes in front of this turn's own prompt, which
-    keeps what Portal put around the message for the turn: the Fork target's
-    own runtime identity and authorization context.
-    """
-
+def require_native_history_import(invocation: InvocationT) -> InvocationT:
+    """A prompt-only backend can resume an accepted turn or start with empty history."""
     seed = context_seed(invocation.request)
-    if not seed or seed_reached_provider(invocation):
-        return invocation
-    portable_prompt, prompt = seed["portable_prompt"], seed["prompt"]
-    if not portable_prompt or not portable_prompt.endswith(prompt):
-        raise ValueError(
-            "This backend requires a portable Provider context seed representation"
-        )
-    transcript = portable_prompt[: len(portable_prompt) - len(prompt)]
-    return replace(invocation, user_prompt=transcript + invocation.user_prompt)
+    if seed.get("segments") and not seed_reached_provider(invocation):
+        raise ValueError(f"{invocation.request.provider} cannot import structured historical segments")
+    return invocation
 
 
 def prepare_backend_context_seed(backend: object, invocation: InvocationT) -> InvocationT:
@@ -144,11 +132,6 @@ def prepare_backend_context_seed(backend: object, invocation: InvocationT) -> In
     seed = context_seed(invocation.request)
     if not seed:
         return invocation
-    if not seed["segments"] and seed["portable_prompt"]:
-        # A text-only handoff has no typed history for an adapter to import.
-        # Realize it once here, including for canonical-history adapters.
-        # Do not call a portable adapter afterwards: it would add it twice.
-        return realize_portable_seed(invocation)
     prepare = getattr(backend, "prepare_context_seed", None)
     if not callable(prepare):
         raise ValueError("Agent backend does not implement Provider context seed delivery")

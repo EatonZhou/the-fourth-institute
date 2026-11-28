@@ -66,7 +66,7 @@ def test_execution_contract_round_trip(namespace, kind):
 
 def test_seed_preserves_payload_and_validates_references(namespace):
     seed = {'schema': tagged('archive.provider-context-seed.v1', namespace),
-            'segments': [{'segment_id': 'segment_fixture'}], 'prompt': 'frozen', 'portable_prompt': 'portable'}
+            'segments': [{'segment_id': 'segment_fixture'}], 'prompt': 'frozen'}
     request = SimpleNamespace(metadata={'fork_context_input': seed})
     before = deepcopy(seed)
     result = checked(namespace, lambda: context_seed(request), numeric_versions=True)

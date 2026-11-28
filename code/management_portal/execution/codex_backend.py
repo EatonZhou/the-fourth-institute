@@ -19,6 +19,7 @@ from typing import Any, Callable, Mapping
 
 from management_common.product_environment import mirror_product_env
 from management_portal.codex_app_server_client import client_for_socket
+from management_portal.codex_app_server_threads import codex_thread_execution_lock
 from management_portal.codex_app_server_compaction import (
     DEFAULT_COMPACT_NO_PROGRESS_TIMEOUT_SECONDS,
     DEFAULT_COMPACT_TOTAL_TIMEOUT_SECONDS,
@@ -1000,6 +1001,11 @@ class CodexBackend:
             "compact": self._compact,
         }.get(operation)
         if handler is not None:
+            if request.metadata.get("fork_context_input") and operation in {"create", "compact"}:
+                with codex_thread_execution_lock(
+                    f"{route.account_id}:{thread_id}", cancellation_requested=session.provider_cancelled,
+                ):
+                    return handler(session)
             return handler(session)
         if operation != "turn":
             raise ValueError(f"unsupported Codex backend operation: {operation}")
@@ -1046,18 +1052,16 @@ class CodexBackend:
         if not request.metadata.get("preserve_session_context"):
             raise ValueError("Session creation history requires an explicit preservation operation")
         from .agent_data_store import get_agent_data_store
-        from .session_history_import import validate_codex_preservation
         store = get_agent_data_store()
-        validate_codex_preservation(store.fork_context_segments(seed["segments"]))
-        session.history_delivery(seed["segments"], store=store,
-                                 agent_id=seed["source_agent_id"]).initialize(session.thread_id)
+        source_agent_id = seed.get("source_agent_id") or request.agent_id
+        session.history_delivery(seed["segments"], store=store, agent_id=source_agent_id).initialize(session.thread_id)
         # create has no turn for the projector to mark. Keep the
         # acknowledged window attached to this session for later forks.
         imported_session = store.ensure_provider_session(
             provider=self.provider_id, backend_route_id=session.route.account_id,
             backend_session_id=session.thread_id, agent_id=request.agent_id, actor_ref=request.actor,
         )
-        store.record_context_received(seed["source_agent_id"], imported_session["provider_session_ref"],
+        store.record_context_received(source_agent_id, imported_session["provider_session_ref"],
             [item["segment_id"] for item in seed["segments"]], actor_ref=request.actor)
 
     def _fork(self, session: CodexSession) -> BackendResult:

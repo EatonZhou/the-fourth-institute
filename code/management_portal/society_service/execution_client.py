@@ -69,9 +69,9 @@ def agent_context_snapshot(agent_id: str, **kwargs: Any) -> dict[str, Any]:
     return get_agent_data_store().agent_context_snapshot(agent_id, **kwargs)
 
 
-def delivery_context_snapshot(agent_id: str, *, message_id: str) -> dict[str, Any]:
+def delivery_context_snapshot(agent_id: str, *, message_id: str, binding_id: str = "") -> dict[str, Any]:
     from management_portal.execution.agent_data_store import get_agent_data_store
-    return get_agent_data_store().delivery_context_snapshot(agent_id, message_id=message_id)
+    return get_agent_data_store().delivery_context_snapshot(agent_id, message_id=message_id, binding_id=binding_id)
 
 
 def prepare_context_preservation(agent_id: str, **kwargs: Any) -> dict[str, Any]:

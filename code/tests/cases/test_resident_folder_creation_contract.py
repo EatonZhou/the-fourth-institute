@@ -510,7 +510,7 @@ def test_fork_5_history_reaches_the_created_residents_next_work(
     })
 
     assert created["fork_mode"] == "recent-5"
-    assert "<resident_trace_context>" in prompt
+    assert "<resident_trace_context>" not in prompt
     assert "question 0" not in prompt
     assert "answer 0" not in prompt
     for index in range(1, 6):
@@ -543,7 +543,7 @@ def test_fork_from_here_provider_history_reaches_the_created_residents_next_work
     })
 
     assert created["fork_mode"] == "message"
-    assert "<resident_trace_context>" in prompt
+    assert "<resident_trace_context>" not in prompt
     assert "question 0" in prompt
     assert "answer 0" in prompt
     assert "question 1" in prompt
@@ -2220,4 +2220,5 @@ def test_fork_appears_in_lineage_without_separate_graph_membership(future_creati
 def _trace_prompt(record, job):
     from management_portal.society_service.resident_execution_domain import _portable_context_execution
     prepared = _portable_context_execution(record, job)
-    return prepared.get('fork_context_input', {}).get('portable_prompt', prepared['actual_sent_prompt'])
+    from tests.cases.test_resident_fork_context_delivery import _delivered_window
+    return _delivered_window(prepared) if prepared.get('fork_context_input') else prepared['actual_sent_prompt']

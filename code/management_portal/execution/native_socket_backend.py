@@ -28,7 +28,7 @@ from .backend_contracts import (
     _live_context_usage,
     full_system_context,
 )
-from .context_seed import realize_portable_seed
+from .context_seed import require_native_history_import
 from .contracts import ExecutionRecoveryDeferred, positive_int
 from .harness_capabilities import SUBAGENTS
 from .native_session_compaction import NativeCompaction
@@ -276,7 +276,7 @@ class NativeSocketBackend:
         self,
         invocation: BackendInvocation,
     ) -> BackendInvocation:
-        return realize_portable_seed(invocation)
+        return require_native_history_import(invocation)
 
     def execute(
         self,

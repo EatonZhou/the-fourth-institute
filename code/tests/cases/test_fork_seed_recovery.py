@@ -22,13 +22,10 @@ from management_portal.execution import claude_backend, codex_backend
 from management_portal.execution.agent_data_session_capture import persist_provider_compaction
 from management_portal.execution.agent_data_store import AgentDataStore
 from management_portal.execution.backend_contracts import BackendInvocation
-from management_portal.execution.context_seed import CONTEXT_SEED_SCHEMA, realize_portable_seed
+from management_portal.execution.context_seed import CONTEXT_SEED_SCHEMA, require_native_history_import
 from management_portal.execution.requests import build_agent_turn_request
 from management_portal.execution.session_manager import RuntimeSession
 from management_portal.society_service import resident_restart_domain
-
-SEEDED_PROMPT = "<portable_full_context>inherited window</portable_full_context>\n\ncontinue the task"
-
 
 def _seeded_invocation(recovery_checkpoint: dict[str, str] | None = None) -> BackendInvocation:
     request = build_agent_turn_request(
@@ -42,7 +39,6 @@ def _seeded_invocation(recovery_checkpoint: dict[str, str] | None = None) -> Bac
             "schema": CONTEXT_SEED_SCHEMA,
             "segments": [{"segment_id": "segment-source-window"}],
             "prompt": "continue the task",
-            "portable_prompt": SEEDED_PROMPT,
         }},
     )
     return BackendInvocation(
@@ -61,20 +57,29 @@ def _seeded_invocation(recovery_checkpoint: dict[str, str] | None = None) -> Bac
 
 def test_first_attempt_sends_the_seed() -> None:
     """Fork 继承的上下文只送达 Provider 一次，失败轮次的压缩照样记录"""
-    assert realize_portable_seed(_seeded_invocation()).user_prompt == SEEDED_PROMPT
+    with pytest.raises(ValueError, match="cannot import structured"):
+        require_native_history_import(_seeded_invocation())
 
 
 def test_recovered_turn_resumes_without_sending_the_seed_again() -> None:
     """Fork 继承的上下文只送达 Provider 一次，失败轮次的压缩照样记录"""
     recovered = _seeded_invocation({"turn_id": "turn-1", "backend_session_id": "claude-session-1"})
-    assert realize_portable_seed(recovered).user_prompt == "continue the task"
+    assert require_native_history_import(recovered).user_prompt == "continue the task"
+
+
+def test_recovered_history_cannot_resume_in_a_different_session():
+    invocation = _seeded_invocation({"turn_id": "turn-1", "backend_session_id": "original"})
+    invocation = replace(invocation, session=replace(invocation.session, backend_session_id="other"))
+    with pytest.raises(ValueError, match="different Provider session"):
+        require_native_history_import(invocation)
 
 
 def test_attempt_that_never_reached_the_provider_still_sends_the_seed() -> None:
     """Fork 继承的上下文只送达 Provider 一次，失败轮次的压缩照样记录"""
     # The Provider session did not exist yet, so nothing holds the seed.
     unstarted = _seeded_invocation({"turn_id": "turn-1", "backend_session_id": ""})
-    assert realize_portable_seed(unstarted).user_prompt == SEEDED_PROMPT
+    with pytest.raises(ValueError, match="cannot import structured"):
+        require_native_history_import(unstarted)
 
 
 def test_compactions_of_a_failed_turn_are_recorded() -> None:
@@ -146,8 +151,8 @@ def test_restart_handoff_reuses_canonical_fork_window(monkeypatch, compacted):
     monkeypatch.setattr(resident_execution_domain, '_prepare_resident_prompt', lambda r, j: {**j, 'actual_sent_prompt': j['raw_message']})
     seed = resident_execution_domain._portable_context_execution(saved[-1], {'raw_message': 'continue'})['fork_context_input']
     assert [s['segment_id'] for s in seed['segments']] == [s['segment_id'] for s in before['segments']]
-    assert ('kept summary' if compacted else 'old request') in seed['portable_prompt']
-    assert 'pre-compaction secret' not in seed['portable_prompt']
+    assert seed['prompt'] == 'continue'
+    assert 'portable_prompt' not in seed
 
 
 class _DaemonClient:
@@ -186,6 +191,7 @@ def test_restart_after_a_failed_unbound_first_turn_hands_its_work_over(monkeypat
     from management_portal.society_service import resident_backend, resident_domain
 
     record, operations, _saved = _restart_domain(monkeypatch)
+    record["backend_route_id"] = "zero"
     from management_portal.execution.agent_data_store import AgentDataStore
     store = AgentDataStore()
     binding_id = resident_backend.execution_binding_id(record)
@@ -211,7 +217,7 @@ def test_restart_after_a_failed_unbound_first_turn_hands_its_work_over(monkeypat
     from management_portal.society_service import resident_execution_domain
     monkeypatch.setattr(resident_execution_domain, "_prepare_resident_prompt", lambda r, j: {**j, "actual_sent_prompt": j["raw_message"]})
     seed = resident_execution_domain._portable_context_execution(_saved[-1], {"raw_message": "continue"})["fork_context_input"]
-    assert seed["segments"] and "old request" in seed["portable_prompt"]
+    assert "old request" in [item["content"] for item in store.fork_context_segments(seed["segments"])]
 
 
 def test_restart_of_a_resident_that_never_had_a_session_only_configures(monkeypatch) -> None:
@@ -220,6 +226,7 @@ def test_restart_of_a_resident_that_never_had_a_session_only_configures(monkeypa
     from management_portal.society_service import resident_backend, resident_domain
 
     record, operations, _saved = _restart_domain(monkeypatch)
+    record["backend_route_id"] = "zero"
     monkeypatch.setattr(resident_backend, "session_record", lambda *_a, **_kw: {})
     monkeypatch.setattr(resident_restart_domain.execution_port, "latest_provider_session_ref",
                         lambda _resident_id, since="": "", raising=False)

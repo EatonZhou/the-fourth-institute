@@ -371,7 +371,7 @@ def _create_resident_by_full_context_fork(
     stage_agent_data_fork(
         child,
         str(child["source_resident_id"]),
-        segment_ids=[item["segment_id"] for item in resident_fork_context.select_segments(context_snapshot)],
+        segment_ids=[item["segment_id"] for item in context_snapshot["segments"]],
     )
     if defer_backend_start:
         _freeze_fork_child(child)
@@ -495,9 +495,11 @@ def _message_matches_selector(
 
 def _fork_provider_context_snapshot(
     record: Mapping[str, Any], *, through_message_id: str = "", through_turn_id: str = "",
+    recent_turns: int = 0, require_round_count: bool = False,
 ) -> dict[str, Any]:
     return execution_port.agent_context_snapshot(resident_domain_common.record_resident_id(record),
-        through_message_id=through_message_id, through_turn_id=through_turn_id)
+        through_message_id=through_message_id, through_turn_id=through_turn_id,
+        recent_turns=recent_turns, require_round_count=require_round_count)
 
 
 @_creation_request
@@ -574,7 +576,7 @@ def create_resident_fork_from_message(
         # Conversation owns its display boundary. Its canonical Messages do
         # not carry Provider IDs; retain the selected turn's existing replies,
         # not just the input, without using Chat text as model context.
-        segments = resident_fork_context.select_segments(snapshot)
+        segments = snapshot["segments"]
         child = {
             "resident_id": target_resident_id,
             "title": str(fork_title or "").strip()
@@ -653,12 +655,10 @@ def create_resident_context_fork(
         registry = resident_lineage.snapshot(record)
         ensure_resident_visible_to_actor(record, actor_id)
         owner = _can_manage_resident(record, actor_id)
-        context_snapshot = _fork_provider_context_snapshot(record)
+        context_snapshot = _fork_provider_context_snapshot(record, recent_turns=turn_count, require_round_count=True)
         if not context_snapshot:
             raise ValueError("Fork 来源缺少有效模型上下文")
-        segments = resident_fork_context.select_segments(
-            context_snapshot, recent_turns=turn_count, require_round_count=True,
-        )
+        segments = context_snapshot["segments"]
         derived_residents = resident_runtime_domain.managed_derived_residents(
             record,
             registry,
@@ -735,14 +735,11 @@ def initialize_resident_context_from_source(
     mode = str(context_mode or "full").strip().lower()
     if mode not in {"full", "5", "10"}:
         raise ValueError("context mode 必须是 full、5 或 10")
-    snapshot = _fork_provider_context_snapshot(source)
+    turns = int(mode) if mode in {"5", "10"} else 0
+    snapshot = _fork_provider_context_snapshot(source, recent_turns=turns)
     if not snapshot:
         raise ValueError("Fork 来源缺少有效模型上下文；不能用 Chat 历史替代")
-    turns = int(mode) if mode in {"5", "10"} else 0
-    segments = resident_fork_context.select_segments(
-        snapshot,
-        recent_turns=turns,
-    )
+    segments = snapshot["segments"]
     stage_agent_data_fork(record, resident_domain_common.record_resident_id(source),
         segment_ids=[item["segment_id"] for item in segments])
     record.update({

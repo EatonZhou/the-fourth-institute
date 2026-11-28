@@ -86,16 +86,8 @@ def test_media_wrapper_preserves_nested_metadata_and_tool_error():
     }
     error = {'code': 'partial-result', 'message': '一部分结果不可用'}
     original = copy.deepcopy(payload)
-    output = _replay(payload, error=error)[1]['output']
-    assert output[:2] == [
-        {'type': 'input_text', 'text': 'partial diagram'},
-        {'type': 'input_image', 'image_url': 'data:image/png;base64,ZmFrZQ=='},
-    ]
-    assert [json.loads(part['text']) for part in output[2:]] == [
-        {'isError': True, 'structuredContent': payload['result']['structuredContent']},
-        {'status': 'partial', 'execution_id': 'execution-example'},
-        {'error': error},
-    ]
+    with pytest.raises(ValueError, match="unsupported metadata"):
+        _replay(payload, error=error)
     assert payload == original
 
 
@@ -134,12 +126,11 @@ def test_claude_output_blocks_replay_typed_media(source, expected):
     """
     payload = {'output': [
         {'type': 'text', 'text': 'diagram'}, {'type': 'image', 'source': source},
-    ], 'tool_use_id': 'claude-call'}
+    ]}
     original = copy.deepcopy(payload)
     output = _replay(payload)[1]['output']
     assert output == [
         {'type': 'input_text', 'text': 'diagram'},
         {'type': 'input_image', 'image_url': expected},
-        {'type': 'input_text', 'text': '{"tool_use_id":"claude-call"}'},
     ]
     assert payload == original

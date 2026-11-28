@@ -37,11 +37,8 @@ def test_switch_reuses_complete_fork_seed_until_accepted(monkeypatch, strategy):
     job = {'actor': 'alice', 'raw_message': 'continue the original task'}
     seed = execution._portable_context_execution(current, job)['fork_context_input']
     assert [s['segment_id'] for s in seed['segments']] == [s['segment_id'] for s in before['segments']]
-    for i in range(6):
-        assert f'user-round-{i}' in seed['portable_prompt']
-        assert f'answer-round-{i}' in seed['portable_prompt']
-    assert 'original-tool-result' in seed['portable_prompt']
-    assert seed['portable_prompt'].endswith(job['raw_message'])
+    assert seed['prompt'] == job['raw_message']
+    assert tool in [s['segment_id'] for s in seed['segments']]
     manager = execution_port.sessions()
     manager.bind_session(resident_backend.execution_binding_id(current), provider='codex',
                          backend_route_id='one', backend_session_id='new-account-thread')
@@ -50,6 +47,9 @@ def test_switch_reuses_complete_fork_seed_until_accepted(monkeypatch, strategy):
     store.begin_execution(execution_id=eid, agent_id=rid, actor_ref='alice', provider='codex', started_at='2026-11-25T00:00:00Z')
     store.bind_execution_provider_session(eid, provider_session_ref=resident_backend.session_record(current)['provider_session_ref'])
     store.record_input_acceptance(eid, agent_id=rid, provider_turn_id='accepted-turn')
+    assert execution._portable_context_execution(current, job)['fork_context_input'] == seed
+    store.record_context_received(rid, resident_backend.session_record(current)['provider_session_ref'],
+                                  [s['segment_id'] for s in seed['segments']], actor_ref='alice')
     assert 'fork_context_input' not in execution._portable_context_execution(current, job)
 
 
@@ -62,7 +62,8 @@ def test_initialized_compacted_fork_reseeds_after_switch(monkeypatch):
     current = saved[-1]
     assert not any(k in current for k in ('context_compaction_policy', 'context_compaction_state', 'context_compacted_at'))
     monkeypatch.setattr(execution, '_prepare_resident_prompt', lambda r, j: {**j, 'actual_sent_prompt': j['raw_message']})
-    prompt = execution._portable_context_execution(current, {'raw_message': 'continue'})['fork_context_input']['portable_prompt']
+    from tests.cases.test_resident_fork_context_delivery import _delivered_window
+    prompt = _delivered_window(execution._portable_context_execution(current, {'raw_message': 'continue'}))
     assert 'kept summary' in prompt and 'original-call' in prompt
     assert 'pre-compaction secret' not in prompt
     assert not operations and not resets
@@ -86,8 +87,9 @@ def test_existing_short_handoff_uses_full_canonical_history(monkeypatch, strateg
     current['session_restart']['pending_handoff'] = {'strategy': strategy, 'prompt': 'truncated summary'}
     monkeypatch.setattr(execution, '_prepare_resident_prompt', lambda r, j: {**j, 'actual_sent_prompt': j['raw_message']})
     seed = execution._portable_context_execution(current, {'raw_message': 'continue'})['fork_context_input']
-    assert 'old request' in seed['portable_prompt'] and 'old result' in seed['portable_prompt']
-    assert 'truncated summary' not in seed['portable_prompt']
+    assert [s['segment_id'] for s in seed['segments']] == [
+        s['segment_id'] for s in store.agent_context_snapshot(current['resident_id'])['segments']]
+    assert seed['prompt'] == 'continue'
 
 
 @pytest.mark.parametrize('strategy', ['native', 'local'])
@@ -138,4 +140,4 @@ def test_old_committed_compaction_material_remains_readable(monkeypatch):
         'pending_handoff': {'operation_id': 'old', 'strategy': 'compact', 'context_reset_at': '',
                             'target': {'provider': 'codex', 'route': 'zero'}, 'prompt': 'old frozen material'},
     })
-    assert 'old frozen material' in pending.context_seed(record, 'new task', accepted=False)['portable_prompt']
+    assert pending.validate_handoff(record) is None

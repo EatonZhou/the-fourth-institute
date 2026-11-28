@@ -20,9 +20,7 @@ from management_portal.society_service import (
 )
 from management_portal.society_service import resident_fork_domain
 from management_portal.society_service import resident_record_domain
-from management_portal.society_service import resident_fork_context
 from management_portal.execution.agent_data_store import get_agent_data_store
-from management_portal.execution.codex_history import response_items_from_segments
 from management_portal.execution.contracts import ExecutionInputControl
 from tests.cases.test_resident_folder_creation_contract import (
     future_creation_store,
@@ -41,7 +39,7 @@ from management_portal.society_service import project_folders
 def _delivered_window(prepared):
     history = prepared['fork_context_input']
     assert history['prompt'] == prepared['actual_sent_prompt']
-    items = response_items_from_segments(get_agent_data_store().fork_context_segments(history['segments']))
+    items = [item['content'] for item in get_agent_data_store().fork_context_segments(history['segments'])]
     # String form is only a test assertion aid, never the wire representation.
     return json.dumps(items, ensure_ascii=False) + prepared['actual_sent_prompt']
 
@@ -73,198 +71,6 @@ def test_fork_snapshot_resolves_execution_provider_identity(
 
     assert snapshot is not None
     assert [item['segment_id'] for item in snapshot['segments']] == [segment_id]
-
-
-def test_fork_window_keeps_every_reply_and_exact_link(subtests, isolated_portal_case):
-    """fork 最近 5 或 10 轮时保留这些轮的全部回复和完整下载链接"""
-    for count in [5, 10]:
-        with subtests.test(count=count), isolated_portal_case() as case_path:
-            segments = []
-            for index in range(12):
-                segments.extend([
-                    {
-                        'segment_id': f'input-{index}',
-                        'provider_turn_id': f'turn-{index}',
-                        'segment_type': 'harness',
-                        'metadata': {'role': 'user', 'kind': 'effective_provider_input'},
-                        'content': f'question-{index}',
-                    },
-                    {
-                        'segment_id': f'download-{index}',
-                        'provider_turn_id': f'turn-{index}',
-                        'segment_type': 'model',
-                        'content': f'download-{index}: /files/report-{index}.pdf?download=1',
-                    },
-                    {
-                        'segment_id': f'final-{index}',
-                        'provider_turn_id': f'turn-{index}',
-                        'segment_type': 'model',
-                        'content': f'final-{index}',
-                    },
-                ])
-            selected = resident_fork_context.seed_messages(
-                {'provider_session_ref': 'source', 'segments': segments},
-                recent_turns=count,
-            )
-            texts = [resident_domain_common.protocol_message_text(item) for item in selected]
-            assert len(selected) == count * 3
-            for index in range(12 - count, 12):
-                assert f'download-{index}: /files/report-{index}.pdf?download=1' in texts
-            assert f'question-{11 - count}' not in texts
-
-
-def test_fork_context_does_not_silently_truncate_delivery_links_contracts(subtests, isolated_portal_case):
-    """Fork 继承的上下文不截断交付链接
-
-    长消息末尾的交付链接完整保留在 Fork 的首条上下文中；只有加密推理的片段不生成占位文本。
-
-    :importance: P1
-    """
-    with subtests.test(contract='test_fork_context_does_not_silently_truncate_delivery_links'), isolated_portal_case() as case_path:
-        text = 'evidence ' * 2000 + '\n/files/late-delivery.zip?download=1'
-        messages = resident_fork_context.seed_messages({
-            'provider_session_ref': 'source',
-            'segments': [{
-                'segment_id': 'delivery',
-                'provider_turn_id': 'turn-delivery',
-                'segment_type': 'model',
-                'content': text,
-            }],
-        })
-        assert resident_domain_common.protocol_message_text(messages[0]) == text
-    with subtests.test(contract='test_fork_does_not_inject_encrypted_reasoning_placeholders'), isolated_portal_case() as case_path:
-        snapshot = {'provider_session_ref': 'source', 'segments': [{'segment_id': 'encrypted-only', 'segment_type': 'model', 'content': {'encrypted': True}, 'metadata': {'kind': 'reasoning'}}, {'segment_id': 'readable', 'segment_type': 'model', 'content': {'encrypted': True, 'summary': 'readable summary'}, 'metadata': {'kind': 'reasoning'}}, {'segment_id': 'native', 'segment_type': 'model', 'content': {'encrypted': True, 'encrypted_content': 'opaque-native-content'}, 'metadata': {'kind': 'reasoning'}}]}
-        messages = resident_fork_context.seed_messages(snapshot)
-        assert [item['source_segment_id'] for item in messages] == ['readable']
-        assert 'readable summary' in messages[0]['content_parts'][0]['text']
-        assert 'opaque-native-content' not in str(messages)
-        snapshot['segments'] = [{'segment_id':'typed','segment_type':'model','content':{
-            'type':'reasoning','encrypted_content':'opaque-typed','summary':[{'type':'summary_text','text':'native readable'}]},
-            'metadata':{'kind':'reasoning'}}]
-        projected=resident_fork_context.seed_messages(snapshot)
-        assert 'native readable' in str(projected) and 'opaque-typed' not in str(projected)
-    with subtests.test(contract='test_recent_fork_counts_harness_transformed_user_turns'), isolated_portal_case() as case_path:
-        segments = []
-        for index in range(7):
-            segments.extend([{'segment_id': f'input-{index}', 'provider_turn_id': f'turn-{index}', 'segment_type': 'harness', 'metadata': {'role': 'user', 'kind': 'effective_provider_input'}, 'content': f'question-{index}'}, {'segment_id': f'output-{index}', 'provider_turn_id': f'turn-{index}', 'segment_type': 'model', 'content': f'answer-{index}'}])
-        messages = resident_fork_context.seed_messages({'segments': segments, 'provider_session_ref': 'source'}, recent_turns=5)
-        assert [item['source_segment_id'] for item in messages] == [item['segment_id'] for item in segments[4:]]
-        assert messages[0]['role'] == 'user'
-
-
-def test_fork_never_inherits_another_session_startup_instructions(isolated_portal_case):
-    """Fork 不继承另一个 session 的一次性启动指令（包括经未启动完整 Fork 继承的副本）
-
-    未启动完整 Fork 的种子以来源 session 的隐藏启动指令开头；从它再 Fork 时不得携带，目标 session 使用自己的启动指令，否则模型把继承事实当作其他 Resident 的。
-    """
-    # An unstarted full Fork's seed begins with the source session's hidden startup
-    # instructions (no provider turn); forking from it must not carry them along.
-    with isolated_portal_case():
-        messages = resident_fork_context.seed_messages({'provider_session_ref': 'source', 'segments': [
-            {'segment_id': 'startup', 'segment_type': 'input', 'content': '<portal-system-prompt role="resident">resident_id: resident_aaaaaaaaaaaa',
-             'metadata': {'role': 'system', 'source': 'system_context', 'kind': 'system_instructions', 'hidden_from_chat': True}},
-            # DSH records the system and developer messages of its own session as Provider input.
-            {'segment_id': 'dsh-system', 'provider_turn_id': 'turn-1', 'segment_type': 'input',
-             'content': [{'type': 'text', 'text': '<portal-system-prompt role="resident">'}], 'metadata': {'role': 'system', 'source': 'dsh_input'}},
-            {'segment_id': 'dsh-developer', 'provider_turn_id': 'turn-1', 'segment_type': 'input',
-             'content': [{'toolName': 'search_harness_artifact', 'type': 'tool-addition'}], 'metadata': {'role': 'developer', 'source': 'dsh_input'}},
-            {'segment_id': 'question', 'provider_turn_id': 'turn-1', 'segment_type': 'input', 'content': 'K01?'},
-            {'segment_id': 'answer', 'provider_turn_id': 'turn-1', 'segment_type': 'model', 'content': 'K01 a7c39e10'},
-        ]}, recent_turns=1)
-        assert [item['source_segment_id'] for item in messages] == ['question', 'answer']
-
-
-def test_fork_context_carries_text_not_base64_media(isolated_portal_case):
-    """Fork 继承的上下文只带文字，不带 base64 图片
-
-    源会话里用户附带的图片和工具读取的截图，在 Fork 首条上下文中不带 base64 数据，避免首轮超出上下文窗口。
-
-    :importance: P1
-    """
-    # A Fork's inherited history is text in its first prompt.  Screenshots and
-    # images a tool read were base64 there; three of them took a Fork's first
-    # turn past a 1M-token window ("Prompt is too long").
-    png = "iVBORw0KGgo" + "A" * 200_000
-    with isolated_portal_case():
-        messages = resident_fork_context.seed_messages({'provider_session_ref': 'source', 'segments': [
-            {'segment_id': 'question', 'provider_turn_id': 'turn-1', 'segment_type': 'harness',
-             'metadata': {'kind': 'effective_provider_input', 'role': 'user'},
-             'content': {'content': [{'type': 'text', 'text': 'K02 这张图对齐吗？'},
-                                     {'type': 'image', 'image_url': f'data:image/png;base64,{png}'}]}},
-            {'segment_id': 'read', 'provider_turn_id': 'turn-1', 'segment_type': 'tool',
-             'content': {'call_id': 'toolu_1', 'input': {'arguments': {'file_path': '/tmp/k02.png'}},
-                         'result': {'output': [{'type': 'image', 'source': {'type': 'base64', 'media_type': 'image/png', 'data': png}}]}}},
-            {'segment_id': 'mcp', 'provider_turn_id': 'turn-1', 'segment_type': 'tool',
-             'content': {'result': {'content': [{'type': 'image', 'data': png, 'mimeType': 'image/jpeg'}]}}},
-            {'segment_id': 'answer', 'provider_turn_id': 'turn-1', 'segment_type': 'model', 'content': 'K02 对齐了'},
-        ]})
-        texts = [resident_domain_common.protocol_message_text(item) for item in messages]
-        assert [item['source_segment_id'] for item in messages] == ['question', 'read', 'mcp', 'answer']
-        assert not any('iVBORw0KGgo' in text for text in texts)
-        assert sum(map(len, texts)) < 2_000
-        assert 'K02 这张图对齐吗？' in texts[0] and '[image/png，约 146 KB，继承的历史只带文字，此处省略]' in texts[0]
-        assert '/tmp/k02.png' in texts[1] and '[image/png，约 146 KB' in texts[1]
-        assert '[image/jpeg，约 146 KB' in texts[2]
-        assert texts[3] == 'K02 对齐了'
-
-
-def test_fork_context_keeps_the_recent_turns_that_fit_the_window():
-    """Fork 上下文保留窗口放得下的最近几轮
-
-    按估算的 token 数，Fork 首条上下文保留压缩摘要和窗口 60% 以内的最近完整轮次，更早的轮次略去并计数。
-
-    :importance: P1
-    """
-    def message(segment_id, role, text, kind="input"):
-        return {"source_segment_id": segment_id, "role": role, "source_segment_type": kind,
-                "content_parts": [{"type": "text", "text": text}]}
-    # 1,000 Latin characters count as 420 tokens; 8,000 Chinese ones as 10,000.
-    assert resident_fork_context.estimated_tokens("x" * 1_000) == 420
-    assert resident_fork_context.estimated_tokens("测" * 8_000) == 10_000
-    history = [message("summary", "system", "x" * 1_000, "compaction")] + [
-        item for turn in range(1, 5) for item in (
-            message(f"q{turn}", "user", "x" * 1_000), message(f"t{turn}", "system", "测" * 8_000, "tool"),
-            message(f"a{turn}", "agent", "x" * 1_000))]
-    # 60% of a 50k-token window is 30,000 tokens: the summary and two 10,840-token turns.
-    kept, left_out = resident_fork_context.fit_to_window(history, 50_000)
-    assert [item["source_segment_id"] for item in kept] == ["summary", "q3", "t3", "a3", "q4", "t4", "a4"]
-    assert left_out == 6
-    assert resident_fork_context.fit_to_window(history, 1_000_000) == (history, 0)
-    # A turn larger than the window leaves only the summary of older history.
-    assert resident_fork_context.fit_to_window(history, 10_000)[0] == history[:1]
-
-
-def test_fork_context_text_says_what_did_not_fit(monkeypatch):
-    """Fork 上下文说明有多少历史没放进去
-
-    源会话历史超出新会话窗口时，Fork 首条上下文开头说明更早的几条历史未包含，只带最近放得下的消息。
-
-    :importance: P1
-    """
-    history = [{"source_segment_id": f"m{index}", "role": "user" if index % 2 == 0 else "agent",
-                "source_segment_type": "input" if index % 2 == 0 else "model",
-                "content_parts": [{"type": "text", "text": f"K03-{index} " + "文" * 20_000}]} for index in range(6)]
-    monkeypatch.setattr(resident_fork_context, "seed_messages", lambda snapshot: history)
-    monkeypatch.setattr("management_portal.society_service.resident_record_domain.find_resident",
-                        lambda resident_id: {"last_model_context_window": 100_000} if resident_id == "resident_source00001" else None)
-    text = resident_execution_domain.resident_trace_context_text(
-        {"last_model_context_window": 100_000}, {"segments": []})
-    # 60% of the source's 100k-token window is 60,000 tokens: two of these 25,003-token messages.
-    assert text.startswith("（更早的 4 条历史超出新会话可用上下文")
-    assert "K03-3 " not in text and "K03-4 " in text and "K03-5 " in text
-
-
-def test_fork_rejects_compaction_without_database_replacement_body(subtests, isolated_portal_case):
-    """压缩记录缺少数据库中的替换历史时 fork 报错"""
-    for content in [None, '', {}, {'provider_checkpoint': {'as_of_seq': 42}},
-                                     {'replacement_history': []}]:
-        with subtests.test(content=content), isolated_portal_case() as case_path:
-            with pytest.raises(ValueError, match='压缩记录缺少'):
-                resident_fork_context.seed_messages({
-                    'provider_session_ref': 'source', 'segments': [{
-                        'segment_id': 'opaque', 'segment_type': 'compaction', 'content': content,
-                    }],
-                })
 
 
 @pytest.mark.parametrize('nested', [False, True])
@@ -306,8 +112,9 @@ def test_recent_fork_uses_child_trace_before_first_run(future_creation_store, mo
         assert (f'question {index}' in prompt) == (index >= 2)
         assert (f'answer {index}' in prompt) == (index >= 2)
     assert 'future-parent' not in prompt
-    # The inherited history carries the source's identity; the child is told it is its own now.
-    assert f"由 {fork_source['resident_id']} Fork 而来" in prepared['fork_context_input']['portable_prompt']
+    assert prepared["fork_context_input"]["segments"] == _trace_refs(child)
+    assert "portable_prompt" not in prepared["fork_context_input"]
+
 
 
 @pytest.mark.parametrize('nested', [False, True])
@@ -477,6 +284,10 @@ def test_compacted_fork_compacts_frozen_context_before_first_turn(
 
     def compact(**kwargs):
         compact_calls.append(kwargs)
+        refs = kwargs["metadata"]["fork_context_input"]["segments"]
+        get_agent_data_store().record_context_received(child["resident_id"],
+            resident_backend.session_record(child)["provider_session_ref"],
+            [ref["segment_id"] for ref in refs], actor_ref="sample_admin")
         return {'usage': {'input_tokens': 20, 'output_tokens': 4}}
 
     monkeypatch.setattr(resident_session_backend_domain, 'create_exact_resident_session', create_session)
@@ -805,7 +616,7 @@ def test_historical_window_uses_compaction_before_cutoff_not_a_later_summary(fut
     source = _activate_created_resident(source['resident_id'])
     store = get_agent_data_store()
     session, old_ids, _ = _record_provider_turn(store, source, 0, answer='pre-compaction-obsolete')
-    summary = store.put_segment(segment_type='compaction', content={'replacement_history': ['first-summary']},
+    summary = store.put_segment(segment_type='compaction', content_type='application/json', content={'replacement_history': ['first-summary']},
                                 execution_id=f'execution-fork-context-{source["resident_id"]}-0')
     store.append_agent_segments(source['resident_id'], [summary], actor_ref='sample_admin')
     _, target_ids, target_turn = _record_provider_turn(store, source, 1, answer='cutoff-answer')
@@ -817,9 +628,8 @@ def test_historical_window_uses_compaction_before_cutoff_not_a_later_summary(fut
     assert [item['segment_id'] for item in snapshot['segments']] == [summary, *target_ids]
     trace_ids = store.sequence_segment_ids(store.trace_sequence_id(source['resident_id']))
     assert snapshot['segments'][-1]['segment_id'] == target_ids[-1]
-    texts = [resident_domain_common.protocol_message_text(item) for item in resident_fork_context.seed_messages(snapshot)]
-    assert 'first-summary' in '\n'.join(texts)
-    assert 'future-summary' not in '\n'.join(texts)
+    assert snapshot["segments"][0]["content"] == {"replacement_history": ["first-summary"]}
+
 
 
 @pytest.mark.parametrize('fork_mode', ['source', 'full', 'recent10'])
@@ -952,7 +762,7 @@ def test_preserved_session_first_input_does_not_reimport_older_provider_history(
     rid = record['resident_id']
     for sid, content in [('older-dsh', [{'type': 'tool-removal', 'toolName': 'subagent'}]),
                          ('handoff-summary', 'The selected handoff knows blue=17.')]:
-        store.put_segment(segment_id=sid, segment_type='input', content=content,
+        store.put_segment(segment_id=sid, segment_type='compaction' if sid == 'handoff-summary' else 'input', content=content,
                           created_by_agent_id=rid, created_by_actor_ref='sample_admin',
                           metadata={'role': 'user'})
         store.append_agent_segments(rid, [sid], actor_ref='sample_admin')
@@ -1041,6 +851,8 @@ def _accept_child_context(child):
     if not resident_backend.record_session_id(child):
         register_session(child, '01a00000-0000-7000-8000-' + child['resident_id'][-12:], backend_route_id='zero')
     session = resident_backend.session_record(child)
+    store.record_context_received(child["resident_id"], session["provider_session_ref"],
+                                  [ref["segment_id"] for ref in _trace_refs(child)], actor_ref="sample_admin")
     identity = 'execution-accepted-' + child['resident_id']
     store.begin_execution(execution_id=identity, agent_id=child['resident_id'], actor_ref='sample_admin', provider='codex', started_at='2026-10-10T00:00:00Z')
     store.bind_execution_provider_session(identity, provider_session_ref=session['provider_session_ref'])
