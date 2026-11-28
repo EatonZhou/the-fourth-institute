@@ -77,6 +77,10 @@ function deletionFixture() {
     refreshResidentSidebarIfDue: async () => {}, syncLineageHatgPanel: async () => {},
     activeChatTargetId: () => state.chatTarget?.key, activeLineageId: () => 'lineage_one',
     writeLastSelection: noop, syncChatTargetLocation: noop, stopPreviewRefresh: noop,
+    selectResident: async (id, options) => {
+      calls.push(['select', id]);
+      state.chatTarget = {id, key: 'resident:' + id, lineage_id: options.lineageId};
+    },
   });
   vm.runInContext(declarations(['lineage_workbench.js', ...workbenchModuleFiles()], ['deleteResidentFromWorkbench', 'removeDeletedResidentSurfaces',
     'clearDeletedResidentLocation', 'loadDetail', 'loadFolder']), ctx);
@@ -172,7 +176,7 @@ test('successful deletion keeps every matching Chat identity with a disabled com
   assert.equal(f.other.contract, undefined);
   await f.ctx.loadDetail(true);
   await f.ctx.loadFolder();
-  assert.equal(f.notices.length, 0);
+  assert.deepEqual(f.notices.map(notice => notice[1]), ['info', 'success']);
 });
 
 test('failed deletion and navigation while deletion is pending preserve the current selection', async () => {
@@ -201,9 +205,23 @@ test('explicit parent fallback works and a post-delete refresh failure never reb
     const pending = f.ctx.deleteResidentFromWorkbench({residentId: f.target.id, fallbackTarget: parent});
     f.removal.resolve({resident_id: f.target.id});
     assert.ok(await pending);
-    assert.equal(f.state.chatTarget, parent);
-    if (refreshFails) assert.match(f.notices[0][0], /刷新删除结果/);
+    assert.equal(f.state.chatTarget.id, parent.id);
+    if (refreshFails) assert.match(f.notices.at(-1)[0], /刷新删除结果/);
   }
+});
+
+test('confirming deletion navigates to the previous Resident before the write resolves', async () => {
+  const f = deletionFixture();
+  f.state.previousChatWorkspace = { kind: 'resident', id: 'resident_other', lineage_id: 'lineage_one' };
+  const pending = f.ctx.deleteResidentFromWorkbench({residentId: f.target.id});
+  assert.equal(f.state.chatTarget.id, 'resident_other');
+  assert.deepEqual(f.calls.slice(0, 2), [['remove'], ['select', 'resident_other']]);
+  assert.equal(f.state.residents.length, 1, 'the page does not mark the identity deleted before the server');
+  f.removal.reject(Object.assign(Error('denied'), {commit_state: 'not_committed'}));
+  assert.equal(await pending, null);
+  assert.equal(f.state.chatTarget.id, 'resident_other', 'failure keeps the active conversation');
+  assert.equal(f.state.residents.length, 1);
+  assert.match(f.notices.at(-1)[0], /denied/);
 });
 
 function previewFixture({restoreDocument, onEmpty} = {}) {

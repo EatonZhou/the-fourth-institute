@@ -611,20 +611,25 @@
 
     async function completeResidentFork(response, lineageId, options = {}) {
       const residentId = String(response?.resident_id || "").trim();
-      const lineage = response?.lineage;
-      if (!residentId || lineage?.lineage_id !== lineageId) {
+      if (!residentId || !lineageId || (response?.lineage && response.lineage.lineage_id !== lineageId)) {
         window.PortalUI.toast(window.PortalI18n.t("分支已创建，但返回结果不完整；请刷新 Lineage 后定位新 Resident。"), "warning");
         return false;
       }
-      try {
-        const hatgPanel = currentLineageWorkbench()?.getPanel("hatg");
-        if (hatgPanel) {
-          try {
-            await hatgPanel.applyLineageMutation(lineage, { separateObjectIds: [residentId] });
-          } catch (error) {
-            window.PortalUI.toast(window.PortalI18n.text`分支已创建，但画布布局未保存：${error.message || error}`, "warning");
-          }
+      const hatgPanel = currentLineageWorkbench()?.getPanel("hatg");
+      void Promise.resolve(response.refresh || response).then(async ({ lineage }) => {
+        if (!lineage || lineage.lineage_id !== lineageId) {
+          throw new Error(window.PortalI18n.t("返回结果缺少 Lineage 状态"));
         }
+        if (!hatgPanel) return;
+        await hatgPanel.applyLineageMutation(lineage, { separateObjectIds: [residentId] });
+        const target = hatgPanel.snapshot?.();
+        if (state.chatTarget?.id === residentId && target?.lineageId === lineageId && target.residentId === residentId) {
+          await hatgPanel.setTarget({ lineageId, residentId, revealInGraph: true });
+        }
+      }).catch(error => {
+        window.PortalUI.toast(window.PortalI18n.text`分支已创建，但画布同步失败：${error.message || error}`, "warning");
+      });
+      try {
         rememberResidentShortcutSession(residentId);
         const opened = await selectResident(residentId, {
           forceView: true,
@@ -654,6 +659,7 @@
           lineage_id: lineageId,
           source_resident_id: id,
           fork_mode: options.mode || "full",
+          defer_refresh: true,
           ...(options.provider ? { provider: options.provider } : {}),
           ...(options.backendRouteId ? { account_id: options.backendRouteId } : {}),
         });
@@ -900,6 +906,7 @@
         source_resident_id: graphParentId,
         context_source_resident_id: residentId,
         fork_mode: "message",
+        defer_refresh: true,
         message,
       });
       await completeResidentFork(response, targetLineageId);

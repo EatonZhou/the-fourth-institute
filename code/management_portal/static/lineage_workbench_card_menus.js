@@ -491,15 +491,42 @@
       const exactResidentId = String(residentId || "").trim();
       if (!exactResidentId || pendingResidentDeletions.has(exactResidentId)) return null;
       pendingResidentDeletions.add(exactResidentId);
+      const toastOptions = { key: `resident-delete:${exactResidentId}` };
       let deletion = null;
       try {
         state.agentMenuId = "";
         state.residentMemberMenuId = "";
         agentFloatingMenuOverlay?.close?.();
-        const result = await residentService.remove({
+        const removal = residentService.remove({
           lineage_id: String(lineageId || "").trim(),
           resident_id: exactResidentId,
         });
+        window.PortalUI.toast(window.PortalI18n.t("正在删除 Resident…"), "info", toastOptions);
+        const next = fallbackTarget || state.previousChatWorkspace;
+        if (selectedResidentId() === exactResidentId && next?.id && (!next.kind || next.kind === "resident")
+          && next.id !== exactResidentId && !pendingResidentDeletions.has(next.id)
+          && !unavailableResidentBindings.has(next.id)) {
+          void selectResident(next.id, { lineageId: next.lineage_id, title: next.title, forceView: true }).catch(error => {
+            window.PortalUI.toast(window.PortalUI.errorMessage(window.PortalI18n.t("打开上一个会话"), error), "error");
+          });
+        }
+        renderAgentList();
+        renderFavoriteList();
+
+        let result;
+        try {
+          result = await removal;
+        } catch (error) {
+          const commitState = error.commit_state || error.body?.error?.commit_state;
+          if (commitState !== "committed" && error.code !== "instruction.projection_pending") {
+            const failed = commitState === "not_committed";
+            const label = failed ? "删除 Resident" : "删除结果待确认，请勿重复提交";
+            window.PortalUI.toast(window.PortalUI.errorMessage(window.PortalI18n.t(label), error),
+              failed ? "error" : "warning", toastOptions);
+            return null;
+          }
+          window.PortalUI.toast(window.PortalUI.errorMessage(window.PortalI18n.t("Resident 已删除，正在校准导航"), error), "warning", toastOptions);
+        }
         const deletedIds = new Set([exactResidentId]);
         const deletedResidentId = String(result?.resident_id || "").trim();
         if (deletedResidentId) deletedIds.add(deletedResidentId);
@@ -509,51 +536,20 @@
         state.residents = state.residents.filter(item => (
           !deletedIds.has(String(item?.resident_id || "").trim())
         ));
-        for (const id of deletedIds) {
-          dismissRecentAgentSession(recentAgentSessionKey({ resident_id: id }));
-          window.PortalConversationStore?.discardResident?.(id);
-        }
-        clearDeletedResidentLocation(deletedIds);
-
-        if (deletedIds.has(selectedResidentId())) {
-          // Only a caller-named Resident (a derived Resident's parent) takes
-          // over the Chat. Otherwise the Chat says the Resident was deleted
-          // instead of opening the Lineage's Leader or another Resident.
-          const nextTarget = fallbackTarget && !deletedIds.has(String(fallbackTarget.id || ""))
-            ? fallbackTarget
-            : null;
-          if (nextTarget) {
-            commitChatTarget(nextTarget);
-            beginChatWorkspaceNavigation();
-            writeLastSelection(nextTarget);
-            syncChatTargetLocation(nextTarget);
-          } else {
-            state.chatNavigationError = window.PortalI18n.t("该 Resident 已删除。");
-            writeLineageUiState({ lastChatTarget: null });
-          }
-          state.detail = null;
-          state.folder = null;
-          state.status = null;
-          state.selectedFile = "";
-          resetChatRenderState();
-        }
-        renderAgentList();
-        renderFavoriteList();
+        for (const id of deletedIds) dismissRecentAgentSession(recentAgentSessionKey({ resident_id: id }));
+        if (result) window.PortalUI.toast(window.PortalI18n.t("Resident 已删除。"), "success", toastOptions);
         syncSelectedResidentSurface();
-        await refreshResidentSidebarIfDue(true);
-        await syncLineageHatgPanel();
-        if (activeChatTargetId() && !unavailableResidentBindings.has(selectedResidentId())) {
-          await Promise.allSettled([loadDetail(true), loadFolder()]);
-        }
+        void refreshResidentSidebarIfDue(true).catch(error => {
+          window.PortalUI.toast(window.PortalUI.errorMessage(window.PortalI18n.t("刷新删除结果"), error), "warning", toastOptions);
+        });
         return deletion;
-      } catch (err) {
-        window.PortalUI.toast(
-          window.PortalUI.errorMessage(window.PortalI18n.t(deletion ? "刷新删除结果" : "删除 Resident"), err),
-          "error",
-        );
+      } catch (error) {
+        window.PortalUI.toast(window.PortalUI.errorMessage(window.PortalI18n.t("刷新删除结果"), error), "error", toastOptions);
         return deletion;
       } finally {
         pendingResidentDeletions.delete(exactResidentId);
+        renderAgentList();
+        renderFavoriteList();
       }
     }
 

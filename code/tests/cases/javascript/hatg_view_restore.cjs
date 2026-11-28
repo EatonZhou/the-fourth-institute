@@ -44,7 +44,7 @@ function harness(query = '?lineage=lineage_one&resident=resident_one&view=worksp
   return {context, state, calls, graph, loading, lineages};
 }
 
-test('Workspace URL survives a tab switch and refresh restores its bindings before rendering', async () => {
+test('Workspace refresh shows Context before the saved Workspace bindings are ready', async () => {
   const first = harness('');
   await first.loading.selectLineage('lineage_one');
   await first.graph.setGraphViewMode('workspace');
@@ -53,7 +53,7 @@ test('Workspace URL survives a tab switch and refresh restores its bindings befo
   await refreshed.loading.selectLineage('lineage_one', {residentId: 'resident_one'});
   assert.equal(refreshed.state.graphViewMode, 'workspace');
   assert.deepEqual(refreshed.calls.reads, ['resident_one']);
-  assert.deepEqual(refreshed.calls.renders, [{mode: 'workspace', bindings: 1}]);
+  assert.deepEqual(refreshed.calls.renders, [{mode: 'context', bindings: 0}, {mode: 'workspace', bindings: 1}]);
   assert.equal(refreshed.state.selectedNodeId, 'resident_one');
   await refreshed.graph.setGraphViewMode('context');
   assert.equal(refreshed.context.location.searchParams.has('view'), false);
@@ -88,9 +88,24 @@ test('a late Workspace restore cannot replace a view explicitly chosen while loa
   const loaded = h.loading.selectLineage('lineage_one');
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(h.state.workspaceViewLoading, true);
+  assert.deepEqual(h.calls.renders, [{mode: 'context', bindings: 0}]);
+  assert.equal(h.state.selectedNodeId, 'resident_one', 'the Resident is selectable before Workspace binding reads settle');
   await h.graph.setGraphViewMode('frontier');
   release({roots: [], entries: []});
   await loaded;
   assert.equal(h.state.graphViewMode, 'frontier');
   assert.equal(h.state.workspaceViewLoading, false);
+});
+
+test('explicit Context selection cancels both the pending Workspace restore and its URL', async () => {
+  const h = harness();
+  let finish;
+  h.context.PortalResidentService.workspaces = () => new Promise(resolve => { finish = resolve; });
+  const load = h.loading.selectLineage('lineage_one');
+  await new Promise(resolve => setImmediate(resolve));
+  await h.graph.setGraphViewMode('context');
+  finish({roots: [], entries: []});
+  await load;
+  assert.equal(h.state.graphViewMode, 'context');
+  assert.equal(h.context.location.searchParams.has('view'), false);
 });

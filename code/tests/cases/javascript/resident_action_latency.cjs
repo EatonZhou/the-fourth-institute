@@ -27,7 +27,7 @@ async function deletion() {
   assert.equal(await ui.removeSelectedNode({nodeId:'R',skipConfirm:true}),true);
   await tick();assert.equal(events.some(e=>e.name==='render-lineage'),false);
   assert.equal(state.residents.length,0,'committed delete updates sidebar before graph read completes');
-  assert.equal(events.filter(e=>e.name==='DeleteResident').length,1);
+  assert.equal(events.filter(e=>e.name==='ApplyLineageChanges').length,1);
   assert.equal(events[0].controls.expectedVersion,7);assert.equal(events[0].controls.idempotencyKey,'resident-delete:isolated-key');
   read.resolve({lineage:{lineage_id:'L',revision:8,nodes:[],edges:[]}});await tick();
   assert.equal(events.filter(e=>e.name==='GetLineage').length,1);
@@ -42,14 +42,18 @@ async function fork() {
     rememberResidentShortcutSession:()=>{},selectResident:async()=>{events.push({name:'open-chat'});return true;},
     renderAgentList:()=>{},renderFavoriteList:()=>{},
   },{PortalUI:{toast:message=>events.push({name:'error',message})}});
-  const action=(async()=>{const response=await client.branchNode({source_resident_id:'R',lineage_id:'L'});return ui.completeResidentFork(response,'L');})();await tick();
-  assert.deepEqual(events.map(e=>e.name),['ForkResident','GetLineage']);
-  read.resolve({lineage:{lineage_id:'L',revision:8,nodes:[{id:'NEW'}]}});await tick();
-  assert.equal(events.some(e=>e.name==='open-chat'),false,'current Fork awaits explicit layout application');
-  layout.resolve();await action;
-  assert.equal(events.filter(e=>e.name==='ForkResident').length,1);assert.equal(events.filter(e=>e.name==='GetLineage').length,1);
-  assert.ok(events.findIndex(e=>e.name==='open-chat')>events.findIndex(e=>e.name==='apply-layout'));
-  assert.equal(events.at(-1).name,'open-chat');traces.push({scenario:'fork-service-and-public-completion-controller',events});
+  const action=(async()=>{const response=await client.branchNode({source_resident_id:'R',lineage_id:'L',defer_refresh:true});return ui.completeResidentFork(response,'L');})();
+  await action;
+  assert.ok(events.some(e=>e.name==='open-chat'), 'confirmed Fork identity opens Chat while the graph is still pending');
+  assert.equal(events.some(e=>e.name==='apply-layout'),false);
+  read.resolve({lineage:{lineage_id:'L',revision:8,nodes:[{id:'NEW'}]}});
+  await tick();
+  assert.ok(events.findIndex(e=>e.name==='open-chat')<events.findIndex(e=>e.name==='apply-layout'));
+  layout.resolve();
+  await tick();
+  assert.equal(events.filter(e=>e.name==='ForkResident').length,1);
+  assert.equal(events.filter(e=>e.name==='GetLineage').length,1);
+  traces.push({scenario:'fork-chat-before-refresh',events});
 }
 async function opening() {
   const events=[],detail=deferred(),graph=deferred();let ready=false;

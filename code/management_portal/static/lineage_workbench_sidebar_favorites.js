@@ -50,6 +50,9 @@
       }
       for (const selectionId of state.favoriteAgentIds) {
         if (representedSelections.has(selectionId)) continue;
+        const deletion = window.PortalResidentService?.deletionState?.(selectionId.startsWith("resident:")
+          ? selectionId.slice("resident:".length) : "");
+        if (deletion?.deletion_pending || deletion?.deleted) continue;
         const status = state.favoriteStatuses[selectionId] || { status: "unavailable" };
         const resident = residentByMenuId(selectionId);
         if (resident) targets.push({ selectionId, target: { type: "resident", item: resident } });

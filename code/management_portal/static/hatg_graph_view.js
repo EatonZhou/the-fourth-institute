@@ -773,8 +773,9 @@
       if (next !== "context" && state.programWireDraft) cancelProgramWireDraft();
       if (next === "workspace" && state.workspaceViewLoading) return;
       const requestSequence = ++state.graphViewRequestSeq;
+      const cancelWorkspaceLoad = next !== "workspace" && state.workspaceViewLoading;
       if (next !== "workspace") setWorkspaceViewLoading(false);
-      if (state.graphViewMode === next) return;
+      if (state.graphViewMode === next && !cancelWorkspaceLoad) return;
       if (next === "workspace" && state.lineage) {
         const lineageId = state.lineage.lineage_id;
         const needsBindings = (state.lineage.nodes || [])

@@ -37,6 +37,8 @@
     function lineageSidebarRoots(_kind = "", { respectFilters = true } = {}) {
       const groups = new Map();
       for (const item of state.residents || []) {
+        const deletion = window.PortalResidentService?.deletionState?.(residentExactId(item));
+        if (deletion?.deletion_pending || deletion?.deleted) continue;
         const lineageId = lineageIdForResident(item) || String(item.resident_id || "");
         if (!lineageId) continue;
         if (!groups.has(lineageId)) groups.set(lineageId, []);

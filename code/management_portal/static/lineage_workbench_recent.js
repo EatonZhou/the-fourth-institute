@@ -170,6 +170,8 @@
     function recentAgentSessionInfos() {
       const byKey = new Map();
       for (const entry of window.PortalConversationStore?.recent?.() || []) {
+        const deletion = window.PortalResidentService?.deletionState?.(entry.resident_id);
+        if (deletion?.deletion_pending || deletion?.deleted) continue;
         const key = recentAgentSessionKey(entry);
         if (key) byKey.set(key, entry);
       }

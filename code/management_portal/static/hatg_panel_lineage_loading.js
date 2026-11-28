@@ -130,6 +130,7 @@
         }
         return;
       }
+      const restoreWorkspace = state.graphViewMode === "workspace" || state.workspaceViewLoading;
       state.graphViewRequestSeq += 1;
       state.workspaceGraphLoadSeq += 1;
       setWorkspaceViewLoading(false);
@@ -185,29 +186,27 @@
         state.globalStopInFlight = false;
         state.nodeStopInFlight = new Set();
         state.selectedSeedId = "";
-        // A restored Workspace view needs the same Binding read as an explicit
-        // tab switch. Do not render it as an empty graph while that read waits.
-        if (state.graphViewMode === "workspace") {
+        // Keep the Context graph usable while a saved Workspace view reads
+        // its bindings. An explicit tab choice supersedes that restore.
+        let workspaceRestore;
+        if (restoreWorkspace) {
+          state.graphViewMode = "context";
           const viewSequence = state.graphViewRequestSeq;
+          const isCurrent = () => state.lineage?.lineage_id === lineageId && viewSequence === state.graphViewRequestSeq;
           setWorkspaceViewLoading(true);
-          try {
-            const result = await loadWorkspaceGraphBindings(lineage, { render: false, fit: false });
-            if (sequence !== state.detailSeq) return;
-            if (viewSequence === state.graphViewRequestSeq && !result?.complete) {
-              state.graphViewMode = "context";
+          workspaceRestore = loadWorkspaceGraphBindings(lineage, { render: false, fit: false }).then(result => {
+            if (!isCurrent()) return;
+            if (result?.complete) {
+              state.graphViewMode = "workspace";
+              renderLineageSurface();
+            } else {
               toast(window.PortalI18n.t("Workspace 视图暂未恢复：节点 Binding 尚未完整到齐，请重试。"), "error", 5600);
             }
-          } catch (error) {
-            if (sequence !== state.detailSeq) return;
-            if (viewSequence === state.graphViewRequestSeq) {
-              state.graphViewMode = "context";
-              toast(window.PortalI18n.text`Workspace 视图加载失败：${error.message || error}`, "error", 5600);
-            }
-          } finally {
-            if (sequence === state.detailSeq && viewSequence === state.graphViewRequestSeq) {
-              setWorkspaceViewLoading(false);
-            }
-          }
+          }).catch(error => {
+            if (isCurrent()) toast(window.PortalI18n.text`Workspace 视图加载失败：${error.message || error}`, "error", 5600);
+          }).finally(() => {
+            if (isCurrent()) setWorkspaceViewLoading(false);
+          });
         }
         const requestedProgramExists = Boolean(
           requestedProgramItemId
@@ -264,9 +263,10 @@
         } else {
           clearNodeSelection();
         }
-        if (requestedProgramExists) {
+        if (requestedProgramExists && sequence === state.detailSeq) {
           await selectProgramObject(requestedProgramItemId, { revealFamily: true });
         }
+        await workspaceRestore;
       } catch (error) {
         if (sequence !== state.detailSeq) return;
         renderNoLineage({ publishLocation: false });
