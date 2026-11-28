@@ -274,13 +274,18 @@ def test_quota_evidence_reads_reuse_sample_and_never_request_external_refresh(mo
     """
     sample = {"account_id": "codex_one", "quota": {"observed_at": 1000},
               "rate_limits": [{"id": "primary", "observed_at": 1000, "resets_at": 2000, "remaining_percent": 89}]}
-    monitor = SimpleNamespace(snapshot=Mock(side_effect=lambda: {"accounts": [deepcopy(sample)]}), request_refresh=Mock())
+    def snapshot(*, account_facts):
+        account_facts.update(registrations=[], login_states={})
+        return {"accounts": [deepcopy(sample)]}
+
+    monitor = SimpleNamespace(snapshot=Mock(side_effect=snapshot), request_refresh=Mock())
     monkeypatch.setattr(isa, "_SERVER", SimpleNamespace(quota_monitor=monitor))
+    monkeypatch.setattr("management_portal.execution.accounts.default_execution_accounts",
+                        lambda *, tolerate_unavailable: SimpleNamespace(adapters={}))
     inv = SimpleNamespace(caller="usage-observer", argument=lambda k, default=None: {"account_id": "codex_one", "refresh": False}.get(k, default))
     a, b = isa.list_provider_accounts(inv), isa.list_provider_accounts(inv)
     assert a["accounts"] == b["accounts"]
-    # The ISA adds registration/login fields; the observed quota stays unchanged.
-    assert [{key: account[key] for key in sample} for account in a["accounts"]] == [sample]
+    assert a["accounts"] == [sample]
     assert a["accounts"][0]["rate_limits"][0]["resets_at"] == 2000
     assert monitor.snapshot.call_count == 2
     monitor.request_refresh.assert_not_called()
