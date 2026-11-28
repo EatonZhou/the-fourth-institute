@@ -28,7 +28,7 @@ def personal(future_creation_store, charters):
 @pytest.mark.empty_execution_registrations
 @pytest.mark.parametrize("first_default", ["claude", "provider_api"])
 def test_personal_family_can_precede_first_ai_account(tmp_path, future_creation_store, monkeypatch, capsys, first_default):
-    """首次注册完整个人 Family 不依赖 Codex 账号，执行配置留待默认 AI 就绪。"""
+    """首次注册完整个人 Family 不依赖 Codex 账号，执行账号由用户明确选择。"""
     from management_portal.execution import account_registrations, account_selection
     from management_portal.society_service import resident_runtime_domain
     from management_portal.society_service.domain_ports import execution_port
@@ -58,7 +58,7 @@ def test_personal_family_can_precede_first_ai_account(tmp_path, future_creation_
         record = resident_catalog.get_catalog().get(rid)
         assert record["backend_route_id"] == ""
         settings = resident_runtime_domain.read_resident_runtime_settings(record)
-        assert settings["backend_role"] == "default"
+        assert not settings.get("backend_role")
         assert not settings.get("model")
     assert principal_hierarchy_domain.ensure_personal_assistant("newcomer", ama["resident_id"], "newcomer") == assistant
     # Background recovery must accept the same unconfigured installation as
@@ -103,8 +103,7 @@ def test_personal_family_can_precede_first_ai_account(tmp_path, future_creation_
     assert [rid for rid, _ in starts] == [other["resident_id"]]
     assert resident_execution_work.read(steward) == job
 
-    # Configuring the first default AI releases the original organization
-    # input, including when the selected provider is not the Codex placeholder.
+    # Explicitly assigning an execution role releases the original organization input.
     first_account = "claude_fixture"
     if first_default == "provider_api":
         account_registrations.create_registration({"account_id": "deepseek_only", "provider": "provider_api",
@@ -114,7 +113,10 @@ def test_personal_family_can_precede_first_ai_account(tmp_path, future_creation_
                          "quota_reserve": {"status": "available", "fresh": False, "remaining": None,
                                            "close_threshold": {"metric": "balance", "value": 0}}})
         first_account = "deepseek_only"
-    account_registrations.update_role("default", first_account, "", "", 0, "newcomer")
+    account_registrations.update_role("organization", first_account, "", "", 0, "newcomer")
+    configuration = resident_runtime_domain.read_resident_runtime_settings(steward)
+    configuration["backend_role"] = "organization"
+    resident_runtime_domain.write_resident_runtime_settings(steward, configuration)
     coordinator._recover_resident(family["steward"])
     assert coordinator.snapshot()["last_error"] == ""
     assert starts[-1][0] == family["steward"]

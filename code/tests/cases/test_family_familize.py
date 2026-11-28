@@ -157,10 +157,10 @@ def test_familize_hands_leadership_and_wires_to_the_facade_and_unfamilize_return
     facade, steward, router = family["facade_resident_id"], family["steward_resident_id"], family["router_resident_id"]
     view = graph(lineage)
     assert view["leader_resident_id"] == facade == family["leader_resident_id"]
-    # Unspecified Family roles inherit the site's configured Resident default.
-    assert _find_resident(router)["backend"] == "codex"
+    # Unconfigured Family roles have no execution account.
+    assert not _find_resident(router)["backend_route_id"]
     settings = ok("GetResidentSettings", {"resident_id": router})["settings"]
-    assert settings["backend_role"] == "default"
+    assert not settings.get("backend_role")
     assert "family-work-guide.md" in charters[0][1]
     assert family["rewired_wire_ids"] == [wire] and _target_of(lineage, wire) == facade
     assert family_facade.facade_configuration(_find_resident(facade))["previous_leader_id"] == first
@@ -378,7 +378,7 @@ def test_existing_lineage_family_does_not_reload_a_deleted_recipe(lineage, chart
 
 @pytest.mark.empty_execution_registrations
 @pytest.mark.parametrize("entry", ["lineage", "selection", "template"])
-def test_family_creation_uses_kimi_site_default_without_codex(lineage, charters, tmp_path, monkeypatch, entry):
+def test_family_creation_with_only_kimi_keeps_unspecified_roles_unassigned(lineage, charters, tmp_path, monkeypatch, entry):
     """Kimi-only installations create every Family role without probing Codex."""
     from management_portal.execution import account_registrations as accounts
     from management_portal import kimi_provider_catalog
@@ -386,10 +386,9 @@ def test_family_creation_uses_kimi_site_default_without_codex(lineage, charters,
     accounts.create_registration({"account_id": "kimi_only", "provider": "kimi",
         "kind": "subscription_login", "route_id": "kimi_only",
         "config": {"account_dir": str(tmp_path / "kimi-account")}}, ACTOR)
-    accounts.update_role("default", "kimi_only", "kimi-code/k3", "", 0, ACTOR)
     monkeypatch.setattr(kimi_provider_catalog, "catalog", lambda row:
         {"models": ["kimi-code/k3"], "default_model": "kimi-code/k3"})
-    member = ok("CreateResident", {"lineage_id": lineage, "title": "Kimi member"})["resident_id"]
+    member = ok("CreateResident", {"lineage_id": lineage, "title": "Kimi member", "provider": "kimi", "account_id": "kimi_only"})["resident_id"]
     if entry == "template":
         family = ok("ApplyTemplate", {"lineage_id": lineage, "template_id": TEMPLATE_ID,
             "target": {"kind": "resident", "resident_ids": [member]}})
@@ -400,16 +399,16 @@ def test_family_creation_uses_kimi_site_default_without_codex(lineage, charters,
     for role in ("facade", "steward", "router"):
         record = _find_resident(family[role + "_resident_id"])
         settings = ok("GetResidentSettings", {"resident_id": record["resident_id"]})["settings"]
-        assert (record["backend"], record["backend_route_id"]) == ("kimi", "kimi_only")
-        assert settings["backend_role"] == "default"
-        assert settings["model"] == "kimi-code/k3"
+        assert not record["backend_route_id"]
+        assert not settings.get("backend_role")
+        assert not settings.get("model")
         assert not settings.get("reasoning_effort")
 
 
 def test_the_router_and_steward_start_with_what_was_chosen_when_placing_the_family(lineage, charters):
     """放入 Family 时为 Router 与 steward 选的后端和设置用于新建它们
 
-    未配置角色跟随站点默认后端；显式角色设置选择 Provider、模型与推理强度，门面、绑定槽或字段不对的设置被拒绝。
+    未配置角色保留待选状态。显式角色设置选择 Provider、模型与推理强度，门面、绑定槽或字段不对的设置被拒绝。
 
     :design: decision_44cf587c1721, decision_5b5653c3eaa5
     """

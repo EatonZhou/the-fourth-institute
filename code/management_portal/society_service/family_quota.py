@@ -121,6 +121,11 @@ def role_availability(record: dict[str, Any], *, execution_gate: dict[str, Any] 
         return {"status": "paused", "reason": "接单已关闭；门面开放时平台将恢复，关闭门面可暂停 Family", "intake": intake}
     if state.get("account_wait"):
         return {"status": "unavailable", "reason": state["account_wait"], "intake": intake}
+    from .resident_default_backend import awaits_account_choice, has_session_binding
+    if awaits_account_choice(record) and not (execution_gate or {}).get("account_id"):
+        from . import resident_backend
+        if not has_session_binding(resident_backend.session_record(record)):
+            return {"status": "unavailable", "reason": "尚未配置执行账号，原任务已保留", "intake": intake}
     from .resident_work_recovery import latest_failed_input, recovery_entry
     failed = latest_failed_input(record)
     if failed:

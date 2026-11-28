@@ -187,7 +187,7 @@ DECLARATIONS = (
     _d("ListBackendRoles", FIXED, "读取 Backend 角色映射。", (),
        (R("roles", "array", "Backend 角色：role、account_id、model、reasoning_effort、version…"),), owner="execution"),
     _d("UpdateBackendRole", FIXED, "设置 Backend 角色；调用信封的 expected_version 给出角色版本时按它比较（尚未建立的角色为 0），省略时直接写入。", (
-        R("backend_role", description="角色名，如 default"),
+        R("backend_role", description="角色名，如 coding"),
         R("account_id", description="固定账号或自动选择的后端/计费范围参考账号，须已启用"),
         P("account_selection", description="auto（默认）：按后端种类顺序及可用额度选择；fixed：固定账号"),
         P("backend_priority", "array", "有序账号种类 ID，用于默认选择及自动切换；跨种类使用目标默认模型，API/服务种类须明确列入；省略保留原值，空数组限制在参考账号同类"),

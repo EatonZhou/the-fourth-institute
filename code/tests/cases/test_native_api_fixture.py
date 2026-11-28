@@ -37,7 +37,7 @@ def fixture_registration():
 def test_api_only_acceptance_allows_compatible_native_harness_routes(fixture_registration):
     fixture, instruction, _, roles = fixture_registration
     fixture.register(instruction)
-    assert roles == [{'backend_role': 'default', 'account_id': 'native_api_only'}]
+    assert roles == []
 
 
 @pytest.mark.parametrize('contamination', ['subscription', 'foreign_api', 'unregistered_account'])

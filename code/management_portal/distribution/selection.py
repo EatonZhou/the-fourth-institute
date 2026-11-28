@@ -529,7 +529,7 @@ class _ExportScope:
             self.rows['article', 'build_settings'] = self.source.rows('article', 'build_settings', predicates={'article_id': article_ids})
         collections = {row["collection"] for row in self.registry}
         self.rows[("resource_registry", "registry_collections")] = self.source.rows("resource_registry", "registry_collections", predicates={"collection": collections})
-        self.roles = self.source.rows("execution_accounts", "backend_roles")
+        self.roles = [row for row in self.source.rows("execution_accounts", "backend_roles") if row["role"] != "default"]
         self.rows[("execution_accounts", "backend_roles")] = [{**row, "account_id": None} for row in self.roles]
 
     def _collect_resource_files(self):

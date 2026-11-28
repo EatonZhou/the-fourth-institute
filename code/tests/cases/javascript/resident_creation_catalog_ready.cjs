@@ -39,6 +39,13 @@ const ui = w.PortalHatgResidentDialogs.createResidentDialogs(deps);
     $id('nodeAccountSelection').value='auto';
     await ui.openNodeModal();
     assert.equal($id('nodeAccountSelection').value,'fixed');
+    assert.equal($id('nodeBackendSelect').value,'');
+    assert.equal($id('nodeRouteSelect').value,'');
+    assert.equal($id('nodeModelSelect').value,'');
+    assert.equal($id('nodeSubmitBtn').disabled,true);
+    $id('nodeBackendSelect').value='codex';
+    state.agentBackendCatalog.backends[0].recommended_route='two';
+    ui.renderNodeProviderFields({type:'change',target:$id('nodeBackendSelect')});
     $id('nodeTitleInput').value='Fixture';
     state.nodeRouteChosen=true; // User route changes below follow the normal change listener.
     for (const [file,id] of [['hatg-panel.html','nodeAccountSelection'],['lineage.html','residentAccountSelection']]) {

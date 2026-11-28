@@ -16,7 +16,7 @@ from ..family_definition import (FAMILY_MEMBER_SIGNALS, FAMILY_ROUTER_SCRIPT,
                                 FAMILY_QUEUE_NOTICE_SCRIPT, has_independent_review)
 from .registry import TemplateError
 
-# Unconfigured roles use the site's default backend, just like a new Resident.
+# New roles keep the execution account unassigned until one is selected.
 # A saved recipe or explicit application setting can still pin each worker.
 RESIDENT_ROLES = [
     {"key": "steward", "title": "steward", "from": "new"},

@@ -89,7 +89,6 @@ class LocalModelApi:
                       and account['registration'].get('config', {}).get('api_id') == 'native_api_only'
                       for account in accounts),
               'API-only fixture unexpectedly has an account outside its disposable Model API')
-        instruction('UpdateBackendRole', {'backend_role': 'default', 'account_id': 'native_api_only'})
 
     def chat(self, instruction, resident_id):
         sent = instruction('DeliverMessage', {'resident_id': resident_id,
@@ -262,6 +261,8 @@ def exercise(exe, root, included, evidence):
             instruction(name, arguments)
         api = LocalModelApi()
         api.register(instruction)
+        instruction('RestartSession', {'resident_id': ama['resident_id'], 'provider': 'provider_api',
+                                       'account_id': 'native_api_only', 'model': api.model})
         instruction('UpdateResidentSettings', {'resident_id': ama['resident_id'],
                                                'changes': {'agent_harness': {}}})
         api.chat(instruction, ama['resident_id'])

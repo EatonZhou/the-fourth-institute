@@ -24,8 +24,8 @@ from management_portal import http_request_body, http_responses, web_accounts
 from tests.cases.test_resident_folder_creation_contract import future_creation_store  # noqa: F401 - fixture
 
 
-def test_personal_ama_can_precede_default_ai(future_creation_store, monkeypatch):
-    """注册用户先取得 AMA 身份，首个默认 AI 就绪后再绑定执行配置。"""
+def test_personal_ama_waits_for_explicit_account_choice(future_creation_store, monkeypatch):
+    """注册用户先取得 AMA 身份，明确选择后再绑定执行配置。"""
     from management_portal.execution import account_registrations
     from management_portal.society_service import resident_default_backend, resident_runtime_domain
     from management_portal.society_service import resident_backend
@@ -34,17 +34,20 @@ def test_personal_ama_can_precede_default_ai(future_creation_store, monkeypatch)
     record = resident_catalog.get_catalog().get(result["resident_id"])
     assert record["backend_route_id"] == ""
     settings = resident_runtime_domain.read_resident_runtime_settings(record)
-    settings.update(allow_subagents=True, permission_preset="", permissions=":read-only",
+    from management_portal.execution.accounts import DefaultAccountUnavailable
+    with pytest.raises(DefaultAccountUnavailable):
+        resident_execution_domain.bind_before_execution(record, "first_user")
+    settings.update(backend_role="coding", allow_subagents=True, permission_preset="", permissions=":read-only",
                     sandbox="read-only", sandbox_explicit=True)
     resident_runtime_domain.write_resident_runtime_settings(record, settings)
     monkeypatch.setattr(resident_default_backend, "role_configuration", lambda _: {
-        "backend": "codex", "backend_route_id": "one", "runtime_settings": {"backend_role": "default"}})
+        "backend": "codex", "backend_route_id": "one", "runtime_settings": {"backend_role": "coding"}})
     monkeypatch.setattr(resident_backend, "session_record", lambda _: {})
     resident_execution_domain.bind_before_execution(record, "first_user")
     saved = resident_catalog.get_catalog().get(result["resident_id"])
     assert saved["backend_route_id"] == "one"
     saved_settings = resident_runtime_domain.read_resident_runtime_settings(saved)
-    assert saved_settings["backend_role"] == "default"
+    assert saved_settings["backend_role"] == "coding"
     assert saved_settings["allow_subagents"] is True
     assert saved_settings["sandbox"] == "read-only"
 
@@ -59,9 +62,9 @@ def test_first_api_binding_replaces_source_site_model(future_creation_store, mon
     result = principal_hierarchy_domain.ensure_personal_ama("api_user", "api_user")
     record = resident_catalog.get_catalog().get(result["resident_id"])
     settings = runtime.read_resident_runtime_settings(record)
-    settings.update(model="gpt-6-luna", reasoning_effort="high", service_tier="priority")
+    settings.update(backend_role="coding", model="gpt-6-luna", reasoning_effort="high", service_tier="priority")
     runtime.write_resident_runtime_settings(record, settings)
-    role_settings = {"backend_role": "default", **({"model": role_model} if role_model else {})}
+    role_settings = {"backend_role": "coding", **({"model": role_model} if role_model else {})}
     monkeypatch.setattr(defaults, "role_configuration", lambda _: {
         "backend": "provider_api", "backend_route_id": "deepseek_api", "runtime_settings": role_settings})
     monkeypatch.setattr(resident_backend, "session_record", lambda _: {})
@@ -120,14 +123,15 @@ def test_first_api_binding_preserves_pending_input_provenance(future_creation_st
     account_registrations.create_registration({"account_id": "deepseek_only", "provider": "provider_api",
         "kind": "api_profile", "config": {"api_id": "deepseek_test"}}, "api_user")
     if configure_before_input:
-        account_registrations.update_role("default", "deepseek_only", "", "", 0, "api_user")
+        account_registrations.update_role("coding", "deepseek_only", "", "", 0, "api_user")
     resident_domain.deliver_resident_message_content(ama["resident_id"], "api_user", "original input")
     record = resident_catalog.get_catalog().get(ama["resident_id"])
+    record.setdefault("execution_settings", {})["backend_role"] = "coding"
     original = resident_execution_work.read(record)
     store = get_agent_data_store()
     assert store.execution(original["execution_id"])["provider"] == "codex"
     if not configure_before_input:
-        account_registrations.update_role("default", "deepseek_only", "", "", 0, "api_user")
+        account_registrations.update_role("coding", "deepseek_only", "", "", 0, "api_user")
     resident_execution_domain.bind_before_execution(record, "api_user")
     current = resident_execution_work.read(record)
     # The real store reserves on every progress write: this reproduced the

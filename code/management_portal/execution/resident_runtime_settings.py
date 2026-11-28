@@ -148,9 +148,6 @@ def normalize_settings(raw: object) -> dict[str, Any]:
         out["account_selection"] = mode(data["account_selection"])
     if data.get("backend_role"):
         out["backend_role"] = str(data["backend_role"])
-    if isinstance(data.get("backend_role_fallback"), dict):
-        fallback = data["backend_role_fallback"]
-        out["backend_role_fallback"] = {"requested": str(fallback.get("requested") or ""), "used": "default"}
     if data.get("prompt_injection") is not None:
         from management_portal import prompt_injection
         out["prompt_injection"] = prompt_injection.normalize(data["prompt_injection"])
@@ -219,7 +216,6 @@ def merge_settings(base: object, updates: object, *, actor: str = "", updated_at
         "account_selection",
         *QUOTA_SETTINGS,
         "backend_role",
-        "backend_role_fallback",
     ):
         if key in clean_updates:
             merged[key] = clean_updates[key]

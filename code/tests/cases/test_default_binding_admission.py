@@ -29,7 +29,8 @@ def pending(future_creation_store, monkeypatch):
     record = resident_catalog.get_catalog().get(ama["resident_id"])
     account_registrations.create_registration({"account_id": "deepseek_only", "provider": "provider_api",
         "kind": "api_profile", "config": {"api_id": "deepseek_test"}}, "api_user")
-    account_registrations.update_role("default", "deepseek_only", "", "", 0, "api_user")
+    record.setdefault("execution_settings", {})["backend_role"] = "coding"
+    account_registrations.update_role("coding", "deepseek_only", "", "", 0, "api_user")
     return record
 
 

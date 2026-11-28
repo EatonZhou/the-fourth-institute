@@ -79,7 +79,6 @@ CREATED = (
     R("resident_id", description="新 Resident ID"),
     R("lineage_id", description="所在 Lineage"),
     FAMILY_JOINED,
-    P("backend_role_fallback", "object", "角色未映射时的 requested 与 used"),
 )
 
 DECLARATIONS = (
@@ -95,8 +94,8 @@ DECLARATIONS = (
         R("lineage_id", description="新 Resident 加入的 Lineage"),
         R("title", description="名称"),
         P("provider", description="执行后端；provider_api 使用 account_id 指定已登记的模型 API", enum=(*PROVIDERS, "provider_api")),
-        P("account_id", description="账号路线；省略时 Resident 调用者继承自己的账号，其他调用者使用系统默认账号"),
-        P("backend_role", description="创建时解析的 Backend 角色；未映射时回退 default"),
+        P("account_id", description="所选后端的账号路线。用户可沿用上次创建的选择，Resident 可继承同后端账号。未选择后端且无个人记录时，保留待选状态"),
+        P("backend_role", description="显式选择的 Backend 角色"),
         P("settings", "object", "初始运行设置；汇报创建后通过 UpdateResidentReporting 修改", properties=SETTINGS_FIELDS),
         P("workspace_paths", "array", "额外绑定的工作目录", items={"type": "string"}),
         FAMILY_TO_JOIN,

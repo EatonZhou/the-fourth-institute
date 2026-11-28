@@ -56,7 +56,7 @@ def test_first_admission_uses_the_default_api_without_a_balance_endpoint(monkeyp
         "backend": "codex", "backend_route_id": row["backend_route_id"],
         "runtime_settings": {"backend_role": role, "account_selection": "auto",
                              "model": "model", "reasoning_effort": "high"}})
-    record = {"backend": "codex", "backend_route_id": "", "execution_settings": {"backend_role": "default"}}
+    record = {"backend": "codex", "backend_route_id": "", "execution_settings": {"backend_role": "coding"}}
     result = defaults.configuration(record, {})
     assert result["backend_route_id"] == row["backend_route_id"]
     assert result["runtime_settings"]["account_selection"] == "auto"
@@ -237,7 +237,7 @@ def test_role_auto_keeps_explicit_cross_backend_policy(monkeypatch):
     monkeypatch.setattr(account_registrations, "registrations", lambda provider=None: [{**source, "route_id": "gemini"}])
     monkeypatch.setattr(defaults, "selection_priority", lambda record: ["codex:subscription_login"])
     result = defaults.configuration({"backend": "antigravity", "backend_route_id": "gemini",
-        "execution_settings": {"backend_role": "default", "model": "model", "account_selection": "auto"}}, {})
+        "execution_settings": {"backend_role": "coding", "model": "model", "account_selection": "auto"}}, {})
     assert (result["backend"], result["backend_route_id"]) == ("codex", "seven")
     assert result["runtime_settings"]["model"] == "codex-model"
 
@@ -308,10 +308,10 @@ def test_backend_priority_drives_first_choice_and_recovery(monkeypatch):
     samples = [source, fuller, claude]
     rows = [{**a, "route_id": a["backend_route_id"]} for a in samples]
     order = ["claude:subscription_login", "codex:subscription_login"]
-    monkeypatch.setattr(account_registrations, "resolve_role", lambda name: ({"backend_priority": order}, None))
+    monkeypatch.setattr(account_registrations, "resolve_role", lambda name: {"backend_priority": order})
     monkeypatch.setattr(account_registrations, "registrations", lambda provider: [a for a in rows if a["provider"] == provider])
     monkeypatch.setattr(account_selection, "observations", lambda: samples)
-    record = {"backend": "codex", "backend_route_id": "one", "execution_settings": {"backend_role": "default", "model": "model", "reasoning_effort": "high", "account_selection": "auto"}}
+    record = {"backend": "codex", "backend_route_id": "one", "execution_settings": {"backend_role": "coding", "model": "model", "reasoning_effort": "high", "account_selection": "auto"}}
     selected = defaults.configuration(record, {})
     assert selected["backend"] == "claude" and selected["runtime_settings"]["model"] == "sonnet"
     assert "reasoning_effort" not in selected["runtime_settings"]
@@ -342,10 +342,10 @@ def test_explicit_priority_applies_even_when_role_reference_is_direct_api(monkey
     target = account("target")
     target["selection_catalog"]["default_model"] = "model"
     order = ["codex:subscription_login"]
-    monkeypatch.setattr(account_registrations, "resolve_role", lambda name: ({"backend_priority": order}, None))
+    monkeypatch.setattr(account_registrations, "resolve_role", lambda name: {"backend_priority": order})
     monkeypatch.setattr(account_registrations, "registrations", lambda provider: [])
     monkeypatch.setattr(account_selection, "observations", lambda: [target])
-    record = {"backend": "provider_api", "backend_route_id": "api", "execution_settings": {"backend_role": "default", "account_selection": "auto"}}
+    record = {"backend": "provider_api", "backend_route_id": "api", "execution_settings": {"backend_role": "coding", "account_selection": "auto"}}
     assert defaults.configuration(record, {})["backend"] == "codex"
     order.clear()
     assert defaults.configuration(record, {})["backend"] == "provider_api"

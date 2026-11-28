@@ -3,8 +3,6 @@ from __future__ import annotations
 
 from management_common.principal import actor_principal
 from management_portal import presentation_store
-from management_portal.execution import account_registrations
-from management_portal.hatg.contracts import InstructionError
 
 
 def remembered(actor):
@@ -25,7 +23,7 @@ def remember(actor, resident, settings):
 
 def available(choice, catalog, load_models=None):
     """Drop unavailable routes or models. Some providers list models on demand."""
-    if not choice:
+    if not isinstance(choice, dict) or not choice.get("backend") or "backend_route_id" not in choice:
         return {}
     for backend in catalog.get("backends", ()):
         if backend["backend"] != choice["backend"]:
@@ -42,22 +40,13 @@ def available(choice, catalog, load_models=None):
     return {}
 
 
-def site_default():
-    try:
-        initial = account_registrations.role_configuration()
-    except InstructionError:
-        return {}
-    return {"backend": initial["backend"], "backend_route_id": initial["backend_route_id"],
-            "model": initial["runtime_settings"].get("model", "")}
-
-
 def for_creation(actor, provider, account, settings):
     if actor_principal(actor).kind != "user" or (provider and account and "model" in settings):
         return {}
     choice = remembered(actor)
-    if not choice and provider and account and "model" not in settings:
-        choice = site_default()
-    if not choice or (provider and provider != choice["backend"]) or (account and account != choice["backend_route_id"]):
+    if not isinstance(choice, dict) or not choice.get("backend") or "backend_route_id" not in choice:
+        return {}
+    if (provider and provider != choice["backend"]) or (account and account != choice["backend_route_id"]):
         return {}
     from management_portal.execution.accounts import default_execution_accounts
     accounts = default_execution_accounts(tolerate_unavailable=True)
@@ -66,4 +55,4 @@ def for_creation(actor, provider, account, settings):
 
 
 def form_default(actor, catalog):
-    return available(remembered(actor), catalog) or available(site_default(), catalog)
+    return available(remembered(actor), catalog)

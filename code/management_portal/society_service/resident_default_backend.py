@@ -1,5 +1,7 @@
 """Resolve intent before first admission; a live session keeps its binding."""
+from management_portal.execution import account_registrations
 from management_portal.execution.account_registrations import role_configuration
+from management_portal.execution.accounts import DefaultAccountUnavailable
 from management_portal.hatg.contracts import InstructionError
 
 
@@ -10,11 +12,10 @@ def selection_mode(record):
     # Existing explicitly configured Residents stay fixed. Roles are the only
     # provenance that authorizes the site's automatic account policy.
     if settings.get("backend_role"):
-        from management_portal.execution.account_registrations import resolve_role
         try:
-            role, _ = resolve_role(settings["backend_role"])
+            role = account_registrations.resolve_role(settings["backend_role"])
         except InstructionError as error:
-            if error.details.get("reason") == "backend_role.default_missing":
+            if error.details.get("reason") == "backend_role.not_configured":
                 return "fixed"  # A removed role cannot authorize changing accounts.
             raise
         return role["account_selection"]
@@ -23,27 +24,42 @@ def selection_mode(record):
 
 def selection_priority(record):
     """The role owns the site's ordered backend policy, shared by admission and recovery."""
-    from management_portal.execution.account_registrations import resolve_role
+    name = (record.get("execution_settings") or {}).get("backend_role")
+    if not name:
+        return []
     try:
-        role, _ = resolve_role((record.get("execution_settings") or {}).get("backend_role") or "default")
+        role = account_registrations.resolve_role(name)
     except InstructionError as error:
-        if error.details.get("reason") == "backend_role.default_missing":
+        if error.details.get("reason") == "backend_role.not_configured":
             return []
         raise
     return list(role.get("backend_priority") or [])
 
 
+def awaits_account_choice(record):
+    return (record.get("backend") not in (None, "", "kimi")
+            and not record.get("backend_route_id")
+            and (record.get("execution_settings") or {}).get("backend_role") in (None, "", "default"))
+
+
+def has_session_binding(binding):
+    return any(binding.get(key) for key in ("backend_route_id", "backend_session_id", "provider_session_ref"))
+
+
 def configuration(record, binding):
-    if any(binding.get(key) for key in ("backend_route_id", "backend_session_id", "provider_session_ref")):
+    if has_session_binding(binding):
         return None
     settings = record.get("execution_settings") or {}
     configured = None
     if not record.get("backend_route_id") and record.get("backend") != "kimi":
+        name = settings.get("backend_role")
+        if awaits_account_choice(record) or not name:
+            raise DefaultAccountUnavailable("尚未选择执行账号")
         try:
-            configured = role_configuration(settings.get("backend_role") or "default")
+            configured = role_configuration(name)
         except InstructionError as error:
-            if error.details.get("reason") == "backend_role.default_missing":
-                return None
+            if error.details.get("reason") == "backend_role.not_configured":
+                raise DefaultAccountUnavailable("指定的后端角色尚未配置执行账号") from error
             raise
     if configured is None:
         if selection_mode(record) != "auto":
@@ -67,7 +83,6 @@ def configuration(record, binding):
         sample = next((a for a in samples if a["account_id"] == source.get("account_id")), {})
         model = runtime.get("model") or (sample.get("selection_catalog") or {}).get("default_model", "")
         if priority:
-            from management_portal.execution.accounts import DefaultAccountUnavailable
             ordered = priority_candidates(samples, priority, source=source, model=model,
                                           effort=runtime.get("reasoning_effort", ""))
             if not ordered:

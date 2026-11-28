@@ -60,7 +60,7 @@
     }
   }
 
-  async function showResidentBackendNotices(container, residentId, { settings, accountId } = {}) {
+  async function showResidentBackendNotices(container, residentId, { accountId } = {}) {
     const request = {};
     container.backendNoticeRequest = request;
     container.replaceChildren();
@@ -69,26 +69,19 @@
     const current = () => container.isConnected && container.backendNoticeRequest === request;
     const service = window.PortalResidentService;
     try {
-      const [stored, boundAccountId, result] = await Promise.all([
-        settings || service.runtimeSettings(residentId).then(result => result.settings || {}),
+      const [boundAccountId, result] = await Promise.all([
         accountId || window.PortalResidentProjection.load(residentId).then(detail => detail.execution_account?.account_id),
         service.runtimeAccounts(),
       ]);
       if (!current()) return;
-      const messages = [];
       const account = result.accounts?.find(row => row.account_id === boundAccountId);
-      if (account?.enabled === false) messages.push(window.PortalI18n.t("账号已停用"));
-      const fallback = stored.backend_role_fallback;
-      if (fallback?.used === "default" && typeof fallback.requested === "string" && fallback.requested) {
-        messages.push(window.PortalI18n.text`角色 ${fallback.requested} 未映射，使用站点默认`);
-      }
-      for (const message of messages) {
+      if (account?.enabled === false) {
         const note = document.createElement("p");
         note.className = "paneNote";
-        note.textContent = message;
+        note.textContent = window.PortalI18n.t("账号已停用");
         container.append(note);
+        container.hidden = false;
       }
-      container.hidden = !messages.length;
     } catch (_) {
       if (!current()) return;
       container.textContent = window.PortalI18n.t("账号与角色状态读取失败，请重新打开设置。");
@@ -339,7 +332,7 @@
         open(settings = {}, onSave = null, dialogOptions = {}) {
           save = onSave; editor.open(settings, dialogOptions);
           overlay.querySelector(".portalRuntimeSettingsTitle").textContent = dialogOptions.title || window.PortalI18n.t("运行设置");
-          void showResidentBackendNotices(overlay.querySelector("[data-resident-backend-notices]"), dialogOptions.residentId, {settings: dialogOptions.residentSettings, accountId: dialogOptions.accountId});
+          void showResidentBackendNotices(overlay.querySelector("[data-resident-backend-notices]"), dialogOptions.residentId, {accountId: dialogOptions.accountId});
           dialog.open({focusTarget: editor.model});
         }, close,
         destroy() { dialog.destroy(); overlay.remove(); },
@@ -776,7 +769,7 @@
           editor.open(current.runtime_settings || {}, {catalog: current.runtime_catalog, showApiAccount: false, showAccountSelection: false, hint: ""});
           baseline = readEditor();
           progress.update(restartView);
-          void showResidentBackendNotices(find("[data-resident-backend-notices]"), current.resident_id, {accountId: current.source?.account_id, settings: current.runtime_settings || {}});
+          void showResidentBackendNotices(find("[data-resident-backend-notices]"), current.resident_id, {accountId: current.source?.account_id});
           update(); void loadTarget();
           if (current.resident_id && restartService && restart) {
             unobserve = restartService.observeSessionRestart(current.resident_id, value => {

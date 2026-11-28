@@ -15,11 +15,11 @@ from management_portal.http_routes import RouteDefinition
 # ActivatePermissionScheme, is always true for a
 # Portal 管理员 (decision_b820faf42218 §3.1).
 PAGE_INSTRUCTIONS = ("CreateUser", "GetExecutionSettings", "UpdateExecutionSettings", "SetPermissionSystemEnabled", "ActivatePermissionScheme",
-                     "UpdateProviderAccount", "UpdateBackendRole", "CreateTerminal", "ListResourceTypes", "SetResourceTypeEnabled",
+                     "UpdateProviderAccount", "CreateTerminal", "ListResourceTypes", "SetResourceTypeEnabled",
                      "ListProviders", "ListProviderAccounts", "RegisterProviderAccount",
                      "DeleteProviderAccount", "DeleteModelApi",
                      "GetProviderAccountConfiguration", "UpdateProviderAccountConfiguration")
-PAGE_ARGUMENTS = {"SetPermissionSystemEnabled": {"enabled": True}, "UpdateBackendRole": {"backend_role": "default"}}
+PAGE_ARGUMENTS = {"SetPermissionSystemEnabled": {"enabled": True}}
 
 
 class PortalSessionHttp:

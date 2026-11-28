@@ -123,14 +123,6 @@
 .backendModelCustomEffort > .portalField { flex:1 1 140px; min-width:0; }
 .backendModelCustomEffort > button { flex:none; }
 
-.backendSelectionSummary { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:16px; margin:4px 0 16px; border:1px solid var(--border); border-radius:10px; background:var(--panel-2); }
-.backendSelectionSummary > p { margin:0; max-width:64ch; }
-.backendSelectionSummary > button { flex:none; white-space:nowrap; }
-.backendDialog:has(.backendSelectionForm) { width:min(720px, calc(100vw - 32px)); box-sizing:border-box; }
-@media (max-width:640px) {
-  .backendSelectionSummary { flex-direction:column; align-items:stretch; gap:12px; }
-  .backendSelectionSummary > button { align-self:flex-start; }
-}
 .backendDirectoryListActions { display:flex; gap:8px; align-items:center; }
 .backendDirectoryListActions > input { flex:1; min-width:0; }
 .backendDirectoryListActions > button { flex:none; white-space:nowrap; }

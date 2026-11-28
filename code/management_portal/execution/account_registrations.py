@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS backend_roles (
 );
 ALTER TABLE backend_roles ADD COLUMN IF NOT EXISTS account_selection TEXT NOT NULL DEFAULT 'auto' CHECK(account_selection IN ('auto','fixed'));
 ALTER TABLE backend_roles ADD COLUMN IF NOT EXISTS backend_priority JSONB NOT NULL DEFAULT '[]';
+DELETE FROM backend_roles WHERE role = 'default';
 ALTER TABLE registrations DROP COLUMN IF EXISTS directory_origin;
 UPDATE registrations SET config=config - 'is_default' - 'fallback_account_ids' WHERE config ?| ARRAY['is_default','fallback_account_ids'];
 """
@@ -268,7 +269,7 @@ def delete_registration(account_id):
 
 def roles():
     with database().read() as c:
-        return [_decode(row) for row in c.execute("SELECT * FROM backend_roles ORDER BY role")]
+        return [_decode(row) for row in c.execute("SELECT * FROM backend_roles WHERE role <> 'default' ORDER BY role")]
 
 
 def _check_version(object_id, current, expected, message):
@@ -284,6 +285,8 @@ def update_role(role, account_id, model, reasoning_effort, expected_version, act
     if backend_priority is not None:
         from .account_migration_types import validate_priority
         backend_priority = validate_priority(backend_priority)
+    if role == "default":
+        raise invalid("站点默认后端已移除，请显式指定后端或命名角色")
     if not IDENTIFIER.fullmatch(str(role or "")):
         raise invalid("角色名格式无效")
     with database().transaction("registrations") as c:
@@ -304,16 +307,14 @@ def update_role(role, account_id, model, reasoning_effort, expected_version, act
 def resolve_role(requested):
     by_role = {row["role"]: row for row in roles()}
     if requested in by_role and by_role[requested].get("account_id"):
-        return by_role[requested], None
-    if not by_role.get("default", {}).get("account_id"):
-        raise InstructionError("instruction.conflict", "站点尚未设置 default Backend 角色",
-                               details={"reason": "backend_role.default_missing"})
-    return by_role["default"], {"requested": requested, "used": "default"}
+        return by_role[requested]
+    raise InstructionError("instruction.conflict", "指定的 Backend 角色不存在",
+                           details={"reason": "backend_role.not_configured", "role": requested})
 
 
-def role_configuration(requested="default"):
-    """Resolve a site's role once into the existing Resident configuration."""
-    role, fallback = resolve_role(requested)
+def role_configuration(requested):
+    """Resolve an explicitly named role into a Resident configuration."""
+    role = resolve_role(requested)
     row = registration(role["account_id"])
     if not row or not row["enabled"]:
         raise invalid("Backend 角色引用的账号已停用或不存在")
@@ -322,8 +323,6 @@ def role_configuration(requested="default"):
         settings["model"] = role["model"]
     if role["reasoning_effort"]:
         settings["reasoning_effort"] = role["reasoning_effort"]
-    if fallback:
-        settings["backend_role_fallback"] = fallback
     return {"backend": row["provider"],
             "backend_route_id": row["config"]["api_id"] if row["provider"] == "provider_api" else row["route_id"],
             "runtime_settings": settings}

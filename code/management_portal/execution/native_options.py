@@ -48,7 +48,7 @@ class NativeOptions:
 
     def validate_requested_fields(self, definition, updates):
         capabilities = self.capabilities(definition)
-        fields = set(capabilities["settings"]) | {"prompt_injection", "allow_subagents", "agent_harness", "prompt_context", "backend_options", "backend_role", "backend_role_fallback", "account_selection", *QUOTA_SETTINGS}
+        fields = set(capabilities["settings"]) | {"prompt_injection", "allow_subagents", "agent_harness", "prompt_context", "backend_options", "backend_role", "account_selection", *QUOTA_SETTINGS}
         from .resident_configuration import normalize_configuration_settings
         normalize_configuration_settings(updates, definition.provider)
         # The switch exists only where the model can start subagents; off is no change elsewhere.

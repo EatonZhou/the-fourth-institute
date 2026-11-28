@@ -25,6 +25,7 @@ const {chromium} = require(path.join(root, 'test_framework/tau_runtime/node_modu
     });
     const provider = page.locator('[data-setting="provider"]');
     assert.equal(await provider.inputValue(), '');
+    assert.equal(await provider.locator('option:checked').innerText(), '请选择');
     assert.equal(await page.locator('[data-setting="account"]').isDisabled(), true);
     assert.deepEqual(await page.evaluate(() => choices.router), {account: '', settings: {}});
     await provider.selectOption('kimi');
@@ -34,6 +35,6 @@ const {chromium} = require(path.join(root, 'test_framework/tau_runtime/node_modu
     await provider.selectOption('');
     assert.deepEqual(await page.evaluate(() => choices.router), {account: '', settings: {}});
     assert.equal(await page.locator('[data-setting="model"]').isDisabled(), true);
-    console.log('Family site default, explicit Kimi and reset preserve submitted intent');
+    console.log('Family starts unselected, accepts explicit Kimi and resets to unselected');
   } finally { await browser.close(); }
 })().catch(error => {console.error(error); process.exitCode = 1;});

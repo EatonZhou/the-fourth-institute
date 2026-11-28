@@ -51,7 +51,7 @@ def _join_family(lineage_id: str, resident_id: str, instance_id: str, inv: Invoc
 def create_resident(inv: Invocation) -> dict[str, Any]:
     lineage_id = inv.argument("lineage_id")
     family = _family_to_join(lineage_id, inv)
-    role_settings, role_provider, role_account, fallback = {}, "", "", None
+    role_settings, role_provider, role_account = {}, "", ""
     requested_role = inv.argument("backend_role")
     selected_provider, selected_account = inv.argument("provider"), inv.argument("account_id")
     settings = inv.argument("settings") or {}
@@ -63,22 +63,21 @@ def create_resident(inv: Invocation) -> dict[str, Any]:
         role_settings = {"account_selection": "fixed"}
         if choice["model"]:
             role_settings["model"] = choice["model"]
-    elif not requested_role and not selected_provider and not selected_account:
-        requested_role = "default"
     if requested_role:
         from management_portal.execution.account_registrations import role_configuration
         configured = role_configuration(requested_role)
         role_provider = configured["backend"]
         role_account = configured["backend_route_id"]
         role_settings = configured["runtime_settings"]
-        fallback = role_settings.get("backend_role_fallback")
-    provider = selected_provider or role_provider or "codex"
+    provider = selected_provider or role_provider
+    if selected_account and not provider:
+        raise invalid("选择账号时需要指定后端")
     payload: dict[str, Any] = {
         "title": inv.argument("title"),
         "backend": provider,
         **placement(inv, lineage_id),
     }
-    account = selected_account or (role_account if provider == role_provider else "") or caller_account(inv, provider)
+    account = selected_account or (role_account if provider == role_provider else "") or (caller_account(inv, provider) if provider else "")
     if account:
         payload["backend_route_id"] = account
     if selected_account:
@@ -91,7 +90,7 @@ def create_resident(inv: Invocation) -> dict[str, Any]:
     resident = result.get("resident") or {}
     resident_id = str(resident.get("resident_id") or (result.get("node") or {}).get("id") or "")
     membership = _join_family(lineage_id, resident_id, family, inv)
-    if resident_id:
+    if resident_id and provider:
         try:
             applied = payload.get("runtime_settings") or {}
             if resident.get("resident_id") and resident.get("backend") and not applied.get("model"):
@@ -105,7 +104,6 @@ def create_resident(inv: Invocation) -> dict[str, Any]:
         "resident_id": resident_id,
         "lineage_id": lineage_id,
         **membership,
-        **({"backend_role_fallback": fallback} if fallback else {}),
     }
 
 

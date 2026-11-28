@@ -385,6 +385,7 @@
       const sourceLineageId = String(source.lineageId || "").trim();
       if (!sourceLineageId || state.residentRegisterSaving) return;
       const backend = $id("residentBackendSelect").value;
+      if (!backend) { $id("residentBackendSelect").reportValidity(); return; }
       const payload = {
         lineage_id: sourceLineageId,
         title: $id("residentTitleInput").value.trim(),

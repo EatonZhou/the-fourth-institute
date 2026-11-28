@@ -115,7 +115,7 @@
         }
       }
       $id("nodeSubmitBtn").disabled = Boolean(state.nodeSubmitBusy || state.nodeCatalogPending
-        || (model.required && !model.value) || (route.required && !route.value));
+        || !selectedBackend || !selected || (model.required && !model.value) || (route.required && !route.value));
     }
 
     async function openNodeModal() {
@@ -213,7 +213,7 @@
         state.nodeSubmitBusy = false;
         setBusy(button, false);
         $id("nodeForm").setAttribute("aria-busy", String(Boolean(state.nodeCatalogPending)));
-        button.disabled = Boolean(state.nodeCatalogPending
+        button.disabled = Boolean(!$id("nodeBackendSelect").value || state.nodeCatalogPending
           || ($id("nodeModelSelect").required && !$id("nodeModelSelect").value)
           || ($id("nodeRouteSelect").required && !$id("nodeRouteSelect").value));
       }
@@ -522,7 +522,7 @@
       const preferred = catalog.creation_default;
       const initial = fresh ? {
         source: null, detail: null,
-        provider: provider || preferred?.backend || catalog.backends.find(row => row.routes?.length)?.backend,
+        provider: provider || preferred?.backend || "",
         account: provider ? undefined : preferred?.backend_route_id,
       } : {provider};
       const selection = window.PortalLineageCatalogs.renderForkProvider({
@@ -537,7 +537,7 @@
       if (compacted.disabled && compacted.checked) {
         $id("branchModeChoices").querySelector('[value="full"]').checked = true;
       }
-      $id("branchSubmitBtn").disabled = !selection.available;
+      $id("branchSubmitBtn").disabled = !selection.selected;
       updateBranchAccountHint();
     }
 

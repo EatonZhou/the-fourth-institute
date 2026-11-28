@@ -433,12 +433,11 @@ def test_local_runtime_failure_reports_scheduler_submission_without_disclosing_e
     assert "private synthetic" not in check["log"]
 
 
-def test_unmapped_imported_role_uses_default(monkeypatch):
+def test_unmapped_imported_role_requires_configuration(monkeypatch):
     monkeypatch.setattr(registrations, "roles", lambda: [
         {"role": "coding", "account_id": None}, {"role": "default", "account_id": "existing"}])
-    resolved, fallback = registrations.resolve_role("coding")
-    assert resolved["account_id"] == "existing"
-    assert fallback == {"requested": "coding", "used": "default"}
+    with pytest.raises(InstructionError, match="角色不存在"):
+        registrations.resolve_role("coding")
 
 
 def test_existing_bindings_keep_their_account(monkeypatch):
@@ -447,19 +446,21 @@ def test_existing_bindings_keep_their_account(monkeypatch):
     monkeypatch.setattr(defaults, "role_configuration", lambda _: configured)
     assert defaults.configuration({"backend": "codex", "backend_route_id": "old"}, {}) is None
     assert defaults.configuration({"backend": "codex"}, {"backend_session_id": "running"}) is None
-    assert defaults.configuration({"backend": "codex"}, {}) == configured
+    with pytest.raises(ValueError, match="尚未选择执行账号"):
+        defaults.configuration({"backend": "codex"}, {})
+    assert defaults.configuration({"backend": "codex", "execution_settings": {"backend_role": "coding"}}, {}) == configured
 
 
-def test_new_resident_uses_default_without_explicit_role(tmp_path, monkeypatch):
+def test_new_resident_without_choice_uses_no_account(tmp_path, monkeypatch):
     from management_portal.society_service.isa import residents
     registrations.create_registration({"config": {"account_dir": str(tmp_path / "accounts" / "claude_first")}, "account_id": "claude_first", "provider": "claude", "kind": "subscription_login"}, "alice")
-    registrations.update_role("default", "claude_first", "model", "", None, "alice")
+    registrations.update_role("coding", "claude_first", "model", "", None, "alice")
     created = []
     monkeypatch.setattr(residents, "_family_to_join", lambda *a: "")
     monkeypatch.setattr(residents, "placement", lambda *a: {})
     monkeypatch.setattr(residents, "lineage_resident_nodes", lambda: SimpleNamespace(create_lineage_resident=lambda lineage, payload, actor:
         created.append(payload) or {"resident": {"resident_id": "resident_000000000001"}}))
     residents.create_resident(invoke(title="New", lineage_id="lineage_000000000001"))
-    assert created[0]["backend"] == "claude"
-    assert created[0]["backend_route_id"] == "claude_first"
-    assert created[0]["runtime_settings"]["model"] == "model"
+    assert not created[0]["backend"]
+    assert "backend_route_id" not in created[0]
+    assert "runtime_settings" not in created[0]

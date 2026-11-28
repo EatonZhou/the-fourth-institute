@@ -20,13 +20,13 @@ def runtime_settings_updates_from_payload(
         "permission_preset", "collaboration_mode", "agent_harness",
         "prompt_injection", "capability_config", "allow_subagents",
         "prompt_context", "backend_options",
-        "backend_role", "backend_role_fallback", "account_selection", *QUOTA_SETTINGS,
+        "backend_role", "account_selection", *QUOTA_SETTINGS,
     }
     unknown = set(data) - allowed
     if unknown:
         raise ValueError("Unsupported runtime settings: " + ", ".join(sorted(unknown)))
     updates: dict[str, Any] = {}
-    for key in ("prompt_context", "backend_options", "backend_role_fallback"):
+    for key in ("prompt_context", "backend_options"):
         if key in data:
             if not isinstance(data[key], dict):
                 raise ValueError(f"{key} must be an object")

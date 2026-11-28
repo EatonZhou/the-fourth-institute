@@ -173,10 +173,11 @@
   }
 
   function populateBackends(select, catalog) {
-    if (!select || !catalog?.backends?.length) return;
+    if (!select) return;
     const current = select.value;
-    select.replaceChildren(...catalog.backends.map(row => new Option(row.label, row.backend)));
-    if (catalog.backends.some(row => row.backend === current)) select.value = current;
+    const backends = catalog?.backends || [];
+    select.replaceChildren(new Option(window.PortalI18n.t("请选择"), ""), ...backends.map(row => new Option(row.label, row.backend)));
+    select.value = backends.some(row => row.backend === current) ? current : "";
   }
 
   function populateCreationRoutes(select, definition, requested, defaultAccount) {
@@ -194,7 +195,7 @@
     const choice = catalog?.creation_default;
     const backend = catalog?.backends?.find(row => row.backend === choice?.backend
       && row.routes?.some(route => route.backend_route_id === choice.backend_route_id));
-    select.value = backend?.backend || catalog?.backends?.find(row => row.routes?.length)?.backend || "";
+    select.value = backend?.backend || "";
     return backend ? choice : null;
   }
 

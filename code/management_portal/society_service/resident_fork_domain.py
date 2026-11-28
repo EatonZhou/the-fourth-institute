@@ -261,6 +261,11 @@ def _ensure_derived_resident_session(
         "last_error": "",
         "updated_at": resident_domain_common.now_iso(),
     })
+    from .resident_default_backend import awaits_account_choice
+    if awaits_account_choice(resident):
+        resident_session_backend_domain.materialize_pending_agent_data_fork(resident, actor)
+        _persist_derived_resident(record, resident)
+        return resident
     if definition and not resident_backend.record_session_id(resident) and "create" in definition.operations:
         return _queue_derived_resident_session_creation(
             record,
@@ -839,7 +844,14 @@ def inherit_derived_resident_runtime_from_source(
         updated_at=now,
     ))
     binding_source = source_resident if source_resident is not None else source_record
-    resident["workspace_bindings"] = copy.deepcopy(binding_source.get("workspace_bindings") or [])
+    bindings = binding_source.get("workspace_bindings") or []
+    from management_portal.resources.workspace_store import get_workspace_store
+    rows = get_workspace_store().rows(item["workspace_id"] for item in bindings)
+    project_id = binding_source.get("project_id")
+    resident["workspace_bindings"] = [
+        copy.deepcopy(item) for item in bindings
+        if not project_id or rows.get(item["workspace_id"], {}).get("owner_id") != project_id
+    ]
     resident_runtime_domain.stamp_derived_resident_runtime_defaults(
         target_record,
         resident,

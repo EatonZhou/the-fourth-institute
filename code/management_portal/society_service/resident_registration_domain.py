@@ -134,11 +134,12 @@ def _prepare_registration_record(payload, actor_id, lineage_node, project_princi
         payload, actor_id, project_id,
         lineage_node=lineage_node, project_principal=project_principal, personal_owner=personal_owner,
     )
-    payload, awaiting_default = _with_default_backend(payload)
+    unconfigured = not payload.get("backend")
+    # Enrollment provisions an identity and mailbox before a user chooses an account.
     backend = str(payload.get("backend") or "codex").strip() or "codex"
     mode = str(payload.get("mode") or "new_session").strip().lower()
     resident_execution_provider.validate_registration(backend, mode)
-    backend_route_id = _registration_route(payload, backend, awaiting_default)
+    backend_route_id = "" if unconfigured else _registration_route(payload, backend)
     _refuse_supplied_session_ids(payload)
     if intent.snapshot.get('record'):
         record = copy.deepcopy(intent.snapshot['record'])
@@ -150,9 +151,9 @@ def _prepare_registration_record(payload, actor_id, lineage_node, project_princi
             title=title, project_id=project_id, backend=backend, backend_route_id=backend_route_id,
             project_principal=project_principal, owner=personal_owner or personal_member_owner,
         )
-        if awaiting_default:
+        if unconfigured:
             from management_portal.execution.resident_runtime_settings import normalize_settings
-            runtime_settings = normalize_settings({"backend": backend, **payload["runtime_settings"]})
+            runtime_settings = normalize_settings({"backend": backend, **(payload.get("runtime_settings") or {})})
         else:
             runtime_settings = resident_runtime_domain.resident_runtime_settings_from_register_payload(
                 record, payload, actor_id, record["created_at"],
@@ -265,28 +266,7 @@ def _check_registration_authority(
     return personal_member_owner
 
 
-def _with_default_backend(payload: dict[str, Any]) -> tuple[dict[str, Any], bool]:
-    """A registration that names no backend gets the default backend role's; True while none is configured."""
-
-    if payload.get("backend"):
-        return payload, False
-    from management_portal.execution.account_registrations import role_configuration
-    from management_portal.hatg.contracts import InstructionError
-    awaiting_default = False
-    try:
-        configured = role_configuration()
-    except InstructionError as error:
-        if error.details.get("reason") != "backend_role.default_missing":
-            raise
-        # User enrollment creates an AMA before the first AI is added.
-        # Keep its identity and mailbox available until a default exists.
-        awaiting_default = True
-        configured = {"backend": "codex", "backend_route_id": "", "runtime_settings": {"backend_role": "default"}}
-    return {**payload, **configured, "runtime_settings": {
-        **configured["runtime_settings"], **(payload.get("runtime_settings") or {})}}, awaiting_default
-
-
-def _registration_route(payload: dict[str, Any], backend: str, awaiting_default: bool) -> str:
+def _registration_route(payload: dict[str, Any], backend: str) -> str:
     requested_backend_route_id = str(
         payload.get("backend_route_id") or ""
     ).strip()
@@ -296,7 +276,7 @@ def _registration_route(payload: dict[str, Any], backend: str, awaiting_default:
         from management_portal.execution.resident_configuration import validate_api_settings
         validate_api_settings(requested_backend_route_id, {}, {})
         backend_route_id = requested_backend_route_id
-    if definition and not awaiting_default:
+    if definition:
         account = resolve_account_configuration(definition.provider, requested_backend_route_id)
         backend_route_id = str(account.get("backend_route_id") or "")
     return backend_route_id
@@ -335,10 +315,6 @@ def _new_resident_record(
 
     from .resident_projection import _optional_absolute_paths
     workspace_paths = _optional_absolute_paths(payload.get("workspace_paths"))
-    if project_id:
-        project_path = str(project_folders.project_root_for_id(project_id).resolve(strict=False))
-        if project_path not in workspace_paths:
-            workspace_paths.append(project_path)
     resident_id = unique_resident_id()
     lineage_id = str(payload.get("lineage_id") or "").strip()
     if lineage_id and not identity_contract.is_valid_id(lineage_id, "lineage"):
@@ -445,6 +421,8 @@ def _stage_registration(record, payload, workspace_path, runtime_settings, actor
             stage = filesystem_path(stage)
             folder = stage if folder_supplied else stage / 'residents' / resident_id
             if not folder_supplied:
+                from management_portal.workspace_seed import create_workspace_folder
+                create_workspace_folder(stage / 'workspace', 'Lineage')
                 (stage / 'LINEAGE.md').touch()
                 (stage / 'runtime').mkdir()
             resident_workspace_domain.ensure_resident_workspace(record, folder=folder)
@@ -516,6 +494,21 @@ def _commit_registration(
             )
             if registered_lineage is None:
                 raise ValueError("Target Lineage is no longer available")
+        from management_portal.resources.workspace_store import get_workspace_store
+        from management_portal.workspace_seed import register_owned_workspace
+        from .resident_workspace_storage import apply_binding_projection
+        team_workspace = Path(record["workspace_path"]) / "workspace"
+        if joins_canonical_lineage:
+            register_owned_workspace(lineage_id, team_workspace, creation, connection)
+        defaults = [(lineage_id, team_workspace)]
+        if registered_lineage and registered_lineage.get("leader_resident_id") == resident_id and record.get("project_id"):
+            project_id = record["project_id"]
+            defaults.append((project_id, project_folders.project_root_for_id(project_id) / "workspace"))
+        for owner_id, path in defaults:
+            binding = get_workspace_store().owned_binding(owner_id, path, connection=connection)
+            if binding and all(item["workspace_id"] != binding["workspace_id"] for item in record["workspace_bindings"]):
+                record["workspace_bindings"].append(binding)
+        apply_binding_projection(record)
         resident_record_domain.save_resident_record(record)
         if creation_key:
             # Identity, graph membership, publication outbox and request

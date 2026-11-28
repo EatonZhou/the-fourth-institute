@@ -32,7 +32,6 @@ def register_codex(monkeypatch, root, *, names=("zero", "one"), default="one", l
 def register_site_defaults(monkeypatch, root, *, legacy_codex_sockets=False):
     """Seed the isolated site's routes; HTTP APIs remain explicit test fixtures."""
     from management_portal.execution import account_hosting
-    from management_portal.execution.account_registrations import update_role
 
     # Existing execution fixture users identify fake clients by these names.
     # Other cases, including host path contracts, use normal path derivation.
@@ -51,5 +50,4 @@ def register_site_defaults(monkeypatch, root, *, legacy_codex_sockets=False):
         create_registration({"account_id": account_id, "provider": provider, "kind": "api_profile",
                              "route_id": route_id, "config": {"api_id": "deepseek_primary"}}, "test")
     create_registration({"account_id": "kimi_default", "provider": "kimi", "kind": "service"}, "test")
-    update_role("default", "codex_one", "", "", 0, "test", "fixed")
     return routes

@@ -163,9 +163,8 @@ function errorText(error) {
     p0: error.details?.session_count ?? "—", p1: error.details?.execution_count ?? "—"});
   if (error.details?.reason === "account.role_in_use") {
     const references = error.details.roles || [];
-    if (references.length === 1 && references[0] === "default") return t("该账号是新会话的默认账号。请先选择另一个默认账号。");
     return references.length
-      ? t("以下后端配置正在使用此账号：{p0}。可在“新会话默认后端”调整 default，其他配置可通过 UpdateBackendRole 调整。", {p0: references.join("、")})
+      ? t("请先更改引用此账号的后端配置。") + " " + references.join("、")
       : t("请先更改引用此账号的后端配置。");
   }
   if (error.details?.reason === "account.api_in_use") return t("无法删除：执行账号 {p0} 仍使用此模型 API。请先处理这些账号的引用，再删除接口。", {
@@ -569,13 +568,13 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
   let pendingAccountId = accountId;
   const abort = new AbortController();
   const canWrite = me.access?.permission_system === "open" || me.access?.allows?.UpdateProviderAccount === true;
-  const canSetDefault = me.access?.permission_system === "open" || me.access?.allows?.UpdateBackendRole === true;
+
   const canRegister = me.access?.permission_system === "open" || me.access?.allows?.RegisterProviderAccount === true;
   const canDeleteAccount = me.access?.permission_system === "open" || me.access?.allows?.DeleteProviderAccount === true;
   const canDeleteApi = me.access?.permission_system === "open" || me.access?.allows?.DeleteModelApi === true;
   const execute = (name, args = {}, options = {}) => call(name, args, {...options, signal: abort.signal});
-  const state = {providers: [], accounts: [], apis: [], roles: []};
-  let providersReady = false, rolesReady = false;
+  const state = {providers: [], accounts: [], apis: []};
+  let providersReady = false;
   const addAccount = button("新增执行账号", () => accountEditor(), true);
   const addSubscription = button("接入订阅帐号", () => accountEditor("subscription_login"), true);
   const addApi = button("新增 API Key", () => apiEditor(), !canWrite);
@@ -633,11 +632,6 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     const control = node("div", undefined, {class: "backendDelete"});
     const feedback = node("p", "", {role: "alert", tabindex: "-1", hidden: true});
     const recovery = button("查看已接入的 AI", async () => {
-      if (recovery.dataset.section === "default") {
-        await refresh("roles");
-        if (!destroyed && rolesReady) defaultBackendEditor();
-        return;
-      }
       await refresh(recovery.dataset.section);
       if (destroyed) return;
       const target = sections[recovery.dataset.section].output.parentElement;
@@ -650,11 +644,8 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       if (!await confirm(title, id)) { notice.textContent = t("已取消删除"); return false; }
       await execute(instruction, {[argument]: id}); await reload();
     }, false, {success: "已删除", errorTarget: feedback, onError: error => {
-      const section = error.details?.reason === "account.role_in_use" && canSetDefault && error.details.roles?.includes("default") ? "default"
-        : error.details?.reason === "account.api_in_use" ? "accounts" : "";
-      if (section) {
-        recovery.dataset.section = section;
-        recovery.textContent = t(section === "default" ? "新会话默认后端" : "查看已接入的 AI");
+      if (error.details?.reason === "account.api_in_use") {
+        recovery.dataset.section = "accounts";
         recovery.hidden = false;
       }
     }}), disabled);
@@ -715,7 +706,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       });
     });
   }
-  function setupEditor(accountId, {useDefault: requestedDefault = false} = {}) {
+  function setupEditor(accountId) {
     let timer, progressTimer, closed = false, checking = false, working = false, setup = null, nextPoll = null;
     function schedulePoll(work, delay) {
       clearTimeout(timer); timer = null; nextPoll = work;
@@ -769,11 +760,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     hint(model, "无需手动填写；授权完成后自动读取默认模型，也可选择其他模型。");
     const choices = node("datalist", undefined, {id: "backend-setup-models"});
     model.setAttribute("list", choices.id); form.append(choices);
-    const useDefault = field(form, "用作默认模型偏好", "use_default", "", {type: "checkbox"});
-    const defaultRole = state.roles.find(role => role.role === "default");
-    useDefault.disabled = !canSetDefault;
-    useDefault.checked = canSetDefault && (requestedDefault || !defaultRole?.account_id || defaultRole.account_id === accountId);
-    hint(useDefault, "测试通过后，Ask Me Anything 和未配置后端的 Resident 将使用此账号。仅保存接口或设置默认路线不会启用默认 AI。");
+
     const authorize = button("登录", () => {
       login = openLogin(accountId, {onChanged: () => { login?.close(); void perform(reload); }});
     }, true);
@@ -792,13 +779,13 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       nextStep.textContent = checkDetail.textContent = "";
       checkLog.hidden = showLog.hidden = true; checkLog.value = "";
       showLog.textContent = t("显示详细日志"); showLog.setAttribute("aria-expanded", "false");
-      checking = true; model.disabled = true; useDefault.disabled = true; setButtons();
+      checking = true; model.disabled = true; setButtons();
       stageRows[2].textContent = t("测试连接") + " · " + t("进行中");
       try {
         const receipt = await execute("CheckProviderAccount", {account_id: accountId, model: model.value.trim()});
         if (closed) return;
         await pollCheck(receipt.execution_id);
-      } catch (error) { checking = false; model.disabled = false; useDefault.disabled = !canSetDefault; throw error; }
+      } catch (error) { checking = false; model.disabled = false; throw error; }
     }, "正在启动本地后台并检查连接，请稍候…"), true);
     form.append(capabilities, status, nextStep, checkDetail, actions(authorize, retry, editConnection, editModels, test, showLog), checkLog);
     form.addEventListener("submit", event => event.preventDefault());
@@ -905,7 +892,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       loginHint.hidden = !setup.runtime_ready || !needsLogin;
       const loginText = t(setup.provider === "codex" ? "先点击登录，获取设备码并在浏览器授权；无需填写模型名称。" : "先点击登录并在浏览器完成授权；无需填写模型名称。");
       if (loginHint.textContent !== loginText) loginHint.textContent = loginText;
-      model.parentElement.hidden = useDefault.parentElement.hidden = capabilities.hidden = needsLogin;
+      model.parentElement.hidden = capabilities.hidden = needsLogin;
       const capabilityText = t(setup.supports_tools ? "支持对话与工具任务；本次测试验证模型回复。" : "支持对话；此接入方式不提供工具执行。");
       if (capabilities.textContent !== capabilityText) capabilities.textContent = capabilityText;
       const statusText = [t(setup.runtime_ready ? "已就绪" : "正在自动准备运行环境…"),
@@ -958,26 +945,15 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
           checkLog.value = result.check.log || t("暂无详细日志，请提供测试编号以便排查。");
           showLog.hidden = false;
         }
-        if (result.check.passed && useDefault.checked) {
-          progressMessage = "测试通过，正在设为默认 AI…";
-          status.textContent = t(progressMessage);
-          const currentDefault = state.roles.find(role => role.role === "default");
-          await execute("UpdateBackendRole", {backend_role: "default", account_id: accountId, account_selection: "fixed", backend_priority: [],
-            model: result.check.model, verification_execution_id: executionId,
-            ...(currentDefault?.account_id === accountId && currentDefault.model === result.check.model
-              ? {reasoning_effort: currentDefault.reasoning_effort || ""} : {})}, {expectedVersion: currentDefault?.version || 0});
-          if (!closed) status.textContent = t("测试通过，已设为默认 AI；新对话和未配置的 Resident 将使用此账号。");
-          await refresh("roles");
-        }
         stopProgress();
-        checking = false; model.disabled = false; useDefault.disabled = !canSetDefault; setButtons();
+        checking = false; model.disabled = false; setButtons();
         if (result.check.passed && !closed) {
-          notice.textContent = t(useDefault.checked ? "测试通过，已设为默认 AI。" : "测试通过，AI 接入已完成。");
+          notice.textContent = t("测试通过，AI 接入已完成。");
           view.close();
         }
       } catch (error) {
         stopProgress();
-        if (!closed) { checking = false; model.disabled = false; useDefault.disabled = !canSetDefault; status.textContent = errorText(error); setButtons(); }
+        if (!closed) { checking = false; model.disabled = false; status.textContent = errorText(error); setButtons(); }
       }
     }
     void perform(reload);
@@ -1288,88 +1264,6 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       }, Boolean(changes.secret), {success: register?.checked ? "接口已保存，请点击“测试并完成”启用 AI。" : "已保存"});
     });
   }
-  function defaultBackendEditor() {
-    const role = state.roles.find(row => row.role === "default");
-    const catalogAbort = new AbortController();
-    const {view, form} = newEditor("新会话默认后端", () => catalogAbort.abort());
-    form.classList.add("backendSelectionForm");
-    const account = select(form, "默认账号", "account_id", [["", t("选择账号")], ...state.accounts.filter(a => a.enabled !== false || a.account_id === role?.account_id).map(a => [a.account_id, a.account_id])], role?.account_id);
-    account.required = true;
-    const model = select(form, "模型偏好（可选）", "model", [["", t("使用账号默认模型")]]);
-    const effort = select(form, "推理强度（可选）", "reasoning_effort", [["", t("使用模型默认强度")]]);
-    const catalogStatus = node("p", "", {class: "backendHint", role: "status", "data-backend-role-catalog": ""});
-    const reloadCatalog = button("重新加载模型列表", () => void loadCatalog(
-      catalogFailed ? requestedPreference.model : model.value, catalogFailed ? requestedPreference.effort : effort.value));
-    form.append(catalogStatus, reloadCatalog);
-    saveButton(form);
-    const save = form.querySelector('[type="submit"]');
-    let catalog = {}, catalogRequest = 0, catalogLoading = false, catalogFailed = false;
-    let requestedPreference = {};
-    const choices = (control, values, value, placeholder) => {
-      control.replaceChildren(node("option", t(placeholder), {value: ""}),
-        ...values.map(item => node("option", item, {value: item})));
-      const unavailable = Boolean(value && !values.includes(value));
-      if (unavailable) control.append(node("option", value + " · " + t("当前不可用"), {value, disabled: true}));
-      control.value = value || "";
-      control.setCustomValidity(unavailable ? t("请选择当前账号支持的选项，或使用默认值。") : "");
-    };
-    const syncEfforts = (value = "") => {
-      const values = catalog.efforts_by_model?.[model.value || catalog.default_model] || [];
-      choices(effort, values, value, values.length ? "使用模型默认强度" : "此模型不提供推理强度选项");
-      effort.disabled = !values.length && !value;
-    };
-    async function loadCatalog(preferredModel = "", preferredEffort = "") {
-      const request = ++catalogRequest;
-      requestedPreference = {model: preferredModel, effort: preferredEffort};
-      catalogLoading = true; catalogFailed = false;
-      model.disabled = effort.disabled = save.disabled = true;
-      catalogStatus.textContent = t("正在读取账号支持的模型…");
-      reloadCatalog.hidden = true;
-      try {
-        if (!account.value) {
-          catalog = {};
-          choices(model, [], "", "使用账号默认模型"); syncEfforts();
-          catalogStatus.textContent = t("请选择默认账号。");
-          return;
-        }
-        // Use the same account runtime catalog as Resident Settings; do not
-        // infer models or effort levels from the Provider name.
-        const result = await window.PortalAPI.get('/api/agent-workbench/agent-runtime-catalog?' +
-          new URLSearchParams({account_id: account.value}), {signal: catalogAbort.signal, cache: "no-store"});
-        if (request !== catalogRequest || editor !== view || destroyed) return;
-        catalog = result;
-        const models = [...new Set((catalog.models || []).filter(item => typeof item === "string" || item.enabled !== false)
-          .map(item => typeof item === "string" ? item : item.id).filter(Boolean))];
-        choices(model, models, preferredModel, "使用账号默认模型"); syncEfforts(preferredEffort);
-        catalogStatus.textContent = models.length ? "" : t("该账号尚未提供可选模型，可使用账号默认值或重新加载。");
-      } catch (error) {
-        if (request !== catalogRequest || editor !== view || destroyed) return;
-        catalogFailed = true;
-        catalogStatus.textContent = errorText(error);
-      } finally {
-        if (request === catalogRequest && editor === view && !destroyed) {
-          catalogLoading = false;
-          model.disabled = catalogFailed || !account.value;
-          if (catalogFailed) effort.disabled = true;
-          save.disabled = catalogFailed;
-          reloadCatalog.hidden = !account.value;
-        }
-      }
-    }
-    model.addEventListener("change", () => { model.setCustomValidity(""); syncEfforts(); });
-    effort.addEventListener("change", () => effort.setCustomValidity(""));
-    account.addEventListener("change", () => void loadCatalog());
-    void loadCatalog(role?.model || "", role?.reasoning_effort || "");
-    form.addEventListener("submit", event => {
-      event.preventDefault();
-      if (catalogLoading || catalogFailed || !form.reportValidity()) return;
-      void run(async () => {
-        await execute("UpdateBackendRole", {backend_role: "default", account_id: account.value, account_selection: "fixed",
-          backend_priority: [], model: model.value.trim(), reasoning_effort: effort.value.trim()}, {expectedVersion: role?.version || 0});
-        view.close(); await refresh("roles");
-      });
-    });
-  }
   const runnerTitle = provider => provider === "provider_api" ? t("直连模型（只对话，不执行工具）")
     : state.providers.find(item => item.provider === provider)?.title || provider;
   function accountConfigurationOperation(account) {
@@ -1430,15 +1324,6 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     const expanded = new Set([...output.querySelectorAll("details[data-backend-api-accounts]")]
       .filter(details => details.open).map(details => details.dataset.backendApiAccounts));
     output.replaceChildren();
-    if (rolesReady) {
-      const summary = node("div", undefined, {class: "backendSelectionSummary", "data-backend-account-selection": ""});
-      summary.append(node("p", t("新会话沿用当前用户上次新建时的账号和模型。首次新建或上次账号不可用时，使用这里的默认值。"), {class: "backendHint"}),
-        button("新会话默认后端", defaultBackendEditor, !canSetDefault));
-      output.append(summary);
-    }
-    if (rolesReady && !state.roles.some(role => role.role === "default" && role.account_id)) {
-      output.append(node("p", t("尚未配置默认模型偏好。请在账号的“设置与测试”中完成接入，或选择“新会话默认后端”。"), {class: "backendHint", "data-backend-default-missing": "", role: "status"}));
-    }
     if (!state.accounts.length) { output.append(node("p", t("暂无登记"))); return; }
     const standalone = [], groups = new Map();
     for (const account of state.accounts) {
@@ -1488,7 +1373,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         deleteControl("删除模型 API？", api.api_id, "DeleteModelApi", "api_id", () => refresh("apis"), !canDeleteApi))]};
     })),
   };
-  const instructions = {providers: "ListProviders", accounts: "ListProviderAccounts", apis: "ListModelApis", roles: "ListBackendRoles"};
+  const instructions = {providers: "ListProviders", accounts: "ListProviderAccounts", apis: "ListModelApis"};
   async function refresh(key, args = {}) {
     try {
       const result = await execute(instructions[key], args); if (destroyed) return;
@@ -1496,13 +1381,11 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         ...account, ...account.registration, registration_version: account.registration.version,
       } : account) : result[key] || [];
       if (key === "providers") providersReady = true;
-      if (key === "roles") rolesReady = true;
-      if (key !== "roles") renderers[key]();
-      if (key === "apis" || key === "providers" || key === "roles") renderers.accounts();
+      renderers[key]();
+      if (key === "apis" || key === "providers") renderers.accounts();
       if (key === "accounts" && pendingAccountId) focusAccount(pendingAccountId);
     } catch (error) { if (!destroyed) {
-      if (key === "roles") { rolesReady = false; notice.textContent = errorText(error); renderAccounts(); }
-      else sections[key].output.replaceChildren(node("p", errorText(error), {role: "alert"}));
+      sections[key].output.replaceChildren(node("p", errorText(error), {role: "alert"}));
     } }
     finally { if (!destroyed) syncAccountButton(); }
   }
@@ -1517,7 +1400,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
   for (const key of Object.keys(sections)) sections[key].actions.append(button("刷新", () => void refresh(key)));
   // Opening registration needs the catalog, not runtime probes or account health.
   const catalogReady = refresh("providers", {include_runtime: false});
-  for (const key of ["accounts", "apis", "roles"]) void refresh(key);
+  for (const key of ["accounts", "apis"]) void refresh(key);
   await catalogReady;
   if (!destroyed) void refresh("providers");
   function focusAccount(id) {

@@ -875,8 +875,8 @@ def test_automatic_api_without_balance_resumes_original_input(quota_family, monk
     settings = {**record["execution_settings"], "account_selection": "auto"}
     if inherit_role:
         settings.pop("account_selection")
-        settings["backend_role"] = "default"
-        monkeypatch.setattr(account_registrations, "resolve_role", lambda _: ({"account_selection": "auto"}, False))
+        settings["backend_role"] = "family"
+        monkeypatch.setattr(account_registrations, "resolve_role", lambda _: {"account_selection": "auto"})
     record["execution_settings"] = settings
     resident_record_domain.save_resident_record(record, commit_configuration=True)
     resident_input_queue_domain.commit_resident_intake_state(record, "open")

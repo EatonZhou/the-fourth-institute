@@ -110,9 +110,18 @@ def assign_derived_resident_account_route(
 ) -> str:
     backend = resident_backend.execution_backend(resident)
     same_provider = backend == resident_backend.execution_backend(source_record)
-    source_route = (resident_session_account_id(source_record) or str(
-        resident_backend.execution_account(source_record).get("backend_route_id") or ""
-    )) if same_provider else ""
+    from .resident_default_backend import awaits_account_choice, has_session_binding
+    source_route = ""
+    if same_provider:
+        binding = resident_backend.session_record(source_record)
+        if awaits_account_choice(source_record) and not has_session_binding(binding):
+            if not requested_account_id:
+                resident["backend_route_id"] = ""
+                return ""
+        else:
+            source_route = resident_session_account_id(source_record, session_record=binding) or str(
+                resident_backend.execution_account(source_record, binding).get("backend_route_id") or ""
+            )
     if same_provider and backend == "provider_api":
         # Completion profiles identify the API itself; their execution adapter
         # intentionally has no native session route to inherit.

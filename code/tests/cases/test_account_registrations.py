@@ -14,7 +14,7 @@ from tests.cases.execution_layer_test_support import legacy_empty_checkpoints
 
 
 def test_registration_versions_and_roles(tmp_path):
-    """账号登记保持审计、版本冲突和角色默认回退。"""
+    """账号登记保持审计、版本冲突和显式角色映射。"""
     from management_portal.execution import account_registrations as store
     row = store.create_registration({"account_id": "codex_test", "provider": "codex",
                                      "kind": "subscription_login", "route_id": "test",
@@ -31,12 +31,23 @@ def test_registration_versions_and_roles(tmp_path):
         store.update_registration("codex_test", {"enabled": True}, 1, "alice")
     assert error.value.code == "instruction.version_conflict"
     store.update_registration("codex_test", {"enabled": True}, 2, "bob")
-    store.update_role("default", "codex_test", "model", "high", 0, "alice")
-    role, fallback = store.resolve_role("coding")
+    store.update_role("coding", "codex_test", "model", "high", 0, "alice")
+    role = store.resolve_role("coding")
     assert role["account_id"] == "codex_test"
-    assert fallback == {"requested": "coding", "used": "default"}
+    store.update_role("retired", "codex_test", "", "", 0, "alice")
+    with store.database().transaction() as connection:
+        connection.execute("UPDATE backend_roles SET role='default' WHERE role='retired'")
+    store._database.cache_clear()
+    assert {r["role"] for r in store.roles()} == {"coding"}
+    with store.database().read() as connection:
+        assert connection.execute("SELECT role FROM backend_roles WHERE role='default'").fetchone() is None
+    assert store.registration("codex_test")["enabled"]
+    with pytest.raises(InstructionError, match="角色不存在"):
+        store.resolve_role("unknown")
+    with pytest.raises(InstructionError, match="默认后端已移除"):
+        store.update_role("default", "codex_test", "model", "", 0, "alice")
     with pytest.raises(InstructionError):
-        store.update_role("default", "codex_test", "model", "low", 0, "bob")
+        store.update_role("coding", "codex_test", "model", "low", 0, "bob")
 
 
 def test_registrations_list_owned_accounts_before_api_profiles(tmp_path):
@@ -60,13 +71,13 @@ def test_account_routing_flags_are_replaced_by_role_selection(tmp_path):
         with pytest.raises(InstructionError):
             store.create_registration({**data, "config": {**data["config"], **flag}}, "alice")
     store.create_registration(data, "alice")
-    role = store.update_role("default", "codex_one", "m", "", 0, "alice")
+    role = store.update_role("coding", "codex_one", "m", "", 0, "alice")
     assert role["account_selection"] == "auto"
-    assert store.role_configuration()["runtime_settings"]["account_selection"] == "auto"
-    role = store.update_role("default", "codex_one", "m", "", 1, "alice", "fixed")
+    assert store.role_configuration("coding")["runtime_settings"]["account_selection"] == "auto"
+    role = store.update_role("coding", "codex_one", "m", "", 1, "alice", "fixed")
     assert role["account_selection"] == "fixed"
     with pytest.raises(ValueError):
-        store.update_role("default", "codex_one", "m", "", 2, "alice", "random")
+        store.update_role("coding", "codex_one", "m", "", 2, "alice", "random")
 
 
 @pytest.mark.parametrize('existing', [False, True])
@@ -199,12 +210,12 @@ def test_role_blocks_account_deletion(tmp_path, monkeypatch):
     """仍被 Backend 角色使用的账号不能删除。"""
     from management_portal.execution import account_registrations as store
     store.create_registration({"config": {"account_dir": str(tmp_path / "accounts" / "claude_test")}, "account_id": "claude_test", "provider": "claude", "kind": "subscription_login"}, "alice")
-    store.update_role("default", "claude_test", "model", "", 0, "alice")
+    store.update_role("coding", "claude_test", "model", "", 0, "alice")
     store.update_role("router_fast", "claude_test", "model", "", 0, "alice")
     with pytest.raises(InstructionError) as error:
         store.delete_registration("claude_test")
     assert (error.value.code, error.value.details["reason"]) == ("instruction.conflict", "account.role_in_use")
-    assert error.value.details["roles"] == ["default", "router_fast"]
+    assert error.value.details["roles"] == ["coding", "router_fast"]
     from management_portal.execution import isa, account_login, account_hosting
     def unexpected(*args, **kwargs):
         pytest.fail("A referenced account must not lose login data or its home")
@@ -215,7 +226,7 @@ def test_role_blocks_account_deletion(tmp_path, monkeypatch):
         isa.delete_provider_account(SimpleNamespace(caller="alice", argument={"account_id": "claude_test"}.get))
     assert refused.value.details == error.value.details
     assert store.registration("claude_test") is not None
-    assert [row["role"] for row in store.roles()] == ["default", "router_fast"]
+    assert [row["role"] for row in store.roles()] == ["coding", "router_fast"]
 
 
 def test_delete_checks_real_session_bindings_and_scheduler_work(tmp_path):
@@ -404,12 +415,12 @@ def test_adapters_derive_explicit_routes_homes_and_capacity(tmp_path, monkeypatc
 
 
 def test_create_resident_resolves_role_and_keeps_explicit_settings(tmp_path, monkeypatch):
-    """创建时解析角色并保存回退标记，显式账号和模型优先。"""
+    """创建时解析指定的角色，显式账号和模型优先。"""
     from management_portal.execution import account_registrations as store
     from management_portal.society_service.isa import residents
     from management_portal.execution.resident_runtime_settings import normalize_settings
     store.create_registration({"config": {"account_dir": str(tmp_path / "accounts" / "codex_one")}, "account_id": "codex_one", "provider": "codex", "kind": "subscription_login", "route_id": "one"}, "alice")
-    store.update_role("default", "codex_one", "role-model", "high", 0, "alice")
+    store.update_role("coding", "codex_one", "role-model", "high", 0, "alice")
     created = []
     def create(lineage, payload, actor):
         created.append(payload)
@@ -419,17 +430,20 @@ def test_create_resident_resolves_role_and_keeps_explicit_settings(tmp_path, mon
     monkeypatch.setattr(residents, "placement", lambda *a: {})
     args = {"lineage_id": "lineage_000000000001", "title": "test", "backend_role": "missing", "account_id": "two", "settings": {"model": "explicit-model"}}
     inv = SimpleNamespace(caller="alice", argument=lambda name, default=None: args.get(name, default))
+    with pytest.raises(InstructionError, match="角色不存在"):
+        residents.create_resident(inv)
+    args["backend_role"] = "coding"
     result = residents.create_resident(inv)
     assert created[0]["backend_route_id"] == "two"
     settings = normalize_settings(created[0]["runtime_settings"])
     from management_portal.society_service.resident_runtime_payload import runtime_settings_updates_from_payload
-    assert runtime_settings_updates_from_payload(created[0]["runtime_settings"])["backend_role"] == "missing"
+    assert runtime_settings_updates_from_payload(created[0]["runtime_settings"])["backend_role"] == "coding"
     from management_portal.execution.provider_catalog import AGENT_PROVIDERS
     AGENT_PROVIDERS["codex"].runtime_adapter().validate_requested_fields(AGENT_PROVIDERS["codex"], created[0]["runtime_settings"])
     from management_portal.execution.resident_runtime_settings import merge_settings
-    assert merge_settings({}, created[0]["runtime_settings"])["backend_role_fallback"] == {"requested": "missing", "used": "default"}
+    assert merge_settings({}, created[0]["runtime_settings"])["backend_role"] == "coding"
     assert settings["model"] == "explicit-model" and settings["reasoning_effort"] == "high"
-    assert result["backend_role_fallback"] == settings["backend_role_fallback"] == {"requested": "missing", "used": "default"}
+    assert "backend_role_fallback" not in result
 
 
 def test_new_resident_uses_last_successful_creation_per_user(monkeypatch):
@@ -451,7 +465,7 @@ def test_new_resident_uses_last_successful_creation_per_user(monkeypatch):
     def create(lineage, payload, actor):
         if payload["title"] == "fail":
             raise ValueError("creation failed")
-        created.append((payload["backend_route_id"], payload["runtime_settings"]["model"]))
+        created.append((payload.get("backend_route_id"), (payload.get("runtime_settings") or {}).get("model")))
         return {"resident": {"resident_id": "resident_000000000001", **payload}}
 
     monkeypatch.setattr(residents, "lineage_resident_nodes", lambda: SimpleNamespace(create_lineage_resident=create))
@@ -464,14 +478,16 @@ def test_new_resident_uses_last_successful_creation_per_user(monkeypatch):
         submit("alice", title="fail", provider="claude", account_id="one", settings={"model": "standard"})
     _set_portal_user_preferences("alice", {"appearance": {"motion": "reduce"}})
     assert defaults.form_default("alice", catalog) == {"backend": "claude", "backend_route_id": "two", "model": "large"}
+    assert defaults.form_default("bob", catalog) == {}
     submit("bob")
     submit("alice")
-    assert created[-2:] == [("one", "standard"), ("two", "large")]
+    assert created[-2:] == [(None, None), ("two", "large")]
     submit("alice", settings={"model": "standard"})
     assert created[-1] == ("two", "standard")
     routes.pop()
     submit("alice")
-    assert created[-1] == ("one", "standard")
+    assert created[-1] == (None, None)
+    assert defaults.form_default("alice", catalog) == {}
 
 
 def test_disabling_account_prevents_queued_work_dispatch(tmp_path):
@@ -645,11 +661,11 @@ def test_backend_priority_versioned_and_preserved_when_omitted(tmp_path):
     store.create_registration({"account_id": "ordered", "provider": "codex", "kind": "subscription_login",
                                "route_id": "ordered", "config": {"account_dir": str(tmp_path / "ordered")}}, "alice")
     order = ["claude:subscription_login", "codex:subscription_login"]
-    role = store.update_role("default", "ordered", "m", "", 0, "alice", backend_priority=order)
+    role = store.update_role("coding", "ordered", "m", "", 0, "alice", backend_priority=order)
     assert role["backend_priority"] == order
-    assert store.update_role("default", "ordered", "m", "", 1, "alice")["backend_priority"] == order
+    assert store.update_role("coding", "ordered", "m", "", 1, "alice")["backend_priority"] == order
     with pytest.raises(InstructionError):
-        store.update_role("default", "ordered", "m", "", 1, "alice", backend_priority=list(reversed(order)))
+        store.update_role("coding", "ordered", "m", "", 1, "alice", backend_priority=list(reversed(order)))
     with pytest.raises(ValueError):
-        store.update_role("default", "ordered", "m", "", 2, "alice", backend_priority=order * 2)
-    assert store.update_role("default", "ordered", "m", "", 2, "alice", backend_priority=[])["backend_priority"] == []
+        store.update_role("coding", "ordered", "m", "", 2, "alice", backend_priority=order * 2)
+    assert store.update_role("coding", "ordered", "m", "", 2, "alice", backend_priority=[])["backend_priority"] == []
