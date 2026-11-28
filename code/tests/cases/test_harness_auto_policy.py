@@ -458,7 +458,7 @@ def test_turn_runtime_uses_live_native_totals_instead_of_previous_turn_contracts
         report = runtime.report()
         assert report["effective_profile"] == "protective"
         assert limits == {}
-    with subtests.test(contract='test_high_pressure_compacts_before_turn_and_keeps_runtime_fallback'), isolated_portal_case() as case_path:
+    with subtests.test(contract='test_high_pressure_keeps_native_compaction_defaults'), isolated_portal_case() as case_path:
         tmp_path = case_path
         controller = AdaptiveHarnessController()
         invocation = _invocation()
@@ -469,9 +469,9 @@ def test_turn_runtime_uses_live_native_totals_instead_of_previous_turn_contracts
             "severe_pressure_streak": 1,
         })
 
-        decision = controller.resolve(invocation, {})
+        decision = controller.resolve(invocation, {"early_context_compaction": {"enabled": True}})
 
-        assert decision.features["early_context_compaction"]["enabled"]
+        assert decision.features["early_context_compaction"]["enabled"] is False
     with subtests.test(contract='test_context_pressure_uses_latest_context_not_cumulative_usage'), isolated_portal_case() as case_path:
         tmp_path = case_path
         controller = AdaptiveHarnessController()

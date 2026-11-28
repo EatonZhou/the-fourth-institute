@@ -78,7 +78,7 @@ HARNESS_FEATURES = {
     'early_context_compaction': HarnessFeatureDefinition(
         module='early_compaction',
         class_name='EarlyContextCompactionFeature',
-        enabled=True,
+        enabled=False,
         parameters=frozenset(),
         rewrites_model_input=False,
     ),
@@ -550,6 +550,10 @@ class AgentHarness:
         raw_mode = str(config.get("mode") or "").strip().casefold()
         if raw_mode not in {"auto", "manual"}:
             raise ValueError(f"unsupported AgentHarness mode: {raw_mode}")
+        if raw_mode == "auto":
+            # Existing settings may contain the former default. Only manual
+            # mode opts in to overriding the provider's compaction threshold.
+            features.pop("early_context_compaction", None)
         config["mode"] = raw_mode
         if "policy_overrides" in config:
             config["policy_overrides"] = controlled_policy_overrides(

@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-08-11'
 version:
-  number: 38
+  number: 40
   created_at: "2026-08-11"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-14T10:43:16Z"
+  updated_at: "2026-11-28T06:26:03Z"
   updated_by:
     user: ""
-    agent: "resident_60ae6d0cdf74"
+    agent: "resident_2e9ea0072551"
 importance: 9
 metaness: 3
 ai_generated: true
@@ -152,7 +152,7 @@ Agent Harness 是包在一次模型生成外面的一组可选插件。Portal �
 
 ## 当前插件集合
 
-默认构造入口 `default_agent_harness()` 登记 10 个插件，其中 9 个在默认启用集合中。登记只表示插件存在；本 turn 是否运行，由计划和能力决定。构造时拒绝空 ID、重复 ID，以及默认启用集合中未登记的 ID。
+默认构造入口 `default_agent_harness()` 登记 10 个插件，其中 8 个在默认启用集合中。登记只表示插件存在；本 turn 是否运行，由计划和能力决定。构造时拒绝空 ID、重复 ID，以及默认启用集合中未登记的 ID。
 
 | 插件 ID | 作用 | 默认启用 | 需要的能力 |
 | --- | --- | --- | --- |
@@ -160,7 +160,7 @@ Agent Harness 是包在一次模型生成外面的一组可选插件。Portal �
 | `unified_resource_recall` | 提供按当前调用者权限读取统一资源的工具 | 是 | `portal_tools` |
 | `native_tool_loop_governor` | 观察 Provider 的原生工具事件，发现循环压力时发送有限次数的提醒 | 是 | `native_tool_events`（发送提醒还要 `active_turn_input`，调整推理强度还要 `turn_reasoning_effort`） |
 | `provider_error_continue` | Provider 出错时安排一次同会话续跑 | 是 | `error_continuation` |
-| `early_context_compaction` | 让 Provider 在上下文到达阈值时使用原生压缩 | 是 | `auto_compact_threshold` |
+| `early_context_compaction` | 提前设置 Provider 原生压缩的触发位置 | 否 | `auto_compact_threshold` |
 | `artifact_search_and_slice` | 在已卸载的结果中搜索，只取回指定片段 | 是 | `portal_tools` |
 | `jev_decision_tool` | 提供 `jev_decide` 工具，调用 JEV 做结构化判定 | 是 | `portal_tools` |
 
@@ -185,7 +185,7 @@ Agent Harness 是包在一次模型生成外面的一组可选插件。Portal �
 | --- | --- |
 | `native_tool_loop_governor` | 总是选用；工具负载越高，检查越频繁、阈值越低 |
 | `provider_error_continue` | 用户没有关闭时选用，续跑次数固定为 1 |
-| `early_context_compaction` | 压力达到 52% 或有保持标记，或提示很长时选用 |
+| `early_context_compaction` | 自动模式采用 Provider 自身的压缩配置。可在手动模式开启此插件。 |
 | `unified_resource_recall` | 提示中出现统一资源地址时选用 |
 | `tool_output_offloading` | 本 turn 会有 Portal 工具、会话已有卸载结果，或压力达到 52% 时选用；压力越高，卸载阈值越低（64、48、32 KiB） |
 | `hash_aware_read_dedup` | 本 turn 会有 Portal 工具、需要保护历史或探索碎片化时选用 |
@@ -207,7 +207,7 @@ Agent Harness 是包在一次模型生成外面的一组可选插件。Portal �
 
 | 参数 | 默认值 | 含义 |
 | --- | --- | --- |
-| `protect_history_pressure_percent` | 52 | 压力达到这个比例时开始保护历史：选用提前压缩，收紧卸载和去重阈值 |
+| `protect_history_pressure_percent` | 52 | 压力达到这个比例时开始保护历史：收紧卸载和去重阈值 |
 | `compaction_threshold_percent` | 70 | 让 Provider 在上下文达到窗口的这个比例时压缩 |
 | `compaction_max_context_tokens` | 0（不设） | 压缩位置的 token 上限；设了以后，上下文预算是“上限 ÷ 压缩比例” |
 | `high_tool_load_calls` | 32 | 上一 turn 的工具调用数达到多少算工具负载高 |
@@ -283,7 +283,7 @@ Provider 结束，发布报告，异步记录策略效果
 - **`artifact_search_and_slice`**：只在本会话的附件范围内搜索，只返回有限长度的片段。
 - **`hash_aware_read_dedup`**：调用参数和结果内容的哈希都相同、结果达到默认 256 token（32–20,000）时，才替换为“与前一次读取相同”的说明；缺少证据时两次都保留。哪些调用算读取：通用的读取工具名（`read_file`、`cat` 等），以及 Portal 工具自己的声明——Harness 工具可以声明某次调用只读（`read_only`）和比较结果时忽略哪些字段（`stable_result`）。`hatg_instruction` 在所调指令既不改变状态、也不是流式时算读取，比较时忽略每次调用各自的 `instruction_id`；资源与卸载结果的读取工具总是只读，资源读取比较时忽略 `cache_hit`。
 - **`inline_media_history`**：工具批次图片预算默认 512 KiB（64 KiB–16 MiB），超出后保留最近 1 张（1–20）。工具返回图片可压缩替换，默认长边 1,536 像素、JPEG 质量 82；Provider 原生工具返回的图片仅观察。所有 Provider 的输入图片保持原文件；具备 `input_image_detail` 的 Adapter 按默认 `high` 限定读取清晰度。
-- **`early_context_compaction`**：只处理 `create` 与 `turn` 两种操作。它不自己压缩，只把 Provider 原生压缩的触发位置提前：默认是上下文窗口的 70%，自动策略还可以给出一个 token 上限，两者取较小的一个；用户设置不保存比例；自动计划从策略表读取比例，手动计划使用功能默认比例。各 Adapter 的做法见下一节。Adapter 不具备 `auto_compact_threshold` 时原因记为 `requires_auto_compact_threshold`。
+- **`early_context_compaction`**：只处理 `create` 与 `turn` 两种操作。在手动模式显式开启后，插件按上下文窗口的 70% 请求 Provider 提前触发原生压缩。用户设置不保存比例。各 Adapter 的做法见下一节。Adapter 不具备 `auto_compact_threshold` 时原因记为 `requires_auto_compact_threshold`。
 
 ### 各 Adapter 怎样设置压缩位置
 
@@ -329,13 +329,13 @@ Provider 结束，发布报告，异步记录策略效果
 - **提醒只用 Provider 的 steering 发送，不伪造用户消息。** 模型已经给出最终回答或 turn 已经结束时，未发送的提醒被丢弃。提醒文本放在 `<agent-harness-runtime-checkpoint>` 标签中；只有 Portal 生成的这个标签被识别为提醒，用户文字中出现同名标签不会触发。
 - **提醒的种类**：重复读取、大输出、大图片、Provider 长时间没有进展（默认 600 秒）、同一种调用反复失败、上下文压力（默认 82%）和工具调用检查点。同一种提醒每 turn 只发一次。
 - **次数与阈值在计划中固定。** 自动策略在 turn 开始时一次决定，手动计划采用规范化配置；轮内 runtime 与观察者只记账，不再收紧阈值。计划被保存到恢复点，恢复执行沿用该计划。
-- 恢复中的 turn 仍然可以观察，也继续配置 Provider 的原生自动压缩阈值。恢复检查点保留首次执行的功能计划。
+- 恢复检查点保留首次执行的功能计划，恢复时继续执行该计划中的观察和原生压缩配置。
 - 同一执行进入后续 Provider turn 时重新开启观察并丢弃上轮未送达的控制。实时压力提醒按 `context_usage_events` 能力生效；没有实时样本时不能用累计成本构造压力。
 - 工具批处理报告保留实际生效的原因，后续没有改动的批次不会把它覆盖为“无需处理”。
 
 ## 执行内的技术恢复
 
-Provider 错误续跑由插件配置、Adapter 执行。用户可以关闭 `provider_error_continue`；开启时普通错误最多续跑一次，`max_continue_attempts` 固定为 1，发送前等待 3 秒，等待期间取消则停止。Resident 设置不保存 `max_continue_attempts` 或 `early_context_compaction.threshold_percent`；续跑次数由恢复实现固定为 1，压缩比例由计划从策略表决定。
+Provider 错误续跑由插件配置、Adapter 执行。用户可以关闭 `provider_error_continue`；开启时普通错误最多续跑一次，`max_continue_attempts` 固定为 1，发送前等待 3 秒，等待期间取消则停止。Resident 设置不保存 `max_continue_attempts` 或 `early_context_compaction.threshold_percent`；续跑次数由恢复实现固定为 1，手动提前压缩采用插件的固定比例。
 
 出口不可用、断线、压缩失败等底层恢复遵循 Adapter 的恢复预算与可恢复性判断，详见 decision_425e428410e0。取消优先，预算耗尽或不可恢复时提交真实终态。技术续跑沿用当前执行和 Provider 会话，不新增 Resident 用户消息；SocietyService 不再为同一次失败另提一个 `continue`。
 

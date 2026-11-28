@@ -18,8 +18,7 @@ from dataclasses import dataclass, replace
 @dataclass(frozen=True)
 class HarnessPolicyParameters:
     # Share of the context budget in use from which the session's history is
-    # protected: early compaction is armed and the offloading and
-    # deduplication thresholds tighten.
+    # protected: the offloading and deduplication thresholds tighten.
     protect_history_pressure_percent: float = 52.0
     # Share of the model's context window at which the Provider is asked to
     # compact by itself.

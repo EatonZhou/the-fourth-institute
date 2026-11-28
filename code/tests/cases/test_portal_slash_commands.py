@@ -377,7 +377,6 @@ class PortalSlashCommandsTest(unittest.TestCase):
         self.assertNotIn("milestone_rollover", defaults["features"])
         for feature_id in (
             "artifact_search_and_slice",
-            "early_context_compaction",
             "hash_aware_read_dedup",
             "inline_media_history",
             "native_tool_loop_governor",
@@ -389,6 +388,7 @@ class PortalSlashCommandsTest(unittest.TestCase):
                     defaults["features"][feature_id]["enabled"]
                 )
         for feature_id in (
+            "early_context_compaction",
             "tool_call_granularity",
         ):
             with self.subTest(default_disabled_feature=feature_id):
@@ -521,7 +521,7 @@ class PortalSlashCommandsTest(unittest.TestCase):
         self.assertEqual(
             harness["features"]["early_context_compaction"],
             {
-                "enabled": True,
+                "enabled": False,
             },
         )
 

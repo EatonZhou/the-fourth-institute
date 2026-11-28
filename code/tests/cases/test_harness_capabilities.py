@@ -427,6 +427,17 @@ def _enabled(decision) -> set[str]:
     return {name for name, config in decision.features.items() if config.get("enabled") is True}
 
 
+@pytest.mark.parametrize("operation", ["create", "turn"])
+def test_auto_mode_ignores_persisted_early_compaction_default(operation):
+    invocation = _policy_invocation(declared=EVERY_CAPABILITY)
+    invocation.request.operation = operation
+    invocation.request.runtime_options["agent_harness"]["features"] = {
+        "early_context_compaction": {"enabled": True},
+    }
+    harness = default_agent_harness()
+    assert "early_context_compaction" not in harness._config(invocation)["features"]
+
+
 def test_auto_policy_gives_two_backends_with_the_same_capabilities_the_same_plan(tmp_path, isolated_portal_case):
     """能力相同的两个后端得到相同的自动计划
 
@@ -466,10 +477,10 @@ def test_auto_policy_keeps_the_reason_when_signals_choose_a_feature_the_adapter_
         wanted = _effective_decision(controller, full)
         limited = _effective_decision(controller, bare)
 
-        assert {"early_context_compaction", "tool_output_offloading", "hash_aware_read_dedup"} <= _enabled(wanted)
+        assert {"tool_output_offloading", "hash_aware_read_dedup"} <= _enabled(wanted)
+        assert "early_context_compaction" not in _enabled(wanted)
         assert _enabled(limited) == {"native_tool_loop_governor"}
         assert limited.unavailable == {
-            "early_context_compaction": "requires_auto_compact_threshold",
             "hash_aware_read_dedup": "requires_portal_tools",
             "provider_error_continue": "requires_error_continuation",
             "jev_decision_tool": "requires_portal_tools",
@@ -584,10 +595,7 @@ def test_a_bounded_backend_measures_pressure_against_its_context_budget(tmp_path
         # ... but 56% of the bounded Backend's 285,714-token budget.
         bounded = plans["dsh"]
         assert bounded.signals["context_pressure_percent"] == 56.0
-        compaction = bounded.features["early_context_compaction"]
-        assert compaction["enabled"] is True
-        assert compaction["max_context_tokens"] == 200_000
-        assert compaction["policy_threshold_percent"] == 70
+        assert bounded.features["early_context_compaction"]["enabled"] is False
         unbounded = plans["backend_of_tomorrow"]
         assert unbounded.signals["context_pressure_percent"] == 16.0
         assert unbounded.features["early_context_compaction"]["enabled"] is False

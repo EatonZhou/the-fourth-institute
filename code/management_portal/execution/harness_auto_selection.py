@@ -36,7 +36,6 @@ class PlanInputs:
     has_artifacts: bool
     current_media_count: int
     resource_reference: bool
-    long_prompt: bool
     repo_task: bool
     configured_reasoning_effort: str
     initial_reasoning_effort: str
@@ -88,20 +87,6 @@ def _provider_error_continue(inputs: PlanInputs, configured: Mapping[str, dict[s
         configured.get("provider_error_continue", {}).get("enabled", True) is True,
         "bounded_provider_error_recovery",
         {"timing": "before_turn"},
-    )
-
-
-def _early_context_compaction(inputs: PlanInputs, configured: Mapping[str, dict[str, Any]]) -> FeatureSelection:
-    # Existing high-pressure sessions compact before their next expensive
-    # model call. The runtime controller remains armed so growth during this
-    # Portal turn has an observed fallback.
-    return FeatureSelection(
-        bool(inputs.history_protection or inputs.long_prompt),
-        "selective_provider_context_guard",
-        {
-            "policy_threshold_percent": inputs.parameters.compaction_threshold_percent,
-            "max_context_tokens": inputs.parameters.compaction_max_context_tokens,
-        },
     )
 
 
@@ -184,7 +169,6 @@ def _tool_call_granularity(inputs: PlanInputs, configured: Mapping[str, dict[str
 FEATURE_SELECTORS: tuple[tuple[str, FeatureSelector], ...] = (
     ("native_tool_loop_governor", _native_tool_loop_governor),
     ("provider_error_continue", _provider_error_continue),
-    ("early_context_compaction", _early_context_compaction),
     ("unified_resource_recall", _unified_resource_recall),
     ("tool_output_offloading", _tool_output_offloading),
     ("hash_aware_read_dedup", _hash_aware_read_dedup),

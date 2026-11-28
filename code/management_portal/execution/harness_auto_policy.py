@@ -46,7 +46,7 @@ from .harness_policy_table import (
 
 LOGGER = logging.getLogger(__name__)
 
-HARNESS_AUTO_POLICY_VERSION = 6
+HARNESS_AUTO_POLICY_VERSION = 7
 HARNESS_MODE_AUTO = "auto"
 # The arm of a controlled experiment that names its own parameter overrides.
 EXPERIMENT_ARM = "experiment"
@@ -841,7 +841,6 @@ class AdaptiveHarnessController:
             has_artifacts=has_artifacts,
             current_media_count=len(turn.input_media),
             resource_reference=turn.resource_reference,
-            long_prompt=turn.long_prompt,
             repo_task=repo_task,
             configured_reasoning_effort=turn.configured_reasoning_effort,
             initial_reasoning_effort=(
