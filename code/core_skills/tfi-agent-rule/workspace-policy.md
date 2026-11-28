@@ -1,6 +1,6 @@
 # 项目工作目录约定
 
-Resident 可按现有权限读取项目。普通任务在相应用途的 workspace/ 内创建目录、运行代码和存放交付物。Portal 开发源码和共享 Skill 仍遵循各自的维护规则。
+Resident 默认不碰其他 Project、其他 Lineage、`secrets/`、provider-state 和各 Provider 账号目录；Release 代码只通过发布更新。普通任务在相应用途的 workspace/ 内创建目录、运行代码和存放交付物。
 
 ## 确定任务文件的存放位置
 

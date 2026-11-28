@@ -158,7 +158,7 @@ Skill 规则保存在其源文件；任务 Skill 由当前消息或运行环境�
 
 模型 API 通过 `ListModelApis`、`CreateModelApi`、`UpdateModelApi`、`DeleteModelApi` 管理，Provider 账号按 `./portal-codex-accounts.md` 处理。凭据交给对应入口支持的 secret 或授权字段，由服务管理存储位置；不要直接改数据库或另建凭据清单。
 
-不要打印、复制到 prompt、提交或写入日志任何原始 API key、password、bearer token、private key、auth JSON 或 secret file 内容。需要说明路由时，可以提及 secret file reference path。
+不要打印、复制到 prompt、提交或写入日志任何原始 API key、password、bearer token、private key、auth JSON 或 secret file 内容。需要说明路由时，可以提及 secret file reference path。默认不碰 `secrets/`、provider-state 和各 Provider 账号目录，凭证操作使用运维指令。
 
 ## 记忆与知识沉淀
 
